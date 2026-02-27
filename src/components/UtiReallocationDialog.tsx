@@ -1,0 +1,372 @@
+import { useState, useEffect, useMemo } from "react";
+import { Patient } from "@/types/patient";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useHospital } from "@/contexts/HospitalContext";
+import { useDepartment } from "@/contexts/DepartmentContext";
+import { ArrowRightLeft, BedDouble, Check } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+interface UtiReallocationDialogProps {
+  patient: Patient | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+  currentUtiUnit?: string; // "UTI 1" or "UTI 2"
+  allPatients?: Patient[]; // All patients to find empty beds
+}
+
+export function UtiReallocationDialog({
+  patient,
+  isOpen,
+  onClose,
+  onSuccess,
+  currentUtiUnit = "UTI 1",
+  allPatients = [],
+}: UtiReallocationDialogProps) {
+  const [targetUnit, setTargetUnit] = useState<string>("");
+  const [targetBedId, setTargetBedId] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+  const { currentState, currentHospital } = useHospital();
+  const { currentDepartment } = useDepartment();
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setTargetUnit("");
+      setTargetBedId("");
+    }
+  }, [isOpen]);
+
+  // Get empty beds (beds without patient name) for each unit
+  const emptyBeds = useMemo(() => {
+    const uti1EmptyBeds = allPatients.filter(p => {
+      const isUti1 = p.sector === "red";
+      const isEmpty = !p.name || p.name.trim() === "";
+      const isNotCurrentPatient = p.id !== patient?.id;
+      return isUti1 && isEmpty && isNotCurrentPatient;
+    }).sort((a, b) => {
+      const numA = parseInt(a.bedNumber) || 0;
+      const numB = parseInt(b.bedNumber) || 0;
+      return numA - numB;
+    });
+
+    const uti2EmptyBeds = allPatients.filter(p => {
+      const isUti2 = p.sector === "yellow";
+      const isEmpty = !p.name || p.name.trim() === "";
+      const isNotCurrentPatient = p.id !== patient?.id;
+      return isUti2 && isEmpty && isNotCurrentPatient;
+    }).sort((a, b) => {
+      const numA = parseInt(a.bedNumber) || 0;
+      const numB = parseInt(b.bedNumber) || 0;
+      return numA - numB;
+    });
+
+    return {
+      "UTI 1": uti1EmptyBeds,
+      "UTI 2": uti2EmptyBeds,
+    };
+  }, [allPatients, patient?.id]);
+
+  // Get available beds for selected unit
+  const availableBeds = targetUnit ? emptyBeds[targetUnit as keyof typeof emptyBeds] || [] : [];
+
+  // Get selected target bed patient record
+  const targetBedPatient = useMemo(() => {
+    return allPatients.find(p => p.id === targetBedId);
+  }, [allPatients, targetBedId]);
+
+  const handleSubmit = async () => {
+    if (!patient || !targetBedPatient) return;
+
+    if (!targetUnit) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Por favor, selecione a unidade de destino.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!targetBedId) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Por favor, selecione o leito de destino.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      if (!currentHospital || !currentState) {
+        throw new Error('Hospital unit and state must be selected');
+      }
+
+      const isSameUnit = targetUnit === currentUtiUnit;
+      const originalBedNumber = patient.bedNumber;
+
+      // Step 1: Move patient data to the target bed (update target bed with patient data)
+      const { error: targetError } = await supabase
+        .from('patients')
+        .update({
+          name: patient.name,
+          age: patient.age?.toString() || null,
+          diagnoses: patient.diagnoses?.join('\n') || null,
+          medical_history: patient.medicalHistory?.join('\n') || null,
+          relevant_exams: patient.relevantExams?.join('\n') || null,
+          pendencies: patient.pendencies?.join('\n') || null,
+          schedule: patient.schedule?.join('\n') || null,
+          admission_history: patient.admissionHistory || null,
+          admission_date: patient.admissionDate || null,
+          highlighted_diagnoses: patient.highlightedDiagnoses || null,
+          highlighted_medical_history: patient.highlightedMedicalHistory || null,
+          highlighted_pendencies: patient.highlightedPendencies || null,
+          highlighted_conducts: patient.highlightedConducts || null,
+          uti_admission_date: patient.utiAdmissionDate?.join('\n') || null,
+          uti_discharge_prediction: patient.utiDischargePrediction?.join('\n') || null,
+          uti_allergies: patient.utiAllergies?.join('\n') || null,
+          uti_admission_reason: patient.utiAdmissionReason?.join('\n') || null,
+          uti_current_status: patient.utiCurrentStatus?.join('\n') || null,
+          uti_devices: patient.utiDevices?.join('\n') || null,
+          uti_cultures_antibiotics: patient.utiCulturesAntibiotics?.join('\n') || null,
+          uti_specialties: patient.utiSpecialties?.join('\n') || null,
+          uti_origin_sector: patient.utiOriginSector?.join('\n') || null,
+          uti_daily_conducts: patient.utiDailyConducts?.join('\n') || null,
+          clinical_status: patient.clinicalStatus || null,
+          psm_status: patient.psmStatus || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', targetBedPatient.id);
+
+      if (targetError) throw targetError;
+
+      // Step 2: Clear the original bed (make it empty)
+      const { error: sourceError } = await supabase
+        .from('patients')
+        .update({
+          name: '',
+          age: null,
+          diagnoses: null,
+          medical_history: null,
+          relevant_exams: null,
+          pendencies: null,
+          schedule: null,
+          admission_history: null,
+          admission_date: null,
+          highlighted_diagnoses: null,
+          highlighted_medical_history: null,
+          highlighted_pendencies: null,
+          highlighted_conducts: null,
+          uti_admission_date: null,
+          uti_discharge_prediction: null,
+          uti_allergies: null,
+          uti_admission_reason: null,
+          uti_current_status: null,
+          uti_devices: null,
+          uti_cultures_antibiotics: null,
+          uti_specialties: null,
+          uti_origin_sector: null,
+          uti_daily_conducts: null,
+          clinical_status: null,
+          psm_status: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', patient.id);
+
+      if (sourceError) throw sourceError;
+
+      // Register movement
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      await supabase
+        .from('patient_movements')
+        .insert({
+          patient_name: patient.name,
+          patient_bed: originalBedNumber,
+          patient_sector: patient.sector,
+          movement_type: isSameUnit ? 'REALOCAÇÃO' : 'TRANSFERÊNCIA',
+          destination: `${targetUnit} - Leito ${targetBedPatient.bedNumber}`,
+          notes: `Realocação de ${currentUtiUnit} Leito ${originalBedNumber} para ${targetUnit} Leito ${targetBedPatient.bedNumber}`,
+          created_by: user?.id,
+          patient_snapshot: patient as any,
+          department: currentDepartment,
+          state_id: currentState.id,
+          hospital_unit_id: currentHospital.id,
+        });
+
+      toast({
+        title: isSameUnit ? "Paciente realocado" : "Paciente transferido",
+        description: isSameUnit 
+          ? `${patient.name} realocado para o leito ${targetBedPatient.bedNumber}.`
+          : `${patient.name} transferido para ${targetUnit}, leito ${targetBedPatient.bedNumber}.`,
+      });
+
+      onSuccess?.();
+      handleClose();
+    } catch (error) {
+      console.error('Error reallocating patient:', error);
+      toast({
+        title: "Erro ao realocar paciente",
+        description: "Não foi possível realocar o paciente. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setTargetUnit("");
+    setTargetBedId("");
+    onClose();
+  };
+
+  if (!patient) return null;
+
+  const totalEmptyBeds = emptyBeds["UTI 1"].length + emptyBeds["UTI 2"].length;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[480px]">
+        <DialogHeader>
+          <div className="flex items-center gap-3 mb-2">
+            <ArrowRightLeft className="h-6 w-6 text-blue-600" />
+            <DialogTitle className="text-xl">Realocar Paciente</DialogTitle>
+          </div>
+          <DialogDescription>
+            Selecione um leito vazio disponível para realocar o paciente
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          {/* Current patient info */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Paciente</Label>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="font-medium">{patient.name}</p>
+              <p className="text-sm text-muted-foreground">
+                {currentUtiUnit} • Leito: {patient.bedNumber}
+              </p>
+            </div>
+          </div>
+
+          {/* Unit selection */}
+          <div className="space-y-2">
+            <Label htmlFor="targetUnit">Unidade de Destino *</Label>
+            <Select value={targetUnit} onValueChange={(value) => {
+              setTargetUnit(value);
+              setTargetBedId(""); // Reset bed selection when unit changes
+            }}>
+              <SelectTrigger id="targetUnit">
+                <SelectValue placeholder="Selecione a unidade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="UTI 1">
+                  <div className="flex items-center gap-2">
+                    <BedDouble className="h-4 w-4 text-blue-500" />
+                    <span>UTI Unidade 1</span>
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      {emptyBeds["UTI 1"].length} vago(s)
+                    </Badge>
+                  </div>
+                </SelectItem>
+                <SelectItem value="UTI 2">
+                  <div className="flex items-center gap-2">
+                    <BedDouble className="h-4 w-4 text-amber-500" />
+                    <span>UTI Unidade 2</span>
+                    <Badge variant="secondary" className="ml-2 text-xs">
+                      {emptyBeds["UTI 2"].length} vago(s)
+                    </Badge>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Bed selection - only show empty beds */}
+          {targetUnit && (
+            <div className="space-y-2">
+              <Label htmlFor="targetBed">Leito de Destino *</Label>
+              {availableBeds.length > 0 ? (
+                <Select value={targetBedId} onValueChange={setTargetBedId}>
+                  <SelectTrigger id="targetBed">
+                    <SelectValue placeholder="Selecione o leito vago" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableBeds.map((bed) => (
+                      <SelectItem key={bed.id} value={bed.id}>
+                        <div className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-green-500" />
+                          <span>Leito {bed.bedNumber}</span>
+                          <Badge variant="outline" className="ml-2 text-xs text-green-600 border-green-300">
+                            Disponível
+                          </Badge>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    Não há leitos vagos disponíveis em {targetUnit}.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Summary of selection */}
+          {targetBedPatient && (
+            <div className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+              <p className="text-sm text-green-700 dark:text-green-400">
+                <strong>{patient.name}</strong> será realocado para{' '}
+                <strong>{targetUnit} - Leito {targetBedPatient.bedNumber}</strong>
+              </p>
+            </div>
+          )}
+
+          {totalEmptyBeds === 0 && (
+            <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm text-red-700 dark:text-red-400">
+                Não há leitos vagos disponíveis em nenhuma unidade de UTI.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isSubmitting || !targetBedId || availableBeds.length === 0}
+          >
+            {isSubmitting ? "Realocando..." : "Confirmar Realocação"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
