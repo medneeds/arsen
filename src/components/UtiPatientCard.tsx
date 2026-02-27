@@ -1104,26 +1104,25 @@ export function UtiPatientCard({
 
                 {/* Mobile: Chips wrap to second line */}
                 <div className="flex items-center gap-1 flex-wrap md:flex-nowrap w-full md:w-auto mt-1 md:mt-0">
-                  {/* Clinical Status Selector - Fixed width */}
+                  {/* Clinical Status - Discreet color dot */}
                   <Select
                     value={patient.clinicalStatus || ""}
                     onValueChange={(v) => handleUpdateField("clinicalStatus", v)}
                   >
                     <SelectTrigger 
-                      className={cn(
-                        "shrink-0 h-5 w-[145px] md:w-[170px] px-1.5 md:px-2 text-[8px] md:text-[9px] font-bold border-0 rounded",
-                        patient.clinicalStatus 
-                          ? CLINICAL_STATUS_OPTIONS.find(o => o.value === patient.clinicalStatus)?.color || "bg-muted"
-                          : "bg-muted text-muted-foreground"
-                      )}
+                      className="shrink-0 h-5 w-5 p-0 border-0 bg-transparent shadow-none focus:ring-0 [&>svg]:hidden"
                       onClick={(e) => e.stopPropagation()}
+                      title={patient.clinicalStatus 
+                        ? CLINICAL_STATUS_OPTIONS.find(o => o.value === patient.clinicalStatus)?.label 
+                        : "Classificação"
+                      }
                     >
-                      <SelectValue placeholder="CLASSIFICAÇÃO">
-                        {patient.clinicalStatus 
-                          ? CLINICAL_STATUS_OPTIONS.find(o => o.value === patient.clinicalStatus)?.label 
-                          : "CLASSIFICAÇÃO"
-                        }
-                      </SelectValue>
+                      <div className={cn(
+                        "w-3 h-3 rounded-full border-2 transition-colors mx-auto",
+                        patient.clinicalStatus 
+                          ? CLINICAL_STATUS_OPTIONS.find(o => o.value === patient.clinicalStatus)?.color || "bg-muted border-muted-foreground/30"
+                          : "bg-muted border-muted-foreground/30"
+                      )} />
                     </SelectTrigger>
                     <SelectContent>
                       {CLINICAL_STATUS_OPTIONS.map((option) => (
