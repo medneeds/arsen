@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @layer base {
   * {
     @apply border-border;
@@ -10,6 +12,7 @@
   html,
   body {
     @apply m-0 p-0 h-full;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
   
   body {
@@ -17,108 +20,107 @@
   }
   
   :root {
-    --background: 210 20% 98%;
-    --foreground: 210 20% 12%;
+    --background: 210 25% 97%;
+    --foreground: 215 25% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 210 20% 12%;
+    --card-foreground: 215 25% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 210 20% 12%;
-    --primary: 210 80% 42%;
+    --popover-foreground: 215 25% 12%;
+    --primary: 210 65% 28%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 15% 92%;
-    --secondary-foreground: 210 20% 12%;
-    --muted: 210 15% 95%;
-    --muted-foreground: 210 10% 45%;
-    --accent: 210 60% 88%;
-    --accent-foreground: 210 80% 28%;
-    --destructive: 0 72% 51%;
+    --secondary: 210 18% 93%;
+    --secondary-foreground: 215 25% 12%;
+    --muted: 210 18% 95%;
+    --muted-foreground: 215 12% 50%;
+    --accent: 174 60% 42%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 68% 50%;
     --destructive-foreground: 0 0% 100%;
-    --critical: 0 72% 51%;
+    --critical: 0 68% 50%;
     --critical-foreground: 0 0% 100%;
-    --warning: 45 93% 47%;
+    --warning: 45 90% 48%;
     --warning-foreground: 0 0% 100%;
-    --stable: 210 80% 42%;
+    --stable: 210 65% 28%;
     --stable-foreground: 0 0% 100%;
-    --border: 210 20% 88%;
-    --input: 210 20% 88%;
-    --ring: 210 80% 42%;
-    --radius: 0.75rem;
+    --border: 215 20% 90%;
+    --input: 215 20% 90%;
+    --ring: 174 60% 42%;
+    --radius: 0.625rem;
     
-    --gradient-primary: linear-gradient(135deg, hsl(210 80% 42%) 0%, hsl(210 70% 35%) 100%);
-    --gradient-card: linear-gradient(to bottom, hsl(0 0% 100% / 0.95) 0%, hsl(0 0% 100% / 0.9) 50%, hsl(0 0% 100% / 0.8) 100%);
-    --gradient-critical: linear-gradient(to right, hsl(0 72% 51% / 0.2) 0%, hsl(0 72% 51% / 0.05) 100%);
-    --gradient-warning: linear-gradient(to right, hsl(45 93% 47% / 0.2) 0%, hsl(45 93% 47% / 0.05) 100%);
-    --gradient-stable: linear-gradient(to right, hsl(210 80% 42% / 0.2) 0%, hsl(210 80% 42% / 0.05) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(210 65% 28%) 0%, hsl(210 55% 22%) 100%);
+    --gradient-card: linear-gradient(to bottom, hsl(0 0% 100% / 0.98) 0%, hsl(0 0% 100% / 0.94) 100%);
+    --gradient-critical: linear-gradient(to right, hsl(0 68% 50% / 0.12) 0%, hsl(0 68% 50% / 0.03) 100%);
+    --gradient-warning: linear-gradient(to right, hsl(45 90% 48% / 0.12) 0%, hsl(45 90% 48% / 0.03) 100%);
+    --gradient-stable: linear-gradient(to right, hsl(210 65% 28% / 0.12) 0%, hsl(210 65% 28% / 0.03) 100%);
     
-    --shadow-sm: 0 1px 2px 0 hsl(210 20% 12% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(210 20% 12% / 0.1), 0 2px 4px -2px hsl(210 20% 12% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(210 20% 12% / 0.1), 0 4px 6px -4px hsl(210 20% 12% / 0.1);
-    --shadow-glow: 0 0 40px hsl(210 80% 42% / 0.15);
+    --shadow-sm: 0 1px 2px 0 hsl(215 25% 12% / 0.04);
+    --shadow-md: 0 4px 8px -2px hsl(215 25% 12% / 0.08);
+    --shadow-lg: 0 12px 24px -4px hsl(215 25% 12% / 0.1);
+    --shadow-glow: 0 0 40px hsl(174 60% 42% / 0.1);
     
     --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-    /* Allocation Status Bar Colors */
-    --status-pending: 45 93% 47%;
-    --status-discussing: 199 89% 48%;
-    --status-rejected: 0 72% 51%;
+    --status-pending: 45 90% 48%;
+    --status-discussing: 199 80% 48%;
+    --status-rejected: 0 68% 50%;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 20%;
+    --sidebar-primary: 210 65% 28%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 18% 96%;
+    --sidebar-accent-foreground: 215 25% 20%;
+    --sidebar-border: 215 20% 92%;
+    --sidebar-ring: 174 60% 42%;
   }
 
   .dark {
-    --background: 210 30% 8%;
-    --foreground: 210 20% 98%;
-    --card: 210 25% 12%;
-    --card-foreground: 210 20% 98%;
-    --popover: 210 25% 12%;
-    --popover-foreground: 210 20% 98%;
-    --primary: 210 70% 55%;
+    --background: 215 30% 7%;
+    --foreground: 210 20% 96%;
+    --card: 215 28% 11%;
+    --card-foreground: 210 20% 96%;
+    --popover: 215 28% 11%;
+    --popover-foreground: 210 20% 96%;
+    --primary: 174 55% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 20% 18%;
-    --secondary-foreground: 210 20% 98%;
-    --muted: 210 20% 18%;
-    --muted-foreground: 210 15% 65%;
-    --accent: 210 50% 25%;
-    --accent-foreground: 210 70% 75%;
-    --destructive: 0 62% 45%;
+    --secondary: 215 22% 16%;
+    --secondary-foreground: 210 20% 96%;
+    --muted: 215 22% 16%;
+    --muted-foreground: 215 15% 60%;
+    --accent: 174 50% 35%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 60% 45%;
     --destructive-foreground: 0 0% 100%;
-    --critical: 0 62% 45%;
+    --critical: 0 60% 45%;
     --critical-foreground: 0 0% 100%;
     --warning: 45 80% 45%;
     --warning-foreground: 0 0% 100%;
-    --stable: 210 70% 55%;
+    --stable: 174 55% 45%;
     --stable-foreground: 0 0% 100%;
-    --border: 210 20% 22%;
-    --input: 210 20% 22%;
-    --ring: 210 70% 65%;
+    --border: 215 22% 20%;
+    --input: 215 22% 20%;
+    --ring: 174 50% 45%;
     
-    --gradient-primary: linear-gradient(135deg, hsl(210 70% 55%) 0%, hsl(210 60% 45%) 100%);
-    --gradient-card: linear-gradient(to bottom, hsl(210 25% 12% / 0.95) 0%, hsl(210 25% 12% / 0.9) 50%, hsl(210 25% 12% / 0.8) 100%);
-    --gradient-critical: linear-gradient(to right, hsl(0 62% 45% / 0.2) 0%, hsl(0 62% 45% / 0.05) 100%);
-    --gradient-warning: linear-gradient(to right, hsl(45 80% 45% / 0.2) 0%, hsl(45 80% 45% / 0.05) 100%);
-    --gradient-stable: linear-gradient(to right, hsl(210 70% 55% / 0.2) 0%, hsl(210 70% 55% / 0.05) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(174 55% 45%) 0%, hsl(174 45% 35%) 100%);
+    --gradient-card: linear-gradient(to bottom, hsl(215 28% 11% / 0.95) 0%, hsl(215 28% 11% / 0.9) 100%);
+    --gradient-critical: linear-gradient(to right, hsl(0 60% 45% / 0.15) 0%, hsl(0 60% 45% / 0.03) 100%);
+    --gradient-warning: linear-gradient(to right, hsl(45 80% 45% / 0.15) 0%, hsl(45 80% 45% / 0.03) 100%);
+    --gradient-stable: linear-gradient(to right, hsl(174 55% 45% / 0.15) 0%, hsl(174 55% 45% / 0.03) 100%);
     
-    --shadow-sm: 0 1px 2px 0 hsl(210 20% 98% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(210 20% 98% / 0.1), 0 2px 4px -2px hsl(210 20% 98% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(210 20% 98% / 0.1), 0 4px 6px -4px hsl(210 20% 98% / 0.1);
-    --shadow-glow: 0 0 40px hsl(210 70% 65% / 0.2);
+    --shadow-sm: 0 1px 2px 0 hsl(210 20% 96% / 0.04);
+    --shadow-md: 0 4px 8px -2px hsl(210 20% 96% / 0.08);
+    --shadow-lg: 0 12px 24px -4px hsl(210 20% 96% / 0.1);
+    --shadow-glow: 0 0 40px hsl(174 50% 45% / 0.15);
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-background: 215 28% 9%;
+    --sidebar-foreground: 210 20% 94%;
+    --sidebar-primary: 174 55% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 215 25% 14%;
+    --sidebar-accent-foreground: 210 20% 94%;
+    --sidebar-border: 215 22% 16%;
+    --sidebar-ring: 174 50% 45%;
   }
 
   * {
@@ -132,23 +134,22 @@
   .print-light {
     color-scheme: light;
     --background: 0 0% 100%;
-    --foreground: 210 20% 12%;
+    --foreground: 215 25% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 210 20% 12%;
+    --card-foreground: 215 25% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 210 20% 12%;
-    --secondary: 210 15% 92%;
-    --secondary-foreground: 210 20% 12%;
-    --muted: 210 15% 95%;
-    --muted-foreground: 210 10% 45%;
-    --accent: 210 60% 88%;
-    --accent-foreground: 210 80% 28%;
-    --border: 210 20% 88%;
-    --input: 210 20% 88%;
-    --ring: 210 80% 42%;
+    --popover-foreground: 215 25% 12%;
+    --secondary: 210 18% 93%;
+    --secondary-foreground: 215 25% 12%;
+    --muted: 210 18% 95%;
+    --muted-foreground: 215 12% 50%;
+    --accent: 174 60% 42%;
+    --accent-foreground: 0 0% 100%;
+    --border: 215 20% 90%;
+    --input: 215 20% 90%;
+    --ring: 174 60% 42%;
   }
 
-  /* Hide print layout on screen */
   .print-layout-container {
     display: none;
   }
@@ -185,7 +186,7 @@
   background: hsl(var(--muted-foreground) / 0.6);
 }
 
-/* Bottom scrollbar - visible and elegant */
+/* Bottom scrollbar */
 .scrollbar-thin-bottom {
   scrollbar-width: auto;
   overflow-x: auto;
@@ -230,16 +231,12 @@
     hsl(var(--primary) / 0.9) 50%,
     hsl(var(--primary) / 0.7) 100%
   );
-  box-shadow: 
-    inset 0 1px 2px hsl(var(--primary-foreground) / 0.3),
-    0 2px 6px hsl(var(--primary) / 0.3);
 }
 
 .scrollbar-thin-bottom::-webkit-scrollbar-thumb:active {
   background: hsl(var(--primary));
 }
 
-/* Dark mode adjustments */
 .dark .scrollbar-thin-bottom::-webkit-scrollbar-track {
   background: linear-gradient(
     to bottom,
@@ -270,9 +267,6 @@
 }
 
 @media print {
-  /* Page size/margins are defined by the specific print components (portrait/landscape).
-     Keeping this global block without forcing a single orientation prevents overflow/scrollbars. */
-
   * {
     print-color-adjust: exact !important;
     -webkit-print-color-adjust: exact !important;
@@ -298,13 +292,11 @@
     overflow: visible !important;
   }
 
-  /* Prevent scrollbars from being rendered into PDF */
   #root {
     height: auto !important;
     overflow: visible !important;
   }
 
-  /* MainLayout uses overflow-auto; during print this can render scrollbars into the PDF */
   main {
     overflow: visible !important;
     height: auto !important;
@@ -332,9 +324,6 @@
     display: none !important;
   }
   
-  /* Marca d'água removida - sem logos de rede específica na impressão */
-  
-  /* Hide sidebar and navigation */
   aside,
   [data-sidebar],
   header,
@@ -343,17 +332,14 @@
     display: none !important;
   }
   
-  /* Hide main dashboard content when printing */
   .dashboard-screen-content {
     display: none !important;
   }
   
-  /* Hide main content when printing */
   .print-hide {
     display: none !important;
   }
   
-  /* Hide all buttons, inputs, and interactive elements during print */
   button:not(.print-show),
   input,
   textarea,
@@ -367,7 +353,6 @@
     display: none !important;
   }
   
-  /* Show only print layout */
   .print-layout-container {
     display: block !important;
     width: 100% !important;
@@ -377,7 +362,6 @@
     z-index: 1;
   }
   
-  /* Mobile print optimizations */
   @supports (-webkit-touch-callout: none) {
     body {
       -webkit-print-color-adjust: exact !important;
@@ -388,7 +372,6 @@
     }
   }
   
-  /* Force visibility of print content on mobile */
   .print-layout-container * {
     visibility: visible !important;
     opacity: 1 !important;
@@ -397,7 +380,6 @@
 
 
 @layer utilities {
-  /* Custom animations for auth page */
   @keyframes float {
     0%, 100% {
       transform: translateY(0px);
@@ -429,7 +411,6 @@
     background: radial-gradient(circle, var(--tw-gradient-stops));
   }
 
-  /* Allocation Status Bar - Sector-based colors */
   .allocation-status-bar {
     position: relative;
     overflow: hidden;
@@ -458,20 +439,18 @@
     z-index: 1;
   }
 
-  /* Sector-based background colors - matching section gradients */
   .allocation-status-bar.sector-red {
-    background: linear-gradient(to right, hsl(0 72% 51% / 0.2) 0%, hsl(0 72% 51% / 0.05) 100%);
+    background: linear-gradient(to right, hsl(0 68% 50% / 0.2) 0%, hsl(0 68% 50% / 0.05) 100%);
   }
 
   .allocation-status-bar.sector-yellow {
-    background: linear-gradient(to right, hsl(45 93% 47% / 0.2) 0%, hsl(45 93% 47% / 0.05) 100%);
+    background: linear-gradient(to right, hsl(45 90% 48% / 0.2) 0%, hsl(45 90% 48% / 0.05) 100%);
   }
 
   .allocation-status-bar.sector-blue {
-    background: linear-gradient(to right, hsl(210 80% 42% / 0.2) 0%, hsl(210 80% 42% / 0.05) 100%);
+    background: linear-gradient(to right, hsl(210 65% 28% / 0.2) 0%, hsl(210 65% 28% / 0.05) 100%);
   }
 
-  /* Status colors - icon and text same color */
   .allocation-status-bar .status-pending,
   .allocation-status-bar .icon-pending {
     color: hsl(25 100% 35%);
@@ -487,131 +466,14 @@
     color: hsl(0 80% 30%);
   }
 
-  /* Destination and time - same style */
   .allocation-status-bar .status-destination,
   .allocation-status-bar .status-time {
     color: hsl(220 20% 25%);
     font-weight: 600;
   }
 
-  /* Separator dot */
   .allocation-status-bar .separator {
     color: rgba(255, 255, 255, 0.8);
     font-weight: bold;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
-
-  /* Dark mode adjustments */
-  .dark .allocation-status-bar.sector-red {
-    background: linear-gradient(to right, hsl(0 62% 45% / 0.2) 0%, hsl(0 62% 45% / 0.05) 100%);
-  }
-  .dark .allocation-status-bar.sector-yellow {
-    background: linear-gradient(to right, hsl(45 80% 45% / 0.2) 0%, hsl(45 80% 45% / 0.05) 100%);
-  }
-  .dark .allocation-status-bar.sector-blue {
-    background: linear-gradient(to right, hsl(210 70% 55% / 0.2) 0%, hsl(210 70% 55% / 0.05) 100%);
-  }
-
-  .dark .allocation-status-bar::before {
-    background: linear-gradient(
-      110deg,
-      transparent 20%,
-      rgba(255, 255, 255, 0.25) 40%,
-      rgba(255, 255, 255, 0.4) 50%,
-      rgba(255, 255, 255, 0.25) 60%,
-      transparent 80%
-    );
-  }
-
-  .dark .allocation-status-bar .status-pending,
-  .dark .allocation-status-bar .icon-pending {
-    color: hsl(35 100% 65%);
-  }
-
-  .dark .allocation-status-bar .status-discussing,
-  .dark .allocation-status-bar .icon-discussing {
-    color: hsl(199 100% 70%);
-  }
-
-  .dark .allocation-status-bar .status-rejected,
-  .dark .allocation-status-bar .icon-rejected {
-    color: hsl(0 80% 70%);
-  }
-
-  .dark .allocation-status-bar .status-destination,
-  .dark .allocation-status-bar .status-time {
-    color: hsl(220 15% 80%);
-  }
-
-  /* Tactile button feedback - ripple + scale */
-  .btn-tactile {
-    @apply relative overflow-hidden transition-transform duration-150 active:scale-95;
-  }
-
-  .btn-tactile::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), hsl(var(--primary-foreground) / 0.2) 0%, transparent 60%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-  }
-
-  .btn-tactile:active::after {
-    opacity: 1;
-  }
-}
-
-/* Force consistent text contrast on autofilled inputs */
-input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:active {
-  -webkit-text-fill-color: #111827 !important;
-  -webkit-box-shadow: 0 0 0 30px #f9fafb inset !important;
-  box-shadow: 0 0 0 30px #f9fafb inset !important;
-  caret-color: #111827 !important;
-  transition: background-color 5000s ease-in-out 0s;
-  font-size: inherit !important;
-  color: #111827 !important;
-}
-
-/* Ensure select triggers always show dark text */
-[data-radix-select-trigger] {
-  color: #111827 !important;
-}
-
-/* Force select placeholder to be visible */
-[data-radix-select-trigger] [data-placeholder] {
-  color: #6b7280 !important;
-  opacity: 1 !important;
-}
-
-/* Force all input text to be dark on light backgrounds (auth page) */
-.bg-white input[type="text"],
-.bg-white input[type="password"],
-.bg-white input[type="email"],
-.bg-white input[type="tel"],
-.bg-white input[type="number"] {
-  color: #111827 !important;
-  -webkit-text-fill-color: #111827 !important;
-  caret-color: #111827 !important;
-}
-
-.bg-white input::placeholder {
-  color: #6b7280 !important;
-  -webkit-text-fill-color: #6b7280 !important;
-  opacity: 1 !important;
-}
-
-/* Ensure select values are visible on white backgrounds */
-.bg-white [data-radix-select-trigger] span {
-  color: #111827 !important;
-  -webkit-text-fill-color: #111827 !important;
-}
-
-.bg-white [data-radix-select-trigger] [data-placeholder] span {
-  color: #6b7280 !important;
-  -webkit-text-fill-color: #6b7280 !important;
 }

@@ -8,10 +8,8 @@ import { toast } from "sonner";
 import { LogIn, User, Lock, Eye, EyeOff } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { cn } from "@/lib/utils";
-
-const SLATE = {
-  bg: "from-[#0f172a] via-[#1e293b] to-[#334155]",
-} as const;
+import { whitelabel } from "@/config/whitelabel";
+import bighelpLogo from "@/assets/bighelp-map-logo.png";
 
 export default function AuthPage() {
   const { user, signIn } = useAuth();
@@ -75,44 +73,51 @@ export default function AuthPage() {
       )}
       
       <div className={cn(
-        `min-h-screen bg-gradient-to-br ${SLATE.bg} flex items-center justify-center p-4 relative overflow-hidden transition-opacity duration-500`,
+        "min-h-screen bg-gradient-to-br from-[#0a1628] via-[#0f2847] to-[#1a3a5c] flex items-center justify-center p-4 relative overflow-hidden transition-opacity duration-500",
         showLoadingScreen && "opacity-0"
       )}>
-        {/* Background effects */}
+        {/* Subtle background pattern */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 -left-32 w-[600px] h-[600px] bg-white/[0.03] rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-1/4 -right-32 w-[600px] h-[600px] bg-white/[0.03] rounded-full blur-3xl animate-pulse [animation-delay:1.5s]" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full blur-[150px] bg-[#2dd4bf]/[0.04]" />
+          <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full blur-[120px] bg-white/[0.02]" />
         </div>
 
         <div className="w-full max-w-sm relative z-10">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-white tracking-wider mb-2">UTI 2</h1>
-            <p className="text-slate-400 text-sm">Hospital Municipal Djalma Marques</p>
-            <p className="text-slate-500 text-xs mt-1">Socorrão I</p>
+            <img 
+              src={bighelpLogo} 
+              alt="BigHelp Map" 
+              className="h-14 mx-auto mb-5 object-contain"
+            />
+            <div className="h-px w-24 mx-auto bg-gradient-to-r from-transparent via-[#2dd4bf]/40 to-transparent mb-4" />
+            <p className="text-slate-400 text-sm font-light tracking-wide">
+              Hospital Mun. Djalma Marques
+            </p>
+            <p className="text-slate-500 text-xs mt-0.5 font-light">Socorrão I</p>
           </div>
 
           {/* Login Card */}
-          <div className="bg-white rounded-2xl shadow-2xl shadow-black/30 p-6">
-            <div className="mb-4 text-center">
-              <div className="inline-flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-br from-slate-800 to-slate-700 shadow-md mb-2">
-                <LogIn className="h-5 w-5 text-white" />
+          <div className="bg-white/[0.97] backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/20 p-7 border border-white/20">
+            <div className="mb-5 text-center">
+              <div className="inline-flex items-center justify-center h-11 w-11 rounded-xl bg-gradient-to-br from-[#0f2847] to-[#1a3a5c] shadow-lg mb-3">
+                <LogIn className="h-5 w-5 text-[#2dd4bf]" />
               </div>
-              <h2 className="text-sm font-bold text-gray-900 uppercase">Acesse sua conta</h2>
+              <h2 className="text-sm font-semibold text-gray-800 uppercase tracking-wider">Acesse sua conta</h2>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <Label htmlFor="username" className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Usuário</Label>
+                <Label htmlFor="username" className="text-[11px] font-medium text-gray-400 uppercase mb-1.5 block tracking-wider">Usuário</Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
                   <Input
                     id="username"
                     type="text"
                     value={loginData.username}
                     onChange={(e) => setLoginData({ ...loginData, username: e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, '') })}
                     placeholder="DIGITE SEU USUÁRIO"
-                    className="pl-10 h-10 bg-gray-50 border border-gray-200 rounded-lg text-sm uppercase font-medium text-gray-900 placeholder:text-gray-400 focus:border-slate-700 focus:ring-1 focus:ring-slate-700/10"
+                    className="pl-10 h-11 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm uppercase font-medium text-gray-900 placeholder:text-gray-300 focus:border-[#2dd4bf]/50 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all"
                     disabled={loading}
                     autoComplete="username"
                   />
@@ -120,23 +125,23 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <Label htmlFor="password" className="text-xs font-semibold text-gray-500 uppercase mb-1 block">Senha</Label>
+                <Label htmlFor="password" className="text-[11px] font-medium text-gray-400 uppercase mb-1.5 block tracking-wider">Senha</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={loginData.password}
                     onChange={(e) => setLoginData({ ...loginData, password: e.target.value.toUpperCase() })}
                     placeholder="DIGITE SUA SENHA"
-                    className="pl-10 pr-10 h-10 bg-gray-50 border border-gray-200 rounded-lg text-sm uppercase font-medium text-gray-900 placeholder:text-gray-400 focus:border-slate-700 focus:ring-1 focus:ring-slate-700/10"
+                    className="pl-10 pr-10 h-11 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm uppercase font-medium text-gray-900 placeholder:text-gray-300 focus:border-[#2dd4bf]/50 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all"
                     disabled={loading}
                     autoComplete="current-password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -147,12 +152,17 @@ export default function AuthPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-10 bg-gradient-to-r from-slate-800 to-slate-700 hover:from-slate-900 hover:to-slate-800 text-white font-semibold uppercase text-xs rounded-lg shadow-lg"
+                className="w-full h-11 bg-gradient-to-r from-[#0f2847] to-[#1a3a5c] hover:from-[#0a1628] hover:to-[#0f2847] text-white font-semibold uppercase text-xs rounded-xl shadow-lg tracking-wider transition-all duration-300"
               >
                 {loading ? "ENTRANDO..." : "ENTRAR"}
               </Button>
             </form>
           </div>
+
+          {/* Footer */}
+          <p className="text-center text-[10px] text-slate-600 mt-6 tracking-widest uppercase font-light">
+            {whitelabel.credits.authorSignature}
+          </p>
         </div>
       </div>
     </>

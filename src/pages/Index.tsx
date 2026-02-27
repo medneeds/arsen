@@ -148,7 +148,7 @@ function DynamicHeader({ children }: { children: React.ReactNode }) {
   
   return (
     <header 
-      className="border-b border-white/10 bg-gradient-to-r from-[#011d54] via-[#013ba6] to-[#0256d4] backdrop-blur-xl fixed top-0 right-0 z-50 shadow-[0_4px_20px_-4px_rgba(1,59,166,0.5)] print:static print:border-b print:shadow-none print:mb-1 print:pb-0.5 transition-[left] duration-200 ease-linear"
+      className="border-b border-white/10 bg-gradient-to-r from-[#0a1628] via-[#0f2847] to-[#1a3a5c] backdrop-blur-xl fixed top-0 right-0 z-50 shadow-lg print:static print:border-b print:shadow-none print:mb-1 print:pb-0.5 transition-[left] duration-200 ease-linear"
       style={{
         left: isMobile ? 0 : (state === 'collapsed' ? 'var(--sidebar-width-icon)' : 'var(--sidebar-width)')
       }}
@@ -844,8 +844,8 @@ const Index = () => {
                   <SidebarTrigger className="print:hidden flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
                   
                     <div className="min-w-0 flex-1">
-                      <h1 className="text-base sm:text-2xl font-bold text-white print:text-xs uppercase tracking-tight truncate">UTI 2 — Mapa de Pacientes</h1>
-                      <p className="text-[10px] sm:text-xs text-white/60 font-medium uppercase tracking-wide print:hidden">Socorrão I</p>
+                      <h1 className="text-base sm:text-2xl font-bold text-white print:text-xs uppercase tracking-tight truncate">BigHelp Map</h1>
+                      <p className="text-[10px] sm:text-xs text-white/50 font-light uppercase tracking-widest print:hidden">Socorrão I — Cuidados Intensivos</p>
                     </div>
                 </div>
 
@@ -1124,9 +1124,32 @@ const Index = () => {
             <div className="space-y-3 sm:space-y-4 print:space-y-1">
               {currentDepartment === "UTI" ? (
                 <div className="space-y-4">
+                  {/* UTI 1 */}
+                  <UtiSectorSection 
+                    sector="red" 
+                    patients={patients.filter(p => p.sector === 'red')}
+                    onUpdatePatient={handleUpdatePatient}
+                    onDeletePatient={handleDeletePatient}
+                    onUndeletePatient={handleUndeletePatient}
+                    onPrintSector={() => handlePrintSector("red")}
+                    onAddExtraBed={() => handleAddExtraBed("red")}
+                    selectionMode={selectionMode}
+                    selectedPatients={selectedPatients}
+                    onToggleSelection={handleToggleSelection}
+                    onReorderPatients={(reordered) => handleReorderPatients("red", reordered)}
+                    onTransfer={handleTransferPatient}
+                    onPrintPatient={handlePrintPatient}
+                    onRefetch={refetch}
+                    customTitle="UTI 1"
+                    customIcon={<span className="w-3 h-3 rounded-full bg-red-500/80 border border-red-400/40" />}
+                    colorVariant="red"
+                    allPatients={patients}
+                    currentUtiUnit="UTI 1"
+                  />
+                  {/* UTI 2 */}
                   <UtiSectorSection 
                     sector="yellow" 
-                    patients={patients.filter(p => p.sector === 'yellow' || p.sector === 'blue' || p.sector === 'red').map(p => ({ ...p, sector: 'yellow' as const }))}
+                    patients={patients.filter(p => p.sector === 'yellow')}
                     onUpdatePatient={handleUpdatePatient}
                     onDeletePatient={handleDeletePatient}
                     onUndeletePatient={handleUndeletePatient}
@@ -1139,106 +1162,56 @@ const Index = () => {
                     onTransfer={handleTransferPatient}
                     onPrintPatient={handlePrintPatient}
                     onRefetch={refetch}
-                    customTitle="UTI 2 — LEITOS"
+                    customTitle="UTI 2"
                     customIcon={<span className="w-3 h-3 rounded-full bg-amber-500/80 border border-amber-400/40" />}
                     colorVariant="yellow"
                     allPatients={patients}
                     currentUtiUnit="UTI 2"
                   />
+                  {/* UCI 1 */}
                   <UtiSectorSection 
-                    sector="yellow" 
-                    patients={patients.filter(p => p.sector === 'yellow').map(p => ({ ...p, sector: 'yellow' as const }))}
+                    sector="blue" 
+                    patients={patients.filter(p => p.sector === 'blue')}
                     onUpdatePatient={handleUpdatePatient}
                     onDeletePatient={handleDeletePatient}
                     onUndeletePatient={handleUndeletePatient}
-                    onPrintSector={() => handlePrintSector("yellow")}
-                    onAddExtraBed={() => handleAddExtraBed("yellow")}
+                    onPrintSector={() => handlePrintSector("blue")}
+                    onAddExtraBed={() => handleAddExtraBed("blue")}
                     selectionMode={selectionMode}
                     selectedPatients={selectedPatients}
                     onToggleSelection={handleToggleSelection}
-                    onReorderPatients={(reordered) => handleReorderPatients("yellow", reordered)}
+                    onReorderPatients={(reordered) => handleReorderPatients("blue", reordered)}
                     onTransfer={handleTransferPatient}
                     onPrintPatient={handlePrintPatient}
                     onRefetch={refetch}
-                    customTitle="UNIDADE DE TERAPIA INTENSIVA 2"
-                    customIcon={<span className="w-3 h-3 rounded-full bg-amber-500/80 border border-amber-400/40" />}
-                    colorVariant="yellow"
+                    customTitle="UCI 1"
+                    customIcon={<span className="w-3 h-3 rounded-full bg-blue-500/80 border border-blue-400/40" />}
+                    colorVariant="blue"
                     allPatients={patients}
-                    currentUtiUnit="UTI 2"
+                    currentUtiUnit="UCI 1"
                   />
-
-                  {/* UTI Outside Patients Section - Bed Allocation Requests */}
-                  {(() => {
-                    const utiOutsidePatients = patients.filter(p => p.sector === 'outside');
-                    const isUtiOutsideSectionOpen = utiOutsidePatients.length > 0;
-                    return (
-                      <Collapsible open={isUtiOutsideSectionOpen} className="space-y-3 mb-4 print:hidden">
-                        <div className="bg-gradient-card rounded-xl p-2 border border-border/50 shadow-md transition-all duration-200 min-h-[48px] flex items-center">
-                          <div className="flex items-center justify-between w-full">
-                            <CollapsibleTrigger asChild>
-                              <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                                <ChevronDown className={`h-5 w-5 transition-transform ${isUtiOutsideSectionOpen ? '' : '-rotate-90'}`} />
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg">📋</span>
-                                  <h2 className="text-lg font-bold text-foreground uppercase">Solicitações de Leito UTI</h2>
-                                </div>
-                              </button>
-                            </CollapsibleTrigger>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setUtiAllocationDialogOpen(true)}
-                                className="h-8 gap-1"
-                              >
-                                <Plus className="h-3.5 w-3.5" />
-                                Nova Solicitação
-                              </Button>
-                              <div className="flex items-center justify-center h-8 w-8 bg-card/80 backdrop-blur-sm rounded-lg border border-border/50">
-                                <p className="text-base font-bold text-foreground">{utiOutsidePatients.length}</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <CollapsibleContent>
-                          <div className="space-y-2 mt-3">
-                            {utiOutsidePatients.length === 0 ? (
-                              <p className="text-sm text-muted-foreground text-center py-4">
-                                Nenhuma solicitação de leito pendente
-                              </p>
-                            ) : (
-                              utiOutsidePatients.map((patient) => (
-                                <div key={patient.id} className="relative">
-                                  {/* Status bar showing requested UTI */}
-                                  {patient.allocationStatus === 'pending' && (
-                                    <div className="mb-1 px-3 py-1 rounded-t-lg bg-amber-100/80 dark:bg-amber-900/40 border border-amber-300/50 dark:border-amber-700/40 text-xs font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-2">
-                                      <span>⏳</span>
-                                      <span>AGUARDANDO APROVAÇÃO</span>
-                                      <span className="ml-auto text-[10px] text-muted-foreground">
-                                        Origem: {patient.utiOriginSector?.[0] || 'Não informado'}
-                                      </span>
-                                    </div>
-                                  )}
-                                  <PatientCard
-                                    patient={patient}
-                                    onUpdate={handleUpdatePatient}
-                                    onDelete={handleDeletePatient}
-                                    onUndelete={handleUndeletePatient}
-                                    selectionMode={selectionMode}
-                                    isSelected={selectedPatients.has(patient.id)}
-                                    onToggleSelection={handleToggleSelection}
-                                    onTransfer={handleTransferPatient}
-                                    onPrintPatient={handlePrintPatient}
-                                    onRefetch={refetch}
-                                  />
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    );
-                  })()}
+                  {/* UCI 2 */}
+                  <UtiSectorSection 
+                    sector="outside" 
+                    patients={patients.filter(p => p.sector === 'outside')}
+                    onUpdatePatient={handleUpdatePatient}
+                    onDeletePatient={handleDeletePatient}
+                    onUndeletePatient={handleUndeletePatient}
+                    onPrintSector={() => handlePrintSector("outside")}
+                    onAddExtraBed={() => handleAddExtraBed("outside")}
+                    selectionMode={selectionMode}
+                    selectedPatients={selectedPatients}
+                    onToggleSelection={handleToggleSelection}
+                    onReorderPatients={(reordered) => handleReorderPatients("outside", reordered)}
+                    onTransfer={handleTransferPatient}
+                    onPrintPatient={handlePrintPatient}
+                    onRefetch={refetch}
+                    customTitle="UCI 2"
+                    customIcon={<span className="w-3 h-3 rounded-full bg-emerald-500/80 border border-emerald-400/40" />}
+                    colorVariant="green"
+                    allPatients={patients}
+                    currentUtiUnit="UCI 2"
+                  />
                 </div>
               ) : (
                 <>

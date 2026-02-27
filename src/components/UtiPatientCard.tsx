@@ -55,7 +55,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 
-type ColorVariant = 'blue' | 'yellow';
+type ColorVariant = 'blue' | 'yellow' | 'red' | 'green';
 
 interface UtiPatientCardProps {
   patient: Patient;
@@ -101,7 +101,7 @@ interface SortableItemProps {
   onToggleHighlight?: () => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   autoFocus?: boolean;
-  highlightColorVariant?: 'blue' | 'yellow';
+  highlightColorVariant?: 'blue' | 'yellow' | 'red' | 'green';
 }
 
 function SortableItem({ id, index, value, onEdit, onDelete, showDragHandle = true, isHighlighted, onToggleHighlight, onKeyDown, autoFocus, highlightColorVariant = 'blue' }: SortableItemProps) {
@@ -161,8 +161,8 @@ function SortableItem({ id, index, value, onEdit, onDelete, showDragHandle = tru
     }
   };
 
-  // Highlight color styles based on variant - subtle background with colored left border, NO bold
-  const highlightStyles = {
+  // Highlight color styles based on variant
+  const highlightStyles: Record<string, { bg: string; number: string; text: string; star: string }> = {
     blue: {
       bg: "bg-blue-100/60 dark:bg-blue-800/30 border-l-2 border-l-blue-500 dark:border-l-blue-400 pl-1.5",
       number: "text-blue-600 dark:text-blue-300",
@@ -174,6 +174,18 @@ function SortableItem({ id, index, value, onEdit, onDelete, showDragHandle = tru
       number: "text-amber-600 dark:text-amber-300",
       text: "text-amber-800 dark:text-amber-100",
       star: "fill-amber-500 text-amber-500"
+    },
+    red: {
+      bg: "bg-red-100/60 dark:bg-red-800/30 border-l-2 border-l-red-500 dark:border-l-red-400 pl-1.5",
+      number: "text-red-600 dark:text-red-300",
+      text: "text-red-800 dark:text-red-100",
+      star: "fill-red-500 text-red-500"
+    },
+    green: {
+      bg: "bg-emerald-100/60 dark:bg-emerald-800/30 border-l-2 border-l-emerald-500 dark:border-l-emerald-400 pl-1.5",
+      number: "text-emerald-600 dark:text-emerald-300",
+      text: "text-emerald-800 dark:text-emerald-100",
+      star: "fill-emerald-500 text-emerald-500"
     }
   };
   const hStyles = highlightStyles[highlightColorVariant];
@@ -282,7 +294,7 @@ interface InlineEditableArrayProps {
   fieldId?: string;
   isActive?: boolean;
   iconColorClass?: string;
-  highlightColorVariant?: 'blue' | 'yellow';
+  highlightColorVariant?: 'blue' | 'yellow' | 'red' | 'green';
 }
 
 function InlineEditableArray({ 
@@ -853,7 +865,7 @@ export function UtiPatientCard({
   };
 
   // Color schemes based on variant
-  const colorSchemes = {
+  const colorSchemes: Record<ColorVariant, Record<string, string>> = {
     blue: {
       card: "bg-slate-100 dark:bg-slate-900/80 border-primary/20",
       bedBg: "bg-primary/10 border-primary/20",
@@ -879,6 +891,32 @@ export function UtiPatientCard({
       col3Icon: "text-amber-500 dark:text-amber-300",
       col4: "bg-amber-100/50 dark:bg-amber-900/30 border-amber-200/50 dark:border-amber-700/40",
       col4Icon: "text-amber-500 dark:text-amber-300",
+    },
+    red: {
+      card: "bg-red-50/50 dark:bg-red-950/30 border-red-400/30",
+      bedBg: "bg-red-100 dark:bg-red-900/40 border-red-300/50 dark:border-red-700/40",
+      bedText: "text-red-700 dark:text-red-400",
+      col1: "bg-red-100/50 dark:bg-red-900/30 border-red-200/50 dark:border-red-700/40",
+      col1Icon: "text-red-500 dark:text-red-300",
+      col2: "bg-red-100/50 dark:bg-red-900/30 border-red-200/50 dark:border-red-700/40",
+      col2Icon: "text-red-500 dark:text-red-300",
+      col3: "bg-red-100/50 dark:bg-red-900/30 border-red-200/50 dark:border-red-700/40",
+      col3Icon: "text-red-500 dark:text-red-300",
+      col4: "bg-red-100/50 dark:bg-red-900/30 border-red-200/50 dark:border-red-700/40",
+      col4Icon: "text-red-500 dark:text-red-300",
+    },
+    green: {
+      card: "bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-400/30",
+      bedBg: "bg-emerald-100 dark:bg-emerald-900/40 border-emerald-300/50 dark:border-emerald-700/40",
+      bedText: "text-emerald-700 dark:text-emerald-400",
+      col1: "bg-emerald-100/50 dark:bg-emerald-900/30 border-emerald-200/50 dark:border-emerald-700/40",
+      col1Icon: "text-emerald-500 dark:text-emerald-300",
+      col2: "bg-emerald-100/50 dark:bg-emerald-900/30 border-emerald-200/50 dark:border-emerald-700/40",
+      col2Icon: "text-emerald-500 dark:text-emerald-300",
+      col3: "bg-emerald-100/50 dark:bg-emerald-900/30 border-emerald-200/50 dark:border-emerald-700/40",
+      col3Icon: "text-emerald-500 dark:text-emerald-300",
+      col4: "bg-emerald-100/50 dark:bg-emerald-900/30 border-emerald-200/50 dark:border-emerald-700/40",
+      col4Icon: "text-emerald-500 dark:text-emerald-300",
     }
   };
 
