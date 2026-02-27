@@ -77,11 +77,17 @@ export function LoadingScreen({ onComplete, duration = 2500 }: LoadingScreenProp
             transitionDelay: "150ms",
           }}
         >
-          <img
-            src={bighelpLogo}
-            alt="BigHelp Map"
-            className="h-14 sm:h-16 md:h-20 object-contain"
-          />
+          <div className="relative inline-block">
+            {/* Radial glow behind logo */}
+            <div className="absolute inset-0 -m-10 rounded-full blur-[60px] bg-[#2dd4bf]/[0.1]" />
+            <div className="relative p-5 rounded-2xl bg-gradient-to-b from-white/[0.07] to-transparent border border-white/[0.06] shadow-[0_12px_48px_-16px_rgba(45,212,191,0.2)]">
+              <img
+                src={bighelpLogo}
+                alt="BigHelp Map"
+                className="h-16 sm:h-20 md:h-24 object-contain relative z-10 drop-shadow-[0_0_16px_rgba(45,212,191,0.25)]"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Divider */}

@@ -85,12 +85,19 @@ export default function AuthPage() {
         <div className="w-full max-w-sm relative z-10">
           {/* Header */}
           <div className="text-center mb-8">
-            <img 
-              src={bighelpLogo} 
-              alt="BigHelp Map" 
-              className="h-14 mx-auto mb-5 object-contain"
-            />
-            <div className="h-px w-24 mx-auto bg-gradient-to-r from-transparent via-[#2dd4bf]/40 to-transparent mb-4" />
+            <div className="relative inline-block mb-5">
+              {/* Outer glow */}
+              <div className="absolute inset-0 -m-6 rounded-full blur-[50px] bg-[#2dd4bf]/[0.08]" />
+              {/* Inner ring */}
+              <div className="relative p-4 rounded-2xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/[0.08] shadow-[0_8px_40px_-12px_rgba(45,212,191,0.15)]">
+                <img 
+                  src={bighelpLogo} 
+                  alt="BigHelp Map" 
+                  className="h-16 sm:h-18 object-contain relative z-10 drop-shadow-[0_0_12px_rgba(45,212,191,0.2)]"
+                />
+              </div>
+            </div>
+            <div className="h-px w-32 mx-auto bg-gradient-to-r from-transparent via-[#2dd4bf]/50 to-transparent mb-4" />
             <p className="text-slate-400 text-sm font-light tracking-wide">
               Hospital Mun. Djalma Marques
             </p>
