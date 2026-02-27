@@ -41,6 +41,13 @@ import AdminStatesPage from "./pages/AdminStatesPage";
 import AdminUnitsPage from "./pages/AdminUnitsPage";
 import AdminCoordinatorsPage from "./pages/AdminCoordinatorsPage";
 import TherapeuticTemplatesPage from "./pages/TherapeuticTemplatesPage";
+import RoundPage from "./pages/RoundPage";
+import RelatorioPage from "./pages/RelatorioPage";
+import RequisicaoLaboratorioPage from "./pages/RequisicaoLaboratorioPage";
+import RequisicaoImagensPage from "./pages/RequisicaoImagensPage";
+import RequisicaoParecerPage from "./pages/RequisicaoParecerPage";
+import PrescricaoPage from "./pages/PrescricaoPage";
+import EvolucaoPage from "./pages/EvolucaoPage";
 
 const queryClient = new QueryClient();
 
@@ -348,6 +355,76 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
                 <TherapeuticTemplatesPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/round"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <RoundPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/relatorio"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <RelatorioPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/requisicao/laboratorio"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <RequisicaoLaboratorioPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/requisicao/imagens"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <RequisicaoImagensPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/requisicao/parecer"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <RequisicaoParecerPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/prescricao"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <PrescricaoPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/evolucao"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <EvolucaoPage />
               </MainLayout>
             </ProtectedRoute>
           }

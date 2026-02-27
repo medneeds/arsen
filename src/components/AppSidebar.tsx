@@ -15,6 +15,8 @@ import {
   Bell,
   PanelLeftClose,
   PanelLeft,
+  Stethoscope,
+  Brain,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { whitelabel } from "@/config/whitelabel";
@@ -95,20 +97,44 @@ export function AppSidebar({
       ],
     },
     {
-      title: "DOCUMENTOS E PROTOCOLOS",
+      title: "DOCUMENTOS",
       icon: FolderOpen,
       items: [
-        { name: "DOCUMENTOS", link: "/documents" },
+        { name: "ROUND", link: "/round" },
         { name: "HEMODERIVADOS", link: "/hemoderivados" },
-        { name: "ALTO CUSTO", link: "/alto-custo" },
-        { name: "OPME", link: "/opme" },
-        { name: "SADT", link: "/sadt" },
-        { name: "TOMOGRAFIAS", link: "/tomografias" },
-        { name: "REGULAÇÕES SUS", link: "/regulacoes" },
+        { name: "RELATÓRIO", link: "/relatorio" },
+        { 
+          name: "REQUISIÇÕES", 
+          subsections: [
+            { name: "LABORATÓRIO", link: "/requisicao/laboratorio" },
+            { name: "IMAGENS", link: "/requisicao/imagens" },
+            { name: "PARECER", link: "/requisicao/parecer" },
+          ]
+        },
+        { name: "REGULAÇÃO", link: "/regulacoes" },
+      ],
+    },
+    {
+      title: "PROTOCOLOS",
+      icon: Stethoscope,
+      items: [
         { name: "PROTOCOLO SEPSE", link: "/sepsis-protocol" },
         { name: "CONTROLE GLICÊMICO", link: "/controle-glicemico" },
         { name: "CUIDADOS PALIATIVOS", link: "/cuidados-paliativos" },
         { name: "PRIORIZAÇÃO CIRÚRGICA", link: "/priorizacao-cirurgica" },
+        { name: "ALTO CUSTO", link: "/alto-custo" },
+        { name: "OPME", link: "/opme" },
+        { name: "SADT", link: "/sadt" },
+        { name: "TOMOGRAFIAS", link: "/tomografias" },
+      ],
+    },
+    {
+      title: "ASSISTENTE CLÍNICO",
+      icon: Brain,
+      items: [
+        { name: "PRESCRIÇÃO", link: "/prescricao" },
+        { name: "EVOLUÇÃO", link: "/evolucao" },
+        { name: "EXAMINUS AI", link: "/ia" },
       ],
     },
     {
