@@ -95,6 +95,23 @@ export function AppSidebar({
       ],
     },
     {
+      title: "DOCUMENTOS E PROTOCOLOS",
+      icon: FolderOpen,
+      items: [
+        { name: "DOCUMENTOS", link: "/documents" },
+        { name: "HEMODERIVADOS", link: "/hemoderivados" },
+        { name: "ALTO CUSTO", link: "/alto-custo" },
+        { name: "OPME", link: "/opme" },
+        { name: "SADT", link: "/sadt" },
+        { name: "TOMOGRAFIAS", link: "/tomografias" },
+        { name: "REGULAÇÕES SUS", link: "/regulacoes" },
+        { name: "PROTOCOLO SEPSE", link: "/sepsis-protocol" },
+        { name: "CONTROLE GLICÊMICO", link: "/controle-glicemico" },
+        { name: "CUIDADOS PALIATIVOS", link: "/cuidados-paliativos" },
+        { name: "PRIORIZAÇÃO CIRÚRGICA", link: "/priorizacao-cirurgica" },
+      ],
+    },
+    {
       title: "VERSÕES",
       icon: History,
       link: "/versions",
