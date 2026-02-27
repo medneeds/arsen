@@ -16,10 +16,7 @@ const DepartmentContext = createContext<DepartmentContextType | undefined>(undef
 const STORAGE_KEY = "selected_department";
 
 export function DepartmentProvider({ children }: { children: ReactNode }) {
-  const [currentDepartment, setCurrentDepartmentState] = useState<Department>(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return (stored as Department) || "URGÊNCIA E EMERGÊNCIA ADULTO";
-  });
+  const [currentDepartment, setCurrentDepartmentState] = useState<Department>("UTI");
 
   const setCurrentDepartment = (department: Department) => {
     setCurrentDepartmentState(department);
