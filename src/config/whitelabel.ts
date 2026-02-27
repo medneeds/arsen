@@ -1,91 +1,70 @@
 /**
- * Configuração White-Label Centralizada - AXIUS
- * 
- * Este arquivo centraliza TODAS as constantes de branding e identidade visual
- * do sistema. Para criar um white-label, basta alterar os valores aqui.
+ * Configuração White-Label Centralizada - BigHelp Map
  */
 
-// ─── LOGOS ────────────────────────────────────────────────────────────────────
-// TODO: Substituir pelos logos reais da instituição Axius
-// Por enquanto, usamos placeholders (os mesmos assets existentes serão substituídos)
-import networkFullLogo from "@/assets/axius-logo-full.png";
-import networkCompactLogo from "@/assets/axius-logo-compact.png";
-import hospitalLogo from "@/assets/axius-hospital-icon.png";
-
-// ─── CONFIGURAÇÃO PRINCIPAL ──────────────────────────────────────────────────
+import bighelpLogo from "@/assets/bighelp-map-logo.png";
 
 export const whitelabel = {
-  // ── Identidade da Plataforma ──
   platform: {
-    name: "Axius",
+    name: "BigHelp Map",
     version: "1.0",
-    fullName: "Axius 1.0",
-    slogan: "Onde cada decisão transforma o cuidado em resultado.",
+    fullName: "BigHelp Map 1.0",
+    slogan: "Mapeando cuidados, salvando vidas.",
     loadingText: "Iniciando",
   },
 
-  // ── Identidade da Rede/Instituição ──
   institution: {
-    networkName: "Axius Health",
-    networkShortName: "Axius",
-    hospitalName: "Hospital Central",
-    networkLogoAlt: "Axius Health",
-    hospitalLogoAlt: "Hospital Central",
+    networkName: "BigHelp Map",
+    networkShortName: "BigHelp",
+    hospitalName: "Hospital Mun. Djalma Marques — Socorrão I",
+    networkLogoAlt: "BigHelp Map",
+    hospitalLogoAlt: "Socorrão I",
   },
 
-  // ── Logos ──
   logos: {
-    networkFull: networkFullLogo,
-    networkCompact: networkCompactLogo,
-    hospital: hospitalLogo,
+    networkFull: bighelpLogo,
+    networkCompact: bighelpLogo,
+    hospital: bighelpLogo,
   },
 
-  // ── Cores do Tema (gradiente principal) ──
   theme: {
-    gradientFrom: "#0f172a",
-    gradientVia: "#1e293b",
-    gradientTo: "#334155",
-    bgGradient: "bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#334155]",
+    gradientFrom: "#0a1628",
+    gradientVia: "#0f2847",
+    gradientTo: "#1a3a5c",
+    bgGradient: "bg-gradient-to-br from-[#0a1628] via-[#0f2847] to-[#1a3a5c]",
   },
 
-  // ── Créditos / Rodapé ──
   credits: {
-    developerName: "Axius Health",
+    developerName: "BigHelp Map",
     developerLabel: "Desenvolvido por",
-    authorSignature: "Axius Health Tech",
-    footerText: "Axius Health Tech",
+    authorSignature: "BigHelp Map",
+    footerText: "BigHelp Map",
   },
 
-  // ── Conformidade / Legal ──
   compliance: {
     legalReferences: "Lei 13.709/2018 (LGPD) • CFM 1.821/2007",
-    systemNameInTerms: "Axius",
+    systemNameInTerms: "BigHelp Map",
     complianceBadgeTitle: "Em Conformidade",
   },
 
-  // ── Funcionalidades da Tela de Login ──
   loginFeatures: [
     "Gestão inteligente de leitos em tempo real",
     "Visão completa do paciente em um clique",
-    "IA integrada para suporte à decisão clínica",
+    "Mapeamento de cuidados intensivos",
     "Conformidade LGPD e CFM 1.821/2007",
   ],
 
-  // ── Senha do Painel Admin ──
   admin: {
-    panelPassword: "AXIUS2025",
+    panelPassword: "BIGHELP2025",
   },
 
-  // ── Documentos Impressos ──
   print: {
     documentFooter: (date: string, time: string) =>
       `Documento gerado automaticamente • ${date} às ${time}`,
     confidentialityText: "Documento Confidencial",
-    systemLabel: "Axius - Sistema de Gestão Hospitalar",
+    systemLabel: "BigHelp Map - Mapa de Cuidados Intensivos",
   },
 } as const;
-
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 export function getMainPageTitle(hospitalName?: string): string {
   return `Mapa de Pacientes - ${hospitalName || whitelabel.institution.hospitalName}`;

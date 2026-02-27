@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
-type ColorVariant = 'blue' | 'yellow';
+type ColorVariant = 'blue' | 'yellow' | 'red' | 'green';
 
 interface UtiSectorSectionProps {
   sector: SectorType;
@@ -81,13 +81,21 @@ function UtiRow(props: UtiRowProps) {
   };
 
   // Vacancy toggle button styles based on color variant
-  const vacancyButtonStyles = {
+  const vacancyButtonStyles: Record<ColorVariant, { vacant: string; occupied: string }> = {
     blue: {
       vacant: "border-primary/40 text-primary hover:bg-primary/10",
       occupied: "border-muted-foreground/30 text-muted-foreground hover:bg-muted/30"
     },
     yellow: {
       vacant: "border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20",
+      occupied: "border-muted-foreground/30 text-muted-foreground hover:bg-muted/30"
+    },
+    red: {
+      vacant: "border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20",
+      occupied: "border-muted-foreground/30 text-muted-foreground hover:bg-muted/30"
+    },
+    green: {
+      vacant: "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20",
       occupied: "border-muted-foreground/30 text-muted-foreground hover:bg-muted/30"
     }
   };
@@ -169,7 +177,7 @@ export function UtiSectorSection({
   const [allCardsCollapsed, setAllCardsCollapsed] = useState(true);
 
   // Header color schemes based on colorVariant
-  const headerStyles = {
+  const headerStyles: Record<ColorVariant, { bg: string; title: string; button: string; chevron: string; counter: string }> = {
     blue: {
       bg: "bg-primary/15 dark:bg-primary/25 border-l-4 border-l-primary",
       title: "text-primary dark:text-primary",
@@ -183,6 +191,20 @@ export function UtiSectorSection({
       button: "border-amber-400/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 hover:border-amber-400/50",
       chevron: "text-amber-600 dark:text-amber-400",
       counter: "border-amber-400/30 bg-amber-500/10"
+    },
+    red: {
+      bg: "bg-red-100/60 dark:bg-red-900/30 border-l-4 border-l-red-500",
+      title: "text-red-700 dark:text-red-400",
+      button: "border-red-400/30 text-red-600 dark:text-red-400 hover:bg-red-500/10 hover:border-red-400/50",
+      chevron: "text-red-600 dark:text-red-400",
+      counter: "border-red-400/30 bg-red-500/10"
+    },
+    green: {
+      bg: "bg-emerald-100/60 dark:bg-emerald-900/30 border-l-4 border-l-emerald-500",
+      title: "text-emerald-700 dark:text-emerald-400",
+      button: "border-emerald-400/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-400/50",
+      chevron: "text-emerald-600 dark:text-emerald-400",
+      counter: "border-emerald-400/30 bg-emerald-500/10"
     }
   };
   const headerClass = headerStyles[colorVariant].bg;
