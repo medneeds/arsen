@@ -843,73 +843,10 @@ const Index = () => {
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   <SidebarTrigger className="print:hidden flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
                   
-                  <div className="min-w-0 flex-1 flex flex-col gap-1.5">
-                    <h1 className="text-base sm:text-2xl font-bold text-white print:text-xs uppercase tracking-tight truncate">Mapa de Pacientes</h1>
-                    <div className="print:hidden">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="inline-flex items-center gap-1.5 h-9 md:h-7 px-4 md:px-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white text-sm md:text-xs font-semibold hover:bg-white/20 hover:border-white/40 transition-all duration-200 rounded-full cursor-pointer shadow-sm hover:shadow-md">
-                            <Building2 className="h-4 md:h-3.5 w-4 md:w-3.5 flex-shrink-0" />
-                            <span className="md:hidden truncate">
-                              {currentDepartment === "URGÊNCIA E EMERGÊNCIA ADULTO" ? "URG E EMERG..." : 
-                               currentDepartment === "URGÊNCIA E EMERGÊNCIA PEDIÁTRICA" ? "URG E EMERG PED..." :
-                               currentDepartment === "POSTO INTERNAÇÃO" ? "POSTO INT..." :
-                               currentDepartment}
-                            </span>
-                            <span className="hidden md:inline truncate max-w-none">{currentDepartment}</span>
-                            <ChevronDown className="h-4 md:h-3.5 w-4 md:w-3.5 flex-shrink-0 opacity-70" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-background border border-border shadow-lg z-[9999] min-w-[280px]">
-                          {authLoading ? (
-                            <DropdownMenuItem disabled className="text-sm py-2.5 px-3">
-                              Carregando...
-                            </DropdownMenuItem>
-                          ) : (
-                            DEPARTMENTS
-                              .filter(dept => {
-                                // Admin (COORDENADOR) vê todos os departamentos
-                                if (role === 'admin') return true;
-                                // Outros usuários veem apenas seus departamentos permitidos
-                                return allowedDepartments.includes(dept);
-                              })
-                              .map((dept) => (
-                            <DropdownMenuItem 
-                              key={dept} 
-                              className={cn(
-                                "text-sm cursor-pointer py-2.5 px-3 transition-colors",
-                                currentDepartment === dept && "bg-accent font-medium"
-                              )}
-                              onClick={() => {
-                                if (dept !== currentDepartment) {
-                                  // Admin pode trocar sem senha
-                                  if (role === 'admin') {
-                                    setCurrentDepartment(dept);
-                                    toast({
-                                      title: "Setor alterado",
-                                      description: `Alternado para: ${dept}`,
-                                    });
-                                  } else {
-                                    // Usuários não-admin NÃO podem trocar de departamento
-                                    // (eles só veem seus departamentos permitidos no dropdown)
-                                    toast({
-                                      title: "Acesso negado",
-                                      description: "Você não tem permissão para alterar departamentos.",
-                                      variant: "destructive",
-                                    });
-                                  }
-                                }
-                              }}
-                            >
-                              <Building2 className="h-4 w-4 mr-2 opacity-60" />
-                              {dept}
-                            </DropdownMenuItem>
-                          ))
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    <div className="min-w-0 flex-1">
+                      <h1 className="text-base sm:text-2xl font-bold text-white print:text-xs uppercase tracking-tight truncate">UTI 2 — Mapa de Pacientes</h1>
+                      <p className="text-[10px] sm:text-xs text-white/60 font-medium uppercase tracking-wide print:hidden">Socorrão I</p>
                     </div>
-                  </div>
                 </div>
 
                 {/* Right side: Action buttons + Theme toggle */}
@@ -1188,25 +1125,25 @@ const Index = () => {
               {currentDepartment === "UTI" ? (
                 <div className="space-y-4">
                   <UtiSectorSection 
-                    sector="blue" 
-                    patients={patients.filter(p => p.sector === 'blue' || p.sector === 'red').map(p => ({ ...p, sector: 'blue' as const }))}
+                    sector="yellow" 
+                    patients={patients.filter(p => p.sector === 'yellow' || p.sector === 'blue' || p.sector === 'red').map(p => ({ ...p, sector: 'yellow' as const }))}
                     onUpdatePatient={handleUpdatePatient}
                     onDeletePatient={handleDeletePatient}
                     onUndeletePatient={handleUndeletePatient}
-                    onPrintSector={() => handlePrintSector("blue")}
-                    onAddExtraBed={() => handleAddExtraBed("blue")}
+                    onPrintSector={() => handlePrintSector("yellow")}
+                    onAddExtraBed={() => handleAddExtraBed("yellow")}
                     selectionMode={selectionMode}
                     selectedPatients={selectedPatients}
                     onToggleSelection={handleToggleSelection}
-                    onReorderPatients={(reordered) => handleReorderPatients("blue", reordered)}
+                    onReorderPatients={(reordered) => handleReorderPatients("yellow", reordered)}
                     onTransfer={handleTransferPatient}
                     onPrintPatient={handlePrintPatient}
                     onRefetch={refetch}
-                    customTitle="UNIDADE DE TERAPIA INTENSIVA 1"
-                    customIcon={<span className="w-3 h-3 rounded-full bg-primary/80 border border-primary/40" />}
-                    colorVariant="blue"
+                    customTitle="UTI 2 — LEITOS"
+                    customIcon={<span className="w-3 h-3 rounded-full bg-amber-500/80 border border-amber-400/40" />}
+                    colorVariant="yellow"
                     allPatients={patients}
-                    currentUtiUnit="UTI 1"
+                    currentUtiUnit="UTI 2"
                   />
                   <UtiSectorSection 
                     sector="yellow" 

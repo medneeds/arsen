@@ -82,7 +82,7 @@ export function AppSidebar({
 
   const allMenuItems = [
     {
-      title: "MAPA",
+      title: "MAPA UTI 2",
       icon: LayoutDashboard,
       link: "/",
     },
@@ -90,53 +90,14 @@ export function AppSidebar({
       title: "PACIENTES",
       icon: Users,
       items: [
-        // { name: "DESOSPITALIZAÇÕES", link: "/dhd" }, // Stand-by temporariamente
         { name: "MOVIMENTAÇÕES", link: "/movements" },
-        { name: "SOLICITAÇÕES", link: "/resources" },
         { name: "HISTÓRICO", link: "/internment-history" },
       ],
-    },
-    {
-      title: "CÓDIGOS",
-      icon: FileSearch,
-      items: [
-        { name: "EXAMES", link: "/codigos?category=exames" },
-        { name: "PROCEDIMENTOS", link: "/codigos?category=procedimentos" },
-        { name: "MATERIAIS", link: "/codigos?category=materiais" },
-        { name: "MEDICAÇÕES", link: "/codigos?category=medicacoes" },
-      ],
-    },
-    {
-      title: "DOCUMENTOS",
-      icon: FolderOpen,
-      items: [
-        { name: "PROTOCOLOS E FORMULÁRIOS", link: "/documents" },
-        { name: "TEMPLATES TERAPÊUTICOS", link: "/therapeutic-templates" },
-      ],
-    },
-    {
-      title: "EXAMINUS AI",
-      icon: Sparkles,
-      link: "/ia",
     },
     {
       title: "VERSÕES",
       icon: History,
       link: "/versions",
-    },
-    {
-      title: "PAINEL ADMIN",
-      icon: BarChart3,
-      requiresPassword: true,
-      items: [
-        { name: "DASHBOARD DE GESTÃO", link: "/dashboard" },
-        { name: "GESTÃO DE USUÁRIOS", link: "/user-management", badge: pendingResets > 0 ? pendingResets : undefined },
-        { name: "TRILHA DE AUDITORIA", link: "/audit-logs" },
-        { name: "PRIVACIDADE LGPD", link: "/privacy" },
-        { name: "CADASTRAR ESTADOS", link: "/admin/states" },
-        { name: "CADASTRAR UNIDADES", link: "/admin/units" },
-        { name: "GERENCIAR COORDENADORES", link: "/admin/coordinators" },
-      ],
     },
   ];
 
@@ -298,54 +259,10 @@ export function AppSidebar({
             {/* Collapsible section (with subitems) */}
             {section.items && (
             <Collapsible
-              defaultOpen={section.title === "MAPA"}
-              open={section.requiresPassword 
-                ? (isGestorMaster || unlockedSections.includes(section.title)) 
-                  ? (adminSectionOpen[section.title] ?? true)
-                  : false
-                : undefined}
-              onOpenChange={(isOpen) => {
-                if (section.requiresPassword) {
-                  if (!isGestorMaster && !unlockedSections.includes(section.title) && isOpen) {
-                    handleAdminSectionClick(section.title);
-                  } else {
-                    setAdminSectionOpen(prev => ({ ...prev, [section.title]: isOpen }));
-                  }
-                }
-              }}
+              defaultOpen={true}
               className="group/collapsible"
             >
               <SidebarGroup className="py-0 my-0">
-                {section.requiresPassword && !isGestorMaster && !unlockedSections.includes(section.title) ? (
-                  // Locked: show button that triggers password dialog
-                  <SidebarGroupLabel 
-                    className={cn(
-                      "transition-all duration-200 hover:bg-accent/80 cursor-pointer !opacity-100 !mt-0",
-                      isCollapsed ? "justify-center px-2 py-3" : "justify-between px-4 py-3 hover:scale-105",
-                      "h-auto border-b border-border/50"
-                    )}
-                    onClick={() => handleAdminSectionClick(section.title)}
-                  >
-                    <div className={cn(
-                      "flex items-center w-full",
-                      isCollapsed ? "justify-center" : "gap-3"
-                    )}>
-                      <section.icon className={cn(
-                        "text-primary transition-all duration-200",
-                        isCollapsed ? "h-5 w-5" : "h-5 w-5"
-                      )} />
-                      {!isCollapsed && (
-                        <>
-                          <span className="text-xs font-medium uppercase tracking-wide text-foreground flex-1 text-left">
-                            {section.title}
-                          </span>
-                          <LockKeyhole className="h-3 w-3 opacity-60" />
-                        </>
-                      )}
-                    </div>
-                  </SidebarGroupLabel>
-                ) : (
-                  // Unlocked or not password-protected: normal collapsible trigger
                   <CollapsibleTrigger className="w-full">
                     <SidebarGroupLabel 
                       className={cn(
@@ -373,7 +290,6 @@ export function AppSidebar({
                     </div>
                   </SidebarGroupLabel>
                 </CollapsibleTrigger>
-                )}
                 <CollapsibleContent className="transition-all duration-300 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
                   <SidebarGroupContent className="px-2">
                     <SidebarMenu>
@@ -425,7 +341,7 @@ export function AppSidebar({
                         }
                         
                         // Regular item without subsections
-                        const itemBadge = typeof item === 'object' && 'badge' in item ? item.badge : undefined;
+                        const itemBadge = typeof item === 'object' && 'badge' in item ? (item as any).badge as React.ReactNode : undefined;
                         
                         return (
                           <SidebarMenuItem key={itemKey}>
