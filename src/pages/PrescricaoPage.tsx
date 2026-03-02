@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Pill, Plus, Trash2, Copy, Printer, Save, RefreshCw,
-  ChevronDown, ChevronUp, Search, GripVertical, AlertTriangle,
+  Search, AlertTriangle,
   UtensilsCrossed, Droplets, Syringe, ClipboardList, X, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -134,43 +134,43 @@ function PrescriptionItemRow({
   onUpdate: (id: string, field: keyof PrescriptionItem, value: string) => void;
   onRemove: (id: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-
   return (
     <div className="group relative rounded-lg border border-border/50 bg-card/50 hover:border-primary/20 transition-all">
-      {/* Compact row */}
-      <div className="flex items-center gap-2 p-2.5">
-        <span className="text-xs font-mono text-muted-foreground w-6 text-center shrink-0">
+      {/* Top row: Number + Name (Presentation) + Dose + Posology + Route + Schedule + Actions */}
+      <div className="flex items-start gap-2 p-2.5">
+        <span className="text-xs font-mono text-muted-foreground w-6 text-center shrink-0 pt-1.5">
           {index + 1}.
         </span>
-        <div className="flex-1 min-w-0 grid grid-cols-12 gap-2 items-center">
-          <div className="col-span-4 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-            <p className="text-[11px] text-muted-foreground truncate">{item.presentation}</p>
+        <div className="flex-1 min-w-0 space-y-1.5">
+          {/* Line 1: Medication name with presentation inline */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-semibold text-foreground">
+              {item.name}
+              {item.presentation && item.presentation !== '-' && (
+                <span className="font-normal text-muted-foreground ml-1">({item.presentation})</span>
+              )}
+            </p>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive ml-auto"
+              onClick={() => onRemove(item.id)}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
           </div>
-          <div className="col-span-2">
+
+          {/* Line 2: Inline editable fields - Dose, Route, Posology, Schedule */}
+          <div className="flex items-center gap-1.5 flex-wrap">
             <Input
               value={item.dose}
               onChange={(e) => onUpdate(item.id, "dose", e.target.value)}
-              className="h-7 text-xs bg-transparent border-border/30"
+              className="h-7 text-xs bg-muted/20 border-border/30 w-24"
               placeholder="Dose"
             />
-          </div>
-          <div className="col-span-2">
-            <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
-              <SelectTrigger className="h-7 text-xs bg-transparent border-border/30">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {POSOLOGIES.map((p) => (
-                  <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="col-span-2">
+            <span className="text-muted-foreground text-[10px]">—</span>
             <Select value={item.route} onValueChange={(v) => onUpdate(item.id, "route", v)}>
-              <SelectTrigger className="h-7 text-xs bg-transparent border-border/30">
+              <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -179,48 +179,37 @@ function PrescriptionItemRow({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="col-span-2 flex items-center gap-1">
+            <span className="text-muted-foreground text-[10px]">—</span>
+            <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
+              <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {POSOLOGIES.map((p) => (
+                  <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-muted-foreground text-[10px]">—</span>
             <Input
               value={item.schedule}
               onChange={(e) => onUpdate(item.id, "schedule", e.target.value)}
-              className="h-7 text-xs bg-transparent border-border/30"
+              className="h-7 text-xs bg-muted/20 border-border/30 w-20"
               placeholder="Horário"
             />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => setExpanded(!expanded)}
-            >
-              {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
-              onClick={() => onRemove(item.id)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
+          </div>
+
+          {/* Line 3: Preparation / Dilution / Infusion instructions - always visible and editable */}
+          <div className="relative">
+            <Input
+              value={item.instructions}
+              onChange={(e) => onUpdate(item.id, "instructions", e.target.value)}
+              className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic"
+              placeholder="Preparo, diluição, tempo de infusão, gotas/min, mL/h..."
+            />
           </div>
         </div>
       </div>
-
-      {/* Expanded details */}
-      {expanded && (
-        <div className="px-3 pb-3 pt-0 border-t border-border/30">
-          <div className="pt-2">
-            <Label className="text-[11px] text-muted-foreground">Instruções / Observações</Label>
-            <Textarea
-              value={item.instructions}
-              onChange={(e) => onUpdate(item.id, "instructions", e.target.value)}
-              className="mt-1 text-xs min-h-[48px] bg-muted/20 border-border/30"
-              placeholder="Instruções de preparo, diluição, cuidados..."
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -250,21 +239,6 @@ function SectionHeader({
   );
 }
 
-// --- Column Headers ---
-function ColumnHeaders() {
-  return (
-    <div className="flex items-center gap-2 px-2.5 pb-1.5">
-      <span className="w-6 shrink-0" />
-      <div className="flex-1 grid grid-cols-12 gap-2">
-        <span className="col-span-4 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Medicamento</span>
-        <span className="col-span-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Dose</span>
-        <span className="col-span-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Posologia</span>
-        <span className="col-span-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Via</span>
-        <span className="col-span-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Horários</span>
-      </div>
-    </div>
-  );
-}
 
 // ===================== MAIN COMPONENT =====================
 const PrescricaoPage = () => {
@@ -470,7 +444,6 @@ const PrescricaoPage = () => {
         <SectionHeader icon={Droplets} title="Soluções" count={solutions.length} color="bg-blue-500/10 text-blue-500" />
         {solutions.length > 0 && (
           <div className="space-y-1.5">
-            <ColumnHeaders />
             {solutions.map((item, i) => (
               <PrescriptionItemRow key={item.id} item={item} index={i} onUpdate={updateItem(setSolutions)} onRemove={removeItem(setSolutions)} />
             ))}
@@ -484,7 +457,7 @@ const PrescricaoPage = () => {
         <SectionHeader icon={Syringe} title="Medicamentos" count={medications.length} color="bg-primary/10 text-primary" />
         {medications.length > 0 && (
           <div className="space-y-1.5">
-            <ColumnHeaders />
+            
             {medications.map((item, i) => (
               <PrescriptionItemRow key={item.id} item={item} index={i} onUpdate={updateItem(setMedications)} onRemove={removeItem(setMedications)} />
             ))}
