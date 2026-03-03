@@ -184,12 +184,11 @@ function PrescriptionItemRow({
 }
 
 // --- Print-only Item Row (flat text, no inputs) ---
-function PrintItemRow({ item, index, showAprazamento = true }: { item: PrescriptionItem; index: number; showAprazamento?: boolean }) {
-  const aprazamentoSlots = 6; // 6 time slots for scheduling
+function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }) {
   return (
-    <div className="flex items-start border-b border-black/20 py-[3px] gap-1" style={{ pageBreakInside: 'avoid' }}>
-      <div className="flex-1 min-w-0">
-        <p className="text-[10px] leading-tight">
+    <tr style={{ pageBreakInside: 'avoid' }}>
+      <td className="border border-black/25 px-1 py-[2px] align-top" style={{ width: '75%' }}>
+        <p className="text-[9px] leading-[1.3]">
           <span className="font-bold">{index + 1}. {item.name}</span>
           {item.presentation && item.presentation !== '-' && (
             <span className="font-normal"> ({item.presentation})</span>
@@ -200,33 +199,30 @@ function PrintItemRow({ item, index, showAprazamento = true }: { item: Prescript
           {item.schedule && item.schedule !== '-' && <span> — <span className="font-semibold">{item.schedule}</span></span>}
         </p>
         {item.instructions && (
-          <p className="text-[9px] italic text-gray-600 ml-3 leading-tight">
+          <p className="text-[8px] italic text-gray-600 ml-2 leading-[1.2]">
             ↳ {item.instructions}
           </p>
         )}
-      </div>
-      {showAprazamento && (
-        <div className="shrink-0 flex gap-[2px]">
-          {Array.from({ length: aprazamentoSlots }).map((_, i) => (
-            <div key={i} className="w-[28px] h-[22px] border border-black/30 rounded-[2px] flex flex-col items-center justify-center">
-              <div className="text-[6px] text-gray-400 leading-none">hr</div>
-              <div className="w-3 border-b border-black/20 mt-[1px]" />
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+      </td>
+      {[0,1,2,3,4,5].map(i => (
+        <td key={i} className="border border-black/25 text-center align-middle" style={{ width: '4.16%', minWidth: '24px' }}>
+          <div className="h-[18px]" />
+        </td>
+      ))}
+    </tr>
   );
 }
 
 // --- Print-only simple row (diets, recommendations) ---
 function PrintSimpleRow({ text, index }: { text: string; index: number }) {
   return (
-    <div className="border-b border-black/20 py-[2px]" style={{ pageBreakInside: 'avoid' }}>
-      <p className="text-[10px] leading-tight">
-        <span className="font-bold">{index + 1}.</span> {text}
-      </p>
-    </div>
+    <tr style={{ pageBreakInside: 'avoid' }}>
+      <td className="border border-black/25 px-1 py-[2px] align-top" colSpan={7}>
+        <p className="text-[9px] leading-[1.3]">
+          <span className="font-bold">{index + 1}.</span> {text}
+        </p>
+      </td>
+    </tr>
   );
 }
 
@@ -345,35 +341,35 @@ const PrescricaoPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-2 print:space-y-1 print:max-w-none print:text-black">
-      {/* ===== PRINT-ONLY LETTERHEAD ===== */}
-      <div className="hidden print:flex prescription-print-section items-center justify-between border-b-2 border-black pb-1 mb-0">
-        <img src={socorraoLogo} alt="Socorrão I" className="h-9 object-contain" />
-        <div className="text-center flex-1 px-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide leading-tight text-black">Hospital Municipal Djalma Marques — Socorrão I</p>
-          <p className="text-[8px] text-gray-500 leading-tight">Prescrição Médica Diária</p>
+      {/* ===== PRINT-ONLY LETTERHEAD + PATIENT INFO (combined, compact) ===== */}
+      <div className="hidden print:block prescription-print-section mb-1">
+        {/* Letterhead */}
+        <div className="flex items-center justify-between border-b-2 border-black pb-1 mb-1">
+          <img src={socorraoLogo} alt="Socorrão I" className="h-8 object-contain" />
+          <div className="text-center flex-1 px-2">
+            <p className="text-[10px] font-bold uppercase tracking-wide leading-tight text-black">Hospital Municipal Djalma Marques — Socorrão I</p>
+            <p className="text-[8px] text-gray-500 leading-tight">Prescrição Médica Diária</p>
+          </div>
+          <img src={bighelpLogo} alt="BigHelp Map" className="h-7 object-contain" />
         </div>
-        <img src={bighelpLogo} alt="BigHelp Map" className="h-7 object-contain" />
-      </div>
-
-      {/* ===== PRINT-ONLY PATIENT INFO ===== */}
-      <div className="hidden print:block prescription-print-section border border-black/30 rounded p-1.5 mb-1" style={{ pageBreakInside: 'avoid' }}>
-        <div className="grid grid-cols-4 gap-x-3 gap-y-[2px] text-[9px] text-black">
-          <div className="col-span-2"><span className="font-bold">Paciente:</span> {patient.name || '________________________'}</div>
-          <div><span className="font-bold">Leito:</span> {patient.bed || '____'}</div>
-          <div><span className="font-bold">Prontuário:</span> {patient.record || '________'}</div>
-          <div><span className="font-bold">Idade:</span> {patient.age || '____'}</div>
-          <div><span className="font-bold">Sexo:</span> {patient.sex || '____'}</div>
-          <div><span className="font-bold">Peso:</span> {patient.weight ? `${patient.weight} kg` : '____'}</div>
-          <div><span className="font-bold">Unidade:</span> {patient.unit || '________'}</div>
-          <div><span className="font-bold">Admissão:</span> {patient.admissionDate || '____/____/____'}</div>
-          <div className="col-span-2"><span className="font-bold text-red-600">Alergias:</span> <span className="text-red-600 font-semibold">{patient.allergies || 'NADA'}</span></div>
-          <div><span className="font-bold">Data prescrição:</span> {prescriptionDate}</div>
-        </div>
-      </div>
-
-      {/* ===== PRINT-ONLY APRAZAMENTO HEADER ===== */}
-      <div className="hidden print:flex prescription-print-section items-center justify-end mb-0 pr-0">
-        <p className="text-[7px] text-gray-500 font-semibold uppercase tracking-wider">Aprazamento →</p>
+        {/* Patient Grid - full width, 2 rows */}
+        <table className="w-full border-collapse border border-black/30 text-[9px] text-black">
+          <tbody>
+            <tr>
+              <td className="border border-black/20 px-1 py-[2px]" colSpan={3}><span className="font-bold">Paciente:</span> {patient.name || '___________________________________'}</td>
+              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Leito:</span> {patient.bed || '______'}</td>
+              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Prontuário:</span> {patient.record || '________'}</td>
+              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Data:</span> {prescriptionDate}</td>
+            </tr>
+            <tr>
+              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Idade:</span> {patient.age || '____'}</td>
+              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Sexo:</span> {patient.sex || '____'}</td>
+              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Peso:</span> {patient.weight ? `${patient.weight}kg` : '____'}</td>
+              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Admissão:</span> {patient.admissionDate || '__/__/____'}</td>
+              <td className="border border-black/20 px-1 py-[2px]" colSpan={2}><span className="font-bold text-red-600">Alergias:</span> <span className="text-red-600 font-semibold">{patient.allergies || 'NDAM'}</span></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       {/* Page Title Bar */}
       <div className="flex items-center justify-between gap-4 print:hidden">
@@ -554,59 +550,74 @@ const PrescricaoPage = () => {
       {/* ========================================================= */}
       {/* ===== PRINT-ONLY PRESCRIPTION BODY (flat text) ===== */}
       {/* ========================================================= */}
-      <div className="hidden print:block prescription-print-section space-y-2">
-        {/* DIETAS */}
-        {diets.length > 0 && (
-          <div>
-            <p className="text-[9px] font-bold uppercase tracking-wider border-b border-black/40 pb-[1px] mb-[2px] text-black">Dietas</p>
-            {diets.map((item, i) => (
-              <PrintSimpleRow key={item.id} text={`${item.name}${item.dose && item.dose !== '-' ? ` — ${item.dose}` : ''}`} index={i} />
-            ))}
-          </div>
-        )}
+      <div className="hidden print:block prescription-print-section">
+        <table className="w-full border-collapse text-black">
+          {/* Table header with aprazamento columns */}
+          <thead>
+            <tr>
+              <th className="border border-black/30 px-1 py-[2px] text-left text-[8px] font-bold uppercase tracking-wider bg-gray-100" style={{ width: '75%' }}>
+                Prescrição
+              </th>
+              {['','','','','',''].map((_, i) => (
+                <th key={i} className="border border-black/30 px-0 py-[2px] text-center text-[7px] font-bold bg-gray-100 uppercase" style={{ width: '4.16%' }}>
+                  {i === 0 ? 'Apraz.' : ''}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {/* DIETAS */}
+            {diets.length > 0 && (
+              <>
+                <tr><td colSpan={7} className="border border-black/30 px-1 py-[1px] text-[8px] font-bold uppercase tracking-wider bg-gray-50">Dietas</td></tr>
+                {diets.map((item, i) => (
+                  <PrintSimpleRow key={item.id} text={`${item.name}${item.dose && item.dose !== '-' ? ` — ${item.dose}` : ''}`} index={i} />
+                ))}
+              </>
+            )}
 
-        {/* SOLUÇÕES */}
-        {solutions.length > 0 && (
-          <div>
-            <p className="text-[9px] font-bold uppercase tracking-wider border-b border-black/40 pb-[1px] mb-[2px] text-black">Soluções</p>
-            {solutions.map((item, i) => (
-              <PrintItemRow key={item.id} item={item} index={i} />
-            ))}
-          </div>
-        )}
+            {/* SOLUÇÕES */}
+            {solutions.length > 0 && (
+              <>
+                <tr><td colSpan={7} className="border border-black/30 px-1 py-[1px] text-[8px] font-bold uppercase tracking-wider bg-gray-50">Soluções</td></tr>
+                {solutions.map((item, i) => (
+                  <PrintItemRow key={item.id} item={item} index={i} />
+                ))}
+              </>
+            )}
 
-        {/* MEDICAMENTOS */}
-        {medications.length > 0 && (
-          <div>
-            <p className="text-[9px] font-bold uppercase tracking-wider border-b border-black/40 pb-[1px] mb-[2px] text-black">Medicamentos</p>
-            {medications.map((item, i) => (
-              <PrintItemRow key={item.id} item={item} index={i + solutions.length} />
-            ))}
-          </div>
-        )}
+            {/* MEDICAMENTOS */}
+            {medications.length > 0 && (
+              <>
+                <tr><td colSpan={7} className="border border-black/30 px-1 py-[1px] text-[8px] font-bold uppercase tracking-wider bg-gray-50">Medicamentos</td></tr>
+                {medications.map((item, i) => (
+                  <PrintItemRow key={item.id} item={item} index={i + solutions.length} />
+                ))}
+              </>
+            )}
 
-        {/* RECOMENDAÇÕES */}
-        {recommendations.length > 0 && (
-          <div>
-            <p className="text-[9px] font-bold uppercase tracking-wider border-b border-black/40 pb-[1px] mb-[2px] text-black">Recomendações</p>
-            {recommendations.map((rec, i) => (
-              <PrintSimpleRow key={i} text={rec} index={i} />
-            ))}
-          </div>
-        )}
+            {/* RECOMENDAÇÕES */}
+            {recommendations.length > 0 && (
+              <>
+                <tr><td colSpan={7} className="border border-black/30 px-1 py-[1px] text-[8px] font-bold uppercase tracking-wider bg-gray-50">Recomendações</td></tr>
+                {recommendations.map((rec, i) => (
+                  <PrintSimpleRow key={i} text={rec} index={i} />
+                ))}
+              </>
+            )}
+          </tbody>
+        </table>
 
-        {/* PRINT FOOTER - Signature */}
-        <div className="pt-6 mt-4 border-t border-black/20" style={{ pageBreakInside: 'avoid' }}>
-          <div className="flex items-end justify-between">
-            <div className="text-[8px] text-gray-500">
-              <p>Gerado em: {prescriptionDate}</p>
-              <p>Sistema BigHelp Map — Prescrição Digital</p>
-            </div>
-            <div className="text-center">
-              <div className="w-48 border-b border-black mb-1" />
-              <p className="text-[9px] text-black font-medium">Assinatura / Carimbo do Médico</p>
-              <p className="text-[8px] text-gray-500">CRM: _______________</p>
-            </div>
+        {/* PRINT FOOTER */}
+        <div className="pt-4 mt-2 border-t border-black/20 flex items-end justify-between" style={{ pageBreakInside: 'avoid' }}>
+          <div className="text-[7px] text-gray-500">
+            <p>Gerado em: {prescriptionDate}</p>
+            <p>BigHelp Map — Prescrição Digital</p>
+          </div>
+          <div className="text-center">
+            <div className="w-44 border-b border-black mb-1" />
+            <p className="text-[8px] text-black font-medium">Assinatura / Carimbo do Médico</p>
+            <p className="text-[7px] text-gray-500">CRM: _______________</p>
           </div>
         </div>
       </div>
