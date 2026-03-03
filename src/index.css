@@ -376,8 +376,21 @@
     visibility: visible !important;
     opacity: 1 !important;
   }
-}
 
+  /* Prescription print-only sections override */
+  .prescription-print-section,
+  .prescription-print-section * {
+    display: revert !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  .prescription-print-section img {
+    display: inline-block !important;
+  }
+  .prescription-print-section .print-hidden-force {
+    display: none !important;
+  }
+}
 
 @layer utilities {
   @keyframes float {

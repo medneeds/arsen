@@ -124,7 +124,7 @@ function MedicationAutocomplete({
   );
 }
 
-// --- Prescription Item Row ---
+// --- Prescription Item Row (screen) ---
 function PrescriptionItemRow({
   item,
   index,
@@ -137,14 +137,12 @@ function PrescriptionItemRow({
   onRemove: (id: string) => void;
 }) {
   return (
-    <div className="group relative rounded-lg border border-border/50 bg-card/50 hover:border-primary/20 transition-all">
-      {/* Top row: Number + Name (Presentation) + Dose + Posology + Route + Schedule + Actions */}
+    <div className="group relative rounded-lg border border-border/50 bg-card/50 hover:border-primary/20 transition-all print:hidden">
       <div className="flex items-start gap-2 p-2.5">
         <span className="text-xs font-mono text-muted-foreground w-6 text-center shrink-0 pt-1.5">
           {index + 1}.
         </span>
         <div className="flex-1 min-w-0 space-y-1.5">
-          {/* Line 1: Medication name with presentation inline */}
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-semibold text-foreground">
               {item.name}
@@ -161,57 +159,73 @@ function PrescriptionItemRow({
               <Trash2 className="h-3 w-3" />
             </Button>
           </div>
-
-          {/* Line 2: Inline editable fields - Dose, Route, Posology, Schedule */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <Input
-              value={item.dose}
-              onChange={(e) => onUpdate(item.id, "dose", e.target.value)}
-              className="h-7 text-xs bg-muted/20 border-border/30 w-24"
-              placeholder="Dose"
-            />
+            <Input value={item.dose} onChange={(e) => onUpdate(item.id, "dose", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-24" placeholder="Dose" />
             <span className="text-muted-foreground text-[10px]">—</span>
             <Select value={item.route} onValueChange={(v) => onUpdate(item.id, "route", v)}>
-              <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ROUTES.map((r) => (
-                  <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>
-                ))}
-              </SelectContent>
+              <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
             </Select>
             <span className="text-muted-foreground text-[10px]">—</span>
             <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
-              <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {POSOLOGIES.map((p) => (
-                  <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>
-                ))}
-              </SelectContent>
+              <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-24"><SelectValue /></SelectTrigger>
+              <SelectContent>{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
             </Select>
             <span className="text-muted-foreground text-[10px]">—</span>
-            <Input
-              value={item.schedule}
-              onChange={(e) => onUpdate(item.id, "schedule", e.target.value)}
-              className="h-7 text-xs bg-muted/20 border-border/30 w-20"
-              placeholder="Horário"
-            />
+            <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-20" placeholder="Horário" />
           </div>
-
-          {/* Line 3: Preparation / Dilution / Infusion instructions - always visible and editable */}
           <div className="relative">
-            <Input
-              value={item.instructions}
-              onChange={(e) => onUpdate(item.id, "instructions", e.target.value)}
-              className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic"
-              placeholder="Preparo, diluição, tempo de infusão, gotas/min, mL/h..."
-            />
+            <Input value={item.instructions} onChange={(e) => onUpdate(item.id, "instructions", e.target.value)} className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic" placeholder="Preparo, diluição, tempo de infusão, gotas/min, mL/h..." />
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// --- Print-only Item Row (flat text, no inputs) ---
+function PrintItemRow({ item, index, showAprazamento = true }: { item: PrescriptionItem; index: number; showAprazamento?: boolean }) {
+  const aprazamentoSlots = 6; // 6 time slots for scheduling
+  return (
+    <div className="flex items-start border-b border-black/20 py-[3px] gap-1" style={{ pageBreakInside: 'avoid' }}>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] leading-tight">
+          <span className="font-bold">{index + 1}. {item.name}</span>
+          {item.presentation && item.presentation !== '-' && (
+            <span className="font-normal"> ({item.presentation})</span>
+          )}
+          {item.dose && item.dose !== '-' && <span> — {item.dose}</span>}
+          {item.route && item.route !== '-' && <span> — {item.route}</span>}
+          {item.posology && item.posology !== '-' && <span> — {item.posology}</span>}
+          {item.schedule && item.schedule !== '-' && <span> — <span className="font-semibold">{item.schedule}</span></span>}
+        </p>
+        {item.instructions && (
+          <p className="text-[9px] italic text-gray-600 ml-3 leading-tight">
+            ↳ {item.instructions}
+          </p>
+        )}
+      </div>
+      {showAprazamento && (
+        <div className="shrink-0 flex gap-[2px]">
+          {Array.from({ length: aprazamentoSlots }).map((_, i) => (
+            <div key={i} className="w-[28px] h-[22px] border border-black/30 rounded-[2px] flex flex-col items-center justify-center">
+              <div className="text-[6px] text-gray-400 leading-none">hr</div>
+              <div className="w-3 border-b border-black/20 mt-[1px]" />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Print-only simple row (diets, recommendations) ---
+function PrintSimpleRow({ text, index }: { text: string; index: number }) {
+  return (
+    <div className="border-b border-black/20 py-[2px]" style={{ pageBreakInside: 'avoid' }}>
+      <p className="text-[10px] leading-tight">
+        <span className="font-bold">{index + 1}.</span> {text}
+      </p>
     </div>
   );
 }
@@ -330,18 +344,39 @@ const PrescricaoPage = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-0 print:space-y-2 print:max-w-none">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-2 print:space-y-1 print:max-w-none print:text-black">
       {/* ===== PRINT-ONLY LETTERHEAD ===== */}
-      <div className="hidden print:flex items-center justify-between border-b-2 border-foreground pb-2 mb-1">
-        <img src={socorraoLogo} alt="Socorrão I" className="h-10 object-contain" />
-        <div className="text-center flex-1 px-4">
-          <p className="text-[11px] font-bold uppercase tracking-wide leading-tight">Hospital Municipal Djalma Marques — Socorrão I</p>
-          <p className="text-[9px] text-muted-foreground leading-tight">Prescrição Médica Diária</p>
+      <div className="hidden print:flex prescription-print-section items-center justify-between border-b-2 border-black pb-1 mb-0">
+        <img src={socorraoLogo} alt="Socorrão I" className="h-9 object-contain" />
+        <div className="text-center flex-1 px-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide leading-tight text-black">Hospital Municipal Djalma Marques — Socorrão I</p>
+          <p className="text-[8px] text-gray-500 leading-tight">Prescrição Médica Diária</p>
         </div>
-        <img src={bighelpLogo} alt="BigHelp Map" className="h-8 object-contain" />
+        <img src={bighelpLogo} alt="BigHelp Map" className="h-7 object-contain" />
+      </div>
+
+      {/* ===== PRINT-ONLY PATIENT INFO ===== */}
+      <div className="hidden print:block prescription-print-section border border-black/30 rounded p-1.5 mb-1" style={{ pageBreakInside: 'avoid' }}>
+        <div className="grid grid-cols-4 gap-x-3 gap-y-[2px] text-[9px] text-black">
+          <div className="col-span-2"><span className="font-bold">Paciente:</span> {patient.name || '________________________'}</div>
+          <div><span className="font-bold">Leito:</span> {patient.bed || '____'}</div>
+          <div><span className="font-bold">Prontuário:</span> {patient.record || '________'}</div>
+          <div><span className="font-bold">Idade:</span> {patient.age || '____'}</div>
+          <div><span className="font-bold">Sexo:</span> {patient.sex || '____'}</div>
+          <div><span className="font-bold">Peso:</span> {patient.weight ? `${patient.weight} kg` : '____'}</div>
+          <div><span className="font-bold">Unidade:</span> {patient.unit || '________'}</div>
+          <div><span className="font-bold">Admissão:</span> {patient.admissionDate || '____/____/____'}</div>
+          <div className="col-span-2"><span className="font-bold text-red-600">Alergias:</span> <span className="text-red-600 font-semibold">{patient.allergies || 'NADA'}</span></div>
+          <div><span className="font-bold">Data prescrição:</span> {prescriptionDate}</div>
+        </div>
+      </div>
+
+      {/* ===== PRINT-ONLY APRAZAMENTO HEADER ===== */}
+      <div className="hidden print:flex prescription-print-section items-center justify-end mb-0 pr-0">
+        <p className="text-[7px] text-gray-500 font-semibold uppercase tracking-wider">Aprazamento →</p>
       </div>
       {/* Page Title Bar */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10">
             <Pill className="h-5 w-5 text-primary" />
@@ -368,7 +403,7 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== PATIENT HEADER ===== */}
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3 print:hidden">
         <div className="flex items-center justify-between">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Identificação do Paciente</h2>
           <span className="text-xs text-muted-foreground font-mono">{prescriptionDate}</span>
@@ -431,7 +466,7 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== DIETAS ===== */}
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3 print:hidden">
         <SectionHeader icon={UtensilsCrossed} title="Dietas" count={diets.length} color="bg-emerald-500/10 text-emerald-500" />
         {diets.length > 0 && (
           <div className="space-y-1.5">
@@ -451,7 +486,7 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== SOLUÇÕES ===== */}
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3 print:hidden">
         <SectionHeader icon={Droplets} title="Soluções" count={solutions.length} color="bg-blue-500/10 text-blue-500" />
         {solutions.length > 0 && (
           <div className="space-y-1.5">
@@ -464,11 +499,10 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== MEDICAMENTOS ===== */}
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3 print:hidden">
         <SectionHeader icon={Syringe} title="Medicamentos" count={medications.length} color="bg-primary/10 text-primary" />
         {medications.length > 0 && (
           <div className="space-y-1.5">
-            
             {medications.map((item, i) => (
               <PrescriptionItemRow key={item.id} item={item} index={i} onUpdate={updateItem(setMedications)} onRemove={removeItem(setMedications)} />
             ))}
@@ -478,7 +512,7 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== RECOMENDAÇÕES ===== */}
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3 print:hidden">
         <SectionHeader icon={ClipboardList} title="Recomendações" count={recommendations.length} color="bg-amber-500/10 text-amber-500" />
         {recommendations.length > 0 && (
           <div className="space-y-1">
@@ -493,43 +527,23 @@ const PrescricaoPage = () => {
             ))}
           </div>
         )}
-
-        {/* Quick add from templates */}
         <div className="space-y-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={recSearchQuery}
-              onChange={(e) => setRecSearchQuery(e.target.value)}
-              placeholder="Buscar recomendação pré-definida..."
-              className="pl-9 bg-muted/30 border-border/50"
-            />
+            <Input value={recSearchQuery} onChange={(e) => setRecSearchQuery(e.target.value)} placeholder="Buscar recomendação pré-definida..." className="pl-9 bg-muted/30 border-border/50" />
           </div>
           {recSearchQuery && (
             <div className="rounded-lg border border-border bg-popover shadow-lg max-h-48 overflow-y-auto">
               {filteredRecTemplates.map((rec, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => addRecommendation(rec)}
-                  disabled={recommendations.includes(rec)}
-                  className="w-full px-3 py-2 text-left hover:bg-accent/50 transition-colors text-sm border-b border-border/30 last:border-0 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-                >
+                <button key={i} type="button" onClick={() => addRecommendation(rec)} disabled={recommendations.includes(rec)} className="w-full px-3 py-2 text-left hover:bg-accent/50 transition-colors text-sm border-b border-border/30 last:border-0 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2">
                   {recommendations.includes(rec) ? <Check className="h-3 w-3 text-primary shrink-0" /> : <Plus className="h-3 w-3 text-muted-foreground shrink-0" />}
                   <span className="truncate">{rec}</span>
                 </button>
               ))}
             </div>
           )}
-          {/* Manual add */}
           <div className="flex items-center gap-2">
-            <Input
-              value={newRecommendation}
-              onChange={(e) => setNewRecommendation(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") addRecommendation(newRecommendation); }}
-              placeholder="Digitar recomendação personalizada..."
-              className="bg-muted/30 border-border/50"
-            />
+            <Input value={newRecommendation} onChange={(e) => setNewRecommendation(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addRecommendation(newRecommendation); }} placeholder="Digitar recomendação personalizada..." className="bg-muted/30 border-border/50" />
             <Button variant="outline" size="sm" onClick={() => addRecommendation(newRecommendation)} disabled={!newRecommendation.trim()}>
               <Plus className="h-3.5 w-3.5" />
             </Button>
@@ -537,8 +551,68 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== FOOTER SUMMARY ===== */}
-      <div className="rounded-xl border border-border bg-muted/30 p-4 flex items-center justify-between">
+      {/* ========================================================= */}
+      {/* ===== PRINT-ONLY PRESCRIPTION BODY (flat text) ===== */}
+      {/* ========================================================= */}
+      <div className="hidden print:block prescription-print-section space-y-2">
+        {/* DIETAS */}
+        {diets.length > 0 && (
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-wider border-b border-black/40 pb-[1px] mb-[2px] text-black">Dietas</p>
+            {diets.map((item, i) => (
+              <PrintSimpleRow key={item.id} text={`${item.name}${item.dose && item.dose !== '-' ? ` — ${item.dose}` : ''}`} index={i} />
+            ))}
+          </div>
+        )}
+
+        {/* SOLUÇÕES */}
+        {solutions.length > 0 && (
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-wider border-b border-black/40 pb-[1px] mb-[2px] text-black">Soluções</p>
+            {solutions.map((item, i) => (
+              <PrintItemRow key={item.id} item={item} index={i} />
+            ))}
+          </div>
+        )}
+
+        {/* MEDICAMENTOS */}
+        {medications.length > 0 && (
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-wider border-b border-black/40 pb-[1px] mb-[2px] text-black">Medicamentos</p>
+            {medications.map((item, i) => (
+              <PrintItemRow key={item.id} item={item} index={i + solutions.length} />
+            ))}
+          </div>
+        )}
+
+        {/* RECOMENDAÇÕES */}
+        {recommendations.length > 0 && (
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-wider border-b border-black/40 pb-[1px] mb-[2px] text-black">Recomendações</p>
+            {recommendations.map((rec, i) => (
+              <PrintSimpleRow key={i} text={rec} index={i} />
+            ))}
+          </div>
+        )}
+
+        {/* PRINT FOOTER - Signature */}
+        <div className="pt-6 mt-4 border-t border-black/20" style={{ pageBreakInside: 'avoid' }}>
+          <div className="flex items-end justify-between">
+            <div className="text-[8px] text-gray-500">
+              <p>Gerado em: {prescriptionDate}</p>
+              <p>Sistema BigHelp Map — Prescrição Digital</p>
+            </div>
+            <div className="text-center">
+              <div className="w-48 border-b border-black mb-1" />
+              <p className="text-[9px] text-black font-medium">Assinatura / Carimbo do Médico</p>
+              <p className="text-[8px] text-gray-500">CRM: _______________</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== FOOTER SUMMARY (screen) ===== */}
+      <div className="rounded-xl border border-border bg-muted/30 p-4 flex items-center justify-between print:hidden">
         <div className="flex items-center gap-4">
           <Badge variant="outline" className="gap-1 text-xs">
             <Pill className="h-3 w-3" />
@@ -548,7 +622,7 @@ const PrescricaoPage = () => {
             {diets.length} dietas · {solutions.length} soluções · {medications.length} medicamentos · {recommendations.length} recomendações
           </span>
         </div>
-        <div className="flex gap-2 print:hidden">
+        <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleRenew} className="gap-1.5 text-xs">
             <Copy className="h-3 w-3" />
             Duplicar para amanhã
