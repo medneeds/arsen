@@ -1,5 +1,7 @@
 import { useState, useRef, useMemo, useCallback } from "react";
 import { format } from "date-fns";
+import bighelpLogo from "@/assets/bighelp-map-logo.png";
+import socorraoLogo from "@/assets/socorrao1-logo.png";
 import { ptBR } from "date-fns/locale";
 import {
   Pill, Plus, Trash2, Copy, Printer, Save, RefreshCw,
@@ -328,7 +330,16 @@ const PrescricaoPage = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-0 print:space-y-3">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-0 print:space-y-2 print:max-w-none">
+      {/* ===== PRINT-ONLY LETTERHEAD ===== */}
+      <div className="hidden print:flex items-center justify-between border-b-2 border-foreground pb-2 mb-1">
+        <img src={socorraoLogo} alt="Socorrão I" className="h-10 object-contain" />
+        <div className="text-center flex-1 px-4">
+          <p className="text-[11px] font-bold uppercase tracking-wide leading-tight">Hospital Municipal Djalma Marques — Socorrão I</p>
+          <p className="text-[9px] text-muted-foreground leading-tight">Prescrição Médica Diária</p>
+        </div>
+        <img src={bighelpLogo} alt="BigHelp Map" className="h-8 object-contain" />
+      </div>
       {/* Page Title Bar */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
