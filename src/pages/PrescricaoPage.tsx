@@ -705,8 +705,27 @@ const PrescricaoPage = () => {
 
   // Renewal with dialog
   const handleRenew = () => {
-    toast.success("Prescrição renovada para o dia seguinte", { description: "Todos os itens mantidos com data atualizada." });
+    if (items.length === 0) { toast.error("Nenhum item para renovar"); return; }
+    setRenewDialogOpen(true);
   };
+
+  const confirmRenewal = useCallback((includeSuspended: boolean) => {
+    const sourceItems = includeSuspended ? items : items.filter(i => i.status === 'active');
+    const renewedItems: PrescriptionItem[] = sourceItems.map(item => ({
+      ...item,
+      id: crypto.randomUUID(),
+      status: 'active',
+      suspensionReason: undefined,
+      suspendedAt: undefined,
+    }));
+    setItems(renewedItems);
+    const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
+    toast.success(`Prescrição renovada para ${tomorrow}`, {
+      description: `${renewedItems.length} itens renovados${includeSuspended ? ' (incluindo suspensos reativados)' : ''}.`,
+    });
+    setRenewDialogOpen(false);
+    setSelectedIds(new Set());
+  }, [items]);
 
   const updatePatient = (field: keyof PatientHeader, value: string) => {
     setPatient((prev) => ({ ...prev, [field]: value }));
