@@ -65,6 +65,13 @@ import {
 } from "@/data/medicationsDatabase";
 
 // --- Types ---
+interface DigitalSignature {
+  doctorName: string;
+  crm: string;
+  signedAt: string;
+  hash: string;
+}
+
 interface PrescriptionItem {
   id: string;
   name: string;
