@@ -163,6 +163,25 @@ const Index = () => {
   // Use department context
   const { currentDepartment, setCurrentDepartment } = useDepartment();
   
+  // Selected sector from login
+  const [activeSector, setActiveSector] = useState<string>(() => {
+    return localStorage.getItem("selected_sector") || "red";
+  });
+  
+  // Persist active sector changes
+  const handleSectorChange = (sector: string) => {
+    setActiveSector(sector);
+    localStorage.setItem("selected_sector", sector);
+  };
+
+  // Sector visual config
+  const SECTOR_VISUAL: Record<string, { title: string; color: string; dotClass: string; colorVariant: string }> = {
+    red: { title: "UTI 1", color: "from-red-500/20 to-red-600/10", dotClass: "bg-red-500/80 border-red-400/40", colorVariant: "red" },
+    yellow: { title: "UTI 2", color: "from-amber-500/20 to-amber-600/10", dotClass: "bg-amber-500/80 border-amber-400/40", colorVariant: "yellow" },
+    blue: { title: "UCI 1", color: "from-blue-500/20 to-blue-600/10", dotClass: "bg-blue-500/80 border-blue-400/40", colorVariant: "blue" },
+    outside: { title: "UCI 2", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
+  };
+  
   // Use real database patients filtered by department
   const { patients: dbPatients, isLoading: patientsLoading, updatePatient: dbUpdatePatient, createPatient: dbCreatePatient, deletePatient: dbDeletePatient, reorderPatients: dbReorderPatients, refetch } = usePatients(currentDepartment);
   const [patients, setPatients] = useState<Patient[]>(dbPatients);
