@@ -3,6 +3,7 @@ import { SectorSection } from "@/components/SectorSection";
 import { UtiSectorSection } from "@/components/UtiSectorSection";
 import { PreAdmissionSection } from "@/components/PreAdmissionSection";
 import { PatientCard } from "@/components/PatientCard";
+import { PatientSidebar } from "@/components/PatientSidebar";
 import { PrintLayout } from "@/components/PrintLayout";
 import { PrintUtiLayout } from "@/components/PrintUtiLayout";
 import { PrintPatientLayout } from "@/components/PrintPatientLayout";
