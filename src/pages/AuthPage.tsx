@@ -69,7 +69,8 @@ export default function AuthPage() {
         }
         setLoading(false);
       } else {
-        setCurrentDepartment(selectedDepartment);
+        setCurrentDepartment("UTI");
+        localStorage.setItem("selected_sector", selectedSector);
         toast.success("LOGIN REALIZADO COM SUCESSO");
         setShowLoadingScreen(true);
       }
