@@ -214,6 +214,9 @@ function SortablePrescriptionItemRow({
   isSimple,
   selected,
   onToggleSelect,
+  onDuplicate,
+  onRequestSuspend,
+  onReactivate,
 }: {
   item: PrescriptionItem;
   index: number;
@@ -223,6 +226,9 @@ function SortablePrescriptionItemRow({
   isSimple?: boolean;
   selected: boolean;
   onToggleSelect: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  onRequestSuspend: (id: string) => void;
+  onReactivate: (id: string) => void;
 }) {
   const {
     attributes,
@@ -239,6 +245,35 @@ function SortablePrescriptionItemRow({
     zIndex: isDragging ? 50 : undefined,
     opacity: isDragging ? 0.8 : undefined,
   };
+
+  const ItemActions = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+          <MoreHorizontal className="h-3.5 w-3.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuItem onClick={() => onDuplicate(item.id)} className="text-xs gap-2">
+          <CopyPlus className="h-3.5 w-3.5" /> Duplicar item
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {item.status === 'active' ? (
+          <DropdownMenuItem onClick={() => onRequestSuspend(item.id)} className="text-xs gap-2 text-yellow-600">
+            <Pause className="h-3.5 w-3.5" /> Suspender item
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onClick={() => onReactivate(item.id)} className="text-xs gap-2 text-green-600">
+            <Play className="h-3.5 w-3.5" /> Reativar item
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => onRemove(item.id)} className="text-xs gap-2 text-destructive">
+          <Trash2 className="h-3.5 w-3.5" /> Excluir item
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   if (isSimple) {
     return (
@@ -267,11 +302,19 @@ function SortablePrescriptionItemRow({
           className="shrink-0"
         />
         <span className="text-xs font-mono text-muted-foreground w-5">{index + 1}.</span>
-        <span className={cn("text-sm font-medium flex-1", item.status === 'suspended' && "line-through")}>
-          {item.name}
-        </span>
+        <div className="flex-1 min-w-0">
+          <span className={cn("text-sm font-medium", item.status === 'suspended' && "line-through")}>
+            {item.name}
+          </span>
+          {item.status === 'suspended' && item.suspensionReason && (
+            <p className="text-[10px] text-destructive/70 italic truncate">Motivo: {item.suspensionReason}</p>
+          )}
+        </div>
         {item.dose !== '-' && <Badge variant="outline" className="text-[10px]">{item.dose}</Badge>}
         {item.posology !== '-' && <Badge variant="secondary" className="text-[10px]">{item.posology}</Badge>}
+        {item.status === 'suspended' && (
+          <Badge variant="destructive" className="text-[9px] px-1.5">SUSPENSO</Badge>
+        )}
         <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           {PRESCRIPTION_FLAGS.map(f => (
             <FlagToggle
@@ -282,9 +325,7 @@ function SortablePrescriptionItemRow({
             />
           ))}
         </div>
-        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive" onClick={() => onRemove(item.id)}>
-          <X className="h-3 w-3" />
-        </Button>
+        <ItemActions />
       </div>
     );
   }
@@ -329,6 +370,9 @@ function SortablePrescriptionItemRow({
                 <span className="font-normal text-muted-foreground ml-1">({item.presentation})</span>
               )}
             </p>
+            {item.status === 'suspended' && (
+              <Badge variant="destructive" className="text-[9px] px-1.5">SUSPENSO</Badge>
+            )}
             <div className="flex gap-0.5 ml-auto">
               {PRESCRIPTION_FLAGS.map(f => (
                 <FlagToggle
@@ -338,37 +382,43 @@ function SortablePrescriptionItemRow({
                   onToggle={() => onToggleFlag(item.id, f.key)}
                 />
               ))}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive ml-1"
-                onClick={() => onRemove(item.id)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+              <ItemActions />
             </div>
           </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <Input value={item.dose} onChange={(e) => onUpdate(item.id, "dose", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-24" placeholder="Dose" />
-            <span className="text-muted-foreground text-[10px]">—</span>
-            <Select value={item.route} onValueChange={(v) => onUpdate(item.id, "route", v)}>
-              <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
-            </Select>
-            <span className="text-muted-foreground text-[10px]">—</span>
-            <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
-              <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-24"><SelectValue /></SelectTrigger>
-              <SelectContent>{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
-            </Select>
-            <span className="text-muted-foreground text-[10px]">—</span>
-            <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-20" placeholder="Horário" />
-          </div>
-          <Input
-            value={item.instructions}
-            onChange={(e) => onUpdate(item.id, "instructions", e.target.value)}
-            className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic"
-            placeholder="Preparo, diluição, tempo de infusão, gotas/min, mL/h..."
-          />
+          {item.status === 'suspended' && item.suspensionReason && (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-destructive/10 border border-destructive/20">
+              <Pause className="h-3 w-3 text-destructive/70 shrink-0" />
+              <p className="text-[10px] text-destructive/80 italic">
+                Motivo: {item.suspensionReason}
+                {item.suspendedAt && <span className="ml-1 text-destructive/50">({item.suspendedAt})</span>}
+              </p>
+            </div>
+          )}
+          {item.status === 'active' && (
+            <>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Input value={item.dose} onChange={(e) => onUpdate(item.id, "dose", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-24" placeholder="Dose" />
+                <span className="text-muted-foreground text-[10px]">—</span>
+                <Select value={item.route} onValueChange={(v) => onUpdate(item.id, "route", v)}>
+                  <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-32"><SelectValue /></SelectTrigger>
+                  <SelectContent>{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
+                </Select>
+                <span className="text-muted-foreground text-[10px]">—</span>
+                <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
+                  <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-24"><SelectValue /></SelectTrigger>
+                  <SelectContent>{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
+                </Select>
+                <span className="text-muted-foreground text-[10px]">—</span>
+                <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-20" placeholder="Horário" />
+              </div>
+              <Input
+                value={item.instructions}
+                onChange={(e) => onUpdate(item.id, "instructions", e.target.value)}
+                className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic"
+                placeholder="Preparo, diluição, tempo de infusão, gotas/min, mL/h..."
+              />
+            </>
+          )}
           {item.flags.length > 0 && (
             <div className="flex gap-1 flex-wrap">
               {item.flags.map(fk => {
@@ -387,8 +437,151 @@ function SortablePrescriptionItemRow({
   );
 }
 
-// --- Print-only Item Row ---
-function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }) {
+// --- Suspension Dialog ---
+function SuspensionDialog({
+  open,
+  onClose,
+  onConfirm,
+  itemName,
+  isBatch,
+  batchCount,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: (reason: string) => void;
+  itemName?: string;
+  isBatch?: boolean;
+  batchCount?: number;
+}) {
+  const [reason, setReason] = useState("");
+
+  const handleConfirm = () => {
+    if (!reason.trim()) {
+      toast.error("Motivo obrigatório para suspensão");
+      return;
+    }
+    onConfirm(reason.trim());
+    setReason("");
+  };
+
+  const handleClose = () => {
+    setReason("");
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-yellow-600">
+            <Pause className="h-5 w-5" />
+            Suspender {isBatch ? `${batchCount} itens` : 'Item'}
+          </DialogTitle>
+          <DialogDescription>
+            {isBatch
+              ? `Informe o motivo para suspender ${batchCount} itens selecionados.`
+              : <>Informe o motivo para suspender: <strong>{itemName}</strong></>
+            }
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          <Label className="text-xs font-medium">Motivo da suspensão *</Label>
+          <Textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Ex: Paciente apresentou reação adversa, substituição por outro medicamento..."
+            className="min-h-[80px] text-sm"
+            autoFocus
+          />
+          <div className="flex gap-1.5 flex-wrap">
+            {['Reação adversa', 'Alta médica', 'Substituição terapêutica', 'Suspensão temporária', 'Erro de prescrição'].map(r => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setReason(r)}
+                className="text-[10px] px-2 py-0.5 rounded-full border border-border bg-muted/50 hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={handleClose}>Cancelar</Button>
+          <Button size="sm" onClick={handleConfirm} disabled={!reason.trim()} className="gap-1.5 bg-yellow-600 hover:bg-yellow-700 text-white">
+            <Pause className="h-3.5 w-3.5" /> Confirmar Suspensão
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// --- Renewal Dialog ---
+function RenewalDialog({
+  open,
+  onClose,
+  onConfirm,
+  activeCount,
+  suspendedCount,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: (includeSuspended: boolean) => void;
+  activeCount: number;
+  suspendedCount: number;
+}) {
+  const [includeSuspended, setIncludeSuspended] = useState(false);
+  const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <RefreshCw className="h-5 w-5 text-primary" />
+            Renovar Prescrição
+          </DialogTitle>
+          <DialogDescription>
+            Renovar prescrição para <strong>{tomorrow}</strong>
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="p-3 rounded-lg bg-muted/50 border border-border space-y-1.5">
+            <div className="flex items-center justify-between text-sm">
+              <span>Itens ativos</span>
+              <Badge variant="secondary">{activeCount}</Badge>
+            </div>
+            {suspendedCount > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Itens suspensos</span>
+                <Badge variant="destructive" className="text-[10px]">{suspendedCount}</Badge>
+              </div>
+            )}
+          </div>
+          {suspendedCount > 0 && (
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox
+                checked={includeSuspended}
+                onCheckedChange={(v) => setIncludeSuspended(!!v)}
+              />
+              Incluir itens suspensos (reativados)
+            </label>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Os itens serão duplicados para a nova prescrição. Itens suspensos{!includeSuspended && ' NÃO'} serão incluídos.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={onClose}>Cancelar</Button>
+          <Button size="sm" onClick={() => onConfirm(includeSuspended)} className="gap-1.5">
+            <RefreshCw className="h-3.5 w-3.5" /> Renovar para {tomorrow}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
   return (
     <tr style={{ pageBreakInside: 'avoid' }}>
       <td className="border border-black/25 px-1 py-[2px] align-top" style={{ width: '75%' }}>
