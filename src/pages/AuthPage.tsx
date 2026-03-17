@@ -249,17 +249,34 @@ export default function AuthPage() {
                   />
                   {/* AI Cross - Gemini-inspired 4-point star/cross */}
                   <g transform="translate(60, 50)">
-                    {/* Main AI star shape - 4 curved petals like Gemini */}
+                    <defs>
+                      <radialGradient id="starGlow" cx="40%" cy="35%" r="60%">
+                        <stop offset="0%" stopColor="white" stopOpacity="1" />
+                        <stop offset="50%" stopColor="white" stopOpacity="0.9" />
+                        <stop offset="100%" stopColor="#c4f0eb" stopOpacity="0.7" />
+                      </radialGradient>
+                      <filter id="star3d">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="shadow" />
+                        <feOffset dx="0" dy="2" in="shadow" result="offsetShadow" />
+                        <feFlood floodColor="#0e7490" floodOpacity="0.3" />
+                        <feComposite in2="offsetShadow" operator="in" result="colorShadow" />
+                        <feMerge>
+                          <feMergeNode in="colorShadow" />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
+                    </defs>
+                    {/* Main AI star shape */}
                     <path
                       d="M0 -20 C4 -8, 8 -4, 20 0 C8 4, 4 8, 0 20 C-4 8, -8 4, -20 0 C-8 -4, -4 -8, 0 -20Z"
-                      fill="white"
-                      fillOpacity="0.65"
+                      fill="url(#starGlow)"
+                      filter="url(#star3d)"
                     />
-                    {/* Smaller inner glow star */}
+                    {/* Highlight / specular reflection */}
                     <path
-                      d="M0 -10 C2 -4, 4 -2, 10 0 C4 2, 2 4, 0 10 C-2 4, -4 2, -10 0 C-4 -2, -2 -4, 0 -10Z"
+                      d="M0 -14 C2.5 -6, 5 -3, 12 0 C5 1.5, 2 3, 0 8 C-1 3, -2 1.5, -6 0 C-2 -2, -1 -5, 0 -14Z"
                       fill="white"
-                      fillOpacity="0.25"
+                      fillOpacity="0.35"
                     />
                   </g>
                 </motion.svg>
