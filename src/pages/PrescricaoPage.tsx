@@ -1226,6 +1226,11 @@ const PrescricaoPage = () => {
           <Badge variant="outline" className="gap-1 text-xs">
             <Pill className="h-3 w-3" /> {totalItems} itens
           </Badge>
+          {suspendedItemsCount > 0 && (
+            <Badge variant="destructive" className="gap-1 text-[10px]">
+              <Pause className="h-3 w-3" /> {suspendedItemsCount} suspenso{suspendedItemsCount > 1 ? 's' : ''}
+            </Badge>
+          )}
           <span className="text-xs text-muted-foreground">
             {TAB_ORDER.map(cat => {
               const count = itemsByCategory[cat].length;
@@ -1236,13 +1241,30 @@ const PrescricaoPage = () => {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleRenew} className="gap-1.5 text-xs">
-            <Copy className="h-3 w-3" /> Duplicar
+            <RefreshCw className="h-3 w-3" /> Renovar
           </Button>
           <Button size="sm" onClick={handleSave} className="gap-1.5 text-xs">
             <Save className="h-3 w-3" /> Salvar
           </Button>
         </div>
       </div>
+
+      {/* ===== DIALOGS ===== */}
+      <SuspensionDialog
+        open={suspendDialogOpen}
+        onClose={() => { setSuspendDialogOpen(false); setSuspendTarget({}); }}
+        onConfirm={confirmSuspend}
+        itemName={suspendTarget.name}
+        isBatch={suspendTarget.isBatch}
+        batchCount={selectedIds.size}
+      />
+      <RenewalDialog
+        open={renewDialogOpen}
+        onClose={() => setRenewDialogOpen(false)}
+        onConfirm={confirmRenewal}
+        activeCount={activeItemsCount}
+        suspendedCount={suspendedItemsCount}
+      />
     </div>
   );
 };
