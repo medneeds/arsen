@@ -5,22 +5,42 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
 } from "recharts";
 import { 
   CalendarIcon, Download, Users, FileText, UserCheck, 
-  UserX, ArrowRightLeft, TrendingUp, Activity, BarChart3, Filter, X, Loader2
+  UserX, ArrowRightLeft, TrendingUp, Activity, BarChart3, Filter, X, Loader2,
+  AlertTriangle, Clock, Bell, ClipboardCheck, UserPlus, LogOut, Pill
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { format, subDays, subMonths, startOfDay, endOfDay } from "date-fns";
+import { format, subDays, subHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useDepartment } from "@/contexts/DepartmentContext";
+import { useHospital } from "@/contexts/HospitalContext";
 import { PrintableDashboard } from "@/components/PrintableDashboard";
 import { ThemeToggle } from "@/components/ThemeToggle";
+
+interface PriorityAlert {
+  id: string;
+  level: 'critical' | 'warning' | 'info';
+  message: string;
+  patientName?: string;
+  bedNumber?: string;
+  timestamp: string;
+}
+
+interface RecentActivity {
+  id: string;
+  type: string;
+  description: string;
+  timestamp: string;
+}
 
 const COLORS = ['#ef4444', '#eab308', '#3b82f6', '#6b7280', '#8b5cf6', '#ec4899'];
 
