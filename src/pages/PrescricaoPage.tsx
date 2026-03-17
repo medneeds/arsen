@@ -843,6 +843,8 @@ const PrescricaoPage = () => {
   const [saving, setSaving] = useState(false);
   const [savedPrescriptions, setSavedPrescriptions] = useState<Array<{ id: string; patient_name: string; status: string; version: number; created_at: string; digital_signature: DigitalSignature | null }>>([]);
   const [loadingList, setLoadingList] = useState(false);
+  const [versionHistory, setVersionHistory] = useState<Array<{ id: string; version: number; status: string; created_at: string; digital_signature: DigitalSignature | null }>>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 
