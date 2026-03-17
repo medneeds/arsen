@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronDown, ChevronUp, Clock, Calendar, Edit, Trash2, Copy, ArrowRightLeft, Printer, Check, X, GripVertical, MoreVertical, Maximize2, TrendingUp, Heart, Skull, Sparkles, Star, FileText, Pencil, Plus, CheckCircle2, BedDouble, Settings, Zap, AlertCircle, CircleCheck, Activity, Shuffle, FileEdit, AlertTriangle, Utensils, MessageSquare, XCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, Calendar, Edit, Trash2, Copy, ArrowRightLeft, Printer, Check, X, GripVertical, MoreVertical, Maximize2, TrendingUp, Heart, Skull, Sparkles, Star, FileText, Pencil, Plus, CheckCircle2, BedDouble, Settings, Zap, AlertCircle, CircleCheck, Activity, Shuffle, FileEdit, AlertTriangle, Utensils, MessageSquare, XCircle, ClipboardList } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { EditPatientDialog } from "./EditPatientDialog";
@@ -34,6 +34,7 @@ import { useSectorStayTimer } from "@/hooks/useSectorStayTimer";
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { useConductHistory } from "@/hooks/useConductHistory";
 import { ConductHistoryDialog } from "./ConductHistoryDialog";
+import { AdmissionHistoryDialog } from "./AdmissionHistoryDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -649,6 +650,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
   const [bedAllocationDialogOpen, setBedAllocationDialogOpen] = useState(false);
   const [dietDialogOpen, setDietDialogOpen] = useState(false);
   const [conductHistoryDialogOpen, setConductHistoryDialogOpen] = useState(false);
+  const [admissionHistoryDialogOpen, setAdmissionHistoryDialogOpen] = useState(false);
   const { history: conductHistory, isLoading: conductHistoryLoading, recordChange } = useConductHistory(patient.id);
   const { role, user } = useAuth();
   const { requests } = useBedAllocationRequests();
@@ -3641,6 +3643,18 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                     {/* Elegant Divider */}
                     <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-2" />
 
+                    {/* HISTÓRIA ADMISSIONAL */}
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAdmissionHistoryDialogOpen(true);
+                      }}
+                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
+                    >
+                      <ClipboardList className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>História Admissional</span>
+                    </DropdownMenuItem>
+
                     {/* HISTÓRICO DE CONDUTAS */}
                     <DropdownMenuItem
                       onClick={(e) => {
@@ -4963,6 +4977,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
         history={conductHistory}
         isLoading={conductHistoryLoading}
         patientName={patient.name}
+      />
+      <AdmissionHistoryDialog
+        patient={patient}
+        open={admissionHistoryDialogOpen}
+        onOpenChange={setAdmissionHistoryDialogOpen}
       />
     </>
   );
