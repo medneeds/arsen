@@ -1169,7 +1169,7 @@ const Index = () => {
                     onDeletePatient={handleDeletePatient}
                     onUndeletePatient={handleUndeletePatient}
                     onPrintSector={() => handlePrintSector(activeSector)}
-                    onAddExtraBed={() => handleAddExtraBed(activeSector as any)}
+                    onAddExtraBed={() => handleAddExtraBed(activeSector as Patient['sector'])}
                     selectionMode={selectionMode}
                     selectedPatients={selectedPatients}
                     onToggleSelection={handleToggleSelection}
@@ -1179,7 +1179,7 @@ const Index = () => {
                     onRefetch={refetch}
                     customTitle={SECTOR_VISUAL[activeSector]?.title || "Setor"}
                     customIcon={<span className={`w-3 h-3 rounded-full ${SECTOR_VISUAL[activeSector]?.dotClass} border`} />}
-                    colorVariant={SECTOR_VISUAL[activeSector]?.colorVariant || "red"}
+                    colorVariant={SECTOR_VISUAL[activeSector]?.colorVariant as any || "red"}
                     allPatients={patients}
                     currentUtiUnit={SECTOR_VISUAL[activeSector]?.title || "UTI 1"}
                     defaultOpen={true}
