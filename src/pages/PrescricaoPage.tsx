@@ -1226,21 +1226,61 @@ const PrescricaoPage = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Prescrição Médica</h1>
-            <p className="text-xs text-muted-foreground">Prescrição médica diária digital — {totalItems} itens</p>
+            <p className="text-xs text-muted-foreground">
+              Prescrição médica diária digital — {totalItems} itens
+              {currentPrescriptionId && <span className="ml-1 text-primary">(salva)</span>}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleNewPrescription} className="gap-1.5 text-xs">
+            <Plus className="h-3.5 w-3.5" /> Nova
+          </Button>
           <Button variant="outline" size="sm" onClick={handleRenew} className="gap-1.5">
             <RefreshCw className="h-3.5 w-3.5" /> Renovar
           </Button>
           <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5">
             <Printer className="h-3.5 w-3.5" /> Imprimir
           </Button>
-          <Button size="sm" onClick={handleSave} className="gap-1.5">
-            <Save className="h-3.5 w-3.5" /> Salvar
+          <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
+            {saving ? <span className="animate-spin h-3.5 w-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> : <Save className="h-3.5 w-3.5" />}
+            {saving ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>
       </div>
+
+      {/* ===== SAVED PRESCRIPTIONS ===== */}
+      {savedPrescriptions.length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-3 print:hidden">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Prescrições Salvas</h2>
+            <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-6 text-[10px] gap-1">
+              <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
+            </Button>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {savedPrescriptions.map(p => (
+              <button
+                key={p.id}
+                onClick={() => loadPrescription(p.id)}
+                className={cn(
+                  "shrink-0 text-left p-2 rounded-lg border text-xs transition-colors hover:bg-accent/50",
+                  currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border"
+                )}
+              >
+                <p className="font-medium truncate max-w-[160px]">{p.patient_name}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
+                    {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
+                  </Badge>
+                  <span className="text-[9px] text-muted-foreground">v{p.version}</span>
+                  <span className="text-[9px] text-muted-foreground">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ===== PATIENT HEADER ===== */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-3 print:hidden">
