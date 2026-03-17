@@ -79,6 +79,7 @@ interface SortablePatientCardProps {
   onTransfer?: (patientId: string, newSector: Patient['sector']) => void;
   onPrintPatient?: (patientId: string) => void;
   onRefetch?: () => void;
+  onQuickView?: (patient: Patient) => void;
 }
 
 function SortablePatientCard(props: SortablePatientCardProps) {
