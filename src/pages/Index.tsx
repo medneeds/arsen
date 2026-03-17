@@ -1413,6 +1413,12 @@ const Index = () => {
       </AlertDialog>
 
       <GlobalSearchDialog externalOpen={searchOpen} onExternalOpenChange={setSearchOpen} />
+
+      <PatientSidebar
+        patient={quickViewPatient}
+        open={quickViewOpen}
+        onOpenChange={setQuickViewOpen}
+      />
     </MainLayout>
   );
 };
