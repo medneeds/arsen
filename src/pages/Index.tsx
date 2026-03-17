@@ -170,7 +170,7 @@ const Index = () => {
   
   // Persist active sector changes
   const handleSectorChange = (sector: string) => {
-    setActiveSector(sector);
+    setActiveSector(sector as SectorType);
     localStorage.setItem("selected_sector", sector);
   };
 
