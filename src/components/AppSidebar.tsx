@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { whitelabel } from "@/config/whitelabel";
+import { BigHelpLogo } from "./BigHelpLogo";
 import { useState } from "react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
@@ -244,19 +245,11 @@ export function AppSidebar({
           <div className="flex items-center justify-center flex-1">
             {!isCollapsed ? (
               <div className="flex flex-col items-center gap-1">
-                <img 
-                  src={whitelabel.logos.networkCompact} 
-                  alt={whitelabel.institution.networkLogoAlt} 
-                  className="w-full h-auto max-h-10 object-contain animate-fade-in"
-                />
+                <BigHelpLogo size="sm" showText={false} />
                 <span className="text-[9px] text-muted-foreground/60 tracking-widest uppercase font-light">Socorrão I</span>
               </div>
             ) : (
-              <img 
-                src={whitelabel.logos.networkCompact} 
-                alt={whitelabel.institution.networkShortName} 
-                className="w-8 h-8 object-contain"
-              />
+              <BigHelpLogo size="xs" />
             )}
           </div>
           {!isCollapsed && (

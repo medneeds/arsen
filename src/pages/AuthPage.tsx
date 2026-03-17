@@ -7,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { LogIn, User, Lock, Eye, EyeOff, Building2, ArrowRight, Activity, Brain, MapPin, Stethoscope, HeartPulse, Shield } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { BigHelpLogo } from "@/components/BigHelpLogo";
 import { cn } from "@/lib/utils";
 import { whitelabel } from "@/config/whitelabel";
-import bighelpLogo from "@/assets/bighelp-map-logo.png";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 import { motion, AnimatePresence } from "framer-motion";
@@ -169,7 +169,7 @@ export default function AuthPage() {
 
             {/* Content */}
             <div className="relative z-10 text-center px-6 max-w-xl mx-auto flex flex-col items-center">
-              {/* Prominent Cross Icon - SVG animated */}
+              {/* Prominent Cross Icon with pulse rings */}
               <motion.div
                 className="relative mb-6"
                 initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
@@ -193,93 +193,13 @@ export default function AuthPage() {
                   transition={{ duration: 3, repeat: Infinity, ease: "easeOut", delay: 2 }}
                 />
 
-                {/* Large glow behind */}
-                <div className="absolute inset-0 -m-16 rounded-full blur-[80px] bg-[#2dd4bf]/[0.15]" />
                 <motion.div
-                  className="absolute inset-0 -m-10 rounded-full blur-[40px] bg-[#2dd4bf]/[0.1]"
-                  animate={{ opacity: [0.3, 0.6, 0.3] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                />
-
-                {/* SVG Cross Icon */}
-                <motion.svg
-                  width="120"
-                  height="140"
-                  viewBox="0 0 120 140"
-                  fill="none"
-                  className="relative z-10 drop-shadow-[0_0_40px_rgba(45,212,191,0.5)]"
                   animate={{ y: [-3, 3, -3] }}
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  className="drop-shadow-[0_0_40px_rgba(45,212,191,0.5)]"
                 >
-                  {/* Cross shape - map pin style */}
-                  <defs>
-                    <linearGradient id="crossGrad" x1="20" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor="#34d9c3" />
-                      <stop offset="50%" stopColor="#2bb5a6" />
-                      <stop offset="100%" stopColor="#0e7490" />
-                    </linearGradient>
-                    <linearGradient id="crossHighlight" x1="30" y1="0" x2="90" y2="80" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor="#5eead4" stopOpacity="0.6" />
-                      <stop offset="100%" stopColor="#2dd4bf" stopOpacity="0" />
-                    </linearGradient>
-                    <filter id="glow">
-                      <feGaussianBlur stdDeviation="3" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  {/* Main cross body */}
-                  <path
-                    d="M45 8C45 4 49 0 53 0H67C71 0 75 4 75 8V35H102C106 35 110 39 110 43V57C110 61 106 65 102 65H75V92C75 96 71 100 67 100H60L60 100L53 100C49 100 45 96 45 92V65H18C14 65 10 61 10 57V43C10 39 14 35 18 35H45V8Z"
-                    fill="url(#crossGrad)"
-                    filter="url(#glow)"
-                  />
-                  {/* Highlight overlay */}
-                  <path
-                    d="M45 8C45 4 49 0 53 0H67C71 0 75 4 75 8V35H102C106 35 110 39 110 43V57C110 61 106 65 102 65H75V92C75 96 71 100 67 100H53C49 100 45 96 45 92V65H18C14 65 10 61 10 57V43C10 39 14 35 18 35H45V8Z"
-                    fill="url(#crossHighlight)"
-                  />
-                  {/* Pin bottom point */}
-                  <path
-                    d="M50 98L60 130L70 98"
-                    fill="url(#crossGrad)"
-                    filter="url(#glow)"
-                  />
-                  {/* AI Cross - Gemini-inspired 4-point star/cross */}
-                  <g transform="translate(60, 50)">
-                    <defs>
-                      <radialGradient id="starGlow" cx="40%" cy="35%" r="60%">
-                        <stop offset="0%" stopColor="white" stopOpacity="1" />
-                        <stop offset="50%" stopColor="white" stopOpacity="0.9" />
-                        <stop offset="100%" stopColor="#c4f0eb" stopOpacity="0.7" />
-                      </radialGradient>
-                      <filter id="star3d">
-                        <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="shadow" />
-                        <feOffset dx="0" dy="2" in="shadow" result="offsetShadow" />
-                        <feFlood floodColor="#0e7490" floodOpacity="0.3" />
-                        <feComposite in2="offsetShadow" operator="in" result="colorShadow" />
-                        <feMerge>
-                          <feMergeNode in="colorShadow" />
-                          <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                      </filter>
-                    </defs>
-                    {/* Main AI star shape */}
-                    <path
-                      d="M0 -20 C4 -8, 8 -4, 20 0 C8 4, 4 8, 0 20 C-4 8, -8 4, -20 0 C-8 -4, -4 -8, 0 -20Z"
-                      fill="url(#starGlow)"
-                      filter="url(#star3d)"
-                    />
-                    {/* Highlight / specular reflection */}
-                    <path
-                      d="M0 -14 C2.5 -6, 5 -3, 12 0 C5 1.5, 2 3, 0 8 C-1 3, -2 1.5, -6 0 C-2 -2, -1 -5, 0 -14Z"
-                      fill="white"
-                      fillOpacity="0.35"
-                    />
-                  </g>
-                </motion.svg>
+                  <BigHelpLogo size="xl" glow />
+                </motion.div>
               </motion.div>
 
               {/* Brand name: BigHelp Map */}
@@ -383,45 +303,60 @@ export default function AuthPage() {
               <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full blur-[120px] bg-white/[0.02]" />
             </div>
 
-            <div className="w-full max-w-sm relative z-10">
-              {/* Header */}
-              <div className="text-center mb-8">
-                <div className="relative inline-block mb-6">
-                  <div className="absolute inset-0 -m-12 rounded-full blur-[70px] bg-[#2dd4bf]/[0.1]" />
-                  <img 
-                    src={bighelpLogo} 
-                    alt="BigHelp Map" 
-                    className="h-20 sm:h-24 object-contain relative z-10 drop-shadow-[0_0_20px_rgba(45,212,191,0.3)]"
-                  />
-                </div>
-                <div className="h-px w-32 mx-auto bg-gradient-to-r from-transparent via-[#2dd4bf]/40 to-transparent mb-5" />
-                <p className="text-slate-300 text-base font-medium tracking-widest uppercase">
-                  Hospital Mun. Djalma Marques
-                </p>
-                <p className="text-slate-400 text-sm mt-1 font-light tracking-wide">Socorrão I</p>
+            <div className="w-full max-w-[400px] relative z-10">
+              {/* Header with logo */}
+              <div className="text-center mb-6">
+                <motion.div
+                  className="inline-block mb-4"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+                >
+                  <BigHelpLogo size="md" glow />
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                  <h1 className="text-2xl text-white tracking-tight mb-1">
+                    <span className="font-extrabold">BigHelp</span>
+                    <span className="font-extralight text-white/60 ml-0.5">Map</span>
+                  </h1>
+                  <div className="h-px w-24 mx-auto bg-gradient-to-r from-transparent via-[#2dd4bf]/40 to-transparent my-3" />
+                  <p className="text-slate-400 text-xs font-medium tracking-[0.2em] uppercase">
+                    Hospital Mun. Djalma Marques
+                  </p>
+                  <p className="text-slate-500 text-[10px] mt-0.5 font-light tracking-widest uppercase">Socorrão I</p>
+                </motion.div>
               </div>
 
-              {/* Login Card */}
-              <div className="bg-white/[0.97] backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/20 p-7 border border-white/20">
+              {/* Login Card - refined glass morphism */}
+              <motion.div
+                className="bg-white/[0.06] backdrop-blur-2xl rounded-2xl shadow-2xl shadow-black/30 p-7 border border-white/[0.08]"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+              >
                 <div className="mb-5 text-center">
-                  <div className="inline-flex items-center justify-center h-11 w-11 rounded-xl bg-gradient-to-br from-[#0f2847] to-[#1a3a5c] shadow-lg mb-3">
-                    <LogIn className="h-5 w-5 text-[#2dd4bf]" />
+                  <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-[#2dd4bf]/10 border border-[#2dd4bf]/20 mb-3">
+                    <LogIn className="h-4 w-4 text-[#2dd4bf]" />
                   </div>
-                  <h2 className="text-sm font-semibold text-gray-800 uppercase tracking-wider">Acesse sua conta</h2>
+                  <h2 className="text-xs font-semibold text-white/80 uppercase tracking-[0.2em]">Acesse sua conta</h2>
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div>
-                    <Label htmlFor="username" className="text-[11px] font-medium text-gray-400 uppercase mb-1.5 block tracking-wider">Usuário</Label>
+                    <Label htmlFor="username" className="text-[10px] font-medium text-white/40 uppercase mb-1.5 block tracking-[0.15em]">Usuário</Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
                       <Input
                         id="username"
                         type="text"
                         value={loginData.username}
                         onChange={(e) => setLoginData({ ...loginData, username: e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, '') })}
                         placeholder="DIGITE SEU USUÁRIO"
-                        className="pl-10 h-11 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm uppercase font-medium text-gray-900 placeholder:text-gray-300 focus:border-[#2dd4bf]/50 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all"
+                        className="pl-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm uppercase font-medium text-white placeholder:text-white/20 focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 focus:bg-white/[0.08] transition-all"
                         disabled={loading}
                         autoComplete="username"
                         autoFocus
@@ -430,23 +365,23 @@ export default function AuthPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="password" className="text-[11px] font-medium text-gray-400 uppercase mb-1.5 block tracking-wider">Senha</Label>
+                    <Label htmlFor="password" className="text-[10px] font-medium text-white/40 uppercase mb-1.5 block tracking-[0.15em]">Senha</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
                         value={loginData.password}
                         onChange={(e) => setLoginData({ ...loginData, password: e.target.value.toUpperCase() })}
                         placeholder="DIGITE SUA SENHA"
-                        className="pl-10 pr-10 h-11 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm uppercase font-medium text-gray-900 placeholder:text-gray-300 focus:border-[#2dd4bf]/50 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all"
+                        className="pl-10 pr-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm uppercase font-medium text-white placeholder:text-white/20 focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 focus:bg-white/[0.08] transition-all"
                         disabled={loading}
                         autoComplete="current-password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors"
                         tabIndex={-1}
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -455,15 +390,15 @@ export default function AuthPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="sector" className="text-[11px] font-medium text-gray-400 uppercase mb-1.5 block tracking-wider">Setor</Label>
+                    <Label htmlFor="sector" className="text-[10px] font-medium text-white/40 uppercase mb-1.5 block tracking-[0.15em]">Setor</Label>
                     <div className="relative">
-                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 z-10 pointer-events-none" />
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10 pointer-events-none" />
                       <Select
                         value={selectedSector}
                         onValueChange={(val) => setSelectedSector(val)}
                         disabled={loading}
                       >
-                        <SelectTrigger className="pl-10 h-11 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm uppercase font-medium text-gray-900 focus:border-[#2dd4bf]/50 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all">
+                        <SelectTrigger className="pl-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm uppercase font-medium text-white focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all">
                           <SelectValue placeholder="SELECIONE O SETOR" />
                         </SelectTrigger>
                         <SelectContent>
@@ -480,25 +415,30 @@ export default function AuthPage() {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full h-11 bg-gradient-to-r from-[#0f2847] to-[#1a3a5c] hover:from-[#0a1628] hover:to-[#0f2847] text-white font-semibold uppercase text-xs rounded-xl shadow-lg tracking-wider transition-all duration-300"
+                    className="w-full h-11 bg-gradient-to-r from-[#2dd4bf]/20 to-[#2dd4bf]/10 hover:from-[#2dd4bf]/30 hover:to-[#2dd4bf]/15 text-white font-semibold uppercase text-xs rounded-xl border border-[#2dd4bf]/20 hover:border-[#2dd4bf]/40 tracking-[0.2em] transition-all duration-300"
                   >
                     {loading ? "ENTRANDO..." : "ENTRAR"}
                   </Button>
                 </form>
-              </div>
+              </motion.div>
 
               {/* Back to splash + Footer */}
-              <div className="text-center mt-5 space-y-3">
+              <motion.div
+                className="text-center mt-5 space-y-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+              >
                 <button
                   onClick={() => setShowSplash(true)}
-                  className="text-[10px] text-[#2dd4bf]/60 hover:text-[#2dd4bf] uppercase tracking-[0.2em] transition-colors duration-300"
+                  className="text-[10px] text-[#2dd4bf]/50 hover:text-[#2dd4bf] uppercase tracking-[0.2em] transition-colors duration-300"
                 >
                   ← Voltar
                 </button>
-                <p className="text-[10px] text-slate-600 tracking-widest uppercase font-light">
+                <p className="text-[9px] text-slate-600 tracking-[0.3em] uppercase font-light">
                   {whitelabel.credits.authorSignature}
                 </p>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         )}
