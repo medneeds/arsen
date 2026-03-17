@@ -64,6 +64,7 @@ export default function AuthPage() {
         }
         setLoading(false);
       } else {
+        setCurrentDepartment(selectedDepartment);
         toast.success("LOGIN REALIZADO COM SUCESSO");
         setShowLoadingScreen(true);
       }
