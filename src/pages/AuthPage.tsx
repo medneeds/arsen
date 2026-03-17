@@ -348,16 +348,16 @@ export default function AuthPage() {
 
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div>
-                    <Label htmlFor="username" className="text-[11px] font-medium text-gray-400 uppercase mb-1.5 block tracking-wider">Usuário</Label>
+                    <Label htmlFor="username" className="text-[10px] font-medium text-white/40 uppercase mb-1.5 block tracking-[0.15em]">Usuário</Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
                       <Input
                         id="username"
                         type="text"
                         value={loginData.username}
                         onChange={(e) => setLoginData({ ...loginData, username: e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, '') })}
                         placeholder="DIGITE SEU USUÁRIO"
-                        className="pl-10 h-11 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm uppercase font-medium text-gray-900 placeholder:text-gray-300 focus:border-[#2dd4bf]/50 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all"
+                        className="pl-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm uppercase font-medium text-white placeholder:text-white/20 focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 focus:bg-white/[0.08] transition-all"
                         disabled={loading}
                         autoComplete="username"
                         autoFocus
@@ -366,23 +366,23 @@ export default function AuthPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="password" className="text-[11px] font-medium text-gray-400 uppercase mb-1.5 block tracking-wider">Senha</Label>
+                    <Label htmlFor="password" className="text-[10px] font-medium text-white/40 uppercase mb-1.5 block tracking-[0.15em]">Senha</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
                         value={loginData.password}
                         onChange={(e) => setLoginData({ ...loginData, password: e.target.value.toUpperCase() })}
                         placeholder="DIGITE SUA SENHA"
-                        className="pl-10 pr-10 h-11 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm uppercase font-medium text-gray-900 placeholder:text-gray-300 focus:border-[#2dd4bf]/50 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all"
+                        className="pl-10 pr-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm uppercase font-medium text-white placeholder:text-white/20 focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 focus:bg-white/[0.08] transition-all"
                         disabled={loading}
                         autoComplete="current-password"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors"
                         tabIndex={-1}
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -391,15 +391,15 @@ export default function AuthPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="sector" className="text-[11px] font-medium text-gray-400 uppercase mb-1.5 block tracking-wider">Setor</Label>
+                    <Label htmlFor="sector" className="text-[10px] font-medium text-white/40 uppercase mb-1.5 block tracking-[0.15em]">Setor</Label>
                     <div className="relative">
-                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 z-10 pointer-events-none" />
+                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10 pointer-events-none" />
                       <Select
                         value={selectedSector}
                         onValueChange={(val) => setSelectedSector(val)}
                         disabled={loading}
                       >
-                        <SelectTrigger className="pl-10 h-11 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm uppercase font-medium text-gray-900 focus:border-[#2dd4bf]/50 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all">
+                        <SelectTrigger className="pl-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm uppercase font-medium text-white focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all">
                           <SelectValue placeholder="SELECIONE O SETOR" />
                         </SelectTrigger>
                         <SelectContent>
@@ -416,25 +416,30 @@ export default function AuthPage() {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full h-11 bg-gradient-to-r from-[#0f2847] to-[#1a3a5c] hover:from-[#0a1628] hover:to-[#0f2847] text-white font-semibold uppercase text-xs rounded-xl shadow-lg tracking-wider transition-all duration-300"
+                    className="w-full h-11 bg-gradient-to-r from-[#2dd4bf]/20 to-[#2dd4bf]/10 hover:from-[#2dd4bf]/30 hover:to-[#2dd4bf]/15 text-white font-semibold uppercase text-xs rounded-xl border border-[#2dd4bf]/20 hover:border-[#2dd4bf]/40 tracking-[0.2em] transition-all duration-300"
                   >
                     {loading ? "ENTRANDO..." : "ENTRAR"}
                   </Button>
                 </form>
-              </div>
+              </motion.div>
 
               {/* Back to splash + Footer */}
-              <div className="text-center mt-5 space-y-3">
+              <motion.div
+                className="text-center mt-5 space-y-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+              >
                 <button
                   onClick={() => setShowSplash(true)}
-                  className="text-[10px] text-[#2dd4bf]/60 hover:text-[#2dd4bf] uppercase tracking-[0.2em] transition-colors duration-300"
+                  className="text-[10px] text-[#2dd4bf]/50 hover:text-[#2dd4bf] uppercase tracking-[0.2em] transition-colors duration-300"
                 >
                   ← Voltar
                 </button>
-                <p className="text-[10px] text-slate-600 tracking-widest uppercase font-light">
+                <p className="text-[9px] text-slate-600 tracking-[0.3em] uppercase font-light">
                   {whitelabel.credits.authorSignature}
                 </p>
-              </div>
+              </motion.div>
             </div>
           </motion.div>
         )}
