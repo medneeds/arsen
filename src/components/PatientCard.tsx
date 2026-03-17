@@ -3643,6 +3643,18 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                     {/* Elegant Divider */}
                     <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-2" />
 
+                    {/* HISTÓRIA ADMISSIONAL */}
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAdmissionHistoryDialogOpen(true);
+                      }}
+                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
+                    >
+                      <ClipboardList className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>História Admissional</span>
+                    </DropdownMenuItem>
+
                     {/* HISTÓRICO DE CONDUTAS */}
                     <DropdownMenuItem
                       onClick={(e) => {
