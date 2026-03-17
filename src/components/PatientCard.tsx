@@ -237,6 +237,7 @@ interface PatientCardProps {
   onTransfer?: (patientId: string, newSector: Patient['sector']) => void;
   onPrintPatient?: (patientId: string) => void;
   onRefetch?: () => void;
+  onQuickView?: (patient: Patient) => void;
 }
 
 const sectorConfig = {
