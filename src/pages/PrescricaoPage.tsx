@@ -1561,8 +1561,9 @@ const PrescricaoPage = () => {
           >
             {digitalSignature ? <><ShieldCheck className="h-3 w-3" /> Reassinar</> : <><Fingerprint className="h-3 w-3" /> Assinar</>}
           </Button>
-          <Button size="sm" onClick={handleSave} className="gap-1.5 text-xs">
-            <Save className="h-3 w-3" /> Salvar
+          <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5 text-xs">
+            {saving ? <span className="animate-spin h-3 w-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> : <Save className="h-3 w-3" />}
+            {saving ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>
       </div>
