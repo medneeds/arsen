@@ -47,7 +47,7 @@ export const PRESCRIPTION_FLAGS = [
   { key: 'bi',  label: 'BI',  fullLabel: 'Bomba de Infusão',    color: 'bg-blue-500/20 text-blue-700 border-blue-300' },
   { key: 'sn',  label: 'SN',  fullLabel: 'Se Necessário',       color: 'bg-yellow-500/20 text-yellow-700 border-yellow-300' },
   { key: 'acm', label: 'ACM', fullLabel: 'A Critério Médico',   color: 'bg-purple-500/20 text-purple-700 border-purple-300' },
-  { key: 'cp',  label: 'CP',  fullLabel: 'Cuidados Paliativos', color: 'bg-teal-500/20 text-teal-700 border-teal-300' },
+  { key: 'cp',  label: 'CP',  fullLabel: 'Carro de Parada',      color: 'bg-teal-500/20 text-teal-700 border-teal-300' },
   { key: 'bu',  label: 'BU',  fullLabel: 'Bolus/Urgência',      color: 'bg-red-500/20 text-red-700 border-red-300' },
 ] as const;
 
