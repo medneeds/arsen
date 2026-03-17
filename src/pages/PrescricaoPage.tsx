@@ -1031,9 +1031,107 @@ const PrescricaoPage = () => {
   const activeItemsCount = items.filter(i => i.status === 'active').length;
   const suspendedItemsCount = items.filter(i => i.status === 'suspended').length;
 
-  const handleSave = () => {
+  // Fetch saved prescriptions
+  const fetchPrescriptions = useCallback(async () => {
+    if (!currentHospital || !currentState) return;
+    setLoadingList(true);
+    try {
+      const { data, error } = await supabase
+        .from('prescriptions')
+        .select('id, patient_name, status, version, created_at, digital_signature')
+        .eq('hospital_unit_id', currentHospital.id)
+        .eq('state_id', currentState.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      setSavedPrescriptions((data || []).map(d => ({
+        ...d,
+        digital_signature: d.digital_signature as DigitalSignature | null,
+      })));
+    } catch (err) {
+      console.error('Error fetching prescriptions:', err);
+    } finally {
+      setLoadingList(false);
+    }
+  }, [currentHospital, currentState]);
+
+  useEffect(() => { fetchPrescriptions(); }, [fetchPrescriptions]);
+
+  // Load a saved prescription
+  const loadPrescription = useCallback(async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('prescriptions')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (error) throw error;
+      if (data) {
+        setPatient(data.patient_data as unknown as PatientHeader);
+        setItems(data.items as unknown as PrescriptionItem[]);
+        setDigitalSignature(data.digital_signature as DigitalSignature | null);
+        setCurrentPrescriptionId(data.id);
+        setSelectedIds(new Set());
+        toast.success("Prescrição carregada", { description: `v${data.version} — ${data.patient_name}` });
+      }
+    } catch (err: any) {
+      toast.error("Erro ao carregar prescrição", { description: err.message });
+    }
+  }, []);
+
+  // Save prescription to database
+  const handleSave = async () => {
     if (!patient.name.trim()) { toast.error("Preencha o nome do paciente"); return; }
-    toast.success("Prescrição salva com sucesso", { description: `${totalItems} itens registrados.` });
+    if (!currentHospital || !currentState) { toast.error("Hospital/Estado não selecionado"); return; }
+    setSaving(true);
+    try {
+      const payload = {
+        patient_name: patient.name.trim(),
+        patient_data: patient as any,
+        items: items as any,
+        digital_signature: digitalSignature as any,
+        status: digitalSignature ? 'signed' : 'draft',
+        department: 'URGÊNCIA E EMERGÊNCIA ADULTO',
+        hospital_unit_id: currentHospital.id,
+        state_id: currentState.id,
+        created_by: user?.id || null,
+      };
+
+      if (currentPrescriptionId) {
+        // Update existing
+        const { error } = await supabase
+          .from('prescriptions')
+          .update(payload)
+          .eq('id', currentPrescriptionId);
+        if (error) throw error;
+        toast.success("Prescrição atualizada", { description: `${totalItems} itens registrados.` });
+      } else {
+        // Insert new
+        const { data, error } = await supabase
+          .from('prescriptions')
+          .insert(payload)
+          .select('id')
+          .single();
+        if (error) throw error;
+        if (data) setCurrentPrescriptionId(data.id);
+        toast.success("Prescrição salva", { description: `${totalItems} itens registrados.` });
+      }
+      fetchPrescriptions();
+    } catch (err: any) {
+      toast.error("Erro ao salvar prescrição", { description: err.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // New prescription
+  const handleNewPrescription = () => {
+    setPatient({ name: "", birthDate: "", age: "", sex: "", bed: "", unit: "", record: "", admissionDate: "", weight: "", allergies: "" });
+    setItems([]);
+    setDigitalSignature(null);
+    setCurrentPrescriptionId(null);
+    setSelectedIds(new Set());
+    toast.info("Nova prescrição iniciada");
   };
 
   const handlePrint = () => window.print();
