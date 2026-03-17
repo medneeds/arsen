@@ -253,13 +253,13 @@ export default function AuthPage() {
                     <path
                       d="M0 -20 C4 -8, 8 -4, 20 0 C8 4, 4 8, 0 20 C-4 8, -8 4, -20 0 C-8 -4, -4 -8, 0 -20Z"
                       fill="white"
-                      fillOpacity="0.95"
+                      fillOpacity="0.65"
                     />
                     {/* Smaller inner glow star */}
                     <path
                       d="M0 -10 C2 -4, 4 -2, 10 0 C4 2, 2 4, 0 10 C-2 4, -4 2, -10 0 C-4 -2, -2 -4, 0 -10Z"
                       fill="white"
-                      fillOpacity="0.4"
+                      fillOpacity="0.25"
                     />
                   </g>
                 </motion.svg>
