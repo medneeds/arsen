@@ -59,7 +59,7 @@ export function PreAdmissionSection() {
   const { currentDepartment } = useDepartment();
 
   const fetchPreAdmissions = async () => {
-    if (!selectedHospitalId || !selectedStateId) return;
+    if (!currentHospital?.id || !currentState?.id) return;
     setIsLoading(true);
     try {
       const { data, error } = await supabase
