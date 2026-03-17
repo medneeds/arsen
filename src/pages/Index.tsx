@@ -1182,7 +1182,6 @@ const Index = () => {
                     colorVariant={SECTOR_VISUAL[activeSector]?.colorVariant as any || "red"}
                     allPatients={patients}
                     currentUtiUnit={SECTOR_VISUAL[activeSector]?.title || "UTI 1"}
-                    defaultOpen={true}
                   />
                 </div>
               ) : (
