@@ -163,6 +163,29 @@ export default function AuthPage() {
                 </div>
               </div>
 
+              <div>
+                <Label htmlFor="sector" className="text-[11px] font-medium text-gray-400 uppercase mb-1.5 block tracking-wider">Setor</Label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 z-10 pointer-events-none" />
+                  <Select
+                    value={selectedDepartment}
+                    onValueChange={(val) => setSelectedDepartment(val as Department)}
+                    disabled={loading}
+                  >
+                    <SelectTrigger className="pl-10 h-11 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm uppercase font-medium text-gray-900 focus:border-[#2dd4bf]/50 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all">
+                      <SelectValue placeholder="SELECIONE O SETOR" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEPARTMENTS.map((dept) => (
+                        <SelectItem key={dept} value={dept} className="uppercase text-xs font-medium">
+                          {dept}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <Button
                 type="submit"
                 disabled={loading}
