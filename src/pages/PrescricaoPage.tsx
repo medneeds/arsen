@@ -828,6 +828,10 @@ const PrescricaoPage = () => {
   const [suspendTarget, setSuspendTarget] = useState<{ id?: string; isBatch?: boolean; name?: string }>({});
   const [renewDialogOpen, setRenewDialogOpen] = useState(false);
 
+  // Phase 4 state — Digital Signature
+  const [signDialogOpen, setSignDialogOpen] = useState(false);
+  const [digitalSignature, setDigitalSignature] = useState<DigitalSignature | null>(null);
+
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 
   // dnd-kit sensors
