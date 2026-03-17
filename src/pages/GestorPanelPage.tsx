@@ -34,7 +34,7 @@ interface CriticalAlert {
 }
 
 export default function GestorPanelPage() {
-  const { selectedUnit } = useHospital();
+  const { currentHospital: selectedUnit } = useHospital();
   const [bedStats, setBedStats] = useState<BedStats>({ total: 0, occupied: 0, vacant: 0, doorPatients: 0, bySector: {} });
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlert[]>([]);
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
