@@ -582,6 +582,9 @@ function RenewalDialog({
     </Dialog>
   );
 }
+
+// --- Print-only Item Row ---
+function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }) {
   return (
     <tr style={{ pageBreakInside: 'avoid' }}>
       <td className="border border-black/25 px-1 py-[2px] align-top" style={{ width: '75%' }}>
