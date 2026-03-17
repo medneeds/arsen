@@ -168,7 +168,9 @@ const DashboardPage = () => {
         fetchSectorDistribution(),
         fetchMovementsByType(),
         fetchBedOccupancy(),
-        fetchRequestsByDestination()
+        fetchRequestsByDestination(),
+        fetchPriorityAlerts(),
+        fetchRecentActivities()
       ]);
     } finally {
       setIsLoading(false);
