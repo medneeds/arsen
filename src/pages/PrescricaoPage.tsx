@@ -8,7 +8,7 @@ import {
   Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe,
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal,
-  Play, CopyPlus,
+  Play, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
