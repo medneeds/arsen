@@ -169,63 +169,128 @@ export default function AuthPage() {
 
             {/* Content */}
             <div className="relative z-10 text-center px-6 max-w-xl mx-auto flex flex-col items-center">
-              {/* Logo with pulse ring */}
+              {/* Prominent Cross Icon - SVG animated */}
               <motion.div
-                className="relative mb-8"
-                initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 1, ease: "easeOut" }}
+                className="relative mb-6"
+                initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
               >
-                {/* Pulse rings */}
+                {/* Outer pulse rings */}
                 <motion.div
-                  className="absolute inset-0 -m-8 rounded-full border border-[#2dd4bf]/10"
-                  animate={{ scale: [1, 1.5], opacity: [0.3, 0] }}
-                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeOut" }}
+                  className="absolute inset-0 -m-12 rounded-full border-2 border-[#2dd4bf]/15"
+                  animate={{ scale: [1, 1.8], opacity: [0.4, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeOut" }}
                 />
                 <motion.div
-                  className="absolute inset-0 -m-8 rounded-full border border-[#2dd4bf]/10"
-                  animate={{ scale: [1, 1.5], opacity: [0.3, 0] }}
-                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeOut", delay: 1.25 }}
+                  className="absolute inset-0 -m-12 rounded-full border border-[#2dd4bf]/10"
+                  animate={{ scale: [1, 2.2], opacity: [0.3, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeOut", delay: 1 }}
                 />
-                <div className="absolute inset-0 -m-10 rounded-full blur-[60px] bg-[#2dd4bf]/[0.12]" />
-                <img
-                  src={bighelpLogo}
-                  alt="BigHelp Map"
-                  className="h-24 sm:h-32 object-contain relative z-10 drop-shadow-[0_0_30px_rgba(45,212,191,0.4)]"
+                <motion.div
+                  className="absolute inset-0 -m-12 rounded-full border border-white/5"
+                  animate={{ scale: [1, 1.6], opacity: [0.2, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeOut", delay: 2 }}
                 />
+
+                {/* Large glow behind */}
+                <div className="absolute inset-0 -m-16 rounded-full blur-[80px] bg-[#2dd4bf]/[0.15]" />
+                <motion.div
+                  className="absolute inset-0 -m-10 rounded-full blur-[40px] bg-[#2dd4bf]/[0.1]"
+                  animate={{ opacity: [0.3, 0.6, 0.3] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                />
+
+                {/* SVG Cross Icon */}
+                <motion.svg
+                  width="120"
+                  height="140"
+                  viewBox="0 0 120 140"
+                  fill="none"
+                  className="relative z-10 drop-shadow-[0_0_40px_rgba(45,212,191,0.5)]"
+                  animate={{ y: [-3, 3, -3] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  {/* Cross shape - map pin style */}
+                  <defs>
+                    <linearGradient id="crossGrad" x1="20" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#34d9c3" />
+                      <stop offset="50%" stopColor="#2bb5a6" />
+                      <stop offset="100%" stopColor="#0e7490" />
+                    </linearGradient>
+                    <linearGradient id="crossHighlight" x1="30" y1="0" x2="90" y2="80" gradientUnits="userSpaceOnUse">
+                      <stop offset="0%" stopColor="#5eead4" stopOpacity="0.6" />
+                      <stop offset="100%" stopColor="#2dd4bf" stopOpacity="0" />
+                    </linearGradient>
+                    <filter id="glow">
+                      <feGaussianBlur stdDeviation="3" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  {/* Main cross body */}
+                  <path
+                    d="M45 8C45 4 49 0 53 0H67C71 0 75 4 75 8V35H102C106 35 110 39 110 43V57C110 61 106 65 102 65H75V92C75 96 71 100 67 100H60L60 100L53 100C49 100 45 96 45 92V65H18C14 65 10 61 10 57V43C10 39 14 35 18 35H45V8Z"
+                    fill="url(#crossGrad)"
+                    filter="url(#glow)"
+                  />
+                  {/* Highlight overlay */}
+                  <path
+                    d="M45 8C45 4 49 0 53 0H67C71 0 75 4 75 8V35H102C106 35 110 39 110 43V57C110 61 106 65 102 65H75V92C75 96 71 100 67 100H53C49 100 45 96 45 92V65H18C14 65 10 61 10 57V43C10 39 14 35 18 35H45V8Z"
+                    fill="url(#crossHighlight)"
+                  />
+                  {/* Pin bottom point */}
+                  <path
+                    d="M50 98L60 130L70 98"
+                    fill="url(#crossGrad)"
+                    filter="url(#glow)"
+                  />
+                  {/* White plus sign in center */}
+                  <rect x="55" y="30" width="10" height="40" rx="3" fill="white" fillOpacity="0.95" />
+                  <rect x="40" y="45" width="40" height="10" rx="3" fill="white" fillOpacity="0.95" />
+                </motion.svg>
+              </motion.div>
+
+              {/* Brand name: BigHelp Map */}
+              <motion.div
+                className="mb-2"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.6 }}
+              >
+                <h1 className="text-4xl sm:text-5xl md:text-6xl text-white tracking-tight">
+                  <span className="font-extrabold">BigHelp</span>
+                  <span className="font-extralight text-white/70 ml-1">Map</span>
+                </h1>
               </motion.div>
 
               {/* Divider */}
               <motion.div
-                className="flex items-center justify-center gap-3 mb-6"
+                className="flex items-center justify-center gap-3 my-5"
                 initial={{ opacity: 0, scaleX: 0 }}
                 animate={{ opacity: 1, scaleX: 1 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
+                transition={{ duration: 0.6, delay: 0.8 }}
               >
-                <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#2dd4bf]/30" />
-                <div className="h-1.5 w-1.5 rounded-full bg-[#2dd4bf]/40" />
-                <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#2dd4bf]/30" />
+                <div className="h-px w-20 bg-gradient-to-r from-transparent to-[#2dd4bf]/40" />
+                <motion.div
+                  className="h-2 w-2 rounded-full bg-[#2dd4bf]/60"
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+                <div className="h-px w-20 bg-gradient-to-l from-transparent to-[#2dd4bf]/40" />
               </motion.div>
 
               {/* Impact phrase */}
-              <motion.h1
-                className="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight mb-3"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.7 }}
-              >
-                Inteligência Clínica
-                <br />
-                <span className="text-[#2dd4bf]">em Tempo Real</span>
-              </motion.h1>
-
               <motion.p
-                className="text-slate-400 text-sm sm:text-base font-light tracking-wide max-w-md mb-10 leading-relaxed"
+                className="text-lg sm:text-xl md:text-2xl text-slate-300 font-light tracking-wide leading-relaxed mb-10 max-w-md"
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.9 }}
+                transition={{ duration: 0.8, delay: 1 }}
               >
-                Gestão hospitalar inteligente com visibilidade total, decisões baseadas em dados e cuidado centrado no paciente.
+                Inteligência Clínica{" "}
+                <span className="text-[#2dd4bf] font-medium">em Tempo Real</span>
               </motion.p>
 
               {/* CTA Button */}
@@ -234,13 +299,11 @@ export default function AuthPage() {
                 className="group relative inline-flex items-center gap-3 px-10 py-4 rounded-full text-white font-semibold text-sm uppercase tracking-[0.2em] transition-all duration-500 overflow-hidden border border-[#2dd4bf]/30 hover:border-[#2dd4bf]/60"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 1.2 }}
+                transition={{ duration: 0.6, delay: 1.3 }}
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.97 }}
               >
-                {/* Gradient bg */}
                 <div className="absolute inset-0 bg-gradient-to-r from-[#2dd4bf]/20 via-[#2dd4bf]/10 to-transparent group-hover:from-[#2dd4bf]/30 group-hover:via-[#2dd4bf]/15 transition-all duration-500" />
-                {/* Shimmer effect */}
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent -skew-x-12"
                   animate={{ x: ["-150%", "150%"] }}
@@ -252,19 +315,19 @@ export default function AuthPage() {
 
               {/* By Medora badge */}
               <motion.div
-                className="mt-12 flex flex-col items-center gap-1"
+                className="mt-14 flex flex-col items-center gap-0.5"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 1, delay: 1.6 }}
+                transition={{ duration: 1, delay: 1.8 }}
               >
-                <div className="h-px w-10 bg-gradient-to-r from-transparent via-slate-600/40 to-transparent mb-2" />
-                <p className="text-[10px] text-slate-500 uppercase tracking-[0.35em] font-medium">
+                <div className="h-px w-12 bg-gradient-to-r from-transparent via-slate-500/30 to-transparent mb-3" />
+                <p className="text-[9px] text-slate-600 uppercase tracking-[0.4em]">
                   by
                 </p>
-                <p className="text-xs sm:text-sm text-slate-300 font-semibold tracking-[0.2em] uppercase">
+                <p className="text-sm sm:text-base text-slate-300 font-bold tracking-[0.25em] uppercase mt-0.5">
                   Medora
                 </p>
-                <p className="text-[9px] text-[#2dd4bf]/50 uppercase tracking-[0.3em] font-light">
+                <p className="text-[8px] text-[#2dd4bf]/40 uppercase tracking-[0.35em] font-light mt-1">
                   Clinical Intelligent Platform
                 </p>
               </motion.div>
