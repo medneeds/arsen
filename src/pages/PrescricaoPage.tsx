@@ -1069,7 +1069,7 @@ const PrescricaoPage = () => {
       if (data) {
         setPatient(data.patient_data as unknown as PatientHeader);
         setItems(data.items as unknown as PrescriptionItem[]);
-        setDigitalSignature(data.digital_signature as DigitalSignature | null);
+        setDigitalSignature(data.digital_signature as unknown as DigitalSignature | null);
         setCurrentPrescriptionId(data.id);
         setSelectedIds(new Set());
         toast.success("Prescrição carregada", { description: `v${data.version} — ${data.patient_name}` });
