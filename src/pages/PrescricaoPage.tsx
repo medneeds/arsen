@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from "react";
+import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { format, addDays } from "date-fns";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
 import socorraoLogo from "@/assets/socorrao1-logo.png";
@@ -36,6 +36,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useHospital } from "@/contexts/HospitalContext";
 import {
   DndContext,
   closestCenter,
@@ -813,6 +816,9 @@ function SignPrescriptionDialog({
 
 // ===================== MAIN COMPONENT =====================
 const PrescricaoPage = () => {
+  const { user } = useAuth();
+  const { currentHospital, currentState } = useHospital();
+
   const [patient, setPatient] = useState<PatientHeader>({
     name: "", birthDate: "", age: "", sex: "", bed: "",
     unit: "", record: "", admissionDate: "", weight: "", allergies: "",
@@ -831,6 +837,12 @@ const PrescricaoPage = () => {
   // Phase 4 state — Digital Signature
   const [signDialogOpen, setSignDialogOpen] = useState(false);
   const [digitalSignature, setDigitalSignature] = useState<DigitalSignature | null>(null);
+
+  // Phase 5 state — Persistence
+  const [currentPrescriptionId, setCurrentPrescriptionId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [savedPrescriptions, setSavedPrescriptions] = useState<Array<{ id: string; patient_name: string; status: string; version: number; created_at: string; digital_signature: DigitalSignature | null }>>([]);
+  const [loadingList, setLoadingList] = useState(false);
 
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 
@@ -1019,9 +1031,107 @@ const PrescricaoPage = () => {
   const activeItemsCount = items.filter(i => i.status === 'active').length;
   const suspendedItemsCount = items.filter(i => i.status === 'suspended').length;
 
-  const handleSave = () => {
+  // Fetch saved prescriptions
+  const fetchPrescriptions = useCallback(async () => {
+    if (!currentHospital || !currentState) return;
+    setLoadingList(true);
+    try {
+      const { data, error } = await supabase
+        .from('prescriptions')
+        .select('id, patient_name, status, version, created_at, digital_signature')
+        .eq('hospital_unit_id', currentHospital.id)
+        .eq('state_id', currentState.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      setSavedPrescriptions((data || []).map(d => ({
+        ...d,
+        digital_signature: d.digital_signature as unknown as DigitalSignature | null,
+      })));
+    } catch (err) {
+      console.error('Error fetching prescriptions:', err);
+    } finally {
+      setLoadingList(false);
+    }
+  }, [currentHospital, currentState]);
+
+  useEffect(() => { fetchPrescriptions(); }, [fetchPrescriptions]);
+
+  // Load a saved prescription
+  const loadPrescription = useCallback(async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('prescriptions')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (error) throw error;
+      if (data) {
+        setPatient(data.patient_data as unknown as PatientHeader);
+        setItems(data.items as unknown as PrescriptionItem[]);
+        setDigitalSignature(data.digital_signature as unknown as DigitalSignature | null);
+        setCurrentPrescriptionId(data.id);
+        setSelectedIds(new Set());
+        toast.success("Prescrição carregada", { description: `v${data.version} — ${data.patient_name}` });
+      }
+    } catch (err: any) {
+      toast.error("Erro ao carregar prescrição", { description: err.message });
+    }
+  }, []);
+
+  // Save prescription to database
+  const handleSave = async () => {
     if (!patient.name.trim()) { toast.error("Preencha o nome do paciente"); return; }
-    toast.success("Prescrição salva com sucesso", { description: `${totalItems} itens registrados.` });
+    if (!currentHospital || !currentState) { toast.error("Hospital/Estado não selecionado"); return; }
+    setSaving(true);
+    try {
+      const payload = {
+        patient_name: patient.name.trim(),
+        patient_data: patient as any,
+        items: items as any,
+        digital_signature: digitalSignature as any,
+        status: digitalSignature ? 'signed' : 'draft',
+        department: 'URGÊNCIA E EMERGÊNCIA ADULTO',
+        hospital_unit_id: currentHospital.id,
+        state_id: currentState.id,
+        created_by: user?.id || null,
+      };
+
+      if (currentPrescriptionId) {
+        // Update existing
+        const { error } = await supabase
+          .from('prescriptions')
+          .update(payload)
+          .eq('id', currentPrescriptionId);
+        if (error) throw error;
+        toast.success("Prescrição atualizada", { description: `${totalItems} itens registrados.` });
+      } else {
+        // Insert new
+        const { data, error } = await supabase
+          .from('prescriptions')
+          .insert(payload)
+          .select('id')
+          .single();
+        if (error) throw error;
+        if (data) setCurrentPrescriptionId(data.id);
+        toast.success("Prescrição salva", { description: `${totalItems} itens registrados.` });
+      }
+      fetchPrescriptions();
+    } catch (err: any) {
+      toast.error("Erro ao salvar prescrição", { description: err.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // New prescription
+  const handleNewPrescription = () => {
+    setPatient({ name: "", birthDate: "", age: "", sex: "", bed: "", unit: "", record: "", admissionDate: "", weight: "", allergies: "" });
+    setItems([]);
+    setDigitalSignature(null);
+    setCurrentPrescriptionId(null);
+    setSelectedIds(new Set());
+    toast.info("Nova prescrição iniciada");
   };
 
   const handlePrint = () => window.print();
@@ -1116,21 +1226,61 @@ const PrescricaoPage = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Prescrição Médica</h1>
-            <p className="text-xs text-muted-foreground">Prescrição médica diária digital — {totalItems} itens</p>
+            <p className="text-xs text-muted-foreground">
+              Prescrição médica diária digital — {totalItems} itens
+              {currentPrescriptionId && <span className="ml-1 text-primary">(salva)</span>}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleNewPrescription} className="gap-1.5 text-xs">
+            <Plus className="h-3.5 w-3.5" /> Nova
+          </Button>
           <Button variant="outline" size="sm" onClick={handleRenew} className="gap-1.5">
             <RefreshCw className="h-3.5 w-3.5" /> Renovar
           </Button>
           <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5">
             <Printer className="h-3.5 w-3.5" /> Imprimir
           </Button>
-          <Button size="sm" onClick={handleSave} className="gap-1.5">
-            <Save className="h-3.5 w-3.5" /> Salvar
+          <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
+            {saving ? <span className="animate-spin h-3.5 w-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> : <Save className="h-3.5 w-3.5" />}
+            {saving ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>
       </div>
+
+      {/* ===== SAVED PRESCRIPTIONS ===== */}
+      {savedPrescriptions.length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-3 print:hidden">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Prescrições Salvas</h2>
+            <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-6 text-[10px] gap-1">
+              <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
+            </Button>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {savedPrescriptions.map(p => (
+              <button
+                key={p.id}
+                onClick={() => loadPrescription(p.id)}
+                className={cn(
+                  "shrink-0 text-left p-2 rounded-lg border text-xs transition-colors hover:bg-accent/50",
+                  currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border"
+                )}
+              >
+                <p className="font-medium truncate max-w-[160px]">{p.patient_name}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
+                    {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
+                  </Badge>
+                  <span className="text-[9px] text-muted-foreground">v{p.version}</span>
+                  <span className="text-[9px] text-muted-foreground">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ===== PATIENT HEADER ===== */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-3 print:hidden">
@@ -1411,8 +1561,9 @@ const PrescricaoPage = () => {
           >
             {digitalSignature ? <><ShieldCheck className="h-3 w-3" /> Reassinar</> : <><Fingerprint className="h-3 w-3" /> Assinar</>}
           </Button>
-          <Button size="sm" onClick={handleSave} className="gap-1.5 text-xs">
-            <Save className="h-3 w-3" /> Salvar
+          <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5 text-xs">
+            {saving ? <span className="animate-spin h-3 w-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> : <Save className="h-3 w-3" />}
+            {saving ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>
       </div>
