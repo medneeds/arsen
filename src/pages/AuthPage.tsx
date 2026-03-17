@@ -247,9 +247,25 @@ export default function AuthPage() {
                     fill="url(#crossGrad)"
                     filter="url(#glow)"
                   />
-                  {/* White plus sign in center */}
-                  <rect x="55" y="30" width="10" height="40" rx="3" fill="white" fillOpacity="0.95" />
-                  <rect x="40" y="45" width="40" height="10" rx="3" fill="white" fillOpacity="0.95" />
+                  {/* AI icon in center - sparkle/brain circuit */}
+                  <g transform="translate(38, 28)">
+                    {/* Central brain shape */}
+                    <path d="M22 4C18.5 4 15.5 5.5 13.5 8C12 10 11 12.5 11 15.5C8.5 16 6.5 18.2 6.5 21C6.5 22.8 7.3 24.4 8.6 25.5C7.5 27 7 28.8 7 31C7 35.5 10 39 14 39.5V42H19V39H22" fill="white" fillOpacity="0.9" />
+                    <path d="M22 4C25.5 4 28.5 5.5 30.5 8C32 10 33 12.5 33 15.5C35.5 16 37.5 18.2 37.5 21C37.5 22.8 36.7 24.4 35.4 25.5C36.5 27 37 28.8 37 31C37 35.5 34 39 30 39.5V42H25V39H22" fill="white" fillOpacity="0.85" />
+                    {/* Neural nodes */}
+                    <circle cx="16" cy="15" r="2.5" fill="#0e7490" />
+                    <circle cx="28" cy="15" r="2.5" fill="#0e7490" />
+                    <circle cx="13" cy="26" r="2.5" fill="#0e7490" />
+                    <circle cx="31" cy="26" r="2.5" fill="#0e7490" />
+                    <circle cx="22" cy="20" r="3.5" fill="#0e7490" />
+                    {/* Neural connections */}
+                    <line x1="16" y1="15" x2="22" y2="20" stroke="#0e7490" strokeWidth="1.5" />
+                    <line x1="28" y1="15" x2="22" y2="20" stroke="#0e7490" strokeWidth="1.5" />
+                    <line x1="13" y1="26" x2="22" y2="20" stroke="#0e7490" strokeWidth="1.5" />
+                    <line x1="31" y1="26" x2="22" y2="20" stroke="#0e7490" strokeWidth="1.5" />
+                    {/* AI sparkle at top */}
+                    <path d="M22 6L23.5 10L27.5 11.5L23.5 13L22 17L20.5 13L16.5 11.5L20.5 10Z" fill="#0e7490" fillOpacity="0.5" />
+                  </g>
                 </motion.svg>
               </motion.div>
 
