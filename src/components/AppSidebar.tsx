@@ -298,7 +298,7 @@ export function AppSidebar({
             {/* Collapsible section (with subitems) */}
             {section.items && (
             <Collapsible
-              defaultOpen={true}
+              defaultOpen={false}
               className="group/collapsible"
             >
               <SidebarGroup className="py-0 my-0">
