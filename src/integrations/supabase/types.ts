@@ -14,6 +14,76 @@ export type Database = {
   }
   public: {
     Tables: {
+      admission_histories: {
+        Row: {
+          chief_complaint: string | null
+          clinical_history: string | null
+          created_at: string
+          created_by: string | null
+          department: string
+          diagnostic_hypothesis: string | null
+          hospital_unit_id: string
+          id: string
+          initial_conduct: string | null
+          patient_id: string
+          state_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          chief_complaint?: string | null
+          clinical_history?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          diagnostic_hypothesis?: string | null
+          hospital_unit_id: string
+          id?: string
+          initial_conduct?: string | null
+          patient_id: string
+          state_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          chief_complaint?: string | null
+          clinical_history?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          diagnostic_hypothesis?: string | null
+          hospital_unit_id?: string
+          id?: string
+          initial_conduct?: string | null
+          patient_id?: string
+          state_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admission_histories_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admission_histories_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admission_histories_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: Database["public"]["Enums"]["audit_action"]
