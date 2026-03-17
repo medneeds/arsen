@@ -5,18 +5,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { LogIn, User, Lock, Eye, EyeOff } from "lucide-react";
+import { LogIn, User, Lock, Eye, EyeOff, Building2 } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { cn } from "@/lib/utils";
 import { whitelabel } from "@/config/whitelabel";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
+import { useDepartment, DEPARTMENTS, Department } from "@/contexts/DepartmentContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AuthPage() {
   const { user, signIn } = useAuth();
+  const { setCurrentDepartment } = useDepartment();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState<Department>("UTI");
   
   const [loginData, setLoginData] = useState({
     username: "",
@@ -54,6 +64,7 @@ export default function AuthPage() {
         }
         setLoading(false);
       } else {
+        setCurrentDepartment(selectedDepartment);
         toast.success("LOGIN REALIZADO COM SUCESSO");
         setShowLoadingScreen(true);
       }
@@ -149,6 +160,29 @@ export default function AuthPage() {
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="sector" className="text-[11px] font-medium text-gray-400 uppercase mb-1.5 block tracking-wider">Setor</Label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 z-10 pointer-events-none" />
+                  <Select
+                    value={selectedDepartment}
+                    onValueChange={(val) => setSelectedDepartment(val as Department)}
+                    disabled={loading}
+                  >
+                    <SelectTrigger className="pl-10 h-11 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm uppercase font-medium text-gray-900 focus:border-[#2dd4bf]/50 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all">
+                      <SelectValue placeholder="SELECIONE O SETOR" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEPARTMENTS.map((dept) => (
+                        <SelectItem key={dept} value={dept} className="uppercase text-xs font-medium">
+                          {dept}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
