@@ -135,6 +135,7 @@ export function AppSidebar({
       items: [
         { name: "PRESCRIÇÃO", link: "/prescricao" },
         { name: "EVOLUÇÃO", link: "/evolucao" },
+        { name: "CATÁLOGO DE MEDICAMENTOS", link: "/catalogo-medicamentos" },
         { name: "EXAMINUS AI", link: "/ia" },
       ],
     },

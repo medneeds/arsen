@@ -48,6 +48,7 @@ import RequisicaoImagensPage from "./pages/RequisicaoImagensPage";
 import RequisicaoParecerPage from "./pages/RequisicaoParecerPage";
 import PrescricaoPage from "./pages/PrescricaoPage";
 import EvolucaoPage from "./pages/EvolucaoPage";
+import MedicationCatalogPage from "./pages/MedicationCatalogPage";
 
 const queryClient = new QueryClient();
 
@@ -425,6 +426,16 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
                 <EvolucaoPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/catalogo-medicamentos"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <MedicationCatalogPage />
               </MainLayout>
             </ProtectedRoute>
           }

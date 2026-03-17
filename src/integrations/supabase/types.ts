@@ -618,6 +618,127 @@ export type Database = {
         }
         Relationships: []
       }
+      medication_aliases: {
+        Row: {
+          alias_name: string
+          alias_type: string
+          created_at: string
+          id: string
+          medication_id: string
+        }
+        Insert: {
+          alias_name: string
+          alias_type?: string
+          created_at?: string
+          id?: string
+          medication_id: string
+        }
+        Update: {
+          alias_name?: string
+          alias_type?: string
+          created_at?: string
+          id?: string
+          medication_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medication_aliases_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medication_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medication_catalog: {
+        Row: {
+          atc_code: string | null
+          controlled: boolean
+          created_at: string
+          generic_name: string
+          high_alert: boolean
+          id: string
+          notes: string | null
+          pharmacological_group: string | null
+          requires_dilution: boolean
+          therapeutic_class: string
+          updated_at: string
+        }
+        Insert: {
+          atc_code?: string | null
+          controlled?: boolean
+          created_at?: string
+          generic_name: string
+          high_alert?: boolean
+          id?: string
+          notes?: string | null
+          pharmacological_group?: string | null
+          requires_dilution?: boolean
+          therapeutic_class: string
+          updated_at?: string
+        }
+        Update: {
+          atc_code?: string | null
+          controlled?: boolean
+          created_at?: string
+          generic_name?: string
+          high_alert?: boolean
+          id?: string
+          notes?: string | null
+          pharmacological_group?: string | null
+          requires_dilution?: boolean
+          therapeutic_class?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      medication_presentations: {
+        Row: {
+          concentration: string
+          created_at: string
+          form: string
+          id: string
+          infusion_time: string | null
+          max_daily_dose: string | null
+          medication_id: string
+          route: string
+          standard_dilution: string | null
+          unit: string
+        }
+        Insert: {
+          concentration: string
+          created_at?: string
+          form: string
+          id?: string
+          infusion_time?: string | null
+          max_daily_dose?: string | null
+          medication_id: string
+          route?: string
+          standard_dilution?: string | null
+          unit?: string
+        }
+        Update: {
+          concentration?: string
+          created_at?: string
+          form?: string
+          id?: string
+          infusion_time?: string | null
+          max_daily_dose?: string | null
+          medication_id?: string
+          route?: string
+          standard_dilution?: string | null
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medication_presentations_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medication_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes_reminders: {
         Row: {
           completed: boolean | null
