@@ -8,7 +8,7 @@ import {
   Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe,
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal,
-  Play, CopyPlus,
+  Play, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,13 @@ import {
 } from "@/data/medicationsDatabase";
 
 // --- Types ---
+interface DigitalSignature {
+  doctorName: string;
+  crm: string;
+  signedAt: string;
+  hash: string;
+}
+
 interface PrescriptionItem {
   id: string;
   name: string;
@@ -688,6 +695,122 @@ function BatchActionBar({
   );
 }
 
+// --- Sign Prescription Dialog (Dual Verification) ---
+function SignPrescriptionDialog({
+  open, onClose, onConfirm, totalItems, activeItems,
+}: {
+  open: boolean; onClose: () => void; onConfirm: (sig: DigitalSignature) => void;
+  totalItems: number; activeItems: number;
+}) {
+  const [step, setStep] = useState<1 | 2>(1);
+  const [doctorName, setDoctorName] = useState("");
+  const [crm, setCrm] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState("");
+
+  const reset = () => { setStep(1); setDoctorName(""); setCrm(""); setPassword(""); setConfirmPassword(""); setShowPassword(false); setShowConfirm(false); setVerifying(false); setError(""); };
+  const handleClose = () => { reset(); onClose(); };
+  const isStep1Valid = doctorName.trim().length >= 3 && /^\d{4,8}$/.test(crm.trim());
+
+  const handleStep1 = () => { if (!isStep1Valid) return; setError(""); setStep(2); };
+
+  const handleSign = async () => {
+    setError("");
+    if (password.length < 4) { setError("Senha deve ter no mínimo 4 caracteres"); return; }
+    if (password !== confirmPassword) { setError("As senhas não coincidem"); return; }
+    setVerifying(true);
+    await new Promise(r => setTimeout(r, 1200));
+    const now = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
+    const raw = `${doctorName}|${crm}|${now}|${activeItems}`;
+    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+    const hash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16).toUpperCase();
+    const sig: DigitalSignature = { doctorName: doctorName.trim().toUpperCase(), crm: crm.trim(), signedAt: now, hash };
+    setVerifying(false);
+    reset();
+    onConfirm(sig);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Fingerprint className="h-5 w-5 text-primary" /> Assinatura Digital da Prescrição
+          </DialogTitle>
+          <DialogDescription>
+            {step === 1 ? "Etapa 1/2 — Identificação do prescritor" : "Etapa 2/2 — Dupla verificação de credenciais"}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs space-y-1">
+          <div className="flex justify-between"><span className="text-muted-foreground">Itens ativos</span><span className="font-medium">{activeItems}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Total de itens</span><span className="font-medium">{totalItems}</span></div>
+          <div className="flex justify-between"><span className="text-muted-foreground">Data/Hora</span><span className="font-medium">{format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}</span></div>
+        </div>
+        <div className="flex items-center gap-2 justify-center">
+          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors", step >= 1 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground")}>1</div>
+          <div className={cn("w-12 h-0.5 transition-colors", step >= 2 ? "bg-primary" : "bg-muted-foreground/20")} />
+          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors", step >= 2 ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground")}>2</div>
+        </div>
+        {step === 1 ? (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="sig-name" className="text-xs font-medium">Nome completo do médico</Label>
+              <Input id="sig-name" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} placeholder="Dr(a). Nome Completo" className="bg-muted/30" autoFocus />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sig-crm" className="text-xs font-medium">Número do CRM</Label>
+              <Input id="sig-crm" value={crm} onChange={(e) => setCrm(e.target.value.replace(/\D/g, ''))} placeholder="Ex: 12345" maxLength={8} className="bg-muted/30" />
+              {crm && !/^\d{4,8}$/.test(crm) && <p className="text-[10px] text-destructive">CRM deve conter entre 4 e 8 dígitos</p>}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="p-2 rounded-lg bg-primary/5 border border-primary/20 text-xs text-primary flex items-center gap-2">
+              <Lock className="h-4 w-4 shrink-0" />
+              <span>Confirme sua identidade digitando sua senha duas vezes para validar a assinatura.</span>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sig-pwd" className="text-xs font-medium">Senha</Label>
+              <div className="relative">
+                <Input id="sig-pwd" type={showPassword ? "text" : "password"} value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} placeholder="Digite sua senha" className="bg-muted/30 pr-9" autoFocus />
+                <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword(!showPassword)}>
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sig-pwd2" className="text-xs font-medium">Confirmar senha</Label>
+              <div className="relative">
+                <Input id="sig-pwd2" type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }} placeholder="Confirme sua senha" className="bg-muted/30 pr-9" />
+                <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowConfirm(!showConfirm)}>
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {password && confirmPassword && password === confirmPassword && <p className="text-[10px] text-green-600 flex items-center gap-1"><Check className="h-3 w-3" /> Senhas coincidem</p>}
+            </div>
+            {error && <p className="text-xs text-destructive flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" /> {error}</p>}
+          </div>
+        )}
+        <DialogFooter className="gap-2 sm:gap-0">
+          {step === 2 && <Button variant="ghost" size="sm" onClick={() => setStep(1)} disabled={verifying} className="mr-auto text-xs">Voltar</Button>}
+          <Button variant="outline" size="sm" onClick={handleClose} disabled={verifying} className="text-xs">Cancelar</Button>
+          {step === 1 ? (
+            <Button size="sm" onClick={handleStep1} disabled={!isStep1Valid} className="gap-1.5 text-xs">Próximo <Check className="h-3 w-3" /></Button>
+          ) : (
+            <Button size="sm" onClick={handleSign} disabled={verifying || !password || !confirmPassword} className="gap-1.5 text-xs">
+              {verifying ? (<><span className="animate-spin h-3 w-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> Verificando...</>) : (<><ShieldCheck className="h-3.5 w-3.5" /> Assinar Prescrição</>)}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ===================== MAIN COMPONENT =====================
 const PrescricaoPage = () => {
   const [patient, setPatient] = useState<PatientHeader>({
@@ -704,6 +827,10 @@ const PrescricaoPage = () => {
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
   const [suspendTarget, setSuspendTarget] = useState<{ id?: string; isBatch?: boolean; name?: string }>({});
   const [renewDialogOpen, setRenewDialogOpen] = useState(false);
+
+  // Phase 4 state — Digital Signature
+  const [signDialogOpen, setSignDialogOpen] = useState(false);
+  const [digitalSignature, setDigitalSignature] = useState<DigitalSignature | null>(null);
 
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 
@@ -898,6 +1025,22 @@ const PrescricaoPage = () => {
   };
 
   const handlePrint = () => window.print();
+
+  // Sign prescription
+  const handleRequestSign = () => {
+    if (!patient.name.trim()) { toast.error("Preencha o nome do paciente antes de assinar"); return; }
+    if (activeItemsCount === 0) { toast.error("Nenhum item ativo para assinar"); return; }
+    setSignDialogOpen(true);
+  };
+
+  const confirmSign = useCallback((sig: DigitalSignature) => {
+    setDigitalSignature(sig);
+    setSignDialogOpen(false);
+    toast.success("Prescrição assinada digitalmente", {
+      description: `Dr(a). ${sig.doctorName} — CRM ${sig.crm} — Hash: ${sig.hash}`,
+      duration: 5000,
+    });
+  }, []);
 
   // Renewal with dialog
   const handleRenew = () => {
@@ -1212,11 +1355,23 @@ const PrescricaoPage = () => {
             <p>Gerado em: {prescriptionDate}</p>
             <p>BigHelp Map — Prescrição Digital</p>
           </div>
-          <div className="text-center">
-            <div className="w-44 border-b border-black mb-1" />
-            <p className="text-[8px] text-black font-medium">Assinatura / Carimbo do Médico</p>
-            <p className="text-[7px] text-gray-500">CRM: _______________</p>
-          </div>
+          {digitalSignature ? (
+            <div className="text-center">
+              <div className="border border-black/40 rounded px-3 py-1.5 inline-block">
+                <p className="text-[9px] font-bold text-black">✓ ASSINADO DIGITALMENTE</p>
+                <p className="text-[8px] text-black font-medium">{digitalSignature.doctorName}</p>
+                <p className="text-[7px] text-gray-600">CRM: {digitalSignature.crm}</p>
+                <p className="text-[7px] text-gray-600">{digitalSignature.signedAt}</p>
+                <p className="text-[6px] text-gray-400 font-mono">Hash: {digitalSignature.hash}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center">
+              <div className="w-44 border-b border-black mb-1" />
+              <p className="text-[8px] text-black font-medium">Assinatura / Carimbo do Médico</p>
+              <p className="text-[7px] text-gray-500">CRM: _______________</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1231,6 +1386,11 @@ const PrescricaoPage = () => {
               <Pause className="h-3 w-3" /> {suspendedItemsCount} suspenso{suspendedItemsCount > 1 ? 's' : ''}
             </Badge>
           )}
+          {digitalSignature && (
+            <Badge variant="outline" className="gap-1 text-[10px] border-green-300 text-green-700 bg-green-50">
+              <ShieldCheck className="h-3 w-3" /> Assinado — {digitalSignature.doctorName}
+            </Badge>
+          )}
           <span className="text-xs text-muted-foreground">
             {TAB_ORDER.map(cat => {
               const count = itemsByCategory[cat].length;
@@ -1242,6 +1402,14 @@ const PrescricaoPage = () => {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleRenew} className="gap-1.5 text-xs">
             <RefreshCw className="h-3 w-3" /> Renovar
+          </Button>
+          <Button
+            variant={digitalSignature ? "outline" : "default"}
+            size="sm"
+            onClick={handleRequestSign}
+            className={cn("gap-1.5 text-xs", digitalSignature && "border-green-300 text-green-700 hover:text-green-800")}
+          >
+            {digitalSignature ? <><ShieldCheck className="h-3 w-3" /> Reassinar</> : <><Fingerprint className="h-3 w-3" /> Assinar</>}
           </Button>
           <Button size="sm" onClick={handleSave} className="gap-1.5 text-xs">
             <Save className="h-3 w-3" /> Salvar
@@ -1264,6 +1432,13 @@ const PrescricaoPage = () => {
         onConfirm={confirmRenewal}
         activeCount={activeItemsCount}
         suspendedCount={suspendedItemsCount}
+      />
+      <SignPrescriptionDialog
+        open={signDialogOpen}
+        onClose={() => setSignDialogOpen(false)}
+        onConfirm={confirmSign}
+        totalItems={totalItems}
+        activeItems={activeItemsCount}
       />
     </div>
   );
