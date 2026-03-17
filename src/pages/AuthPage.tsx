@@ -247,21 +247,20 @@ export default function AuthPage() {
                     fill="url(#crossGrad)"
                     filter="url(#glow)"
                   />
-                  {/* AI-styled cross in center */}
+                  {/* AI Cross - Gemini-inspired 4-point star/cross */}
                   <g transform="translate(60, 50)">
-                    {/* Main cross bars */}
-                    <rect x="-4" y="-18" width="8" height="36" rx="2" fill="white" fillOpacity="0.95" />
-                    <rect x="-18" y="-4" width="36" height="8" rx="2" fill="white" fillOpacity="0.95" />
-                    {/* Circuit nodes at cross endpoints */}
-                    <circle cx="0" cy="-18" r="3" fill="white" fillOpacity="0.9" />
-                    <circle cx="0" cy="18" r="3" fill="white" fillOpacity="0.9" />
-                    <circle cx="-18" cy="0" r="3" fill="white" fillOpacity="0.9" />
-                    <circle cx="18" cy="0" r="3" fill="white" fillOpacity="0.9" />
-                    {/* Inner circuit ring */}
-                    <circle cx="0" cy="0" r="8" fill="none" stroke="white" strokeWidth="1.5" strokeOpacity="0.5" strokeDasharray="3 2" />
-                    {/* AI sparkles at corners */}
-                    <path d="M12 -12L13.5 -9L16.5 -7.5L13.5 -6L12 -3L10.5 -6L7.5 -7.5L10.5 -9Z" fill="white" fillOpacity="0.6" />
-                    <path d="M-12 12L-10.5 14.5L-7.5 16L-10.5 17.5L-12 20L-13.5 17.5L-16.5 16L-13.5 14.5Z" fill="white" fillOpacity="0.4" />
+                    {/* Main AI star shape - 4 curved petals like Gemini */}
+                    <path
+                      d="M0 -20 C4 -8, 8 -4, 20 0 C8 4, 4 8, 0 20 C-4 8, -8 4, -20 0 C-8 -4, -4 -8, 0 -20Z"
+                      fill="white"
+                      fillOpacity="0.95"
+                    />
+                    {/* Smaller inner glow star */}
+                    <path
+                      d="M0 -10 C2 -4, 4 -2, 10 0 C4 2, 2 4, 0 10 C-2 4, -4 2, -10 0 C-4 -2, -2 -4, 0 -10Z"
+                      fill="white"
+                      fillOpacity="0.4"
+                    />
                   </g>
                 </motion.svg>
               </motion.div>
