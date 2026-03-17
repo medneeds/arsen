@@ -303,31 +303,47 @@ export default function AuthPage() {
               <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full blur-[120px] bg-white/[0.02]" />
             </div>
 
-            <div className="w-full max-w-sm relative z-10">
-              {/* Header */}
-              <div className="text-center mb-8">
-                <div className="relative inline-block mb-6">
-                  <div className="absolute inset-0 -m-12 rounded-full blur-[70px] bg-[#2dd4bf]/[0.1]" />
-                  <img 
-                    src={bighelpLogo} 
-                    alt="BigHelp Map" 
-                    className="h-20 sm:h-24 object-contain relative z-10 drop-shadow-[0_0_20px_rgba(45,212,191,0.3)]"
-                  />
-                </div>
-                <div className="h-px w-32 mx-auto bg-gradient-to-r from-transparent via-[#2dd4bf]/40 to-transparent mb-5" />
-                <p className="text-slate-300 text-base font-medium tracking-widest uppercase">
-                  Hospital Mun. Djalma Marques
-                </p>
-                <p className="text-slate-400 text-sm mt-1 font-light tracking-wide">Socorrão I</p>
+            <div className="w-full max-w-[400px] relative z-10">
+              {/* Header with logo */}
+              <div className="text-center mb-6">
+                <motion.div
+                  className="inline-block mb-4"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+                >
+                  <BigHelpLogo size="md" glow />
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                  <h1 className="text-2xl text-white tracking-tight mb-1">
+                    <span className="font-extrabold">BigHelp</span>
+                    <span className="font-extralight text-white/60 ml-0.5">Map</span>
+                  </h1>
+                  <div className="h-px w-24 mx-auto bg-gradient-to-r from-transparent via-[#2dd4bf]/40 to-transparent my-3" />
+                  <p className="text-slate-400 text-xs font-medium tracking-[0.2em] uppercase">
+                    Hospital Mun. Djalma Marques
+                  </p>
+                  <p className="text-slate-500 text-[10px] mt-0.5 font-light tracking-widest uppercase">Socorrão I</p>
+                </motion.div>
               </div>
 
-              {/* Login Card */}
-              <div className="bg-white/[0.97] backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/20 p-7 border border-white/20">
+              {/* Login Card - refined glass morphism */}
+              <motion.div
+                className="bg-white/[0.06] backdrop-blur-2xl rounded-2xl shadow-2xl shadow-black/30 p-7 border border-white/[0.08]"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+              >
                 <div className="mb-5 text-center">
-                  <div className="inline-flex items-center justify-center h-11 w-11 rounded-xl bg-gradient-to-br from-[#0f2847] to-[#1a3a5c] shadow-lg mb-3">
-                    <LogIn className="h-5 w-5 text-[#2dd4bf]" />
+                  <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-[#2dd4bf]/10 border border-[#2dd4bf]/20 mb-3">
+                    <LogIn className="h-4.5 w-4.5 text-[#2dd4bf]" />
                   </div>
-                  <h2 className="text-sm font-semibold text-gray-800 uppercase tracking-wider">Acesse sua conta</h2>
+                  <h2 className="text-xs font-semibold text-white/80 uppercase tracking-[0.2em]">Acesse sua conta</h2>
+                </div>
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-4">
