@@ -816,6 +816,158 @@ function SignPrescriptionDialog({
   );
 }
 
+// --- Drug Interaction Check Dialog ---
+function DrugInteractionDialog({
+  open,
+  onClose,
+  items,
+  patientContext,
+}: {
+  open: boolean;
+  onClose: () => void;
+  items: PrescriptionItem[];
+  patientContext?: { age?: string; sex?: string; weight?: string; allergies?: string };
+}) {
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const medications = useMemo(() =>
+    items
+      .filter(i => i.status === 'active' && !['nutrition', 'care'].includes(i.category))
+      .map(i => ({ name: i.name, dose: i.dose, route: i.route, posology: i.posology })),
+    [items]
+  );
+
+  const runCheck = useCallback(async () => {
+    if (medications.length < 2) {
+      setError("São necessários pelo menos 2 medicamentos ativos para verificar interações.");
+      return;
+    }
+    setLoading(true);
+    setResult("");
+    setError("");
+
+    try {
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-interactions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ medications, patientContext }),
+        }
+      );
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
+        throw new Error(errData.error || `Erro ${resp.status}`);
+      }
+
+      if (!resp.body) throw new Error("Resposta vazia");
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let accumulated = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, newlineIndex);
+          buffer = buffer.slice(newlineIndex + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) {
+              accumulated += content;
+              setResult(accumulated);
+            }
+          } catch {
+            buffer = line + "\n" + buffer;
+            break;
+          }
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || "Erro ao verificar interações");
+    } finally {
+      setLoading(false);
+    }
+  }, [medications, patientContext]);
+
+  useEffect(() => {
+    if (open && !result && !loading && !error) {
+      runCheck();
+    }
+  }, [open]);
+
+  const handleClose = () => {
+    setResult("");
+    setError("");
+    setLoading(false);
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-amber-500" />
+            Verificação de Interações Medicamentosas
+          </DialogTitle>
+          <DialogDescription>
+            Análise inteligente de {medications.length} medicamento{medications.length !== 1 ? 's' : ''} ativo{medications.length !== 1 ? 's' : ''} na prescrição.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {loading && !result && (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <Loader2 className="h-8 w-8 text-primary animate-spin" />
+              <p className="text-sm text-muted-foreground">Analisando interações medicamentosas...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {result && (
+            <div className="prose prose-sm dark:prose-invert max-w-none px-1">
+              <ReactMarkdown>{result}</ReactMarkdown>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t">
+          {result && (
+            <Button variant="outline" size="sm" onClick={runCheck} disabled={loading} className="mr-auto gap-1.5 text-xs">
+              <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} /> Reanalisar
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={handleClose} className="text-xs">Fechar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ===================== MAIN COMPONENT =====================
 const PrescricaoPage = () => {
   const { user } = useAuth();
