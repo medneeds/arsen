@@ -247,25 +247,24 @@ export default function AuthPage() {
                     fill="url(#crossGrad)"
                     filter="url(#glow)"
                   />
-                  {/* AI Brain icon in center */}
-                  <g transform="translate(44, 34)" fill="white" fillOpacity="0.95">
-                    {/* Brain outline - left hemisphere */}
-                    <path d="M16 2C13.5 2 11.2 3 9.5 4.7C8.2 6 7.3 7.7 7 9.5C5.2 10.2 4 11.9 4 14C4 15.3 4.5 16.5 5.3 17.4C4.5 18.5 4 19.9 4 21.5C4 24.5 6.2 27 9 27.5V29H13V27H16V25" strokeWidth="0" />
-                    {/* Brain outline - right hemisphere */}
-                    <path d="M16 2C18.5 2 20.8 3 22.5 4.7C23.8 6 24.7 7.7 25 9.5C26.8 10.2 28 11.9 28 14C28 15.3 27.5 16.5 26.7 17.4C27.5 18.5 28 19.9 28 21.5C28 24.5 25.8 27 23 27.5V29H19V27H16V25" strokeWidth="0" />
-                    {/* Neural circuit dots */}
-                    <circle cx="11" cy="11" r="1.5" />
-                    <circle cx="21" cy="11" r="1.5" />
-                    <circle cx="9" cy="18" r="1.5" />
-                    <circle cx="23" cy="18" r="1.5" />
-                    <circle cx="16" cy="14" r="2" />
+                  {/* AI icon in center - sparkle/brain circuit */}
+                  <g transform="translate(38, 28)">
+                    {/* Central brain shape */}
+                    <path d="M22 4C18.5 4 15.5 5.5 13.5 8C12 10 11 12.5 11 15.5C8.5 16 6.5 18.2 6.5 21C6.5 22.8 7.3 24.4 8.6 25.5C7.5 27 7 28.8 7 31C7 35.5 10 39 14 39.5V42H19V39H22" fill="white" fillOpacity="0.9" />
+                    <path d="M22 4C25.5 4 28.5 5.5 30.5 8C32 10 33 12.5 33 15.5C35.5 16 37.5 18.2 37.5 21C37.5 22.8 36.7 24.4 35.4 25.5C36.5 27 37 28.8 37 31C37 35.5 34 39 30 39.5V42H25V39H22" fill="white" fillOpacity="0.85" />
+                    {/* Neural nodes */}
+                    <circle cx="16" cy="15" r="2.5" fill="#0e7490" />
+                    <circle cx="28" cy="15" r="2.5" fill="#0e7490" />
+                    <circle cx="13" cy="26" r="2.5" fill="#0e7490" />
+                    <circle cx="31" cy="26" r="2.5" fill="#0e7490" />
+                    <circle cx="22" cy="20" r="3.5" fill="#0e7490" />
                     {/* Neural connections */}
-                    <line x1="11" y1="11" x2="16" y2="14" stroke="white" strokeWidth="1" strokeOpacity="0.7" />
-                    <line x1="21" y1="11" x2="16" y2="14" stroke="white" strokeWidth="1" strokeOpacity="0.7" />
-                    <line x1="9" y1="18" x2="16" y2="14" stroke="white" strokeWidth="1" strokeOpacity="0.7" />
-                    <line x1="23" y1="18" x2="16" y2="14" stroke="white" strokeWidth="1" strokeOpacity="0.7" />
-                    {/* Sparkle / AI accent */}
-                    <path d="M16 6L17 8.5L19.5 9.5L17 10.5L16 13L15 10.5L12.5 9.5L15 8.5Z" fillOpacity="0.6" />
+                    <line x1="16" y1="15" x2="22" y2="20" stroke="#0e7490" strokeWidth="1.5" />
+                    <line x1="28" y1="15" x2="22" y2="20" stroke="#0e7490" strokeWidth="1.5" />
+                    <line x1="13" y1="26" x2="22" y2="20" stroke="#0e7490" strokeWidth="1.5" />
+                    <line x1="31" y1="26" x2="22" y2="20" stroke="#0e7490" strokeWidth="1.5" />
+                    {/* AI sparkle at top */}
+                    <path d="M22 6L23.5 10L27.5 11.5L23.5 13L22 17L20.5 13L16.5 11.5L20.5 10Z" fill="#0e7490" fillOpacity="0.5" />
                   </g>
                 </motion.svg>
               </motion.div>
