@@ -504,6 +504,11 @@ const PrescricaoPage = () => {
   const [nonStdName, setNonStdName] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  // Phase 3 state
+  const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
+  const [suspendTarget, setSuspendTarget] = useState<{ id?: string; isBatch?: boolean; name?: string }>({});
+  const [renewDialogOpen, setRenewDialogOpen] = useState(false);
+
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 
   // dnd-kit sensors
@@ -563,6 +568,58 @@ const PrescricaoPage = () => {
     }));
   }, []);
 
+  // Individual duplicate
+  const duplicateItem = useCallback((id: string) => {
+    setItems(prev => {
+      const source = prev.find(i => i.id === id);
+      if (!source) return prev;
+      const idx = prev.findIndex(i => i.id === id);
+      const clone: PrescriptionItem = { ...source, id: crypto.randomUUID(), status: 'active', suspensionReason: undefined, suspendedAt: undefined };
+      const next = [...prev];
+      next.splice(idx + 1, 0, clone);
+      return next;
+    });
+    toast.success("Item duplicado");
+  }, []);
+
+  // Suspend with reason (individual)
+  const requestSuspendItem = useCallback((id: string) => {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    setSuspendTarget({ id, name: item.name });
+    setSuspendDialogOpen(true);
+  }, [items]);
+
+  const confirmSuspend = useCallback((reason: string) => {
+    const now = format(new Date(), "dd/MM HH:mm", { locale: ptBR });
+    if (suspendTarget.isBatch) {
+      setItems(prev => prev.map(item =>
+        selectedIds.has(item.id) && item.status === 'active'
+          ? { ...item, status: 'suspended' as const, suspensionReason: reason, suspendedAt: now }
+          : item
+      ));
+      toast.success(`${selectedIds.size} item(ns) suspenso(s)`);
+      setSelectedIds(new Set());
+    } else if (suspendTarget.id) {
+      setItems(prev => prev.map(item =>
+        item.id === suspendTarget.id
+          ? { ...item, status: 'suspended' as const, suspensionReason: reason, suspendedAt: now }
+          : item
+      ));
+      toast.success("Item suspenso");
+    }
+    setSuspendDialogOpen(false);
+    setSuspendTarget({});
+  }, [suspendTarget, selectedIds]);
+
+  // Reactivate
+  const reactivateItem = useCallback((id: string) => {
+    setItems(prev => prev.map(item =>
+      item.id === id ? { ...item, status: 'active' as const, suspensionReason: undefined, suspendedAt: undefined } : item
+    ));
+    toast.success("Item reativado");
+  }, []);
+
   // Selection
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds(prev => {
@@ -590,14 +647,11 @@ const PrescricaoPage = () => {
     });
   }, [items]);
 
-  // Batch actions
+  // Batch actions (suspend now opens dialog)
   const suspendSelected = useCallback(() => {
-    setItems(prev => prev.map(item =>
-      selectedIds.has(item.id) ? { ...item, status: item.status === 'suspended' ? 'active' : 'suspended' } : item
-    ));
-    toast.success(`${selectedIds.size} item(ns) suspenso(s)`);
-    setSelectedIds(new Set());
-  }, [selectedIds]);
+    setSuspendTarget({ isBatch: true });
+    setSuspendDialogOpen(true);
+  }, []);
 
   const deleteSelected = useCallback(() => {
     setItems(prev => prev.filter(item => !selectedIds.has(item.id)));
@@ -609,7 +663,7 @@ const PrescricaoPage = () => {
     setItems(prev => {
       const duplicates = prev
         .filter(item => selectedIds.has(item.id))
-        .map(item => ({ ...item, id: crypto.randomUUID() }));
+        .map(item => ({ ...item, id: crypto.randomUUID(), status: 'active' as const, suspensionReason: undefined, suspendedAt: undefined }));
       return [...prev, ...duplicates];
     });
     toast.success(`${selectedIds.size} item(ns) duplicado(s)`);
@@ -639,6 +693,8 @@ const PrescricaoPage = () => {
   }, [items]);
 
   const totalItems = items.length;
+  const activeItemsCount = items.filter(i => i.status === 'active').length;
+  const suspendedItemsCount = items.filter(i => i.status === 'suspended').length;
 
   const handleSave = () => {
     if (!patient.name.trim()) { toast.error("Preencha o nome do paciente"); return; }
@@ -647,6 +703,7 @@ const PrescricaoPage = () => {
 
   const handlePrint = () => window.print();
 
+  // Renewal with dialog
   const handleRenew = () => {
     toast.success("Prescrição renovada para o dia seguinte", { description: "Todos os itens mantidos com data atualizada." });
   };
