@@ -11,8 +11,9 @@ import { PrintUtiPreviewDialog } from "@/components/PrintUtiPreviewDialog";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { MainLayout } from "@/components/MainLayout";
 import { ShiftReminderDialog } from "@/components/ShiftReminderDialog";
-import { Patient } from "@/types/patient";
-import { Activity, Users, Clock, Printer, Eye, EyeOff, ClipboardList, LogOut, CheckSquare, Trash2, Undo, Redo, Plus, StickyNote, Edit, List, X, FileText, ChevronDown, GripVertical, ClipboardCheck, Save, MoreVertical, Building2, RefreshCw, Bell, Maximize2, Minimize2, Search } from "lucide-react";
+import { Patient, SectorType } from "@/types/patient";
+import { Activity, Users, Clock, Printer, Eye, EyeOff, ClipboardList, LogOut, CheckSquare, Trash2, Undo, Redo, Plus, StickyNote, Edit, List, X, FileText, ChevronDown, GripVertical, ClipboardCheck, Save, MoreVertical, Building2, RefreshCw, Bell, Maximize2, Minimize2, Search, ArrowLeftRight } from "lucide-react";
+import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { GlobalSearchDialog } from "@/components/GlobalSearchDialog";
@@ -161,6 +162,25 @@ function DynamicHeader({ children }: { children: React.ReactNode }) {
 const Index = () => {
   // Use department context
   const { currentDepartment, setCurrentDepartment } = useDepartment();
+  
+  // Selected sector from login
+  const [activeSector, setActiveSector] = useState<SectorType>(() => {
+    return (localStorage.getItem("selected_sector") as SectorType) || "red";
+  });
+  
+  // Persist active sector changes
+  const handleSectorChange = (sector: string) => {
+    setActiveSector(sector as SectorType);
+    localStorage.setItem("selected_sector", sector);
+  };
+
+  // Sector visual config
+  const SECTOR_VISUAL: Record<string, { title: string; color: string; dotClass: string; colorVariant: string }> = {
+    red: { title: "UTI 1", color: "from-red-500/20 to-red-600/10", dotClass: "bg-red-500/80 border-red-400/40", colorVariant: "red" },
+    yellow: { title: "UTI 2", color: "from-amber-500/20 to-amber-600/10", dotClass: "bg-amber-500/80 border-amber-400/40", colorVariant: "yellow" },
+    blue: { title: "UCI 1", color: "from-blue-500/20 to-blue-600/10", dotClass: "bg-blue-500/80 border-blue-400/40", colorVariant: "blue" },
+    outside: { title: "UCI 2", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
+  };
   
   // Use real database patients filtered by department
   const { patients: dbPatients, isLoading: patientsLoading, updatePatient: dbUpdatePatient, createPatient: dbCreatePatient, deletePatient: dbDeletePatient, reorderPatients: dbReorderPatients, refetch } = usePatients(currentDepartment);
@@ -845,7 +865,24 @@ const Index = () => {
                   
                     <div className="min-w-0 flex-1">
                       <h1 className="text-base sm:text-2xl font-bold text-white print:text-xs uppercase tracking-tight truncate">BigHelp Map</h1>
-                      <p className="text-[10px] sm:text-xs text-white/50 font-light uppercase tracking-widest print:hidden">Socorrão I — Cuidados Intensivos</p>
+                      <div className="flex items-center gap-2 print:hidden">
+                        <span className={`w-2 h-2 rounded-full ${SECTOR_VISUAL[activeSector]?.dotClass} border`} />
+                        <Select value={activeSector} onValueChange={handleSectorChange}>
+                          <SelectTrigger className="h-5 w-auto gap-1 bg-transparent border-none text-[10px] sm:text-xs text-white/60 font-light uppercase tracking-widest p-0 focus:ring-0 focus:ring-offset-0 hover:text-white/90 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(SECTOR_VISUAL).map(([key, cfg]) => (
+                              <SelectItem key={key} value={key} className="uppercase text-xs font-medium">
+                                <span className="flex items-center gap-2">
+                                  <span className={`w-2 h-2 rounded-full ${cfg.dotClass} border`} />
+                                  {cfg.title}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                 </div>
 
@@ -1124,93 +1161,27 @@ const Index = () => {
             <div className="space-y-3 sm:space-y-4 print:space-y-1">
               {currentDepartment === "UTI" ? (
                 <div className="space-y-4">
-                  {/* UTI 1 */}
+                  {/* Only render the active sector */}
                   <UtiSectorSection 
-                    sector="red" 
-                    patients={patients.filter(p => p.sector === 'red')}
+                    sector={activeSector as any}
+                    patients={patients.filter(p => p.sector === activeSector)}
                     onUpdatePatient={handleUpdatePatient}
                     onDeletePatient={handleDeletePatient}
                     onUndeletePatient={handleUndeletePatient}
-                    onPrintSector={() => handlePrintSector("red")}
-                    onAddExtraBed={() => handleAddExtraBed("red")}
+                    onPrintSector={() => handlePrintSector(activeSector)}
+                    onAddExtraBed={() => handleAddExtraBed(activeSector as Patient['sector'])}
                     selectionMode={selectionMode}
                     selectedPatients={selectedPatients}
                     onToggleSelection={handleToggleSelection}
-                    onReorderPatients={(reordered) => handleReorderPatients("red", reordered)}
+                    onReorderPatients={(reordered) => handleReorderPatients(activeSector, reordered)}
                     onTransfer={handleTransferPatient}
                     onPrintPatient={handlePrintPatient}
                     onRefetch={refetch}
-                    customTitle="UTI 1"
-                    customIcon={<span className="w-3 h-3 rounded-full bg-red-500/80 border border-red-400/40" />}
-                    colorVariant="red"
+                    customTitle={SECTOR_VISUAL[activeSector]?.title || "Setor"}
+                    customIcon={<span className={`w-3 h-3 rounded-full ${SECTOR_VISUAL[activeSector]?.dotClass} border`} />}
+                    colorVariant={SECTOR_VISUAL[activeSector]?.colorVariant as any || "red"}
                     allPatients={patients}
-                    currentUtiUnit="UTI 1"
-                  />
-                  {/* UTI 2 */}
-                  <UtiSectorSection 
-                    sector="yellow" 
-                    patients={patients.filter(p => p.sector === 'yellow')}
-                    onUpdatePatient={handleUpdatePatient}
-                    onDeletePatient={handleDeletePatient}
-                    onUndeletePatient={handleUndeletePatient}
-                    onPrintSector={() => handlePrintSector("yellow")}
-                    onAddExtraBed={() => handleAddExtraBed("yellow")}
-                    selectionMode={selectionMode}
-                    selectedPatients={selectedPatients}
-                    onToggleSelection={handleToggleSelection}
-                    onReorderPatients={(reordered) => handleReorderPatients("yellow", reordered)}
-                    onTransfer={handleTransferPatient}
-                    onPrintPatient={handlePrintPatient}
-                    onRefetch={refetch}
-                    customTitle="UTI 2"
-                    customIcon={<span className="w-3 h-3 rounded-full bg-amber-500/80 border border-amber-400/40" />}
-                    colorVariant="yellow"
-                    allPatients={patients}
-                    currentUtiUnit="UTI 2"
-                  />
-                  {/* UCI 1 */}
-                  <UtiSectorSection 
-                    sector="blue" 
-                    patients={patients.filter(p => p.sector === 'blue')}
-                    onUpdatePatient={handleUpdatePatient}
-                    onDeletePatient={handleDeletePatient}
-                    onUndeletePatient={handleUndeletePatient}
-                    onPrintSector={() => handlePrintSector("blue")}
-                    onAddExtraBed={() => handleAddExtraBed("blue")}
-                    selectionMode={selectionMode}
-                    selectedPatients={selectedPatients}
-                    onToggleSelection={handleToggleSelection}
-                    onReorderPatients={(reordered) => handleReorderPatients("blue", reordered)}
-                    onTransfer={handleTransferPatient}
-                    onPrintPatient={handlePrintPatient}
-                    onRefetch={refetch}
-                    customTitle="UCI 1"
-                    customIcon={<span className="w-3 h-3 rounded-full bg-blue-500/80 border border-blue-400/40" />}
-                    colorVariant="blue"
-                    allPatients={patients}
-                    currentUtiUnit="UCI 1"
-                  />
-                  {/* UCI 2 */}
-                  <UtiSectorSection 
-                    sector="outside" 
-                    patients={patients.filter(p => p.sector === 'outside')}
-                    onUpdatePatient={handleUpdatePatient}
-                    onDeletePatient={handleDeletePatient}
-                    onUndeletePatient={handleUndeletePatient}
-                    onPrintSector={() => handlePrintSector("outside")}
-                    onAddExtraBed={() => handleAddExtraBed("outside")}
-                    selectionMode={selectionMode}
-                    selectedPatients={selectedPatients}
-                    onToggleSelection={handleToggleSelection}
-                    onReorderPatients={(reordered) => handleReorderPatients("outside", reordered)}
-                    onTransfer={handleTransferPatient}
-                    onPrintPatient={handlePrintPatient}
-                    onRefetch={refetch}
-                    customTitle="UCI 2"
-                    customIcon={<span className="w-3 h-3 rounded-full bg-emerald-500/80 border border-emerald-400/40" />}
-                    colorVariant="green"
-                    allPatients={patients}
-                    currentUtiUnit="UCI 2"
+                    currentUtiUnit={SECTOR_VISUAL[activeSector]?.title || "UTI 1"}
                   />
                 </div>
               ) : (
