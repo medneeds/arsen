@@ -27,8 +27,12 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<Department>("UTI");
+  const [selectedSector, setSelectedSector] = useState<string>("red");
   
+  const SECTORS = Object.entries(SECTOR_BED_CONFIG).map(([key, config]) => ({
+    key,
+    label: config.label,
+  }));
   const [loginData, setLoginData] = useState({
     username: "",
     password: "",
