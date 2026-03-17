@@ -5,7 +5,7 @@ import socorraoLogo from "@/assets/socorrao1-logo.png";
 import { ptBR } from "date-fns/locale";
 import {
   Pill, Plus, Trash2, Copy, Printer, Save, RefreshCw,
-  Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe,
+  Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe, History,
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal,
   Play, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
