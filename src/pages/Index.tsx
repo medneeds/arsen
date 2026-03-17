@@ -788,6 +788,11 @@ const Index = () => {
     }
   };
 
+  const handleQuickView = (patient: Patient) => {
+    setQuickViewPatient(patient);
+    setQuickViewOpen(true);
+  };
+
   return (
     <MainLayout onOpenHandover={() => setHandoverDialogOpen(true)}>
         {/* Print-only layout - Hidden on screen, visible only when printing */}
