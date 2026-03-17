@@ -78,12 +78,7 @@ export function LoadingScreen({ onComplete, duration = 2500 }: LoadingScreenProp
           }}
         >
           <div className="relative inline-block">
-            <div className="absolute inset-0 -m-14 rounded-full blur-[70px] bg-[#2dd4bf]/[0.1]" />
-            <img
-              src={bighelpLogo}
-              alt="BigHelp Map"
-              className="h-20 sm:h-24 md:h-28 object-contain relative z-10 drop-shadow-[0_0_24px_rgba(45,212,191,0.3)]"
-            />
+            <BigHelpLogo size="lg" glow showText />
           </div>
         </div>
 
