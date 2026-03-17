@@ -81,7 +81,7 @@ export function PreAdmissionSection() {
 
   useEffect(() => {
     fetchPreAdmissions();
-  }, [selectedHospitalId, selectedStateId]);
+  }, [currentHospital?.id, currentState?.id]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
