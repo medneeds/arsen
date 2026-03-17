@@ -1374,6 +1374,60 @@ const PrescricaoPage = () => {
         </div>
       )}
 
+      {/* ===== VERSION HISTORY ===== */}
+      {versionHistory.length > 1 && currentPrescriptionId && (
+        <div className="rounded-xl border border-border bg-card p-3 print:hidden">
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="w-full flex items-center justify-between text-xs"
+          >
+            <span className="flex items-center gap-2 font-semibold text-muted-foreground uppercase tracking-wider">
+              <History className="h-3.5 w-3.5" /> Histórico de Versões ({versionHistory.length})
+            </span>
+            <span className="text-muted-foreground text-[10px]">{showHistory ? 'Ocultar' : 'Expandir'}</span>
+          </button>
+          {showHistory && (
+            <div className="mt-3 space-y-1">
+              {versionHistory.map((v, i) => (
+                <button
+                  key={v.id}
+                  onClick={() => loadPrescription(v.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-2 rounded-lg border text-xs transition-colors hover:bg-accent/50 text-left",
+                    currentPrescriptionId === v.id ? "border-primary bg-primary/5" : "border-border/50"
+                  )}
+                >
+                  <div className="flex flex-col items-center gap-0.5">
+                    <div className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border",
+                      currentPrescriptionId === v.id ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground"
+                    )}>
+                      {v.version}
+                    </div>
+                    {i < versionHistory.length - 1 && <div className="w-px h-2 bg-border" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Versão {v.version}</span>
+                      <Badge variant={v.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
+                        {v.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
+                      </Badge>
+                      {currentPrescriptionId === v.id && (
+                        <Badge variant="secondary" className="text-[9px] h-4 px-1.5">Atual</Badge>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {format(new Date(v.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      {v.digital_signature && ` — Assinado por ${v.digital_signature.doctorName}`}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ===== PATIENT HEADER ===== */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-3 print:hidden">
         <div className="flex items-center justify-between">
