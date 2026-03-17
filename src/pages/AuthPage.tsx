@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { LogIn, User, Lock, Eye, EyeOff, Building2, ArrowRight, Activity, Brain, MapPin, Stethoscope, HeartPulse, Shield } from "lucide-react";
+import {
+  LogIn, User, Lock, Eye, EyeOff, Building2, ArrowRight, ArrowLeft,
+  Activity, Brain, MapPin, Stethoscope, HeartPulse, Shield,
+  BarChart3, Users, ClipboardList, Bed
+} from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { BigHelpLogo } from "@/components/BigHelpLogo";
 import { cn } from "@/lib/utils";
@@ -33,6 +37,60 @@ const floatingIcons = [
   { Icon: Brain, x: "60%", y: "30%", delay: 3, duration: 5 },
 ];
 
+type AccessProfile = "medico" | "gestor" | "multi" | "administrativo";
+
+const ACCESS_PROFILES: {
+  key: AccessProfile;
+  label: string;
+  subtitle: string;
+  icon: typeof Stethoscope;
+  color: string;
+  borderColor: string;
+  bgGlow: string;
+  features: string[];
+}[] = [
+  {
+    key: "medico",
+    label: "Acesso Médico",
+    subtitle: "Plantonistas e Diaristas",
+    icon: Stethoscope,
+    color: "text-[#2dd4bf]",
+    borderColor: "border-[#2dd4bf]/30 hover:border-[#2dd4bf]/60",
+    bgGlow: "from-[#2dd4bf]/15 to-[#2dd4bf]/5",
+    features: ["Mapa de Leitos", "Prescrição Digital", "Evolução Clínica", "Protocolos"],
+  },
+  {
+    key: "gestor",
+    label: "Painel do Gestor",
+    subtitle: "Coordenação de UTI",
+    icon: BarChart3,
+    color: "text-amber-400",
+    borderColor: "border-amber-400/30 hover:border-amber-400/60",
+    bgGlow: "from-amber-400/15 to-amber-400/5",
+    features: ["Gestão de Leitos", "Exames Críticos", "Catálogo de Medicações", "Indicadores"],
+  },
+  {
+    key: "multi",
+    label: "Equipe Multi",
+    subtitle: "Fisio · Enfermagem · Técnicos",
+    icon: Users,
+    color: "text-violet-400",
+    borderColor: "border-violet-400/30 hover:border-violet-400/60",
+    bgGlow: "from-violet-400/15 to-violet-400/5",
+    features: ["Visão do Paciente", "Condutas Diárias", "Registros Assistenciais", "Comunicação"],
+  },
+  {
+    key: "administrativo",
+    label: "Administrativo",
+    subtitle: "Recepção e Cadastro",
+    icon: ClipboardList,
+    color: "text-sky-400",
+    borderColor: "border-sky-400/30 hover:border-sky-400/60",
+    bgGlow: "from-sky-400/15 to-sky-400/5",
+    features: ["Cadastro de Pacientes", "Pré-Admissão", "Movimentações", "Relatórios"],
+  },
+];
+
 export default function AuthPage() {
   const { user, signIn } = useAuth();
   const { setCurrentDepartment } = useDepartment();
@@ -40,9 +98,10 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
+  const [screen, setScreen] = useState<"splash" | "profiles" | "login">("splash");
+  const [selectedProfile, setSelectedProfile] = useState<AccessProfile>("medico");
   const [selectedSector, setSelectedSector] = useState<string>("red");
-  
+
   const SECTORS = Object.entries(SECTOR_BED_CONFIG).map(([key, config]) => ({
     key,
     label: config.label,
@@ -60,7 +119,7 @@ export default function AuthPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!loginData.username.trim()) {
       toast.error("DIGITE SEU USUÁRIO");
       return;
@@ -85,6 +144,7 @@ export default function AuthPage() {
       } else {
         setCurrentDepartment("UTI");
         localStorage.setItem("selected_sector", selectedSector);
+        localStorage.setItem("access_profile", selectedProfile);
         toast.success("LOGIN REALIZADO COM SUCESSO");
         setShowLoadingScreen(true);
       }
@@ -94,21 +154,31 @@ export default function AuthPage() {
     }
   };
 
+  const handleSelectProfile = (profile: AccessProfile) => {
+    setSelectedProfile(profile);
+    setScreen("login");
+  };
+
+  const currentProfileConfig = ACCESS_PROFILES.find(p => p.key === selectedProfile)!;
+
+  // Shared dark background
+  const bgClasses = "min-h-screen bg-gradient-to-br from-[#040a18] via-[#0a1628] to-[#0f2847] flex flex-col items-center justify-center relative overflow-hidden";
+
   return (
     <>
       {showLoadingScreen && (
-        <LoadingScreen 
-          onComplete={() => navigate("/")} 
+        <LoadingScreen
+          onComplete={() => navigate("/")}
           duration={2000}
         />
       )}
 
       <AnimatePresence mode="wait">
-        {showSplash ? (
+        {screen === "splash" ? (
           /* ─── SPLASH / CONCEPTUAL SCREEN ─────────────────────── */
           <motion.div
             key="splash"
-            className="min-h-screen bg-gradient-to-br from-[#040a18] via-[#0a1628] to-[#0f2847] flex flex-col items-center justify-center relative overflow-hidden"
+            className={bgClasses}
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.5 }}
           >
@@ -169,14 +239,13 @@ export default function AuthPage() {
 
             {/* Content */}
             <div className="relative z-10 text-center px-6 max-w-xl mx-auto flex flex-col items-center">
-              {/* Prominent Cross Icon with pulse rings */}
+              {/* Logo with pulse rings */}
               <motion.div
                 className="relative mb-6"
                 initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
                 animate={{ opacity: 1, scale: 1, rotate: 0 }}
                 transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
               >
-                {/* Outer pulse rings */}
                 <motion.div
                   className="absolute inset-0 -m-12 rounded-full border-2 border-[#2dd4bf]/15"
                   animate={{ scale: [1, 1.8], opacity: [0.4, 0] }}
@@ -188,12 +257,6 @@ export default function AuthPage() {
                   transition={{ duration: 3, repeat: Infinity, ease: "easeOut", delay: 1 }}
                 />
                 <motion.div
-                  className="absolute inset-0 -m-12 rounded-full border border-white/5"
-                  animate={{ scale: [1, 1.6], opacity: [0.2, 0] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeOut", delay: 2 }}
-                />
-
-                <motion.div
                   animate={{ y: [-3, 3, -3] }}
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                   className="drop-shadow-[0_0_40px_rgba(45,212,191,0.5)]"
@@ -202,7 +265,7 @@ export default function AuthPage() {
                 </motion.div>
               </motion.div>
 
-              {/* Brand name: BigHelp Map */}
+              {/* Brand name */}
               <motion.div
                 className="mb-2"
                 initial={{ opacity: 0, y: 16 }}
@@ -242,9 +305,9 @@ export default function AuthPage() {
                 <span className="text-[#2dd4bf] font-medium">em Tempo Real</span>
               </motion.p>
 
-              {/* CTA Button */}
+              {/* CTA Button → goes to profiles */}
               <motion.button
-                onClick={() => setShowSplash(false)}
+                onClick={() => setScreen("profiles")}
                 className="group relative inline-flex items-center gap-3 px-10 py-4 rounded-full text-white font-semibold text-sm uppercase tracking-[0.2em] transition-all duration-500 overflow-hidden border border-[#2dd4bf]/30 hover:border-[#2dd4bf]/60"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -270,21 +333,123 @@ export default function AuthPage() {
                 transition={{ duration: 1, delay: 1.8 }}
               >
                 <div className="h-px w-12 bg-gradient-to-r from-transparent via-slate-500/30 to-transparent mb-3" />
-                <p className="text-[9px] text-slate-600 uppercase tracking-[0.4em]">
-                  by
-                </p>
-                <p className="text-sm sm:text-base text-slate-300 font-bold tracking-[0.25em] uppercase mt-0.5">
-                  Medora
-                </p>
-                <p className="text-[8px] text-[#2dd4bf]/40 uppercase tracking-[0.35em] font-light mt-1">
-                  Clinical Intelligent Platform
-                </p>
+                <p className="text-[9px] text-slate-600 uppercase tracking-[0.4em]">by</p>
+                <p className="text-sm sm:text-base text-slate-300 font-bold tracking-[0.25em] uppercase mt-0.5">Medora</p>
+                <p className="text-[8px] text-[#2dd4bf]/40 uppercase tracking-[0.35em] font-light mt-1">Clinical Intelligent Platform</p>
               </motion.div>
             </div>
 
             {/* Bottom decorative bar */}
             <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#2dd4bf]/20 to-transparent" />
           </motion.div>
+
+        ) : screen === "profiles" ? (
+          /* ─── ACCESS PROFILES SCREEN ─────────────────────────── */
+          <motion.div
+            key="profiles"
+            className={bgClasses}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.4 }}
+          >
+            {/* Subtle background */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full blur-[150px] bg-[#2dd4bf]/[0.04]" />
+            </div>
+
+            <div className="relative z-10 w-full max-w-3xl mx-auto px-4 sm:px-6">
+              {/* Header */}
+              <motion.div
+                className="text-center mb-8"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <BigHelpLogo size="md" glow />
+                <h2 className="text-xl sm:text-2xl text-white font-bold tracking-tight mt-4">
+                  Selecione o Tipo de Acesso
+                </h2>
+                <p className="text-slate-400 text-xs mt-2 tracking-wide uppercase">
+                  Hospital Mun. Djalma Marques — Socorrão I
+                </p>
+              </motion.div>
+
+              {/* Access Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                {ACCESS_PROFILES.map((profile, i) => (
+                  <motion.button
+                    key={profile.key}
+                    onClick={() => handleSelectProfile(profile.key)}
+                    className={cn(
+                      "group relative text-left p-5 rounded-2xl border backdrop-blur-xl transition-all duration-300",
+                      "bg-white/[0.04] hover:bg-white/[0.08]",
+                      profile.borderColor
+                    )}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.15 * i }}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {/* Glow background */}
+                    <div className={cn(
+                      "absolute inset-0 rounded-2xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+                      profile.bgGlow
+                    )} />
+
+                    <div className="relative z-10">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className={cn(
+                          "flex items-center justify-center h-10 w-10 rounded-xl border transition-colors duration-300",
+                          profile.key === "medico" && "bg-[#2dd4bf]/10 border-[#2dd4bf]/20",
+                          profile.key === "gestor" && "bg-amber-400/10 border-amber-400/20",
+                          profile.key === "multi" && "bg-violet-400/10 border-violet-400/20",
+                          profile.key === "administrativo" && "bg-sky-400/10 border-sky-400/20",
+                        )}>
+                          <profile.icon className={cn("h-5 w-5", profile.color)} />
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-white/20 group-hover:text-white/50 transition-all duration-300 group-hover:translate-x-1" />
+                      </div>
+
+                      <h3 className="text-white font-bold text-sm uppercase tracking-wide mb-0.5">
+                        {profile.label}
+                      </h3>
+                      <p className={cn("text-[10px] font-medium tracking-wider uppercase mb-3", profile.color + "/70")}>
+                        {profile.subtitle}
+                      </p>
+
+                      <div className="space-y-1">
+                        {profile.features.map((feat, fi) => (
+                          <div key={fi} className="flex items-center gap-2">
+                            <div className={cn("h-1 w-1 rounded-full", profile.color.replace("text-", "bg-") + "/50")} />
+                            <span className="text-[10px] text-slate-400 tracking-wide">{feat}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+
+              {/* Back button */}
+              <motion.div
+                className="text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+              >
+                <button
+                  onClick={() => setScreen("splash")}
+                  className="inline-flex items-center gap-2 text-[10px] text-[#2dd4bf]/50 hover:text-[#2dd4bf] uppercase tracking-[0.2em] transition-colors duration-300"
+                >
+                  <ArrowLeft className="h-3 w-3" />
+                  Voltar
+                </button>
+              </motion.div>
+            </div>
+          </motion.div>
+
         ) : (
           /* ─── LOGIN SCREEN ─────────────────────────────────────── */
           <motion.div
@@ -304,7 +469,7 @@ export default function AuthPage() {
             </div>
 
             <div className="w-full max-w-[400px] relative z-10">
-              {/* Header with logo */}
+              {/* Header with logo + selected profile badge */}
               <div className="text-center mb-6">
                 <motion.div
                   className="inline-block mb-4"
@@ -324,14 +489,22 @@ export default function AuthPage() {
                     <span className="font-extralight text-white/60 ml-0.5">Map</span>
                   </h1>
                   <div className="h-px w-24 mx-auto bg-gradient-to-r from-transparent via-[#2dd4bf]/40 to-transparent my-3" />
-                  <p className="text-slate-400 text-xs font-medium tracking-[0.2em] uppercase">
-                    Hospital Mun. Djalma Marques
-                  </p>
-                  <p className="text-slate-500 text-[10px] mt-0.5 font-light tracking-widest uppercase">Socorrão I</p>
+
+                  {/* Profile badge */}
+                  <div className={cn(
+                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-semibold uppercase tracking-[0.15em]",
+                    currentProfileConfig.key === "medico" && "border-[#2dd4bf]/30 text-[#2dd4bf] bg-[#2dd4bf]/5",
+                    currentProfileConfig.key === "gestor" && "border-amber-400/30 text-amber-400 bg-amber-400/5",
+                    currentProfileConfig.key === "multi" && "border-violet-400/30 text-violet-400 bg-violet-400/5",
+                    currentProfileConfig.key === "administrativo" && "border-sky-400/30 text-sky-400 bg-sky-400/5",
+                  )}>
+                    <currentProfileConfig.icon className="h-3 w-3" />
+                    {currentProfileConfig.label}
+                  </div>
                 </motion.div>
               </div>
 
-              {/* Login Card - refined glass morphism */}
+              {/* Login Card */}
               <motion.div
                 className="bg-white/[0.06] backdrop-blur-2xl rounded-2xl shadow-2xl shadow-black/30 p-7 border border-white/[0.08]"
                 initial={{ opacity: 0, y: 20 }}
@@ -389,28 +562,31 @@ export default function AuthPage() {
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="sector" className="text-[10px] font-medium text-white/40 uppercase mb-1.5 block tracking-[0.15em]">Setor</Label>
-                    <div className="relative">
-                      <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10 pointer-events-none" />
-                      <Select
-                        value={selectedSector}
-                        onValueChange={(val) => setSelectedSector(val)}
-                        disabled={loading}
-                      >
-                        <SelectTrigger className="pl-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm uppercase font-medium text-white focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all">
-                          <SelectValue placeholder="SELECIONE O SETOR" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SECTORS.map((sector) => (
-                            <SelectItem key={sector.key} value={sector.key} className="uppercase text-xs font-medium">
-                              {sector.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  {/* Sector select - only for medico & gestor */}
+                  {(selectedProfile === "medico" || selectedProfile === "gestor") && (
+                    <div>
+                      <Label htmlFor="sector" className="text-[10px] font-medium text-white/40 uppercase mb-1.5 block tracking-[0.15em]">Setor</Label>
+                      <div className="relative">
+                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10 pointer-events-none" />
+                        <Select
+                          value={selectedSector}
+                          onValueChange={(val) => setSelectedSector(val)}
+                          disabled={loading}
+                        >
+                          <SelectTrigger className="pl-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm uppercase font-medium text-white focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all">
+                            <SelectValue placeholder="SELECIONE O SETOR" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {SECTORS.map((sector) => (
+                              <SelectItem key={sector.key} value={sector.key} className="uppercase text-xs font-medium">
+                                {sector.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <Button
                     type="submit"
@@ -422,7 +598,7 @@ export default function AuthPage() {
                 </form>
               </motion.div>
 
-              {/* Back to splash + Footer */}
+              {/* Back to profiles + Footer */}
               <motion.div
                 className="text-center mt-5 space-y-3"
                 initial={{ opacity: 0 }}
@@ -430,10 +606,14 @@ export default function AuthPage() {
                 transition={{ delay: 0.6 }}
               >
                 <button
-                  onClick={() => setShowSplash(true)}
-                  className="text-[10px] text-[#2dd4bf]/50 hover:text-[#2dd4bf] uppercase tracking-[0.2em] transition-colors duration-300"
+                  onClick={() => {
+                    setScreen("profiles");
+                    setLoginData({ username: "", password: "" });
+                  }}
+                  className="inline-flex items-center gap-2 text-[10px] text-[#2dd4bf]/50 hover:text-[#2dd4bf] uppercase tracking-[0.2em] transition-colors duration-300"
                 >
-                  ← Voltar
+                  <ArrowLeft className="h-3 w-3" />
+                  Alterar tipo de acesso
                 </button>
                 <p className="text-[9px] text-slate-600 tracking-[0.3em] uppercase font-light">
                   {whitelabel.credits.authorSignature}
