@@ -5,18 +5,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { LogIn, User, Lock, Eye, EyeOff } from "lucide-react";
+import { LogIn, User, Lock, Eye, EyeOff, Building2 } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { cn } from "@/lib/utils";
 import { whitelabel } from "@/config/whitelabel";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
+import { useDepartment, DEPARTMENTS, Department } from "@/contexts/DepartmentContext";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AuthPage() {
   const { user, signIn } = useAuth();
+  const { setCurrentDepartment } = useDepartment();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState<Department>("UTI");
   
   const [loginData, setLoginData] = useState({
     username: "",
