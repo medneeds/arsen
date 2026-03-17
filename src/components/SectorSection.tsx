@@ -44,6 +44,7 @@ interface SectorSectionProps {
   customTitle?: string;
   customIcon?: string;
   onRefetch?: () => void;
+  onQuickView?: (patient: Patient) => void;
 }
 
 const sectorInfo = {
@@ -78,6 +79,7 @@ interface SortablePatientCardProps {
   onTransfer?: (patientId: string, newSector: Patient['sector']) => void;
   onPrintPatient?: (patientId: string) => void;
   onRefetch?: () => void;
+  onQuickView?: (patient: Patient) => void;
 }
 
 function SortablePatientCard(props: SortablePatientCardProps) {
@@ -137,7 +139,8 @@ export function SectorSection({
   onOpenChange,
   customTitle,
   customIcon,
-  onRefetch
+  onRefetch,
+  onQuickView
 }: SectorSectionProps) {
   const info = sectorInfo[sector];
   const displayTitle = customTitle || info.title;
@@ -294,6 +297,7 @@ export function SectorSection({
                   onTransfer={onTransfer}
                   onPrintPatient={onPrintPatient}
                   onRefetch={onRefetch}
+                  onQuickView={onQuickView}
                 />
               ))}
             </SortableContext>

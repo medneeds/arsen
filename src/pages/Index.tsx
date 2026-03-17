@@ -3,6 +3,7 @@ import { SectorSection } from "@/components/SectorSection";
 import { UtiSectorSection } from "@/components/UtiSectorSection";
 import { PreAdmissionSection } from "@/components/PreAdmissionSection";
 import { PatientCard } from "@/components/PatientCard";
+import { PatientSidebar } from "@/components/PatientSidebar";
 import { PrintLayout } from "@/components/PrintLayout";
 import { PrintUtiLayout } from "@/components/PrintUtiLayout";
 import { PrintPatientLayout } from "@/components/PrintPatientLayout";
@@ -109,6 +110,7 @@ interface SortableOutsidePatientCardProps {
   onTransfer?: (patientId: string, newSector: Patient['sector']) => void;
   onPrintPatient?: (patientId: string) => void;
   onRefetch?: () => void;
+  onQuickView?: (patient: Patient) => void;
 }
 
 function SortableOutsidePatientCard(props: SortableOutsidePatientCardProps) {
@@ -222,6 +224,8 @@ const Index = () => {
   const [utiAllocationDialogOpen, setUtiAllocationDialogOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [quickViewPatient, setQuickViewPatient] = useState<Patient | null>(null);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
   const { toast } = useToast();
   const { signOut, user, role, allowedDepartments, loading: authLoading } = useAuth();
   const { saveVersion, fetchVersions } = usePatientVersions();
@@ -784,6 +788,11 @@ const Index = () => {
     }
   };
 
+  const handleQuickView = (patient: Patient) => {
+    setQuickViewPatient(patient);
+    setQuickViewOpen(true);
+  };
+
   return (
     <MainLayout onOpenHandover={() => setHandoverDialogOpen(true)}>
         {/* Print-only layout - Hidden on screen, visible only when printing */}
@@ -1207,6 +1216,7 @@ const Index = () => {
                     onTransfer={handleTransferPatient}
                     onPrintPatient={handlePrintPatient}
                     onRefetch={refetch}
+                    onQuickView={handleQuickView}
                   />
                   <SectorSection 
                     sector="yellow" 
@@ -1223,6 +1233,7 @@ const Index = () => {
                     onTransfer={handleTransferPatient}
                     onPrintPatient={handlePrintPatient}
                     onRefetch={refetch}
+                    onQuickView={handleQuickView}
                   />
                   <SectorSection 
                     sector="blue" 
@@ -1239,6 +1250,7 @@ const Index = () => {
                     onTransfer={handleTransferPatient}
                     onPrintPatient={handlePrintPatient}
                     onRefetch={refetch}
+                    onQuickView={handleQuickView}
                   />
 
                   {/* Pacientes Fora das Alas Section */}
@@ -1308,6 +1320,7 @@ const Index = () => {
                                     onTransfer={handleTransferPatient}
                                     onPrintPatient={handlePrintPatient}
                                     onRefetch={refetch}
+                                    onQuickView={handleQuickView}
                                   />
                                 ))}
                               </SortableContext>
@@ -1401,6 +1414,12 @@ const Index = () => {
       </AlertDialog>
 
       <GlobalSearchDialog externalOpen={searchOpen} onExternalOpenChange={setSearchOpen} />
+
+      <PatientSidebar
+        patient={quickViewPatient}
+        open={quickViewOpen}
+        onOpenChange={setQuickViewOpen}
+      />
     </MainLayout>
   );
 };
