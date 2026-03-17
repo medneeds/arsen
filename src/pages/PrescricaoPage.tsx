@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from "react";
+import React, { useState, useRef, useMemo, useCallback } from "react";
 import { format } from "date-fns";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
 import socorraoLogo from "@/assets/socorrao1-logo.png";
@@ -6,7 +6,8 @@ import { ptBR } from "date-fns/locale";
 import {
   Pill, Plus, Trash2, Copy, Printer, Save, RefreshCw,
   Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe,
-  ClipboardList, X, Check, Shield, Wind, TestTube, FileText
+  ClipboardList, X, Check, Shield, Wind, TestTube, FileText,
+  GripVertical, CheckSquare, Square, Pause, MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,15 +16,32 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   ALL_ITEMS_BY_CATEGORY,
   CATEGORY_CONFIG,
   PRESCRIPTION_FLAGS,
   ROUTES,
   POSOLOGIES,
-  RECOMMENDATION_TEMPLATES,
   type MedicationEntry,
   type PrescriptionCategory,
   type PrescriptionFlag,
@@ -167,14 +185,16 @@ function FlagToggle({ flag, active, onToggle }: {
   );
 }
 
-// --- Prescription Item Row ---
-function PrescriptionItemRow({
+// --- Sortable Prescription Item Row ---
+function SortablePrescriptionItemRow({
   item,
   index,
   onUpdate,
   onRemove,
   onToggleFlag,
   isSimple,
+  selected,
+  onToggleSelect,
 }: {
   item: PrescriptionItem;
   index: number;
@@ -182,15 +202,51 @@ function PrescriptionItemRow({
   onRemove: (id: string) => void;
   onToggleFlag: (id: string, flag: PrescriptionFlag) => void;
   isSimple?: boolean;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.8 : undefined,
+  };
+
   if (isSimple) {
     return (
-      <div className={cn(
-        "flex items-center gap-2 px-2.5 py-2 rounded-lg border group transition-all",
-        item.status === 'suspended'
-          ? "border-destructive/30 bg-destructive/5 opacity-60"
-          : "border-border/40 bg-muted/20"
-      )}>
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={cn(
+          "flex items-center gap-2 px-2.5 py-2 rounded-lg border group transition-all",
+          item.status === 'suspended'
+            ? "border-destructive/30 bg-destructive/5 opacity-60"
+            : "border-border/40 bg-muted/20",
+          selected && "ring-2 ring-primary/40 border-primary/30",
+          isDragging && "shadow-lg"
+        )}
+      >
+        <button
+          className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0 touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <Checkbox
+          checked={selected}
+          onCheckedChange={() => onToggleSelect(item.id)}
+          className="shrink-0"
+        />
         <span className="text-xs font-mono text-muted-foreground w-5">{index + 1}.</span>
         <span className={cn("text-sm font-medium flex-1", item.status === 'suspended' && "line-through")}>
           {item.name}
@@ -215,14 +271,33 @@ function PrescriptionItemRow({
   }
 
   return (
-    <div className={cn(
-      "group relative rounded-lg border transition-all",
-      item.status === 'suspended'
-        ? "border-destructive/30 bg-destructive/5 opacity-60"
-        : "border-border/50 bg-card/50 hover:border-primary/20",
-      item.highAlert && item.status !== 'suspended' && "border-red-300/50 bg-red-50/30 dark:bg-red-950/10"
-    )}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "group relative rounded-lg border transition-all",
+        item.status === 'suspended'
+          ? "border-destructive/30 bg-destructive/5 opacity-60"
+          : "border-border/50 bg-card/50 hover:border-primary/20",
+        item.highAlert && item.status !== 'suspended' && "border-red-300/50 bg-red-50/30 dark:bg-red-950/10",
+        selected && "ring-2 ring-primary/40 border-primary/30",
+        isDragging && "shadow-lg"
+      )}
+    >
       <div className="flex items-start gap-2 p-2.5">
+        <div className="flex flex-col items-center gap-1.5 shrink-0 pt-1">
+          <button
+            className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors touch-none"
+            {...attributes}
+            {...listeners}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+          <Checkbox
+            checked={selected}
+            onCheckedChange={() => onToggleSelect(item.id)}
+          />
+        </div>
         <span className="text-xs font-mono text-muted-foreground w-6 text-center shrink-0 pt-1.5">
           {index + 1}.
         </span>
@@ -235,7 +310,6 @@ function PrescriptionItemRow({
                 <span className="font-normal text-muted-foreground ml-1">({item.presentation})</span>
               )}
             </p>
-            {/* Flags (always visible) */}
             <div className="flex gap-0.5 ml-auto">
               {PRESCRIPTION_FLAGS.map(f => (
                 <FlagToggle
@@ -276,7 +350,6 @@ function PrescriptionItemRow({
             className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic"
             placeholder="Preparo, diluição, tempo de infusão, gotas/min, mL/h..."
           />
-          {/* Active flag badges */}
           {item.flags.length > 0 && (
             <div className="flex gap-1 flex-wrap">
               {item.flags.map(fk => {
@@ -339,6 +412,67 @@ function PrintSimpleRow({ item, index }: { item: PrescriptionItem; index: number
   );
 }
 
+// --- Batch Action Bar ---
+function BatchActionBar({
+  selectedCount,
+  onSelectAll,
+  onDeselectAll,
+  allSelected,
+  onSuspendSelected,
+  onDeleteSelected,
+  onDuplicateSelected,
+}: {
+  selectedCount: number;
+  onSelectAll: () => void;
+  onDeselectAll: () => void;
+  allSelected: boolean;
+  onSuspendSelected: () => void;
+  onDeleteSelected: () => void;
+  onDuplicateSelected: () => void;
+}) {
+  if (selectedCount === 0) return null;
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-1 duration-200">
+      <Checkbox
+        checked={allSelected}
+        onCheckedChange={() => allSelected ? onDeselectAll() : onSelectAll()}
+      />
+      <span className="text-xs font-medium text-primary">
+        {selectedCount} selecionado{selectedCount > 1 ? 's' : ''}
+      </span>
+      <div className="flex-1" />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={onDuplicateSelected}>
+            <Copy className="h-3 w-3" /> Duplicar
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Duplicar itens selecionados</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs text-yellow-600 hover:text-yellow-700 border-yellow-200 hover:border-yellow-300" onClick={onSuspendSelected}>
+            <Pause className="h-3 w-3" /> Suspender
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Suspender itens selecionados</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/50" onClick={onDeleteSelected}>
+            <Trash2 className="h-3 w-3" /> Excluir
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Excluir itens selecionados</TooltipContent>
+      </Tooltip>
+      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={onDeselectAll}>
+        <X className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+}
+
 // ===================== MAIN COMPONENT =====================
 const PrescricaoPage = () => {
   const [patient, setPatient] = useState<PatientHeader>({
@@ -349,8 +483,15 @@ const PrescricaoPage = () => {
   const [items, setItems] = useState<PrescriptionItem[]>([]);
   const [activeTab, setActiveTab] = useState<PrescriptionCategory>('nutrition');
   const [nonStdName, setNonStdName] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
+
+  // dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   // --- Handlers ---
   const createItem = (med: MedicationEntry): PrescriptionItem => ({
@@ -390,6 +531,7 @@ const PrescricaoPage = () => {
 
   const removeItem = useCallback((id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
+    setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
   }, []);
 
   const toggleFlag = useCallback((id: string, flag: PrescriptionFlag) => {
@@ -400,6 +542,72 @@ const PrescricaoPage = () => {
         : [...item.flags, flag];
       return { ...item, flags };
     }));
+  }, []);
+
+  // Selection
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  }, []);
+
+  const selectAllInCategory = useCallback((cat: PrescriptionCategory) => {
+    const catIds = items.filter(i => i.category === cat).map(i => i.id);
+    setSelectedIds(prev => {
+      const n = new Set(prev);
+      catIds.forEach(id => n.add(id));
+      return n;
+    });
+  }, [items]);
+
+  const deselectAllInCategory = useCallback((cat: PrescriptionCategory) => {
+    const catIds = new Set(items.filter(i => i.category === cat).map(i => i.id));
+    setSelectedIds(prev => {
+      const n = new Set(prev);
+      catIds.forEach(id => n.delete(id));
+      return n;
+    });
+  }, [items]);
+
+  // Batch actions
+  const suspendSelected = useCallback(() => {
+    setItems(prev => prev.map(item =>
+      selectedIds.has(item.id) ? { ...item, status: item.status === 'suspended' ? 'active' : 'suspended' } : item
+    ));
+    toast.success(`${selectedIds.size} item(ns) suspenso(s)`);
+    setSelectedIds(new Set());
+  }, [selectedIds]);
+
+  const deleteSelected = useCallback(() => {
+    setItems(prev => prev.filter(item => !selectedIds.has(item.id)));
+    toast.success(`${selectedIds.size} item(ns) excluído(s)`);
+    setSelectedIds(new Set());
+  }, [selectedIds]);
+
+  const duplicateSelected = useCallback(() => {
+    setItems(prev => {
+      const duplicates = prev
+        .filter(item => selectedIds.has(item.id))
+        .map(item => ({ ...item, id: crypto.randomUUID() }));
+      return [...prev, ...duplicates];
+    });
+    toast.success(`${selectedIds.size} item(ns) duplicado(s)`);
+    setSelectedIds(new Set());
+  }, [selectedIds]);
+
+  // Drag & drop
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setItems(prev => {
+      const oldIndex = prev.findIndex(i => i.id === active.id);
+      const newIndex = prev.findIndex(i => i.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
   }, []);
 
   const itemsByCategory = useMemo(() => {
@@ -428,8 +636,12 @@ const PrescricaoPage = () => {
     setPatient((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Determine if category uses simple (care/nutrition) or full row
   const isSimpleCategory = (cat: PrescriptionCategory) => ['nutrition', 'care'].includes(cat);
+
+  // Selection helpers for current tab
+  const currentCatItems = itemsByCategory[activeTab];
+  const selectedInCurrentTab = currentCatItems.filter(i => selectedIds.has(i.id)).length;
+  const allSelectedInTab = currentCatItems.length > 0 && selectedInCurrentTab === currentCatItems.length;
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-2 print:space-y-1 print:max-w-none print:text-black">
@@ -595,21 +807,47 @@ const PrescricaoPage = () => {
                   {catItems.length > 0 && <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{catItems.length}</Badge>}
                 </div>
 
-                {/* Items list */}
+                {/* Batch action bar */}
+                {cat === activeTab && (
+                  <BatchActionBar
+                    selectedCount={selectedInCurrentTab}
+                    allSelected={allSelectedInTab}
+                    onSelectAll={() => selectAllInCategory(cat)}
+                    onDeselectAll={() => deselectAllInCategory(cat)}
+                    onSuspendSelected={suspendSelected}
+                    onDeleteSelected={deleteSelected}
+                    onDuplicateSelected={duplicateSelected}
+                  />
+                )}
+
+                {/* Items list with drag & drop */}
                 {catItems.length > 0 && (
-                  <div className="space-y-1.5">
-                    {catItems.map((item, i) => (
-                      <PrescriptionItemRow
-                        key={item.id}
-                        item={item}
-                        index={i}
-                        onUpdate={updateItem}
-                        onRemove={removeItem}
-                        onToggleFlag={toggleFlag}
-                        isSimple={simple}
-                      />
-                    ))}
-                  </div>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={catItems.map(i => i.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-1.5">
+                        {catItems.map((item, i) => (
+                          <SortablePrescriptionItemRow
+                            key={item.id}
+                            item={item}
+                            index={i}
+                            onUpdate={updateItem}
+                            onRemove={removeItem}
+                            onToggleFlag={toggleFlag}
+                            isSimple={simple}
+                            selected={selectedIds.has(item.id)}
+                            onToggleSelect={toggleSelect}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
                 )}
 
                 {/* Add item */}
@@ -715,5 +953,4 @@ const PrescricaoPage = () => {
   );
 };
 
-import React from "react";
 export default PrescricaoPage;
