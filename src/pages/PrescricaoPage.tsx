@@ -1046,7 +1046,7 @@ const PrescricaoPage = () => {
       if (error) throw error;
       setSavedPrescriptions((data || []).map(d => ({
         ...d,
-        digital_signature: d.digital_signature as DigitalSignature | null,
+        digital_signature: d.digital_signature as unknown as DigitalSignature | null,
       })));
     } catch (err) {
       console.error('Error fetching prescriptions:', err);
