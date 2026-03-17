@@ -865,7 +865,24 @@ const Index = () => {
                   
                     <div className="min-w-0 flex-1">
                       <h1 className="text-base sm:text-2xl font-bold text-white print:text-xs uppercase tracking-tight truncate">BigHelp Map</h1>
-                      <p className="text-[10px] sm:text-xs text-white/50 font-light uppercase tracking-widest print:hidden">Socorrão I — Cuidados Intensivos</p>
+                      <div className="flex items-center gap-2 print:hidden">
+                        <span className={`w-2 h-2 rounded-full ${SECTOR_VISUAL[activeSector]?.dotClass} border`} />
+                        <Select value={activeSector} onValueChange={handleSectorChange}>
+                          <SelectTrigger className="h-5 w-auto gap-1 bg-transparent border-none text-[10px] sm:text-xs text-white/60 font-light uppercase tracking-widest p-0 focus:ring-0 focus:ring-offset-0 hover:text-white/90 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(SECTOR_VISUAL).map(([key, cfg]) => (
+                              <SelectItem key={key} value={key} className="uppercase text-xs font-medium">
+                                <span className="flex items-center gap-2">
+                                  <span className={`w-2 h-2 rounded-full ${cfg.dotClass} border`} />
+                                  {cfg.title}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                 </div>
 
