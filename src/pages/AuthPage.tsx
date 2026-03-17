@@ -10,7 +10,8 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { cn } from "@/lib/utils";
 import { whitelabel } from "@/config/whitelabel";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
-import { useDepartment, DEPARTMENTS, Department } from "@/contexts/DepartmentContext";
+import { useDepartment } from "@/contexts/DepartmentContext";
+import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 import {
   Select,
   SelectContent,
