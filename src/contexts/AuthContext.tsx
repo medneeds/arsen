@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from("user_roles")
         .select("role")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
       if (roleError) {
         if (import.meta.env.DEV) {
@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from("profiles")
         .select("status")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         if (import.meta.env.DEV) {
@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from("profiles")
         .select("status")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (!profileError && profileData) {
         setStatus(profileData.status as UserStatus);

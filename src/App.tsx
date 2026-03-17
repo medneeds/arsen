@@ -49,6 +49,7 @@ import RequisicaoParecerPage from "./pages/RequisicaoParecerPage";
 import PrescricaoPage from "./pages/PrescricaoPage";
 import EvolucaoPage from "./pages/EvolucaoPage";
 import MedicationCatalogPage from "./pages/MedicationCatalogPage";
+import GestorPanelPage from "./pages/GestorPanelPage";
 
 const queryClient = new QueryClient();
 
@@ -437,6 +438,14 @@ const App = () => {
               <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
                 <MedicationCatalogPage />
               </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/painel-gestor"
+          element={
+            <ProtectedRoute>
+              <GestorPanelPage />
             </ProtectedRoute>
           }
         />
