@@ -164,8 +164,8 @@ const Index = () => {
   const { currentDepartment, setCurrentDepartment } = useDepartment();
   
   // Selected sector from login
-  const [activeSector, setActiveSector] = useState<string>(() => {
-    return localStorage.getItem("selected_sector") || "red";
+  const [activeSector, setActiveSector] = useState<SectorType>(() => {
+    return (localStorage.getItem("selected_sector") as SectorType) || "red";
   });
   
   // Persist active sector changes
