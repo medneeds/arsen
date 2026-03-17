@@ -1355,11 +1355,23 @@ const PrescricaoPage = () => {
             <p>Gerado em: {prescriptionDate}</p>
             <p>BigHelp Map — Prescrição Digital</p>
           </div>
-          <div className="text-center">
-            <div className="w-44 border-b border-black mb-1" />
-            <p className="text-[8px] text-black font-medium">Assinatura / Carimbo do Médico</p>
-            <p className="text-[7px] text-gray-500">CRM: _______________</p>
-          </div>
+          {digitalSignature ? (
+            <div className="text-center">
+              <div className="border border-black/40 rounded px-3 py-1.5 inline-block">
+                <p className="text-[9px] font-bold text-black">✓ ASSINADO DIGITALMENTE</p>
+                <p className="text-[8px] text-black font-medium">{digitalSignature.doctorName}</p>
+                <p className="text-[7px] text-gray-600">CRM: {digitalSignature.crm}</p>
+                <p className="text-[7px] text-gray-600">{digitalSignature.signedAt}</p>
+                <p className="text-[6px] text-gray-400 font-mono">Hash: {digitalSignature.hash}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center">
+              <div className="w-44 border-b border-black mb-1" />
+              <p className="text-[8px] text-black font-medium">Assinatura / Carimbo do Médico</p>
+              <p className="text-[7px] text-gray-500">CRM: _______________</p>
+            </div>
+          )}
         </div>
       </div>
 
