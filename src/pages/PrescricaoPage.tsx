@@ -992,6 +992,9 @@ const PrescricaoPage = () => {
   const [signDialogOpen, setSignDialogOpen] = useState(false);
   const [digitalSignature, setDigitalSignature] = useState<DigitalSignature | null>(null);
 
+  // Phase 5 state — AI Drug Interactions
+  const [interactionDialogOpen, setInteractionDialogOpen] = useState(false);
+
   // Phase 5 state — Persistence
   const [currentPrescriptionId, setCurrentPrescriptionId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
