@@ -1235,6 +1235,7 @@ const Index = () => {
                     onRefetch={refetch}
                     onQuickView={handleQuickView}
                   />
+                  <SectorSection 
                     sector="blue" 
                     patients={bluePatients} 
                     onUpdatePatient={handleUpdatePatient}
@@ -1249,6 +1250,7 @@ const Index = () => {
                     onTransfer={handleTransferPatient}
                     onPrintPatient={handlePrintPatient}
                     onRefetch={refetch}
+                    onQuickView={handleQuickView}
                   />
 
                   {/* Pacientes Fora das Alas Section */}
