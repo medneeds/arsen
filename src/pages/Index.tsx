@@ -224,6 +224,8 @@ const Index = () => {
   const [utiAllocationDialogOpen, setUtiAllocationDialogOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [quickViewPatient, setQuickViewPatient] = useState<Patient | null>(null);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
   const { toast } = useToast();
   const { signOut, user, role, allowedDepartments, loading: authLoading } = useAuth();
   const { saveVersion, fetchVersions } = usePatientVersions();
