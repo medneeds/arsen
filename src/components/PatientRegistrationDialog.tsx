@@ -144,7 +144,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
       return;
     }
 
-    if (!selectedHospitalId || !selectedStateId) {
+    if (!currentHospital?.id || !currentState?.id) {
       toast({ title: "Selecione um hospital", variant: "destructive" });
       return;
     }
