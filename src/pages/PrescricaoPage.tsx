@@ -1386,6 +1386,11 @@ const PrescricaoPage = () => {
               <Pause className="h-3 w-3" /> {suspendedItemsCount} suspenso{suspendedItemsCount > 1 ? 's' : ''}
             </Badge>
           )}
+          {digitalSignature && (
+            <Badge variant="outline" className="gap-1 text-[10px] border-green-300 text-green-700 bg-green-50">
+              <ShieldCheck className="h-3 w-3" /> Assinado — {digitalSignature.doctorName}
+            </Badge>
+          )}
           <span className="text-xs text-muted-foreground">
             {TAB_ORDER.map(cat => {
               const count = itemsByCategory[cat].length;
@@ -1397,6 +1402,14 @@ const PrescricaoPage = () => {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleRenew} className="gap-1.5 text-xs">
             <RefreshCw className="h-3 w-3" /> Renovar
+          </Button>
+          <Button
+            variant={digitalSignature ? "outline" : "default"}
+            size="sm"
+            onClick={handleRequestSign}
+            className={cn("gap-1.5 text-xs", digitalSignature && "border-green-300 text-green-700 hover:text-green-800")}
+          >
+            {digitalSignature ? <><ShieldCheck className="h-3 w-3" /> Reassinar</> : <><Fingerprint className="h-3 w-3" /> Assinar</>}
           </Button>
           <Button size="sm" onClick={handleSave} className="gap-1.5 text-xs">
             <Save className="h-3 w-3" /> Salvar
@@ -1419,6 +1432,13 @@ const PrescricaoPage = () => {
         onConfirm={confirmRenewal}
         activeCount={activeItemsCount}
         suspendedCount={suspendedItemsCount}
+      />
+      <SignPrescriptionDialog
+        open={signDialogOpen}
+        onClose={() => setSignDialogOpen(false)}
+        onConfirm={confirmSign}
+        totalItems={totalItems}
+        activeItems={activeItemsCount}
       />
     </div>
   );
