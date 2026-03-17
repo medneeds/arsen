@@ -44,6 +44,7 @@ interface SectorSectionProps {
   customTitle?: string;
   customIcon?: string;
   onRefetch?: () => void;
+  onQuickView?: (patient: Patient) => void;
 }
 
 const sectorInfo = {
