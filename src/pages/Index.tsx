@@ -176,9 +176,9 @@ const Index = () => {
 
   // Sector visual config
   const SECTOR_VISUAL: Record<string, { title: string; color: string; dotClass: string; colorVariant: string }> = {
-    red: { title: "UTI 1", color: "from-red-500/20 to-red-600/10", dotClass: "bg-red-500/80 border-red-400/40", colorVariant: "red" },
-    yellow: { title: "UTI 2", color: "from-amber-500/20 to-amber-600/10", dotClass: "bg-amber-500/80 border-amber-400/40", colorVariant: "yellow" },
-    blue: { title: "UCI 1", color: "from-blue-500/20 to-blue-600/10", dotClass: "bg-blue-500/80 border-blue-400/40", colorVariant: "blue" },
+    red: { title: "UTI 1", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
+    yellow: { title: "UTI 2", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
+    blue: { title: "UCI 1", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
     outside: { title: "UCI 2", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
   };
   
