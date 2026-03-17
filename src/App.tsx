@@ -430,6 +430,16 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/catalogo-medicamentos"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <MedicationCatalogPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
