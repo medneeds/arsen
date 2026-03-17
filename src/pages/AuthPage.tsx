@@ -247,9 +247,26 @@ export default function AuthPage() {
                     fill="url(#crossGrad)"
                     filter="url(#glow)"
                   />
-                  {/* White plus sign in center */}
-                  <rect x="55" y="30" width="10" height="40" rx="3" fill="white" fillOpacity="0.95" />
-                  <rect x="40" y="45" width="40" height="10" rx="3" fill="white" fillOpacity="0.95" />
+                  {/* AI Brain icon in center */}
+                  <g transform="translate(44, 34)" fill="white" fillOpacity="0.95">
+                    {/* Brain outline - left hemisphere */}
+                    <path d="M16 2C13.5 2 11.2 3 9.5 4.7C8.2 6 7.3 7.7 7 9.5C5.2 10.2 4 11.9 4 14C4 15.3 4.5 16.5 5.3 17.4C4.5 18.5 4 19.9 4 21.5C4 24.5 6.2 27 9 27.5V29H13V27H16V25" strokeWidth="0" />
+                    {/* Brain outline - right hemisphere */}
+                    <path d="M16 2C18.5 2 20.8 3 22.5 4.7C23.8 6 24.7 7.7 25 9.5C26.8 10.2 28 11.9 28 14C28 15.3 27.5 16.5 26.7 17.4C27.5 18.5 28 19.9 28 21.5C28 24.5 25.8 27 23 27.5V29H19V27H16V25" strokeWidth="0" />
+                    {/* Neural circuit dots */}
+                    <circle cx="11" cy="11" r="1.5" />
+                    <circle cx="21" cy="11" r="1.5" />
+                    <circle cx="9" cy="18" r="1.5" />
+                    <circle cx="23" cy="18" r="1.5" />
+                    <circle cx="16" cy="14" r="2" />
+                    {/* Neural connections */}
+                    <line x1="11" y1="11" x2="16" y2="14" stroke="white" strokeWidth="1" strokeOpacity="0.7" />
+                    <line x1="21" y1="11" x2="16" y2="14" stroke="white" strokeWidth="1" strokeOpacity="0.7" />
+                    <line x1="9" y1="18" x2="16" y2="14" stroke="white" strokeWidth="1" strokeOpacity="0.7" />
+                    <line x1="23" y1="18" x2="16" y2="14" stroke="white" strokeWidth="1" strokeOpacity="0.7" />
+                    {/* Sparkle / AI accent */}
+                    <path d="M16 6L17 8.5L19.5 9.5L17 10.5L16 13L15 10.5L12.5 9.5L15 8.5Z" fillOpacity="0.6" />
+                  </g>
                 </motion.svg>
               </motion.div>
 
