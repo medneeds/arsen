@@ -139,7 +139,8 @@ export function SectorSection({
   onOpenChange,
   customTitle,
   customIcon,
-  onRefetch
+  onRefetch,
+  onQuickView
 }: SectorSectionProps) {
   const info = sectorInfo[sector];
   const displayTitle = customTitle || info.title;
