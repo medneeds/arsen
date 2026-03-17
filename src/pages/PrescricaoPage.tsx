@@ -1909,6 +1909,17 @@ const PrescricaoPage = () => {
         totalItems={totalItems}
         activeItems={activeItemsCount}
       />
+      <DrugInteractionDialog
+        open={interactionDialogOpen}
+        onClose={() => setInteractionDialogOpen(false)}
+        items={items}
+        patientContext={{
+          age: patient.age,
+          sex: patient.sex,
+          weight: patient.weight,
+          allergies: patient.allergies,
+        }}
+      />
     </div>
   );
 };
