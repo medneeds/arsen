@@ -1488,6 +1488,21 @@ const PrescricaoPage = () => {
           <Button variant="outline" size="sm" onClick={handleRenew} className="gap-1.5">
             <RefreshCw className="h-3.5 w-3.5" /> Renovar
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const activeMeds = items.filter(i => i.status === 'active' && !['nutrition', 'care'].includes(i.category));
+              if (activeMeds.length < 2) {
+                toast.error("Mínimo de 2 medicamentos ativos para verificar interações");
+                return;
+              }
+              setInteractionDialogOpen(true);
+            }}
+            className="gap-1.5 text-amber-600 border-amber-200 hover:border-amber-300 hover:text-amber-700"
+          >
+            <Zap className="h-3.5 w-3.5" /> Interações
+          </Button>
           <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5">
             <Printer className="h-3.5 w-3.5" /> Imprimir
           </Button>
