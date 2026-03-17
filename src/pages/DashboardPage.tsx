@@ -179,79 +179,64 @@ const DashboardPage = () => {
 
   const fetchKPIs = async () => {
     const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const now = new Date();
+    const twentyFourHoursAgo = subHours(now, 24);
     
-    // Current period
-    const { data: requests } = await supabase
-      .from('internment_requests')
-      .select('*')
-      .match(departmentFilter)
-      .gte('created_at', dateRange.from.toISOString())
-      .lte('created_at', dateRange.to.toISOString());
-
-    const { data: patients } = await supabase
-      .from('patients')
-      .select('*')
-      .match(departmentFilter);
-
-    const { data: discharges } = await supabase
-      .from('patient_movements')
-      .select('*')
-      .match(departmentFilter)
-      .eq('movement_type', 'ALTA')
-      .gte('created_at', dateRange.from.toISOString())
-      .lte('created_at', dateRange.to.toISOString());
-
-    const { data: deaths } = await supabase
-      .from('patient_movements')
-      .select('*')
-      .match(departmentFilter)
-      .eq('movement_type', 'ÓBITO')
-      .gte('created_at', dateRange.from.toISOString())
-      .lte('created_at', dateRange.to.toISOString());
-
-    const { data: transfers } = await supabase
-      .from('patient_movements')
-      .select('*')
-      .match(departmentFilter)
-      .eq('movement_type', 'TRANSFERÊNCIA')
-      .gte('created_at', dateRange.from.toISOString())
-      .lte('created_at', dateRange.to.toISOString());
+    // Current period queries
+    const [
+      { data: requests },
+      { data: patients },
+      { data: discharges },
+      { data: deaths },
+      { data: transfers },
+      { data: newAdmissions },
+      { data: pendingPrescriptions },
+      { data: plannedDischargesData },
+    ] = await Promise.all([
+      supabase.from('internment_requests').select('*').match(departmentFilter)
+        .gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
+      supabase.from('patients').select('*').match(departmentFilter),
+      supabase.from('patient_movements').select('*').match(departmentFilter)
+        .eq('movement_type', 'ALTA').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
+      supabase.from('patient_movements').select('*').match(departmentFilter)
+        .eq('movement_type', 'ÓBITO').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
+      supabase.from('patient_movements').select('*').match(departmentFilter)
+        .eq('movement_type', 'TRANSFERÊNCIA').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
+      // New admissions in last 24h
+      supabase.from('patients').select('*').match(departmentFilter)
+        .gte('created_at', twentyFourHoursAgo.toISOString()),
+      // Pending prescriptions (draft status)
+      supabase.from('prescriptions').select('*').match(departmentFilter)
+        .eq('status', 'draft'),
+      // Planned discharges (patients with internment_status indicating discharge)
+      supabase.from('patients').select('*').match(departmentFilter)
+        .or('internment_status.eq.IR_PARA_ENFERMARIA,internment_status.eq.PSM_FAVORAVEL'),
+    ]);
 
     // Comparison period
     const daysDiff = Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
     const comparisonFrom = subDays(dateRange.from, daysDiff);
     const comparisonTo = dateRange.from;
+    const compTwentyFourHBefore = subHours(comparisonTo, 24);
 
-    const { data: compRequests } = await supabase
-      .from('internment_requests')
-      .select('*')
-      .match(departmentFilter)
-      .gte('created_at', comparisonFrom.toISOString())
-      .lte('created_at', comparisonTo.toISOString());
-
-    const { data: compDischarges } = await supabase
-      .from('patient_movements')
-      .select('*')
-      .match(departmentFilter)
-      .eq('movement_type', 'ALTA')
-      .gte('created_at', comparisonFrom.toISOString())
-      .lte('created_at', comparisonTo.toISOString());
-
-    const { data: compDeaths } = await supabase
-      .from('patient_movements')
-      .select('*')
-      .match(departmentFilter)
-      .eq('movement_type', 'ÓBITO')
-      .gte('created_at', comparisonFrom.toISOString())
-      .lte('created_at', comparisonTo.toISOString());
-
-    const { data: compTransfers } = await supabase
-      .from('patient_movements')
-      .select('*')
-      .match(departmentFilter)
-      .eq('movement_type', 'TRANSFERÊNCIA')
-      .gte('created_at', comparisonFrom.toISOString())
-      .lte('created_at', comparisonTo.toISOString());
+    const [
+      { data: compRequests },
+      { data: compDischarges },
+      { data: compDeaths },
+      { data: compTransfers },
+      { data: compNewAdmissions },
+    ] = await Promise.all([
+      supabase.from('internment_requests').select('*').match(departmentFilter)
+        .gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
+      supabase.from('patient_movements').select('*').match(departmentFilter)
+        .eq('movement_type', 'ALTA').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
+      supabase.from('patient_movements').select('*').match(departmentFilter)
+        .eq('movement_type', 'ÓBITO').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
+      supabase.from('patient_movements').select('*').match(departmentFilter)
+        .eq('movement_type', 'TRANSFERÊNCIA').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
+      supabase.from('patients').select('*').match(departmentFilter)
+        .gte('created_at', compTwentyFourHBefore.toISOString()).lte('created_at', comparisonTo.toISOString()),
+    ]);
 
     setKpis({
       internmentRequests: requests?.length || 0,
@@ -259,14 +244,149 @@ const DashboardPage = () => {
       discharges: discharges?.length || 0,
       deaths: deaths?.length || 0,
       transfers: transfers?.length || 0,
+      newAdmissions24h: newAdmissions?.length || 0,
+      pendingPrescriptions: pendingPrescriptions?.length || 0,
+      plannedDischarges: plannedDischargesData?.length || 0,
       comparison: {
         internmentRequests: compRequests?.length || 0,
         activePatients: 0,
         discharges: compDischarges?.length || 0,
         deaths: compDeaths?.length || 0,
-        transfers: compTransfers?.length || 0
+        transfers: compTransfers?.length || 0,
+        newAdmissions24h: compNewAdmissions?.length || 0,
+        pendingPrescriptions: 0,
+        plannedDischarges: 0,
       }
     });
+  };
+
+  const fetchPriorityAlerts = async () => {
+    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const alerts: PriorityAlert[] = [];
+
+    // Critical: Patients with clinical_status 'gravissimo'
+    const { data: criticalPatients } = await supabase
+      .from('patients')
+      .select('id, name, bed_number, clinical_status, created_at')
+      .match(departmentFilter)
+      .eq('clinical_status', 'gravissimo');
+
+    criticalPatients?.forEach(p => {
+      alerts.push({
+        id: `critical-${p.id}`,
+        level: 'critical',
+        message: 'Estado clínico gravíssimo — requer atenção imediata',
+        patientName: p.name,
+        bedNumber: p.bed_number,
+        timestamp: p.created_at,
+      });
+    });
+
+    // Warning: Pending prescriptions (draft) older than 2h
+    const twoHoursAgo = subHours(new Date(), 2);
+    const { data: stalePrescriptions } = await supabase
+      .from('prescriptions')
+      .select('id, patient_name, created_at')
+      .match(departmentFilter)
+      .eq('status', 'draft')
+      .lte('created_at', twoHoursAgo.toISOString());
+
+    stalePrescriptions?.forEach(p => {
+      alerts.push({
+        id: `warning-rx-${p.id}`,
+        level: 'warning',
+        message: 'Prescrição pendente há mais de 2 horas',
+        patientName: p.patient_name,
+        timestamp: p.created_at,
+      });
+    });
+
+    // Info: Pending bed allocation requests
+    const { data: pendingAllocations } = await supabase
+      .from('bed_allocation_requests')
+      .select('id, patient_id, requested_sector, created_at')
+      .match(departmentFilter)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    pendingAllocations?.forEach(a => {
+      alerts.push({
+        id: `info-alloc-${a.id}`,
+        level: 'info',
+        message: `Solicitação de leito pendente para ${a.requested_sector}`,
+        timestamp: a.created_at,
+      });
+    });
+
+    // Sort: critical first, then warning, then info
+    const levelOrder = { critical: 0, warning: 1, info: 2 };
+    alerts.sort((a, b) => levelOrder[a.level] - levelOrder[b.level]);
+    setPriorityAlerts(alerts);
+  };
+
+  const fetchRecentActivities = async () => {
+    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const activities: RecentActivity[] = [];
+
+    // Recent movements (last 48h)
+    const fortyEightHoursAgo = subHours(new Date(), 48);
+    const { data: movements } = await supabase
+      .from('patient_movements')
+      .select('id, patient_name, movement_type, created_at')
+      .match(departmentFilter)
+      .gte('created_at', fortyEightHoursAgo.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    movements?.forEach(m => {
+      activities.push({
+        id: `mov-${m.id}`,
+        type: m.movement_type === 'ALTA' ? 'discharge' : 'movement',
+        description: `${m.movement_type}: ${m.patient_name}`,
+        timestamp: m.created_at,
+      });
+    });
+
+    // Recent prescriptions
+    const { data: rxs } = await supabase
+      .from('prescriptions')
+      .select('id, patient_name, status, created_at')
+      .match(departmentFilter)
+      .gte('created_at', fortyEightHoursAgo.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    rxs?.forEach(r => {
+      activities.push({
+        id: `rx-${r.id}`,
+        type: 'prescription',
+        description: `Prescrição ${r.status === 'signed' ? 'assinada' : 'criada'}: ${r.patient_name}`,
+        timestamp: r.created_at,
+      });
+    });
+
+    // Recent patients created
+    const { data: newPatients } = await supabase
+      .from('patients')
+      .select('id, name, created_at')
+      .match(departmentFilter)
+      .gte('created_at', fortyEightHoursAgo.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    newPatients?.forEach(p => {
+      activities.push({
+        id: `adm-${p.id}`,
+        type: 'admission',
+        description: `Admissão: ${p.name}`,
+        timestamp: p.created_at,
+      });
+    });
+
+    // Sort by timestamp desc
+    activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    setRecentActivities(activities.slice(0, 10));
   };
 
   const fetchMovementsOverTime = async () => {
