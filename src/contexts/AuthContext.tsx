@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from("profiles")
         .select("status")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (!profileError && profileData) {
         setStatus(profileData.status as UserStatus);
