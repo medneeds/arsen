@@ -297,6 +297,7 @@ export function SectorSection({
                   onTransfer={onTransfer}
                   onPrintPatient={onPrintPatient}
                   onRefetch={onRefetch}
+                  onQuickView={onQuickView}
                 />
               ))}
             </SortableContext>
