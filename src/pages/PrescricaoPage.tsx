@@ -1188,23 +1188,85 @@ const PrescricaoPage = () => {
     setRenewDialogOpen(true);
   };
 
-  const confirmRenewal = useCallback((includeSuspended: boolean) => {
+  const confirmRenewal = useCallback(async (includeSuspended: boolean) => {
     const sourceItems = includeSuspended ? items : items.filter(i => i.status === 'active');
     const renewedItems: PrescriptionItem[] = sourceItems.map(item => ({
       ...item,
       id: crypto.randomUUID(),
-      status: 'active',
+      status: 'active' as const,
       suspensionReason: undefined,
       suspendedAt: undefined,
     }));
+
+    // If current prescription is saved, save it first then create a new version linked to it
+    if (currentPrescriptionId && currentHospital && currentState) {
+      setSaving(true);
+      try {
+        // Save current state of existing prescription
+        await supabase
+          .from('prescriptions')
+          .update({
+            patient_data: patient as any,
+            items: items as any,
+            digital_signature: digitalSignature as any,
+            status: digitalSignature ? 'signed' : 'draft',
+          })
+          .eq('id', currentPrescriptionId);
+
+        // Get current version number
+        const { data: parentData } = await supabase
+          .from('prescriptions')
+          .select('version')
+          .eq('id', currentPrescriptionId)
+          .single();
+        const nextVersion = (parentData?.version || 1) + 1;
+
+        // Create new version linked to parent
+        const { data: newData, error } = await supabase
+          .from('prescriptions')
+          .insert({
+            patient_name: patient.name.trim(),
+            patient_data: patient as any,
+            items: renewedItems as any,
+            digital_signature: null,
+            status: 'draft',
+            version: nextVersion,
+            parent_id: currentPrescriptionId,
+            department: 'URGÊNCIA E EMERGÊNCIA ADULTO',
+            hospital_unit_id: currentHospital.id,
+            state_id: currentState.id,
+            created_by: user?.id || null,
+          })
+          .select('id')
+          .single();
+
+        if (error) throw error;
+        if (newData) {
+          setCurrentPrescriptionId(newData.id);
+          fetchVersionHistory(newData.id);
+        }
+        fetchPrescriptions();
+        const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
+        toast.success(`Prescrição renovada para ${tomorrow} (v${nextVersion})`, {
+          description: `${renewedItems.length} itens renovados${includeSuspended ? ' (incluindo suspensos reativados)' : ''}.`,
+        });
+      } catch (err: any) {
+        toast.error("Erro ao renovar prescrição", { description: err.message });
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
+      toast.success(`Prescrição renovada para ${tomorrow}`, {
+        description: `${renewedItems.length} itens renovados${includeSuspended ? ' (incluindo suspensos reativados)' : ''}.`,
+      });
+    }
+
     setItems(renewedItems);
-    const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
-    toast.success(`Prescrição renovada para ${tomorrow}`, {
-      description: `${renewedItems.length} itens renovados${includeSuspended ? ' (incluindo suspensos reativados)' : ''}.`,
-    });
+    setDigitalSignature(null);
     setRenewDialogOpen(false);
     setSelectedIds(new Set());
-  }, [items]);
+  }, [items, currentPrescriptionId, currentHospital, currentState, patient, digitalSignature, user, fetchPrescriptions, fetchVersionHistory]);
 
   const updatePatient = (field: keyof PatientHeader, value: string) => {
     setPatient((prev) => ({ ...prev, [field]: value }));
