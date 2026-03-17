@@ -64,6 +64,8 @@ const DashboardPage = () => {
     });
   }, [currentDepartment]);
   
+  const { currentHospital, currentState } = useHospital();
+
   // KPIs State
   const [kpis, setKpis] = useState({
     internmentRequests: 0,
@@ -71,14 +73,24 @@ const DashboardPage = () => {
     discharges: 0,
     deaths: 0,
     transfers: 0,
+    newAdmissions24h: 0,
+    pendingPrescriptions: 0,
+    plannedDischarges: 0,
     comparison: {
       internmentRequests: 0,
       activePatients: 0,
       discharges: 0,
       deaths: 0,
-      transfers: 0
+      transfers: 0,
+      newAdmissions24h: 0,
+      pendingPrescriptions: 0,
+      plannedDischarges: 0,
     }
   });
+
+  // Priority Alerts & Activities
+  const [priorityAlerts, setPriorityAlerts] = useState<PriorityAlert[]>([]);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
 
   // Charts Data State
   const [movementsOverTime, setMovementsOverTime] = useState<any[]>([]);
