@@ -4978,6 +4978,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
         isLoading={conductHistoryLoading}
         patientName={patient.name}
       />
+      <AdmissionHistoryDialog
+        patient={patient}
+        open={admissionHistoryDialogOpen}
+        onOpenChange={setAdmissionHistoryDialogOpen}
+      />
     </>
   );
 }
