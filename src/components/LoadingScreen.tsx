@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { whitelabel } from "@/config/whitelabel";
-import bighelpLogo from "@/assets/bighelp-map-logo.png";
+import { BigHelpLogo } from "./BigHelpLogo";
 
 interface LoadingScreenProps {
   onComplete?: () => void;
