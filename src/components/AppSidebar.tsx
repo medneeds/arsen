@@ -83,15 +83,26 @@ export function AppSidebar({
   // Check if user is BIGDOOR (porta role)
   const isDoorUser = role === "porta";
 
+  // Access profile from localStorage
+  const accessProfile = typeof window !== 'undefined' ? localStorage.getItem("access_profile") || "medico" : "medico";
+
   const allMenuItems = [
     {
       title: "MAPA",
       icon: LayoutDashboard,
       link: "/",
+      profiles: ["medico", "gestor", "multi"],
+    },
+    {
+      title: "PAINEL DO GESTOR",
+      icon: BarChart3,
+      link: "/painel-gestor",
+      profiles: ["gestor"],
     },
     {
       title: "PACIENTES",
       icon: Users,
+      profiles: ["medico", "gestor", "multi", "administrativo"],
       items: [
         { name: "MOVIMENTAÇÕES", link: "/movements" },
         { name: "HISTÓRICO", link: "/internment-history" },
@@ -100,6 +111,7 @@ export function AppSidebar({
     {
       title: "DOCUMENTOS",
       icon: FolderOpen,
+      profiles: ["medico", "gestor"],
       items: [
         { name: "ROUND", link: "/round" },
         { name: "HEMODERIVADOS", link: "/hemoderivados" },
@@ -118,6 +130,7 @@ export function AppSidebar({
     {
       title: "PROTOCOLOS",
       icon: Stethoscope,
+      profiles: ["medico", "gestor"],
       items: [
         { name: "PROTOCOLO SEPSE", link: "/sepsis-protocol" },
         { name: "CONTROLE GLICÊMICO", link: "/controle-glicemico" },
@@ -132,6 +145,7 @@ export function AppSidebar({
     {
       title: "ASSISTENTE CLÍNICO",
       icon: Brain,
+      profiles: ["medico", "gestor"],
       items: [
         { name: "PRESCRIÇÃO", link: "/prescricao" },
         { name: "EVOLUÇÃO", link: "/evolucao" },
@@ -143,13 +157,14 @@ export function AppSidebar({
       title: "VERSÕES",
       icon: History,
       link: "/versions",
+      profiles: ["medico", "gestor"],
     },
   ];
 
-  // Filtra itens de menu baseado no papel do usuário
+  // Filter menu items based on access profile and user role
   const menuItems = isDoorUser 
     ? allMenuItems.filter(item => item.title === "MAPA" || item.title === "EXAMINUS AI")
-    : allMenuItems;
+    : allMenuItems.filter(item => !item.profiles || item.profiles.includes(accessProfile));
 
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
