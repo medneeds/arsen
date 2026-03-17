@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from("profiles")
         .select("status")
         .eq("id", userId)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         if (import.meta.env.DEV) {
