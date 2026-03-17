@@ -65,8 +65,8 @@ export function PreAdmissionSection() {
       const { data, error } = await supabase
         .from("pre_admissions")
         .select("*")
-        .eq("hospital_unit_id", selectedHospitalId)
-        .eq("state_id", selectedStateId)
+        .eq("hospital_unit_id", currentHospital.id)
+        .eq("state_id", currentState.id)
         .in("status", ["pre_admissao", "classificado"])
         .order("created_at", { ascending: false });
 
