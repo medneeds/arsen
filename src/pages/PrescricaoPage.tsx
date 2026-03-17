@@ -5,7 +5,7 @@ import socorraoLogo from "@/assets/socorrao1-logo.png";
 import { ptBR } from "date-fns/locale";
 import {
   Pill, Plus, Trash2, Copy, Printer, Save, RefreshCw,
-  Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe,
+  Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe, History,
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal,
   Play, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
@@ -843,6 +843,8 @@ const PrescricaoPage = () => {
   const [saving, setSaving] = useState(false);
   const [savedPrescriptions, setSavedPrescriptions] = useState<Array<{ id: string; patient_name: string; status: string; version: number; created_at: string; digital_signature: DigitalSignature | null }>>([]);
   const [loadingList, setLoadingList] = useState(false);
+  const [versionHistory, setVersionHistory] = useState<Array<{ id: string; version: number; status: string; created_at: string; digital_signature: DigitalSignature | null }>>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 
@@ -1057,6 +1059,33 @@ const PrescricaoPage = () => {
 
   useEffect(() => { fetchPrescriptions(); }, [fetchPrescriptions]);
 
+  // Fetch version history for a prescription (by patient_name in same hospital)
+  const fetchVersionHistory = useCallback(async (prescriptionId: string) => {
+    if (!currentHospital || !currentState) return;
+    try {
+      const { data: current } = await supabase
+        .from('prescriptions')
+        .select('patient_name')
+        .eq('id', prescriptionId)
+        .single();
+      if (!current) return;
+      const { data } = await supabase
+        .from('prescriptions')
+        .select('id, version, status, created_at, digital_signature')
+        .eq('patient_name', current.patient_name)
+        .eq('hospital_unit_id', currentHospital.id)
+        .eq('state_id', currentState.id)
+        .order('version', { ascending: true });
+      setVersionHistory((data || []).map(v => ({
+        ...v,
+        digital_signature: v.digital_signature as unknown as DigitalSignature | null,
+      })));
+    } catch (err) {
+      console.error('Error fetching version history:', err);
+      setVersionHistory([]);
+    }
+  }, [currentHospital, currentState]);
+
   // Load a saved prescription
   const loadPrescription = useCallback(async (id: string) => {
     try {
@@ -1073,11 +1102,12 @@ const PrescricaoPage = () => {
         setCurrentPrescriptionId(data.id);
         setSelectedIds(new Set());
         toast.success("Prescrição carregada", { description: `v${data.version} — ${data.patient_name}` });
+        fetchVersionHistory(id);
       }
     } catch (err: any) {
       toast.error("Erro ao carregar prescrição", { description: err.message });
     }
-  }, []);
+  }, [fetchVersionHistory]);
 
   // Save prescription to database
   const handleSave = async () => {
@@ -1158,23 +1188,85 @@ const PrescricaoPage = () => {
     setRenewDialogOpen(true);
   };
 
-  const confirmRenewal = useCallback((includeSuspended: boolean) => {
+  const confirmRenewal = useCallback(async (includeSuspended: boolean) => {
     const sourceItems = includeSuspended ? items : items.filter(i => i.status === 'active');
     const renewedItems: PrescriptionItem[] = sourceItems.map(item => ({
       ...item,
       id: crypto.randomUUID(),
-      status: 'active',
+      status: 'active' as const,
       suspensionReason: undefined,
       suspendedAt: undefined,
     }));
+
+    // If current prescription is saved, save it first then create a new version linked to it
+    if (currentPrescriptionId && currentHospital && currentState) {
+      setSaving(true);
+      try {
+        // Save current state of existing prescription
+        await supabase
+          .from('prescriptions')
+          .update({
+            patient_data: patient as any,
+            items: items as any,
+            digital_signature: digitalSignature as any,
+            status: digitalSignature ? 'signed' : 'draft',
+          })
+          .eq('id', currentPrescriptionId);
+
+        // Get current version number
+        const { data: parentData } = await supabase
+          .from('prescriptions')
+          .select('version')
+          .eq('id', currentPrescriptionId)
+          .single();
+        const nextVersion = (parentData?.version || 1) + 1;
+
+        // Create new version linked to parent
+        const { data: newData, error } = await supabase
+          .from('prescriptions')
+          .insert({
+            patient_name: patient.name.trim(),
+            patient_data: patient as any,
+            items: renewedItems as any,
+            digital_signature: null,
+            status: 'draft',
+            version: nextVersion,
+            parent_id: currentPrescriptionId,
+            department: 'URGÊNCIA E EMERGÊNCIA ADULTO',
+            hospital_unit_id: currentHospital.id,
+            state_id: currentState.id,
+            created_by: user?.id || null,
+          })
+          .select('id')
+          .single();
+
+        if (error) throw error;
+        if (newData) {
+          setCurrentPrescriptionId(newData.id);
+          fetchVersionHistory(newData.id);
+        }
+        fetchPrescriptions();
+        const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
+        toast.success(`Prescrição renovada para ${tomorrow} (v${nextVersion})`, {
+          description: `${renewedItems.length} itens renovados${includeSuspended ? ' (incluindo suspensos reativados)' : ''}.`,
+        });
+      } catch (err: any) {
+        toast.error("Erro ao renovar prescrição", { description: err.message });
+      } finally {
+        setSaving(false);
+      }
+    } else {
+      const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
+      toast.success(`Prescrição renovada para ${tomorrow}`, {
+        description: `${renewedItems.length} itens renovados${includeSuspended ? ' (incluindo suspensos reativados)' : ''}.`,
+      });
+    }
+
     setItems(renewedItems);
-    const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
-    toast.success(`Prescrição renovada para ${tomorrow}`, {
-      description: `${renewedItems.length} itens renovados${includeSuspended ? ' (incluindo suspensos reativados)' : ''}.`,
-    });
+    setDigitalSignature(null);
     setRenewDialogOpen(false);
     setSelectedIds(new Set());
-  }, [items]);
+  }, [items, currentPrescriptionId, currentHospital, currentState, patient, digitalSignature, user, fetchPrescriptions, fetchVersionHistory]);
 
   const updatePatient = (field: keyof PatientHeader, value: string) => {
     setPatient((prev) => ({ ...prev, [field]: value }));
@@ -1279,6 +1371,60 @@ const PrescricaoPage = () => {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ===== VERSION HISTORY ===== */}
+      {versionHistory.length > 1 && currentPrescriptionId && (
+        <div className="rounded-xl border border-border bg-card p-3 print:hidden">
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="w-full flex items-center justify-between text-xs"
+          >
+            <span className="flex items-center gap-2 font-semibold text-muted-foreground uppercase tracking-wider">
+              <History className="h-3.5 w-3.5" /> Histórico de Versões ({versionHistory.length})
+            </span>
+            <span className="text-muted-foreground text-[10px]">{showHistory ? 'Ocultar' : 'Expandir'}</span>
+          </button>
+          {showHistory && (
+            <div className="mt-3 space-y-1">
+              {versionHistory.map((v, i) => (
+                <button
+                  key={v.id}
+                  onClick={() => loadPrescription(v.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-2 rounded-lg border text-xs transition-colors hover:bg-accent/50 text-left",
+                    currentPrescriptionId === v.id ? "border-primary bg-primary/5" : "border-border/50"
+                  )}
+                >
+                  <div className="flex flex-col items-center gap-0.5">
+                    <div className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border",
+                      currentPrescriptionId === v.id ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/30 text-muted-foreground"
+                    )}>
+                      {v.version}
+                    </div>
+                    {i < versionHistory.length - 1 && <div className="w-px h-2 bg-border" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Versão {v.version}</span>
+                      <Badge variant={v.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
+                        {v.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
+                      </Badge>
+                      {currentPrescriptionId === v.id && (
+                        <Badge variant="secondary" className="text-[9px] h-4 px-1.5">Atual</Badge>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {format(new Date(v.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      {v.digital_signature && ` — Assinado por ${v.digital_signature.doctorName}`}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
