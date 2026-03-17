@@ -816,6 +816,9 @@ function SignPrescriptionDialog({
 
 // ===================== MAIN COMPONENT =====================
 const PrescricaoPage = () => {
+  const { user } = useAuth();
+  const { currentHospital, currentState } = useHospital();
+
   const [patient, setPatient] = useState<PatientHeader>({
     name: "", birthDate: "", age: "", sex: "", bed: "",
     unit: "", record: "", admissionDate: "", weight: "", allergies: "",
@@ -834,6 +837,12 @@ const PrescricaoPage = () => {
   // Phase 4 state — Digital Signature
   const [signDialogOpen, setSignDialogOpen] = useState(false);
   const [digitalSignature, setDigitalSignature] = useState<DigitalSignature | null>(null);
+
+  // Phase 5 state — Persistence
+  const [currentPrescriptionId, setCurrentPrescriptionId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [savedPrescriptions, setSavedPrescriptions] = useState<Array<{ id: string; patient_name: string; status: string; version: number; created_at: string; digital_signature: DigitalSignature | null }>>([]);
+  const [loadingList, setLoadingList] = useState(false);
 
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 
