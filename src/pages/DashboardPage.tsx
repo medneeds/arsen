@@ -777,48 +777,162 @@ const DashboardPage = () => {
           </CardContent>
         </Card>
 
-        {/* KPIs com animações escalonadas */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+        {/* KPIs - Row 1: Existing */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <KPICard 
-              title="Pedidos de Internação" 
-              value={kpis.internmentRequests} 
-              icon={FileText}
-              comparison={kpis.comparison.internmentRequests}
-            />
+            <KPICard title="Pacientes Ativos" value={kpis.activePatients} icon={Users} comparison={kpis.comparison.activePatients} />
+          </div>
+          <div className="animate-fade-in" style={{ animationDelay: '0.25s' }}>
+            <KPICard title="Novas Admissões (24h)" value={kpis.newAdmissions24h} icon={UserPlus} comparison={kpis.comparison.newAdmissions24h} />
           </div>
           <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            <KPICard 
-              title="Pacientes Ativos" 
-              value={kpis.activePatients} 
-              icon={Users}
-              comparison={kpis.comparison.activePatients}
-            />
+            <KPICard title="Prescrições Pendentes" value={kpis.pendingPrescriptions} icon={Pill} comparison={kpis.comparison.pendingPrescriptions} />
           </div>
+          <div className="animate-fade-in" style={{ animationDelay: '0.35s' }}>
+            <KPICard title="Altas Previstas" value={kpis.plannedDischarges} icon={LogOut} comparison={kpis.comparison.plannedDischarges} />
+          </div>
+        </div>
+
+        {/* KPIs - Row 2: Movements */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            <KPICard 
-              title="Altas" 
-              value={kpis.discharges} 
-              icon={UserCheck}
-              comparison={kpis.comparison.discharges}
-            />
+            <KPICard title="Pedidos de Internação" value={kpis.internmentRequests} icon={FileText} comparison={kpis.comparison.internmentRequests} />
+          </div>
+          <div className="animate-fade-in" style={{ animationDelay: '0.45s' }}>
+            <KPICard title="Altas" value={kpis.discharges} icon={UserCheck} comparison={kpis.comparison.discharges} />
           </div>
           <div className="animate-fade-in" style={{ animationDelay: '0.5s' }}>
-            <KPICard 
-              title="Óbitos" 
-              value={kpis.deaths} 
-              icon={UserX}
-              comparison={kpis.comparison.deaths}
-            />
+            <KPICard title="Óbitos" value={kpis.deaths} icon={UserX} comparison={kpis.comparison.deaths} />
           </div>
-          <div className="animate-fade-in" style={{ animationDelay: '0.6s' }}>
-            <KPICard 
-              title="Transferências" 
-              value={kpis.transfers} 
-              icon={ArrowRightLeft}
-              comparison={kpis.comparison.transfers}
-            />
+          <div className="animate-fade-in" style={{ animationDelay: '0.55s' }}>
+            <KPICard title="Transferências" value={kpis.transfers} icon={ArrowRightLeft} comparison={kpis.comparison.transfers} />
           </div>
+        </div>
+
+        {/* Priority Alerts + Recent Activities */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Priority Alerts Panel */}
+          <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-gradient-card animate-fade-in" style={{ animationDelay: '0.6s' }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-destructive/10 p-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <CardTitle className="uppercase text-lg font-bold">Alertas Prioritários</CardTitle>
+                  <CardDescription className="text-sm">Situações que requerem atenção</CardDescription>
+                </div>
+                {priorityAlerts.length > 0 && (
+                  <Badge variant="destructive" className="ml-auto">{priorityAlerts.length}</Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[280px]">
+                {priorityAlerts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full py-8 text-muted-foreground">
+                    <ClipboardCheck className="h-10 w-10 mb-3 opacity-40" />
+                    <p className="text-sm font-medium">Nenhum alerta no momento</p>
+                    <p className="text-xs">Tudo sob controle ✓</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {priorityAlerts.map((alert) => (
+                      <div
+                        key={alert.id}
+                        className={cn(
+                          "flex items-start gap-3 p-3 rounded-lg border transition-colors",
+                          alert.level === 'critical' && "bg-destructive/5 border-destructive/20",
+                          alert.level === 'warning' && "bg-amber-500/5 border-amber-500/20",
+                          alert.level === 'info' && "bg-primary/5 border-primary/20",
+                        )}
+                      >
+                        <div className={cn(
+                          "mt-0.5 rounded-full p-1",
+                          alert.level === 'critical' && "bg-destructive/10",
+                          alert.level === 'warning' && "bg-amber-500/10",
+                          alert.level === 'info' && "bg-primary/10",
+                        )}>
+                          {alert.level === 'critical' && <AlertTriangle className="h-3.5 w-3.5 text-destructive" />}
+                          {alert.level === 'warning' && <Clock className="h-3.5 w-3.5 text-amber-500" />}
+                          {alert.level === 'info' && <Bell className="h-3.5 w-3.5 text-primary" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {alert.patientName && <span className="font-semibold">{alert.patientName}</span>}
+                            {alert.bedNumber && <span className="text-muted-foreground ml-1">({alert.bedNumber})</span>}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{alert.message}</p>
+                        </div>
+                        <Badge variant="outline" className={cn(
+                          "text-[10px] shrink-0",
+                          alert.level === 'critical' && "border-destructive/30 text-destructive",
+                          alert.level === 'warning' && "border-amber-500/30 text-amber-600",
+                          alert.level === 'info' && "border-primary/30 text-primary",
+                        )}>
+                          {alert.level === 'critical' ? 'CRÍTICO' : alert.level === 'warning' ? 'ATENÇÃO' : 'PENDÊNCIA'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {/* Recent Activities Timeline */}
+          <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-gradient-card animate-fade-in" style={{ animationDelay: '0.65s' }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-primary/10 p-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="uppercase text-lg font-bold">Atividades Recentes</CardTitle>
+                  <CardDescription className="text-sm">Últimas 48 horas</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[280px]">
+                {recentActivities.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full py-8 text-muted-foreground">
+                    <Clock className="h-10 w-10 mb-3 opacity-40" />
+                    <p className="text-sm font-medium">Nenhuma atividade recente</p>
+                  </div>
+                ) : (
+                  <div className="relative space-y-0">
+                    {recentActivities.map((activity, index) => (
+                      <div key={activity.id} className="flex gap-3 pb-4 relative">
+                        {/* Timeline line */}
+                        {index < recentActivities.length - 1 && (
+                          <div className="absolute left-[13px] top-7 bottom-0 w-px bg-border" />
+                        )}
+                        <div className={cn(
+                          "shrink-0 rounded-full p-1.5 z-10",
+                          activity.type === 'discharge' ? "bg-green-500/10" :
+                          activity.type === 'prescription' ? "bg-primary/10" :
+                          activity.type === 'admission' ? "bg-amber-500/10" :
+                          "bg-muted"
+                        )}>
+                          {activity.type === 'discharge' && <LogOut className="h-3 w-3 text-green-600" />}
+                          {activity.type === 'prescription' && <Pill className="h-3 w-3 text-primary" />}
+                          {activity.type === 'admission' && <UserPlus className="h-3 w-3 text-amber-600" />}
+                          {activity.type === 'movement' && <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm truncate">{activity.description}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {format(new Date(activity.timestamp), "dd/MM HH:mm", { locale: ptBR })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Charts Grid com estilo premium */}
