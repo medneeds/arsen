@@ -938,6 +938,9 @@ const PrescricaoPage = () => {
                             isSimple={simple}
                             selected={selectedIds.has(item.id)}
                             onToggleSelect={toggleSelect}
+                            onDuplicate={duplicateItem}
+                            onRequestSuspend={requestSuspendItem}
+                            onReactivate={reactivateItem}
                           />
                         ))}
                       </div>
