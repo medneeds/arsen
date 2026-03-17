@@ -5,27 +5,28 @@ import socorraoLogo from "@/assets/socorrao1-logo.png";
 import { ptBR } from "date-fns/locale";
 import {
   Pill, Plus, Trash2, Copy, Printer, Save, RefreshCw,
-  Search, AlertTriangle,
-  UtensilsCrossed, Droplets, Syringe, ClipboardList, X, Check
+  Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe,
+  ClipboardList, X, Check, Shield, Wind, TestTube, FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  MEDICATIONS_DATABASE,
-  DIET_OPTIONS,
-  SOLUTION_OPTIONS,
+  ALL_ITEMS_BY_CATEGORY,
+  CATEGORY_CONFIG,
+  PRESCRIPTION_FLAGS,
   ROUTES,
   POSOLOGIES,
-  COMMON_SCHEDULES,
   RECOMMENDATION_TEMPLATES,
   type MedicationEntry,
+  type PrescriptionCategory,
+  type PrescriptionFlag,
 } from "@/data/medicationsDatabase";
 
 // --- Types ---
@@ -38,7 +39,10 @@ interface PrescriptionItem {
   posology: string;
   schedule: string;
   instructions: string;
-  category: 'medicamento' | 'solucao' | 'dieta';
+  category: PrescriptionCategory;
+  flags: PrescriptionFlag[];
+  highAlert: boolean;
+  status: 'active' | 'suspended';
 }
 
 interface PatientHeader {
@@ -53,6 +57,16 @@ interface PatientHeader {
   weight: string;
   allergies: string;
 }
+
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  UtensilsCrossed, Droplets, Pill, Shield, AlertTriangle,
+  Wind, TestTube, ClipboardList, FileText,
+};
+
+const TAB_ORDER: PrescriptionCategory[] = [
+  'nutrition', 'hydration', 'medication', 'antimicrobial',
+  'high_alert', 'inhalation', 'hemotherapy', 'care', 'nonstandard',
+];
 
 // --- Autocomplete Component ---
 function MedicationAutocomplete({
@@ -74,7 +88,8 @@ function MedicationAutocomplete({
     return source.filter(
       (m) =>
         m.name.toLowerCase().includes(q) ||
-        m.presentation.toLowerCase().includes(q)
+        m.presentation.toLowerCase().includes(q) ||
+        (m.aliases && m.aliases.some(a => a.toLowerCase().includes(q)))
     ).slice(0, 10);
   }, [query, source]);
 
@@ -110,12 +125,15 @@ function MedicationAutocomplete({
               className="w-full px-3 py-2.5 text-left hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 border-b border-border/30 last:border-0"
             >
               <div className="min-w-0">
-                <span className="text-sm font-medium text-foreground block truncate">{med.name}</span>
+                <span className="text-sm font-medium text-foreground block truncate">
+                  {med.name}
+                  {med.highAlert && <AlertTriangle className="inline h-3 w-3 ml-1 text-red-500" />}
+                </span>
                 <span className="text-xs text-muted-foreground block truncate">{med.presentation}</span>
               </div>
-              <Badge variant="outline" className="text-[10px] shrink-0">
-                {med.defaultRoute}
-              </Badge>
+              {med.defaultRoute !== '-' && (
+                <Badge variant="outline" className="text-[10px] shrink-0">{med.defaultRoute}</Badge>
+              )}
             </button>
           ))}
         </div>
@@ -124,40 +142,118 @@ function MedicationAutocomplete({
   );
 }
 
-// --- Prescription Item Row (screen) ---
+// --- Flag Toggle ---
+function FlagToggle({ flag, active, onToggle }: {
+  flag: typeof PRESCRIPTION_FLAGS[number];
+  active: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onToggle}
+          className={cn(
+            "text-[9px] font-bold px-1.5 py-0.5 rounded border transition-all",
+            active ? flag.color : "bg-muted/30 text-muted-foreground/50 border-border/30"
+          )}
+        >
+          {flag.label}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="text-xs">{flag.fullLabel}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+// --- Prescription Item Row ---
 function PrescriptionItemRow({
   item,
   index,
   onUpdate,
   onRemove,
+  onToggleFlag,
+  isSimple,
 }: {
   item: PrescriptionItem;
   index: number;
   onUpdate: (id: string, field: keyof PrescriptionItem, value: string) => void;
   onRemove: (id: string) => void;
+  onToggleFlag: (id: string, flag: PrescriptionFlag) => void;
+  isSimple?: boolean;
 }) {
+  if (isSimple) {
+    return (
+      <div className={cn(
+        "flex items-center gap-2 px-2.5 py-2 rounded-lg border group transition-all",
+        item.status === 'suspended'
+          ? "border-destructive/30 bg-destructive/5 opacity-60"
+          : "border-border/40 bg-muted/20"
+      )}>
+        <span className="text-xs font-mono text-muted-foreground w-5">{index + 1}.</span>
+        <span className={cn("text-sm font-medium flex-1", item.status === 'suspended' && "line-through")}>
+          {item.name}
+        </span>
+        {item.dose !== '-' && <Badge variant="outline" className="text-[10px]">{item.dose}</Badge>}
+        {item.posology !== '-' && <Badge variant="secondary" className="text-[10px]">{item.posology}</Badge>}
+        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          {PRESCRIPTION_FLAGS.map(f => (
+            <FlagToggle
+              key={f.key}
+              flag={f}
+              active={item.flags.includes(f.key)}
+              onToggle={() => onToggleFlag(item.id, f.key)}
+            />
+          ))}
+        </div>
+        <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive" onClick={() => onRemove(item.id)}>
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="group relative rounded-lg border border-border/50 bg-card/50 hover:border-primary/20 transition-all print:hidden">
+    <div className={cn(
+      "group relative rounded-lg border transition-all",
+      item.status === 'suspended'
+        ? "border-destructive/30 bg-destructive/5 opacity-60"
+        : "border-border/50 bg-card/50 hover:border-primary/20",
+      item.highAlert && item.status !== 'suspended' && "border-red-300/50 bg-red-50/30 dark:bg-red-950/10"
+    )}>
       <div className="flex items-start gap-2 p-2.5">
         <span className="text-xs font-mono text-muted-foreground w-6 text-center shrink-0 pt-1.5">
           {index + 1}.
         </span>
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm font-semibold text-foreground">
+            <p className={cn("text-sm font-semibold text-foreground", item.status === 'suspended' && "line-through")}>
+              {item.highAlert && <AlertTriangle className="inline h-3 w-3 mr-1 text-red-500" />}
               {item.name}
               {item.presentation && item.presentation !== '-' && (
                 <span className="font-normal text-muted-foreground ml-1">({item.presentation})</span>
               )}
             </p>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive ml-auto"
-              onClick={() => onRemove(item.id)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
+            {/* Flags (always visible) */}
+            <div className="flex gap-0.5 ml-auto">
+              {PRESCRIPTION_FLAGS.map(f => (
+                <FlagToggle
+                  key={f.key}
+                  flag={f}
+                  active={item.flags.includes(f.key)}
+                  onToggle={() => onToggleFlag(item.id, f.key)}
+                />
+              ))}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive ml-1"
+                onClick={() => onRemove(item.id)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
             <Input value={item.dose} onChange={(e) => onUpdate(item.id, "dose", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-24" placeholder="Dose" />
@@ -174,34 +270,50 @@ function PrescriptionItemRow({
             <span className="text-muted-foreground text-[10px]">—</span>
             <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-20" placeholder="Horário" />
           </div>
-          <div className="relative">
-            <Input value={item.instructions} onChange={(e) => onUpdate(item.id, "instructions", e.target.value)} className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic" placeholder="Preparo, diluição, tempo de infusão, gotas/min, mL/h..." />
-          </div>
+          <Input
+            value={item.instructions}
+            onChange={(e) => onUpdate(item.id, "instructions", e.target.value)}
+            className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic"
+            placeholder="Preparo, diluição, tempo de infusão, gotas/min, mL/h..."
+          />
+          {/* Active flag badges */}
+          {item.flags.length > 0 && (
+            <div className="flex gap-1 flex-wrap">
+              {item.flags.map(fk => {
+                const f = PRESCRIPTION_FLAGS.find(pf => pf.key === fk);
+                return f ? (
+                  <Badge key={fk} variant="outline" className={cn("text-[9px] px-1.5", f.color)}>
+                    {f.fullLabel}
+                  </Badge>
+                ) : null;
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-// --- Print-only Item Row (flat text, no inputs) ---
+// --- Print-only Item Row ---
 function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }) {
   return (
     <tr style={{ pageBreakInside: 'avoid' }}>
       <td className="border border-black/25 px-1 py-[2px] align-top" style={{ width: '75%' }}>
         <p className="text-[9px] leading-[1.3]">
           <span className="font-bold">{index + 1}. {item.name}</span>
-          {item.presentation && item.presentation !== '-' && (
-            <span className="font-normal"> ({item.presentation})</span>
-          )}
+          {item.presentation && item.presentation !== '-' && <span className="font-normal"> ({item.presentation})</span>}
           {item.dose && item.dose !== '-' && <span> — {item.dose}</span>}
           {item.route && item.route !== '-' && <span> — {item.route}</span>}
           {item.posology && item.posology !== '-' && <span> — {item.posology}</span>}
           {item.schedule && item.schedule !== '-' && <span> — <span className="font-semibold">{item.schedule}</span></span>}
+          {item.flags.length > 0 && (
+            <span className="font-bold text-[8px]"> [{item.flags.map(f => f.toUpperCase()).join(', ')}]</span>
+          )}
+          {item.status === 'suspended' && <span className="text-red-600 font-bold"> [SUSPENSO]</span>}
         </p>
         {item.instructions && (
-          <p className="text-[8px] italic text-gray-600 ml-2 leading-[1.2]">
-            ↳ {item.instructions}
-          </p>
+          <p className="text-[8px] italic text-gray-600 ml-2 leading-[1.2]">↳ {item.instructions}</p>
         )}
       </td>
       {[0,1,2,3,4,5].map(i => (
@@ -213,65 +325,35 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
   );
 }
 
-// --- Print-only simple row (diets, recommendations) ---
-function PrintSimpleRow({ text, index }: { text: string; index: number }) {
+function PrintSimpleRow({ item, index }: { item: PrescriptionItem; index: number }) {
   return (
     <tr style={{ pageBreakInside: 'avoid' }}>
       <td className="border border-black/25 px-1 py-[2px] align-top" colSpan={7}>
         <p className="text-[9px] leading-[1.3]">
-          <span className="font-bold">{index + 1}.</span> {text}
+          <span className="font-bold">{index + 1}.</span> {item.name}
+          {item.dose && item.dose !== '-' ? ` — ${item.dose}` : ''}
+          {item.posology && item.posology !== '-' ? ` — ${item.posology}` : ''}
         </p>
       </td>
     </tr>
   );
 }
 
-// --- Section Header ---
-function SectionHeader({
-  icon: Icon,
-  title,
-  count,
-  color,
-}: {
-  icon: React.ElementType;
-  title: string;
-  count: number;
-  color: string;
-}) {
-  return (
-    <div className="flex items-center gap-2.5 mb-3">
-      <div className={cn("p-1.5 rounded-md", color)}>
-        <Icon className="h-4 w-4" />
-      </div>
-      <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">{title}</h3>
-      {count > 0 && (
-        <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{count}</Badge>
-      )}
-    </div>
-  );
-}
-
-
 // ===================== MAIN COMPONENT =====================
 const PrescricaoPage = () => {
-  // Patient header state
   const [patient, setPatient] = useState<PatientHeader>({
     name: "", birthDate: "", age: "", sex: "", bed: "",
     unit: "", record: "", admissionDate: "", weight: "", allergies: "",
   });
 
-  // Prescription items
-  const [diets, setDiets] = useState<PrescriptionItem[]>([]);
-  const [solutions, setSolutions] = useState<PrescriptionItem[]>([]);
-  const [medications, setMedications] = useState<PrescriptionItem[]>([]);
-  const [recommendations, setRecommendations] = useState<string[]>([]);
-  const [newRecommendation, setNewRecommendation] = useState("");
-  const [recSearchQuery, setRecSearchQuery] = useState("");
+  const [items, setItems] = useState<PrescriptionItem[]>([]);
+  const [activeTab, setActiveTab] = useState<PrescriptionCategory>('nutrition');
+  const [nonStdName, setNonStdName] = useState("");
 
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 
   // --- Handlers ---
-  const createItem = (med: MedicationEntry, cat: 'medicamento' | 'solucao' | 'dieta'): PrescriptionItem => ({
+  const createItem = (med: MedicationEntry): PrescriptionItem => ({
     id: crypto.randomUUID(),
     name: med.name,
     presentation: med.presentation,
@@ -280,70 +362,79 @@ const PrescricaoPage = () => {
     posology: med.defaultPosology,
     schedule: med.defaultSchedule,
     instructions: med.instructions || "",
-    category: cat,
+    category: med.category,
+    flags: [],
+    highAlert: med.highAlert || false,
+    status: 'active',
   });
 
-  const addDiet = (med: MedicationEntry) => setDiets((prev) => [...prev, createItem(med, 'dieta')]);
-  const addSolution = (med: MedicationEntry) => setSolutions((prev) => [...prev, createItem(med, 'solucao')]);
-  const addMedication = (med: MedicationEntry) => setMedications((prev) => [...prev, createItem(med, 'medicamento')]);
+  const addItem = (med: MedicationEntry) => {
+    setItems((prev) => [...prev, createItem(med)]);
+  };
 
-  const updateItem = useCallback((setter: React.Dispatch<React.SetStateAction<PrescriptionItem[]>>) => {
-    return (id: string, field: keyof PrescriptionItem, value: string) => {
-      setter((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
-    };
+  const addNonStandard = () => {
+    if (!nonStdName.trim()) return;
+    setItems(prev => [...prev, {
+      id: crypto.randomUUID(),
+      name: nonStdName.trim(),
+      presentation: '-', dose: '-', route: '-',
+      posology: '-', schedule: '-', instructions: '',
+      category: 'nonstandard', flags: [], highAlert: false, status: 'active',
+    }]);
+    setNonStdName("");
+  };
+
+  const updateItem = useCallback((id: string, field: keyof PrescriptionItem, value: string) => {
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
   }, []);
 
-  const removeItem = useCallback((setter: React.Dispatch<React.SetStateAction<PrescriptionItem[]>>) => {
-    return (id: string) => {
-      setter((prev) => prev.filter((item) => item.id !== id));
-    };
+  const removeItem = useCallback((id: string) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
-  const addRecommendation = (rec: string) => {
-    if (rec.trim() && !recommendations.includes(rec.trim())) {
-      setRecommendations((prev) => [...prev, rec.trim()]);
-      setNewRecommendation("");
-      setRecSearchQuery("");
-    }
-  };
+  const toggleFlag = useCallback((id: string, flag: PrescriptionFlag) => {
+    setItems((prev) => prev.map((item) => {
+      if (item.id !== id) return item;
+      const flags = item.flags.includes(flag)
+        ? item.flags.filter(f => f !== flag)
+        : [...item.flags, flag];
+      return { ...item, flags };
+    }));
+  }, []);
 
-  const removeRecommendation = (index: number) => {
-    setRecommendations((prev) => prev.filter((_, i) => i !== index));
-  };
+  const itemsByCategory = useMemo(() => {
+    const map: Record<PrescriptionCategory, PrescriptionItem[]> = {
+      nutrition: [], hydration: [], medication: [], antimicrobial: [],
+      high_alert: [], inhalation: [], hemotherapy: [], care: [], nonstandard: [],
+    };
+    items.forEach(item => { map[item.category].push(item); });
+    return map;
+  }, [items]);
 
-  const filteredRecTemplates = useMemo(() => {
-    if (!recSearchQuery.trim()) return RECOMMENDATION_TEMPLATES;
-    const q = recSearchQuery.toLowerCase();
-    return RECOMMENDATION_TEMPLATES.filter((r) => r.toLowerCase().includes(q));
-  }, [recSearchQuery]);
-
-  const totalItems = diets.length + solutions.length + medications.length + recommendations.length;
-
-  const handleRenew = () => {
-    toast.success("Prescrição renovada para o dia seguinte", { description: "Todos os itens foram mantidos com data atualizada." });
-  };
+  const totalItems = items.length;
 
   const handleSave = () => {
-    if (!patient.name.trim()) {
-      toast.error("Preencha o nome do paciente");
-      return;
-    }
+    if (!patient.name.trim()) { toast.error("Preencha o nome do paciente"); return; }
     toast.success("Prescrição salva com sucesso", { description: `${totalItems} itens registrados.` });
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = () => window.print();
+
+  const handleRenew = () => {
+    toast.success("Prescrição renovada para o dia seguinte", { description: "Todos os itens mantidos com data atualizada." });
   };
 
   const updatePatient = (field: keyof PatientHeader, value: string) => {
     setPatient((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Determine if category uses simple (care/nutrition) or full row
+  const isSimpleCategory = (cat: PrescriptionCategory) => ['nutrition', 'care'].includes(cat);
+
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-2 print:space-y-1 print:max-w-none print:text-black">
-      {/* ===== PRINT-ONLY LETTERHEAD + PATIENT INFO (combined, compact) ===== */}
+      {/* ===== PRINT-ONLY LETTERHEAD ===== */}
       <div className="hidden print:block prescription-print-section mb-1">
-        {/* Letterhead */}
         <div className="flex items-center justify-between border-b-2 border-black pb-1 mb-1">
           <img src={socorraoLogo} alt="Socorrão I" className="h-8 object-contain" />
           <div className="text-center flex-1 px-2">
@@ -352,7 +443,6 @@ const PrescricaoPage = () => {
           </div>
           <img src={bighelpLogo} alt="BigHelp Map" className="h-7 object-contain" />
         </div>
-        {/* Patient Grid - full width, 2 rows */}
         <table className="w-full border-collapse border border-black/30 text-[9px] text-black">
           <tbody>
             <tr>
@@ -371,7 +461,8 @@ const PrescricaoPage = () => {
           </tbody>
         </table>
       </div>
-      {/* Page Title Bar */}
+
+      {/* Page Title */}
       <div className="flex items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10">
@@ -379,21 +470,18 @@ const PrescricaoPage = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground">Prescrição Médica</h1>
-            <p className="text-xs text-muted-foreground">Prescrição médica diária digital</p>
+            <p className="text-xs text-muted-foreground">Prescrição médica diária digital — {totalItems} itens</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 print:hidden">
+        <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRenew} className="gap-1.5">
-            <RefreshCw className="h-3.5 w-3.5" />
-            Renovar
+            <RefreshCw className="h-3.5 w-3.5" /> Renovar
           </Button>
           <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5">
-            <Printer className="h-3.5 w-3.5" />
-            Imprimir
+            <Printer className="h-3.5 w-3.5" /> Imprimir
           </Button>
           <Button size="sm" onClick={handleSave} className="gap-1.5">
-            <Save className="h-3.5 w-3.5" />
-            Salvar
+            <Save className="h-3.5 w-3.5" /> Salvar
           </Button>
         </div>
       </div>
@@ -429,7 +517,7 @@ const PrescricaoPage = () => {
           </div>
           <div>
             <Label className="text-[11px] text-muted-foreground">Leito</Label>
-            <Input value={patient.bed} onChange={(e) => updatePatient("bed", e.target.value)} placeholder="Ex: 11" className="mt-0.5 h-8 text-xs" />
+            <Input value={patient.bed} onChange={(e) => updatePatient("bed", e.target.value)} placeholder="Ex: L11" className="mt-0.5 h-8 text-xs" />
           </div>
           <div>
             <Label className="text-[11px] text-muted-foreground">Prontuário</Label>
@@ -461,98 +549,99 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== DIETAS ===== */}
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3 print:hidden">
-        <SectionHeader icon={UtensilsCrossed} title="Dietas" count={diets.length} color="bg-emerald-500/10 text-emerald-500" />
-        {diets.length > 0 && (
-          <div className="space-y-1.5">
-            {diets.map((item, i) => (
-              <div key={item.id} className="flex items-center gap-2 px-2.5 py-2 rounded-lg border border-border/40 bg-muted/20 group">
-                <span className="text-xs font-mono text-muted-foreground w-5">{i + 1}.</span>
-                <span className="text-sm font-medium text-foreground flex-1">{item.name}</span>
-                <Badge variant="outline" className="text-[10px]">{item.dose !== '-' ? item.dose : ''}</Badge>
-                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive" onClick={() => removeItem(setDiets)(item.id)}>
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
+      {/* ===== PRESCRIPTION TABS ===== */}
+      <div className="rounded-xl border border-border bg-card print:hidden">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PrescriptionCategory)} className="w-full">
+          <div className="border-b border-border px-2 pt-2">
+            <TabsList className="h-auto flex-wrap gap-1 bg-transparent justify-start p-0 pb-2">
+              {TAB_ORDER.map(cat => {
+                const config = CATEGORY_CONFIG[cat];
+                const IconComp = CATEGORY_ICONS[config.icon] || Pill;
+                const count = itemsByCategory[cat].length;
+                return (
+                  <TabsTrigger
+                    key={cat}
+                    value={cat}
+                    className={cn(
+                      "gap-1.5 text-xs px-3 py-1.5 rounded-lg data-[state=active]:shadow-sm transition-all",
+                      "data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border"
+                    )}
+                  >
+                    <IconComp className={cn("h-3.5 w-3.5", config.color)} />
+                    <span className="hidden sm:inline">{config.label}</span>
+                    {count > 0 && (
+                      <Badge variant="secondary" className="text-[9px] h-4 px-1 min-w-[16px]">{count}</Badge>
+                    )}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
           </div>
-        )}
-        <MedicationAutocomplete source={DIET_OPTIONS} onSelect={addDiet} placeholder="Buscar dieta..." />
+
+          {TAB_ORDER.map(cat => {
+            const config = CATEGORY_CONFIG[cat];
+            const catItems = itemsByCategory[cat];
+            const source = ALL_ITEMS_BY_CATEGORY[cat];
+            const simple = isSimpleCategory(cat);
+
+            return (
+              <TabsContent key={cat} value={cat} className="p-4 space-y-3 mt-0">
+                {/* Section header */}
+                <div className="flex items-center gap-2.5">
+                  <div className={cn("p-1.5 rounded-md", config.bgColor, config.color)}>
+                    {(() => { const I = CATEGORY_ICONS[config.icon] || Pill; return <I className="h-4 w-4" />; })()}
+                  </div>
+                  <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">{config.label}</h3>
+                  {catItems.length > 0 && <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{catItems.length}</Badge>}
+                </div>
+
+                {/* Items list */}
+                {catItems.length > 0 && (
+                  <div className="space-y-1.5">
+                    {catItems.map((item, i) => (
+                      <PrescriptionItemRow
+                        key={item.id}
+                        item={item}
+                        index={i}
+                        onUpdate={updateItem}
+                        onRemove={removeItem}
+                        onToggleFlag={toggleFlag}
+                        isSimple={simple}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Add item */}
+                {cat === 'nonstandard' ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={nonStdName}
+                      onChange={(e) => setNonStdName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") addNonStandard(); }}
+                      placeholder="Nome do item não padronizado..."
+                      className="bg-muted/30 border-border/50"
+                    />
+                    <Button variant="outline" size="sm" onClick={addNonStandard} disabled={!nonStdName.trim()}>
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <MedicationAutocomplete
+                    source={source}
+                    onSelect={addItem}
+                    placeholder={`Buscar ${config.label.toLowerCase()}...`}
+                  />
+                )}
+              </TabsContent>
+            );
+          })}
+        </Tabs>
       </div>
 
-      {/* ===== SOLUÇÕES ===== */}
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3 print:hidden">
-        <SectionHeader icon={Droplets} title="Soluções" count={solutions.length} color="bg-blue-500/10 text-blue-500" />
-        {solutions.length > 0 && (
-          <div className="space-y-1.5">
-            {solutions.map((item, i) => (
-              <PrescriptionItemRow key={item.id} item={item} index={i} onUpdate={updateItem(setSolutions)} onRemove={removeItem(setSolutions)} />
-            ))}
-          </div>
-        )}
-        <MedicationAutocomplete source={SOLUTION_OPTIONS} onSelect={addSolution} placeholder="Buscar solução..." />
-      </div>
-
-      {/* ===== MEDICAMENTOS ===== */}
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3 print:hidden">
-        <SectionHeader icon={Syringe} title="Medicamentos" count={medications.length} color="bg-primary/10 text-primary" />
-        {medications.length > 0 && (
-          <div className="space-y-1.5">
-            {medications.map((item, i) => (
-              <PrescriptionItemRow key={item.id} item={item} index={i} onUpdate={updateItem(setMedications)} onRemove={removeItem(setMedications)} />
-            ))}
-          </div>
-        )}
-        <MedicationAutocomplete source={MEDICATIONS_DATABASE} onSelect={addMedication} placeholder="Buscar medicamento... (ex: Omeprazol, Dipirona, Noradrenalina)" />
-      </div>
-
-      {/* ===== RECOMENDAÇÕES ===== */}
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3 print:hidden">
-        <SectionHeader icon={ClipboardList} title="Recomendações" count={recommendations.length} color="bg-amber-500/10 text-amber-500" />
-        {recommendations.length > 0 && (
-          <div className="space-y-1">
-            {recommendations.map((rec, i) => (
-              <div key={i} className="flex items-start gap-2 px-2.5 py-2 rounded-lg border border-border/40 bg-muted/20 group">
-                <span className="text-xs font-mono text-muted-foreground mt-0.5 w-5">{i + 1}.</span>
-                <p className="text-sm text-foreground flex-1">{rec}</p>
-                <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 text-destructive" onClick={() => removeRecommendation(i)}>
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="space-y-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input value={recSearchQuery} onChange={(e) => setRecSearchQuery(e.target.value)} placeholder="Buscar recomendação pré-definida..." className="pl-9 bg-muted/30 border-border/50" />
-          </div>
-          {recSearchQuery && (
-            <div className="rounded-lg border border-border bg-popover shadow-lg max-h-48 overflow-y-auto">
-              {filteredRecTemplates.map((rec, i) => (
-                <button key={i} type="button" onClick={() => addRecommendation(rec)} disabled={recommendations.includes(rec)} className="w-full px-3 py-2 text-left hover:bg-accent/50 transition-colors text-sm border-b border-border/30 last:border-0 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2">
-                  {recommendations.includes(rec) ? <Check className="h-3 w-3 text-primary shrink-0" /> : <Plus className="h-3 w-3 text-muted-foreground shrink-0" />}
-                  <span className="truncate">{rec}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <Input value={newRecommendation} onChange={(e) => setNewRecommendation(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addRecommendation(newRecommendation); }} placeholder="Digitar recomendação personalizada..." className="bg-muted/30 border-border/50" />
-            <Button variant="outline" size="sm" onClick={() => addRecommendation(newRecommendation)} disabled={!newRecommendation.trim()}>
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* ========================================================= */}
-      {/* ===== PRINT-ONLY PRESCRIPTION BODY (flat text) ===== */}
-      {/* ========================================================= */}
+      {/* ===== PRINT-ONLY PRESCRIPTION BODY ===== */}
       <div className="hidden print:block prescription-print-section">
         <table className="w-full border-collapse text-black">
-          {/* Table header with aprazamento columns */}
           <thead>
             <tr>
               <th className="border border-black/30 px-1 py-[2px] text-left text-[8px] font-bold uppercase tracking-wider bg-gray-100" style={{ width: '75%' }}>
@@ -566,49 +655,26 @@ const PrescricaoPage = () => {
             </tr>
           </thead>
           <tbody>
-            {/* DIETAS */}
-            {diets.length > 0 && (
-              <>
-                <tr><td colSpan={7} className="border border-black/30 px-1 py-[1px] text-[8px] font-bold uppercase tracking-wider bg-gray-50">Dietas</td></tr>
-                {diets.map((item, i) => (
-                  <PrintSimpleRow key={item.id} text={`${item.name}${item.dose && item.dose !== '-' ? ` — ${item.dose}` : ''}`} index={i} />
-                ))}
-              </>
-            )}
-
-            {/* SOLUÇÕES */}
-            {solutions.length > 0 && (
-              <>
-                <tr><td colSpan={7} className="border border-black/30 px-1 py-[1px] text-[8px] font-bold uppercase tracking-wider bg-gray-50">Soluções</td></tr>
-                {solutions.map((item, i) => (
-                  <PrintItemRow key={item.id} item={item} index={i} />
-                ))}
-              </>
-            )}
-
-            {/* MEDICAMENTOS */}
-            {medications.length > 0 && (
-              <>
-                <tr><td colSpan={7} className="border border-black/30 px-1 py-[1px] text-[8px] font-bold uppercase tracking-wider bg-gray-50">Medicamentos</td></tr>
-                {medications.map((item, i) => (
-                  <PrintItemRow key={item.id} item={item} index={i + solutions.length} />
-                ))}
-              </>
-            )}
-
-            {/* RECOMENDAÇÕES */}
-            {recommendations.length > 0 && (
-              <>
-                <tr><td colSpan={7} className="border border-black/30 px-1 py-[1px] text-[8px] font-bold uppercase tracking-wider bg-gray-50">Recomendações</td></tr>
-                {recommendations.map((rec, i) => (
-                  <PrintSimpleRow key={i} text={rec} index={i} />
-                ))}
-              </>
-            )}
+            {TAB_ORDER.map(cat => {
+              const catItems = itemsByCategory[cat].filter(i => i.status === 'active');
+              if (catItems.length === 0) return null;
+              const config = CATEGORY_CONFIG[cat];
+              const simple = isSimpleCategory(cat);
+              return (
+                <React.Fragment key={cat}>
+                  <tr><td colSpan={7} className="border border-black/30 px-1 py-[1px] text-[8px] font-bold uppercase tracking-wider bg-gray-50">{config.label}</td></tr>
+                  {catItems.map((item, i) => (
+                    simple
+                      ? <PrintSimpleRow key={item.id} item={item} index={i} />
+                      : <PrintItemRow key={item.id} item={item} index={i} />
+                  ))}
+                </React.Fragment>
+              );
+            })}
           </tbody>
         </table>
 
-        {/* PRINT FOOTER */}
+        {/* Print footer */}
         <div className="pt-4 mt-2 border-t border-black/20 flex items-end justify-between" style={{ pageBreakInside: 'avoid' }}>
           <div className="text-[7px] text-gray-500">
             <p>Gerado em: {prescriptionDate}</p>
@@ -622,25 +688,26 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== FOOTER SUMMARY (screen) ===== */}
+      {/* ===== FOOTER SUMMARY ===== */}
       <div className="rounded-xl border border-border bg-muted/30 p-4 flex items-center justify-between print:hidden">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <Badge variant="outline" className="gap-1 text-xs">
-            <Pill className="h-3 w-3" />
-            {totalItems} itens
+            <Pill className="h-3 w-3" /> {totalItems} itens
           </Badge>
           <span className="text-xs text-muted-foreground">
-            {diets.length} dietas · {solutions.length} soluções · {medications.length} medicamentos · {recommendations.length} recomendações
+            {TAB_ORDER.map(cat => {
+              const count = itemsByCategory[cat].length;
+              if (count === 0) return null;
+              return `${count} ${CATEGORY_CONFIG[cat].label.toLowerCase()}`;
+            }).filter(Boolean).join(' · ')}
           </span>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleRenew} className="gap-1.5 text-xs">
-            <Copy className="h-3 w-3" />
-            Duplicar para amanhã
+            <Copy className="h-3 w-3" /> Duplicar
           </Button>
           <Button size="sm" onClick={handleSave} className="gap-1.5 text-xs">
-            <Save className="h-3 w-3" />
-            Salvar prescrição
+            <Save className="h-3 w-3" /> Salvar
           </Button>
         </div>
       </div>
@@ -648,4 +715,5 @@ const PrescricaoPage = () => {
   );
 };
 
+import React from "react";
 export default PrescricaoPage;
