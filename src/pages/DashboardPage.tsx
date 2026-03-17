@@ -5,22 +5,42 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
 } from "recharts";
 import { 
   CalendarIcon, Download, Users, FileText, UserCheck, 
-  UserX, ArrowRightLeft, TrendingUp, Activity, BarChart3, Filter, X, Loader2
+  UserX, ArrowRightLeft, TrendingUp, Activity, BarChart3, Filter, X, Loader2,
+  AlertTriangle, Clock, Bell, ClipboardCheck, UserPlus, LogOut, Pill
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { format, subDays, subMonths, startOfDay, endOfDay } from "date-fns";
+import { format, subDays, subHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useDepartment } from "@/contexts/DepartmentContext";
+import { useHospital } from "@/contexts/HospitalContext";
 import { PrintableDashboard } from "@/components/PrintableDashboard";
 import { ThemeToggle } from "@/components/ThemeToggle";
+
+interface PriorityAlert {
+  id: string;
+  level: 'critical' | 'warning' | 'info';
+  message: string;
+  patientName?: string;
+  bedNumber?: string;
+  timestamp: string;
+}
+
+interface RecentActivity {
+  id: string;
+  type: string;
+  description: string;
+  timestamp: string;
+}
 
 const COLORS = ['#ef4444', '#eab308', '#3b82f6', '#6b7280', '#8b5cf6', '#ec4899'];
 
@@ -64,6 +84,8 @@ const DashboardPage = () => {
     });
   }, [currentDepartment]);
   
+  const { currentHospital, currentState } = useHospital();
+
   // KPIs State
   const [kpis, setKpis] = useState({
     internmentRequests: 0,
@@ -71,14 +93,24 @@ const DashboardPage = () => {
     discharges: 0,
     deaths: 0,
     transfers: 0,
+    newAdmissions24h: 0,
+    pendingPrescriptions: 0,
+    plannedDischarges: 0,
     comparison: {
       internmentRequests: 0,
       activePatients: 0,
       discharges: 0,
       deaths: 0,
-      transfers: 0
+      transfers: 0,
+      newAdmissions24h: 0,
+      pendingPrescriptions: 0,
+      plannedDischarges: 0,
     }
   });
+
+  // Priority Alerts & Activities
+  const [priorityAlerts, setPriorityAlerts] = useState<PriorityAlert[]>([]);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
 
   // Charts Data State
   const [movementsOverTime, setMovementsOverTime] = useState<any[]>([]);
@@ -136,7 +168,9 @@ const DashboardPage = () => {
         fetchSectorDistribution(),
         fetchMovementsByType(),
         fetchBedOccupancy(),
-        fetchRequestsByDestination()
+        fetchRequestsByDestination(),
+        fetchPriorityAlerts(),
+        fetchRecentActivities()
       ]);
     } finally {
       setIsLoading(false);
@@ -145,79 +179,64 @@ const DashboardPage = () => {
 
   const fetchKPIs = async () => {
     const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const now = new Date();
+    const twentyFourHoursAgo = subHours(now, 24);
     
-    // Current period
-    const { data: requests } = await supabase
-      .from('internment_requests')
-      .select('*')
-      .match(departmentFilter)
-      .gte('created_at', dateRange.from.toISOString())
-      .lte('created_at', dateRange.to.toISOString());
-
-    const { data: patients } = await supabase
-      .from('patients')
-      .select('*')
-      .match(departmentFilter);
-
-    const { data: discharges } = await supabase
-      .from('patient_movements')
-      .select('*')
-      .match(departmentFilter)
-      .eq('movement_type', 'ALTA')
-      .gte('created_at', dateRange.from.toISOString())
-      .lte('created_at', dateRange.to.toISOString());
-
-    const { data: deaths } = await supabase
-      .from('patient_movements')
-      .select('*')
-      .match(departmentFilter)
-      .eq('movement_type', 'ÓBITO')
-      .gte('created_at', dateRange.from.toISOString())
-      .lte('created_at', dateRange.to.toISOString());
-
-    const { data: transfers } = await supabase
-      .from('patient_movements')
-      .select('*')
-      .match(departmentFilter)
-      .eq('movement_type', 'TRANSFERÊNCIA')
-      .gte('created_at', dateRange.from.toISOString())
-      .lte('created_at', dateRange.to.toISOString());
+    // Current period queries
+    const [
+      { data: requests },
+      { data: patients },
+      { data: discharges },
+      { data: deaths },
+      { data: transfers },
+      { data: newAdmissions },
+      { data: pendingPrescriptions },
+      { data: plannedDischargesData },
+    ] = await Promise.all([
+      supabase.from('internment_requests').select('*').match(departmentFilter)
+        .gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
+      supabase.from('patients').select('*').match(departmentFilter),
+      supabase.from('patient_movements').select('*').match(departmentFilter)
+        .eq('movement_type', 'ALTA').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
+      supabase.from('patient_movements').select('*').match(departmentFilter)
+        .eq('movement_type', 'ÓBITO').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
+      supabase.from('patient_movements').select('*').match(departmentFilter)
+        .eq('movement_type', 'TRANSFERÊNCIA').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
+      // New admissions in last 24h
+      supabase.from('patients').select('*').match(departmentFilter)
+        .gte('created_at', twentyFourHoursAgo.toISOString()),
+      // Pending prescriptions (draft status)
+      supabase.from('prescriptions').select('*').match(departmentFilter)
+        .eq('status', 'draft'),
+      // Planned discharges (patients with internment_status indicating discharge)
+      supabase.from('patients').select('*').match(departmentFilter)
+        .or('internment_status.eq.IR_PARA_ENFERMARIA,internment_status.eq.PSM_FAVORAVEL'),
+    ]);
 
     // Comparison period
     const daysDiff = Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
     const comparisonFrom = subDays(dateRange.from, daysDiff);
     const comparisonTo = dateRange.from;
+    const compTwentyFourHBefore = subHours(comparisonTo, 24);
 
-    const { data: compRequests } = await supabase
-      .from('internment_requests')
-      .select('*')
-      .match(departmentFilter)
-      .gte('created_at', comparisonFrom.toISOString())
-      .lte('created_at', comparisonTo.toISOString());
-
-    const { data: compDischarges } = await supabase
-      .from('patient_movements')
-      .select('*')
-      .match(departmentFilter)
-      .eq('movement_type', 'ALTA')
-      .gte('created_at', comparisonFrom.toISOString())
-      .lte('created_at', comparisonTo.toISOString());
-
-    const { data: compDeaths } = await supabase
-      .from('patient_movements')
-      .select('*')
-      .match(departmentFilter)
-      .eq('movement_type', 'ÓBITO')
-      .gte('created_at', comparisonFrom.toISOString())
-      .lte('created_at', comparisonTo.toISOString());
-
-    const { data: compTransfers } = await supabase
-      .from('patient_movements')
-      .select('*')
-      .match(departmentFilter)
-      .eq('movement_type', 'TRANSFERÊNCIA')
-      .gte('created_at', comparisonFrom.toISOString())
-      .lte('created_at', comparisonTo.toISOString());
+    const [
+      { data: compRequests },
+      { data: compDischarges },
+      { data: compDeaths },
+      { data: compTransfers },
+      { data: compNewAdmissions },
+    ] = await Promise.all([
+      supabase.from('internment_requests').select('*').match(departmentFilter)
+        .gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
+      supabase.from('patient_movements').select('*').match(departmentFilter)
+        .eq('movement_type', 'ALTA').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
+      supabase.from('patient_movements').select('*').match(departmentFilter)
+        .eq('movement_type', 'ÓBITO').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
+      supabase.from('patient_movements').select('*').match(departmentFilter)
+        .eq('movement_type', 'TRANSFERÊNCIA').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
+      supabase.from('patients').select('*').match(departmentFilter)
+        .gte('created_at', compTwentyFourHBefore.toISOString()).lte('created_at', comparisonTo.toISOString()),
+    ]);
 
     setKpis({
       internmentRequests: requests?.length || 0,
@@ -225,14 +244,149 @@ const DashboardPage = () => {
       discharges: discharges?.length || 0,
       deaths: deaths?.length || 0,
       transfers: transfers?.length || 0,
+      newAdmissions24h: newAdmissions?.length || 0,
+      pendingPrescriptions: pendingPrescriptions?.length || 0,
+      plannedDischarges: plannedDischargesData?.length || 0,
       comparison: {
         internmentRequests: compRequests?.length || 0,
         activePatients: 0,
         discharges: compDischarges?.length || 0,
         deaths: compDeaths?.length || 0,
-        transfers: compTransfers?.length || 0
+        transfers: compTransfers?.length || 0,
+        newAdmissions24h: compNewAdmissions?.length || 0,
+        pendingPrescriptions: 0,
+        plannedDischarges: 0,
       }
     });
+  };
+
+  const fetchPriorityAlerts = async () => {
+    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const alerts: PriorityAlert[] = [];
+
+    // Critical: Patients with clinical_status 'gravissimo'
+    const { data: criticalPatients } = await supabase
+      .from('patients')
+      .select('id, name, bed_number, clinical_status, created_at')
+      .match(departmentFilter)
+      .eq('clinical_status', 'gravissimo');
+
+    criticalPatients?.forEach(p => {
+      alerts.push({
+        id: `critical-${p.id}`,
+        level: 'critical',
+        message: 'Estado clínico gravíssimo — requer atenção imediata',
+        patientName: p.name,
+        bedNumber: p.bed_number,
+        timestamp: p.created_at,
+      });
+    });
+
+    // Warning: Pending prescriptions (draft) older than 2h
+    const twoHoursAgo = subHours(new Date(), 2);
+    const { data: stalePrescriptions } = await supabase
+      .from('prescriptions')
+      .select('id, patient_name, created_at')
+      .match(departmentFilter)
+      .eq('status', 'draft')
+      .lte('created_at', twoHoursAgo.toISOString());
+
+    stalePrescriptions?.forEach(p => {
+      alerts.push({
+        id: `warning-rx-${p.id}`,
+        level: 'warning',
+        message: 'Prescrição pendente há mais de 2 horas',
+        patientName: p.patient_name,
+        timestamp: p.created_at,
+      });
+    });
+
+    // Info: Pending bed allocation requests
+    const { data: pendingAllocations } = await supabase
+      .from('bed_allocation_requests')
+      .select('id, patient_id, requested_sector, created_at')
+      .match(departmentFilter)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    pendingAllocations?.forEach(a => {
+      alerts.push({
+        id: `info-alloc-${a.id}`,
+        level: 'info',
+        message: `Solicitação de leito pendente para ${a.requested_sector}`,
+        timestamp: a.created_at,
+      });
+    });
+
+    // Sort: critical first, then warning, then info
+    const levelOrder = { critical: 0, warning: 1, info: 2 };
+    alerts.sort((a, b) => levelOrder[a.level] - levelOrder[b.level]);
+    setPriorityAlerts(alerts);
+  };
+
+  const fetchRecentActivities = async () => {
+    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const activities: RecentActivity[] = [];
+
+    // Recent movements (last 48h)
+    const fortyEightHoursAgo = subHours(new Date(), 48);
+    const { data: movements } = await supabase
+      .from('patient_movements')
+      .select('id, patient_name, movement_type, created_at')
+      .match(departmentFilter)
+      .gte('created_at', fortyEightHoursAgo.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    movements?.forEach(m => {
+      activities.push({
+        id: `mov-${m.id}`,
+        type: m.movement_type === 'ALTA' ? 'discharge' : 'movement',
+        description: `${m.movement_type}: ${m.patient_name}`,
+        timestamp: m.created_at,
+      });
+    });
+
+    // Recent prescriptions
+    const { data: rxs } = await supabase
+      .from('prescriptions')
+      .select('id, patient_name, status, created_at')
+      .match(departmentFilter)
+      .gte('created_at', fortyEightHoursAgo.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    rxs?.forEach(r => {
+      activities.push({
+        id: `rx-${r.id}`,
+        type: 'prescription',
+        description: `Prescrição ${r.status === 'signed' ? 'assinada' : 'criada'}: ${r.patient_name}`,
+        timestamp: r.created_at,
+      });
+    });
+
+    // Recent patients created
+    const { data: newPatients } = await supabase
+      .from('patients')
+      .select('id, name, created_at')
+      .match(departmentFilter)
+      .gte('created_at', fortyEightHoursAgo.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    newPatients?.forEach(p => {
+      activities.push({
+        id: `adm-${p.id}`,
+        type: 'admission',
+        description: `Admissão: ${p.name}`,
+        timestamp: p.created_at,
+      });
+    });
+
+    // Sort by timestamp desc
+    activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    setRecentActivities(activities.slice(0, 10));
   };
 
   const fetchMovementsOverTime = async () => {
@@ -623,48 +777,162 @@ const DashboardPage = () => {
           </CardContent>
         </Card>
 
-        {/* KPIs com animações escalonadas */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+        {/* KPIs - Row 1: Existing */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <KPICard 
-              title="Pedidos de Internação" 
-              value={kpis.internmentRequests} 
-              icon={FileText}
-              comparison={kpis.comparison.internmentRequests}
-            />
+            <KPICard title="Pacientes Ativos" value={kpis.activePatients} icon={Users} comparison={kpis.comparison.activePatients} />
+          </div>
+          <div className="animate-fade-in" style={{ animationDelay: '0.25s' }}>
+            <KPICard title="Novas Admissões (24h)" value={kpis.newAdmissions24h} icon={UserPlus} comparison={kpis.comparison.newAdmissions24h} />
           </div>
           <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            <KPICard 
-              title="Pacientes Ativos" 
-              value={kpis.activePatients} 
-              icon={Users}
-              comparison={kpis.comparison.activePatients}
-            />
+            <KPICard title="Prescrições Pendentes" value={kpis.pendingPrescriptions} icon={Pill} comparison={kpis.comparison.pendingPrescriptions} />
           </div>
+          <div className="animate-fade-in" style={{ animationDelay: '0.35s' }}>
+            <KPICard title="Altas Previstas" value={kpis.plannedDischarges} icon={LogOut} comparison={kpis.comparison.plannedDischarges} />
+          </div>
+        </div>
+
+        {/* KPIs - Row 2: Movements */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            <KPICard 
-              title="Altas" 
-              value={kpis.discharges} 
-              icon={UserCheck}
-              comparison={kpis.comparison.discharges}
-            />
+            <KPICard title="Pedidos de Internação" value={kpis.internmentRequests} icon={FileText} comparison={kpis.comparison.internmentRequests} />
+          </div>
+          <div className="animate-fade-in" style={{ animationDelay: '0.45s' }}>
+            <KPICard title="Altas" value={kpis.discharges} icon={UserCheck} comparison={kpis.comparison.discharges} />
           </div>
           <div className="animate-fade-in" style={{ animationDelay: '0.5s' }}>
-            <KPICard 
-              title="Óbitos" 
-              value={kpis.deaths} 
-              icon={UserX}
-              comparison={kpis.comparison.deaths}
-            />
+            <KPICard title="Óbitos" value={kpis.deaths} icon={UserX} comparison={kpis.comparison.deaths} />
           </div>
-          <div className="animate-fade-in" style={{ animationDelay: '0.6s' }}>
-            <KPICard 
-              title="Transferências" 
-              value={kpis.transfers} 
-              icon={ArrowRightLeft}
-              comparison={kpis.comparison.transfers}
-            />
+          <div className="animate-fade-in" style={{ animationDelay: '0.55s' }}>
+            <KPICard title="Transferências" value={kpis.transfers} icon={ArrowRightLeft} comparison={kpis.comparison.transfers} />
           </div>
+        </div>
+
+        {/* Priority Alerts + Recent Activities */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Priority Alerts Panel */}
+          <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-gradient-card animate-fade-in" style={{ animationDelay: '0.6s' }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-destructive/10 p-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <CardTitle className="uppercase text-lg font-bold">Alertas Prioritários</CardTitle>
+                  <CardDescription className="text-sm">Situações que requerem atenção</CardDescription>
+                </div>
+                {priorityAlerts.length > 0 && (
+                  <Badge variant="destructive" className="ml-auto">{priorityAlerts.length}</Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[280px]">
+                {priorityAlerts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full py-8 text-muted-foreground">
+                    <ClipboardCheck className="h-10 w-10 mb-3 opacity-40" />
+                    <p className="text-sm font-medium">Nenhum alerta no momento</p>
+                    <p className="text-xs">Tudo sob controle ✓</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {priorityAlerts.map((alert) => (
+                      <div
+                        key={alert.id}
+                        className={cn(
+                          "flex items-start gap-3 p-3 rounded-lg border transition-colors",
+                          alert.level === 'critical' && "bg-destructive/5 border-destructive/20",
+                          alert.level === 'warning' && "bg-amber-500/5 border-amber-500/20",
+                          alert.level === 'info' && "bg-primary/5 border-primary/20",
+                        )}
+                      >
+                        <div className={cn(
+                          "mt-0.5 rounded-full p-1",
+                          alert.level === 'critical' && "bg-destructive/10",
+                          alert.level === 'warning' && "bg-amber-500/10",
+                          alert.level === 'info' && "bg-primary/10",
+                        )}>
+                          {alert.level === 'critical' && <AlertTriangle className="h-3.5 w-3.5 text-destructive" />}
+                          {alert.level === 'warning' && <Clock className="h-3.5 w-3.5 text-amber-500" />}
+                          {alert.level === 'info' && <Bell className="h-3.5 w-3.5 text-primary" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {alert.patientName && <span className="font-semibold">{alert.patientName}</span>}
+                            {alert.bedNumber && <span className="text-muted-foreground ml-1">({alert.bedNumber})</span>}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{alert.message}</p>
+                        </div>
+                        <Badge variant="outline" className={cn(
+                          "text-[10px] shrink-0",
+                          alert.level === 'critical' && "border-destructive/30 text-destructive",
+                          alert.level === 'warning' && "border-amber-500/30 text-amber-600",
+                          alert.level === 'info' && "border-primary/30 text-primary",
+                        )}>
+                          {alert.level === 'critical' ? 'CRÍTICO' : alert.level === 'warning' ? 'ATENÇÃO' : 'PENDÊNCIA'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {/* Recent Activities Timeline */}
+          <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-gradient-card animate-fade-in" style={{ animationDelay: '0.65s' }}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-primary/10 p-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="uppercase text-lg font-bold">Atividades Recentes</CardTitle>
+                  <CardDescription className="text-sm">Últimas 48 horas</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[280px]">
+                {recentActivities.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full py-8 text-muted-foreground">
+                    <Clock className="h-10 w-10 mb-3 opacity-40" />
+                    <p className="text-sm font-medium">Nenhuma atividade recente</p>
+                  </div>
+                ) : (
+                  <div className="relative space-y-0">
+                    {recentActivities.map((activity, index) => (
+                      <div key={activity.id} className="flex gap-3 pb-4 relative">
+                        {/* Timeline line */}
+                        {index < recentActivities.length - 1 && (
+                          <div className="absolute left-[13px] top-7 bottom-0 w-px bg-border" />
+                        )}
+                        <div className={cn(
+                          "shrink-0 rounded-full p-1.5 z-10",
+                          activity.type === 'discharge' ? "bg-green-500/10" :
+                          activity.type === 'prescription' ? "bg-primary/10" :
+                          activity.type === 'admission' ? "bg-amber-500/10" :
+                          "bg-muted"
+                        )}>
+                          {activity.type === 'discharge' && <LogOut className="h-3 w-3 text-green-600" />}
+                          {activity.type === 'prescription' && <Pill className="h-3 w-3 text-primary" />}
+                          {activity.type === 'admission' && <UserPlus className="h-3 w-3 text-amber-600" />}
+                          {activity.type === 'movement' && <ArrowRightLeft className="h-3 w-3 text-muted-foreground" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm truncate">{activity.description}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {format(new Date(activity.timestamp), "dd/MM HH:mm", { locale: ptBR })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Charts Grid com estilo premium */}
