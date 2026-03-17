@@ -1,1 +1,4 @@
 project_id = "wgugmnpwliupwewtduvt"
+
+[functions.extract-patient-data]
+verify_jwt = false
