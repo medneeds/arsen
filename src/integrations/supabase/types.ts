@@ -920,6 +920,111 @@ export type Database = {
           },
         ]
       }
+      pre_admissions: {
+        Row: {
+          address: string | null
+          ai_extracted_data: Json | null
+          birth_date: string | null
+          city: string | null
+          cns: string | null
+          cpf: string | null
+          created_at: string
+          created_by: string | null
+          department: string
+          destination_bed: string | null
+          destination_sector: string | null
+          hospital_unit_id: string
+          id: string
+          medical_record: string | null
+          mother_name: string | null
+          neighborhood: string | null
+          notes: string | null
+          patient_name: string
+          phone: string | null
+          risk_classification: string | null
+          risk_classified_at: string | null
+          risk_classified_by: string | null
+          sex: string | null
+          social_name: string | null
+          state_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          ai_extracted_data?: Json | null
+          birth_date?: string | null
+          city?: string | null
+          cns?: string | null
+          cpf?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          destination_bed?: string | null
+          destination_sector?: string | null
+          hospital_unit_id: string
+          id?: string
+          medical_record?: string | null
+          mother_name?: string | null
+          neighborhood?: string | null
+          notes?: string | null
+          patient_name: string
+          phone?: string | null
+          risk_classification?: string | null
+          risk_classified_at?: string | null
+          risk_classified_by?: string | null
+          sex?: string | null
+          social_name?: string | null
+          state_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          ai_extracted_data?: Json | null
+          birth_date?: string | null
+          city?: string | null
+          cns?: string | null
+          cpf?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          destination_bed?: string | null
+          destination_sector?: string | null
+          hospital_unit_id?: string
+          id?: string
+          medical_record?: string | null
+          mother_name?: string | null
+          neighborhood?: string | null
+          notes?: string | null
+          patient_name?: string
+          phone?: string | null
+          risk_classification?: string | null
+          risk_classified_at?: string | null
+          risk_classified_by?: string | null
+          sex?: string | null
+          social_name?: string | null
+          state_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_admissions_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pre_admissions_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prescriptions: {
         Row: {
           created_at: string
