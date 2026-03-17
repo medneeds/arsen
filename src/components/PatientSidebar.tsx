@@ -112,7 +112,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <SheetTitle className="text-base font-bold truncate">
-                  {namesHidden ? maskName(patient.name) : patient.name}
+                  {maskName(patient.name, namesHidden)}
                 </SheetTitle>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <Badge variant="outline" className="text-[10px] font-mono gap-1">
