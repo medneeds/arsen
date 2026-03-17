@@ -920,6 +920,82 @@ export type Database = {
           },
         ]
       }
+      prescriptions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          department: string
+          digital_signature: Json | null
+          hospital_unit_id: string
+          id: string
+          items: Json
+          notes: string | null
+          parent_id: string | null
+          patient_data: Json
+          patient_name: string
+          state_id: string
+          status: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          digital_signature?: Json | null
+          hospital_unit_id: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          parent_id?: string | null
+          patient_data?: Json
+          patient_name: string
+          state_id: string
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          digital_signature?: Json | null
+          hospital_unit_id?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          parent_id?: string | null
+          patient_data?: Json
+          patient_name?: string
+          state_id?: string
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescriptions_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescriptions_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescriptions_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           approved_at: string | null
