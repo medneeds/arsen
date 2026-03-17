@@ -3641,6 +3641,20 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       </CollapsibleContent>
                     </Collapsible>
 
+                    {/* VISUALIZAÇÃO RÁPIDA */}
+                    {onQuickView && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onQuickView(patient);
+                        }}
+                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
+                      >
+                        <Eye className="h-4 w-4 text-primary" />
+                        <span>Visualização Rápida</span>
+                      </DropdownMenuItem>
+                    )}
+
                     {/* Elegant Divider */}
                     <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-2" />
 
