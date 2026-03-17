@@ -1026,6 +1026,22 @@ const PrescricaoPage = () => {
 
   const handlePrint = () => window.print();
 
+  // Sign prescription
+  const handleRequestSign = () => {
+    if (!patient.name.trim()) { toast.error("Preencha o nome do paciente antes de assinar"); return; }
+    if (activeItemsCount === 0) { toast.error("Nenhum item ativo para assinar"); return; }
+    setSignDialogOpen(true);
+  };
+
+  const confirmSign = useCallback((sig: DigitalSignature) => {
+    setDigitalSignature(sig);
+    setSignDialogOpen(false);
+    toast.success("Prescrição assinada digitalmente", {
+      description: `Dr(a). ${sig.doctorName} — CRM ${sig.crm} — Hash: ${sig.hash}`,
+      duration: 5000,
+    });
+  }, []);
+
   // Renewal with dialog
   const handleRenew = () => {
     if (items.length === 0) { toast.error("Nenhum item para renovar"); return; }
