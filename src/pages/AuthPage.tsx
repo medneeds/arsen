@@ -169,7 +169,7 @@ export default function AuthPage() {
 
             {/* Content */}
             <div className="relative z-10 text-center px-6 max-w-xl mx-auto flex flex-col items-center">
-              {/* Prominent Cross Icon - SVG animated */}
+              {/* Prominent Cross Icon with pulse rings */}
               <motion.div
                 className="relative mb-6"
                 initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
@@ -193,93 +193,13 @@ export default function AuthPage() {
                   transition={{ duration: 3, repeat: Infinity, ease: "easeOut", delay: 2 }}
                 />
 
-                {/* Large glow behind */}
-                <div className="absolute inset-0 -m-16 rounded-full blur-[80px] bg-[#2dd4bf]/[0.15]" />
                 <motion.div
-                  className="absolute inset-0 -m-10 rounded-full blur-[40px] bg-[#2dd4bf]/[0.1]"
-                  animate={{ opacity: [0.3, 0.6, 0.3] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                />
-
-                {/* SVG Cross Icon */}
-                <motion.svg
-                  width="120"
-                  height="140"
-                  viewBox="0 0 120 140"
-                  fill="none"
-                  className="relative z-10 drop-shadow-[0_0_40px_rgba(45,212,191,0.5)]"
                   animate={{ y: [-3, 3, -3] }}
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  className="drop-shadow-[0_0_40px_rgba(45,212,191,0.5)]"
                 >
-                  {/* Cross shape - map pin style */}
-                  <defs>
-                    <linearGradient id="crossGrad" x1="20" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor="#34d9c3" />
-                      <stop offset="50%" stopColor="#2bb5a6" />
-                      <stop offset="100%" stopColor="#0e7490" />
-                    </linearGradient>
-                    <linearGradient id="crossHighlight" x1="30" y1="0" x2="90" y2="80" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor="#5eead4" stopOpacity="0.6" />
-                      <stop offset="100%" stopColor="#2dd4bf" stopOpacity="0" />
-                    </linearGradient>
-                    <filter id="glow">
-                      <feGaussianBlur stdDeviation="3" result="blur" />
-                      <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  {/* Main cross body */}
-                  <path
-                    d="M45 8C45 4 49 0 53 0H67C71 0 75 4 75 8V35H102C106 35 110 39 110 43V57C110 61 106 65 102 65H75V92C75 96 71 100 67 100H60L60 100L53 100C49 100 45 96 45 92V65H18C14 65 10 61 10 57V43C10 39 14 35 18 35H45V8Z"
-                    fill="url(#crossGrad)"
-                    filter="url(#glow)"
-                  />
-                  {/* Highlight overlay */}
-                  <path
-                    d="M45 8C45 4 49 0 53 0H67C71 0 75 4 75 8V35H102C106 35 110 39 110 43V57C110 61 106 65 102 65H75V92C75 96 71 100 67 100H53C49 100 45 96 45 92V65H18C14 65 10 61 10 57V43C10 39 14 35 18 35H45V8Z"
-                    fill="url(#crossHighlight)"
-                  />
-                  {/* Pin bottom point */}
-                  <path
-                    d="M50 98L60 130L70 98"
-                    fill="url(#crossGrad)"
-                    filter="url(#glow)"
-                  />
-                  {/* AI Cross - Gemini-inspired 4-point star/cross */}
-                  <g transform="translate(60, 50)">
-                    <defs>
-                      <radialGradient id="starGlow" cx="40%" cy="35%" r="60%">
-                        <stop offset="0%" stopColor="white" stopOpacity="1" />
-                        <stop offset="50%" stopColor="white" stopOpacity="0.9" />
-                        <stop offset="100%" stopColor="#c4f0eb" stopOpacity="0.7" />
-                      </radialGradient>
-                      <filter id="star3d">
-                        <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="shadow" />
-                        <feOffset dx="0" dy="2" in="shadow" result="offsetShadow" />
-                        <feFlood floodColor="#0e7490" floodOpacity="0.3" />
-                        <feComposite in2="offsetShadow" operator="in" result="colorShadow" />
-                        <feMerge>
-                          <feMergeNode in="colorShadow" />
-                          <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                      </filter>
-                    </defs>
-                    {/* Main AI star shape */}
-                    <path
-                      d="M0 -20 C4 -8, 8 -4, 20 0 C8 4, 4 8, 0 20 C-4 8, -8 4, -20 0 C-8 -4, -4 -8, 0 -20Z"
-                      fill="url(#starGlow)"
-                      filter="url(#star3d)"
-                    />
-                    {/* Highlight / specular reflection */}
-                    <path
-                      d="M0 -14 C2.5 -6, 5 -3, 12 0 C5 1.5, 2 3, 0 8 C-1 3, -2 1.5, -6 0 C-2 -2, -1 -5, 0 -14Z"
-                      fill="white"
-                      fillOpacity="0.35"
-                    />
-                  </g>
-                </motion.svg>
+                  <BigHelpLogo size="xl" glow />
+                </motion.div>
               </motion.div>
 
               {/* Brand name: BigHelp Map */}
