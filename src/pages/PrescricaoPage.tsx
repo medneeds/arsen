@@ -1059,56 +1059,32 @@ const PrescricaoPage = () => {
 
   useEffect(() => { fetchPrescriptions(); }, [fetchPrescriptions]);
 
-  // Fetch version history for a prescription chain
+  // Fetch version history for a prescription (by patient_name in same hospital)
   const fetchVersionHistory = useCallback(async (prescriptionId: string) => {
+    if (!currentHospital || !currentState) return;
     try {
-      // Get the root of the chain by walking up parent_id
-      let rootId = prescriptionId;
-      let current = prescriptionId;
-      for (let i = 0; i < 50; i++) {
-        const { data } = await supabase
-          .from('prescriptions')
-          .select('parent_id')
-          .eq('id', current)
-          .single();
-        if (!data?.parent_id) break;
-        current = data.parent_id;
-        rootId = current;
-      }
-      // Fetch all versions in this chain (root + descendants)
-      const { data: allVersions, error } = await supabase
+      const { data: current } = await supabase
         .from('prescriptions')
-        .select('id, version, status, created_at, digital_signature, parent_id')
-        .or(`id.eq.${rootId},parent_id.eq.${rootId}`)
-        .order('version', { ascending: true });
-      
-      if (error) throw error;
-      
-      // Also fetch grandchildren etc. — simpler approach: fetch by patient_name + hospital
-      const { data: chainData } = await supabase
-        .from('prescriptions')
-        .select('id, version, status, created_at, digital_signature')
+        .select('patient_name')
         .eq('id', prescriptionId)
         .single();
-      
-      if (chainData) {
-        // Get all prescriptions with same patient in same hospital ordered by version
-        const { data: fullChain } = await supabase
-          .from('prescriptions')
-          .select('id, version, status, created_at, digital_signature')
-          .eq('patient_name', (await supabase.from('prescriptions').select('patient_name').eq('id', prescriptionId).single()).data?.patient_name || '')
-          .order('version', { ascending: true });
-        
-        setVersionHistory((fullChain || []).map(v => ({
-          ...v,
-          digital_signature: v.digital_signature as unknown as DigitalSignature | null,
-        })));
-      }
+      if (!current) return;
+      const { data } = await supabase
+        .from('prescriptions')
+        .select('id, version, status, created_at, digital_signature')
+        .eq('patient_name', current.patient_name)
+        .eq('hospital_unit_id', currentHospital.id)
+        .eq('state_id', currentState.id)
+        .order('version', { ascending: true });
+      setVersionHistory((data || []).map(v => ({
+        ...v,
+        digital_signature: v.digital_signature as unknown as DigitalSignature | null,
+      })));
     } catch (err) {
       console.error('Error fetching version history:', err);
       setVersionHistory([]);
     }
-  }, []);
+  }, [currentHospital, currentState]);
 
   // Load a saved prescription
   const loadPrescription = useCallback(async (id: string) => {
