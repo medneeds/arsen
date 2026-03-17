@@ -10,7 +10,8 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { cn } from "@/lib/utils";
 import { whitelabel } from "@/config/whitelabel";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
-import { useDepartment, DEPARTMENTS, Department } from "@/contexts/DepartmentContext";
+import { useDepartment } from "@/contexts/DepartmentContext";
+import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 import {
   Select,
   SelectContent,
@@ -26,8 +27,12 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<Department>("UTI");
+  const [selectedSector, setSelectedSector] = useState<string>("red");
   
+  const SECTORS = Object.entries(SECTOR_BED_CONFIG).map(([key, config]) => ({
+    key,
+    label: config.label,
+  }));
   const [loginData, setLoginData] = useState({
     username: "",
     password: "",
@@ -64,7 +69,8 @@ export default function AuthPage() {
         }
         setLoading(false);
       } else {
-        setCurrentDepartment(selectedDepartment);
+        setCurrentDepartment("UTI");
+        localStorage.setItem("selected_sector", selectedSector);
         toast.success("LOGIN REALIZADO COM SUCESSO");
         setShowLoadingScreen(true);
       }
@@ -168,17 +174,17 @@ export default function AuthPage() {
                 <div className="relative">
                   <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 z-10 pointer-events-none" />
                   <Select
-                    value={selectedDepartment}
-                    onValueChange={(val) => setSelectedDepartment(val as Department)}
+                    value={selectedSector}
+                    onValueChange={(val) => setSelectedSector(val)}
                     disabled={loading}
                   >
                     <SelectTrigger className="pl-10 h-11 bg-gray-50/80 border border-gray-200/80 rounded-xl text-sm uppercase font-medium text-gray-900 focus:border-[#2dd4bf]/50 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all">
                       <SelectValue placeholder="SELECIONE O SETOR" />
                     </SelectTrigger>
                     <SelectContent>
-                      {DEPARTMENTS.map((dept) => (
-                        <SelectItem key={dept} value={dept} className="uppercase text-xs font-medium">
-                          {dept}
+                      {SECTORS.map((sector) => (
+                        <SelectItem key={sector.key} value={sector.key} className="uppercase text-xs font-medium">
+                          {sector.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
