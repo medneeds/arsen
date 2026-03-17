@@ -66,7 +66,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
   const [isSaving, setIsSaving] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { selectedHospitalId, selectedStateId } = useHospital();
+  const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
 
   const updateField = (field: keyof PatientFormData, value: string) => {

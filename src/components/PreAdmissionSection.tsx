@@ -55,7 +55,7 @@ export function PreAdmissionSection() {
   const [classifyTarget, setClassifyTarget] = useState<PreAdmission | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PreAdmission | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { selectedHospitalId, selectedStateId } = useHospital();
+  const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
 
   const fetchPreAdmissions = async () => {
