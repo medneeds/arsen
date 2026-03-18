@@ -49,6 +49,7 @@ import EvolucaoPage from "./pages/EvolucaoPage";
 import MedicationCatalogPage from "./pages/MedicationCatalogPage";
 import GestorPanelPage from "./pages/GestorPanelPage";
 import ValidacaoFarmaceuticaPage from "./pages/ValidacaoFarmaceuticaPage";
+import PainelClinicoPage from "./pages/PainelClinicoPage";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +70,16 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <Index />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/painel-clinico"
+            element={
+              <ProtectedRoute>
+                <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                  <PainelClinicoPage />
+                </MainLayout>
               </ProtectedRoute>
             }
           />
