@@ -385,7 +385,7 @@ function SortablePrescriptionItemRow({
               )}
             </p>
             {item.status === 'suspended' && (
-              <Badge variant="destructive" className="text-[9px] px-1.5">SUSPENSO</Badge>
+              <Badge variant="destructive" className="text-[9px] px-1.5">Suspenso</Badge>
             )}
             <div className="flex gap-0.5 ml-auto">
               {PRESCRIPTION_FLAGS.map(f => (
