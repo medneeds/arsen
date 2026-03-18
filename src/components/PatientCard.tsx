@@ -4506,7 +4506,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                   {patient.bedNumber}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-2xl font-bold uppercase tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                     {displayName}
                   </span>
                   <span className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
