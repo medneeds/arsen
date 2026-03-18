@@ -269,7 +269,7 @@ export default function PainelClinicoPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
-                        <span className={cn("font-mono font-bold text-sm", days !== null && days > 7 ? "text-orange-600 dark:text-orange-400" : "text-foreground")}>
+                        <span className={cn("font-mono font-bold text-sm", days !== null && days > 7 ? "text-destructive" : "text-foreground")}>
                           {days !== null ? days : "—"}
                         </span>
                       </TableCell>
