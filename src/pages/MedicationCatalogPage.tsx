@@ -120,14 +120,38 @@ export default function MedicationCatalogPage() {
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Pill className="h-6 w-6 text-primary" />
-          Catálogo Clínico de Medicamentos
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Consulta rápida de medicamentos, apresentações, vias e orientações de preparo.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Pill className="h-6 w-6 text-primary" />
+            Catálogo Clínico de Medicamentos
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Consulta rápida de medicamentos, apresentações, vias e orientações de preparo.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={importing}
+          onClick={async () => {
+            setImporting(true);
+            try {
+              const { data, error } = await supabase.functions.invoke("seed-rename-catalog");
+              if (error) throw error;
+              toast.success(data.message || `${data.inserted} medicamentos importados`);
+              if (data.inserted > 0) fetchCatalog();
+            } catch (err: any) {
+              toast.error("Erro na importação: " + (err.message || "Erro desconhecido"));
+            } finally {
+              setImporting(false);
+            }
+          }}
+          className="shrink-0"
+        >
+          {importing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+          {importing ? "Importando..." : "Importar RENAME/FTN"}
+        </Button>
       </div>
 
       {/* Stats */}
