@@ -745,6 +745,20 @@ const RequisicaoUnificadaPage = () => {
             ))
           )}
         </TabsContent>
+
+        {/* ════════════════════════════════════════════ */}
+        {/* TAB: COMPARATIVO (somente laboratório)      */}
+        {/* ════════════════════════════════════════════ */}
+        {activeCategory === "laboratorio" && (
+          <TabsContent value="comparativo" className="mt-4">
+            <LabComparativeView
+              requests={completedRequests}
+              patientName={formPatientName}
+              patientId={formPatientId}
+              allRequests={requests.filter(r => r.status === "completed" && r.category === "laboratorio")}
+            />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* ── Result Dialog ── */}
