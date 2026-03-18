@@ -2271,15 +2271,15 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== PRINT-ONLY PRESCRIPTION BODY ===== */}
-      <div className="hidden print:block prescription-print-section">
-        <table className="w-full border-collapse text-black">
+      <div className="hidden print:block prescription-print-section" style={{ marginTop: '4px' }}>
+        <table className="w-full border-collapse text-black" style={{ borderSpacing: 0 }}>
           <thead>
             <tr>
-              <th className="border border-black/30 px-1 py-[2px] text-left text-[8px] font-bold uppercase tracking-wider bg-gray-100" style={{ width: '75%' }}>
+              <th className="px-1.5 py-[3px] text-left text-[7pt] font-bold uppercase tracking-wider text-white" style={{ width: '75%', backgroundColor: '#1e293b', border: '0.5px solid #1e293b' }}>
                 Prescrição
               </th>
               {['','','','','',''].map((_, i) => (
-                <th key={i} className="border border-black/30 px-0 py-[2px] text-center text-[7px] font-bold bg-gray-100 uppercase" style={{ width: '4.16%' }}>
+                <th key={i} className="px-0 py-[3px] text-center text-[6pt] font-bold uppercase text-white" style={{ width: '4.16%', backgroundColor: '#1e293b', border: '0.5px solid #1e293b' }}>
                   {i === 0 ? 'Apraz.' : ''}
                 </th>
               ))}
@@ -2293,7 +2293,11 @@ const PrescricaoPage = () => {
               const simple = isSimpleCategory(cat);
               return (
                 <React.Fragment key={cat}>
-                  <tr><td colSpan={7} className="border border-black/30 px-1 py-[1px] text-[8px] font-bold uppercase tracking-wider bg-gray-50">{config.label}</td></tr>
+                  <tr>
+                    <td colSpan={7} className="px-1.5 py-[2px] text-[7pt] font-bold uppercase tracking-wider" style={{ backgroundColor: '#f1f5f9', borderLeft: '3px solid #475569', border: '0.5px solid #e2e8f0', color: '#334155', letterSpacing: '0.6px' }}>
+                      {config.label}
+                    </td>
+                  </tr>
                   {catItems.map((item, i) => (
                     simple
                       ? <PrintSimpleRow key={item.id} item={item} index={i} />
@@ -2306,26 +2310,24 @@ const PrescricaoPage = () => {
         </table>
 
         {/* Print footer */}
-        <div className="pt-4 mt-2 border-t border-black/20 flex items-end justify-between" style={{ pageBreakInside: 'avoid' }}>
-          <div className="text-[7px] text-gray-500">
-            <p>Gerado em: {prescriptionDate}</p>
-            <p>BigHelp Map — Prescrição Digital</p>
+        <div className="flex items-end justify-between" style={{ paddingTop: '10px', marginTop: '6px', borderTop: '0.5px solid #e2e8f0', pageBreakInside: 'avoid' }}>
+          <div className="text-[6pt] text-gray-400" style={{ lineHeight: '1.4' }}>
+            <p>{prescriptionDate} • BigHelp Map</p>
           </div>
           {digitalSignature ? (
             <div className="text-center">
-              <div className="border border-black/40 rounded px-3 py-1.5 inline-block">
-                <p className="text-[9px] font-bold text-black">✓ ASSINADO DIGITALMENTE</p>
-                <p className="text-[8px] text-black font-medium">{digitalSignature.doctorName}</p>
-                <p className="text-[7px] text-gray-600">CRM: {digitalSignature.crm}</p>
-                <p className="text-[7px] text-gray-600">{digitalSignature.signedAt}</p>
-                <p className="text-[6px] text-gray-400 font-mono">Hash: {digitalSignature.hash}</p>
+              <div style={{ border: '1px solid #334155', borderRadius: '4px', padding: '4px 10px', display: 'inline-block' }}>
+                <p className="text-[8pt] font-bold text-black">✓ ASSINADO DIGITALMENTE</p>
+                <p className="text-[7pt] text-black font-medium">{digitalSignature.doctorName}</p>
+                <p className="text-[6pt] text-gray-600">CRM: {digitalSignature.crm} • {digitalSignature.signedAt}</p>
+                <p className="text-[5pt] text-gray-400 font-mono">Hash: {digitalSignature.hash}</p>
               </div>
             </div>
           ) : (
             <div className="text-center">
-              <div className="w-44 border-b border-black mb-1" />
-              <p className="text-[8px] text-black font-medium">Assinatura / Carimbo do Médico</p>
-              <p className="text-[7px] text-gray-500">CRM: _______________</p>
+              <div style={{ width: '160px', borderBottom: '1px solid #000', marginBottom: '3px' }} />
+              <p className="text-[7pt] text-black font-medium">Assinatura / Carimbo</p>
+              <p className="text-[6pt] text-gray-500">CRM: _______________</p>
             </div>
           )}
         </div>
