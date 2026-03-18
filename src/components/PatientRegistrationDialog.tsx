@@ -278,7 +278,14 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
 
                 {previewImage && (
                   <div className="mt-4">
-                    <img src={previewImage} alt="Documento" className="max-h-48 mx-auto rounded-lg border shadow-sm" />
+                    {previewImage === 'pdf' ? (
+                      <div className="flex items-center justify-center gap-2 p-4 bg-muted rounded-lg border">
+                        <Upload className="h-6 w-6 text-primary" />
+                        <span className="text-sm font-medium">PDF carregado</span>
+                      </div>
+                    ) : (
+                      <img src={previewImage} alt="Documento" className="max-h-48 mx-auto rounded-lg border shadow-sm" />
+                    )}
                   </div>
                 )}
 
