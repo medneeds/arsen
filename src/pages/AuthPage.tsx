@@ -447,7 +447,7 @@ export default function AuthPage() {
                       <h3 className="text-white font-bold text-sm uppercase tracking-wide mb-0.5">
                         {profile.label}
                       </h3>
-                      <p className={cn("text-[10px] font-medium tracking-wider uppercase mb-3", profile.color + "/70")}>
+                      <p className="text-[10px] font-medium tracking-wider uppercase mb-3 text-white/60">
                         {profile.subtitle}
                       </p>
 
