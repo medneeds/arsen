@@ -973,6 +973,7 @@ function DrugInteractionDialog({
 const PrescricaoPage = () => {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
+  const [searchParams] = useSearchParams();
 
   const [patient, setPatient] = useState<PatientHeader>({
     name: "", birthDate: "", age: "", sex: "", bed: "",
@@ -1005,6 +1006,31 @@ const PrescricaoPage = () => {
   const [showHistory, setShowHistory] = useState(false);
 
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
+
+  // Auto-fill patient header from URL params and load demo prescription items
+  useEffect(() => {
+    const patientName = searchParams.get('patientName');
+    const patientBed = searchParams.get('patientBed');
+    if (patientName && patient.name === "") {
+      const sectorMap: Record<string, string> = { red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2" };
+      const sector = searchParams.get('patientSector') || '';
+      setPatient(prev => ({
+        ...prev,
+        name: patientName,
+        bed: patientBed || '',
+        unit: sectorMap[sector] || sector,
+      }));
+
+      // Load demo prescription items based on bed number
+      if (patientBed) {
+        const demoItems = getDemoPrescriptionItems(patientBed);
+        if (demoItems.length > 0 && items.length === 0) {
+          setItems(demoItems);
+          setActiveTab('medication');
+        }
+      }
+    }
+  }, [searchParams]);
 
   // dnd-kit sensors
   const sensors = useSensors(
