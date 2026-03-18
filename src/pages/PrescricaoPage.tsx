@@ -1635,7 +1635,7 @@ const PrescricaoPage = () => {
       {savedPrescriptions.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-3 print:hidden">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Prescrições Salvas</h2>
+            <h2 className="text-xs font-semibold text-muted-foreground tracking-wider">Prescrições salvas</h2>
             <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-6 text-[10px] gap-1">
               <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
             </Button>
