@@ -1260,6 +1260,8 @@ const PrescricaoPage = () => {
   const [activeTab, setActiveTab] = useState<PrescriptionCategory>(initialDemoItems.length > 0 ? 'medication' : 'nutrition');
   const [nonStdName, setNonStdName] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [freeRecommendation, setFreeRecommendation] = useState("");
+  const [appliedCareProfiles, setAppliedCareProfiles] = useState<Set<string>>(new Set());
 
   // Phase 3 state
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
