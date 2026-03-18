@@ -175,7 +175,7 @@ const AutoResizeTextarea = memo(({ value, onChange, onKeyDown, onBlur, placehold
       onBlur={onBlur}
       placeholder={placeholder}
       className={cn(
-        "resize-none overflow-hidden w-full min-h-[20px] text-[10px] uppercase text-foreground border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:outline-none",
+        "resize-none overflow-hidden w-full min-h-[20px] text-[10px] text-foreground border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:outline-none",
         className
       )}
       rows={1}
