@@ -886,7 +886,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
     } else if (editingField === "age") {
       // Tenta formatar idade usando IA (data de nascimento ou idade simples)
       const formattedAge = await calculateAge(editValue);
-      updatedPatient.age = formattedAge ?? editValue.toUpperCase();
+      updatedPatient.age = formattedAge ?? editValue;
     } else if (editingField === "diagnoses") {
       if (editingArrayIndex === -2) {
         // Adding new
