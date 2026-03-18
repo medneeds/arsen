@@ -270,7 +270,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
                     ) : (
                       <>
                         <Upload className="h-4 w-4 mr-2" />
-                        Selecionar Imagem
+                        Selecionar Imagem ou PDF
                       </>
                     )}
                   </Button>
