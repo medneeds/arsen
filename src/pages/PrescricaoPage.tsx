@@ -1796,123 +1796,122 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== PRESCRIPTION TABS ===== */}
-      <div className={cn("rounded-xl border border-border bg-card print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PrescriptionCategory)} className="w-full">
-          <div className="border-b border-border px-2 pt-2">
-            <TabsList className="h-auto flex-wrap gap-1 bg-transparent justify-start p-0 pb-2">
-              {TAB_ORDER.map(cat => {
-                const config = CATEGORY_CONFIG[cat];
-                const IconComp = CATEGORY_ICONS[config.icon] || Pill;
-                const count = itemsByCategory[cat].length;
-                return (
-                  <TabsTrigger
-                    key={cat}
-                    value={cat}
-                    className={cn(
-                      "gap-1.5 text-xs px-3 py-1.5 rounded-lg data-[state=active]:shadow-sm transition-all",
-                      "data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border"
-                    )}
-                  >
-                    <IconComp className={cn("h-3.5 w-3.5", config.color)} />
-                    <span className="hidden sm:inline">{config.label}</span>
-                    {count > 0 && (
-                      <Badge variant="secondary" className="text-[9px] h-4 px-1 min-w-[16px]">{count}</Badge>
-                    )}
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-          </div>
-
+      {/* ===== PRESCRIPTION SEARCH BAR (adapts to selected category) ===== */}
+      <div className={cn("rounded-xl border border-border bg-card p-3 print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <span className="text-xs font-medium text-muted-foreground">Adicionar em:</span>
           {TAB_ORDER.map(cat => {
             const config = CATEGORY_CONFIG[cat];
-            const catItems = itemsByCategory[cat];
-            const source = ALL_ITEMS_BY_CATEGORY[cat];
-            const simple = isSimpleCategory(cat);
-
+            const IconComp = CATEGORY_ICONS[config.icon] || Pill;
             return (
-              <TabsContent key={cat} value={cat} className="p-4 space-y-3 mt-0">
-                {/* Section header */}
-                <div className="flex items-center gap-2.5">
-                  <div className={cn("p-1.5 rounded-md", config.bgColor, config.color)}>
-                    {(() => { const I = CATEGORY_ICONS[config.icon] || Pill; return <I className="h-4 w-4" />; })()}
-                  </div>
-                  <h3 className="text-sm font-semibold text-foreground tracking-wide">{config.label}</h3>
-                  {catItems.length > 0 && <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{catItems.length}</Badge>}
-                </div>
-
-                {/* Add item (search) - above items */}
-                {cat === 'nonstandard' ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={nonStdName}
-                      onChange={(e) => setNonStdName(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") addNonStandard(); }}
-                      placeholder="Nome do item não padronizado..."
-                      className="bg-muted/30 border-border/50"
-                    />
-                    <Button variant="outline" size="sm" onClick={addNonStandard} disabled={!nonStdName.trim()}>
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ) : (
-                  <MedicationAutocomplete
-                    source={source}
-                    onSelect={addItem}
-                    placeholder={`Buscar ${config.label.toLowerCase()}...`}
-                  />
+              <button
+                key={cat}
+                onClick={() => setActiveTab(cat)}
+                className={cn(
+                  "flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border transition-all",
+                  activeTab === cat
+                    ? "bg-primary/10 border-primary/30 text-primary font-medium shadow-sm"
+                    : "bg-muted/30 border-border/40 text-muted-foreground hover:bg-accent/50"
                 )}
-
-                {/* Batch action bar */}
-                {cat === activeTab && (
-                  <BatchActionBar
-                    selectedCount={selectedInCurrentTab}
-                    allSelected={allSelectedInTab}
-                    onSelectAll={() => selectAllInCategory(cat)}
-                    onDeselectAll={() => deselectAllInCategory(cat)}
-                    onSuspendSelected={suspendSelected}
-                    onDeleteSelected={deleteSelected}
-                    onDuplicateSelected={duplicateSelected}
-                  />
-                )}
-
-                {/* Items list with drag & drop */}
-                {catItems.length > 0 && (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext
-                      items={catItems.map(i => i.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div className="space-y-1.5">
-                        {catItems.map((item, i) => (
-                          <SortablePrescriptionItemRow
-                            key={item.id}
-                            item={item}
-                            index={i}
-                            onUpdate={updateItem}
-                            onRemove={removeItem}
-                            onToggleFlag={toggleFlag}
-                            isSimple={simple}
-                            selected={selectedIds.has(item.id)}
-                            onToggleSelect={toggleSelect}
-                            onDuplicate={duplicateItem}
-                            onRequestSuspend={requestSuspendItem}
-                            onReactivate={reactivateItem}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
-                  </DndContext>
-                )}
-              </TabsContent>
+              >
+                <IconComp className={cn("h-3 w-3", activeTab === cat ? "text-primary" : config.color)} />
+                <span className="hidden sm:inline">{config.label}</span>
+              </button>
             );
           })}
-        </Tabs>
+        </div>
+        {activeTab === 'nonstandard' ? (
+          <div className="flex items-center gap-2">
+            <Input
+              value={nonStdName}
+              onChange={(e) => setNonStdName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") addNonStandard(); }}
+              placeholder="Nome do item não padronizado..."
+              className="bg-muted/30 border-border/50"
+            />
+            <Button variant="outline" size="sm" onClick={addNonStandard} disabled={!nonStdName.trim()}>
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ) : (
+          <MedicationAutocomplete
+            source={ALL_ITEMS_BY_CATEGORY[activeTab]}
+            onSelect={addItem}
+            placeholder={`Buscar ${CATEGORY_CONFIG[activeTab].label.toLowerCase()}...`}
+          />
+        )}
+      </div>
+
+      {/* ===== FULL PRESCRIPTION VIEW (all categories) ===== */}
+      <div className={cn("space-y-3 print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
+        {/* Batch action bar */}
+        <BatchActionBar
+          selectedCount={selectedIds.size}
+          allSelected={items.length > 0 && selectedIds.size === items.length}
+          onSelectAll={() => setSelectedIds(new Set(items.map(i => i.id)))}
+          onDeselectAll={() => setSelectedIds(new Set())}
+          onSuspendSelected={suspendSelected}
+          onDeleteSelected={deleteSelected}
+          onDuplicateSelected={duplicateSelected}
+        />
+
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={items.map(i => i.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {TAB_ORDER.map(cat => {
+              const config = CATEGORY_CONFIG[cat];
+              const catItems = itemsByCategory[cat];
+              const simple = isSimpleCategory(cat);
+              if (catItems.length === 0) return null;
+
+              const IconComp = CATEGORY_ICONS[config.icon] || Pill;
+
+              return (
+                <div key={cat} className="rounded-xl border border-border bg-card overflow-hidden">
+                  {/* Category header */}
+                  <div className={cn("flex items-center gap-2 px-3 py-2 border-b border-border/50", config.bgColor)}>
+                    <IconComp className={cn("h-3.5 w-3.5", config.color)} />
+                    <span className="text-xs font-semibold text-foreground">{config.label}</span>
+                    <Badge variant="secondary" className="text-[9px] h-4 px-1.5">{catItems.length}</Badge>
+                  </div>
+                  {/* Items */}
+                  <div className="p-2 space-y-1.5">
+                    {catItems.map((item, i) => (
+                      <SortablePrescriptionItemRow
+                        key={item.id}
+                        item={item}
+                        index={i}
+                        onUpdate={updateItem}
+                        onRemove={removeItem}
+                        onToggleFlag={toggleFlag}
+                        isSimple={simple}
+                        selected={selectedIds.has(item.id)}
+                        onToggleSelect={toggleSelect}
+                        onDuplicate={duplicateItem}
+                        onRequestSuspend={requestSuspendItem}
+                        onReactivate={reactivateItem}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </SortableContext>
+        </DndContext>
+
+        {items.length === 0 && (
+          <div className="rounded-xl border border-dashed border-border bg-muted/20 p-8 text-center">
+            <Pill className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">Nenhum item na prescrição</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">Use a barra de busca acima para adicionar itens</p>
+          </div>
+        )}
       </div>
 
       {/* ===== PRINT-ONLY PRESCRIPTION BODY ===== */}
