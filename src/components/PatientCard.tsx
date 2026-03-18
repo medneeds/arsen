@@ -1554,7 +1554,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                            
                            <p 
                             className={cn(
-                              "font-semibold text-base md:text-sm text-foreground leading-tight uppercase break-words rounded px-1 -mx-1",
+                              "font-semibold text-base md:text-sm text-foreground leading-tight break-words rounded px-1 -mx-1",
                               canEdit && "cursor-pointer hover:bg-accent/50"
                             )}
                             onClick={() => canEdit && startEditing("name", patient.name)}
