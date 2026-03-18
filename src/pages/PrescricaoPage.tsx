@@ -327,7 +327,7 @@ function SortablePrescriptionItemRow({
         {item.dose !== '-' && <Badge variant="outline" className="text-[10px]">{item.dose}</Badge>}
         {item.posology !== '-' && <Badge variant="secondary" className="text-[10px]">{item.posology}</Badge>}
         {item.status === 'suspended' && (
-          <Badge variant="destructive" className="text-[9px] px-1.5">SUSPENSO</Badge>
+           <Badge variant="destructive" className="text-[9px] px-1.5">Suspenso</Badge>
         )}
         <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           {PRESCRIPTION_FLAGS.map(f => (
@@ -385,7 +385,7 @@ function SortablePrescriptionItemRow({
               )}
             </p>
             {item.status === 'suspended' && (
-              <Badge variant="destructive" className="text-[9px] px-1.5">SUSPENSO</Badge>
+              <Badge variant="destructive" className="text-[9px] px-1.5">Suspenso</Badge>
             )}
             <div className="flex gap-0.5 ml-auto">
               {PRESCRIPTION_FLAGS.map(f => (
@@ -610,9 +610,9 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
           {item.posology && item.posology !== '-' && <span> — {item.posology}</span>}
           {item.schedule && item.schedule !== '-' && <span> — <span className="font-semibold">{item.schedule}</span></span>}
           {item.flags.length > 0 && (
-            <span className="font-bold text-[8px]"> [{item.flags.map(f => f.toUpperCase()).join(', ')}]</span>
+            <span className="font-bold text-[8px]"> [{item.flags.join(', ')}]</span>
           )}
-          {item.status === 'suspended' && <span className="text-red-600 font-bold"> [SUSPENSO]</span>}
+          {item.status === 'suspended' && <span className="text-red-600 font-bold"> [Suspenso]</span>}
         </p>
         {item.instructions && (
           <p className="text-[8px] italic text-gray-600 ml-2 leading-[1.2]">↳ {item.instructions}</p>
@@ -735,7 +735,7 @@ function SignPrescriptionDialog({
     const raw = `${doctorName}|${crm}|${now}|${activeItems}`;
     const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
     const hash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16).toUpperCase();
-    const sig: DigitalSignature = { doctorName: doctorName.trim().toUpperCase(), crm: crm.trim(), signedAt: now, hash };
+    const sig: DigitalSignature = { doctorName: doctorName.trim(), crm: crm.trim(), signedAt: now, hash };
     setVerifying(false);
     reset();
     onConfirm(sig);
@@ -1635,7 +1635,7 @@ const PrescricaoPage = () => {
       {savedPrescriptions.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-3 print:hidden">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Prescrições Salvas</h2>
+            <h2 className="text-xs font-semibold text-muted-foreground tracking-wider">Prescrições salvas</h2>
             <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-6 text-[10px] gap-1">
               <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
             </Button>
@@ -1671,8 +1671,8 @@ const PrescricaoPage = () => {
             onClick={() => setShowHistory(!showHistory)}
             className="w-full flex items-center justify-between text-xs"
           >
-            <span className="flex items-center gap-2 font-semibold text-muted-foreground uppercase tracking-wider">
-              <History className="h-3.5 w-3.5" /> Histórico de Versões ({versionHistory.length})
+            <span className="flex items-center gap-2 font-semibold text-muted-foreground tracking-wider">
+              <History className="h-3.5 w-3.5" /> Histórico de versões ({versionHistory.length})
             </span>
             <span className="text-muted-foreground text-[10px]">{showHistory ? 'Ocultar' : 'Expandir'}</span>
           </button>
@@ -1838,7 +1838,7 @@ const PrescricaoPage = () => {
                   <div className={cn("p-1.5 rounded-md", config.bgColor, config.color)}>
                     {(() => { const I = CATEGORY_ICONS[config.icon] || Pill; return <I className="h-4 w-4" />; })()}
                   </div>
-                  <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">{config.label}</h3>
+                  <h3 className="text-sm font-semibold text-foreground tracking-wide">{config.label}</h3>
                   {catItems.length > 0 && <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{catItems.length}</Badge>}
                 </div>
 
