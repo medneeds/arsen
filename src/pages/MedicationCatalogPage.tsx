@@ -52,6 +52,7 @@ const routeColors: Record<string, string> = {
 export default function MedicationCatalogPage() {
   const [medications, setMedications] = useState<MedicationCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [classFilter, setClassFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
