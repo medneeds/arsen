@@ -416,6 +416,7 @@ export default function AuthPage() {
                           profile.key === "gestor" && "bg-amber-400/10 border-amber-400/20",
                           profile.key === "multi" && "bg-violet-400/10 border-violet-400/20",
                           profile.key === "administrativo" && "bg-sky-400/10 border-sky-400/20",
+                          profile.key === "farmacia" && "bg-emerald-400/10 border-emerald-400/20",
                         )}>
                           <profile.icon className={cn("h-5 w-5", profile.color)} />
                         </div>
