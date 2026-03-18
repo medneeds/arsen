@@ -2721,7 +2721,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       <Badge 
                         variant="outline" 
                         className={cn(
-                          "h-4 px-1.5 text-[8px] font-semibold uppercase gap-0.5 print:hidden",
+                          "h-4 px-1.5 text-[8px] font-semibold gap-0.5 print:hidden",
                           internmentStatusConfig[patient.internmentStatus as keyof typeof internmentStatusConfig].color,
                           internmentStatusConfig[patient.internmentStatus as keyof typeof internmentStatusConfig].bgColor,
                           internmentStatusConfig[patient.internmentStatus as keyof typeof internmentStatusConfig].borderColor
