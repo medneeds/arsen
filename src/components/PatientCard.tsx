@@ -1370,8 +1370,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
             {allocationTimeElapsed && (
               <>
                 <span className="separator relative z-10">•</span>
-                <span className="text-xs font-semibold relative z-10 status-time uppercase">
-                  HÁ {allocationTimeElapsed.toUpperCase()}
+                <span className="text-xs font-semibold relative z-10 status-time">
+                  Há {allocationTimeElapsed}
                 </span>
               </>
             )}
