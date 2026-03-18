@@ -185,6 +185,7 @@ const RequisicaoUnificadaPage = () => {
   const [formSelectedItems, setFormSelectedItems] = useState<string[]>([]);
   const [formCustomItem, setFormCustomItem] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [expandedCombo, setExpandedCombo] = useState<string | null>(null);
 
   // ── Result dialog ──
   const [viewingRequest, setViewingRequest] = useState<any | null>(null);
