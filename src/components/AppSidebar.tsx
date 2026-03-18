@@ -504,7 +504,7 @@ export function AppSidebar({
       <Drawer open={openMobile} onOpenChange={setOpenMobile} modal={true}>
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader className="border-b pb-3 pt-2">
-            <DrawerTitle className="text-center text-sm font-semibold uppercase tracking-wide">Menu de Navegação</DrawerTitle>
+            <DrawerTitle className="text-center text-sm font-semibold tracking-wide">Menu de Navegação</DrawerTitle>
           </DrawerHeader>
           <div className="overflow-y-auto flex-1 px-2">
             {sidebarContent}
