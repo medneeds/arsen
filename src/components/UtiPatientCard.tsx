@@ -423,7 +423,7 @@ function InlineEditableArray({
     if (newItemValue.trim()) {
       isInternalChangeRef.current = true;
       setItemIds((prev) => [...prev, makeId()]);
-      onUpdate([...items, newItemValue.trim().toUpperCase()]);
+      onUpdate([...items, newItemValue.trim()]);
       setNewItemValue("");
       if (!continueAdding) {
         setIsAddingNew(false);
