@@ -136,6 +136,73 @@ function posologyToIntervals(posology: string): number {
   return map[posology] || 1;
 }
 
+// --- Common schedule presets ---
+const SCHEDULE_PRESETS: Record<string, { label: string; options: { name: string; times: string }[] }> = {
+  '24/24h': {
+    label: '24/24h (1x)',
+    options: [
+      { name: '06h', times: '06h' },
+      { name: '08h', times: '08h' },
+      { name: '10h', times: '10h' },
+      { name: '14h', times: '14h' },
+      { name: '22h', times: '22h' },
+    ],
+  },
+  '12/12h': {
+    label: '12/12h (2x)',
+    options: [
+      { name: '06h–18h', times: '06h, 18h' },
+      { name: '08h–20h', times: '08h, 20h' },
+      { name: '10h–22h', times: '10h, 22h' },
+      { name: '00h–12h', times: '00h, 12h' },
+    ],
+  },
+  '8/8h': {
+    label: '8/8h (3x)',
+    options: [
+      { name: '06h–14h–22h', times: '06h, 14h, 22h' },
+      { name: '08h–16h–00h', times: '08h, 16h, 00h' },
+      { name: '00h–08h–16h', times: '00h, 08h, 16h' },
+      { name: '02h–10h–18h', times: '02h, 10h, 18h' },
+    ],
+  },
+  '6/6h': {
+    label: '6/6h (4x)',
+    options: [
+      { name: '06h–12h–18h–00h', times: '06h, 12h, 18h, 00h' },
+      { name: '08h–14h–20h–02h', times: '08h, 14h, 20h, 02h' },
+      { name: '00h–06h–12h–18h', times: '00h, 06h, 12h, 18h' },
+      { name: '02h–08h–14h–20h', times: '02h, 08h, 14h, 20h' },
+    ],
+  },
+  '4/4h': {
+    label: '4/4h (6x)',
+    options: [
+      { name: '06h–10h–14h–18h–22h–02h', times: '06h, 10h, 14h, 18h, 22h, 02h' },
+      { name: '00h–04h–08h–12h–16h–20h', times: '00h, 04h, 08h, 12h, 16h, 20h' },
+      { name: '02h–06h–10h–14h–18h–22h', times: '02h, 06h, 10h, 14h, 18h, 22h' },
+    ],
+  },
+  '3/3h': {
+    label: '3/3h (8x)',
+    options: [
+      { name: '00–03–06–09–12–15–18–21', times: '00h, 03h, 06h, 09h, 12h, 15h, 18h, 21h' },
+      { name: '01–04–07–10–13–16–19–22', times: '01h, 04h, 07h, 10h, 13h, 16h, 19h, 22h' },
+    ],
+  },
+  '2/2h': {
+    label: '2/2h (12x)',
+    options: [
+      { name: 'Padrão pares', times: '00h, 02h, 04h, 06h, 08h, 10h, 12h, 14h, 16h, 18h, 20h, 22h' },
+      { name: 'Padrão ímpares', times: '01h, 03h, 05h, 07h, 09h, 11h, 13h, 15h, 17h, 19h, 21h, 23h' },
+    ],
+  },
+};
+
+function getPresetsForPosology(posology: string): typeof SCHEDULE_PRESETS[string] | null {
+  return SCHEDULE_PRESETS[posology] || null;
+}
+
 // Build synced preparation description from structured fields
 function buildPrepDescription(item: PrescriptionItem): string {
   const parts: string[] = [];
@@ -408,7 +475,37 @@ function SortablePrescriptionItemRow({
         </div>
         {/* Schedule - far right aligned */}
         <div className="shrink-0 flex items-center gap-1.5 pl-2 border-l border-border/30">
-          <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-44 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
+          {(() => {
+            const presets = getPresetsForPosology(item.posology);
+            if (presets) {
+              return (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-6 px-1.5 text-[10px] border-border/40 text-muted-foreground hover:text-foreground shrink-0">
+                      <ClipboardList className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      {presets.label}
+                    </div>
+                    <DropdownMenuSeparator />
+                    {presets.options.map((opt) => (
+                      <DropdownMenuItem
+                        key={opt.name}
+                        onClick={() => onUpdate(item.id, "schedule", opt.times)}
+                        className="text-xs gap-2 font-mono"
+                      >
+                        {opt.times}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            }
+            return null;
+          })()}
+          <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-48 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
         </div>
         <ItemActions />
       </div>
@@ -505,10 +602,46 @@ function SortablePrescriptionItemRow({
                     <SelectContent>{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
-                {/* Schedule - far right, wider */}
+                {/* Schedule - far right, with presets */}
                 <div className="shrink-0 flex items-center gap-1.5 ml-auto pl-3 border-l border-border/30">
                   <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Apraz:</span>
-                  <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-44 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
+                  <div className="flex items-center gap-1">
+                    {(() => {
+                      const presets = getPresetsForPosology(item.posology);
+                      if (presets) {
+                        return (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-7 px-1.5 text-[10px] border-border/40 text-muted-foreground hover:text-foreground shrink-0">
+                                <ClipboardList className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                              <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                {presets.label} — Escolha um esquema
+                              </div>
+                              <DropdownMenuSeparator />
+                              {presets.options.map((opt) => (
+                                <DropdownMenuItem
+                                  key={opt.name}
+                                  onClick={() => onUpdate(item.id, "schedule", opt.times)}
+                                  className="text-xs gap-2 font-mono"
+                                >
+                                  {opt.times}
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-[10px] text-muted-foreground italic" onClick={() => {}}>
+                                Personalizado: edite o campo →
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        );
+                      }
+                      return null;
+                    })()}
+                    <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-52 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
+                  </div>
                 </div>
               </div>
 
@@ -814,19 +947,17 @@ function parseScheduleSlots(schedule: string): string[] {
     .filter(s => /^\d{1,2}h?$/.test(s) || /^\d{1,2}:\d{2}$/.test(s));
 }
 
-// --- Print-only Item Row ---
+// --- Print-only Item Row (dynamic schedule slots) ---
 function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }) {
   const hasPreparo = item.diluent || item.diluentVolume || item.accessType || item.infusionTime;
   const slots = parseScheduleSlots(item.schedule);
   
   return (
     <tr style={{ pageBreakInside: 'avoid' }}>
-      {/* Nº */}
-      <td style={{ width: '24px', border: '0.5px solid #94a3b8', padding: '2px 0', textAlign: 'center', verticalAlign: 'top', fontSize: '8pt', fontWeight: 800, color: '#0f172a' }}>
+      <td style={{ width: '24px', border: '0.5px solid #cbd5e1', padding: '2px 0', textAlign: 'center', verticalAlign: 'top', fontSize: '8pt', fontWeight: 800, color: '#0f172a', backgroundColor: '#fff' }}>
         {index + 1}
       </td>
-      {/* Prescrição */}
-      <td style={{ border: '0.5px solid #94a3b8', padding: '3px 6px', verticalAlign: 'top' }}>
+      <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', verticalAlign: 'top', backgroundColor: '#fff' }}>
         <div style={{ fontSize: '8.5pt', lineHeight: '1.35', color: '#0f172a' }}>
           <span style={{ fontWeight: 700 }}>{item.name}</span>
           {item.presentation && item.presentation !== '-' && (
@@ -858,24 +989,23 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
           </div>
         )}
       </td>
-      {/* Aprazamento — up to 6 time slots */}
-      {[0,1,2,3,4,5].map(i => (
-        <td key={i} style={{ 
-          width: '38px', 
-          border: '0.5px solid #94a3b8', 
-          textAlign: 'center', 
-          verticalAlign: 'middle',
-          fontSize: '7.5pt',
-          fontWeight: 600,
-          fontFamily: 'monospace',
-          color: '#1e293b',
-          padding: '2px 1px'
-        }}>
-          {slots[i] || ''}
-        </td>
-      ))}
+      {/* Aprazamento — dynamic: times distributed in single cell */}
+      <td style={{ 
+        border: '0.5px solid #cbd5e1', 
+        textAlign: 'center', 
+        verticalAlign: 'middle',
+        fontSize: '7.5pt',
+        fontWeight: 600,
+        fontFamily: 'monospace',
+        color: '#1e293b',
+        padding: '2px 4px',
+        backgroundColor: '#fff',
+        whiteSpace: 'nowrap',
+      }}>
+        {slots.length > 0 ? slots.join('  ') : ''}
+      </td>
       {/* Checagem enfermagem */}
-      <td style={{ width: '28px', border: '0.5px solid #94a3b8', textAlign: 'center', verticalAlign: 'middle' }}>
+      <td style={{ width: '28px', border: '0.5px solid #cbd5e1', textAlign: 'center', verticalAlign: 'middle', backgroundColor: '#fff' }}>
         <div style={{ width: '10px', height: '10px', border: '1px solid #94a3b8', borderRadius: '2px', margin: '0 auto' }} />
       </td>
     </tr>
@@ -885,23 +1015,23 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
 function PrintSimpleRow({ item, index }: { item: PrescriptionItem; index: number }) {
   return (
     <tr style={{ pageBreakInside: 'avoid' }}>
-      <td style={{ width: '24px', border: '0.5px solid #94a3b8', padding: '2px 0', textAlign: 'center', verticalAlign: 'top', fontSize: '8pt', fontWeight: 800, color: '#0f172a' }}>
+      <td style={{ width: '24px', border: '0.5px solid #cbd5e1', padding: '2px 0', textAlign: 'center', verticalAlign: 'top', fontSize: '8pt', fontWeight: 800, color: '#0f172a', backgroundColor: '#fff' }}>
         {index + 1}
       </td>
-      <td colSpan={7} style={{ border: '0.5px solid #94a3b8', padding: '2px 6px', verticalAlign: 'top' }}>
+      <td colSpan={2} style={{ border: '0.5px solid #cbd5e1', padding: '2px 6px', verticalAlign: 'top', backgroundColor: '#fff' }}>
         <div style={{ fontSize: '8.5pt', lineHeight: '1.35', color: '#0f172a' }}>
           {item.name}
           {item.dose && item.dose !== '-' ? ` — ${item.dose}` : ''}
           {item.posology && item.posology !== '-' ? ` — ${item.posology}` : ''}
         </div>
       </td>
-      <td style={{ width: '28px', border: '0.5px solid #94a3b8', textAlign: 'center', verticalAlign: 'middle' }}>
+      <td style={{ width: '28px', border: '0.5px solid #cbd5e1', textAlign: 'center', verticalAlign: 'middle', backgroundColor: '#fff' }}>
         <div style={{ width: '10px', height: '10px', border: '1px solid #94a3b8', borderRadius: '2px', margin: '0 auto' }} />
       </td>
     </tr>
   );
 }
-// --- Batch Action Bar ---
+
 function BatchActionBar({
   selectedCount,
   onSelectAll,
@@ -1872,67 +2002,76 @@ const PrescricaoPage = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-0 print:m-0 print:space-y-0 print:max-w-none print:text-black animate-fade-in">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-0 print:m-0 print:space-y-0 print:max-w-none print:text-black animate-fade-in" style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' } as React.CSSProperties}>
       {/* ===== PRINT STYLES ===== */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          @page { size: A4 portrait; margin: 5mm 6mm 8mm 6mm; }
-          .prescription-print-section table { border-collapse: collapse; table-layout: fixed; width: 100%; }
+          @page { size: A4 portrait; margin: 6mm 7mm 10mm 7mm; }
+          body, html { background: #fff !important; }
+          * { background-color: transparent !important; }
+          .prescription-print-section table { border-collapse: collapse; width: 100%; }
+          .prescription-print-section td, .prescription-print-section th { background-color: #fff !important; }
+          .print-header-bar { background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-cat-header { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       ` }} />
 
       {/* ===== PRINT-ONLY LETTERHEAD ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginBottom: '2px' }}>
-        {/* Institutional header */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '3px' }}>
-          <tbody>
-            <tr>
-              <td style={{ width: '60px', verticalAlign: 'middle', padding: '0 4px 0 0' }}>
-                <img src={socorraoLogo} alt="Socorrão I" style={{ height: '28px', objectFit: 'contain' }} />
-              </td>
-              <td style={{ verticalAlign: 'middle', textAlign: 'center' }}>
-                <div style={{ fontSize: '9pt', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#0f172a', lineHeight: 1 }}>
-                  Hospital Municipal Djalma Marques — Socorrão I
-                </div>
-                <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '1px' }}>
-                  PRESCRIÇÃO MÉDICA DIÁRIA
-                </div>
-              </td>
-              <td style={{ width: '50px', verticalAlign: 'middle', textAlign: 'right', padding: '0 0 0 4px' }}>
-                <img src={bighelpLogo} alt="BigHelp Map" style={{ height: '22px', objectFit: 'contain', opacity: 0.25 }} />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div style={{ borderTop: '2px solid #0f172a', borderBottom: '0.5px solid #94a3b8' }} />
+      <div className="hidden print:block prescription-print-section" style={{ marginBottom: '4px' }}>
+        {/* Institutional header — clean & elegant */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0 6px 0' }}>
+          <img src={socorraoLogo} alt="Socorrão I" style={{ height: '32px', objectFit: 'contain' }} />
+          <div style={{ textAlign: 'center', flex: 1, padding: '0 12px' }}>
+            <div style={{ fontSize: '10pt', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.2px', color: '#0f172a', lineHeight: 1.1 }}>
+              Hospital Municipal Djalma Marques — Socorrão I
+            </div>
+            <div style={{ fontSize: '7.5pt', fontWeight: 600, color: '#475569', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '2px' }}>
+              Prescrição Médica Diária
+            </div>
+          </div>
+          <img src={bighelpLogo} alt="BigHelp Map" style={{ height: '20px', objectFit: 'contain', opacity: 0.2 }} />
+        </div>
+        <div style={{ height: '2px', background: 'linear-gradient(to right, #0f172a, #475569, #0f172a)', borderRadius: '1px' }} />
 
-        {/* Patient identification table */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt', color: '#0f172a', marginTop: '2px' }}>
+        {/* Patient identification — elegant grid */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt', color: '#0f172a', marginTop: '4px' }}>
           <tbody>
             <tr>
-              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '50%' }}>
-                <span style={{ fontWeight: 700 }}>PACIENTE:</span> {patient.name || '___________________________________'}
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '48%' }}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Paciente</span>
+                <div style={{ fontWeight: 700, fontSize: '9pt', marginTop: '1px' }}>{patient.name || '___________________________________'}</div>
               </td>
-              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '12%' }}>
-                <span style={{ fontWeight: 700 }}>LEITO:</span> {patient.bed || '______'}
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '10%', textAlign: 'center' }}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Leito</span>
+                <div style={{ fontWeight: 800, fontSize: '10pt', marginTop: '1px' }}>{patient.bed || '—'}</div>
               </td>
-              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '18%' }}>
-                <span style={{ fontWeight: 700 }}>PRONTUÁRIO:</span> {patient.record || '________'}
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '14%' }}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Prontuário</span>
+                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>{patient.record || '________'}</div>
               </td>
-              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '20%' }}>
-                <span style={{ fontWeight: 700 }}>DATA:</span> {prescriptionDate}
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '14%' }}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Data</span>
+                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>{prescriptionDate}</div>
+              </td>
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '14%', textAlign: 'center' }}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Idade / Sexo</span>
+                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>
+                  {patient.age || '—'} / {patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'M' : patient.sex.toLowerCase().startsWith('f') ? 'F' : patient.sex.charAt(0).toUpperCase()) : '—'}
+                </div>
               </td>
             </tr>
             <tr>
-              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }} colSpan={2}>
-                <span style={{ fontWeight: 700, color: '#dc2626' }}>ALERGIAS:</span>{' '}
-                <span style={{ color: '#dc2626', fontWeight: 700 }}>{patient.allergies || 'NDAM'}</span>
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px' }} colSpan={2}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Alergias</span>
+                <div style={{ fontWeight: 700, fontSize: '8.5pt', color: '#dc2626', marginTop: '1px' }}>{patient.allergies || 'NDAM'}</div>
               </td>
-              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }}>
-                <span style={{ fontWeight: 700 }}>PESO:</span> {patient.weight ? `${patient.weight} kg` : '______ kg'}
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px' }}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Peso</span>
+                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>{patient.weight ? `${patient.weight} kg` : '— kg'}</div>
               </td>
-              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }}>
-                <span style={{ fontWeight: 700 }}>IDADE:</span> {patient.age || '____'} | <span style={{ fontWeight: 700 }}>SEXO:</span> {patient.sex || '__'}
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px' }} colSpan={2}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Unidade</span>
+                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>{patient.unit || '—'}</div>
               </td>
             </tr>
           </tbody>
@@ -2315,33 +2454,26 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== PRINT-ONLY PRESCRIPTION BODY ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginTop: '3px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+      <div className="hidden print:block prescription-print-section" style={{ marginTop: '4px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <colgroup>
             <col style={{ width: '24px' }} />
             <col />
-            <col style={{ width: '38px' }} />
-            <col style={{ width: '38px' }} />
-            <col style={{ width: '38px' }} />
-            <col style={{ width: '38px' }} />
-            <col style={{ width: '38px' }} />
-            <col style={{ width: '38px' }} />
+            <col style={{ width: '180px' }} />
             <col style={{ width: '28px' }} />
           </colgroup>
           <thead>
             <tr>
-              <th style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '3px 2px', fontSize: '6pt', fontWeight: 700, textAlign: 'center' }}>
+              <th className="print-header-bar" style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '4px 2px', fontSize: '6.5pt', fontWeight: 700, textAlign: 'center' }}>
                 Nº
               </th>
-              <th style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '3px 6px', fontSize: '7pt', fontWeight: 700, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+              <th className="print-header-bar" style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '4px 6px', fontSize: '7.5pt', fontWeight: 700, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '1px' }}>
                 Prescrição Médica
               </th>
-              {['1º','2º','3º','4º','5º','6º'].map((label, i) => (
-                <th key={i} style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '0.5px solid #334155', padding: '3px 1px', fontSize: '6pt', fontWeight: 700, textAlign: 'center', textTransform: 'uppercase' }}>
-                  {label}
-                </th>
-              ))}
-              <th style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '0.5px solid #334155', padding: '3px 1px', fontSize: '5pt', fontWeight: 700, textAlign: 'center' }}>
+              <th className="print-header-bar" style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '4px 4px', fontSize: '7pt', fontWeight: 700, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                Aprazamento
+              </th>
+              <th className="print-header-bar" style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '4px 1px', fontSize: '6pt', fontWeight: 700, textAlign: 'center' }}>
                 ✓
               </th>
             </tr>
@@ -2355,14 +2487,14 @@ const PrescricaoPage = () => {
               return (
                 <React.Fragment key={cat}>
                   <tr>
-                    <td colSpan={9} style={{ 
-                      padding: '2px 6px', 
+                    <td colSpan={4} className="print-cat-header" style={{ 
+                      padding: '3px 8px', 
                       fontSize: '7pt', 
                       fontWeight: 800, 
                       textTransform: 'uppercase', 
-                      letterSpacing: '0.8px',
-                      backgroundColor: '#f1f5f9', 
-                      borderLeft: '3px solid #334155',
+                      letterSpacing: '1px',
+                      backgroundColor: '#f8fafc', 
+                      borderLeft: '3px solid #1e293b',
                       border: '0.5px solid #cbd5e1',
                       color: '#1e293b'
                     }}>
