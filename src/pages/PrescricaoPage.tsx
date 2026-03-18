@@ -969,7 +969,57 @@ function DrugInteractionDialog({
   );
 }
 
-// ===================== MAIN COMPONENT =====================
+// Demo prescription items for fictitious patients
+function getDemoPrescriptionItems(bedNumber: string): PrescriptionItem[] {
+  const demoData: Record<string, PrescriptionItem[]> = {
+    "L09": [
+      { id: crypto.randomUUID(), name: "Dieta branda", presentation: "-", dose: "-", route: "-", posology: "-", schedule: "-", instructions: "", category: "nutrition", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "SF 0,9% 1000ml", presentation: "Solução 0,9%", dose: "1000ml", route: "EV", posology: "8/8h", schedule: "08-16-00h", instructions: "Manter acesso venoso pérvio", category: "hydration", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Dipirona", presentation: "500mg/ml — Ampola 2ml", dose: "1g EV", route: "EV", posology: "6/6h", schedule: "06-12-18-00h", instructions: "Diluir em 100ml SF 0,9%, infundir em 15 min", category: "medication", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Tramadol", presentation: "50mg/ml — Ampola 2ml", dose: "100mg EV", route: "EV", posology: "8/8h", schedule: "08-16-00h", instructions: "Diluir em 100ml SF 0,9%, infundir em 30 min", category: "medication", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Ceftriaxona", presentation: "1g — Frasco-ampola", dose: "2g EV", route: "EV", posology: "12/12h", schedule: "08-20h", instructions: "Reconstituir em 10ml AD, diluir em 100ml SF 0,9%, infundir em 30 min", category: "antimicrobial", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Enoxaparina", presentation: "40mg/0,4ml — Seringa", dose: "40mg SC", route: "SC", posology: "1x/dia", schedule: "22h", instructions: "Aplicar no tecido subcutâneo abdominal", category: "medication", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Omeprazol", presentation: "40mg — Frasco-ampola", dose: "40mg EV", route: "EV", posology: "1x/dia", schedule: "06h", instructions: "Reconstituir em 10ml AD, infundir em bolus lento", category: "medication", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Controle de sinais vitais", presentation: "-", dose: "-", route: "-", posology: "4/4h", schedule: "-", instructions: "", category: "care", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Cabeceira elevada a 30°", presentation: "-", dose: "-", route: "-", posology: "-", schedule: "-", instructions: "", category: "care", flags: [], highAlert: false, status: "active" },
+    ],
+    "L10": [
+      { id: crypto.randomUUID(), name: "Dieta enteral hipercalórica", presentation: "-", dose: "60ml/h", route: "SNE", posology: "Contínua", schedule: "-", instructions: "Via sonda nasoenteral", category: "nutrition", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "SF 0,9% 500ml", presentation: "Solução 0,9%", dose: "500ml", route: "EV", posology: "12/12h", schedule: "08-20h", instructions: "", category: "hydration", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Meropenem", presentation: "1g — Frasco-ampola", dose: "1g EV", route: "EV", posology: "8/8h", schedule: "06-14-22h", instructions: "Infusão estendida em 3h — diluir em 250ml SF 0,9%", category: "antimicrobial", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Vancomicina", presentation: "500mg — Frasco-ampola", dose: "1g EV", route: "EV", posology: "12/12h", schedule: "08-20h", instructions: "Diluir em 250ml SF 0,9%, infundir em 1h. Monitorar vancocinemia vale", category: "antimicrobial", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Midazolam", presentation: "5mg/ml — Ampola 10ml", dose: "5mg/h", route: "EV", posology: "Contínua", schedule: "-", instructions: "BIC: 50mg em 50ml SF 0,9% — 5ml/h", category: "high_alert", flags: ["BI"], highAlert: true, status: "active" },
+      { id: crypto.randomUUID(), name: "Fentanil", presentation: "50mcg/ml — Ampola 10ml", dose: "100mcg/h", route: "EV", posology: "Contínua", schedule: "-", instructions: "BIC: 500mcg em 50ml SF 0,9% — 10ml/h", category: "high_alert", flags: ["BI"], highAlert: true, status: "active" },
+      { id: crypto.randomUUID(), name: "Noradrenalina", presentation: "2mg/ml — Ampola 4ml", dose: "0.3mcg/kg/min", route: "EV", posology: "Contínua", schedule: "-", instructions: "BIC: 16mg em 234ml SG 5% — titular para PAM >65mmHg", category: "high_alert", flags: ["BI"], highAlert: true, status: "active" },
+      { id: crypto.randomUUID(), name: "Gasometria arterial", presentation: "-", dose: "-", route: "-", posology: "4/4h", schedule: "-", instructions: "", category: "care", flags: [], highAlert: false, status: "active" },
+    ],
+    "L11": [
+      { id: crypto.randomUUID(), name: "Dieta zero", presentation: "-", dose: "-", route: "-", posology: "-", schedule: "-", instructions: "Jejum — avaliação cardiológica", category: "nutrition", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "SG 5% 500ml + NaCl 20% 30ml + KCl 19,1% 10ml", presentation: "Solução", dose: "500ml", route: "EV", posology: "12/12h", schedule: "08-20h", instructions: "Infundir em 6h", category: "hydration", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Dobutamina", presentation: "12,5mg/ml — Ampola 20ml", dose: "10mcg/kg/min", route: "EV", posology: "Contínua", schedule: "-", instructions: "BIC: 250mg em 230ml SG 5% — titular conforme débito cardíaco", category: "high_alert", flags: ["BI"], highAlert: true, status: "active" },
+      { id: crypto.randomUUID(), name: "Heparina não fracionada", presentation: "5.000UI/ml — Frasco 5ml", dose: "1.000UI/h", route: "EV", posology: "Contínua", schedule: "-", instructions: "BIC: 25.000UI em 250ml SF 0,9% — 10ml/h. Controle TTPa 6/6h", category: "high_alert", flags: ["BI"], highAlert: true, status: "active" },
+      { id: crypto.randomUUID(), name: "AAS", presentation: "100mg — Comprimido", dose: "100mg", route: "VO/SNE", posology: "1x/dia", schedule: "12h", instructions: "Macerar se via sonda", category: "medication", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Clopidogrel", presentation: "75mg — Comprimido", dose: "75mg", route: "VO/SNE", posology: "1x/dia", schedule: "12h", instructions: "Macerar se via sonda", category: "medication", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Monitorização hemodinâmica contínua", presentation: "-", dose: "-", route: "-", posology: "-", schedule: "-", instructions: "", category: "care", flags: [], highAlert: false, status: "active" },
+    ],
+  };
+
+  // For beds L12-L18, generate a basic prescription
+  if (!demoData[bedNumber] && bedNumber >= "L12" && bedNumber <= "L18") {
+    return [
+      { id: crypto.randomUUID(), name: "Dieta branda", presentation: "-", dose: "-", route: "-", posology: "-", schedule: "-", instructions: "", category: "nutrition", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "SF 0,9% 1000ml", presentation: "Solução 0,9%", dose: "1000ml", route: "EV", posology: "8/8h", schedule: "08-16-00h", instructions: "", category: "hydration", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Dipirona", presentation: "500mg/ml — Ampola 2ml", dose: "1g EV", route: "EV", posology: "6/6h", schedule: "06-12-18-00h", instructions: "Diluir em 100ml SF 0,9%", category: "medication", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Omeprazol", presentation: "40mg — Frasco-ampola", dose: "40mg EV", route: "EV", posology: "1x/dia", schedule: "06h", instructions: "", category: "medication", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Enoxaparina", presentation: "40mg/0,4ml — Seringa", dose: "40mg SC", route: "SC", posology: "1x/dia", schedule: "22h", instructions: "", category: "medication", flags: [], highAlert: false, status: "active" },
+      { id: crypto.randomUUID(), name: "Controle de sinais vitais 4/4h", presentation: "-", dose: "-", route: "-", posology: "4/4h", schedule: "-", instructions: "", category: "care", flags: [], highAlert: false, status: "active" },
+    ];
+  }
+
+  return demoData[bedNumber] || [];
+}
+
+
 const PrescricaoPage = () => {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
