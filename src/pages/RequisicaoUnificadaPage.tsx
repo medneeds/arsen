@@ -4,7 +4,7 @@ import { ptBR } from "date-fns/locale";
 import {
   TestTubes, ScanLine, UserCheck, Plus, Search, Clock, CheckCircle2,
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
-  ChevronDown, Filter, Eye, ClipboardList,
+  ChevronDown, Filter, Eye, ClipboardList, Package, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,82 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
+
+// ── UTI Exam Combos ──
+type ComboCategory = "laboratorio" | "imagem";
+interface UtiCombo {
+  id: string;
+  label: string;
+  description: string;
+  icon: typeof Clock;
+  color: string;
+  bg: string;
+  border: string;
+  categories: Partial<Record<ComboCategory, string[]>>;
+}
+
+const UTI_COMBOS: UtiCombo[] = [
+  {
+    id: "rotina-uti",
+    label: "Rotina UTI",
+    description: "Exames laboratoriais de rotina diária da UTI",
+    icon: Clock,
+    color: "text-blue-600",
+    bg: "bg-blue-500/10",
+    border: "border-blue-300",
+    categories: {
+      laboratorio: [
+        "Hemograma Completo", "Ureia", "Creatinina", "Sódio", "Potássio", "Cálcio", "Magnésio", "Fósforo",
+        "Glicemia", "TGO", "TGP", "Bilirrubina Total e Frações", "PCR",
+        "TAP/INR", "TTPA", "Gasometria Arterial", "Lactato",
+      ],
+    },
+  },
+  {
+    id: "admissao-uti",
+    label: "Admissão UTI (SAPS)",
+    description: "Pacote completo: SAPS 3, culturas, RX tórax admissional, ECG",
+    icon: Package,
+    color: "text-emerald-600",
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-300",
+    categories: {
+      laboratorio: [
+        "Hemograma Completo", "Plaquetas",
+        "Ureia", "Creatinina", "Sódio", "Potássio", "Cálcio", "Magnésio", "Fósforo",
+        "Glicemia", "TGO", "TGP", "Bilirrubina Total e Frações", "Albumina", "PCR",
+        "Amilase", "Lipase", "DHL",
+        "TAP/INR", "TTPA", "Fibrinogênio", "D-Dímero",
+        "Gasometria Arterial", "Lactato",
+        "Troponina", "BNP/NT-proBNP", "Procalcitonina",
+        "Hemocultura (2 pares)", "Urocultura", "Cultura de Secreção",
+        "EAS/Urina Tipo I",
+        "TSH", "T4 Livre", "Cortisol",
+      ],
+      imagem: [
+        "RX Tórax AP (leito)", "ECG 12 derivações",
+      ],
+    },
+  },
+  {
+    id: "sepse-uti",
+    label: "Pacote Sepse",
+    description: "Investigação e manejo de sepse: labs + culturas",
+    icon: Zap,
+    color: "text-red-600",
+    bg: "bg-red-500/10",
+    border: "border-red-300",
+    categories: {
+      laboratorio: [
+        "Hemograma Completo", "Plaquetas", "PCR", "Procalcitonina", "Lactato",
+        "Gasometria Arterial", "Ureia", "Creatinina", "Sódio", "Potássio",
+        "TGO", "TGP", "Bilirrubina Total e Frações",
+        "TAP/INR", "TTPA", "Fibrinogênio", "D-Dímero",
+        "Hemocultura (2 pares)", "Urocultura", "Cultura de Secreção",
+      ],
+    },
+  },
+];
 
 // ── Category config ──
 const CATEGORIES = {
@@ -109,6 +185,7 @@ const RequisicaoUnificadaPage = () => {
   const [formSelectedItems, setFormSelectedItems] = useState<string[]>([]);
   const [formCustomItem, setFormCustomItem] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [expandedCombo, setExpandedCombo] = useState<string | null>(null);
 
   // ── Result dialog ──
   const [viewingRequest, setViewingRequest] = useState<any | null>(null);
@@ -165,6 +242,39 @@ const RequisicaoUnificadaPage = () => {
     }
   };
 
+  const applyCombo = (combo: UtiCombo) => {
+    const currentCatItems = combo.categories[activeCategory as ComboCategory] || [];
+    const otherCatItems = Object.entries(combo.categories)
+      .filter(([cat]) => cat !== activeCategory)
+      .flatMap(([, items]) => items || []);
+    const allComboItems = [...currentCatItems, ...otherCatItems];
+    setFormSelectedItems(prev => {
+      const merged = new Set([...prev, ...allComboItems]);
+      return Array.from(merged);
+    });
+    const crossCats = Object.keys(combo.categories).filter(c => c !== activeCategory);
+    const crossNote = crossCats.length > 0
+      ? ` (inclui itens de ${crossCats.map(c => CATEGORIES[c as CategoryKey]?.shortLabel).join(", ")})`
+      : "";
+    toast.success(`${combo.label} aplicado — ${allComboItems.length} exames${crossNote}`);
+  };
+
+  const removeCombo = (combo: UtiCombo) => {
+    const allComboItems = Object.values(combo.categories).flat();
+    setFormSelectedItems(prev => prev.filter(item => !allComboItems.includes(item)));
+    toast.info(`${combo.label} removido`);
+  };
+
+  const isComboFullySelected = (combo: UtiCombo) => {
+    const allItems = Object.values(combo.categories).flat();
+    return allItems.every(item => formSelectedItems.includes(item));
+  };
+
+  const isComboPartiallySelected = (combo: UtiCombo) => {
+    const allItems = Object.values(combo.categories).flat();
+    return allItems.some(item => formSelectedItems.includes(item)) && !isComboFullySelected(combo);
+  };
+
   const resetForm = () => {
     setFormPatientName("");
     setFormPatientBed("");
@@ -174,6 +284,7 @@ const RequisicaoUnificadaPage = () => {
     setFormNotes("");
     setFormSelectedItems([]);
     setFormCustomItem("");
+    setExpandedCombo(null);
   };
 
   const handleSubmitRequest = async () => {
@@ -372,6 +483,105 @@ const RequisicaoUnificadaPage = () => {
               <Input placeholder="Motivo da solicitação" value={formIndication} onChange={e => setFormIndication(e.target.value)} />
             </div>
           </div>
+
+          {/* ── Combos UTI ── */}
+          {(activeCategory === "laboratorio" || activeCategory === "imagem") && (
+            <Card className="border-border/50 bg-muted/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <Package className="h-4 w-4 text-primary" />
+                  Pacotes Rápidos UTI
+                  <Badge variant="outline" className="text-[10px] font-normal">Clique para aplicar</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {UTI_COMBOS.map(combo => {
+                  const ComboIcon = combo.icon;
+                  const fullySelected = isComboFullySelected(combo);
+                  const partiallySelected = isComboPartiallySelected(combo);
+                  const isExpanded = expandedCombo === combo.id;
+                  const allItems = Object.entries(combo.categories).flatMap(([cat, items]) =>
+                    (items || []).map(item => ({ item, category: cat }))
+                  );
+
+                  return (
+                    <div key={combo.id} className={cn(
+                      "rounded-lg border transition-all",
+                      fullySelected ? `${combo.border} ${combo.bg}` : "border-border bg-background",
+                    )}>
+                      <div className="flex items-center gap-3 p-3">
+                        <div className={cn("p-1.5 rounded-lg", combo.bg)}>
+                          <ComboIcon className={cn("h-4 w-4", combo.color)} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground">{combo.label}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{combo.description}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {partiallySelected && (
+                            <Badge variant="outline" className="text-[9px] h-5 border-amber-300 text-amber-600">Parcial</Badge>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-[10px]"
+                            onClick={() => setExpandedCombo(isExpanded ? null : combo.id)}
+                          >
+                            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isExpanded && "rotate-180")} />
+                          </Button>
+                          {fullySelected ? (
+                            <Button size="sm" variant="outline" className="h-7 px-2.5 text-[10px] border-destructive/30 text-destructive hover:bg-destructive/10" onClick={() => removeCombo(combo)}>
+                              Remover
+                            </Button>
+                          ) : (
+                            <Button size="sm" className="h-7 px-2.5 text-[10px]" onClick={() => applyCombo(combo)}>
+                              Aplicar
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Expanded: show all items with individual toggles */}
+                      {isExpanded && (
+                        <div className="px-3 pb-3 border-t border-border/50 pt-2 space-y-2">
+                          {Object.entries(combo.categories).map(([cat, items]) => (
+                            <div key={cat}>
+                              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
+                                {CATEGORIES[cat as CategoryKey]?.shortLabel || cat}
+                                {cat !== activeCategory && (
+                                  <span className="ml-1 text-[9px] normal-case font-normal">(outra categoria)</span>
+                                )}
+                              </p>
+                              <div className="flex flex-wrap gap-1">
+                                {(items || []).map(item => {
+                                  const selected = formSelectedItems.includes(item);
+                                  return (
+                                    <button
+                                      key={item}
+                                      onClick={() => toggleItem(item)}
+                                      className={cn(
+                                        "px-2.5 py-1 rounded-md text-[11px] border transition-all duration-150",
+                                        selected
+                                          ? "border-primary bg-primary/10 text-primary font-medium"
+                                          : "border-border/60 bg-background text-muted-foreground hover:bg-muted/50"
+                                      )}
+                                    >
+                                      {selected && <span className="mr-0.5">✓</span>}
+                                      {item}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Item selection */}
           <Card className="border-border/50">
