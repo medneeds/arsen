@@ -1390,6 +1390,7 @@ const PrescricaoPage = () => {
 
   // Sign prescription
   const handleRequestSign = () => {
+    if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de assinar"); return; }
     if (!patient.name.trim()) { toast.error("Preencha o nome do paciente antes de assinar"); return; }
     if (activeItemsCount === 0) { toast.error("Nenhum item ativo para assinar"); return; }
     setSignDialogOpen(true);
@@ -1420,30 +1421,36 @@ const PrescricaoPage = () => {
       suspendedAt: undefined,
     }));
 
-    // If current prescription is saved, save it first then create a new version linked to it
-    if (currentPrescriptionId && currentHospital && currentState) {
+    const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
+
+    if (currentHospital && currentState && patient.name.trim()) {
       setSaving(true);
       try {
-        // Save current state of existing prescription
-        await supabase
-          .from('prescriptions')
-          .update({
-            patient_data: patient as any,
-            items: items as any,
-            digital_signature: digitalSignature as any,
-            status: digitalSignature ? 'signed' : 'draft',
-          })
-          .eq('id', currentPrescriptionId);
+        // Save current prescription first if it exists
+        if (currentPrescriptionId) {
+          await supabase
+            .from('prescriptions')
+            .update({
+              patient_data: patient as any,
+              items: items as any,
+              digital_signature: digitalSignature as any,
+              status: digitalSignature ? 'signed' : 'draft',
+            })
+            .eq('id', currentPrescriptionId);
+        }
 
         // Get current version number
-        const { data: parentData } = await supabase
-          .from('prescriptions')
-          .select('version')
-          .eq('id', currentPrescriptionId)
-          .single();
-        const nextVersion = (parentData?.version || 1) + 1;
+        let nextVersion = 1;
+        if (currentPrescriptionId) {
+          const { data: parentData } = await supabase
+            .from('prescriptions')
+            .select('version')
+            .eq('id', currentPrescriptionId)
+            .single();
+          nextVersion = (parentData?.version || 1) + 1;
+        }
 
-        // Create new version linked to parent
+        // Create new version (auto-saved)
         const { data: newData, error } = await supabase
           .from('prescriptions')
           .insert({
@@ -1453,7 +1460,7 @@ const PrescricaoPage = () => {
             digital_signature: null,
             status: 'draft',
             version: nextVersion,
-            parent_id: currentPrescriptionId,
+            parent_id: currentPrescriptionId || undefined,
             department: 'URGÊNCIA E EMERGÊNCIA ADULTO',
             hospital_unit_id: currentHospital.id,
             state_id: currentState.id,
@@ -1468,8 +1475,7 @@ const PrescricaoPage = () => {
           fetchVersionHistory(newData.id);
         }
         fetchPrescriptions();
-        const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
-        toast.success(`Prescrição renovada para ${tomorrow} (v${nextVersion})`, {
+        toast.success(`Prescrição renovada e salva para ${tomorrow} (v${nextVersion})`, {
           description: `${renewedItems.length} itens renovados${includeSuspended ? ' (incluindo suspensos reativados)' : ''}.`,
         });
       } catch (err: any) {
@@ -1478,7 +1484,6 @@ const PrescricaoPage = () => {
         setSaving(false);
       }
     } else {
-      const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
       toast.success(`Prescrição renovada para ${tomorrow}`, {
         description: `${renewedItems.length} itens renovados${includeSuspended ? ' (incluindo suspensos reativados)' : ''}.`,
       });
@@ -1495,6 +1500,7 @@ const PrescricaoPage = () => {
   };
 
   const isSimpleCategory = (cat: PrescriptionCategory) => ['nutrition', 'care'].includes(cat);
+  const canPrescribe = patient.weight.trim() !== '' && patient.allergies.trim() !== '';
 
   // Selection helpers for current tab
   const currentCatItems = itemsByCategory[activeTab];
@@ -1706,70 +1712,85 @@ const PrescricaoPage = () => {
       )}
 
       {/* ===== PATIENT HEADER ===== */}
-      <div className="rounded-xl border border-border bg-card p-4 space-y-3 print:hidden">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Identificação do Paciente</h2>
-          <span className="text-xs text-muted-foreground font-mono">{prescriptionDate}</span>
+      <div className="rounded-xl border border-border bg-card overflow-hidden print:hidden">
+        {/* Top bar with patient name and date */}
+        <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border/50">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center">
+              <span className="text-xs font-bold text-primary">{patient.name ? patient.name.charAt(0).toUpperCase() : '?'}</span>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground leading-tight">{patient.name || 'Paciente não identificado'}</h2>
+              <p className="text-[10px] text-muted-foreground">Leito {patient.bed || '—'} · {patient.unit || '—'}</p>
+            </div>
+          </div>
+          <span className="text-[10px] text-muted-foreground font-mono bg-background/60 px-2 py-0.5 rounded">{prescriptionDate}</span>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-          <div className="col-span-2">
-            <Label className="text-[11px] text-muted-foreground">Paciente</Label>
-            <Input value={patient.name} onChange={(e) => updatePatient("name", e.target.value)} placeholder="Nome completo" className="mt-0.5 h-8 text-sm font-medium" />
+
+        {/* Info grid - read-only fields */}
+        <div className="px-4 py-3 space-y-3">
+          <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs">
+            {[
+              { label: 'Nascimento', value: patient.birthDate ? format(new Date(patient.birthDate + 'T12:00:00'), 'dd/MM/yyyy') : '—' },
+              { label: 'Idade', value: patient.age || '—' },
+              { label: 'Sexo', value: patient.sex || '—' },
+              { label: 'Prontuário', value: patient.record || '—' },
+              { label: 'Admissão', value: patient.admissionDate ? format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '—' },
+              { label: 'Unidade', value: patient.unit || '—' },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <span className="text-muted-foreground">{label}:</span>
+                <span className="font-medium text-foreground">{value}</span>
+              </div>
+            ))}
           </div>
-          <div>
-            <Label className="text-[11px] text-muted-foreground">Nascimento</Label>
-            <Input type="date" value={patient.birthDate} onChange={(e) => updatePatient("birthDate", e.target.value)} className="mt-0.5 h-8 text-xs" />
+
+          {/* Editable fields: Weight and Allergies */}
+          <div className="flex gap-3 items-end pt-1 border-t border-border/40">
+            <div className="w-32">
+              <Label className="text-[11px] text-muted-foreground font-medium">Peso (kg) *</Label>
+              <Input
+                value={patient.weight}
+                onChange={(e) => updatePatient("weight", e.target.value)}
+                placeholder="Ex: 72"
+                className={cn(
+                  "mt-0.5 h-8 text-xs font-medium",
+                  !patient.weight.trim() && "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10 focus:border-amber-500"
+                )}
+              />
+            </div>
+            <div className="flex-1">
+              <Label className="text-[11px] text-muted-foreground font-medium flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias *
+              </Label>
+              <Input
+                value={patient.allergies}
+                onChange={(e) => updatePatient("allergies", e.target.value)}
+                placeholder="Informe alergias ou NDAM (nenhuma droga alérgica medicamentosa)"
+                className={cn(
+                  "mt-0.5 h-8 text-xs font-medium",
+                  !patient.allergies.trim()
+                    ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10 focus:border-amber-500"
+                    : "border-destructive/20 focus:border-destructive/50"
+                )}
+              />
+            </div>
           </div>
-          <div>
-            <Label className="text-[11px] text-muted-foreground">Idade</Label>
-            <Input value={patient.age} onChange={(e) => updatePatient("age", e.target.value)} placeholder="Ex: 71 anos" className="mt-0.5 h-8 text-xs" />
-          </div>
-          <div>
-            <Label className="text-[11px] text-muted-foreground">Sexo</Label>
-            <Select value={patient.sex} onValueChange={(v) => updatePatient("sex", v)}>
-              <SelectTrigger className="mt-0.5 h-8 text-xs"><SelectValue placeholder="Selecionar" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Masculino">Masculino</SelectItem>
-                <SelectItem value="Feminino">Feminino</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-[11px] text-muted-foreground">Leito</Label>
-            <Input value={patient.bed} onChange={(e) => updatePatient("bed", e.target.value)} placeholder="Ex: L11" className="mt-0.5 h-8 text-xs" />
-          </div>
-          <div>
-            <Label className="text-[11px] text-muted-foreground">Prontuário</Label>
-            <Input value={patient.record} onChange={(e) => updatePatient("record", e.target.value)} placeholder="Nº prontuário" className="mt-0.5 h-8 text-xs" />
-          </div>
-          <div>
-            <Label className="text-[11px] text-muted-foreground">Admissão</Label>
-            <Input type="date" value={patient.admissionDate} onChange={(e) => updatePatient("admissionDate", e.target.value)} className="mt-0.5 h-8 text-xs" />
-          </div>
-          <div>
-            <Label className="text-[11px] text-muted-foreground">Unidade</Label>
-            <Input value={patient.unit} onChange={(e) => updatePatient("unit", e.target.value)} placeholder="Ex: UTI 2" className="mt-0.5 h-8 text-xs" />
-          </div>
-          <div>
-            <Label className="text-[11px] text-muted-foreground">Peso (kg)</Label>
-            <Input value={patient.weight} onChange={(e) => updatePatient("weight", e.target.value)} placeholder="Ex: 72" className="mt-0.5 h-8 text-xs" />
-          </div>
-          <div className="col-span-2">
-            <Label className="text-[11px] text-muted-foreground flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
-            </Label>
-            <Input
-              value={patient.allergies}
-              onChange={(e) => updatePatient("allergies", e.target.value)}
-              placeholder="Informe alergias medicamentosas"
-              className="mt-0.5 h-8 text-xs border-destructive/20 focus:border-destructive/50"
-            />
-          </div>
+
+          {/* Missing fields warning */}
+          {(!patient.weight.trim() || !patient.allergies.trim()) && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              <p className="text-[11px] font-medium">
+                Preencha {!patient.weight.trim() && !patient.allergies.trim() ? 'o peso e as alergias' : !patient.weight.trim() ? 'o peso' : 'as alergias'} para habilitar a prescrição.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* ===== PRESCRIPTION TABS ===== */}
-      <div className="rounded-xl border border-border bg-card print:hidden">
+      <div className={cn("rounded-xl border border-border bg-card print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PrescriptionCategory)} className="w-full">
           <div className="border-b border-border px-2 pt-2">
             <TabsList className="h-auto flex-wrap gap-1 bg-transparent justify-start p-0 pb-2">
