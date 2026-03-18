@@ -2,11 +2,16 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield, AlertTriangle, Clock, CheckCircle, Info } from "lucide-react";
+import { Shield, AlertTriangle, Clock, CheckCircle, Info, ChevronRight, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface RiskClassificationDialogProps {
   open: boolean;
@@ -68,10 +73,65 @@ const RISK_LEVELS = [
   },
 ] as const;
 
+interface VitalSigns {
+  pa_systolic: string;
+  pa_diastolic: string;
+  fc: string;
+  fr: string;
+  tax: string;
+  spo2: string;
+  hgt: string;
+}
+
+interface TriageForm {
+  chief_complaint: string;
+  vital_signs: VitalSigns;
+  glasgow_eye: number;
+  glasgow_verbal: number;
+  glasgow_motor: number;
+  airway_patent: boolean;
+  airway_obstruction: boolean;
+  airway_intubated: boolean;
+  airway_notes: string;
+  peripheral_perfusion: string;
+  pulse_quality: string;
+  allergies: string;
+  flu_symptoms: boolean;
+  flu_symptoms_detail: string;
+  pain_scale: number;
+  oxygen_therapy: boolean;
+  oxygen_therapy_detail: string;
+  triage_notes: string;
+}
+
+const INITIAL_FORM: TriageForm = {
+  chief_complaint: "",
+  vital_signs: { pa_systolic: "", pa_diastolic: "", fc: "", fr: "", tax: "", spo2: "", hgt: "" },
+  glasgow_eye: 4,
+  glasgow_verbal: 5,
+  glasgow_motor: 6,
+  airway_patent: true,
+  airway_obstruction: false,
+  airway_intubated: false,
+  airway_notes: "",
+  peripheral_perfusion: "",
+  pulse_quality: "",
+  allergies: "",
+  flu_symptoms: false,
+  flu_symptoms_detail: "",
+  pain_scale: 0,
+  oxygen_therapy: false,
+  oxygen_therapy_detail: "",
+  triage_notes: "",
+};
+
 export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onSuccess }: RiskClassificationDialogProps) {
   const [selected, setSelected] = useState<string | null>(null);
-  const [notes, setNotes] = useState("");
+  const [form, setForm] = useState<TriageForm>(INITIAL_FORM);
   const [isSaving, setIsSaving] = useState(false);
+  const [step, setStep] = useState(0); // 0 = clinical, 1 = classification
+
+  const glasgowTotal = form.glasgow_eye + form.glasgow_verbal + form.glasgow_motor;
 
   const handleSave = async () => {
     if (!selected || !preAdmission) return;
@@ -87,8 +147,28 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
           risk_classified_at: new Date().toISOString(),
           risk_classified_by: userData?.user?.id || null,
           status: "classificado",
-          notes: notes.trim() || preAdmission.patient_name ? notes.trim() : null,
-        })
+          chief_complaint: form.chief_complaint.trim() || null,
+          vital_signs: form.vital_signs,
+          glasgow_score: glasgowTotal,
+          glasgow_detail: {
+            eye: form.glasgow_eye,
+            verbal: form.glasgow_verbal,
+            motor: form.glasgow_motor,
+          },
+          airway_patent: form.airway_patent,
+          airway_obstruction: form.airway_obstruction,
+          airway_intubated: form.airway_intubated,
+          airway_notes: form.airway_notes.trim() || null,
+          peripheral_perfusion: form.peripheral_perfusion || null,
+          pulse_quality: form.pulse_quality || null,
+          allergies: form.allergies.trim() || null,
+          flu_symptoms: form.flu_symptoms,
+          flu_symptoms_detail: form.flu_symptoms_detail.trim() || null,
+          pain_scale: form.pain_scale,
+          oxygen_therapy: form.oxygen_therapy,
+          oxygen_therapy_detail: form.oxygen_therapy_detail.trim() || null,
+          triage_notes: form.triage_notes.trim() || null,
+        } as any)
         .eq("id", preAdmission.id);
 
       if (error) throw error;
@@ -99,9 +179,7 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
         description: `${preAdmission.patient_name} classificado com sucesso`,
       });
 
-      setSelected(null);
-      setNotes("");
-      onOpenChange(false);
+      resetAndClose();
       onSuccess?.();
     } catch (err: any) {
       toast({ title: "Erro ao classificar", description: err.message, variant: "destructive" });
@@ -110,73 +188,420 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
     }
   };
 
-  const handleClose = () => {
+  const resetAndClose = () => {
     setSelected(null);
-    setNotes("");
+    setForm(INITIAL_FORM);
+    setStep(0);
     onOpenChange(false);
   };
 
+  const updateVitals = (key: keyof VitalSigns, value: string) => {
+    setForm(prev => ({
+      ...prev,
+      vital_signs: { ...prev.vital_signs, [key]: value },
+    }));
+  };
+
   const age = preAdmission?.birth_date
-    ? Math.floor((Date.now() - new Date(preAdmission.birth_date + 'T12:00:00').getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+    ? Math.floor((Date.now() - new Date(preAdmission.birth_date + "T12:00:00").getTime()) / (365.25 * 24 * 60 * 60 * 1000))
     : null;
 
+  const painColor = form.pain_scale <= 3 ? "text-green-600" : form.pain_scale <= 6 ? "text-yellow-600" : "text-red-600";
+
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+    <Dialog open={open} onOpenChange={resetAndClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] p-0">
+        <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Classificação de Risco — Manchester
+            Triagem — Classificação de Risco
           </DialogTitle>
           {preAdmission && (
             <p className="text-sm text-muted-foreground">
               {preAdmission.patient_name}
               {age !== null && ` • ${age} anos`}
-              {preAdmission.sex && ` • ${preAdmission.sex === 'M' ? 'Masculino' : preAdmission.sex === 'F' ? 'Feminino' : 'Outro'}`}
+              {preAdmission.sex && ` • ${preAdmission.sex === "M" ? "Masculino" : preAdmission.sex === "F" ? "Feminino" : "Outro"}`}
             </p>
           )}
+          {/* Step indicator */}
+          <div className="flex items-center gap-2 pt-2">
+            <button
+              onClick={() => setStep(0)}
+              className={cn(
+                "text-xs font-medium px-3 py-1 rounded-full transition-colors",
+                step === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              )}
+            >
+              1. Avaliação Clínica
+            </button>
+            <ChevronRight className="h-3 w-3 text-muted-foreground" />
+            <button
+              onClick={() => setStep(1)}
+              className={cn(
+                "text-xs font-medium px-3 py-1 rounded-full transition-colors",
+                step === 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              )}
+            >
+              2. Classificação Manchester
+            </button>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-2">
-          {RISK_LEVELS.map(level => {
-            const Icon = level.icon;
-            const isSelected = selected === level.value;
-            return (
-              <button
-                key={level.value}
-                onClick={() => setSelected(level.value)}
-                className={cn(
-                  "w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left",
-                  isSelected ? level.selectedColor : level.color,
-                  "cursor-pointer"
-                )}
-              >
-                <Icon className="h-5 w-5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-sm">{level.label}</div>
-                  <div className="text-xs opacity-90">{level.description}</div>
+        <ScrollArea className="max-h-[60vh] px-6">
+          {step === 0 ? (
+            <div className="space-y-5 pb-4">
+              {/* Chief Complaint */}
+              <div>
+                <Label className="text-xs font-semibold">Motivo da Entrada / Queixa Principal *</Label>
+                <Textarea
+                  value={form.chief_complaint}
+                  onChange={e => setForm(prev => ({ ...prev, chief_complaint: e.target.value }))}
+                  placeholder="Descreva a queixa principal e motivo da entrada..."
+                  rows={2}
+                />
+              </div>
+
+              {/* Vital Signs */}
+              <div>
+                <Label className="text-xs font-semibold mb-2 block">Sinais Vitais</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">PA (mmHg)</Label>
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number"
+                        placeholder="SIS"
+                        value={form.vital_signs.pa_systolic}
+                        onChange={e => updateVitals("pa_systolic", e.target.value)}
+                        className="h-8 text-xs"
+                      />
+                      <span className="text-muted-foreground text-xs">/</span>
+                      <Input
+                        type="number"
+                        placeholder="DIA"
+                        value={form.vital_signs.pa_diastolic}
+                        onChange={e => updateVitals("pa_diastolic", e.target.value)}
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">FC (bpm)</Label>
+                    <Input
+                      type="number"
+                      placeholder="FC"
+                      value={form.vital_signs.fc}
+                      onChange={e => updateVitals("fc", e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">FR (irpm)</Label>
+                    <Input
+                      type="number"
+                      placeholder="FR"
+                      value={form.vital_signs.fr}
+                      onChange={e => updateVitals("fr", e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">Tax (°C)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="36.5"
+                      value={form.vital_signs.tax}
+                      onChange={e => updateVitals("tax", e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">SpO₂ (%)</Label>
+                    <Input
+                      type="number"
+                      placeholder="SpO₂"
+                      value={form.vital_signs.spo2}
+                      onChange={e => updateVitals("spo2", e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">HGT (mg/dL)</Label>
+                    <Input
+                      type="number"
+                      placeholder="HGT"
+                      value={form.vital_signs.hgt}
+                      onChange={e => updateVitals("hgt", e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  </div>
                 </div>
-                <div className="text-xs font-mono font-bold shrink-0">{level.time}</div>
-              </button>
-            );
-          })}
-        </div>
+              </div>
 
-        <div>
-          <Label className="text-xs">Observações clínicas</Label>
-          <Textarea
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            placeholder="Sintomas, queixas, sinais vitais..."
-            rows={2}
-          />
-        </div>
+              {/* Airway Assessment */}
+              <div>
+                <Label className="text-xs font-semibold mb-2 block">Avaliação das Vias Aéreas</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="airway-patent"
+                      checked={form.airway_patent}
+                      onCheckedChange={v => setForm(prev => ({ ...prev, airway_patent: !!v }))}
+                    />
+                    <Label htmlFor="airway-patent" className="text-xs cursor-pointer">Pérvias</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="airway-obstruction"
+                      checked={form.airway_obstruction}
+                      onCheckedChange={v => setForm(prev => ({ ...prev, airway_obstruction: !!v }))}
+                    />
+                    <Label htmlFor="airway-obstruction" className="text-xs cursor-pointer">Obstrução</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="airway-intubated"
+                      checked={form.airway_intubated}
+                      onCheckedChange={v => setForm(prev => ({ ...prev, airway_intubated: !!v }))}
+                    />
+                    <Label htmlFor="airway-intubated" className="text-xs cursor-pointer">IOT/Intubado</Label>
+                  </div>
+                </div>
+                <Input
+                  className="mt-2 h-8 text-xs"
+                  placeholder="Observações sobre vias aéreas..."
+                  value={form.airway_notes}
+                  onChange={e => setForm(prev => ({ ...prev, airway_notes: e.target.value }))}
+                />
+              </div>
 
-        <div className="flex justify-end gap-2 pt-2 border-t">
-          <Button variant="outline" onClick={handleClose}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!selected || isSaving}>
-            Classificar Paciente
-          </Button>
+              {/* Perfusion & Pulse */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold">Perfusão Periférica</Label>
+                  <Select
+                    value={form.peripheral_perfusion}
+                    onValueChange={v => setForm(prev => ({ ...prev, peripheral_perfusion: v }))}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">Normal (&lt; 2s)</SelectItem>
+                      <SelectItem value="lentificada">Lentificada (2-4s)</SelectItem>
+                      <SelectItem value="muito_lenta">Muito lenta (&gt; 4s)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">Pulso</Label>
+                  <Select
+                    value={form.pulse_quality}
+                    onValueChange={v => setForm(prev => ({ ...prev, pulse_quality: v }))}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cheio_regular">Cheio e regular</SelectItem>
+                      <SelectItem value="fraco">Fraco / Filiforme</SelectItem>
+                      <SelectItem value="irregular">Irregular</SelectItem>
+                      <SelectItem value="ausente">Ausente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Glasgow */}
+              <div>
+                <Label className="text-xs font-semibold mb-2 block">
+                  Escala de Glasgow (ECG) — Total: <span className={cn("font-bold", glasgowTotal <= 8 ? "text-red-600" : glasgowTotal <= 12 ? "text-yellow-600" : "text-green-600")}>{glasgowTotal}</span>
+                </Label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">Ocular (1-4)</Label>
+                    <Select
+                      value={String(form.glasgow_eye)}
+                      onValueChange={v => setForm(prev => ({ ...prev, glasgow_eye: Number(v) }))}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="4">4 - Espontânea</SelectItem>
+                        <SelectItem value="3">3 - Ao comando verbal</SelectItem>
+                        <SelectItem value="2">2 - À dor</SelectItem>
+                        <SelectItem value="1">1 - Nenhuma</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">Verbal (1-5)</Label>
+                    <Select
+                      value={String(form.glasgow_verbal)}
+                      onValueChange={v => setForm(prev => ({ ...prev, glasgow_verbal: Number(v) }))}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5 - Orientada</SelectItem>
+                        <SelectItem value="4">4 - Confusa</SelectItem>
+                        <SelectItem value="3">3 - Palavras inapropriadas</SelectItem>
+                        <SelectItem value="2">2 - Sons incompreensíveis</SelectItem>
+                        <SelectItem value="1">1 - Nenhuma</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground">Motora (1-6)</Label>
+                    <Select
+                      value={String(form.glasgow_motor)}
+                      onValueChange={v => setForm(prev => ({ ...prev, glasgow_motor: Number(v) }))}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="6">6 - Obedece comandos</SelectItem>
+                        <SelectItem value="5">5 - Localiza dor</SelectItem>
+                        <SelectItem value="4">4 - Flexão normal</SelectItem>
+                        <SelectItem value="3">3 - Flexão anormal</SelectItem>
+                        <SelectItem value="2">2 - Extensão</SelectItem>
+                        <SelectItem value="1">1 - Nenhuma</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pain Scale */}
+              <div>
+                <Label className="text-xs font-semibold mb-1 block">
+                  Escala de Dor: <span className={cn("font-bold", painColor)}>{form.pain_scale}/10</span>
+                </Label>
+                <Slider
+                  value={[form.pain_scale]}
+                  onValueChange={v => setForm(prev => ({ ...prev, pain_scale: v[0] }))}
+                  max={10}
+                  step={1}
+                  className="py-2"
+                />
+                <div className="flex justify-between text-[10px] text-muted-foreground">
+                  <span>Sem dor</span>
+                  <span>Dor máxima</span>
+                </div>
+              </div>
+
+              {/* Allergies */}
+              <div>
+                <Label className="text-xs font-semibold">Alergias</Label>
+                <Input
+                  value={form.allergies}
+                  onChange={e => setForm(prev => ({ ...prev, allergies: e.target.value }))}
+                  placeholder="Descreva alergias conhecidas (ou 'Nega alergias')"
+                  className="h-8 text-xs"
+                />
+              </div>
+
+              {/* Flu Symptoms */}
+              <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/40">
+                <Checkbox
+                  id="flu-symptoms"
+                  checked={form.flu_symptoms}
+                  onCheckedChange={v => setForm(prev => ({ ...prev, flu_symptoms: !!v }))}
+                />
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="flu-symptoms" className="text-xs font-semibold cursor-pointer">Sintomas Gripais / Síndrome Respiratória</Label>
+                  {form.flu_symptoms && (
+                    <Input
+                      className="h-8 text-xs mt-1"
+                      placeholder="Detalhe: febre, tosse, coriza, dispneia..."
+                      value={form.flu_symptoms_detail}
+                      onChange={e => setForm(prev => ({ ...prev, flu_symptoms_detail: e.target.value }))}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Oxygen Therapy */}
+              <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/40">
+                <Checkbox
+                  id="oxygen-therapy"
+                  checked={form.oxygen_therapy}
+                  onCheckedChange={v => setForm(prev => ({ ...prev, oxygen_therapy: !!v }))}
+                />
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="oxygen-therapy" className="text-xs font-semibold cursor-pointer">Em uso de O₂ / Oxigenoterapia</Label>
+                  {form.oxygen_therapy && (
+                    <Input
+                      className="h-8 text-xs mt-1"
+                      placeholder="Tipo e fluxo (ex: CN 3L/min, Máscara 5L/min)"
+                      value={form.oxygen_therapy_detail}
+                      onChange={e => setForm(prev => ({ ...prev, oxygen_therapy_detail: e.target.value }))}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Triage Notes */}
+              <div>
+                <Label className="text-xs font-semibold">Observações da Triagem</Label>
+                <Textarea
+                  value={form.triage_notes}
+                  onChange={e => setForm(prev => ({ ...prev, triage_notes: e.target.value }))}
+                  placeholder="Informações adicionais relevantes..."
+                  rows={2}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2 pb-4">
+              {RISK_LEVELS.map(level => {
+                const Icon = level.icon;
+                const isSelected = selected === level.value;
+                return (
+                  <button
+                    key={level.value}
+                    onClick={() => setSelected(level.value)}
+                    className={cn(
+                      "w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left",
+                      isSelected ? level.selectedColor : level.color,
+                      "cursor-pointer"
+                    )}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-sm">{level.label}</div>
+                      <div className="text-xs opacity-90">{level.description}</div>
+                    </div>
+                    <div className="text-xs font-mono font-bold shrink-0">{level.time}</div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </ScrollArea>
+
+        <div className="flex justify-between gap-2 px-6 pb-6 pt-2 border-t">
+          {step === 0 ? (
+            <>
+              <Button variant="outline" onClick={resetAndClose}>Cancelar</Button>
+              <Button onClick={() => setStep(1)} disabled={!form.chief_complaint.trim()}>
+                Avançar <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => setStep(0)}>
+                <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+              </Button>
+              <Button onClick={handleSave} disabled={!selected || isSaving}>
+                Classificar Paciente
+              </Button>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
