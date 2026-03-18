@@ -566,7 +566,7 @@ export default function UserManagementPage() {
                   </div>
                   {selectedUser.approved_at && (
                     <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                         <CheckCircle className="h-3 w-3" /> Data de Aprovação
                       </p>
                       <p className="text-sm">
