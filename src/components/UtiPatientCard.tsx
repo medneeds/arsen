@@ -701,7 +701,7 @@ function InlineEditableTextarea({ value, onUpdate, placeholder = "-" }: InlineEd
   }, [value]);
 
   const handleSave = () => {
-    onUpdate(localValue.toUpperCase());
+    onUpdate(localValue);
     setIsEditing(false);
   };
 
@@ -711,9 +711,9 @@ function InlineEditableTextarea({ value, onUpdate, placeholder = "-" }: InlineEd
         ref={textareaRef}
         value={localValue}
         onChange={(e) => {
-          setLocalValue(e.target.value.toUpperCase());
+          setLocalValue(e.target.value);
         }}
-        className="w-full bg-background border border-primary/30 rounded px-2 py-1.5 outline-none text-xs uppercase min-h-[80px] max-h-[300px] resize-y overflow-auto"
+        className="w-full bg-background border border-primary/30 rounded px-2 py-1.5 outline-none text-xs min-h-[80px] max-h-[300px] resize-y overflow-auto"
         onKeyDown={(e) => {
           if (e.key === 'Escape') setIsEditing(false);
         }}
