@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Clock, CheckCircle, XCircle, MessageSquare, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
   const [isSettingDiscussing, setIsSettingDiscussing] = useState(false);
   const { requests, approveRequest, setDiscussing, refetch } = useBedAllocationRequests();
   const { role } = useAuth();
+  const navigate = useNavigate();
   
   // Find request for this patient
   const patientRequest = requests.find(r => r.patient_id === patient.id);
@@ -78,16 +80,35 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
 
   const Icon = config.icon;
 
+  // Check if this is a UTI sector allocation
+  const isUtiAllocation = () => {
+    if (!patientRequest) return false;
+    const utiSectors = ["UTI 1", "UTI 2", "red", "yellow"];
+    return utiSectors.includes(patientRequest.requested_sector) || patientRequest.department === "UTI";
+  };
+
   const handleApprove = async () => {
     if (!patientRequest?.id) return;
     setIsApproving(true);
     try {
+      const isUti = isUtiAllocation();
       const success = await approveRequest(patientRequest.id);
       if (success) {
         setIsDialogOpen(false);
-        // Trigger immediate refresh
         await refetch();
         onStatusChange?.();
+        
+        // If UTI allocation, redirect to SAPS 3
+        if (isUti) {
+          navigate("/saps3", {
+            state: {
+              patientId: patient.id,
+              patientName: patient.name,
+              patientAge: patient.age,
+              fromAllocation: true,
+            }
+          });
+        }
       }
     } finally {
       setIsApproving(false);
