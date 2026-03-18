@@ -86,16 +86,17 @@ const getResponsibleDoctor = (patient: Patient): string => {
 };
 
 const getPrescriptionStatus = (patient: Patient): { label: string; variant: "default" | "secondary" | "outline" | "destructive" } => {
-  // Simple check: if patient has schedule items, consider it active
-  if (patient.schedule && patient.schedule.length > 0) {
+  const scheduleItems = parseTextArray(patient.schedule);
+  if (scheduleItems.length > 0) {
     return { label: "Ativa", variant: "default" };
   }
   return { label: "Pendente", variant: "secondary" };
 };
 
 const getDischargeText = (patient: Patient): string => {
-  if (patient.utiDischargePrediction && patient.utiDischargePrediction.length > 0) {
-    return patient.utiDischargePrediction[0];
+  const predictions = parseTextArray(patient.utiDischargePrediction);
+  if (predictions.length > 0) {
+    return predictions[0];
   }
   return "Sem previsão";
 };
