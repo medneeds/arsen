@@ -82,10 +82,14 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
       return;
     }
 
-    // Show preview
-    const reader = new FileReader();
-    reader.onload = (ev) => setPreviewImage(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    // Show preview (only for images)
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setPreviewImage(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setPreviewImage('pdf');
+    }
 
     // Convert to base64
     setIsExtracting(true);
