@@ -142,7 +142,7 @@ function SortableItem({ id, index, value, onEdit, onDelete, showDragHandle = tru
 
   const handleSave = () => {
     if (localValue.trim()) {
-      onEdit(localValue.trim().toUpperCase());
+      onEdit(localValue.trim());
     }
     setIsEditing(false);
   };
