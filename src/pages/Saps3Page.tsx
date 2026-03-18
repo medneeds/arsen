@@ -23,11 +23,13 @@ import {
   Thermometer,
   Brain,
   Save,
-  Plus,
   History,
   Trash2,
   ChevronDown,
   ChevronUp,
+  Bed,
+  Clock,
+  UserCheck,
   AlertTriangle,
 } from "lucide-react";
 import {
@@ -46,9 +48,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// ─── SAPS 3 Scoring Tables (simplified reference values) ───
-// Based on Moreno RP et al. SAPS 3 — From evaluation of the patient to evaluation of the intensive care unit
-
+// ─── SAPS 3 Scoring Tables ───
 function calculateAgeScore(age: number | null): number {
   if (!age) return 0;
   if (age < 40) return 0;
@@ -151,7 +151,7 @@ function calculateCreatinineScore(cr: number | null): number {
 
 function calculateLeukocytesScore(leuk: number | null): number {
   if (!leuk) return 0;
-  if (leuk < 1) return 5; // severe leukopenia (< 1.0 x10³/mm³)
+  if (leuk < 1) return 5;
   return 0;
 }
 
@@ -179,39 +179,36 @@ function calculateOxygenationScore(ratio: number | null, ventilated: boolean): n
 function calculateComorbidityScore(comorbidities: string[]): number {
   let score = 0;
   const scoreMap: Record<string, number> = {
-    cancer_hematologic: 10,
-    cancer_metastatic: 11,
-    hiv_aids: 8,
-    cirrhosis: 4,
-    heart_failure_nyha4: 6,
-    chronic_renal: 3,
-    immunosuppression: 3,
-    chemotherapy: 3,
+    cancer_hematologic: 10, cancer_metastatic: 11, hiv_aids: 8,
+    cirrhosis: 4, heart_failure_nyha4: 6, chronic_renal: 3,
+    immunosuppression: 3, chemotherapy: 3,
   };
-  for (const c of comorbidities) {
-    score += scoreMap[c] || 0;
-  }
+  for (const c of comorbidities) score += scoreMap[c] || 0;
   return score;
 }
 
 function calculateAdmissionReasonScore(reason: string | null): number {
   if (!reason) return 0;
-  const scoreMap: Record<string, number> = {
-    cardiovascular: 3,
-    neurological: 5,
-    hepatic: 6,
-    digestive: 4,
-    respiratory: 0,
-    other: 0,
-  };
-  return scoreMap[reason] || 0;
+  const m: Record<string, number> = { cardiovascular: 3, neurological: 5, hepatic: 6, digestive: 4, respiratory: 0, other: 0 };
+  return m[reason] || 0;
 }
 
-// Logit-based mortality prediction (SAPS 3 equation — general model)
 function predictMortality(totalScore: number): number {
   const logit = -32.6659 + Math.log(totalScore + 20.5958) * 7.3068;
   const probability = Math.exp(logit) / (1 + Math.exp(logit));
-  return Math.round(probability * 1000) / 10; // percentage with 1 decimal
+  return Math.round(probability * 1000) / 10;
+}
+
+// ─── Types ───
+interface PendingRequest {
+  id: string;
+  patient_name: string;
+  birth_date: string | null;
+  sex: string | null;
+  destination_sector: string | null;
+  notes: string | null;
+  created_at: string;
+  medical_record: string | null;
 }
 
 interface Saps3Record {
@@ -233,17 +230,29 @@ const COMORBIDITY_OPTIONS = [
   { id: "chemotherapy", label: "Quimioterapia recente" },
 ];
 
+// Bed config per UTI sector
+const UTI_SECTORS = [
+  { value: "red", label: "UTI 1", prefix: "L", start: 1, max: 8 },
+  { value: "yellow", label: "UTI 2", prefix: "L", start: 9, max: 10 },
+];
+
 export default function Saps3Page() {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
-  const selectedHospital = currentHospital?.id;
-  const selectedState = currentState?.id;
-  
+  const hospitalId = currentHospital?.id;
+  const stateId = currentState?.id;
+
+  // ─── State ───
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [records, setRecords] = useState<Saps3Record[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [showHistory, setShowHistory] = useState(true);
+  const [selectedRequest, setSelectedRequest] = useState<PendingRequest | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [occupiedBeds, setOccupiedBeds] = useState<string[]>([]);
+
+  // Allocation
+  const [selectedSector, setSelectedSector] = useState<string>("");
+  const [selectedBed, setSelectedBed] = useState<string>("");
 
   // Box I
   const [patientName, setPatientName] = useState("");
@@ -273,7 +282,6 @@ export default function Saps3Page() {
   const [pao2Fio2, setPao2Fio2] = useState<string>("");
   const [isVentilated, setIsVentilated] = useState(false);
 
-  // Collapsible state
   const [box1Open, setBox1Open] = useState(true);
   const [box2Open, setBox2Open] = useState(true);
   const [box3Open, setBox3Open] = useState(true);
@@ -293,72 +301,119 @@ export default function Saps3Page() {
     const pltN = plateletsLowest ? parseInt(plateletsLowest) : null;
     const oxyN = pao2Fio2 ? parseFloat(pao2Fio2) : null;
 
-    const box1 = 16 + // base score
-      calculateAgeScore(ageN) +
-      calculateComorbidityScore(comorbidities) +
-      calculateLosBeforeIcuScore(losN) +
-      calculateAdmissionSourceScore(admissionSource) +
+    const box1 = 16 +
+      calculateAgeScore(ageN) + calculateComorbidityScore(comorbidities) +
+      calculateLosBeforeIcuScore(losN) + calculateAdmissionSourceScore(admissionSource) +
       calculatePlannedScore(plannedAdmission);
 
-    const box2 =
-      calculateAdmissionReasonScore(admissionReason) +
-      calculateSurgicalStatusScore(surgicalStatus) +
-      calculateInfectionScore(infectionAtAdmission);
+    const box2 = calculateAdmissionReasonScore(admissionReason) +
+      calculateSurgicalStatusScore(surgicalStatus) + calculateInfectionScore(infectionAtAdmission);
 
-    const box3 =
-      calculateGcsScore(gcsN) +
-      calculateHrScore(hrN) +
-      calculateSbpScore(sbpN) +
-      calculateBilirubinScore(bilN) +
-      calculateTempScore(tempN) +
-      calculateCreatinineScore(crN) +
-      calculateLeukocytesScore(leukN) +
-      calculatePhScore(phN) +
-      calculatePlateletsScore(pltN) +
+    const box3 = calculateGcsScore(gcsN) + calculateHrScore(hrN) + calculateSbpScore(sbpN) +
+      calculateBilirubinScore(bilN) + calculateTempScore(tempN) + calculateCreatinineScore(crN) +
+      calculateLeukocytesScore(leukN) + calculatePhScore(phN) + calculatePlateletsScore(pltN) +
       calculateOxygenationScore(oxyN, isVentilated);
 
     const total = box1 + box2 + box3;
-    const mortality = predictMortality(total);
+    return { box1, box2, box3, total, mortality: predictMortality(total) };
+  }, [age, comorbidities, losBeforeIcu, admissionSource, plannedAdmission, admissionReason,
+    surgicalStatus, infectionAtAdmission, gcs, hrHighest, sbpLowest, bilirubinHighest,
+    tempLowest, creatinineHighest, leukocytes, phLowest, plateletsLowest, pao2Fio2, isVentilated]);
 
-    return { box1, box2, box3, total, mortality };
-  }, [age, comorbidities, losBeforeIcu, admissionSource, plannedAdmission, admissionReason, surgicalStatus, infectionAtAdmission, gcs, hrHighest, sbpLowest, bilirubinHighest, tempLowest, creatinineHighest, leukocytes, phLowest, plateletsLowest, pao2Fio2, isVentilated]);
+  // ─── Available beds for selected sector ───
+  const availableBeds = useMemo(() => {
+    const sector = UTI_SECTORS.find(s => s.value === selectedSector);
+    if (!sector) return [];
+    const beds: { value: string; label: string; occupied: boolean }[] = [];
+    for (let i = sector.start; i < sector.start + sector.max; i++) {
+      const bedNum = `${sector.prefix}${String(i).padStart(2, "0")}`;
+      beds.push({ value: bedNum, label: bedNum, occupied: occupiedBeds.includes(bedNum) });
+    }
+    return beds;
+  }, [selectedSector, occupiedBeds]);
 
-  // ─── Load records ───
+  // ─── Data Loading ───
+  const loadPendingRequests = async () => {
+    if (!hospitalId || !stateId) return;
+    const { data } = await supabase
+      .from("pre_admissions")
+      .select("id, patient_name, birth_date, sex, destination_sector, notes, created_at, medical_record")
+      .eq("hospital_unit_id", hospitalId)
+      .eq("state_id", stateId)
+      .eq("status", "aguardando_leito_uti")
+      .order("created_at", { ascending: true });
+    if (data) setPendingRequests(data);
+  };
+
   const loadRecords = async () => {
-    if (!selectedHospital || !selectedState) return;
+    if (!hospitalId || !stateId) return;
     const { data } = await supabase
       .from("saps3_assessments" as any)
       .select("id, patient_name, total_score, predicted_mortality, created_at")
-      .eq("hospital_unit_id", selectedHospital)
-      .eq("state_id", selectedState)
+      .eq("hospital_unit_id", hospitalId)
+      .eq("state_id", stateId)
       .order("created_at", { ascending: false })
       .limit(50);
     if (data) setRecords(data as any);
   };
 
-  useEffect(() => {
-    loadRecords();
-  }, [selectedHospital, selectedState]);
+  const loadOccupiedBeds = async () => {
+    if (!hospitalId || !stateId) return;
+    const { data } = await supabase
+      .from("patients")
+      .select("bed_number")
+      .eq("hospital_unit_id", hospitalId)
+      .eq("state_id", stateId)
+      .eq("department", "UTI");
+    if (data) setOccupiedBeds(data.map(p => p.bed_number));
+  };
 
-  // ─── Save ───
+  useEffect(() => {
+    loadPendingRequests();
+    loadRecords();
+    loadOccupiedBeds();
+  }, [hospitalId, stateId]);
+
+  // ─── Start admission from pending request ───
+  const startAdmission = (req: PendingRequest) => {
+    setSelectedRequest(req);
+    setPatientName(req.patient_name);
+    // Calculate age from birth_date
+    if (req.birth_date) {
+      const birth = new Date(req.birth_date + "T12:00:00");
+      const ageYears = Math.floor((Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+      setAge(String(ageYears));
+    }
+    // Pre-select sector based on destination
+    if (req.destination_sector === "UTI 1") setSelectedSector("red");
+    else if (req.destination_sector === "UTI 2") setSelectedSector("yellow");
+    // Reset rest
+    setSelectedBed("");
+    setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
+    setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
+    setInfectionAtAdmission(""); setGcs(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
+    setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
+    setPao2Fio2(""); setIsVentilated(false);
+    setBox1Open(true); setBox2Open(true); setBox3Open(true);
+  };
+
+  // ─── Save: SAPS3 + create patient + update pre_admission ───
   const handleSave = async () => {
-    if (!patientName.trim()) {
-      toast.error("Nome do paciente é obrigatório");
-      return;
-    }
-    if (!selectedHospital || !selectedState) {
-      toast.error("Hospital/Estado não selecionado");
-      return;
-    }
+    if (!patientName.trim()) { toast.error("Nome do paciente é obrigatório"); return; }
+    if (!selectedSector) { toast.error("Selecione o setor da UTI"); return; }
+    if (!selectedBed) { toast.error("Selecione o leito"); return; }
+    if (!hospitalId || !stateId) { toast.error("Hospital/Estado não selecionado"); return; }
+
     setSaving(true);
     try {
-      const payload = {
+      // 1. Save SAPS 3
+      const sapsPayload = {
         patient_name: patientName,
-        hospital_unit_id: selectedHospital,
-        state_id: selectedState,
+        hospital_unit_id: hospitalId,
+        state_id: stateId,
         created_by: user?.id,
         age: age ? parseInt(age) : null,
-        comorbidities: comorbidities,
+        comorbidities,
         hospital_los_before_icu: losBeforeIcu ? parseInt(losBeforeIcu) : null,
         icu_admission_source: admissionSource || null,
         planned_admission: plannedAdmission,
@@ -385,13 +440,42 @@ export default function Saps3Page() {
         predicted_mortality: scores.mortality,
       };
 
-      const { error } = await supabase.from("saps3_assessments" as any).insert(payload as any);
-      if (error) throw error;
+      const { error: sapsError } = await supabase.from("saps3_assessments" as any).insert(sapsPayload as any);
+      if (sapsError) throw sapsError;
 
-      toast.success("Ficha SAPS 3 salva com sucesso!");
-      resetForm();
-      setShowForm(false);
+      // 2. Create patient in the selected bed
+      const { error: patientError } = await supabase.from("patients").insert({
+        name: patientName,
+        bed_number: selectedBed,
+        sector: selectedSector,
+        department: "UTI",
+        age: age ? `${age} anos` : null,
+        hospital_unit_id: hospitalId,
+        state_id: stateId,
+        created_by: user?.id,
+        admission_date: new Date().toISOString(),
+        clinical_status: "grave",
+        is_vacant: false,
+      });
+      if (patientError) throw patientError;
+
+      // 3. Update pre_admission status if from a request
+      if (selectedRequest) {
+        await supabase
+          .from("pre_admissions")
+          .update({
+            status: "admitido_uti",
+            destination_bed: selectedBed,
+            destination_sector: UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector,
+          })
+          .eq("id", selectedRequest.id);
+      }
+
+      toast.success(`Paciente admitido no leito ${selectedBed} com SAPS 3 = ${scores.total} (mortalidade ${scores.mortality}%)`);
+      setSelectedRequest(null);
+      loadPendingRequests();
       loadRecords();
+      loadOccupiedBeds();
     } catch (err: any) {
       toast.error("Erro ao salvar: " + err.message);
     } finally {
@@ -403,21 +487,8 @@ export default function Saps3Page() {
     if (!deleteId) return;
     const { error } = await supabase.from("saps3_assessments" as any).delete().eq("id", deleteId);
     if (error) toast.error("Erro ao excluir");
-    else {
-      toast.success("Registro excluído");
-      loadRecords();
-    }
+    else { toast.success("Registro excluído"); loadRecords(); }
     setDeleteId(null);
-  };
-
-  const resetForm = () => {
-    setPatientName(""); setAge(""); setComorbidities([]); setLosBeforeIcu("");
-    setAdmissionSource(""); setPlannedAdmission(false); setAdmissionReason("");
-    setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
-    setInfectionAtAdmission(""); setGcs(""); setHrHighest(""); setSbpLowest("");
-    setBilirubinHighest(""); setTempLowest(""); setCreatinineHighest("");
-    setLeukocytes(""); setPhLowest(""); setPlateletsLowest(""); setPao2Fio2("");
-    setIsVentilated(false);
   };
 
   const getMortalityColor = (m: number | null) => {
@@ -435,75 +506,173 @@ export default function Saps3Page() {
     return "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
   };
 
+  const isFormMode = !!selectedRequest;
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Calculator className="h-6 w-6 text-primary" />
-            SAPS 3 — Admissão UTI
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Simplified Acute Physiology Score III — Cálculo automático de score e mortalidade predita
-          </p>
-        </div>
-        <Button onClick={() => { resetForm(); setShowForm(true); }} className="gap-2">
-          <Plus className="h-4 w-4" /> Nova Avaliação
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <Calculator className="h-6 w-6 text-primary" />
+          Admissão UTI — SAPS 3
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Fluxo admissional: Solicitação → Avaliação médica → Alocação de leito + SAPS 3
+        </p>
       </div>
 
-      {/* ─── Score Panel (visible when form is open) ─── */}
-      {showForm && (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Box I</p>
-                <p className="text-2xl font-bold text-foreground">{scores.box1}</p>
-                <p className="text-xs text-muted-foreground">Pré-admissão</p>
+      {/* ─── Step 1: Pending UTI Bed Requests ─── */}
+      {!isFormMode && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between text-base">
+              <span className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-amber-500" />
+                Solicitações de Leito UTI Pendentes
+                {pendingRequests.length > 0 && (
+                  <Badge variant="destructive" className="ml-1">{pendingRequests.length}</Badge>
+                )}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {pendingRequests.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                Nenhuma solicitação de leito UTI pendente.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {pendingRequests.map(req => (
+                  <div key={req.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-foreground truncate">{req.patient_name}</p>
+                        <Badge variant="outline" className="shrink-0 text-xs">
+                          {req.destination_sector}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                        {req.birth_date && (
+                          <span>Nasc: {new Date(req.birth_date + "T12:00:00").toLocaleDateString("pt-BR")}</span>
+                        )}
+                        {req.sex && <span>Sexo: {req.sex === "M" ? "Masc" : "Fem"}</span>}
+                        {req.medical_record && <span>Prontuário: {req.medical_record}</span>}
+                        <span>Solicitado: {format(new Date(req.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                      </div>
+                      {req.notes && (
+                        <p className="text-xs text-muted-foreground mt-1 truncate">Obs: {req.notes}</p>
+                      )}
+                    </div>
+                    <Button size="sm" onClick={() => startAdmission(req)} className="gap-1.5 ml-3 shrink-0">
+                      <UserCheck className="h-4 w-4" /> Admitir
+                    </Button>
+                  </div>
+                ))}
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Box II</p>
-                <p className="text-2xl font-bold text-foreground">{scores.box2}</p>
-                <p className="text-xs text-muted-foreground">Circunstâncias</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Box III</p>
-                <p className="text-2xl font-bold text-foreground">{scores.box3}</p>
-                <p className="text-xs text-muted-foreground">Fisiológicas</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Total</p>
-                <p className="text-3xl font-extrabold text-primary">{scores.total}</p>
-                <p className="text-xs text-muted-foreground">Score total</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Mortalidade</p>
-                <p className={`text-3xl font-extrabold ${getMortalityColor(scores.mortality)}`}>
-                  {scores.mortality}%
-                </p>
-                <p className="text-xs text-muted-foreground">Predita (hospitalar)</p>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* ─── Form ─── */}
-      {showForm && (
+      {/* ─── Step 2: Admission Form (Bed Selection + SAPS 3) ─── */}
+      {isFormMode && (
         <div className="space-y-4">
-          {/* Patient Name */}
+          {/* Patient info banner */}
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Admitindo paciente</p>
+                  <p className="text-lg font-bold text-foreground">{patientName}</p>
+                  {selectedRequest?.destination_sector && (
+                    <p className="text-xs text-muted-foreground">
+                      Solicitação para: {selectedRequest.destination_sector}
+                    </p>
+                  )}
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setSelectedRequest(null)}>
+                  Cancelar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Bed Selection */}
           <Card>
-            <CardContent className="pt-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Bed className="h-5 w-5 text-primary" />
+                Alocação de Leito
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="patientName">Nome do Paciente *</Label>
-                  <Input id="patientName" value={patientName} onChange={e => setPatientName(e.target.value)} placeholder="Nome completo" />
+                  <Label>Setor UTI</Label>
+                  <Select value={selectedSector} onValueChange={v => { setSelectedSector(v); setSelectedBed(""); }}>
+                    <SelectTrigger><SelectValue placeholder="Selecione o setor" /></SelectTrigger>
+                    <SelectContent>
+                      {UTI_SECTORS.map(s => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <Label htmlFor="age">Idade (anos)</Label>
-                  <Input id="age" type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Ex: 65" min={0} max={120} />
+                  <Label>Leito</Label>
+                  <Select value={selectedBed} onValueChange={setSelectedBed} disabled={!selectedSector}>
+                    <SelectTrigger><SelectValue placeholder={selectedSector ? "Selecione o leito" : "Selecione o setor primeiro"} /></SelectTrigger>
+                    <SelectContent>
+                      {availableBeds.map(b => (
+                        <SelectItem key={b.value} value={b.value} disabled={b.occupied}>
+                          {b.label} {b.occupied ? " (ocupado)" : " ✓ livre"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {selectedBed && (
+                <div className="flex items-center gap-2 p-2 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                  <Bed className="h-4 w-4 text-emerald-600" />
+                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                    Leito selecionado: {selectedBed} — {UTI_SECTORS.find(s => s.value === selectedSector)?.label}
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Score Panel */}
+          <Card className="border-primary/20">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Box I</p>
+                  <p className="text-2xl font-bold text-foreground">{scores.box1}</p>
+                  <p className="text-xs text-muted-foreground">Pré-admissão</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Box II</p>
+                  <p className="text-2xl font-bold text-foreground">{scores.box2}</p>
+                  <p className="text-xs text-muted-foreground">Circunstâncias</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Box III</p>
+                  <p className="text-2xl font-bold text-foreground">{scores.box3}</p>
+                  <p className="text-xs text-muted-foreground">Fisiológicas</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Total</p>
+                  <p className="text-3xl font-extrabold text-primary">{scores.total}</p>
+                  <p className="text-xs text-muted-foreground">Score total</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Mortalidade</p>
+                  <p className={`text-3xl font-extrabold ${getMortalityColor(scores.mortality)}`}>
+                    {scores.mortality}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">Predita</p>
                 </div>
               </div>
             </CardContent>
@@ -526,18 +695,22 @@ export default function Saps3Page() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="space-y-4 pt-0">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <Label>Tempo de internação hospitalar antes da UTI (dias)</Label>
+                      <Label>Idade (anos)</Label>
+                      <Input type="number" value={age} onChange={e => setAge(e.target.value)} placeholder="Ex: 65" min={0} max={120} />
+                    </div>
+                    <div>
+                      <Label>Dias no hospital antes da UTI</Label>
                       <Input type="number" value={losBeforeIcu} onChange={e => setLosBeforeIcu(e.target.value)} placeholder="0" min={0} />
                     </div>
                     <div>
-                      <Label>Origem da admissão na UTI</Label>
+                      <Label>Origem da admissão</Label>
                       <Select value={admissionSource} onValueChange={setAdmissionSource}>
                         <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="emergency">Pronto-Socorro</SelectItem>
-                          <SelectItem value="same_hospital_floor">Enfermaria do mesmo hospital</SelectItem>
+                          <SelectItem value="same_hospital_floor">Enfermaria</SelectItem>
                           <SelectItem value="other_icu">Outra UTI</SelectItem>
                           <SelectItem value="other_hospital">Outro hospital</SelectItem>
                           <SelectItem value="operating_room">Centro cirúrgico</SelectItem>
@@ -558,9 +731,7 @@ export default function Saps3Page() {
                           <Checkbox
                             checked={comorbidities.includes(c.id)}
                             onCheckedChange={(checked) => {
-                              setComorbidities(prev =>
-                                checked ? [...prev, c.id] : prev.filter(x => x !== c.id)
-                              );
+                              setComorbidities(prev => checked ? [...prev, c.id] : prev.filter(x => x !== c.id));
                             }}
                           />
                           {c.label}
@@ -599,7 +770,7 @@ export default function Saps3Page() {
                           <SelectItem value="cardiovascular">Cardiovascular</SelectItem>
                           <SelectItem value="neurological">Neurológica</SelectItem>
                           <SelectItem value="hepatic">Hepática</SelectItem>
-                          <SelectItem value="digestive">Digestiva/Gastrointestinal</SelectItem>
+                          <SelectItem value="digestive">Digestiva/GI</SelectItem>
                           <SelectItem value="respiratory">Respiratória</SelectItem>
                           <SelectItem value="other">Outra</SelectItem>
                         </SelectContent>
@@ -674,15 +845,11 @@ export default function Saps3Page() {
                 <CardContent className="space-y-4 pt-0">
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     <div>
-                      <Label className="flex items-center gap-1">
-                        <Brain className="h-3.5 w-3.5" /> Glasgow (GCS)
-                      </Label>
+                      <Label className="flex items-center gap-1"><Brain className="h-3.5 w-3.5" /> Glasgow (GCS)</Label>
                       <Input type="number" value={gcs} onChange={e => setGcs(e.target.value)} placeholder="3-15" min={3} max={15} />
                     </div>
                     <div>
-                      <Label className="flex items-center gap-1">
-                        <Heart className="h-3.5 w-3.5" /> FC mais alta (bpm)
-                      </Label>
+                      <Label className="flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> FC mais alta (bpm)</Label>
                       <Input type="number" value={hrHighest} onChange={e => setHrHighest(e.target.value)} placeholder="Ex: 110" />
                     </div>
                     <div>
@@ -690,17 +857,15 @@ export default function Saps3Page() {
                       <Input type="number" value={sbpLowest} onChange={e => setSbpLowest(e.target.value)} placeholder="Ex: 90" />
                     </div>
                     <div>
-                      <Label className="flex items-center gap-1">
-                        <Thermometer className="h-3.5 w-3.5" /> Temp. mais baixa (°C)
-                      </Label>
+                      <Label className="flex items-center gap-1"><Thermometer className="h-3.5 w-3.5" /> Temp. mais baixa (°C)</Label>
                       <Input type="number" step="0.1" value={tempLowest} onChange={e => setTempLowest(e.target.value)} placeholder="Ex: 36.2" />
                     </div>
                     <div>
-                      <Label>Bilirrubina mais alta (mg/dL)</Label>
+                      <Label>Bilirrubina (mg/dL)</Label>
                       <Input type="number" step="0.1" value={bilirubinHighest} onChange={e => setBilirubinHighest(e.target.value)} placeholder="Ex: 1.2" />
                     </div>
                     <div>
-                      <Label>Creatinina mais alta (mg/dL)</Label>
+                      <Label>Creatinina (mg/dL)</Label>
                       <Input type="number" step="0.1" value={creatinineHighest} onChange={e => setCreatinineHighest(e.target.value)} placeholder="Ex: 1.5" />
                     </div>
                     <div>
@@ -712,7 +877,7 @@ export default function Saps3Page() {
                       <Input type="number" step="0.01" value={phLowest} onChange={e => setPhLowest(e.target.value)} placeholder="Ex: 7.35" />
                     </div>
                     <div>
-                      <Label>Plaquetas mais baixas (x10³)</Label>
+                      <Label>Plaquetas (x10³)</Label>
                       <Input type="number" value={plateletsLowest} onChange={e => setPlateletsLowest(e.target.value)} placeholder="Ex: 150" />
                     </div>
                     <div>
@@ -729,28 +894,29 @@ export default function Saps3Page() {
             </Card>
           </Collapsible>
 
-          {/* Actions */}
+          {/* Save */}
           <div className="flex gap-3 justify-end">
-            <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving} className="gap-2">
-              <Save className="h-4 w-4" /> {saving ? "Salvando..." : "Salvar Avaliação"}
+            <Button variant="outline" onClick={() => setSelectedRequest(null)}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={saving || !selectedBed} className="gap-2">
+              <Save className="h-4 w-4" />
+              {saving ? "Admitindo..." : `Admitir no ${selectedBed || "leito"}`}
             </Button>
           </div>
         </div>
       )}
 
       {/* ─── History ─── */}
-      {!showForm && (
+      {!isFormMode && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <History className="h-5 w-5" /> Avaliações Registradas
+              <History className="h-5 w-5" /> Admissões Realizadas (SAPS 3)
             </CardTitle>
           </CardHeader>
           <CardContent>
             {records.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Nenhuma avaliação SAPS 3 registrada ainda.
+                Nenhuma admissão com SAPS 3 registrada.
               </p>
             ) : (
               <div className="space-y-2">
@@ -789,7 +955,7 @@ export default function Saps3Page() {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir avaliação SAPS 3?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir registro SAPS 3?</AlertDialogTitle>
             <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
