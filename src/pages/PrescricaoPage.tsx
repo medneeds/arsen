@@ -1266,9 +1266,15 @@ const PrescricaoPage = () => {
     flags: [],
     highAlert: med.highAlert || false,
     status: 'active',
-    infusionMode: isIVRoute(med.defaultRoute) ? 'BIC' : undefined,
+    infusionMode: 'BIC',
     infusionTime: '',
     volumeTotal: '',
+    quantity: '1',
+    action: 'fazer',
+    diluent: '',
+    diluentVolume: '',
+    accessType: '',
+    concentration: '',
   });
 
   const addItem = (med: MedicationEntry) => {
