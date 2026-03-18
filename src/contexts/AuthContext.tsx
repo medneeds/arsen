@@ -14,7 +14,7 @@ interface AuthContextType {
   allowedDepartments: string[];
   loading: boolean;
   signIn: (username: string, password: string) => Promise<{ error: any }>;
-  signUp: (username: string, password: string, fullName: string, role?: "admin" | "medico" | "porta" | "visitante") => Promise<{ error: any }>;
+  signUp: (username: string, password: string, fullName: string, role?: "admin" | "medico" | "porta" | "visitante" | "farmacia") => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshUserStatus: () => Promise<void>;
 }
