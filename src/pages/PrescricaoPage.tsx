@@ -1128,6 +1128,9 @@ const PrescricaoPage = () => {
     flags: [],
     highAlert: med.highAlert || false,
     status: 'active',
+    infusionMode: isIVRoute(med.defaultRoute) ? 'BIC' : undefined,
+    infusionTime: '',
+    volumeTotal: '',
   });
 
   const addItem = (med: MedicationEntry) => {
