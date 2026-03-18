@@ -1066,7 +1066,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
       recordChange({
         fieldName: editingField,
         oldValue: null,
-        newValue: `[ADICIONADO] ${editValue.toUpperCase()}`,
+        newValue: `[ADICIONADO] ${editValue}`,
       });
     }
 
