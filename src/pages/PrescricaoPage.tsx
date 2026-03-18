@@ -370,6 +370,10 @@ function SortablePrescriptionItemRow({
             />
           ))}
         </div>
+        {/* Schedule - far right aligned */}
+        <div className="shrink-0 flex items-center gap-1 pl-2 border-l border-border/30">
+          <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-24 font-mono text-center" placeholder="Horário" />
+        </div>
         <ItemActions />
       </div>
     );
