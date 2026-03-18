@@ -16,6 +16,7 @@ const LEGACY_GENERIC_USERS = [
   "liderped@sistema.local",
   "coordenador@sistema.local",
   "rotina@sistema.local",
+  "farmacia@sistema.local",
 ];
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {

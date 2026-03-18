@@ -89,6 +89,16 @@ const ACCESS_PROFILES: {
     bgGlow: "from-sky-400/15 to-sky-400/5",
     features: ["Cadastro de Pacientes", "Pré-Admissão", "Movimentações", "Relatórios"],
   },
+  {
+    key: "farmacia",
+    label: "Farmácia Clínica",
+    subtitle: "Validação e Dispensação",
+    icon: Shield,
+    color: "text-emerald-400",
+    borderColor: "border-emerald-400/30 hover:border-emerald-400/60",
+    bgGlow: "from-emerald-400/15 to-emerald-400/5",
+    features: ["Validação de Prescrições", "Catálogo de Medicamentos", "Interações Medicamentosas", "Dispensação"],
+  },
 ];
 
 export default function AuthPage() {
