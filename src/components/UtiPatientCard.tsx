@@ -565,9 +565,9 @@ function InlineEditableArray({
               ref={newInputRef}
               type="text"
               value={newItemValue}
-              onChange={(e) => setNewItemValue(e.target.value.toUpperCase())}
-              placeholder="NOVO ITEM..."
-              className="flex-1 text-[11px] bg-background border border-primary/30 rounded px-1.5 py-1 outline-none uppercase font-medium tracking-tight placeholder:font-normal placeholder:text-muted-foreground/50"
+              onChange={(e) => setNewItemValue(e.target.value)}
+              placeholder="Novo item..."
+              className="flex-1 text-[11px] bg-background border border-primary/30 rounded px-1.5 py-1 outline-none font-medium tracking-tight placeholder:font-normal placeholder:text-muted-foreground/50"
               onKeyDown={handleNewItemKeyDown}
               onBlur={() => handleAddItem(false)}
             />
