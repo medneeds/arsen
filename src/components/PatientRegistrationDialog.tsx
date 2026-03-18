@@ -243,7 +243,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
                   <Camera className="h-10 w-10 text-primary/60" />
                   <h3 className="font-semibold">Upload de Documento</h3>
                   <p className="text-sm text-muted-foreground max-w-sm">
-                    Fotografe ou faça upload de um documento de identidade (RG, CNH, Cartão SUS). 
+                    Fotografe ou faça upload de um documento de identidade (RG, CNH, Cartão SUS) em imagem ou PDF. 
                     A IA extrairá automaticamente os dados do paciente.
                   </p>
                 </div>
