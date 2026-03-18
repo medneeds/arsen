@@ -166,6 +166,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 const RequisicaoUnificadaPage = () => {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const unitId = currentHospital?.id;
   const stateId = currentState?.id;
 
@@ -177,6 +179,7 @@ const RequisicaoUnificadaPage = () => {
 
   // ── New request form ──
   const [showNewRequest, setShowNewRequest] = useState(false);
+  const [formPatientId, setFormPatientId] = useState<string | null>(null);
   const [formPatientName, setFormPatientName] = useState("");
   const [formPatientBed, setFormPatientBed] = useState("");
   const [formPatientSector, setFormPatientSector] = useState("");
@@ -192,6 +195,20 @@ const RequisicaoUnificadaPage = () => {
   const [viewingRequest, setViewingRequest] = useState<any | null>(null);
   const [resultText, setResultText] = useState("");
   const [savingResult, setSavingResult] = useState(false);
+
+  // ── Pre-fill from navigation state or URL params ──
+  useEffect(() => {
+    const state = location.state as any;
+    const patientId = state?.patientId || searchParams.get("patientId");
+    const patientName = state?.patientName || searchParams.get("patientName");
+    const patientBed = state?.patientBed || searchParams.get("patientBed");
+    const patientSector = state?.patientSector || searchParams.get("patientSector");
+    if (patientId) setFormPatientId(patientId);
+    if (patientName) setFormPatientName(patientName);
+    if (patientBed) setFormPatientBed(patientBed);
+    if (patientSector) setFormPatientSector(patientSector);
+    if (patientId || patientName) setActiveSubTab("solicitar");
+  }, []);
 
   useEffect(() => {
     if (unitId && stateId) fetchRequests();
