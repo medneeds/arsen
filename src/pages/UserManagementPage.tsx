@@ -375,12 +375,12 @@ export default function UserManagementPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead className="font-bold uppercase text-xs">Usuário</TableHead>
-                <TableHead className="font-bold uppercase text-xs">CRM</TableHead>
-                <TableHead className="font-bold uppercase text-xs">Status</TableHead>
-                <TableHead className="font-bold uppercase text-xs">Papel</TableHead>
-                <TableHead className="font-bold uppercase text-xs">Cadastro</TableHead>
-                <TableHead className="font-bold uppercase text-xs text-right">Ações</TableHead>
+                <TableHead className="font-bold text-xs">Usuário</TableHead>
+                <TableHead className="font-bold text-xs">CRM</TableHead>
+                <TableHead className="font-bold text-xs">Status</TableHead>
+                <TableHead className="font-bold text-xs">Papel</TableHead>
+                <TableHead className="font-bold text-xs">Cadastro</TableHead>
+                <TableHead className="font-bold text-xs text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
