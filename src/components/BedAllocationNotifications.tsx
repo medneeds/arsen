@@ -135,12 +135,9 @@ export function BedAllocationNotifications() {
   const [showPopup, setShowPopup] = useState(false);
   const [lastNotifiedId, setLastNotifiedId] = useState<string | null>(null);
 
-  // Apenas LIDER e COORDENADOR veem as notificações
-  if (role === "porta") return null;
-
   // Realtime pop-up notification for new requests
   useEffect(() => {
-    if (!currentHospital?.id) return;
+    if (!currentHospital?.id || role === "porta") return;
 
     const channel = supabase
       .channel("new-allocation-popup")
@@ -157,7 +154,6 @@ export function BedAllocationNotifications() {
           if (payload.new.id !== lastNotifiedId) {
             setLastNotifiedId(payload.new.id as string);
             setShowPopup(true);
-            // Play notification sound
             playNotificationSound();
           }
         }
@@ -167,17 +163,39 @@ export function BedAllocationNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentHospital?.id, lastNotifiedId, playNotificationSound]);
+  }, [currentHospital?.id, lastNotifiedId, playNotificationSound, role]);
+
+  // Apenas LIDER e COORDENADOR veem as notificações
+  if (role === "porta") return null;
 
   const pendingRequests = requests.filter(r => r.status === "pending");
   const discussingRequests = requests.filter(r => r.status === "discussing");
 
+  // Check if this is a UTI sector allocation
+  const isUtiSector = (sector: string) => {
+    const utiSectors = ["UTI 1", "UTI 2", "red", "yellow"];
+    return utiSectors.includes(sector);
+  };
+
   const handleApprove = async (request: BedAllocationRequest) => {
+    const isUti = isUtiSector(request.requested_sector) || request.department === "UTI";
+    
     const success = await approveRequest(request.id);
     if (success) {
       setSelectedRequest(null);
-      // Refetch to update the list immediately
       await refetch();
+      
+      // If UTI allocation, redirect to SAPS 3 with patient data
+      if (isUti && request.patient) {
+        navigate("/saps3", {
+          state: {
+            patientId: request.patient.id,
+            patientName: request.patient.name,
+            patientAge: request.patient.age,
+            fromAllocation: true,
+          }
+        });
+      }
     }
   };
 
