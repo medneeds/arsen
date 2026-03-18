@@ -251,7 +251,7 @@ export default function PainelClinicoPage() {
                 {filteredPatients.map(patient => {
                   const days = calcDaysInternment(patient.admissionDate);
                   const prescStatus = getPrescriptionStatus(patient);
-                  const pendencies = patient.pendencies.filter(p => p.trim());
+                  const pendencies = parseTextArray(patient.pendencies);
                   
                   return (
                     <TableRow
