@@ -379,26 +379,52 @@ export default function Saps3Page() {
     loadOccupiedBeds();
   }, [hospitalId, stateId]);
 
-  // ─── Pre-fill from allocation navigation ───
+  // ─── Pre-fill from allocation navigation / URL ───
   useEffect(() => {
     const state = location.state as any;
-    if (state?.fromAllocation && state?.patientName) {
-      setPatientName(state.patientName);
-      if (state.patientAge) {
-        const ageStr = String(state.patientAge).replace(/\D/g, "");
-        if (ageStr) setAge(ageStr);
-      }
-      setSelectedSector(""); setSelectedBed("");
-      setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
-      setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
-      setInfectionAtAdmission(""); setGcs(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
-      setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
-      setPao2Fio2(""); setIsVentilated(false);
-      setBox1Open(true); setBox2Open(true); setBox3Open(true);
-      toast.info(`Preencha o SAPS 3 para ${state.patientName}`);
-      window.history.replaceState({}, document.title);
+    const fromAllocation = Boolean(state?.fromAllocation || searchParams.get("fromAllocation") === "true");
+    const patientNameFromContext = state?.patientName || searchParams.get("patientName");
+
+    if (!fromAllocation || !patientNameFromContext) return;
+
+    const patientAgeFromContext = state?.patientAge || searchParams.get("patientAge");
+    const destinationSectorFromContext = state?.destinationSector || searchParams.get("destinationSector");
+    const preAdmissionId = state?.preAdmissionId || searchParams.get("preAdmissionId");
+    const allocationRequestId = state?.allocationRequestId || searchParams.get("allocationRequestId");
+    const patientId = state?.patientId || searchParams.get("patientId");
+
+    setSelectedRequest({
+      id: preAdmissionId || allocationRequestId || patientId || patientNameFromContext,
+      patient_name: patientNameFromContext,
+      birth_date: null,
+      sex: null,
+      destination_sector: destinationSectorFromContext,
+      notes: null,
+      created_at: new Date().toISOString(),
+      medical_record: null,
+      patient_id: patientId,
+      allocation_request_id: allocationRequestId,
+    });
+
+    setPatientName(patientNameFromContext);
+    if (patientAgeFromContext) {
+      const ageStr = String(patientAgeFromContext).replace(/\D/g, "");
+      if (ageStr) setAge(ageStr);
     }
-  }, [location.state]);
+
+    if (destinationSectorFromContext === "UTI 1") setSelectedSector("red");
+    else if (destinationSectorFromContext === "UTI 2") setSelectedSector("yellow");
+    else setSelectedSector("");
+
+    setSelectedBed("");
+    setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
+    setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
+    setInfectionAtAdmission(""); setGcs(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
+    setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
+    setPao2Fio2(""); setIsVentilated(false);
+    setBox1Open(true); setBox2Open(true); setBox3Open(true);
+    toast.info(`Preencha o SAPS 3 para ${patientNameFromContext}`);
+  }, [location.state, searchParams]);
 
   // ─── Start admission from pending request ───
   const startAdmission = (req: PendingRequest) => {
