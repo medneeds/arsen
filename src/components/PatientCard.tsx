@@ -1744,7 +1744,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                   <span className="text-xs md:text-[9px] font-medium text-muted-foreground mb-0">Admissão UTI</span>
                       <ol className="text-xs text-foreground space-y-0 print:text-[7.5px] list-none pl-0">
                         {(patient.utiAdmissionDate || []).map((item, idx) => (
-                          <li key={`uti-admission-date-${idx}`} className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5">
+                          <li key={`uti-admission-date-${idx}`} className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5">
                             {editingField === "utiAdmissionDate" && editingArrayIndex === idx ? (
                               <>
                                 <div className="flex items-center gap-1 flex-1">
