@@ -164,10 +164,11 @@ export default function PainelClinicoPage() {
       .filter(p => {
         if (!search) return true;
         const q = search.toLowerCase();
+        const diagArr = parseTextArray(p.diagnoses);
         return (
           p.name.toLowerCase().includes(q) ||
           p.bedNumber.toLowerCase().includes(q) ||
-          p.diagnoses.some(d => d.toLowerCase().includes(q))
+          diagArr.some(d => d.toLowerCase().includes(q))
         );
       });
   }, [patients, search, sectorFilter]);
