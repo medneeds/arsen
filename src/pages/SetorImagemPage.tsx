@@ -327,7 +327,7 @@ const SetorImagemPage = () => {
           <TabsTrigger value="all" className="gap-1.5 text-xs">
             <ScanLine className="h-3.5 w-3.5" /> Todos
           </TabsTrigger>
-        </Tabs>
+        </TabsList>
 
         {/* Content for all tabs uses same list */}
         {["pending", "in_progress", "completed", "all"].map((tab) => (
