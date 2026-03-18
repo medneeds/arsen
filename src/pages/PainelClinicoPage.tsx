@@ -273,9 +273,9 @@ export default function PainelClinicoPage() {
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {patient.age ? `${patient.age} anos` : "—"}
                           </p>
-                          {patient.diagnoses.length > 0 && (
+                          {parseTextArray(patient.diagnoses).length > 0 && (
                             <p className="text-xs text-muted-foreground mt-1 line-clamp-1 max-w-[200px]">
-                              {patient.diagnoses[0]}
+                              {parseTextArray(patient.diagnoses)[0]}
                             </p>
                           )}
                         </div>
