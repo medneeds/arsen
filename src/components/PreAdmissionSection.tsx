@@ -195,11 +195,11 @@ export function PreAdmissionSection() {
                           <Button
                             size="sm"
                             className="flex-1 h-6 text-[10px] gap-1"
-                            onClick={() => {
-                              toast({ title: "Em breve", description: "Admissão em leito será implementada na próxima fase" });
-                            }}
+                            onClick={() => setAdmitTarget(pa)}
                           >
-                            <User className="h-3 w-3" />
+                            <BedDouble className="h-3 w-3" />
+                            Admitir em Leito
+                          </Button>
                             Admitir em Leito
                           </Button>
                         )}
