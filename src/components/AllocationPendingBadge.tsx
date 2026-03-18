@@ -92,23 +92,27 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
     setIsApproving(true);
     try {
       const isUti = isUtiAllocation();
+
+      if (isUti) {
+        const params = new URLSearchParams({
+          fromAllocation: "true",
+          allocationRequestId: patientRequest.id,
+          patientId: patient.id,
+          patientName: patient.name || "",
+          patientAge: String(patient.age ?? ""),
+          destinationSector: patientRequest.requested_sector || "",
+        });
+
+        setIsDialogOpen(false);
+        navigate(`/saps3?${params.toString()}`);
+        return;
+      }
+
       const success = await approveRequest(patientRequest.id);
       if (success) {
         setIsDialogOpen(false);
         await refetch();
         onStatusChange?.();
-        
-        // If UTI allocation, redirect to SAPS 3
-        if (isUti) {
-          navigate("/saps3", {
-            state: {
-              patientId: patient.id,
-              patientName: patient.name,
-              patientAge: patient.age,
-              fromAllocation: true,
-            }
-          });
-        }
       }
     } finally {
       setIsApproving(false);
