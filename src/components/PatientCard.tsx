@@ -4366,7 +4366,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-border/30">
-              <h3 className="text-xl font-bold text-primary uppercase tracking-wide flex items-center gap-2">
+              <h3 className="text-xl font-bold text-primary tracking-wide flex items-center gap-2">
                 <div className="w-1 h-6 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
                 Antecedentes
               </h3>
