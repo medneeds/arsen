@@ -4,7 +4,7 @@ import { ptBR } from "date-fns/locale";
 import {
   TestTubes, ScanLine, UserCheck, Plus, Search, Clock, CheckCircle2,
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
-  ChevronDown, Filter, Eye, ClipboardList,
+  ChevronDown, Filter, Eye, ClipboardList, Package, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,82 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
+
+// ── UTI Exam Combos ──
+type ComboCategory = "laboratorio" | "imagem";
+interface UtiCombo {
+  id: string;
+  label: string;
+  description: string;
+  icon: typeof Clock;
+  color: string;
+  bg: string;
+  border: string;
+  categories: Partial<Record<ComboCategory, string[]>>;
+}
+
+const UTI_COMBOS: UtiCombo[] = [
+  {
+    id: "rotina-uti",
+    label: "Rotina UTI",
+    description: "Exames laboratoriais de rotina diária da UTI",
+    icon: Clock,
+    color: "text-blue-600",
+    bg: "bg-blue-500/10",
+    border: "border-blue-300",
+    categories: {
+      laboratorio: [
+        "Hemograma Completo", "Ureia", "Creatinina", "Sódio", "Potássio", "Cálcio", "Magnésio", "Fósforo",
+        "Glicemia", "TGO", "TGP", "Bilirrubina Total e Frações", "PCR",
+        "TAP/INR", "TTPA", "Gasometria Arterial", "Lactato",
+      ],
+    },
+  },
+  {
+    id: "admissao-uti",
+    label: "Admissão UTI (SAPS)",
+    description: "Pacote completo: SAPS 3, culturas, RX tórax admissional, ECG",
+    icon: Package,
+    color: "text-emerald-600",
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-300",
+    categories: {
+      laboratorio: [
+        "Hemograma Completo", "Plaquetas",
+        "Ureia", "Creatinina", "Sódio", "Potássio", "Cálcio", "Magnésio", "Fósforo",
+        "Glicemia", "TGO", "TGP", "Bilirrubina Total e Frações", "Albumina", "PCR",
+        "Amilase", "Lipase", "DHL",
+        "TAP/INR", "TTPA", "Fibrinogênio", "D-Dímero",
+        "Gasometria Arterial", "Lactato",
+        "Troponina", "BNP/NT-proBNP", "Procalcitonina",
+        "Hemocultura (2 pares)", "Urocultura", "Cultura de Secreção",
+        "EAS/Urina Tipo I",
+        "TSH", "T4 Livre", "Cortisol",
+      ],
+      imagem: [
+        "RX Tórax AP (leito)", "ECG 12 derivações",
+      ],
+    },
+  },
+  {
+    id: "sepse-uti",
+    label: "Pacote Sepse",
+    description: "Investigação e manejo de sepse: labs + culturas",
+    icon: Zap,
+    color: "text-red-600",
+    bg: "bg-red-500/10",
+    border: "border-red-300",
+    categories: {
+      laboratorio: [
+        "Hemograma Completo", "Plaquetas", "PCR", "Procalcitonina", "Lactato",
+        "Gasometria Arterial", "Ureia", "Creatinina", "Sódio", "Potássio",
+        "TGO", "TGP", "Bilirrubina Total e Frações",
+        "TAP/INR", "TTPA", "Fibrinogênio", "D-Dímero",
+        "Hemocultura (2 pares)", "Urocultura", "Cultura de Secreção",
+      ],
+    },
+  },
+];
 
 // ── Category config ──
 const CATEGORIES = {
