@@ -409,7 +409,7 @@ export function AppSidebar({
                                   {item.subsections && Array.isArray(item.subsections) && item.subsections.map((subitem: any) => (
                                     <SidebarMenuItem key={subitem.name}>
                                       <SidebarMenuButton
-                                        className="group/subitem hover:bg-accent/60 transition-all duration-200 uppercase text-[10px] rounded-lg cursor-pointer gap-2 hover:translate-x-1 mb-1"
+                                        className="group/subitem hover:bg-accent/60 transition-all duration-200 text-[10px] rounded-lg cursor-pointer gap-2 hover:translate-x-1 mb-1"
                                         tooltip={subitem.name}
                                         onClick={() => handleItemClick(subitem)}
                                       >
