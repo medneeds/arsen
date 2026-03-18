@@ -931,37 +931,37 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
     } else if (editingField === "utiAdmissionDate") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiAdmissionDate = [...(patient.utiAdmissionDate || []), editValue.toUpperCase()];
+          updatedPatient.utiAdmissionDate = [...(patient.utiAdmissionDate || []), editValue];
         }
       } else {
         updatedPatient.utiAdmissionDate = (patient.utiAdmissionDate || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiDischargePrediction") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiDischargePrediction = [...(patient.utiDischargePrediction || []), editValue.toUpperCase()];
+          updatedPatient.utiDischargePrediction = [...(patient.utiDischargePrediction || []), editValue];
         }
       } else {
         updatedPatient.utiDischargePrediction = (patient.utiDischargePrediction || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiAllergies") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiAllergies = [...(patient.utiAllergies || []), editValue.toUpperCase()];
+          updatedPatient.utiAllergies = [...(patient.utiAllergies || []), editValue];
         }
       } else {
         updatedPatient.utiAllergies = (patient.utiAllergies || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiAdmissionReason") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiAdmissionReason = [...(patient.utiAdmissionReason || []), editValue.toUpperCase()];
+          updatedPatient.utiAdmissionReason = [...(patient.utiAdmissionReason || []), editValue];
         }
       } else {
         updatedPatient.utiAdmissionReason = (patient.utiAdmissionReason || []).map((item, i) => 
