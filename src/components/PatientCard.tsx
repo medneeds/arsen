@@ -1833,7 +1833,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                         {(patient.utiDischargePrediction || []).map((item, idx) => {
                           const daysCalculation = calculateDaysUntilDischarge(item);
                           return (
-                            <li key={`uti-discharge-${idx}`} className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5">
+                            <li key={`uti-discharge-${idx}`} className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5">
                               {editingField === "utiDischargePrediction" && editingArrayIndex === idx ? (
                                 <>
                                   <div className="flex items-center gap-1 flex-1">
