@@ -1025,13 +1025,23 @@ const PrescricaoPage = () => {
   const { currentHospital, currentState } = useHospital();
   const [searchParams] = useSearchParams();
 
-  const [patient, setPatient] = useState<PatientHeader>({
-    name: "", birthDate: "", age: "", sex: "", bed: "",
-    unit: "", record: "", admissionDate: "", weight: "", allergies: "",
-  });
+  // Initialize patient and items directly from URL params to avoid render delay
+  const initialPatientName = searchParams.get('patientName') || '';
+  const initialPatientBed = searchParams.get('patientBed') || '';
+  const initialPatientSector = searchParams.get('patientSector') || '';
+  const sectorMapInit: Record<string, string> = { red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2" };
 
-  const [items, setItems] = useState<PrescriptionItem[]>([]);
-  const [activeTab, setActiveTab] = useState<PrescriptionCategory>('nutrition');
+  const [patient, setPatient] = useState<PatientHeader>(() => ({
+    name: initialPatientName,
+    birthDate: "", age: "", sex: "",
+    bed: initialPatientBed,
+    unit: sectorMapInit[initialPatientSector] || initialPatientSector,
+    record: "", admissionDate: "", weight: "", allergies: "",
+  }));
+
+  const initialDemoItems = useMemo(() => initialPatientBed ? getDemoPrescriptionItems(initialPatientBed) : [], []);
+  const [items, setItems] = useState<PrescriptionItem[]>(initialDemoItems);
+  const [activeTab, setActiveTab] = useState<PrescriptionCategory>(initialDemoItems.length > 0 ? 'medication' : 'nutrition');
   const [nonStdName, setNonStdName] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
