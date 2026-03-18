@@ -1868,8 +1868,6 @@ const PrescricaoPage = () => {
               const config = CATEGORY_CONFIG[cat];
               const catItems = itemsByCategory[cat];
               const simple = isSimpleCategory(cat);
-              if (catItems.length === 0) return null;
-
               const IconComp = CATEGORY_ICONS[config.icon] || Pill;
 
               return (
@@ -1880,25 +1878,50 @@ const PrescricaoPage = () => {
                     <span className="text-xs font-semibold text-foreground">{config.label}</span>
                     <Badge variant="secondary" className="text-[9px] h-4 px-1.5">{catItems.length}</Badge>
                   </div>
-                  {/* Items */}
-                  <div className="p-2 space-y-1.5">
-                    {catItems.map((item, i) => (
-                      <SortablePrescriptionItemRow
-                        key={item.id}
-                        item={item}
-                        index={i}
-                        onUpdate={updateItem}
-                        onRemove={removeItem}
-                        onToggleFlag={toggleFlag}
-                        isSimple={simple}
-                        selected={selectedIds.has(item.id)}
-                        onToggleSelect={toggleSelect}
-                        onDuplicate={duplicateItem}
-                        onRequestSuspend={requestSuspendItem}
-                        onReactivate={reactivateItem}
+                  {/* Inline search bar for this category */}
+                  <div className="px-2 pt-2">
+                    {cat === 'nonstandard' ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={activeTab === 'nonstandard' ? nonStdName : ''}
+                          onChange={(e) => { setActiveTab('nonstandard'); setNonStdName(e.target.value); }}
+                          onKeyDown={(e) => { if (e.key === "Enter") addNonStandard(); }}
+                          placeholder="Adicionar item não padronizado..."
+                          className="bg-muted/30 border-border/50 h-8 text-xs"
+                        />
+                        <Button variant="outline" size="sm" onClick={addNonStandard} disabled={!nonStdName.trim()} className="h-8 px-2">
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <MedicationAutocomplete
+                        source={ALL_ITEMS_BY_CATEGORY[cat]}
+                        onSelect={addItem}
+                        placeholder={`Buscar ${config.label.toLowerCase()}...`}
                       />
-                    ))}
+                    )}
                   </div>
+                  {/* Items */}
+                  {catItems.length > 0 && (
+                    <div className="p-2 space-y-1.5">
+                      {catItems.map((item, i) => (
+                        <SortablePrescriptionItemRow
+                          key={item.id}
+                          item={item}
+                          index={i}
+                          onUpdate={updateItem}
+                          onRemove={removeItem}
+                          onToggleFlag={toggleFlag}
+                          isSimple={simple}
+                          selected={selectedIds.has(item.id)}
+                          onToggleSelect={toggleSelect}
+                          onDuplicate={duplicateItem}
+                          onRequestSuspend={requestSuspendItem}
+                          onReactivate={reactivateItem}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
