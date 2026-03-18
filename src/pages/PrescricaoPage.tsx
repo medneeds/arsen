@@ -1842,6 +1842,28 @@ const PrescricaoPage = () => {
                   {catItems.length > 0 && <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{catItems.length}</Badge>}
                 </div>
 
+                {/* Add item (search) - above items */}
+                {cat === 'nonstandard' ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={nonStdName}
+                      onChange={(e) => setNonStdName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") addNonStandard(); }}
+                      placeholder="Nome do item não padronizado..."
+                      className="bg-muted/30 border-border/50"
+                    />
+                    <Button variant="outline" size="sm" onClick={addNonStandard} disabled={!nonStdName.trim()}>
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <MedicationAutocomplete
+                    source={source}
+                    onSelect={addItem}
+                    placeholder={`Buscar ${config.label.toLowerCase()}...`}
+                  />
+                )}
+
                 {/* Batch action bar */}
                 {cat === activeTab && (
                   <BatchActionBar
@@ -1886,28 +1908,6 @@ const PrescricaoPage = () => {
                       </div>
                     </SortableContext>
                   </DndContext>
-                )}
-
-                {/* Add item */}
-                {cat === 'nonstandard' ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={nonStdName}
-                      onChange={(e) => setNonStdName(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") addNonStandard(); }}
-                      placeholder="Nome do item não padronizado..."
-                      className="bg-muted/30 border-border/50"
-                    />
-                    <Button variant="outline" size="sm" onClick={addNonStandard} disabled={!nonStdName.trim()}>
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ) : (
-                  <MedicationAutocomplete
-                    source={source}
-                    onSelect={addItem}
-                    placeholder={`Buscar ${config.label.toLowerCase()}...`}
-                  />
                 )}
               </TabsContent>
             );
