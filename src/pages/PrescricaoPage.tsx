@@ -1876,52 +1876,67 @@ const PrescricaoPage = () => {
       {/* ===== PRINT STYLES ===== */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          @page { size: A4 portrait; margin: 6mm 8mm 10mm 8mm; }
+          @page { size: A4 portrait; margin: 5mm 6mm 8mm 6mm; }
+          .prescription-print-section table { border-collapse: collapse; table-layout: fixed; width: 100%; }
         }
       ` }} />
 
       {/* ===== PRINT-ONLY LETTERHEAD ===== */}
-      <div className="hidden print:block prescription-print-section mb-0">
-        {/* Header bar */}
-        <div className="flex items-center justify-between pb-1 mb-1" style={{ borderBottom: '1.5px solid #0f172a' }}>
-          <img src={socorraoLogo} alt="Socorrão I" className="h-7 object-contain" />
-          <div className="text-center flex-1 px-3">
-            <p className="text-[9pt] font-extrabold uppercase tracking-widest leading-none text-black">Hospital Municipal Djalma Marques — Socorrão I</p>
-            <p className="text-[7pt] text-gray-500 leading-tight mt-[1px]">Prescrição Médica Diária</p>
-          </div>
-          <img src={bighelpLogo} alt="BigHelp Map" className="h-6 object-contain opacity-30" />
-        </div>
-        {/* Patient data — compact single-row grid */}
-        <div className="grid grid-cols-6 gap-0 text-[8pt] text-black" style={{ border: '0.5px solid #94a3b8' }}>
-          <div className="col-span-3 px-1.5 py-[2px]" style={{ borderRight: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold">Pac:</span> {patient.name || '___________________________________'}
-          </div>
-          <div className="px-1.5 py-[2px]" style={{ borderRight: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold">Leito:</span> {patient.bed || '______'}
-          </div>
-          <div className="px-1.5 py-[2px]" style={{ borderRight: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold">Pront:</span> {patient.record || '________'}
-          </div>
-          <div className="px-1.5 py-[2px]">
-            <span className="font-bold">Data:</span> {prescriptionDate}
-          </div>
-          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold">Idade:</span> {patient.age || '____'}
-          </div>
-          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold">Sexo:</span> {patient.sex || '____'}
-          </div>
-          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold">Peso:</span> {patient.weight ? `${patient.weight}kg` : '____'}
-          </div>
-          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold">Adm:</span> {patient.admissionDate || '__/__/____'}
-          </div>
-          <div className="col-span-2 px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold text-red-700">Alergias:</span>{' '}
-            <span className="text-red-700 font-semibold">{patient.allergies || 'NDAM'}</span>
-          </div>
-        </div>
+      <div className="hidden print:block prescription-print-section" style={{ marginBottom: '2px' }}>
+        {/* Institutional header */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '3px' }}>
+          <tbody>
+            <tr>
+              <td style={{ width: '60px', verticalAlign: 'middle', padding: '0 4px 0 0' }}>
+                <img src={socorraoLogo} alt="Socorrão I" style={{ height: '28px', objectFit: 'contain' }} />
+              </td>
+              <td style={{ verticalAlign: 'middle', textAlign: 'center' }}>
+                <div style={{ fontSize: '9pt', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#0f172a', lineHeight: 1 }}>
+                  Hospital Municipal Djalma Marques — Socorrão I
+                </div>
+                <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '1px' }}>
+                  PRESCRIÇÃO MÉDICA DIÁRIA
+                </div>
+              </td>
+              <td style={{ width: '50px', verticalAlign: 'middle', textAlign: 'right', padding: '0 0 0 4px' }}>
+                <img src={bighelpLogo} alt="BigHelp Map" style={{ height: '22px', objectFit: 'contain', opacity: 0.25 }} />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div style={{ borderTop: '2px solid #0f172a', borderBottom: '0.5px solid #94a3b8' }} />
+
+        {/* Patient identification table */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt', color: '#0f172a', marginTop: '2px' }}>
+          <tbody>
+            <tr>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '50%' }}>
+                <span style={{ fontWeight: 700 }}>PACIENTE:</span> {patient.name || '___________________________________'}
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '12%' }}>
+                <span style={{ fontWeight: 700 }}>LEITO:</span> {patient.bed || '______'}
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '18%' }}>
+                <span style={{ fontWeight: 700 }}>PRONTUÁRIO:</span> {patient.record || '________'}
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '20%' }}>
+                <span style={{ fontWeight: 700 }}>DATA:</span> {prescriptionDate}
+              </td>
+            </tr>
+            <tr>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }} colSpan={2}>
+                <span style={{ fontWeight: 700, color: '#dc2626' }}>ALERGIAS:</span>{' '}
+                <span style={{ color: '#dc2626', fontWeight: 700 }}>{patient.allergies || 'NDAM'}</span>
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }}>
+                <span style={{ fontWeight: 700 }}>PESO:</span> {patient.weight ? `${patient.weight} kg` : '______ kg'}
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }}>
+                <span style={{ fontWeight: 700 }}>IDADE:</span> {patient.age || '____'} | <span style={{ fontWeight: 700 }}>SEXO:</span> {patient.sex || '__'}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       {/* Page Title */}
