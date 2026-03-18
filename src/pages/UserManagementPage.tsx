@@ -545,7 +545,7 @@ export default function UserManagementPage() {
                     <p className="text-sm font-mono">{selectedUser.crm || "—"}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Building2 className="h-3 w-3" /> Especialidade
                     </p>
                     <p className="text-sm">{selectedUser.specialty || "—"}</p>
