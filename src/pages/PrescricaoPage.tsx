@@ -1322,6 +1322,52 @@ const PrescricaoPage = () => {
     setItems((prev) => [...prev, createItem(med)]);
   };
 
+  const applyCareProfile = (profile: CareProfile) => {
+    const existingNames = new Set(items.filter(i => i.category === 'care').map(i => i.name));
+    const newItems: PrescriptionItem[] = [];
+    // Add structured care items from IDs
+    for (const careId of profile.items) {
+      const careMed = CARE_OPTIONS.find(c => c.id === careId);
+      if (careMed && !existingNames.has(careMed.name)) {
+        newItems.push(createItem(careMed));
+        existingNames.add(careMed.name);
+      }
+    }
+    // Add extra text-based items
+    for (const extraText of profile.extraItems) {
+      if (!existingNames.has(extraText)) {
+        newItems.push({
+          id: crypto.randomUUID(),
+          name: extraText,
+          presentation: '-', dose: '-', route: '-',
+          posology: '-', schedule: '-', instructions: '',
+          category: 'care', flags: [], highAlert: false, status: 'active',
+        });
+        existingNames.add(extraText);
+      }
+    }
+    if (newItems.length > 0) {
+      setItems(prev => [...prev, ...newItems]);
+      toast.success(`Perfil "${profile.label}" aplicado — ${newItems.length} itens adicionados`);
+    } else {
+      toast.info(`Todos os itens do perfil "${profile.label}" já estão na prescrição`);
+    }
+    setAppliedCareProfiles(prev => new Set(prev).add(profile.id));
+  };
+
+  const addFreeRecommendation = () => {
+    if (!freeRecommendation.trim()) return;
+    setItems(prev => [...prev, {
+      id: crypto.randomUUID(),
+      name: freeRecommendation.trim(),
+      presentation: '-', dose: '-', route: '-',
+      posology: '-', schedule: '-', instructions: '',
+      category: 'care', flags: [], highAlert: false, status: 'active',
+    }]);
+    setFreeRecommendation("");
+    toast.success("Recomendação adicionada");
+  };
+
   const addNonStandard = () => {
     if (!nonStdName.trim()) return;
     setItems(prev => [...prev, {
