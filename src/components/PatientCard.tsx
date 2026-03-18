@@ -2897,8 +2897,82 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
               </>
             )}
 
+            {/* Farmácia Clínica - Visão compacta com dados relevantes */}
+            {currentDepartment !== "UTI" && role === 'farmacia' && (
+              <div className="md:col-span-14 border-l-2 border-emerald-400/30 pl-3 py-1.5 bg-emerald-50/30 dark:bg-emerald-950/10 rounded-r">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                  {/* Diagnósticos (resumo) */}
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Diagnósticos</span>
+                    {patient.diagnoses.length > 0 ? (
+                      <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
+                        {patient.diagnoses.map((d, i) => (
+                          <li key={i} className="leading-tight">
+                            <span className="font-semibold text-muted-foreground">{i + 1}.</span> {d}
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground italic">—</span>
+                    )}
+                  </div>
+
+                  {/* Alergias / Antecedentes */}
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Alergias / Antecedentes</span>
+                    {patient.medicalHistory.length > 0 ? (
+                      <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
+                        {patient.medicalHistory.map((h, i) => (
+                          <li key={i} className={cn(
+                            "leading-tight",
+                            h.toLowerCase().includes('alerg') && "text-destructive font-semibold"
+                          )}>
+                            <span className="font-semibold text-muted-foreground">{i + 1}.</span> {h}
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground italic">—</span>
+                    )}
+                  </div>
+
+                  {/* Exames Relevantes */}
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Exames</span>
+                    {patient.relevantExams.length > 0 ? (
+                      <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
+                        {patient.relevantExams.map((e, i) => (
+                          <li key={i} className="leading-tight">
+                            <span className="font-semibold text-muted-foreground">{i + 1}.</span> {e}
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground italic">—</span>
+                    )}
+                  </div>
+
+                  {/* Pendências / Condutas */}
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Pendências</span>
+                    {patient.pendencies.length > 0 ? (
+                      <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
+                        {patient.pendencies.map((p, i) => (
+                          <li key={i} className="leading-tight">
+                            <span className="font-semibold text-muted-foreground">{i + 1}.</span> {p}
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground italic">—</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Hipóteses / Diagnósticos - apenas para outros departamentos */}
-            {currentDepartment !== "UTI" && (
+            {currentDepartment !== "UTI" && role !== 'farmacia' && (
               <div className="flex flex-col md:col-span-3 relative">
                 <div className="flex items-center gap-1 mb-0.5">
                   <span className="text-[10px] font-medium text-muted-foreground">Hipóteses / Diagnósticos</span>
