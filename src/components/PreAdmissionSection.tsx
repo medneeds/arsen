@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { PatientRegistrationDialog } from "./PatientRegistrationDialog";
 import { RiskClassificationDialog } from "./RiskClassificationDialog";
+import { AdmitPatientDialog } from "./AdmitPatientDialog";
 import { 
   UserPlus, Shield, Trash2, Edit, ChevronDown, ChevronUp, 
-  Clock, AlertTriangle, User, Calendar
+  Clock, AlertTriangle, User, Calendar, BedDouble
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
