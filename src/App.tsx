@@ -50,6 +50,7 @@ import PrescricaoPage from "./pages/PrescricaoPage";
 import EvolucaoPage from "./pages/EvolucaoPage";
 import MedicationCatalogPage from "./pages/MedicationCatalogPage";
 import GestorPanelPage from "./pages/GestorPanelPage";
+import ValidacaoFarmaceuticaPage from "./pages/ValidacaoFarmaceuticaPage";
 
 const queryClient = new QueryClient();
 
@@ -446,6 +447,16 @@ const App = () => {
           element={
             <ProtectedRoute>
               <GestorPanelPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/validacao-farmaceutica"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <ValidacaoFarmaceuticaPage />
+              </MainLayout>
             </ProtectedRoute>
           }
         />
