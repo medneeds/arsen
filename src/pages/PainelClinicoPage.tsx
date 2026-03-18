@@ -117,8 +117,8 @@ const DOCUMENTS = [
 ];
 
 export default function PainelClinicoPage() {
-  const { department } = useDepartment();
-  const { patients, isLoading } = usePatients(department);
+  const { currentDepartment } = useDepartment();
+  const { patients, isLoading } = usePatients(currentDepartment);
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
