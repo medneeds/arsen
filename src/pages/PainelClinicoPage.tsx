@@ -142,7 +142,7 @@ const DOCUMENTS = [
     { name: "Imunoglobulina Humana", path: "/documents/alto-custo/imunoglobulina-humana.odt" },
     { name: "Teicoplanina", path: "/documents/alto-custo/teicoplanina.odt" },
   ]},
-
+];
 
 // Mock UTI 2 patients for demo (L09-L18)
 const MOCK_UTI2_PATIENTS: Patient[] = [
