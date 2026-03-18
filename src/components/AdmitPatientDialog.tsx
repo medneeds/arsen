@@ -79,10 +79,10 @@ const RISK_LABELS: Record<string, string> = {
 };
 
 const SECTORS = [
-  { value: "red", label: "Cuidados Especiais (Vermelha)", color: "text-red-500" },
-  { value: "yellow", label: "Observação Amarela", color: "text-yellow-500" },
-  { value: "blue", label: "Observação Azul", color: "text-blue-500" },
-  { value: "outside", label: "Fora das Alas", color: "text-muted-foreground" },
+  { value: "red", label: "UTI 1", color: "text-red-500" },
+  { value: "yellow", label: "UTI 2", color: "text-yellow-500" },
+  { value: "blue", label: "UCI 1", color: "text-blue-500" },
+  { value: "outside", label: "UCI 2", color: "text-emerald-500" },
 ];
 
 export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess }: AdmitPatientDialogProps) {
