@@ -517,7 +517,7 @@ const SortableDiagnosisItemCollapsed = memo(function SortableDiagnosisItemCollap
       <li
         ref={setNodeRef}
         style={style}
-        className="text-[10px] text-foreground leading-snug uppercase group/item rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary"
+        className="text-[10px] text-foreground leading-snug group/item rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary"
       >
         <div className="flex-shrink-0 w-3" />
         <div className="flex items-start gap-1 flex-1">
