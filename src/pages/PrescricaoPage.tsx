@@ -156,7 +156,7 @@ function buildPrepDescription(item: PrescriptionItem): string {
     parts.push(`Correr em ${timeH}.`);
   }
   if (item.concentration) parts.push(`Concentração: ${item.concentration}.`);
-  if (item.flags.includes('BI')) parts.push('Uso em bomba de infusão.');
+  if (item.flags.includes('bi' as PrescriptionFlag)) parts.push('Uso em bomba de infusão.');
   return parts.join(' ');
 }
 
