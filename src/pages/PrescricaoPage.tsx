@@ -1720,22 +1720,52 @@ const PrescricaoPage = () => {
 
       {/* ===== PATIENT HEADER ===== */}
       <div className="rounded-xl border border-border bg-card overflow-hidden print:hidden">
-        {/* Top bar with patient name and date */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border/50">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center">
+        {/* Top bar: patient name + weight/allergies */}
+        <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border/50 gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
               <span className="text-xs font-bold text-primary">{patient.name ? patient.name.charAt(0).toUpperCase() : '?'}</span>
             </div>
-            <div>
-              <h2 className="text-sm font-semibold text-foreground leading-tight">{patient.name || 'Paciente não identificado'}</h2>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-foreground leading-tight truncate">{patient.name || 'Paciente não identificado'}</h2>
               <p className="text-[10px] text-muted-foreground">Leito {patient.bed || '—'} · {patient.unit || '—'}</p>
             </div>
           </div>
-          <span className="text-[10px] text-muted-foreground font-mono bg-background/60 px-2 py-0.5 rounded">{prescriptionDate}</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
+              <Input
+                value={patient.weight}
+                onChange={(e) => updatePatient("weight", e.target.value)}
+                placeholder="Ex: 72"
+                className={cn(
+                  "h-7 w-20 text-xs font-medium",
+                  !patient.weight.trim() && "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
+                )}
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
+                <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
+              </Label>
+              <Input
+                value={patient.allergies}
+                onChange={(e) => updatePatient("allergies", e.target.value)}
+                placeholder="NDAM ou listar"
+                className={cn(
+                  "h-7 w-40 text-xs font-medium",
+                  !patient.allergies.trim()
+                    ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
+                    : "border-destructive/20"
+                )}
+              />
+            </div>
+            <span className="text-[10px] text-muted-foreground font-mono bg-background/60 px-2 py-0.5 rounded ml-1">{prescriptionDate}</span>
+          </div>
         </div>
 
         {/* Info grid - read-only fields */}
-        <div className="px-4 py-3 space-y-3">
+        <div className="px-4 py-2.5">
           <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs">
             {[
               { label: 'Nascimento', value: patient.birthDate ? format(new Date(patient.birthDate + 'T12:00:00'), 'dd/MM/yyyy') : '—' },
@@ -1752,41 +1782,9 @@ const PrescricaoPage = () => {
             ))}
           </div>
 
-          {/* Editable fields: Weight and Allergies */}
-          <div className="flex gap-3 items-end pt-1 border-t border-border/40">
-            <div className="w-32">
-              <Label className="text-[11px] text-muted-foreground font-medium">Peso (kg) *</Label>
-              <Input
-                value={patient.weight}
-                onChange={(e) => updatePatient("weight", e.target.value)}
-                placeholder="Ex: 72"
-                className={cn(
-                  "mt-0.5 h-8 text-xs font-medium",
-                  !patient.weight.trim() && "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10 focus:border-amber-500"
-                )}
-              />
-            </div>
-            <div className="flex-1">
-              <Label className="text-[11px] text-muted-foreground font-medium flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias *
-              </Label>
-              <Input
-                value={patient.allergies}
-                onChange={(e) => updatePatient("allergies", e.target.value)}
-                placeholder="Informe alergias ou NDAM (nenhuma droga alérgica medicamentosa)"
-                className={cn(
-                  "mt-0.5 h-8 text-xs font-medium",
-                  !patient.allergies.trim()
-                    ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10 focus:border-amber-500"
-                    : "border-destructive/20 focus:border-destructive/50"
-                )}
-              />
-            </div>
-          </div>
-
           {/* Missing fields warning */}
           {(!patient.weight.trim() || !patient.allergies.trim()) && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400">
+            <div className="flex items-center gap-2 px-3 py-1.5 mt-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               <p className="text-[11px] font-medium">
                 Preencha {!patient.weight.trim() && !patient.allergies.trim() ? 'o peso e as alergias' : !patient.weight.trim() ? 'o peso' : 'as alergias'} para habilitar a prescrição.
