@@ -133,6 +133,33 @@ function posologyToIntervals(posology: string): number {
   return map[posology] || 1;
 }
 
+// Build synced preparation description from structured fields
+function buildPrepDescription(item: PrescriptionItem): string {
+  const parts: string[] = [];
+  if (item.dose && item.dose !== '-') parts.push(item.dose);
+  if (item.diluent) {
+    let dilPart = `Diluir em ${item.diluent}`;
+    if (item.diluentVolume) dilPart += ` ${item.diluentVolume}mL`;
+    parts.push(dilPart + '.');
+  }
+  if (item.accessType) parts.push(`Acesso ${item.accessType.toLowerCase()}.`);
+  if (item.infusionTime && item.volumeTotal) {
+    const rate = calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC');
+    const timeH = parseFloat(item.infusionTime) >= 60
+      ? `${(parseFloat(item.infusionTime) / 60).toFixed(1)}h`
+      : `${item.infusionTime}min`;
+    parts.push(`Correr em ${timeH} (${rate}).`);
+  } else if (item.infusionTime) {
+    const timeH = parseFloat(item.infusionTime) >= 60
+      ? `${(parseFloat(item.infusionTime) / 60).toFixed(1)}h`
+      : `${item.infusionTime}min`;
+    parts.push(`Correr em ${timeH}.`);
+  }
+  if (item.concentration) parts.push(`Concentração: ${item.concentration}.`);
+  if (item.flags.includes('bi' as PrescriptionFlag)) parts.push('Uso em bomba de infusão.');
+  return parts.join(' ');
+}
+
 interface PatientHeader {
   name: string;
   birthDate: string;
@@ -593,12 +620,21 @@ function SortablePrescriptionItemRow({
                 )}
               </div>
 
-              {/* Instructions */}
+              {/* Auto-synced preparation description */}
+              {(() => {
+                const autoDesc = buildPrepDescription(item);
+                return autoDesc ? (
+                  <p className="text-[11px] text-muted-foreground italic px-2.5 py-1 rounded bg-muted/20 border border-border/20 leading-relaxed">
+                    {autoDesc}
+                  </p>
+                ) : null;
+              })()}
+              {/* Additional manual notes */}
               <Input
                 value={item.instructions}
                 onChange={(e) => onUpdate(item.id, "instructions", e.target.value)}
                 className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic"
-                placeholder="Observações adicionais de preparo..."
+                placeholder="Observações adicionais..."
               />
             </>
           )}
