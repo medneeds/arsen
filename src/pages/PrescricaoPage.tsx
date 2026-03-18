@@ -2315,18 +2315,35 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== PRINT-ONLY PRESCRIPTION BODY ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginTop: '4px' }}>
-        <table className="w-full border-collapse text-black" style={{ borderSpacing: 0 }}>
+      <div className="hidden print:block prescription-print-section" style={{ marginTop: '3px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '24px' }} />
+            <col />
+            <col style={{ width: '38px' }} />
+            <col style={{ width: '38px' }} />
+            <col style={{ width: '38px' }} />
+            <col style={{ width: '38px' }} />
+            <col style={{ width: '38px' }} />
+            <col style={{ width: '38px' }} />
+            <col style={{ width: '28px' }} />
+          </colgroup>
           <thead>
             <tr>
-              <th className="px-1.5 py-[3px] text-left text-[7pt] font-bold uppercase tracking-wider text-white" style={{ width: '75%', backgroundColor: '#1e293b', border: '0.5px solid #1e293b' }}>
-                Prescrição
+              <th style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '3px 2px', fontSize: '6pt', fontWeight: 700, textAlign: 'center' }}>
+                Nº
               </th>
-              {['','','','','',''].map((_, i) => (
-                <th key={i} className="px-0 py-[3px] text-center text-[6pt] font-bold uppercase text-white" style={{ width: '4.16%', backgroundColor: '#1e293b', border: '0.5px solid #1e293b' }}>
-                  {i === 0 ? 'Apraz.' : ''}
+              <th style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '3px 6px', fontSize: '7pt', fontWeight: 700, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                Prescrição Médica
+              </th>
+              {['1º','2º','3º','4º','5º','6º'].map((label, i) => (
+                <th key={i} style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '0.5px solid #334155', padding: '3px 1px', fontSize: '6pt', fontWeight: 700, textAlign: 'center', textTransform: 'uppercase' }}>
+                  {label}
                 </th>
               ))}
+              <th style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '0.5px solid #334155', padding: '3px 1px', fontSize: '5pt', fontWeight: 700, textAlign: 'center' }}>
+                ✓
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -2338,7 +2355,17 @@ const PrescricaoPage = () => {
               return (
                 <React.Fragment key={cat}>
                   <tr>
-                    <td colSpan={7} className="px-1.5 py-[2px] text-[7pt] font-bold uppercase tracking-wider" style={{ backgroundColor: '#f1f5f9', borderLeft: '3px solid #475569', border: '0.5px solid #e2e8f0', color: '#334155', letterSpacing: '0.6px' }}>
+                    <td colSpan={9} style={{ 
+                      padding: '2px 6px', 
+                      fontSize: '7pt', 
+                      fontWeight: 800, 
+                      textTransform: 'uppercase', 
+                      letterSpacing: '0.8px',
+                      backgroundColor: '#f1f5f9', 
+                      borderLeft: '3px solid #334155',
+                      border: '0.5px solid #cbd5e1',
+                      color: '#1e293b'
+                    }}>
                       {config.label}
                     </td>
                   </tr>
@@ -2353,27 +2380,32 @@ const PrescricaoPage = () => {
           </tbody>
         </table>
 
-        {/* Print footer */}
-        <div className="flex items-end justify-between" style={{ paddingTop: '10px', marginTop: '6px', borderTop: '0.5px solid #e2e8f0', pageBreakInside: 'avoid' }}>
-          <div className="text-[6pt] text-gray-400" style={{ lineHeight: '1.4' }}>
-            <p>{prescriptionDate} • BigHelp Map</p>
+        {/* Print footer — signature + timestamp */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: '12px', marginTop: '8px', borderTop: '1px solid #e2e8f0', pageBreakInside: 'avoid' }}>
+          <div style={{ fontSize: '6pt', color: '#94a3b8', lineHeight: '1.5' }}>
+            <div>{prescriptionDate}</div>
+            <div>BigHelp Map • Prescrição Digital</div>
           </div>
-          {digitalSignature ? (
-            <div className="text-center">
-              <div style={{ border: '1px solid #334155', borderRadius: '4px', padding: '4px 10px', display: 'inline-block' }}>
-                <p className="text-[8pt] font-bold text-black">✓ ASSINADO DIGITALMENTE</p>
-                <p className="text-[7pt] text-black font-medium">{digitalSignature.doctorName}</p>
-                <p className="text-[6pt] text-gray-600">CRM: {digitalSignature.crm} • {digitalSignature.signedAt}</p>
-                <p className="text-[5pt] text-gray-400 font-mono">Hash: {digitalSignature.hash}</p>
+          <div style={{ textAlign: 'center' }}>
+            {digitalSignature ? (
+              <div style={{ border: '1.5px solid #0f172a', borderRadius: '4px', padding: '6px 14px', display: 'inline-block' }}>
+                <div style={{ fontSize: '8pt', fontWeight: 800, color: '#0f172a' }}>✓ ASSINADO DIGITALMENTE</div>
+                <div style={{ fontSize: '7.5pt', fontWeight: 600, color: '#0f172a', marginTop: '2px' }}>{digitalSignature.doctorName}</div>
+                <div style={{ fontSize: '6.5pt', color: '#475569' }}>CRM: {digitalSignature.crm} • {digitalSignature.signedAt}</div>
+                <div style={{ fontSize: '5pt', color: '#94a3b8', fontFamily: 'monospace', marginTop: '2px' }}>Hash: {digitalSignature.hash}</div>
               </div>
-            </div>
-          ) : (
-            <div className="text-center">
-              <div style={{ width: '160px', borderBottom: '1px solid #000', marginBottom: '3px' }} />
-              <p className="text-[7pt] text-black font-medium">Assinatura / Carimbo</p>
-              <p className="text-[6pt] text-gray-500">CRM: _______________</p>
-            </div>
-          )}
+            ) : (
+              <>
+                <div style={{ width: '180px', borderBottom: '1px solid #0f172a', marginBottom: '4px', marginLeft: 'auto', marginRight: 'auto' }} />
+                <div style={{ fontSize: '7.5pt', fontWeight: 600, color: '#0f172a' }}>Assinatura / Carimbo do Médico</div>
+                <div style={{ fontSize: '6.5pt', color: '#64748b', marginTop: '1px' }}>CRM: _______________</div>
+              </>
+            )}
+          </div>
+          <div style={{ fontSize: '6pt', color: '#94a3b8', textAlign: 'right', lineHeight: '1.5' }}>
+            <div>Enfermagem: ___________</div>
+            <div>Hora: ____:____</div>
+          </div>
         </div>
       </div>
 
