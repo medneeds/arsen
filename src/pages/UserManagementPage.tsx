@@ -320,7 +320,7 @@ export default function UserManagementPage() {
               <Users className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground uppercase tracking-tight">
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">
                 Gestão de Usuários
               </h1>
               <p className="text-sm text-muted-foreground">
