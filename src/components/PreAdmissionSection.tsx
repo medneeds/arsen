@@ -232,6 +232,13 @@ export function PreAdmissionSection() {
         onSuccess={fetchPreAdmissions}
       />
 
+      <AdmitPatientDialog
+        open={!!admitTarget}
+        onOpenChange={(open) => !open && setAdmitTarget(null)}
+        preAdmission={admitTarget}
+        onSuccess={fetchPreAdmissions}
+      />
+
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
