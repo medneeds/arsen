@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -210,6 +210,8 @@ interface PendingRequest {
   notes: string | null;
   created_at: string;
   medical_record: string | null;
+  patient_id?: string | null;
+  allocation_request_id?: string | null;
 }
 
 interface Saps3Record {
@@ -241,6 +243,7 @@ export default function Saps3Page() {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const hospitalId = currentHospital?.id;
   const stateId = currentState?.id;
 
@@ -376,26 +379,52 @@ export default function Saps3Page() {
     loadOccupiedBeds();
   }, [hospitalId, stateId]);
 
-  // ─── Pre-fill from allocation navigation ───
+  // ─── Pre-fill from allocation navigation / URL ───
   useEffect(() => {
     const state = location.state as any;
-    if (state?.fromAllocation && state?.patientName) {
-      setPatientName(state.patientName);
-      if (state.patientAge) {
-        const ageStr = String(state.patientAge).replace(/\D/g, "");
-        if (ageStr) setAge(ageStr);
-      }
-      setSelectedSector(""); setSelectedBed("");
-      setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
-      setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
-      setInfectionAtAdmission(""); setGcs(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
-      setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
-      setPao2Fio2(""); setIsVentilated(false);
-      setBox1Open(true); setBox2Open(true); setBox3Open(true);
-      toast.info(`Preencha o SAPS 3 para ${state.patientName}`);
-      window.history.replaceState({}, document.title);
+    const fromAllocation = Boolean(state?.fromAllocation || searchParams.get("fromAllocation") === "true");
+    const patientNameFromContext = state?.patientName || searchParams.get("patientName");
+
+    if (!fromAllocation || !patientNameFromContext) return;
+
+    const patientAgeFromContext = state?.patientAge || searchParams.get("patientAge");
+    const destinationSectorFromContext = state?.destinationSector || searchParams.get("destinationSector");
+    const preAdmissionId = state?.preAdmissionId || searchParams.get("preAdmissionId");
+    const allocationRequestId = state?.allocationRequestId || searchParams.get("allocationRequestId");
+    const patientId = state?.patientId || searchParams.get("patientId");
+
+    setSelectedRequest({
+      id: preAdmissionId || allocationRequestId || patientId || patientNameFromContext,
+      patient_name: patientNameFromContext,
+      birth_date: null,
+      sex: null,
+      destination_sector: destinationSectorFromContext,
+      notes: null,
+      created_at: new Date().toISOString(),
+      medical_record: null,
+      patient_id: patientId,
+      allocation_request_id: allocationRequestId,
+    });
+
+    setPatientName(patientNameFromContext);
+    if (patientAgeFromContext) {
+      const ageStr = String(patientAgeFromContext).replace(/\D/g, "");
+      if (ageStr) setAge(ageStr);
     }
-  }, [location.state]);
+
+    if (destinationSectorFromContext === "UTI 1") setSelectedSector("red");
+    else if (destinationSectorFromContext === "UTI 2") setSelectedSector("yellow");
+    else setSelectedSector("");
+
+    setSelectedBed("");
+    setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
+    setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
+    setInfectionAtAdmission(""); setGcs(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
+    setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
+    setPao2Fio2(""); setIsVentilated(false);
+    setBox1Open(true); setBox2Open(true); setBox3Open(true);
+    toast.info(`Preencha o SAPS 3 para ${patientNameFromContext}`);
+  }, [location.state, searchParams]);
 
   // ─── Start admission from pending request ───
   const startAdmission = (req: PendingRequest) => {
@@ -420,7 +449,7 @@ export default function Saps3Page() {
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
   };
 
-  // ─── Save: SAPS3 + create patient + update pre_admission ───
+  // ─── Save: SAPS3 + finalize allocation/admission ───
   const handleSave = async () => {
     if (!patientName.trim()) { toast.error("Nome do paciente é obrigatório"); return; }
     if (!selectedSector) { toast.error("Selecione o setor da UTI"); return; }
@@ -429,7 +458,6 @@ export default function Saps3Page() {
 
     setSaving(true);
     try {
-      // 1. Save SAPS 3
       const sapsPayload = {
         patient_name: patientName,
         hospital_unit_id: hospitalId,
@@ -466,32 +494,90 @@ export default function Saps3Page() {
       const { error: sapsError } = await supabase.from("saps3_assessments" as any).insert(sapsPayload as any);
       if (sapsError) throw sapsError;
 
-      // 2. Create patient in the selected bed
-      const { error: patientError } = await supabase.from("patients").insert({
-        name: patientName,
-        bed_number: selectedBed,
-        sector: selectedSector,
-        department: "UTI",
-        age: age ? `${age} anos` : null,
-        hospital_unit_id: hospitalId,
-        state_id: stateId,
-        created_by: user?.id,
-        admission_date: new Date().toISOString(),
-        clinical_status: "grave",
-        is_vacant: false,
-      });
-      if (patientError) throw patientError;
+      const destinationSectorLabel = UTI_SECTORS.find((sector) => sector.value === selectedSector)?.label || selectedSector;
 
-      // 3. Update pre_admission status if from a request
-      if (selectedRequest) {
-        await supabase
-          .from("pre_admissions")
+      if (selectedRequest?.allocation_request_id && selectedRequest.patient_id) {
+        const { data: existingPatients } = await supabase
+          .from("patients")
+          .select("display_order")
+          .eq("hospital_unit_id", hospitalId)
+          .eq("state_id", stateId)
+          .eq("department", "UTI")
+          .eq("sector", selectedSector);
+
+        const maxDisplayOrder = (existingPatients || []).reduce((max, patient) => {
+          const order = patient.display_order ?? 0;
+          return order > max ? order : max;
+        }, 0);
+
+        const { error: requestError } = await supabase
+          .from("bed_allocation_requests")
           .update({
-            status: "admitido_uti",
-            destination_bed: selectedBed,
-            destination_sector: UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector,
+            status: "approved",
+            reviewed_by: user?.id,
+            reviewed_at: new Date().toISOString(),
           })
-          .eq("id", selectedRequest.id);
+          .eq("id", selectedRequest.allocation_request_id);
+
+        if (requestError) throw requestError;
+
+        const { error: patientError } = await supabase
+          .from("patients")
+          .update({
+            is_door_patient: false,
+            allocation_status: "approved",
+            sector: selectedSector,
+            bed_number: selectedBed,
+            display_order: maxDisplayOrder + 1,
+            department: "UTI",
+          })
+          .eq("id", selectedRequest.patient_id);
+
+        if (patientError) throw patientError;
+      } else {
+        let diagnoses: string | null = null;
+        let medicalHistory: string | null = null;
+
+        if (selectedRequest?.id) {
+          const { data: preAdmissionData } = await supabase
+            .from("pre_admissions")
+            .select("chief_complaint, allergies")
+            .eq("id", selectedRequest.id)
+            .maybeSingle();
+
+          diagnoses = preAdmissionData?.chief_complaint || null;
+          medicalHistory = preAdmissionData?.allergies ? `Alergias: ${preAdmissionData.allergies}` : null;
+        }
+
+        const { error: patientError } = await supabase.from("patients").insert({
+          name: patientName,
+          bed_number: selectedBed,
+          sector: selectedSector,
+          department: "UTI",
+          age: age ? `${age} anos` : null,
+          hospital_unit_id: hospitalId,
+          state_id: stateId,
+          created_by: user?.id,
+          admission_date: new Date().toISOString(),
+          clinical_status: "grave",
+          is_vacant: false,
+          diagnoses,
+          medical_history: medicalHistory,
+        });
+        if (patientError) throw patientError;
+
+        if (selectedRequest?.id) {
+          const { error: updatePreAdmissionError } = await supabase
+            .from("pre_admissions")
+            .update({
+              status: "admitido",
+              destination_bed: selectedBed,
+              destination_sector: destinationSectorLabel,
+            })
+            .eq("id", selectedRequest.id);
+
+          if (updatePreAdmissionError) throw updatePreAdmissionError;
+        }
       }
 
       toast.success(`Paciente admitido no leito ${selectedBed} com SAPS 3 = ${scores.total} (mortalidade ${scores.mortality}%)`);

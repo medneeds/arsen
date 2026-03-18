@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
@@ -97,6 +98,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Fetch full pre-admission data with triage info
   useEffect(() => {
@@ -140,7 +142,6 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         const bedNum = `${config.prefix}${String(i).padStart(2, '0')}`;
         beds.push(bedNum);
       }
-      // Add EXTRA options
       beds.push("EXTRA");
       setAvailableBeds(beds);
     };
@@ -152,11 +153,53 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     return Math.floor((Date.now() - new Date(birthDate + 'T12:00:00').getTime()) / (365.25 * 24 * 60 * 60 * 1000));
   };
 
+  const isUtiAdmission = selectedSector === "red" || selectedSector === "yellow";
+
   const handleAdmit = async () => {
-    if (!selectedSector || !selectedBed || !fullData || !currentHospital?.id || !currentState?.id) return;
+    if (!selectedSector || !fullData || !currentHospital?.id || !currentState?.id) return;
+    if (!isUtiAdmission && !selectedBed) return;
 
     setIsSubmitting(true);
     try {
+      const age = calcAge(fullData.birth_date);
+      const destinationSectorLabel = SECTORS.find((sector) => sector.value === selectedSector)?.label || selectedSector;
+
+      if (isUtiAdmission) {
+        const { error: updateError } = await supabase
+          .from("pre_admissions")
+          .update({
+            status: "aguardando_leito_uti",
+            destination_sector: destinationSectorLabel,
+            destination_bed: null,
+            notes: admissionNotes || fullData.notes || null,
+          })
+          .eq("id", fullData.id);
+
+        if (updateError) throw updateError;
+
+        const params = new URLSearchParams({
+          fromAllocation: "true",
+          preAdmissionId: fullData.id,
+          patientName: fullData.patient_name,
+          patientAge: age ? String(age) : "",
+          destinationSector: destinationSectorLabel,
+        });
+
+        toast({
+          title: "Encaminhado para admissão UTI",
+          description: "Preencha o SAPS 3 antes de definir o leito.",
+        });
+
+        onOpenChange(false);
+        onSuccess();
+        setSelectedSector("");
+        setSelectedBed("");
+        setAdmissionNotes("");
+        setFullData(null);
+        navigate(`/saps3?${params.toString()}`);
+        return;
+      }
+
       let finalBed = selectedBed;
       if (selectedBed === "EXTRA") {
         const extraBeds = occupiedBeds.filter(b => b.startsWith("EXTRA")).map(b => parseInt(b.replace("EXTRA", ""), 10)).filter(n => !isNaN(n));
@@ -164,9 +207,6 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         finalBed = `EXTRA${nextExtra}`;
       }
 
-      const age = calcAge(fullData.birth_date);
-
-      // Create patient in the patients table
       const { error: patientError } = await supabase.from("patients").insert({
         name: fullData.patient_name,
         age: age ? `${age}a` : null,
@@ -186,7 +226,6 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
       if (patientError) throw patientError;
 
-      // Update pre-admission status
       const { error: updateError } = await supabase
         .from("pre_admissions")
         .update({
@@ -201,7 +240,6 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       toast({ title: "Paciente admitido", description: `${fullData.patient_name} → Leito ${finalBed}` });
       onOpenChange(false);
       onSuccess();
-      // Reset
       setSelectedSector("");
       setSelectedBed("");
       setAdmissionNotes("");
@@ -352,7 +390,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             <BedDouble className="h-4 w-4" /> Alocação
           </p>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className={cn("gap-3", isUtiAdmission ? "grid grid-cols-1" : "grid grid-cols-2")}>
             <div className="space-y-1.5">
               <Label className="text-xs">Setor</Label>
               <Select value={selectedSector} onValueChange={(v) => { setSelectedSector(v); setSelectedBed(""); }}>
@@ -367,30 +405,40 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
               </Select>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs">Leito</Label>
-              <Select value={selectedBed} onValueChange={setSelectedBed} disabled={!selectedSector}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar leito" /></SelectTrigger>
-                <SelectContent>
-                  {availableBeds.map(bed => {
-                    const isOccupied = occupiedBeds.includes(bed);
-                    if (bed === "EXTRA") {
+            {!isUtiAdmission && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Leito</Label>
+                <Select value={selectedBed} onValueChange={setSelectedBed} disabled={!selectedSector}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar leito" /></SelectTrigger>
+                  <SelectContent>
+                    {availableBeds.map(bed => {
+                      const isOccupied = occupiedBeds.includes(bed);
+                      if (bed === "EXTRA") {
+                        return (
+                          <SelectItem key="EXTRA" value="EXTRA">
+                            ➕ Leito Extra
+                          </SelectItem>
+                        );
+                      }
                       return (
-                        <SelectItem key="EXTRA" value="EXTRA">
-                          ➕ Leito Extra
+                        <SelectItem key={bed} value={bed} disabled={isOccupied}>
+                          {bed} {isOccupied ? "(Ocupado)" : "✓"}
                         </SelectItem>
                       );
-                    }
-                    return (
-                      <SelectItem key={bed} value={bed} disabled={isOccupied}>
-                        {bed} {isOccupied ? "(Ocupado)" : "✓"}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
+
+          {isUtiAdmission && (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="p-3 text-xs text-muted-foreground">
+                Para admissão em UTI, o leito só será definido após o preenchimento completo do SAPS 3.
+              </CardContent>
+            </Card>
+          )}
 
           <div className="space-y-1.5">
             <Label className="text-xs">Observações da admissão (opcional)</Label>
@@ -409,11 +457,11 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           </Button>
           <Button
             onClick={handleAdmit}
-            disabled={!selectedSector || !selectedBed || isSubmitting}
+            disabled={!selectedSector || (!isUtiAdmission && !selectedBed) || isSubmitting}
             className="gap-1"
           >
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <BedDouble className="h-4 w-4" />}
-            Confirmar Admissão
+            {isUtiAdmission ? "Continuar para SAPS 3" : "Confirmar Admissão"}
           </Button>
         </DialogFooter>
       </DialogContent>
