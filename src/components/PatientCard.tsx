@@ -3696,7 +3696,24 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       </DropdownMenuItem>
                     )}
 
-                    {/* LIBERAR DIETA - Diet Authorization */}
+                    {/* SOLICITAR EXAME - Navigate to Requisições with patient data */}
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate('/requisicoes', { 
+                          state: { 
+                            patientId: patient.id, 
+                            patientName: patient.name, 
+                            patientBed: patient.bedNumber, 
+                            patientSector: patient.sector 
+                          } 
+                        });
+                      }}
+                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
+                    >
+                      <TestTubes className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <span>Solicitar Exame</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
