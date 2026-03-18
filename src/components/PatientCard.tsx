@@ -4633,12 +4633,12 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
             {/* História Admissional / Anamnese */}
             {patient.admissionHistory && (
               <div className="mt-6 pt-6 border-t border-border/30">
-                <h4 className="text-lg font-bold text-primary uppercase mb-3 flex items-center gap-2">
+                <h4 className="text-lg font-bold text-primary mb-3 flex items-center gap-2">
                   <div className="w-1 h-5 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
                   História Admissional / Anamnese
                 </h4>
                 <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 shadow-sm">
-                  <p className="text-sm text-foreground leading-relaxed uppercase whitespace-pre-wrap">
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                     {patient.admissionHistory}
                   </p>
                 </div>
