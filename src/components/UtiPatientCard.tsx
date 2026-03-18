@@ -1424,7 +1424,7 @@ export function UtiPatientCard({
                   <InlineEditableArray
                     items={especialidades}
                     onUpdate={(items) => handleUpdateField("utiSpecialties", items)}
-                    label="ESPECIALIDADES"
+                    label="Especialidades"
                     colorClass="bg-muted/50 border border-border/50"
                     alwaysShowAll
                   />
