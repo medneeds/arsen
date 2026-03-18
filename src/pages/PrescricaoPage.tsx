@@ -1495,6 +1495,7 @@ const PrescricaoPage = () => {
   };
 
   const isSimpleCategory = (cat: PrescriptionCategory) => ['nutrition', 'care'].includes(cat);
+  const canPrescribe = patient.weight.trim() !== '' && patient.allergies.trim() !== '';
 
   // Selection helpers for current tab
   const currentCatItems = itemsByCategory[activeTab];
