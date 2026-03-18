@@ -58,7 +58,7 @@ interface PreAdmissionFull {
 interface AdmitPatientDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  preAdmission: PreAdmissionFull | null;
+  preAdmission: { id: string; patient_name: string; risk_classification?: string | null } | null;
   onSuccess: () => void;
 }
 
