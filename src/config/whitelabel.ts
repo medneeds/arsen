@@ -9,7 +9,7 @@ export const whitelabel = {
     name: "BigHelp Map",
     version: "1.0",
     fullName: "BigHelp Map 1.0",
-    slogan: "Mapeando cuidados, salvando vidas. Porque a vida é bela.",
+    slogan: "Mapeando cuidados, salvando vidas.",
     loadingText: "Iniciando",
   },
 
