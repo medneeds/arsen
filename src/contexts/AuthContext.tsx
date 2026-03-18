@@ -3,7 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
-type UserRole = "admin" | "medico" | "porta" | "visitante" | null;
+type UserRole = "admin" | "medico" | "porta" | "visitante" | "farmacia" | null;
 type UserStatus = "pending" | "approved" | "rejected" | null;
 
 interface AuthContextType {
@@ -14,7 +14,7 @@ interface AuthContextType {
   allowedDepartments: string[];
   loading: boolean;
   signIn: (username: string, password: string) => Promise<{ error: any }>;
-  signUp: (username: string, password: string, fullName: string, role?: "admin" | "medico" | "porta" | "visitante") => Promise<{ error: any }>;
+  signUp: (username: string, password: string, fullName: string, role?: "admin" | "medico" | "porta" | "visitante" | "farmacia") => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshUserStatus: () => Promise<void>;
 }
@@ -158,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const signUp = async (username: string, password: string, fullName: string, role: "admin" | "medico" | "porta" | "visitante" = "medico") => {
+  const signUp = async (username: string, password: string, fullName: string, role: "admin" | "medico" | "porta" | "visitante" | "farmacia" = "medico") => {
     const redirectUrl = `${window.location.origin}/`;
     const internalEmail = `${username.toLowerCase()}@sistema.local`;
     

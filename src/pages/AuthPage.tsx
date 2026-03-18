@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   LogIn, User, Lock, Eye, EyeOff, Building2, ArrowRight, ArrowLeft,
   Activity, Brain, MapPin, Stethoscope, HeartPulse, Shield,
-  BarChart3, Users, ClipboardList, Bed
+  BarChart3, Users, ClipboardList, Bed, Pill
 } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { BigHelpLogo } from "@/components/BigHelpLogo";
@@ -37,7 +37,7 @@ const floatingIcons = [
   { Icon: Brain, x: "60%", y: "30%", delay: 3, duration: 5 },
 ];
 
-type AccessProfile = "medico" | "gestor" | "multi" | "administrativo";
+type AccessProfile = "medico" | "gestor" | "multi" | "administrativo" | "farmacia";
 
 const ACCESS_PROFILES: {
   key: AccessProfile;
@@ -88,6 +88,16 @@ const ACCESS_PROFILES: {
     borderColor: "border-sky-400/30 hover:border-sky-400/60",
     bgGlow: "from-sky-400/15 to-sky-400/5",
     features: ["Cadastro de Pacientes", "Pré-Admissão", "Movimentações", "Relatórios"],
+  },
+  {
+    key: "farmacia",
+    label: "Farmácia Clínica",
+    subtitle: "Validação e Dispensação",
+    icon: Pill,
+    color: "text-emerald-400",
+    borderColor: "border-emerald-400/30 hover:border-emerald-400/60",
+    bgGlow: "from-emerald-400/15 to-emerald-400/5",
+    features: ["Validação de Prescrições", "Catálogo de Medicamentos", "Interações Medicamentosas", "Dispensação"],
   },
 ];
 
@@ -406,6 +416,7 @@ export default function AuthPage() {
                           profile.key === "gestor" && "bg-amber-400/10 border-amber-400/20",
                           profile.key === "multi" && "bg-violet-400/10 border-violet-400/20",
                           profile.key === "administrativo" && "bg-sky-400/10 border-sky-400/20",
+                          profile.key === "farmacia" && "bg-emerald-400/10 border-emerald-400/20",
                         )}>
                           <profile.icon className={cn("h-5 w-5", profile.color)} />
                         </div>

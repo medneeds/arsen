@@ -2013,12 +2013,13 @@ export type Database = {
           sector: string
         }[]
       }
+      setup_farmacia_user: { Args: never; Returns: undefined }
       setup_medicoporta_user: { Args: never; Returns: undefined }
       setup_medicouti_user: { Args: never; Returns: undefined }
       setup_visitante_user: { Args: never; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "medico" | "porta" | "visitante"
+      app_role: "admin" | "medico" | "porta" | "visitante" | "farmacia"
       audit_action:
         | "INSERT"
         | "UPDATE"
@@ -2153,7 +2154,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "medico", "porta", "visitante"],
+      app_role: ["admin", "medico", "porta", "visitante", "farmacia"],
       audit_action: ["INSERT", "UPDATE", "DELETE", "SELECT", "LOGIN", "LOGOUT"],
     },
   },
