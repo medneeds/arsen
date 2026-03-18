@@ -86,12 +86,15 @@ export function AppSidebar({
   // Access profile from localStorage
   const accessProfile = typeof window !== 'undefined' ? localStorage.getItem("access_profile") || "medico" : "medico";
 
+  // ── Menu structure with per-item profile visibility ──
+  // Profiles: medico, gestor, multi, administrativo
+  // "porta" and "visitante" roles get special handling below
   const allMenuItems = [
     {
       title: "MAPA",
       icon: LayoutDashboard,
       link: "/",
-      profiles: ["medico", "gestor", "multi"],
+      profiles: ["medico", "gestor", "multi", "administrativo"],
     },
     {
       title: "PAINEL DO GESTOR",
@@ -104,8 +107,8 @@ export function AppSidebar({
       icon: Users,
       profiles: ["medico", "gestor", "multi", "administrativo"],
       items: [
-        { name: "MOVIMENTAÇÕES", link: "/movements" },
-        { name: "HISTÓRICO", link: "/internment-history" },
+        { name: "MOVIMENTAÇÕES", link: "/movements", profiles: ["medico", "gestor", "multi", "administrativo"] },
+        { name: "HISTÓRICO", link: "/internment-history", profiles: ["medico", "gestor", "multi"] },
       ],
     },
     {
@@ -113,33 +116,34 @@ export function AppSidebar({
       icon: FolderOpen,
       profiles: ["medico", "gestor"],
       items: [
-        { name: "ROUND", link: "/round" },
-        { name: "HEMODERIVADOS", link: "/hemoderivados" },
-        { name: "RELATÓRIO", link: "/relatorio" },
+        { name: "ROUND", link: "/round", profiles: ["medico", "gestor"] },
+        { name: "HEMODERIVADOS", link: "/hemoderivados", profiles: ["medico", "gestor"] },
+        { name: "RELATÓRIO", link: "/relatorio", profiles: ["medico", "gestor"] },
         { 
           name: "REQUISIÇÕES", 
+          profiles: ["medico", "gestor"],
           subsections: [
             { name: "LABORATÓRIO", link: "/requisicao/laboratorio" },
             { name: "IMAGENS", link: "/requisicao/imagens" },
             { name: "PARECER", link: "/requisicao/parecer" },
           ]
         },
-        { name: "REGULAÇÃO", link: "/regulacoes" },
+        { name: "REGULAÇÃO", link: "/regulacoes", profiles: ["medico", "gestor"] },
       ],
     },
     {
       title: "PROTOCOLOS",
       icon: Stethoscope,
-      profiles: ["medico", "gestor"],
+      profiles: ["medico", "gestor", "multi"],
       items: [
-        { name: "PROTOCOLO SEPSE", link: "/sepsis-protocol" },
-        { name: "CONTROLE GLICÊMICO", link: "/controle-glicemico" },
-        { name: "CUIDADOS PALIATIVOS", link: "/cuidados-paliativos" },
-        { name: "PRIORIZAÇÃO CIRÚRGICA", link: "/priorizacao-cirurgica" },
-        { name: "ALTO CUSTO", link: "/alto-custo" },
-        { name: "OPME", link: "/opme" },
-        { name: "SADT", link: "/sadt" },
-        { name: "TOMOGRAFIAS", link: "/tomografias" },
+        { name: "PROTOCOLO SEPSE", link: "/sepsis-protocol", profiles: ["medico", "gestor", "multi"] },
+        { name: "CONTROLE GLICÊMICO", link: "/controle-glicemico", profiles: ["medico", "gestor", "multi"] },
+        { name: "CUIDADOS PALIATIVOS", link: "/cuidados-paliativos", profiles: ["medico", "gestor"] },
+        { name: "PRIORIZAÇÃO CIRÚRGICA", link: "/priorizacao-cirurgica", profiles: ["medico", "gestor"] },
+        { name: "ALTO CUSTO", link: "/alto-custo", profiles: ["medico", "gestor"] },
+        { name: "OPME", link: "/opme", profiles: ["medico", "gestor"] },
+        { name: "SADT", link: "/sadt", profiles: ["medico", "gestor"] },
+        { name: "TOMOGRAFIAS", link: "/tomografias", profiles: ["medico", "gestor"] },
       ],
     },
     {
@@ -147,11 +151,11 @@ export function AppSidebar({
       icon: Brain,
       profiles: ["medico", "gestor"],
       items: [
-        { name: "PRESCRIÇÃO", link: "/prescricao" },
-        { name: "VALIDAÇÃO FARMACÊUTICA", link: "/validacao-farmaceutica" },
-        { name: "EVOLUÇÃO", link: "/evolucao" },
-        { name: "CATÁLOGO DE MEDICAMENTOS", link: "/catalogo-medicamentos" },
-        { name: "EXAMINUS AI", link: "/ia" },
+        { name: "PRESCRIÇÃO", link: "/prescricao", profiles: ["medico", "gestor"] },
+        { name: "VALIDAÇÃO FARMACÊUTICA", link: "/validacao-farmaceutica", profiles: ["gestor"] },
+        { name: "EVOLUÇÃO", link: "/evolucao", profiles: ["medico", "gestor"] },
+        { name: "CATÁLOGO DE MEDICAMENTOS", link: "/catalogo-medicamentos", profiles: ["gestor"] },
+        { name: "EXAMINUS AI", link: "/ia", profiles: ["medico", "gestor", "multi"] },
       ],
     },
     {
@@ -162,10 +166,38 @@ export function AppSidebar({
     },
   ];
 
-  // Filter menu items based on access profile and user role
-  const menuItems = isDoorUser 
-    ? allMenuItems.filter(item => item.title === "MAPA" || item.title === "EXAMINUS AI")
-    : allMenuItems.filter(item => !item.profiles || item.profiles.includes(accessProfile));
+  // ── Build filtered menu based on role + profile ──
+  const buildFilteredMenu = () => {
+    // Porta: minimal access
+    if (isDoorUser) {
+      return [
+        { title: "MAPA", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
+        { title: "ASSISTENTE CLÍNICO", icon: Brain, profiles: ["medico"], items: [
+          { name: "EXAMINUS AI", link: "/ia", profiles: ["medico"] },
+        ]},
+      ];
+    }
+    // Visitante: read-only map
+    if (role === "visitante") {
+      return [
+        { title: "MAPA", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
+      ];
+    }
+    // Filter sections by profile, then filter sub-items within each section
+    return allMenuItems
+      .filter(section => !section.profiles || section.profiles.includes(accessProfile))
+      .map(section => {
+        if (!section.items) return section;
+        const filteredItems = section.items.filter(
+          (item: any) => !item.profiles || item.profiles.includes(accessProfile)
+        );
+        if (filteredItems.length === 0) return null;
+        return { ...section, items: filteredItems };
+      })
+      .filter(Boolean) as typeof allMenuItems;
+  };
+
+  const menuItems = buildFilteredMenu();
 
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
