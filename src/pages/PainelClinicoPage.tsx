@@ -624,12 +624,23 @@ export default function PainelClinicoPage() {
   );
 }
 
-// Helper component
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+// InfoSection component - synced with map sidebar style
+function InfoSection({ icon: Icon, title, items }: { icon: React.ElementType; title: string; items: string[] }) {
   return (
-    <div>
-      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{title}</h3>
-      <ul className="space-y-0.5 list-disc list-inside">{children}</ul>
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1.5">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{title}</h4>
+      </div>
+      {items.length > 0 ? (
+        <ul className="space-y-0.5 list-disc list-inside pl-5">
+          {items.map((item, i) => (
+            <li key={i} className="text-sm text-foreground">{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-muted-foreground italic pl-5">Nenhum registro</p>
+      )}
     </div>
   );
 }
