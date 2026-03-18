@@ -28,32 +28,40 @@ export function PrintableSectorSection({
   const isCompact = mode === 'compact';
   
   return (
-    <div 
-      style={{ 
-        marginBottom: isCompact ? '12px' : '16px'
-      }}
-    >
+    <div style={{ marginBottom: isCompact ? '6px' : '10px' }}>
+      {/* Sector header — slim pill style */}
       <div 
         style={{ 
           backgroundColor: bgColor,
-          borderLeft: `6px solid ${borderColor}`,
-          padding: isCompact ? '8px 12px' : '10px 14px',
-          marginBottom: isCompact ? '8px' : '12px',
+          borderLeft: `4px solid ${borderColor}`,
+          padding: isCompact ? '4px 10px' : '6px 12px',
+          marginBottom: isCompact ? '4px' : '6px',
           pageBreakAfter: 'avoid',
           breakAfter: 'avoid',
-          borderRadius: '4px'
+          borderRadius: '2px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
         }}
       >
         <h2 style={{ 
-          fontSize: isCompact ? '12pt' : '13pt', 
-          fontWeight: 'bold', 
+          fontSize: isCompact ? '9pt' : '10pt', 
+          fontWeight: '700', 
           textTransform: 'uppercase',
           color: textColor,
           margin: 0,
-          letterSpacing: '0.5px'
+          letterSpacing: '0.6px'
         }}>
-          {sectorName} ({patients.length} {patients.length === 1 ? 'PACIENTE' : 'PACIENTES'})
+          {sectorName}
         </h2>
+        <span style={{
+          fontSize: isCompact ? '7pt' : '7.5pt',
+          fontWeight: '600',
+          color: textColor,
+          opacity: 0.7
+        }}>
+          {patients.length} {patients.length === 1 ? 'paciente' : 'pacientes'}
+        </span>
       </div>
       <div>
         {patients.map(patient => (
