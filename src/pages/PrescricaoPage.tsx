@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { format, addDays } from "date-fns";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
