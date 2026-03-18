@@ -3192,7 +3192,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
             )}
 
             {/* Exames - apenas para outros departamentos */}
-            {currentDepartment !== "UTI" && (
+            {currentDepartment !== "UTI" && role !== 'farmacia' && (
               <div className="flex flex-col md:col-span-3 relative">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="text-[10px] font-medium text-muted-foreground">Exames</span>
