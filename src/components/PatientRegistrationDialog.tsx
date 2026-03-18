@@ -82,10 +82,14 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
       return;
     }
 
-    // Show preview
-    const reader = new FileReader();
-    reader.onload = (ev) => setPreviewImage(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    // Show preview (only for images)
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setPreviewImage(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setPreviewImage('pdf');
+    }
 
     // Convert to base64
     setIsExtracting(true);
@@ -239,7 +243,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
                   <Camera className="h-10 w-10 text-primary/60" />
                   <h3 className="font-semibold">Upload de Documento</h3>
                   <p className="text-sm text-muted-foreground max-w-sm">
-                    Fotografe ou faça upload de um documento de identidade (RG, CNH, Cartão SUS). 
+                    Fotografe ou faça upload de um documento de identidade (RG, CNH, Cartão SUS) em imagem ou PDF. 
                     A IA extrairá automaticamente os dados do paciente.
                   </p>
                 </div>
@@ -247,8 +251,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
-                  capture="environment"
+                  accept="image/*,application/pdf"
                   onChange={handleImageUpload}
                   className="hidden"
                 />
@@ -267,7 +270,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
                     ) : (
                       <>
                         <Upload className="h-4 w-4 mr-2" />
-                        Selecionar Imagem
+                        Selecionar Imagem ou PDF
                       </>
                     )}
                   </Button>
@@ -275,7 +278,14 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
 
                 {previewImage && (
                   <div className="mt-4">
-                    <img src={previewImage} alt="Documento" className="max-h-48 mx-auto rounded-lg border shadow-sm" />
+                    {previewImage === 'pdf' ? (
+                      <div className="flex items-center justify-center gap-2 p-4 bg-muted rounded-lg border">
+                        <Upload className="h-6 w-6 text-primary" />
+                        <span className="text-sm font-medium">PDF carregado</span>
+                      </div>
+                    ) : (
+                      <img src={previewImage} alt="Documento" className="max-h-48 mx-auto rounded-lg border shadow-sm" />
+                    )}
                   </div>
                 )}
 
