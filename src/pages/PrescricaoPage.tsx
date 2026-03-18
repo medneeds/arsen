@@ -1843,34 +1843,56 @@ const PrescricaoPage = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-2 print:space-y-1 print:max-w-none print:text-black animate-fade-in">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-0 print:m-0 print:space-y-0 print:max-w-none print:text-black animate-fade-in">
+      {/* ===== PRINT STYLES ===== */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          @page { size: A4 portrait; margin: 6mm 8mm 10mm 8mm; }
+        }
+      ` }} />
+
       {/* ===== PRINT-ONLY LETTERHEAD ===== */}
-      <div className="hidden print:block prescription-print-section mb-1">
-        <div className="flex items-center justify-between border-b-2 border-black pb-1 mb-1">
-          <img src={socorraoLogo} alt="Socorrão I" className="h-8 object-contain" />
-          <div className="text-center flex-1 px-2">
-            <p className="text-[10px] font-bold uppercase tracking-wide leading-tight text-black">Hospital Municipal Djalma Marques — Socorrão I</p>
-            <p className="text-[8px] text-gray-500 leading-tight">Prescrição Médica Diária</p>
+      <div className="hidden print:block prescription-print-section mb-0">
+        {/* Header bar */}
+        <div className="flex items-center justify-between pb-1 mb-1" style={{ borderBottom: '1.5px solid #0f172a' }}>
+          <img src={socorraoLogo} alt="Socorrão I" className="h-7 object-contain" />
+          <div className="text-center flex-1 px-3">
+            <p className="text-[9pt] font-extrabold uppercase tracking-widest leading-none text-black">Hospital Municipal Djalma Marques — Socorrão I</p>
+            <p className="text-[7pt] text-gray-500 leading-tight mt-[1px]">Prescrição Médica Diária</p>
           </div>
-          <img src={bighelpLogo} alt="BigHelp Map" className="h-7 object-contain" />
+          <img src={bighelpLogo} alt="BigHelp Map" className="h-6 object-contain opacity-30" />
         </div>
-        <table className="w-full border-collapse border border-black/30 text-[9px] text-black">
-          <tbody>
-            <tr>
-              <td className="border border-black/20 px-1 py-[2px]" colSpan={3}><span className="font-bold">Paciente:</span> {patient.name || '___________________________________'}</td>
-              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Leito:</span> {patient.bed || '______'}</td>
-              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Prontuário:</span> {patient.record || '________'}</td>
-              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Data:</span> {prescriptionDate}</td>
-            </tr>
-            <tr>
-              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Idade:</span> {patient.age || '____'}</td>
-              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Sexo:</span> {patient.sex || '____'}</td>
-              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Peso:</span> {patient.weight ? `${patient.weight}kg` : '____'}</td>
-              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Admissão:</span> {patient.admissionDate || '__/__/____'}</td>
-              <td className="border border-black/20 px-1 py-[2px]" colSpan={2}><span className="font-bold text-red-600">Alergias:</span> <span className="text-red-600 font-semibold">{patient.allergies || 'NDAM'}</span></td>
-            </tr>
-          </tbody>
-        </table>
+        {/* Patient data — compact single-row grid */}
+        <div className="grid grid-cols-6 gap-0 text-[8pt] text-black" style={{ border: '0.5px solid #94a3b8' }}>
+          <div className="col-span-3 px-1.5 py-[2px]" style={{ borderRight: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold">Pac:</span> {patient.name || '___________________________________'}
+          </div>
+          <div className="px-1.5 py-[2px]" style={{ borderRight: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold">Leito:</span> {patient.bed || '______'}
+          </div>
+          <div className="px-1.5 py-[2px]" style={{ borderRight: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold">Pront:</span> {patient.record || '________'}
+          </div>
+          <div className="px-1.5 py-[2px]">
+            <span className="font-bold">Data:</span> {prescriptionDate}
+          </div>
+          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold">Idade:</span> {patient.age || '____'}
+          </div>
+          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold">Sexo:</span> {patient.sex || '____'}
+          </div>
+          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold">Peso:</span> {patient.weight ? `${patient.weight}kg` : '____'}
+          </div>
+          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold">Adm:</span> {patient.admissionDate || '__/__/____'}
+          </div>
+          <div className="col-span-2 px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold text-red-700">Alergias:</span>{' '}
+            <span className="text-red-700 font-semibold">{patient.allergies || 'NDAM'}</span>
+          </div>
+        </div>
       </div>
 
       {/* Page Title */}
