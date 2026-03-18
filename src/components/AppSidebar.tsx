@@ -148,19 +148,10 @@ export function AppSidebar({
       icon: Brain,
       profiles: ["medico", "gestor"],
       items: [
-        { name: "Prescrição", link: "/prescricao", profiles: ["medico", "gestor"] },
         { name: "Validação Farmacêutica", link: "/validacao-farmaceutica", profiles: ["gestor"] },
-        { name: "Evolução", link: "/evolucao", profiles: ["medico", "gestor"] },
-        { name: "Requisições", link: "/requisicoes", profiles: ["medico", "gestor"] },
         { name: "Catálogo de Medicamentos", link: "/catalogo-medicamentos", profiles: ["gestor"] },
         { name: "Examinus AI", link: "/ia", profiles: ["medico", "gestor", "multi"] },
       ],
-    },
-    {
-      title: "Versões",
-      icon: History,
-      link: "/versions",
-      profiles: ["medico", "gestor"],
     },
   ];
 
