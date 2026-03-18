@@ -878,7 +878,7 @@ const Index = () => {
                       <div className="flex items-center gap-2 print:hidden">
                         <span className={`w-2 h-2 rounded-full ${SECTOR_VISUAL[activeSector]?.dotClass} border`} />
                         <Select value={activeSector} onValueChange={handleSectorChange}>
-                          <SelectTrigger className="h-5 w-auto gap-1 bg-transparent border-none text-[10px] sm:text-xs text-white/60 font-light uppercase tracking-widest p-0 focus:ring-0 focus:ring-offset-0 hover:text-white/90 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/40">
+                          <SelectTrigger className="h-5 w-auto gap-1 bg-transparent border-none text-[10px] sm:text-xs text-white/60 font-light tracking-widest p-0 focus:ring-0 focus:ring-offset-0 hover:text-white/90 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/40">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
