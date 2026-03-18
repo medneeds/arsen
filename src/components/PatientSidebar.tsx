@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   X, BedDouble, Calendar, Clock, Activity, FileText, Stethoscope,
-  AlertTriangle, ClipboardList, Pill, TrendingUp, Heart, User
+  AlertTriangle, ClipboardList, Pill, TrendingUp, Heart, User, TestTubes
 } from "lucide-react";
 import { differenceInDays, differenceInHours, parseISO, isValid } from "date-fns";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
