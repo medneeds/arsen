@@ -93,7 +93,7 @@ const ACCESS_PROFILES: {
     key: "farmacia",
     label: "Farmácia Clínica",
     subtitle: "Validação e Dispensação",
-    icon: Shield,
+    icon: Pill,
     color: "text-emerald-400",
     borderColor: "border-emerald-400/30 hover:border-emerald-400/60",
     bgGlow: "from-emerald-400/15 to-emerald-400/5",
