@@ -242,6 +242,39 @@ const RequisicaoUnificadaPage = () => {
     }
   };
 
+  const applyCombo = (combo: UtiCombo) => {
+    const currentCatItems = combo.categories[activeCategory as ComboCategory] || [];
+    const otherCatItems = Object.entries(combo.categories)
+      .filter(([cat]) => cat !== activeCategory)
+      .flatMap(([, items]) => items || []);
+    const allComboItems = [...currentCatItems, ...otherCatItems];
+    setFormSelectedItems(prev => {
+      const merged = new Set([...prev, ...allComboItems]);
+      return Array.from(merged);
+    });
+    const crossCats = Object.keys(combo.categories).filter(c => c !== activeCategory);
+    const crossNote = crossCats.length > 0
+      ? ` (inclui itens de ${crossCats.map(c => CATEGORIES[c as CategoryKey]?.shortLabel).join(", ")})`
+      : "";
+    toast.success(`${combo.label} aplicado — ${allComboItems.length} exames${crossNote}`);
+  };
+
+  const removeCombo = (combo: UtiCombo) => {
+    const allComboItems = Object.values(combo.categories).flat();
+    setFormSelectedItems(prev => prev.filter(item => !allComboItems.includes(item)));
+    toast.info(`${combo.label} removido`);
+  };
+
+  const isComboFullySelected = (combo: UtiCombo) => {
+    const allItems = Object.values(combo.categories).flat();
+    return allItems.every(item => formSelectedItems.includes(item));
+  };
+
+  const isComboPartiallySelected = (combo: UtiCombo) => {
+    const allItems = Object.values(combo.categories).flat();
+    return allItems.some(item => formSelectedItems.includes(item)) && !isComboFullySelected(combo);
+  };
+
   const resetForm = () => {
     setFormPatientName("");
     setFormPatientBed("");
@@ -251,6 +284,7 @@ const RequisicaoUnificadaPage = () => {
     setFormNotes("");
     setFormSelectedItems([]);
     setFormCustomItem("");
+    setExpandedCombo(null);
   };
 
   const handleSubmitRequest = async () => {
