@@ -449,6 +449,11 @@ const RequisicaoUnificadaPage = () => {
                 <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{completedRequests.length}</Badge>
               )}
             </TabsTrigger>
+            {activeCategory === "laboratorio" && (
+              <TabsTrigger value="comparativo" className="gap-1.5 text-xs">
+                <TrendingUp className="h-3.5 w-3.5" /> Comparativo
+              </TabsTrigger>
+            )}
           </TabsList>
           {activeSubTab !== "solicitar" && (
             <div className="relative w-full sm:w-64">
