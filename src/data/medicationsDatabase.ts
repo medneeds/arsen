@@ -245,3 +245,125 @@ export const RECOMMENDATION_TEMPLATES: string[] = [
   'Neurocheck 4/4h',
   'Comunicar médico plantonista se instabilidade hemodinâmica',
 ];
+
+// ========== PERFIS DE CUIDADOS ==========
+export interface CareProfile {
+  id: string;
+  label: string;
+  icon: string;
+  description: string;
+  items: string[]; // IDs dos CARE_OPTIONS a incluir
+  extraItems: string[]; // Cuidados adicionais como texto livre
+}
+
+export const CARE_PROFILES: CareProfile[] = [
+  {
+    id: 'geral',
+    label: 'Padrão Geral',
+    icon: 'Shield',
+    description: 'Cuidados gerais de enfermaria clínica',
+    items: ['c1', 'c2', 'c4', 'c5', 'c7', 'c8', 'c15', 'c18'],
+    extraItems: [
+      'Manter decúbito elevado 30°',
+      'Verificar sinais vitais 6/6h',
+      'Higiene oral 3x/dia',
+      'Manter grades do leito elevadas',
+    ],
+  },
+  {
+    id: 'neurocritico',
+    label: 'Neurocrítico',
+    icon: 'Zap',
+    description: 'AVC, TCE, pós-operatório neurocirúrgico',
+    items: ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c12', 'c13', 'c15', 'c18'],
+    extraItems: [
+      'Cabeceira elevada 30° rigorosamente',
+      'Centralização cefálica e colar cervical',
+      'Neurocheck (Glasgow, pupilas, déficit motor) 2/2h',
+      'Manter PAM 80-100mmHg',
+      'Manter normotermia (T ≤ 37,5°C)',
+      'Manter glicemia 140-180mg/dL',
+      'Manter Na+ 135-145 mEq/L',
+      'Evitar hipotensão (PAS > 100mmHg)',
+      'Comunicar se ECG < 13 ou piora pupilar',
+      'Restrição hídrica se edema cerebral',
+    ],
+  },
+  {
+    id: 'choque-septico',
+    label: 'Choque Séptico',
+    icon: 'AlertTriangle',
+    description: 'Sepse e choque séptico — pacote 1ª hora',
+    items: ['c1', 'c2', 'c3', 'c4', 'c5', 'c7', 'c8', 'c12', 'c13', 'c19', 'c18'],
+    extraItems: [
+      'Manter PAM ≥ 65mmHg',
+      'Controle diurese horária (alvo ≥ 0,5 mL/kg/h)',
+      'Lactato sérico 6/6h (alvo clearance > 10%)',
+      'Débito urinário em coletor graduado horário',
+      'Balanço hídrico rigoroso 6/6h',
+      'Controle glicêmico 4/4h (alvo 140-180 mg/dL)',
+      'Coleta de hemoculturas antes do ATB (2 amostras)',
+      'Antibioticoterapia em até 1h do diagnóstico',
+      'Reavaliar perfusão periférica a cada 2h',
+      'Comunicar se PAM < 65 ou diurese < 0,5 mL/kg/h',
+    ],
+  },
+  {
+    id: 'ventilacao-mecanica',
+    label: 'Ventilação Mecânica',
+    icon: 'Wind',
+    description: 'Paciente em VM invasiva ou VNI',
+    items: ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10', 'c11', 'c12', 'c13', 'c14', 'c15', 'c18'],
+    extraItems: [
+      'Cabeceira 30-45° rigorosamente',
+      'Higiene oral com clorexidina 0,12% 3x/dia',
+      'Pressão do cuff 20-30cmH₂O (verificar 12/12h)',
+      'Aspiração traqueal e orofaringe conforme necessidade',
+      'Fisioterapia respiratória + motora 3x/dia',
+      'Protocolo de despertar diário (suspensão sedação)',
+      'Avaliar prontidão para extubação diariamente',
+      'Anotar parâmetros do VM a cada 6h',
+      'Profilaxia de TEV (protocolo institucional)',
+      'Profilaxia de úlcera de estresse',
+      'Manter SpO₂ 92-96% (DPOC: 88-92%)',
+    ],
+  },
+  {
+    id: 'cuidados-paliativos',
+    label: 'Cuidados Paliativos',
+    icon: 'ClipboardList',
+    description: 'Conforto e qualidade de vida — paciente paliativo',
+    items: ['c1', 'c4', 'c5', 'c16', 'c17'],
+    extraItems: [
+      'Priorizar conforto e controle de dor',
+      'Avaliar dor pela escala visual analógica (EVA) 4/4h',
+      'Manter mucosa oral hidratada (gaze úmida)',
+      'Higiene oral com antisséptico bucal 3x/dia',
+      'Prevenir constipação (dieta e laxativos se necessário)',
+      'Cuidados com pele e prevenção de LPP',
+      'Permitir acompanhante em período integral',
+      'Evitar procedimentos invasivos fúteis',
+      'Avaliação multiprofissional (psicologia, capelania, serviço social)',
+      'Comunicar equipe de cuidados paliativos sobre intercorrências',
+      'Respeitar diretivas antecipadas de vontade',
+    ],
+  },
+  {
+    id: 'pos-operatorio',
+    label: 'Pós-Operatório',
+    icon: 'Syringe',
+    description: 'Cuidados pós-cirúrgicos gerais',
+    items: ['c1', 'c2', 'c3', 'c4', 'c5', 'c7', 'c8', 'c15', 'c18'],
+    extraItems: [
+      'Sinais vitais de hora em hora nas primeiras 6h',
+      'Observar sangramento em sítio cirúrgico',
+      'Controle de dor (escala EVA)',
+      'Repouso no leito conforme orientação cirúrgica',
+      'Deambulação precoce quando autorizado',
+      'Cuidados com drenos e curativos',
+      'Jejum até liberação da equipe cirúrgica',
+      'Antibioticoprofilaxia conforme protocolo',
+    ],
+  },
+];
+
