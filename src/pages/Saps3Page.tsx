@@ -240,6 +240,7 @@ const UTI_SECTORS = [
 export default function Saps3Page() {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
+  const location = useLocation();
   const hospitalId = currentHospital?.id;
   const stateId = currentState?.id;
 
