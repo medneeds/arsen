@@ -735,7 +735,7 @@ function SignPrescriptionDialog({
     const raw = `${doctorName}|${crm}|${now}|${activeItems}`;
     const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
     const hash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16).toUpperCase();
-    const sig: DigitalSignature = { doctorName: doctorName.trim().toUpperCase(), crm: crm.trim(), signedAt: now, hash };
+    const sig: DigitalSignature = { doctorName: doctorName.trim(), crm: crm.trim(), signedAt: now, hash };
     setVerifying(false);
     reset();
     onConfirm(sig);
