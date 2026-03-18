@@ -449,7 +449,7 @@ export default function Saps3Page() {
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
   };
 
-  // ─── Save: SAPS3 + create patient + update pre_admission ───
+  // ─── Save: SAPS3 + finalize allocation/admission ───
   const handleSave = async () => {
     if (!patientName.trim()) { toast.error("Nome do paciente é obrigatório"); return; }
     if (!selectedSector) { toast.error("Selecione o setor da UTI"); return; }
@@ -458,7 +458,6 @@ export default function Saps3Page() {
 
     setSaving(true);
     try {
-      // 1. Save SAPS 3
       const sapsPayload = {
         patient_name: patientName,
         hospital_unit_id: hospitalId,
@@ -495,32 +494,90 @@ export default function Saps3Page() {
       const { error: sapsError } = await supabase.from("saps3_assessments" as any).insert(sapsPayload as any);
       if (sapsError) throw sapsError;
 
-      // 2. Create patient in the selected bed
-      const { error: patientError } = await supabase.from("patients").insert({
-        name: patientName,
-        bed_number: selectedBed,
-        sector: selectedSector,
-        department: "UTI",
-        age: age ? `${age} anos` : null,
-        hospital_unit_id: hospitalId,
-        state_id: stateId,
-        created_by: user?.id,
-        admission_date: new Date().toISOString(),
-        clinical_status: "grave",
-        is_vacant: false,
-      });
-      if (patientError) throw patientError;
+      const destinationSectorLabel = UTI_SECTORS.find((sector) => sector.value === selectedSector)?.label || selectedSector;
 
-      // 3. Update pre_admission status if from a request
-      if (selectedRequest) {
-        await supabase
-          .from("pre_admissions")
+      if (selectedRequest?.allocation_request_id && selectedRequest.patient_id) {
+        const { data: existingPatients } = await supabase
+          .from("patients")
+          .select("display_order")
+          .eq("hospital_unit_id", hospitalId)
+          .eq("state_id", stateId)
+          .eq("department", "UTI")
+          .eq("sector", selectedSector);
+
+        const maxDisplayOrder = (existingPatients || []).reduce((max, patient) => {
+          const order = patient.display_order ?? 0;
+          return order > max ? order : max;
+        }, 0);
+
+        const { error: requestError } = await supabase
+          .from("bed_allocation_requests")
           .update({
-            status: "admitido_uti",
-            destination_bed: selectedBed,
-            destination_sector: UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector,
+            status: "approved",
+            reviewed_by: user?.id,
+            reviewed_at: new Date().toISOString(),
           })
-          .eq("id", selectedRequest.id);
+          .eq("id", selectedRequest.allocation_request_id);
+
+        if (requestError) throw requestError;
+
+        const { error: patientError } = await supabase
+          .from("patients")
+          .update({
+            is_door_patient: false,
+            allocation_status: "approved",
+            sector: selectedSector,
+            bed_number: selectedBed,
+            display_order: maxDisplayOrder + 1,
+            department: "UTI",
+          })
+          .eq("id", selectedRequest.patient_id);
+
+        if (patientError) throw patientError;
+      } else {
+        let diagnoses: string | null = null;
+        let medicalHistory: string | null = null;
+
+        if (selectedRequest?.id) {
+          const { data: preAdmissionData } = await supabase
+            .from("pre_admissions")
+            .select("chief_complaint, allergies")
+            .eq("id", selectedRequest.id)
+            .maybeSingle();
+
+          diagnoses = preAdmissionData?.chief_complaint || null;
+          medicalHistory = preAdmissionData?.allergies ? `Alergias: ${preAdmissionData.allergies}` : null;
+        }
+
+        const { error: patientError } = await supabase.from("patients").insert({
+          name: patientName,
+          bed_number: selectedBed,
+          sector: selectedSector,
+          department: "UTI",
+          age: age ? `${age} anos` : null,
+          hospital_unit_id: hospitalId,
+          state_id: stateId,
+          created_by: user?.id,
+          admission_date: new Date().toISOString(),
+          clinical_status: "grave",
+          is_vacant: false,
+          diagnoses,
+          medical_history: medicalHistory,
+        });
+        if (patientError) throw patientError;
+
+        if (selectedRequest?.id) {
+          const { error: updatePreAdmissionError } = await supabase
+            .from("pre_admissions")
+            .update({
+              status: "admitido",
+              destination_bed: selectedBed,
+              destination_sector: destinationSectorLabel,
+            })
+            .eq("id", selectedRequest.id);
+
+          if (updatePreAdmissionError) throw updatePreAdmissionError;
+        }
       }
 
       toast.success(`Paciente admitido no leito ${selectedBed} com SAPS 3 = ${scores.total} (mortalidade ${scores.mortality}%)`);
