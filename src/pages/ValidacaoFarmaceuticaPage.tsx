@@ -326,8 +326,12 @@ const ValidacaoFarmaceuticaPage = () => {
               return (
                 <Card
                   key={p.id}
-                  className="cursor-pointer hover:shadow-md transition-all border-l-4"
-                  style={{ borderLeftColor: status === "approved" ? "hsl(var(--primary))" : status === "rejected" ? "hsl(var(--destructive))" : "hsl(var(--muted-foreground))" }}
+                  className={cn(
+                    "cursor-pointer hover:shadow-md transition-all border-l-4",
+                    status === "approved" && "border-l-primary",
+                    status === "rejected" && "border-l-destructive",
+                    status !== "approved" && status !== "rejected" && "border-l-muted-foreground"
+                  )}
                   onClick={() => openValidation(p)}
                 >
                   <CardContent className="p-4">
