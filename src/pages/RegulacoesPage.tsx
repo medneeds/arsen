@@ -35,10 +35,10 @@ export default function RegulacoesPage() {
       <div className="p-6 md:p-8 space-y-8 max-w-6xl">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-green-500 to-green-400 bg-clip-text text-transparent uppercase">
-            REGULAÇÕES SUS
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-green-500 to-green-400 bg-clip-text text-transparent">
+            Regulações SUS
           </h1>
-          <p className="text-muted-foreground text-lg uppercase">
+          <p className="text-muted-foreground text-lg">
             Documentos para regulação e solicitações SUS
           </p>
           <Badge variant="secondary" className="mt-2">
