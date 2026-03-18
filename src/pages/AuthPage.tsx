@@ -436,7 +436,7 @@ export default function AuthPage() {
                     key={profile.key}
                     onClick={() => handleSelectProfile(profile.key)}
                     className={cn(
-                      "group relative text-left p-5 rounded-2xl border backdrop-blur-xl transition-all duration-300",
+                      "group relative text-left p-5 rounded-2xl border backdrop-blur-xl transition-all duration-300 min-h-[130px]",
                       "bg-white/[0.04] hover:bg-white/[0.08]",
                       profile.borderColor
                     )}
