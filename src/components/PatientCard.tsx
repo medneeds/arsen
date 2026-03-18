@@ -891,48 +891,41 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
       if (editingArrayIndex === -2) {
         // Adding new
         if (editValue.trim()) {
-          updatedPatient.diagnoses = [...patient.diagnoses, editValue.toUpperCase()];
+          updatedPatient.diagnoses = [...patient.diagnoses, editValue];
         }
       } else {
-        // Editing existing
         updatedPatient.diagnoses = patient.diagnoses.map((d, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : d
+          i === editingArrayIndex ? editValue : d
         );
       }
     } else if (editingField === "medicalHistory") {
       if (editingArrayIndex === -2) {
-        // Adding new
         if (editValue.trim()) {
-          updatedPatient.medicalHistory = [...patient.medicalHistory, editValue.toUpperCase()];
+          updatedPatient.medicalHistory = [...patient.medicalHistory, editValue];
         }
       } else {
-        // Editing existing
         updatedPatient.medicalHistory = patient.medicalHistory.map((h, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : h
+          i === editingArrayIndex ? editValue : h
         );
       }
     } else if (editingField === "relevantExams") {
       if (editingArrayIndex === -2) {
-        // Adding new
         if (editValue.trim()) {
-          updatedPatient.relevantExams = [...patient.relevantExams, editValue.toUpperCase()];
+          updatedPatient.relevantExams = [...patient.relevantExams, editValue];
         }
       } else {
-        // Editing existing
         updatedPatient.relevantExams = patient.relevantExams.map((e, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : e
+          i === editingArrayIndex ? editValue : e
         );
       }
     } else if (editingField === "pendencies") {
       if (editingArrayIndex === -2) {
-        // Adding new
         if (editValue.trim()) {
-          updatedPatient.pendencies = [...patient.pendencies, editValue.toUpperCase()];
+          updatedPatient.pendencies = [...patient.pendencies, editValue];
         }
       } else {
-        // Editing existing
         updatedPatient.pendencies = patient.pendencies.map((p, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : p
+          i === editingArrayIndex ? editValue : p
         );
       }
     } else if (editingField === "utiAdmissionDate") {
