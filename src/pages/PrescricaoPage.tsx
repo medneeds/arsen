@@ -475,7 +475,37 @@ function SortablePrescriptionItemRow({
         </div>
         {/* Schedule - far right aligned */}
         <div className="shrink-0 flex items-center gap-1.5 pl-2 border-l border-border/30">
-          <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-44 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
+          {(() => {
+            const presets = getPresetsForPosology(item.posology);
+            if (presets) {
+              return (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-6 px-1.5 text-[10px] border-border/40 text-muted-foreground hover:text-foreground shrink-0">
+                      <ClipboardList className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      {presets.label}
+                    </div>
+                    <DropdownMenuSeparator />
+                    {presets.options.map((opt) => (
+                      <DropdownMenuItem
+                        key={opt.name}
+                        onClick={() => onUpdate(item.id, "schedule", opt.times)}
+                        className="text-xs gap-2 font-mono"
+                      >
+                        {opt.times}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            }
+            return null;
+          })()}
+          <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-48 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
         </div>
         <ItemActions />
       </div>
