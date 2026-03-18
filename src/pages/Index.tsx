@@ -1140,7 +1140,7 @@ const Index = () => {
                           <p className="text-[10px] font-semibold text-white tracking-tight">
                             {user?.user_metadata?.username || user?.email?.split('@')[0]}
                           </p>
-                          <p className="text-[9px] text-white/70 uppercase">
+                          <p className="text-[9px] text-white/70">
                             {role === 'admin' ? 'Administrador' : 'Médico'}
                           </p>
                         </div>
