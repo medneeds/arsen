@@ -1216,6 +1216,85 @@ export type Database = {
           },
         ]
       }
+      prescription_validations: {
+        Row: {
+          allergy_check_passed: boolean | null
+          created_at: string
+          department: string
+          dilution_check_passed: boolean | null
+          dose_check_passed: boolean | null
+          hospital_unit_id: string
+          id: string
+          interaction_check_passed: boolean | null
+          notes: string | null
+          prescription_id: string
+          state_id: string
+          status: string
+          updated_at: string
+          validated_by: string | null
+          validation_items: Json
+          validator_name: string | null
+        }
+        Insert: {
+          allergy_check_passed?: boolean | null
+          created_at?: string
+          department?: string
+          dilution_check_passed?: boolean | null
+          dose_check_passed?: boolean | null
+          hospital_unit_id: string
+          id?: string
+          interaction_check_passed?: boolean | null
+          notes?: string | null
+          prescription_id: string
+          state_id: string
+          status?: string
+          updated_at?: string
+          validated_by?: string | null
+          validation_items?: Json
+          validator_name?: string | null
+        }
+        Update: {
+          allergy_check_passed?: boolean | null
+          created_at?: string
+          department?: string
+          dilution_check_passed?: boolean | null
+          dose_check_passed?: boolean | null
+          hospital_unit_id?: string
+          id?: string
+          interaction_check_passed?: boolean | null
+          notes?: string | null
+          prescription_id?: string
+          state_id?: string
+          status?: string
+          updated_at?: string
+          validated_by?: string | null
+          validation_items?: Json
+          validator_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_validations_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_validations_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_validations_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prescriptions: {
         Row: {
           created_at: string
