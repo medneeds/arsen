@@ -213,9 +213,21 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     }
   };
 
-  const pa = fullData || preAdmission;
-  if (!pa) return null;
+  if (!preAdmission) return null;
+  
+  if (!fullData) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <div className="flex items-center justify-center p-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
+  const pa = fullData;
   const vs = pa.vital_signs || {};
   const gd = pa.glasgow_detail || {};
   const age = calcAge(pa.birth_date);
