@@ -1390,6 +1390,7 @@ const PrescricaoPage = () => {
 
   // Sign prescription
   const handleRequestSign = () => {
+    if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de assinar"); return; }
     if (!patient.name.trim()) { toast.error("Preencha o nome do paciente antes de assinar"); return; }
     if (activeItemsCount === 0) { toast.error("Nenhum item ativo para assinar"); return; }
     setSignDialogOpen(true);
