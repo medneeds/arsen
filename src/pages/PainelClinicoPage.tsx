@@ -2,11 +2,12 @@ import { useState, useMemo } from "react";
 import { usePatients } from "@/hooks/usePatients";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { Patient } from "@/types/patient";
-import { differenceInDays, parseISO } from "date-fns";
+import { differenceInDays, parseISO, formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Filter, FileText, Pill, Activity, ClipboardList, FolderOpen } from "lucide-react";
+import { Search, Eye, Filter, FileText, Pill, Activity, ClipboardList, FolderOpen, User, Calendar, Clock, Stethoscope, Heart, TrendingUp, AlertTriangle, TestTubes, Syringe, Shield, Thermometer } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -15,6 +16,32 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+
+const parseTextArray = (input: string | string[] | undefined | null): string[] => {
+  if (!input) return [];
+  if (Array.isArray(input)) return input.filter(item => item && item.trim());
+  return input.split('\n').filter(item => item && item.trim());
+};
+
+const clinicalStatusLabels: Record<string, { label: string; color: string }> = {
+  gravissimo: { label: "Gravíssimo", color: "bg-red-600 text-white" },
+  grave: { label: "Grave", color: "bg-red-500 text-white" },
+  grave_estavel: { label: "Grave estável", color: "bg-orange-500 text-white" },
+  potencialmente_grave: { label: "Potencialmente grave", color: "bg-amber-500 text-white" },
+  regular: { label: "Regular", color: "bg-blue-500 text-white" },
+  paliativado: { label: "Paliativado", color: "bg-purple-500 text-white" },
+};
+
+const formatStayDuration = (admissionDate: string): string => {
+  if (!admissionDate) return "—";
+  try {
+    const date = parseISO(admissionDate);
+    if (isNaN(date.getTime())) return "—";
+    return formatDistanceToNow(date, { locale: ptBR, addSuffix: false });
+  } catch {
+    return "—";
+  }
+};
 
 // Helpers
 const calcDaysInternment = (admissionDate: string): number | null => {
@@ -416,9 +443,9 @@ export default function PainelClinicoPage() {
                     {getSectorLabel(selectedPatient.sector)}
                   </Badge>
                 </div>
-                {selectedPatient.clinicalStatus && (
-                  <Badge variant="secondary" className="mt-2 text-xs capitalize">
-                    {selectedPatient.clinicalStatus.replace(/_/g, " ")}
+                {selectedPatient.clinicalStatus && clinicalStatusLabels[selectedPatient.clinicalStatus] && (
+                  <Badge className={cn("mt-2 text-xs", clinicalStatusLabels[selectedPatient.clinicalStatus].color)}>
+                    {clinicalStatusLabels[selectedPatient.clinicalStatus].label}
                   </Badge>
                 )}
               </div>
@@ -448,40 +475,66 @@ export default function PainelClinicoPage() {
                 <ScrollArea className="flex-1">
                   {/* RESUMO */}
                   <TabsContent value="resumo" className="p-4 space-y-4 mt-0">
-                    <Section title="Hipóteses / Diagnósticos">
-                      {selectedPatient.diagnoses.length > 0
-                        ? selectedPatient.diagnoses.map((d, i) => <li key={i} className="text-sm text-foreground">{d}</li>)
-                        : <p className="text-sm text-muted-foreground italic">Nenhum diagnóstico registrado</p>
-                      }
-                    </Section>
-                    <Section title="Antecedentes / Comorbidades">
-                      {selectedPatient.medicalHistory.length > 0
-                        ? selectedPatient.medicalHistory.map((h, i) => <li key={i} className="text-sm text-foreground">{h}</li>)
-                        : <p className="text-sm text-muted-foreground italic">Nenhum antecedente registrado</p>
-                      }
-                    </Section>
-                    <Section title="Exames Relevantes">
-                      {selectedPatient.relevantExams.length > 0
-                        ? selectedPatient.relevantExams.map((e, i) => <li key={i} className="text-sm text-foreground">{e}</li>)
-                        : <p className="text-sm text-muted-foreground italic">Nenhum exame registrado</p>
-                      }
-                    </Section>
-                    <Section title="Plano Terapêutico / Condutas">
-                      {selectedPatient.schedule.length > 0
-                        ? selectedPatient.schedule.map((s, i) => <li key={i} className="text-sm text-foreground">{s}</li>)
-                        : <p className="text-sm text-muted-foreground italic">Nenhuma conduta registrada</p>
-                      }
-                    </Section>
-                    <Section title="Programações / Pendências">
-                      {selectedPatient.pendencies.length > 0
-                        ? selectedPatient.pendencies.map((p, i) => <li key={i} className="text-sm text-foreground">{p}</li>)
-                        : <p className="text-sm text-muted-foreground italic">Nenhuma pendência</p>
-                      }
-                    </Section>
+                    {/* Quick Stats - synced with map sidebar */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-muted/50 rounded-lg p-2 text-center border border-border/30">
+                        <User className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
+                        <p className="text-[10px] text-muted-foreground">Idade</p>
+                        <p className="text-xs font-semibold">{selectedPatient.age ? `${selectedPatient.age} anos` : "—"}</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-2 text-center border border-border/30">
+                        <Calendar className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
+                        <p className="text-[10px] text-muted-foreground">Admissão</p>
+                        <p className="text-xs font-semibold">
+                          {selectedPatient.admissionDate
+                            ? new Date(selectedPatient.admissionDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                            : "—"}
+                        </p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-2 text-center border border-border/30">
+                        <Clock className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
+                        <p className="text-[10px] text-muted-foreground">Tempo</p>
+                        <p className="text-xs font-semibold">{formatStayDuration(selectedPatient.admissionDate)}</p>
+                      </div>
+                    </div>
+
+                    <InfoSection icon={Stethoscope} title="Hipóteses / Diagnósticos" items={parseTextArray(selectedPatient.diagnoses)} />
+                    <InfoSection icon={Heart} title="Antecedentes / Comorbidades" items={parseTextArray(selectedPatient.medicalHistory)} />
+                    <InfoSection icon={TrendingUp} title="Exames Relevantes" items={parseTextArray(selectedPatient.relevantExams)} />
+                    <InfoSection icon={ClipboardList} title="Plano Terapêutico / Condutas" items={parseTextArray(selectedPatient.schedule)} />
+                    <InfoSection icon={AlertTriangle} title="Programações / Pendências" items={parseTextArray(selectedPatient.pendencies)} />
+
+                    {/* UTI-specific fields */}
+                    {parseTextArray(selectedPatient.utiAdmissionReason).length > 0 && (
+                      <InfoSection icon={Thermometer} title="Motivo da Admissão UTI" items={parseTextArray(selectedPatient.utiAdmissionReason)} />
+                    )}
+                    {parseTextArray(selectedPatient.utiCurrentStatus).length > 0 && (
+                      <InfoSection icon={Activity} title="Status Atual UTI" items={parseTextArray(selectedPatient.utiCurrentStatus)} />
+                    )}
+                    {parseTextArray(selectedPatient.utiDevices).length > 0 && (
+                      <InfoSection icon={Syringe} title="Dispositivos" items={parseTextArray(selectedPatient.utiDevices)} />
+                    )}
+                    {parseTextArray(selectedPatient.utiCulturesAntibiotics).length > 0 && (
+                      <InfoSection icon={Shield} title="Culturas / Antibióticos" items={parseTextArray(selectedPatient.utiCulturesAntibiotics)} />
+                    )}
+                    {parseTextArray(selectedPatient.utiAllergies).length > 0 && (
+                      <InfoSection icon={AlertTriangle} title="Alergias" items={parseTextArray(selectedPatient.utiAllergies)} />
+                    )}
+                    {parseTextArray(selectedPatient.utiDailyConducts).length > 0 && (
+                      <InfoSection icon={ClipboardList} title="Condutas do Dia" items={parseTextArray(selectedPatient.utiDailyConducts)} />
+                    )}
+                    {parseTextArray(selectedPatient.utiDischargePrediction).length > 0 && (
+                      <InfoSection icon={Calendar} title="Previsão de Alta" items={parseTextArray(selectedPatient.utiDischargePrediction)} />
+                    )}
+
                     {selectedPatient.admissionHistory && (
-                      <Section title="História Admissional">
-                        <p className="text-sm text-foreground whitespace-pre-wrap">{selectedPatient.admissionHistory}</p>
-                      </Section>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">História Admissional</h4>
+                        </div>
+                        <p className="text-sm text-foreground pl-5 leading-relaxed whitespace-pre-line">{selectedPatient.admissionHistory}</p>
+                      </div>
                     )}
                   </TabsContent>
 
@@ -571,12 +624,23 @@ export default function PainelClinicoPage() {
   );
 }
 
-// Helper component
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+// InfoSection component - synced with map sidebar style
+function InfoSection({ icon: Icon, title, items }: { icon: React.ElementType; title: string; items: string[] }) {
   return (
-    <div>
-      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{title}</h3>
-      <ul className="space-y-0.5 list-disc list-inside">{children}</ul>
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1.5">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{title}</h4>
+      </div>
+      {items.length > 0 ? (
+        <ul className="space-y-0.5 list-disc list-inside pl-5">
+          {items.map((item, i) => (
+            <li key={i} className="text-sm text-foreground">{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-muted-foreground italic pl-5">Nenhum registro</p>
+      )}
     </div>
   );
 }
