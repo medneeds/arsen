@@ -14,321 +14,188 @@ const getMedicalResponsibilityLabel = (patient: Patient) => {
   const parts: string[] = [];
   
   if (type === 'porta') {
-    if (portaNames) parts.push(`🩺 ${portaNames}`);
+    if (portaNames) parts.push(`${portaNames}`);
     if (officeNumber) parts.push(`C${officeNumber}`);
-    return parts.join(' • ') || '🩺 Porta';
+    return parts.join(' · ') || 'Porta';
   } else if (type === 'lider' && leaderNames) {
-    return `⚕️ Líder: ${leaderNames}`;
+    return `Líder: ${leaderNames}`;
   } else if (type === 'conjunto') {
     if (portaNames) parts.push(portaNames);
     if (officeNumber) parts.push(`C${officeNumber}`);
     if (leaderNames) parts.push(`Líder: ${leaderNames}`);
-    return `👥 ${parts.join(' • ')}`;
+    return parts.join(' · ');
   }
   
   return null;
 };
 
-export function PrintablePatientCard({ patient, mode, bedColor = '#6b7280' }: PrintablePatientCardProps) {
+const renderList = (items: string[], fontSize: string, maxItems?: number) => {
+  if (items.length === 0) return <span style={{ color: '#cbd5e1', fontSize }}>—</span>;
+  const display = maxItems ? items.slice(0, maxItems) : items;
+  return (
+    <>
+      {display.map((item, idx) => (
+        <div key={idx} style={{ marginBottom: '1px', fontSize, color: '#1e293b', lineHeight: '1.35' }}>
+          <span style={{ color: '#94a3b8', fontWeight: '600', marginRight: '2px' }}>{idx + 1}.</span>{item}
+        </div>
+      ))}
+      {maxItems && items.length > maxItems && (
+        <div style={{ fontSize: '5.5pt', color: '#94a3b8' }}>+{items.length - maxItems}</div>
+      )}
+    </>
+  );
+};
+
+const SectionLabel = ({ children, isCompact }: { children: string; isCompact: boolean }) => (
+  <div style={{ 
+    fontSize: isCompact ? '6pt' : '6.5pt', 
+    color: '#64748b', 
+    marginBottom: '2px', 
+    textTransform: 'uppercase', 
+    fontWeight: '700',
+    letterSpacing: '0.5px'
+  }}>
+    {children}
+  </div>
+);
+
+export function PrintablePatientCard({ patient, mode, bedColor = '#64748b' }: PrintablePatientCardProps) {
   if (!patient.name) return null;
   
   const isCompact = mode === 'compact';
+  const fs = isCompact ? '7pt' : '7.5pt';
+  const responsibilityLabel = getMedicalResponsibilityLabel(patient);
   
-  // Modo compacto otimizado para paisagem
-  if (isCompact) {
-    return (
-      <div 
-        style={{ 
-          border: '1px solid #d1d5db',
-          borderRadius: '4px',
-          padding: '7px 8px',
-          marginBottom: '4px',
-          backgroundColor: '#ffffff',
-          fontSize: '8.5pt',
-          pageBreakInside: 'avoid',
-          breakInside: 'avoid'
-        }}
-      >
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: '45px 1.8fr 3fr 2.2fr 2.2fr 3.2fr',
-          gap: '12px',
-          alignItems: 'start'
-        }}>
-          {/* Leito */}
-          <div>
-            <div style={{ fontSize: '7.5pt', color: '#6b7280', marginBottom: '3px', textTransform: 'uppercase', fontWeight: '600' }}>Leito</div>
-            <div style={{ 
-              backgroundColor: bedColor,
-              color: '#ffffff',
-              padding: '3px 8px',
-              borderRadius: '4px',
-              fontSize: '9pt',
-              fontWeight: 'bold',
-              display: 'inline-block'
-            }}>
-              {patient.bedNumber}
-            </div>
-            {getMedicalResponsibilityLabel(patient) && (
-              <div style={{
-                fontSize: '6.5pt',
-                color: bedColor,
-                backgroundColor: `${bedColor}15`,
-                border: `1px solid ${bedColor}40`,
-                padding: '2px 4px',
-                borderRadius: '3px',
-                marginTop: '3px',
-                display: 'inline-block'
-              }}>
-                {getMedicalResponsibilityLabel(patient)}
-              </div>
-            )}
-          </div>
-
-          {/* Paciente */}
-          <div>
-            <div style={{ fontSize: '7.5pt', color: '#6b7280', marginBottom: '3px', textTransform: 'uppercase', fontWeight: '600' }}>Paciente</div>
-            <div style={{ fontSize: '9pt', fontWeight: 'bold', color: '#000000', marginBottom: '2px' }}>
-              {patient.name || 'SEM NOME'}
-            </div>
-            <div style={{ fontSize: '7.5pt', color: '#6b7280' }}>
-              {formatAgeDisplay(patient.age)}
-            </div>
-          </div>
-
-          {/* Hipóteses / Diagnósticos */}
-          <div>
-            <div style={{ fontSize: '7.5pt', color: '#6b7280', marginBottom: '3px', textTransform: 'uppercase', fontWeight: '600' }}>
-              Hipóteses / Diagnósticos
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-              {patient.diagnoses.length > 0 ? (
-                patient.diagnoses.map((diagnosis, idx) => (
-                  <span 
-                    key={idx} 
-                    style={{ 
-                      backgroundColor: '#f3f4f6',
-                      padding: '2px 6px',
-                      borderRadius: '3px',
-                      fontSize: '7.5pt',
-                      color: '#374151',
-                      lineHeight: '1.6'
-                    }}
-                  >
-                    {diagnosis}
-                  </span>
-                ))
-              ) : (
-                <span style={{ fontSize: '7.5pt', color: '#9ca3af' }}>-</span>
-              )}
-            </div>
-          </div>
-
-          {/* Antecedentes */}
-          <div>
-            <div style={{ fontSize: '7.5pt', color: '#6b7280', marginBottom: '3px', textTransform: 'uppercase', fontWeight: '600' }}>
-              Antecedentes
-            </div>
-            <div style={{ fontSize: '7.5pt', color: '#374151', lineHeight: '1.5' }}>
-              {patient.medicalHistory.length > 0 ? (
-                patient.medicalHistory.map((history, idx) => (
-                  <div key={idx} style={{ marginBottom: '2px' }}>
-                    <span style={{ fontWeight: 'bold', color: '#6b7280' }}>{idx + 1}.</span> {history}
-                  </div>
-                ))
-              ) : (
-                <span style={{ color: '#9ca3af' }}>-</span>
-              )}
-            </div>
-          </div>
-
-          {/* Exames */}
-          <div>
-            <div style={{ fontSize: '7.5pt', color: '#6b7280', marginBottom: '3px', textTransform: 'uppercase', fontWeight: '600' }}>
-              Exames
-            </div>
-            <div style={{ fontSize: '7.5pt', color: '#374151', lineHeight: '1.5' }}>
-              {patient.relevantExams.length > 0 ? (
-                patient.relevantExams.map((exam, idx) => (
-                  <div key={idx} style={{ marginBottom: '2px' }}>
-                    <span style={{ fontWeight: 'bold', color: '#6b7280' }}>{idx + 1}.</span> {exam}
-                  </div>
-                ))
-              ) : (
-                <span style={{ color: '#9ca3af' }}>-</span>
-              )}
-            </div>
-          </div>
-
-          {/* Programações / Pendências */}
-          <div>
-            <div style={{ fontSize: '7.5pt', color: '#6b7280', marginBottom: '3px', textTransform: 'uppercase', fontWeight: '600' }}>
-              Programações / Pendências
-            </div>
-            <div style={{ fontSize: '7.5pt', color: '#374151', lineHeight: '1.5' }}>
-              {patient.pendencies.length > 0 ? (
-                patient.pendencies.map((pendency, idx) => (
-                  <div key={idx} style={{ marginBottom: '2px' }}>
-                    <span style={{ fontWeight: 'bold', color: '#6b7280' }}>{idx + 1}.</span> {pendency}
-                  </div>
-                ))
-              ) : (
-                <span style={{ color: '#9ca3af' }}>-</span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  // Modo detalhado - agora com layout grid organizado
   return (
     <div 
       style={{ 
-        border: '1px solid #d1d5db',
-        borderRadius: '6px',
-        padding: '10px 12px',
-        marginBottom: '10px',
+        border: '0.5px solid #e2e8f0',
+        borderRadius: '3px',
+        padding: isCompact ? '4px 6px' : '6px 8px',
+        marginBottom: isCompact ? '2px' : '4px',
         backgroundColor: '#ffffff',
-        fontSize: '9.5pt',
         pageBreakInside: 'avoid',
         breakInside: 'avoid'
       }}
     >
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: '60px 2fr 3fr 2.5fr 2.5fr 3.5fr',
-        gap: '14px',
+        gridTemplateColumns: isCompact 
+          ? '38px 1.5fr 2.8fr 2fr 2fr 3fr' 
+          : '48px 1.8fr 2.8fr 2.2fr 2.2fr 3fr',
+        gap: isCompact ? '6px' : '10px',
         alignItems: 'start'
       }}>
         {/* Leito */}
         <div>
-          <div style={{ fontSize: '8pt', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Leito</div>
+          <SectionLabel isCompact={isCompact}>Leito</SectionLabel>
           <div style={{ 
             backgroundColor: bedColor,
             color: '#ffffff',
-            padding: '4px 10px',
-            borderRadius: '5px',
-            fontSize: '10pt',
-            fontWeight: 'bold',
+            padding: isCompact ? '2px 4px' : '2px 6px',
+            borderRadius: '3px',
+            fontSize: isCompact ? '8pt' : '9pt',
+            fontWeight: '800',
             display: 'inline-block',
             textAlign: 'center',
-            minWidth: '45px'
+            minWidth: isCompact ? '28px' : '36px',
+            letterSpacing: '0.3px'
           }}>
             {patient.bedNumber}
           </div>
-          {getMedicalResponsibilityLabel(patient) && (
+          {responsibilityLabel && (
             <div style={{
-              fontSize: '7pt',
+              fontSize: '5.5pt',
               color: bedColor,
-              backgroundColor: `${bedColor}15`,
-              border: `1px solid ${bedColor}40`,
-              padding: '3px 6px',
-              borderRadius: '4px',
-              marginTop: '4px',
-              display: 'inline-block'
+              padding: '1px 3px',
+              marginTop: '2px',
+              lineHeight: '1.2'
             }}>
-              {getMedicalResponsibilityLabel(patient)}
+              {responsibilityLabel}
             </div>
           )}
         </div>
 
         {/* Paciente */}
         <div>
-          <div style={{ fontSize: '8pt', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>Paciente</div>
-          <div style={{ fontSize: '10pt', fontWeight: 'bold', color: '#000000', marginBottom: '3px', lineHeight: '1.3' }}>
+          <SectionLabel isCompact={isCompact}>Paciente</SectionLabel>
+          <div style={{ 
+            fontSize: isCompact ? '8pt' : '8.5pt', 
+            fontWeight: '700', 
+            color: '#0f172a', 
+            lineHeight: '1.2',
+            marginBottom: '1px'
+          }}>
             {patient.name || 'SEM NOME'}
           </div>
-          <div style={{ fontSize: '8pt', color: '#6b7280' }}>
+          <div style={{ fontSize: isCompact ? '6.5pt' : '7pt', color: '#64748b' }}>
             {formatAgeDisplay(patient.age)}
           </div>
         </div>
 
-        {/* Hipóteses / Diagnósticos */}
+        {/* Hipóteses */}
         <div>
-          <div style={{ fontSize: '8pt', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>
-            Hipóteses / Diagnósticos
-          </div>
-          <div style={{ fontSize: '8.5pt', color: '#374151', lineHeight: '1.5' }}>
-            {patient.diagnoses.length > 0 ? (
-              patient.diagnoses.map((diagnosis, idx) => (
-                <div key={idx} style={{ marginBottom: '3px' }}>
-                  <span style={{ fontWeight: 'bold', color: '#6b7280' }}>{idx + 1}.</span> {diagnosis}
-                </div>
-              ))
-            ) : (
-              <span style={{ color: '#9ca3af' }}>-</span>
-            )}
-          </div>
+          <SectionLabel isCompact={isCompact}>Hipóteses / Diagnósticos</SectionLabel>
+          {isCompact ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px' }}>
+              {patient.diagnoses.length > 0 ? (
+                patient.diagnoses.map((d, idx) => (
+                  <span key={idx} style={{ 
+                    backgroundColor: '#f1f5f9',
+                    padding: '1px 4px',
+                    borderRadius: '2px',
+                    fontSize: '6.5pt',
+                    color: '#334155',
+                    lineHeight: '1.5'
+                  }}>
+                    {d}
+                  </span>
+                ))
+              ) : (
+                <span style={{ fontSize: '6.5pt', color: '#cbd5e1' }}>—</span>
+              )}
+            </div>
+          ) : (
+            renderList(patient.diagnoses, fs)
+          )}
         </div>
 
         {/* Antecedentes */}
         <div>
-          <div style={{ fontSize: '8pt', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>
-            Antecedentes
-          </div>
-          <div style={{ fontSize: '8.5pt', color: '#374151', lineHeight: '1.5' }}>
-            {patient.medicalHistory.length > 0 ? (
-              patient.medicalHistory.map((history, idx) => (
-                <div key={idx} style={{ marginBottom: '3px' }}>
-                  <span style={{ fontWeight: 'bold', color: '#6b7280' }}>{idx + 1}.</span> {history}
-                </div>
-              ))
-            ) : (
-              <span style={{ color: '#9ca3af' }}>-</span>
-            )}
-          </div>
+          <SectionLabel isCompact={isCompact}>Antecedentes</SectionLabel>
+          {renderList(patient.medicalHistory, fs, isCompact ? 3 : undefined)}
         </div>
 
         {/* Exames */}
         <div>
-          <div style={{ fontSize: '8pt', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>
-            Exames
-          </div>
-          <div style={{ fontSize: '8.5pt', color: '#374151', lineHeight: '1.5' }}>
-            {patient.relevantExams.length > 0 ? (
-              patient.relevantExams.map((exam, idx) => (
-                <div key={idx} style={{ marginBottom: '3px' }}>
-                  <span style={{ fontWeight: 'bold', color: '#6b7280' }}>{idx + 1}.</span> {exam}
-                </div>
-              ))
-            ) : (
-              <span style={{ color: '#9ca3af' }}>-</span>
-            )}
-          </div>
+          <SectionLabel isCompact={isCompact}>Exames</SectionLabel>
+          {renderList(patient.relevantExams, fs, isCompact ? 3 : undefined)}
         </div>
 
-        {/* Programações / Pendências */}
+        {/* Pendências */}
         <div>
-          <div style={{ fontSize: '8pt', color: '#6b7280', marginBottom: '4px', textTransform: 'uppercase', fontWeight: '600' }}>
-            Programações / Pendências
-          </div>
-          <div style={{ fontSize: '8.5pt', color: '#374151', lineHeight: '1.5' }}>
-            {patient.pendencies.length > 0 ? (
-              patient.pendencies.map((pendency, idx) => {
-                const isHighlighted = patient.highlightedPendencies?.includes(idx);
-                return (
-                  <div 
-                    key={idx} 
-                    style={{ 
-                      marginBottom: '3px',
-                      fontWeight: isHighlighted ? 'bold' : 'normal',
-                      backgroundColor: isHighlighted ? '#fef3c7' : 'transparent',
-                      padding: isHighlighted ? '2px 4px' : '0',
-                      borderRadius: isHighlighted ? '3px' : '0',
-                      display: 'inline-block',
-                      width: '100%'
-                    }}
-                  >
-                    <span style={{ fontWeight: 'bold', color: '#6b7280' }}>{idx + 1}.</span> {pendency}
-                  </div>
-                );
-              })
-            ) : (
-              <span style={{ color: '#9ca3af' }}>-</span>
-            )}
-          </div>
+          <SectionLabel isCompact={isCompact}>Programações / Pendências</SectionLabel>
+          {patient.pendencies.length > 0 ? (
+            patient.pendencies.map((p, idx) => {
+              const isHighlighted = patient.highlightedPendencies?.includes(idx);
+              return (
+                <div key={idx} style={{ 
+                  marginBottom: '1px', 
+                  fontSize: fs, 
+                  color: '#1e293b', 
+                  lineHeight: '1.35',
+                  fontWeight: isHighlighted ? '700' : 'normal',
+                  backgroundColor: isHighlighted ? '#fef9c3' : 'transparent',
+                  padding: isHighlighted ? '1px 3px' : '0',
+                  borderRadius: isHighlighted ? '2px' : '0'
+                }}>
+                  <span style={{ color: '#94a3b8', fontWeight: '600', marginRight: '2px' }}>{idx + 1}.</span>{p}
+                </div>
+              );
+            })
+          ) : (
+            <span style={{ color: '#cbd5e1', fontSize: fs }}>—</span>
+          )}
         </div>
       </div>
     </div>
