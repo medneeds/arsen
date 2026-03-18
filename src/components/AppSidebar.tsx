@@ -367,7 +367,7 @@ export function AppSidebar({
                       )} />
                       {!isCollapsed && (
                         <>
-                          <span className="text-xs font-medium uppercase tracking-wide text-foreground flex-1 text-left">
+                          <span className="text-xs font-medium tracking-wide text-foreground flex-1 text-left">
                             {section.title}
                           </span>
                           <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
