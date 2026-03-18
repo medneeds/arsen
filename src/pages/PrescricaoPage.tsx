@@ -66,6 +66,9 @@ import {
   PRESCRIPTION_FLAGS,
   ROUTES,
   POSOLOGIES,
+  CARE_OPTIONS,
+  CARE_PROFILES,
+  type CareProfile,
   type MedicationEntry,
   type PrescriptionCategory,
   type PrescriptionFlag,
@@ -175,7 +178,7 @@ interface PatientHeader {
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
   UtensilsCrossed, Droplets, Pill, Shield, AlertTriangle,
-  Wind, TestTube, ClipboardList, FileText,
+  Wind, TestTube, ClipboardList, FileText, Syringe, Zap,
 };
 
 const TAB_ORDER: PrescriptionCategory[] = [
@@ -1257,6 +1260,8 @@ const PrescricaoPage = () => {
   const [activeTab, setActiveTab] = useState<PrescriptionCategory>(initialDemoItems.length > 0 ? 'medication' : 'nutrition');
   const [nonStdName, setNonStdName] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [freeRecommendation, setFreeRecommendation] = useState("");
+  const [appliedCareProfiles, setAppliedCareProfiles] = useState<Set<string>>(new Set());
 
   // Phase 3 state
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
@@ -1315,6 +1320,52 @@ const PrescricaoPage = () => {
 
   const addItem = (med: MedicationEntry) => {
     setItems((prev) => [...prev, createItem(med)]);
+  };
+
+  const applyCareProfile = (profile: CareProfile) => {
+    const existingNames = new Set(items.filter(i => i.category === 'care').map(i => i.name));
+    const newItems: PrescriptionItem[] = [];
+    // Add structured care items from IDs
+    for (const careId of profile.items) {
+      const careMed = CARE_OPTIONS.find(c => c.id === careId);
+      if (careMed && !existingNames.has(careMed.name)) {
+        newItems.push(createItem(careMed));
+        existingNames.add(careMed.name);
+      }
+    }
+    // Add extra text-based items
+    for (const extraText of profile.extraItems) {
+      if (!existingNames.has(extraText)) {
+        newItems.push({
+          id: crypto.randomUUID(),
+          name: extraText,
+          presentation: '-', dose: '-', route: '-',
+          posology: '-', schedule: '-', instructions: '',
+          category: 'care', flags: [], highAlert: false, status: 'active',
+        });
+        existingNames.add(extraText);
+      }
+    }
+    if (newItems.length > 0) {
+      setItems(prev => [...prev, ...newItems]);
+      toast.success(`Perfil "${profile.label}" aplicado — ${newItems.length} itens adicionados`);
+    } else {
+      toast.info(`Todos os itens do perfil "${profile.label}" já estão na prescrição`);
+    }
+    setAppliedCareProfiles(prev => new Set(prev).add(profile.id));
+  };
+
+  const addFreeRecommendation = () => {
+    if (!freeRecommendation.trim()) return;
+    setItems(prev => [...prev, {
+      id: crypto.randomUUID(),
+      name: freeRecommendation.trim(),
+      presentation: '-', dose: '-', route: '-',
+      posology: '-', schedule: '-', instructions: '',
+      category: 'care', flags: [], highAlert: false, status: 'active',
+    }]);
+    setFreeRecommendation("");
+    toast.success("Recomendação adicionada");
   };
 
   const addNonStandard = () => {
@@ -2068,6 +2119,76 @@ const PrescricaoPage = () => {
                       )}
                     </div>
                   </div>
+
+                  {/* Care Profiles Panel — only for 'care' category */}
+                  {cat === 'care' && (
+                    <div className="border-b border-border/50 bg-muted/20 p-3 space-y-3">
+                      {/* Profile buttons */}
+                      <div>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Perfis de Cuidados</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {CARE_PROFILES.map(profile => {
+                            const ProfileIcon = CATEGORY_ICONS[profile.icon] || ClipboardList;
+                            const applied = appliedCareProfiles.has(profile.id);
+                            return (
+                              <Tooltip key={profile.id}>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant={applied ? "default" : "outline"}
+                                    size="sm"
+                                    className={cn(
+                                      "h-7 text-[11px] gap-1.5 transition-all",
+                                      applied && "opacity-70"
+                                    )}
+                                    onClick={() => applyCareProfile(profile)}
+                                  >
+                                    <ProfileIcon className="h-3 w-3" />
+                                    {profile.label}
+                                    {applied && <Check className="h-3 w-3" />}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="text-xs max-w-xs">
+                                  <p className="font-medium">{profile.label}</p>
+                                  <p className="text-muted-foreground">{profile.description}</p>
+                                  <p className="text-muted-foreground mt-1">{profile.items.length + profile.extraItems.length} itens</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Free recommendation input */}
+                      <div>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Recomendação Avulsa</p>
+                        <div className="flex items-start gap-1.5">
+                          <Textarea
+                            value={freeRecommendation}
+                            onChange={(e) => setFreeRecommendation(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                addFreeRecommendation();
+                              }
+                            }}
+                            placeholder="Digitar cuidado ou recomendação personalizada... (Enter para adicionar)"
+                            className="min-h-[36px] h-9 bg-background/60 border-border/50 text-xs resize-none flex-1"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={addFreeRecommendation}
+                            disabled={!freeRecommendation.trim()}
+                            className="h-9 px-3"
+                          >
+                            <Plus className="h-3.5 w-3.5 mr-1" />
+                            <span className="text-xs">Adicionar</span>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Items */}
                   {catItems.length > 0 && (
                     <div className="p-2 space-y-1.5">
