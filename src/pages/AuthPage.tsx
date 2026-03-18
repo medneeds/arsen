@@ -479,10 +479,10 @@ export default function AuthPage() {
                         <ArrowRight className="h-4 w-4 text-white/20 group-hover:text-white/50 transition-all duration-300 group-hover:translate-x-0.5 shrink-0" />
                       </div>
 
-                      <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      <div className="space-y-1 mt-2">
                         {profile.features.map((feat, fi) => (
                           <div key={fi} className="flex items-center gap-1.5">
-                            <div className={cn("h-1 w-1 rounded-full", profile.color.replace("text-", "bg-") + "/50")} />
+                            <div className={cn("h-1 w-1 rounded-full shrink-0", profile.color.replace("text-", "bg-") + "/50")} />
                             <span className="text-[11px] text-slate-400 tracking-wide">{feat}</span>
                           </div>
                         ))}
