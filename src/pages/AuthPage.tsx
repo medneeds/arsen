@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   LogIn, User, Lock, Eye, EyeOff, Building2, ArrowRight, ArrowLeft,
   Activity, Brain, MapPin, Stethoscope, HeartPulse, Shield,
-  BarChart3, Users, ClipboardList, Bed, Pill, ScanLine
+  BarChart3, Users, ClipboardList, Bed, Pill, ScanLine, Scissors, ShieldAlert
 } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { BigHelpLogo } from "@/components/BigHelpLogo";
@@ -37,7 +37,7 @@ const floatingIcons = [
   { Icon: Brain, x: "60%", y: "30%", delay: 3, duration: 5 },
 ];
 
-type AccessProfile = "medico" | "gestor" | "multi" | "administrativo" | "farmacia" | "imagem" | "laboratorio";
+type AccessProfile = "medico" | "gestor" | "multi" | "administrativo" | "farmacia" | "imagem" | "laboratorio" | "centro_cirurgico" | "ccih";
 
 const ACCESS_PROFILES: {
   key: AccessProfile;
@@ -118,6 +118,26 @@ const ACCESS_PROFILES: {
     borderColor: "border-amber-400/30 hover:border-amber-400/60",
     bgGlow: "from-amber-400/15 to-amber-400/5",
     features: ["Recepção de Amostras", "Processamento", "Liberação de Resultados", "Controle de Qualidade"],
+  },
+  {
+    key: "centro_cirurgico",
+    label: "Centro Cirúrgico",
+    subtitle: "Agendamento · Segurança · Mapa",
+    icon: Scissors,
+    color: "text-orange-400",
+    borderColor: "border-orange-400/30 hover:border-orange-400/60",
+    bgGlow: "from-orange-400/15 to-orange-400/5",
+    features: ["Agendamento Cirúrgico", "Checklist de Segurança", "Mapa Cirúrgico", "Pós-Operatório"],
+  },
+  {
+    key: "ccih",
+    label: "CCIH",
+    subtitle: "Controle de Infecção Hospitalar",
+    icon: ShieldAlert,
+    color: "text-red-400",
+    borderColor: "border-red-400/30 hover:border-red-400/60",
+    bgGlow: "from-red-400/15 to-red-400/5",
+    features: ["Vigilância de Infecções", "Culturas e Antibiogramas", "Protocolos de Isolamento", "Indicadores CCIH"],
   },
 ];
 
