@@ -178,7 +178,7 @@ interface PatientHeader {
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
   UtensilsCrossed, Droplets, Pill, Shield, AlertTriangle,
-  Wind, TestTube, ClipboardList, FileText,
+  Wind, TestTube, ClipboardList, FileText, Syringe, Zap,
 };
 
 const TAB_ORDER: PrescriptionCategory[] = [
