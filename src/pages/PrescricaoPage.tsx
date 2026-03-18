@@ -1825,7 +1825,7 @@ const PrescricaoPage = () => {
               const IconComp = CATEGORY_ICONS[config.icon] || Pill;
 
               return (
-                <div key={cat} className="rounded-xl border border-border bg-card overflow-hidden">
+                <div key={cat} className="rounded-xl border border-border bg-card">
                   {/* Category header with inline search */}
                   <div className={cn("flex items-center gap-2 px-3 py-2 border-b border-border/50", config.bgColor)}>
                     <IconComp className={cn("h-3.5 w-3.5 shrink-0", config.color)} />
