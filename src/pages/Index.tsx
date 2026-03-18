@@ -1130,7 +1130,7 @@ const Index = () => {
                           <Users className="h-3.5 w-3.5 text-white" />
                         </div>
                         <div className="flex flex-col justify-center">
-                          <p className="text-[8px] text-white/70 uppercase leading-none tracking-wide font-medium">Total</p>
+                          <p className="text-[8px] text-white/70 leading-none tracking-wide font-medium">Total</p>
                           <p className="text-base font-bold text-white leading-tight">{totalPatients}</p>
                         </div>
                       </div>
