@@ -53,10 +53,10 @@ export default function FluxoPaliativacaoPage() {
                 <Workflow className="h-7 w-7 text-violet-500" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent uppercase">
+                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                   Fluxo de Paliativação
                 </h1>
-                <p className="text-muted-foreground text-lg uppercase mt-1">
+                <p className="text-muted-foreground text-lg mt-1">
                   Instruções sobre Paliativação e Transferência UTI
                 </p>
               </div>

@@ -37,10 +37,10 @@ export default function ControleGlicemicoPage() {
                 <Activity className="h-7 w-7 text-emerald-500" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent uppercase">
+                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                   Protocolo de Controle Glicêmico
                 </h1>
-                <p className="text-muted-foreground text-lg uppercase mt-1">
+                <p className="text-muted-foreground text-lg mt-1">
                   Formulário de controle glicêmico e protocolo de insulina
                 </p>
               </div>

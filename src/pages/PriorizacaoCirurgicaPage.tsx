@@ -107,10 +107,10 @@ export default function PriorizacaoCirurgicaPage() {
                 <Scissors className="h-7 w-7 text-orange-500" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent uppercase">
-                  PRIORIZAÇÃO CIRÚRGICA
+                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  Priorização Cirúrgica
                 </h1>
-                <p className="text-muted-foreground text-lg uppercase mt-1">
+                <p className="text-muted-foreground text-lg mt-1">
                   Priorização Cirúrgica
                 </p>
               </div>

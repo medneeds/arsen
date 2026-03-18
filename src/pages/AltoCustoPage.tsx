@@ -39,10 +39,10 @@ export default function AltoCustoPage() {
       <div className="p-6 md:p-8 space-y-8 max-w-6xl">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-amber-500 to-amber-400 bg-clip-text text-transparent uppercase">
-            ALTO CUSTO
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-amber-500 to-amber-400 bg-clip-text text-transparent">
+            Alto Custo
           </h1>
-          <p className="text-muted-foreground text-lg uppercase">
+          <p className="text-muted-foreground text-lg">
             Solicitações de medicamentos e procedimentos de alto custo
           </p>
           <Badge variant="secondary" className="mt-2">
