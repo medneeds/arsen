@@ -807,28 +807,50 @@ function RenewalDialog({
 
 // --- Print-only Item Row ---
 function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }) {
+  const hasPreparo = item.diluent || item.diluentVolume || item.accessType || item.infusionTime;
   return (
     <tr style={{ pageBreakInside: 'avoid' }}>
-      <td className="border border-black/25 px-1 py-[2px] align-top" style={{ width: '75%' }}>
-        <p className="text-[9px] leading-[1.3]">
-          <span className="font-bold">{index + 1}. {item.name}</span>
-          {item.presentation && item.presentation !== '-' && <span className="font-normal"> ({item.presentation})</span>}
-          {item.dose && item.dose !== '-' && <span> — {item.dose}</span>}
-          {item.route && item.route !== '-' && <span> — {item.route}</span>}
-          {item.posology && item.posology !== '-' && <span> — {item.posology}</span>}
-          {item.schedule && item.schedule !== '-' && <span> — <span className="font-semibold">{item.schedule}</span></span>}
-          {item.flags.length > 0 && (
-            <span className="font-bold text-[8px]"> [{item.flags.join(', ')}]</span>
-          )}
-          {item.status === 'suspended' && <span className="text-red-600 font-bold"> [Suspenso]</span>}
-        </p>
-        {item.instructions && (
-          <p className="text-[8px] italic text-gray-600 ml-2 leading-[1.2]">↳ {item.instructions}</p>
-        )}
+      <td className="border border-black/20 px-1.5 py-[3px] align-top" style={{ width: '75%' }}>
+        <div className="flex items-baseline gap-1 text-[8.5pt] leading-[1.35]">
+          <span className="font-bold text-black shrink-0">{index + 1}.</span>
+          <div>
+            <span className="font-bold text-black">{item.name}</span>
+            {item.presentation && item.presentation !== '-' && (
+              <span className="text-gray-600 font-normal"> ({item.presentation})</span>
+            )}
+            {item.dose && item.dose !== '-' && <span className="text-black"> — {item.dose}</span>}
+            {item.route && item.route !== '-' && <span className="text-black"> — {item.route}</span>}
+            {item.posology && item.posology !== '-' && <span className="text-black"> — {item.posology}</span>}
+            {item.schedule && item.schedule !== '-' && (
+              <span className="font-semibold text-black"> — {item.schedule}</span>
+            )}
+            {item.flags.length > 0 && (
+              <span className="text-[7.5pt] font-bold text-black ml-1">[{item.flags.join(', ')}]</span>
+            )}
+            {item.status === 'suspended' && (
+              <span className="text-[7.5pt] font-bold text-red-700 ml-1">[SUSPENSO]</span>
+            )}
+            {hasPreparo && (
+              <div className="text-[7pt] text-gray-500 italic leading-[1.25] mt-[1px] ml-2">
+                ↳ {[
+                  item.action && item.action !== '-' ? item.action : null,
+                  item.diluent && item.diluent !== '-' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : null,
+                  item.accessType && item.accessType !== '-' ? item.accessType : null,
+                  item.infusionTime && item.infusionTime !== '-' ? `Correr em ${item.infusionTime}min` : null,
+                ].filter(Boolean).join(' · ')}
+              </div>
+            )}
+            {item.instructions && !hasPreparo && (
+              <div className="text-[7pt] text-gray-500 italic leading-[1.25] mt-[1px] ml-2">
+                ↳ {item.instructions}
+              </div>
+            )}
+          </div>
+        </div>
       </td>
       {[0,1,2,3,4,5].map(i => (
-        <td key={i} className="border border-black/25 text-center align-middle" style={{ width: '4.16%', minWidth: '24px' }}>
-          <div className="h-[18px]" />
+        <td key={i} className="border border-black/20 text-center align-middle" style={{ width: '4.16%', minWidth: '22px' }}>
+          <div className="h-[16px]" />
         </td>
       ))}
     </tr>
@@ -838,12 +860,13 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
 function PrintSimpleRow({ item, index }: { item: PrescriptionItem; index: number }) {
   return (
     <tr style={{ pageBreakInside: 'avoid' }}>
-      <td className="border border-black/25 px-1 py-[2px] align-top" colSpan={7}>
-        <p className="text-[9px] leading-[1.3]">
-          <span className="font-bold">{index + 1}.</span> {item.name}
-          {item.dose && item.dose !== '-' ? ` — ${item.dose}` : ''}
-          {item.posology && item.posology !== '-' ? ` — ${item.posology}` : ''}
-        </p>
+      <td className="border border-black/20 px-1.5 py-[2px] align-top" colSpan={7}>
+        <div className="text-[8.5pt] leading-[1.35]">
+          <span className="font-bold text-black">{index + 1}.</span>{' '}
+          <span className="text-black">{item.name}</span>
+          {item.dose && item.dose !== '-' ? <span className="text-black"> — {item.dose}</span> : ''}
+          {item.posology && item.posology !== '-' ? <span className="text-black"> — {item.posology}</span> : ''}
+        </div>
       </td>
     </tr>
   );
