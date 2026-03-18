@@ -1392,7 +1392,7 @@ export function UtiPatientCard({
                   <InlineEditableArray
                     items={dispositivos}
                     onUpdate={(items) => handleUpdateField("utiDevices", items)}
-                    label="DISPOSITIVOS"
+                    label="Dispositivos"
                     colorClass="bg-red-50/50 dark:bg-red-900/10 border border-red-200/30 dark:border-red-800/20"
                     alwaysShowAll
                   />
