@@ -294,6 +294,7 @@ const RequisicaoUnificadaPage = () => {
   };
 
   const resetForm = () => {
+    setFormPatientId(null);
     setFormPatientName("");
     setFormPatientBed("");
     setFormPatientSector("");
