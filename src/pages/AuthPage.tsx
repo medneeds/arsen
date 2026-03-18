@@ -109,6 +109,16 @@ const ACCESS_PROFILES: {
     bgGlow: "from-rose-400/15 to-rose-400/5",
     features: ["Recepção de Requisições", "Execução de Exames", "Laudos e Resultados", "Fila de Prioridade"],
   },
+  {
+    key: "laboratorio",
+    label: "Setor Laboratorial",
+    subtitle: "Análises · Coletas · Resultados",
+    icon: ScanLine,
+    color: "text-amber-400",
+    borderColor: "border-amber-400/30 hover:border-amber-400/60",
+    bgGlow: "from-amber-400/15 to-amber-400/5",
+    features: ["Recepção de Amostras", "Processamento", "Liberação de Resultados", "Controle de Qualidade"],
+  },
 ];
 
 export default function AuthPage() {
