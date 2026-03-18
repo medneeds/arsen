@@ -243,6 +243,7 @@ export default function Saps3Page() {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const hospitalId = currentHospital?.id;
   const stateId = currentState?.id;
 
