@@ -1295,29 +1295,29 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
     
     // Map sector to display name
     const sectorDisplayName = {
-      'red': 'SALA DE CUIDADOS ESPECIAIS',
-      'yellow': 'OBSERVAÇÃO AMARELA',
-      'blue': 'OBSERVAÇÃO AZUL',
-      'Sala de Cuidados Especiais': 'SALA DE CUIDADOS ESPECIAIS',
-      'Observação Amarela': 'OBSERVAÇÃO AMARELA',
-      'Observação Azul': 'OBSERVAÇÃO AZUL',
-    }[requestedSector] || requestedSector.toUpperCase();
+      'red': 'Sala de Cuidados Especiais',
+      'yellow': 'Observação Amarela',
+      'blue': 'Observação Azul',
+      'Sala de Cuidados Especiais': 'Sala de Cuidados Especiais',
+      'Observação Amarela': 'Observação Amarela',
+      'Observação Azul': 'Observação Azul',
+    }[requestedSector] || requestedSector;
     
     const statusConfigs = {
       pending: {
-        label: "AGUARDANDO",
+        label: "Aguardando",
         statusClass: "status-pending",
         iconClass: "icon-pending",
         icon: Clock,
       },
       discussing: {
-        label: "EM DISCUSSÃO",
+        label: "Em discussão",
         statusClass: "status-discussing",
         iconClass: "icon-discussing",
         icon: MessageSquare,
       },
       rejected: {
-        label: "NEGADO",
+        label: "Negado",
         statusClass: "status-rejected",
         iconClass: "icon-rejected",
         icon: XCircle,
