@@ -1838,7 +1838,7 @@ const PrescricaoPage = () => {
                   <div className={cn("p-1.5 rounded-md", config.bgColor, config.color)}>
                     {(() => { const I = CATEGORY_ICONS[config.icon] || Pill; return <I className="h-4 w-4" />; })()}
                   </div>
-                  <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">{config.label}</h3>
+                  <h3 className="text-sm font-semibold text-foreground tracking-wide">{config.label}</h3>
                   {catItems.length > 0 && <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{catItems.length}</Badge>}
                 </div>
 
