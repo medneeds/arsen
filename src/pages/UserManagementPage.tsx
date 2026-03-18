@@ -533,7 +533,7 @@ export default function UserManagementPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Mail className="h-3 w-3" /> Email/Login
                     </p>
                     <p className="text-sm font-mono">{selectedUser.email?.replace("@sistema.local", "") || "—"}</p>
