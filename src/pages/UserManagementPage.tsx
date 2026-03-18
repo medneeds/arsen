@@ -557,7 +557,7 @@ export default function UserManagementPage() {
                     <p className="text-sm">{selectedUser.phone || "—"}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Calendar className="h-3 w-3" /> Data de Cadastro
                     </p>
                     <p className="text-sm">
