@@ -74,6 +74,16 @@ const App = () => {
             }
           />
           <Route
+            path="/painel-clinico"
+            element={
+              <ProtectedRoute>
+                <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                  <PainelClinicoPage />
+                </MainLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/resources"
             element={
               <ProtectedRoute>
