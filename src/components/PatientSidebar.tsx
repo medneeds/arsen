@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   X, BedDouble, Calendar, Clock, Activity, FileText, Stethoscope,
-  AlertTriangle, ClipboardList, Pill, TrendingUp, Heart, User
+  AlertTriangle, ClipboardList, Pill, TrendingUp, Heart, User, TestTubes
 } from "lucide-react";
 import { differenceInDays, differenceInHours, parseISO, isValid } from "date-fns";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
@@ -206,6 +206,25 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
           >
             <Pill className="h-3.5 w-3.5 mr-1.5" />
             Prescrição
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 text-xs"
+            onClick={() => {
+              navigate('/requisicoes', { 
+                state: { 
+                  patientId: patient.id, 
+                  patientName: patient.name, 
+                  patientBed: patient.bedNumber, 
+                  patientSector: patient.sector 
+                } 
+              });
+              onOpenChange(false);
+            }}
+          >
+            <TestTubes className="h-3.5 w-3.5 mr-1.5" />
+            Exames
           </Button>
         </div>
       </SheetContent>

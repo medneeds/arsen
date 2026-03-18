@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -165,6 +166,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 const RequisicaoUnificadaPage = () => {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const unitId = currentHospital?.id;
   const stateId = currentState?.id;
 
@@ -176,6 +179,7 @@ const RequisicaoUnificadaPage = () => {
 
   // ── New request form ──
   const [showNewRequest, setShowNewRequest] = useState(false);
+  const [formPatientId, setFormPatientId] = useState<string | null>(null);
   const [formPatientName, setFormPatientName] = useState("");
   const [formPatientBed, setFormPatientBed] = useState("");
   const [formPatientSector, setFormPatientSector] = useState("");
@@ -191,6 +195,20 @@ const RequisicaoUnificadaPage = () => {
   const [viewingRequest, setViewingRequest] = useState<any | null>(null);
   const [resultText, setResultText] = useState("");
   const [savingResult, setSavingResult] = useState(false);
+
+  // ── Pre-fill from navigation state or URL params ──
+  useEffect(() => {
+    const state = location.state as any;
+    const patientId = state?.patientId || searchParams.get("patientId");
+    const patientName = state?.patientName || searchParams.get("patientName");
+    const patientBed = state?.patientBed || searchParams.get("patientBed");
+    const patientSector = state?.patientSector || searchParams.get("patientSector");
+    if (patientId) setFormPatientId(patientId);
+    if (patientName) setFormPatientName(patientName);
+    if (patientBed) setFormPatientBed(patientBed);
+    if (patientSector) setFormPatientSector(patientSector);
+    if (patientId || patientName) setActiveSubTab("solicitar");
+  }, []);
 
   useEffect(() => {
     if (unitId && stateId) fetchRequests();
@@ -276,6 +294,7 @@ const RequisicaoUnificadaPage = () => {
   };
 
   const resetForm = () => {
+    setFormPatientId(null);
     setFormPatientName("");
     setFormPatientBed("");
     setFormPatientSector("");
@@ -296,6 +315,7 @@ const RequisicaoUnificadaPage = () => {
     try {
       const { error } = await supabase.from("exam_requests").insert({
         category: activeCategory,
+        patient_id: formPatientId || null,
         patient_name: formPatientName.trim(),
         patient_bed: formPatientBed.trim() || null,
         patient_sector: formPatientSector.trim() || null,
@@ -443,22 +463,29 @@ const RequisicaoUnificadaPage = () => {
         {/* ════════════════════════════════════════════ */}
         <TabsContent value="solicitar" className="mt-4 space-y-4">
           {/* Patient info */}
-          <Card className="border-border/50">
+          <Card className={cn("border-border/50", formPatientId && "border-primary/30 bg-primary/5")}>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Dados do Paciente</CardTitle>
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                Dados do Paciente
+                {formPatientId && (
+                  <Badge variant="outline" className="text-[10px] border-primary/30 text-primary bg-primary/10">
+                    Vinculado ao mapa
+                  </Badge>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Nome do Paciente *</Label>
-                <Input placeholder="Nome completo" value={formPatientName} onChange={e => setFormPatientName(e.target.value)} />
+                <Input placeholder="Nome completo" value={formPatientName} onChange={e => setFormPatientName(e.target.value)} readOnly={!!formPatientId} className={formPatientId ? "bg-muted/50" : ""} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Leito</Label>
-                <Input placeholder="Ex: 01" value={formPatientBed} onChange={e => setFormPatientBed(e.target.value)} />
+                <Input placeholder="Ex: 01" value={formPatientBed} onChange={e => setFormPatientBed(e.target.value)} readOnly={!!formPatientId} className={formPatientId ? "bg-muted/50" : ""} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Setor</Label>
-                <Input placeholder="Ex: UTI 1" value={formPatientSector} onChange={e => setFormPatientSector(e.target.value)} />
+                <Input placeholder="Ex: UTI 1" value={formPatientSector} onChange={e => setFormPatientSector(e.target.value)} readOnly={!!formPatientId} className={formPatientId ? "bg-muted/50" : ""} />
               </div>
             </CardContent>
           </Card>
