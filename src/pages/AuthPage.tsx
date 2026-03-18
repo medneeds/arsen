@@ -436,7 +436,7 @@ export default function AuthPage() {
                     key={profile.key}
                     onClick={() => handleSelectProfile(profile.key)}
                     className={cn(
-                      "group relative text-left p-4 rounded-xl border backdrop-blur-xl transition-all duration-300",
+                      "group relative text-left p-5 rounded-2xl border backdrop-blur-xl transition-all duration-300",
                       "bg-white/[0.04] hover:bg-white/[0.08]",
                       profile.borderColor
                     )}
@@ -448,14 +448,14 @@ export default function AuthPage() {
                   >
                     {/* Glow background */}
                     <div className={cn(
-                      "absolute inset-0 rounded-xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+                      "absolute inset-0 rounded-2xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500",
                       profile.bgGlow
                     )} />
 
                     <div className="relative z-10">
-                      <div className="flex items-center gap-3 mb-2">
+                      <div className="flex items-center gap-3 mb-3">
                         <div className={cn(
-                          "flex items-center justify-center h-9 w-9 rounded-lg border transition-colors duration-300 shrink-0",
+                          "flex items-center justify-center h-11 w-11 rounded-xl border transition-colors duration-300 shrink-0",
                           profile.key === "medico" && "bg-[#2dd4bf]/10 border-[#2dd4bf]/20",
                           profile.key === "gestor" && "bg-amber-400/10 border-amber-400/20",
                           profile.key === "multi" && "bg-violet-400/10 border-violet-400/20",
@@ -466,24 +466,24 @@ export default function AuthPage() {
                           profile.key === "centro_cirurgico" && "bg-orange-400/10 border-orange-400/20",
                           profile.key === "ccih" && "bg-red-400/10 border-red-400/20",
                         )}>
-                          <profile.icon className={cn("h-4 w-4", profile.color)} />
+                          <profile.icon className={cn("h-5 w-5", profile.color)} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-white font-bold text-xs uppercase tracking-wide leading-tight">
+                          <h3 className="text-white font-bold text-sm uppercase tracking-wide leading-tight">
                             {profile.label}
                           </h3>
-                          <p className="text-[9px] font-medium tracking-wider uppercase text-white/60 leading-tight mt-0.5">
+                          <p className="text-[11px] font-medium tracking-wider uppercase text-white/60 leading-tight mt-0.5">
                             {profile.subtitle}
                           </p>
                         </div>
-                        <ArrowRight className="h-3.5 w-3.5 text-white/20 group-hover:text-white/50 transition-all duration-300 group-hover:translate-x-0.5 shrink-0" />
+                        <ArrowRight className="h-4 w-4 text-white/20 group-hover:text-white/50 transition-all duration-300 group-hover:translate-x-0.5 shrink-0" />
                       </div>
 
-                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
                         {profile.features.map((feat, fi) => (
                           <div key={fi} className="flex items-center gap-1.5">
                             <div className={cn("h-1 w-1 rounded-full", profile.color.replace("text-", "bg-") + "/50")} />
-                            <span className="text-[9px] text-slate-400 tracking-wide">{feat}</span>
+                            <span className="text-[11px] text-slate-400 tracking-wide">{feat}</span>
                           </div>
                         ))}
                       </div>
