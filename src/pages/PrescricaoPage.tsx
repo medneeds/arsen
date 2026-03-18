@@ -2119,6 +2119,76 @@ const PrescricaoPage = () => {
                       )}
                     </div>
                   </div>
+
+                  {/* Care Profiles Panel — only for 'care' category */}
+                  {cat === 'care' && (
+                    <div className="border-b border-border/50 bg-muted/20 p-3 space-y-3">
+                      {/* Profile buttons */}
+                      <div>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Perfis de Cuidados</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {CARE_PROFILES.map(profile => {
+                            const ProfileIcon = CATEGORY_ICONS[profile.icon] || ClipboardList;
+                            const applied = appliedCareProfiles.has(profile.id);
+                            return (
+                              <Tooltip key={profile.id}>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant={applied ? "default" : "outline"}
+                                    size="sm"
+                                    className={cn(
+                                      "h-7 text-[11px] gap-1.5 transition-all",
+                                      applied && "opacity-70"
+                                    )}
+                                    onClick={() => applyCareProfile(profile)}
+                                  >
+                                    <ProfileIcon className="h-3 w-3" />
+                                    {profile.label}
+                                    {applied && <Check className="h-3 w-3" />}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="text-xs max-w-xs">
+                                  <p className="font-medium">{profile.label}</p>
+                                  <p className="text-muted-foreground">{profile.description}</p>
+                                  <p className="text-muted-foreground mt-1">{profile.items.length + profile.extraItems.length} itens</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Free recommendation input */}
+                      <div>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Recomendação Avulsa</p>
+                        <div className="flex items-start gap-1.5">
+                          <Textarea
+                            value={freeRecommendation}
+                            onChange={(e) => setFreeRecommendation(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                addFreeRecommendation();
+                              }
+                            }}
+                            placeholder="Digitar cuidado ou recomendação personalizada... (Enter para adicionar)"
+                            className="min-h-[36px] h-9 bg-background/60 border-border/50 text-xs resize-none flex-1"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={addFreeRecommendation}
+                            disabled={!freeRecommendation.trim()}
+                            className="h-9 px-3"
+                          >
+                            <Plus className="h-3.5 w-3.5 mr-1" />
+                            <span className="text-xs">Adicionar</span>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Items */}
                   {catItems.length > 0 && (
                     <div className="p-2 space-y-1.5">
