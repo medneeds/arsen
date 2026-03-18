@@ -479,7 +479,7 @@ function InlineEditableArray({
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-1.5">
             {icon}
-            <span className="text-[10px] font-semibold text-muted-foreground tracking-wide uppercase">{label}</span>
+            <span className="text-[10px] font-semibold text-muted-foreground tracking-wide">{label}</span>
             {items.length > 0 && (
               <Badge variant="secondary" className="h-3.5 px-1 text-[9px] font-medium">{items.length}</Badge>
             )}
