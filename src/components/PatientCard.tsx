@@ -4084,7 +4084,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
@@ -4097,7 +4097,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                                 cancelEditing();
                               }
                             }}
-                            className="text-base uppercase font-medium bg-background/50 border-primary/50 resize-none"
+                            className="text-base font-medium bg-background/50 border-primary/50 resize-none"
                           />
                           <Button
                             size="icon"
