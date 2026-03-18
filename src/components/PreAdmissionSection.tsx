@@ -54,6 +54,7 @@ export function PreAdmissionSection() {
   const [isOpen, setIsOpen] = useState(true);
   const [showRegistration, setShowRegistration] = useState(false);
   const [classifyTarget, setClassifyTarget] = useState<PreAdmission | null>(null);
+  const [admitTarget, setAdmitTarget] = useState<PreAdmission | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PreAdmission | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { currentHospital, currentState } = useHospital();
