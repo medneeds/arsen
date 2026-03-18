@@ -94,6 +94,37 @@ interface PrescriptionItem {
   status: 'active' | 'suspended';
   suspensionReason?: string;
   suspendedAt?: string;
+  // IV infusion fields
+  infusionMode?: 'BIC' | 'gts';
+  infusionTime?: string; // in minutes
+  volumeTotal?: string; // in mL
+}
+
+// Calculate infusion rate
+function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts'): string {
+  const volume = parseFloat(volumeStr);
+  const time = parseFloat(timeStr);
+  if (!volume || !time || time <= 0) return '';
+  if (mode === 'BIC') {
+    const mlPerHour = (volume / time) * 60;
+    return `${mlPerHour.toFixed(1)} mL/h`;
+  } else {
+    const gtsPerMin = (volume * 20) / (time); // 1mL = 20 gts (equipo padrão)
+    return `${gtsPerMin.toFixed(1)} gts/min`;
+  }
+}
+
+function isIVRoute(route: string): boolean {
+  return ['Intravenosa'].includes(route);
+}
+
+function posologyToIntervals(posology: string): number {
+  const map: Record<string, number> = {
+    '1x/dia': 1, '2x/dia': 2, '3x/dia': 3, '4x/dia': 4,
+    '6/6h': 4, '8/8h': 3, '12/12h': 2, '24/24h': 1,
+    '4/4h': 6, '2/2h': 12, 'Contínuo': 1, 'Dose única': 1,
+  };
+  return map[posology] || 1;
 }
 
 interface PatientHeader {
