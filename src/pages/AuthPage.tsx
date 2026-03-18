@@ -408,74 +408,78 @@ export default function AuthPage() {
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full blur-[150px] bg-[#2dd4bf]/[0.04]" />
             </div>
 
-            <div className="relative z-10 w-full max-w-3xl mx-auto px-4 sm:px-6">
+            <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6">
               {/* Header */}
               <motion.div
-                className="text-center mb-8"
+                className="text-center mb-6"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
                 <BigHelpLogo size="md" glow />
-                <h2 className="text-xl sm:text-2xl text-white font-bold tracking-tight mt-4">
+                <h2 className="text-xl sm:text-2xl text-white font-bold tracking-tight mt-3">
                   Selecione o Tipo de Acesso
                 </h2>
-                <p className="text-slate-400 text-xs mt-2 tracking-wide uppercase">
+                <p className="text-slate-400 text-xs mt-1.5 tracking-wide uppercase">
                   Hospital Mun. Djalma Marques — Socorrão I
                 </p>
               </motion.div>
 
-              {/* Access Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              {/* Access Cards Grid — 3 columns on md+ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-5">
                 {ACCESS_PROFILES.map((profile, i) => (
                   <motion.button
                     key={profile.key}
                     onClick={() => handleSelectProfile(profile.key)}
                     className={cn(
-                      "group relative text-left p-5 rounded-2xl border backdrop-blur-xl transition-all duration-300",
+                      "group relative text-left p-4 rounded-xl border backdrop-blur-xl transition-all duration-300",
                       "bg-white/[0.04] hover:bg-white/[0.08]",
                       profile.borderColor
                     )}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.15 * i }}
+                    transition={{ duration: 0.35, delay: 0.08 * i }}
                     whileHover={{ scale: 1.02, y: -2 }}
                     whileTap={{ scale: 0.98 }}
                   >
                     {/* Glow background */}
                     <div className={cn(
-                      "absolute inset-0 rounded-2xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500",
+                      "absolute inset-0 rounded-xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500",
                       profile.bgGlow
                     )} />
 
                     <div className="relative z-10">
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3 mb-2">
                         <div className={cn(
-                          "flex items-center justify-center h-10 w-10 rounded-xl border transition-colors duration-300",
+                          "flex items-center justify-center h-9 w-9 rounded-lg border transition-colors duration-300 shrink-0",
                           profile.key === "medico" && "bg-[#2dd4bf]/10 border-[#2dd4bf]/20",
                           profile.key === "gestor" && "bg-amber-400/10 border-amber-400/20",
                           profile.key === "multi" && "bg-violet-400/10 border-violet-400/20",
                           profile.key === "administrativo" && "bg-sky-400/10 border-sky-400/20",
                           profile.key === "farmacia" && "bg-emerald-400/10 border-emerald-400/20",
                           profile.key === "imagem" && "bg-rose-400/10 border-rose-400/20",
+                          profile.key === "laboratorio" && "bg-amber-400/10 border-amber-400/20",
+                          profile.key === "centro_cirurgico" && "bg-orange-400/10 border-orange-400/20",
+                          profile.key === "ccih" && "bg-red-400/10 border-red-400/20",
                         )}>
-                          <profile.icon className={cn("h-5 w-5", profile.color)} />
+                          <profile.icon className={cn("h-4 w-4", profile.color)} />
                         </div>
-                        <ArrowRight className="h-4 w-4 text-white/20 group-hover:text-white/50 transition-all duration-300 group-hover:translate-x-1" />
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-white font-bold text-xs uppercase tracking-wide leading-tight">
+                            {profile.label}
+                          </h3>
+                          <p className="text-[9px] font-medium tracking-wider uppercase text-white/60 leading-tight mt-0.5">
+                            {profile.subtitle}
+                          </p>
+                        </div>
+                        <ArrowRight className="h-3.5 w-3.5 text-white/20 group-hover:text-white/50 transition-all duration-300 group-hover:translate-x-0.5 shrink-0" />
                       </div>
 
-                      <h3 className="text-white font-bold text-sm uppercase tracking-wide mb-0.5">
-                        {profile.label}
-                      </h3>
-                      <p className="text-[10px] font-medium tracking-wider uppercase mb-3 text-white/60">
-                        {profile.subtitle}
-                      </p>
-
-                      <div className="space-y-1">
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
                         {profile.features.map((feat, fi) => (
-                          <div key={fi} className="flex items-center gap-2">
+                          <div key={fi} className="flex items-center gap-1.5">
                             <div className={cn("h-1 w-1 rounded-full", profile.color.replace("text-", "bg-") + "/50")} />
-                            <span className="text-[10px] text-slate-400 tracking-wide">{feat}</span>
+                            <span className="text-[9px] text-slate-400 tracking-wide">{feat}</span>
                           </div>
                         ))}
                       </div>
@@ -489,7 +493,7 @@ export default function AuthPage() {
                 className="text-center"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
+                transition={{ delay: 0.5 }}
               >
                 <button
                   onClick={() => setScreen("splash")}
