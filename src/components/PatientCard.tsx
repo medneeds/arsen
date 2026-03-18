@@ -2768,7 +2768,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                                     const target = e.target as HTMLTextAreaElement;
                                     const start = target.selectionStart;
                                     const end = target.selectionEnd;
-                                    setEditValue(e.target.value.toUpperCase());
+                                    setEditValue(e.target.value);
                                     requestAnimationFrame(() => {
                                       target.setSelectionRange(start, end);
                                     });
