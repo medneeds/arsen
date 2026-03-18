@@ -1354,7 +1354,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
             {allocationStatusBarConfig.icon === Clock && <Clock className={cn("h-3.5 w-3.5 relative z-10", allocationStatusBarConfig.iconClass)} />}
             {allocationStatusBarConfig.icon === MessageSquare && <MessageSquare className={cn("h-3.5 w-3.5 relative z-10", allocationStatusBarConfig.iconClass)} />}
             {allocationStatusBarConfig.icon === XCircle && <XCircle className={cn("h-3.5 w-3.5 relative z-10", allocationStatusBarConfig.iconClass)} />}
-            <span className={cn("text-xs font-semibold relative z-10 uppercase", allocationStatusBarConfig.statusClass)}>
+            <span className={cn("text-xs font-semibold relative z-10", allocationStatusBarConfig.statusClass)}>
               {allocationStatusBarConfig.label}
             </span>
             
