@@ -539,7 +539,7 @@ export default function UserManagementPage() {
                     <p className="text-sm font-mono">{selectedUser.email?.replace("@sistema.local", "") || "—"}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Stethoscope className="h-3 w-3" /> CRM
                     </p>
                     <p className="text-sm font-mono">{selectedUser.crm || "—"}</p>
