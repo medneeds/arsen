@@ -626,48 +626,127 @@ export default function PainelClinicoPage() {
 
                   {/* PRESCRIÇÃO */}
                   <TabsContent value="prescricao" className="p-4 mt-0">
-                    <div className="space-y-3">
-                      <p className="text-sm text-muted-foreground">
-                        Acesse o módulo de prescrição com os dados deste paciente pré-preenchidos.
-                      </p>
+                    <div className="space-y-4">
+                      {(() => {
+                        const mockPresc = MOCK_PRESCRIPTIONS[selectedPatient.id];
+                        if (!mockPresc) return (
+                          <p className="text-sm text-muted-foreground italic">Nenhuma prescrição registrada para este paciente.</p>
+                        );
+                        return mockPresc.map((cat, ci) => (
+                          <div key={ci} className="space-y-2">
+                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{cat.category}</h4>
+                            <div className="space-y-1.5">
+                              {cat.items.map((item, ii) => (
+                                <div key={ii} className="bg-muted/40 border border-border/30 rounded-lg px-3 py-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-foreground">{item.name}</span>
+                                    <div className="flex gap-1.5">
+                                      <Badge variant="outline" className="text-[10px]">{item.route}</Badge>
+                                      <Badge variant="secondary" className="text-[10px]">{item.frequency}</Badge>
+                                    </div>
+                                  </div>
+                                  {item.notes && (
+                                    <p className="text-xs text-muted-foreground italic mt-1">{item.notes}</p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            {ci < mockPresc.length - 1 && <Separator />}
+                          </div>
+                        ));
+                      })()}
+                      <Separator />
                       <Button
+                        variant="outline"
                         className="w-full"
                         onClick={() => navigate(`/prescricao?patientId=${selectedPatient.id}&patientName=${encodeURIComponent(selectedPatient.name)}&patientBed=${encodeURIComponent(selectedPatient.bedNumber)}&patientSector=${encodeURIComponent(selectedPatient.sector)}`)}
                       >
                         <Pill className="h-4 w-4 mr-2" />
-                        Abrir Prescrição
+                        Abrir módulo completo
                       </Button>
                     </div>
                   </TabsContent>
 
                   {/* EVOLUÇÃO */}
                   <TabsContent value="evolucao" className="p-4 mt-0">
-                    <div className="space-y-3">
-                      <p className="text-sm text-muted-foreground">
-                        Acesse o módulo de evolução clínica com os dados deste paciente pré-preenchidos.
-                      </p>
+                    <div className="space-y-4">
+                      {(() => {
+                        const mockEvol = MOCK_EVOLUTIONS[selectedPatient.id];
+                        if (!mockEvol) return (
+                          <p className="text-sm text-muted-foreground italic">Nenhuma evolução registrada para este paciente.</p>
+                        );
+                        return mockEvol.map((evol, ei) => (
+                          <div key={ei} className="bg-muted/40 border border-border/30 rounded-lg p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Badge variant="outline" className="text-[10px]">{evol.type}</Badge>
+                              <span className="text-[10px] text-muted-foreground">{evol.date}</span>
+                            </div>
+                            <p className="text-xs font-medium text-primary">{evol.author}</p>
+                            <p className="text-sm text-foreground leading-relaxed">{evol.content}</p>
+                          </div>
+                        ));
+                      })()}
+                      <Separator />
                       <Button
+                        variant="outline"
                         className="w-full"
                         onClick={() => navigate(`/evolucao?patientId=${selectedPatient.id}&patientName=${encodeURIComponent(selectedPatient.name)}&patientBed=${encodeURIComponent(selectedPatient.bedNumber)}&patientSector=${encodeURIComponent(selectedPatient.sector)}`)}
                       >
                         <FileText className="h-4 w-4 mr-2" />
-                        Abrir Evolução
+                        Abrir módulo completo
                       </Button>
                     </div>
                   </TabsContent>
 
                   {/* REQUISIÇÕES */}
                   <TabsContent value="requisicoes" className="p-4 mt-0">
-                    <div className="space-y-3">
-                      <p className="text-sm text-muted-foreground">
-                        Solicite exames laboratoriais, de imagem ou pareceres médicos vinculados a este paciente.
-                      </p>
+                    <div className="space-y-4">
+                      {(() => {
+                        const mockReqs = MOCK_REQUISITIONS[selectedPatient.id];
+                        if (!mockReqs) return (
+                          <p className="text-sm text-muted-foreground italic">Nenhuma requisição registrada para este paciente.</p>
+                        );
+                        return mockReqs.map((req, ri) => {
+                          const statusColors: Record<string, string> = {
+                            "Resultado disponível": "bg-green-500/10 text-green-700 dark:text-green-400 border-green-200",
+                            "Solicitado": "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200",
+                            "Em processamento": "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200",
+                            "Aguardando": "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-200",
+                            "Respondido": "bg-green-500/10 text-green-700 dark:text-green-400 border-green-200",
+                          };
+                          return (
+                            <div key={ri} className="bg-muted/40 border border-border/30 rounded-lg p-3 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-[10px]">{req.category}</Badge>
+                                  <Badge variant="outline" className={cn("text-[10px]", statusColors[req.status] || "")}>{req.status}</Badge>
+                                </div>
+                                <span className="text-[10px] text-muted-foreground">{req.date}</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">Solicitado por: {req.requestedBy}</p>
+                              <ul className="list-disc list-inside space-y-0.5">
+                                {req.items.map((item, ii) => (
+                                  <li key={ii} className="text-sm text-foreground">{item}</li>
+                                ))}
+                              </ul>
+                              {req.results && (
+                                <div className="bg-background/50 rounded p-2 mt-1">
+                                  <p className="text-xs font-medium text-muted-foreground mb-0.5">Resultado:</p>
+                                  <p className="text-sm text-foreground">{req.results}</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        });
+                      })()}
+                      <Separator />
                       <Button
+                        variant="outline"
                         className="w-full"
                         onClick={() => navigate(`/requisicoes?patientId=${selectedPatient.id}&patientName=${encodeURIComponent(selectedPatient.name)}&patientBed=${encodeURIComponent(selectedPatient.bedNumber)}&patientSector=${encodeURIComponent(selectedPatient.sector)}`)}
                       >
                         <ClipboardList className="h-4 w-4 mr-2" />
-                        Abrir Requisições
+                        Abrir módulo completo
                       </Button>
                     </div>
                   </TabsContent>
