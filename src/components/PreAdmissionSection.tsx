@@ -200,8 +200,6 @@ export function PreAdmissionSection() {
                             <BedDouble className="h-3 w-3" />
                             Admitir em Leito
                           </Button>
-                            Admitir em Leito
-                          </Button>
                         )}
                         <Button
                           size="sm"
