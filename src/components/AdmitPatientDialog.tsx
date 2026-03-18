@@ -390,7 +390,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             <BedDouble className="h-4 w-4" /> Alocação
           </p>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className={cn("gap-3", isUtiAdmission ? "grid grid-cols-1" : "grid grid-cols-2")}>
             <div className="space-y-1.5">
               <Label className="text-xs">Setor</Label>
               <Select value={selectedSector} onValueChange={(v) => { setSelectedSector(v); setSelectedBed(""); }}>
@@ -405,30 +405,40 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
               </Select>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs">Leito</Label>
-              <Select value={selectedBed} onValueChange={setSelectedBed} disabled={!selectedSector}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar leito" /></SelectTrigger>
-                <SelectContent>
-                  {availableBeds.map(bed => {
-                    const isOccupied = occupiedBeds.includes(bed);
-                    if (bed === "EXTRA") {
+            {!isUtiAdmission && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Leito</Label>
+                <Select value={selectedBed} onValueChange={setSelectedBed} disabled={!selectedSector}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar leito" /></SelectTrigger>
+                  <SelectContent>
+                    {availableBeds.map(bed => {
+                      const isOccupied = occupiedBeds.includes(bed);
+                      if (bed === "EXTRA") {
+                        return (
+                          <SelectItem key="EXTRA" value="EXTRA">
+                            ➕ Leito Extra
+                          </SelectItem>
+                        );
+                      }
                       return (
-                        <SelectItem key="EXTRA" value="EXTRA">
-                          ➕ Leito Extra
+                        <SelectItem key={bed} value={bed} disabled={isOccupied}>
+                          {bed} {isOccupied ? "(Ocupado)" : "✓"}
                         </SelectItem>
                       );
-                    }
-                    return (
-                      <SelectItem key={bed} value={bed} disabled={isOccupied}>
-                        {bed} {isOccupied ? "(Ocupado)" : "✓"}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
+
+          {isUtiAdmission && (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="p-3 text-xs text-muted-foreground">
+                Para admissão em UTI, o leito só será definido após o preenchimento completo do SAPS 3.
+              </CardContent>
+            </Card>
+          )}
 
           <div className="space-y-1.5">
             <Label className="text-xs">Observações da admissão (opcional)</Label>
@@ -447,11 +457,11 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           </Button>
           <Button
             onClick={handleAdmit}
-            disabled={!selectedSector || !selectedBed || isSubmitting}
+            disabled={!selectedSector || (!isUtiAdmission && !selectedBed) || isSubmitting}
             className="gap-1"
           >
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <BedDouble className="h-4 w-4" />}
-            Confirmar Admissão
+            {isUtiAdmission ? "Continuar para SAPS 3" : "Confirmar Admissão"}
           </Button>
         </DialogFooter>
       </DialogContent>

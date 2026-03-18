@@ -179,23 +179,26 @@ export function BedAllocationNotifications() {
 
   const handleApprove = async (request: BedAllocationRequest) => {
     const isUti = isUtiSector(request.requested_sector) || request.department === "UTI";
-    
+
+    if (isUti && request.patient) {
+      const params = new URLSearchParams({
+        fromAllocation: "true",
+        allocationRequestId: request.id,
+        patientId: request.patient.id,
+        patientName: request.patient.name || "",
+        patientAge: String(request.patient.age ?? ""),
+        destinationSector: request.requested_sector || "",
+      });
+
+      setSelectedRequest(null);
+      navigate(`/saps3?${params.toString()}`);
+      return;
+    }
+
     const success = await approveRequest(request.id);
     if (success) {
       setSelectedRequest(null);
       await refetch();
-      
-      // If UTI allocation, redirect to SAPS 3 with patient data
-      if (isUti && request.patient) {
-        navigate("/saps3", {
-          state: {
-            patientId: request.patient.id,
-            patientName: request.patient.name,
-            patientAge: request.patient.age,
-            fromAllocation: true,
-          }
-        });
-      }
     }
   };
 

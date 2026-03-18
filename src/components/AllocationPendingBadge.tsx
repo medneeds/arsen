@@ -243,12 +243,12 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
                 {isApproving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Aprovando...
+                    {isUtiAllocation() ? "Abrindo SAPS 3..." : "Aprovando..."}
                   </>
                 ) : (
                   <>
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Aprovar Alocação
+                    {isUtiAllocation() ? "Abrir SAPS 3" : "Aprovar Alocação"}
                   </>
                 )}
               </Button>
