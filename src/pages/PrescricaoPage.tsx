@@ -94,10 +94,16 @@ interface PrescriptionItem {
   status: 'active' | 'suspended';
   suspensionReason?: string;
   suspendedAt?: string;
-  // IV infusion fields
-  infusionMode?: 'BIC' | 'gts';
-  infusionTime?: string; // in minutes
-  volumeTotal?: string; // in mL
+  // Detailed prescription fields
+  quantity?: string;          // Quantidade
+  action?: string;            // Fazer/Retirar
+  diluent?: string;           // Diluente (SF0,9%, SG5%, AD, etc.)
+  diluentVolume?: string;     // Volume do diluente (mL)
+  accessType?: string;        // Acesso (Periférico, Central, etc.)
+  infusionTime?: string;      // Correr em (min)
+  infusionMode?: 'BIC' | 'gts'; // mL/h vs gts/min
+  volumeTotal?: string;       // Volume total (mL)
+  concentration?: string;     // Concentração calculada ou manual
 }
 
 // Calculate infusion rate
@@ -371,8 +377,8 @@ function SortablePrescriptionItemRow({
           ))}
         </div>
         {/* Schedule - far right aligned */}
-        <div className="shrink-0 flex items-center gap-1 pl-2 border-l border-border/30">
-          <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-24 font-mono text-center" placeholder="Horário" />
+        <div className="shrink-0 flex items-center gap-1.5 pl-2 border-l border-border/30">
+          <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-44 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
         </div>
         <ItemActions />
       </div>
@@ -449,7 +455,7 @@ function SortablePrescriptionItemRow({
           )}
           {item.status === 'active' && (
             <>
-              {/* Dose + Route + Posology row with Schedule on far right */}
+              {/* Row 1: Dose + Via + Intervalo + Aprazamento (far right) */}
               <div className="flex items-center gap-1.5">
                 <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
                   <Input value={item.dose} onChange={(e) => onUpdate(item.id, "dose", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-24" placeholder="Dose" />
@@ -469,32 +475,91 @@ function SortablePrescriptionItemRow({
                     <SelectContent>{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
-                {/* Schedule - far right */}
-                <div className="shrink-0 flex items-center gap-1 ml-auto pl-3 border-l border-border/30">
-                  <span className="text-[10px] text-muted-foreground font-medium">Apraz:</span>
-                  <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-28 font-mono text-center" placeholder="08h, 14h, 20h" />
+                {/* Schedule - far right, wider */}
+                <div className="shrink-0 flex items-center gap-1.5 ml-auto pl-3 border-l border-border/30">
+                  <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Apraz:</span>
+                  <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-44 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
                 </div>
               </div>
 
-              {/* IV Infusion details - only for Intravenosa route */}
-              {isIVRoute(item.route) && (
-                <div className="flex items-center gap-2 flex-wrap px-2 py-1.5 rounded-md bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/40 dark:border-blue-800/30">
-                  <Droplets className="h-3 w-3 text-blue-500 shrink-0" />
-                  <span className="text-[10px] font-medium text-blue-700 dark:text-blue-400">Infusão:</span>
-                  <Input
-                    value={item.volumeTotal || ''}
-                    onChange={(e) => onUpdate(item.id, "volumeTotal", e.target.value)}
-                    className="h-6 text-[11px] bg-background border-blue-200/50 dark:border-blue-800/40 w-20 text-center"
-                    placeholder="Vol (mL)"
-                  />
+              {/* Row 2: Detailed fields - Quantidade, Fazer/Retirar, Diluente, Vol Diluente, Acesso */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground">Qtd:</span>
+                  <Input value={item.quantity || ''} onChange={(e) => onUpdate(item.id, "quantity", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-16 text-center" placeholder="1" />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground">Ação:</span>
+                  <Select value={item.action || 'fazer'} onValueChange={(v) => onUpdate(item.id, "action", v)}>
+                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-24"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fazer" className="text-xs">Fazer</SelectItem>
+                      <SelectItem value="retirar" className="text-xs">Retirar</SelectItem>
+                      <SelectItem value="manter" className="text-xs">Manter</SelectItem>
+                      <SelectItem value="suspender" className="text-xs">Suspender</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground">Diluente:</span>
+                  <Select value={item.diluent || ''} onValueChange={(v) => onUpdate(item.id, "diluent", v)}>
+                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-24"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SF0,9%" className="text-xs">SF 0,9%</SelectItem>
+                      <SelectItem value="SG5%" className="text-xs">SG 5%</SelectItem>
+                      <SelectItem value="SG10%" className="text-xs">SG 10%</SelectItem>
+                      <SelectItem value="RL" className="text-xs">Ringer Lactato</SelectItem>
+                      <SelectItem value="AD" className="text-xs">Água Destilada</SelectItem>
+                      <SelectItem value="SF0,45%" className="text-xs">SF 0,45%</SelectItem>
+                      <SelectItem value="outro" className="text-xs">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground">Vol:</span>
+                  <Input value={item.diluentVolume || ''} onChange={(e) => onUpdate(item.id, "diluentVolume", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-16 text-center" placeholder="mL" />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground">Acesso:</span>
+                  <Select value={item.accessType || ''} onValueChange={(v) => onUpdate(item.id, "accessType", v)}>
+                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-28"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Periférico" className="text-xs">Periférico</SelectItem>
+                      <SelectItem value="Central" className="text-xs">Central</SelectItem>
+                      <SelectItem value="PICC" className="text-xs">PICC</SelectItem>
+                      <SelectItem value="Port-a-cath" className="text-xs">Port-a-cath</SelectItem>
+                      <SelectItem value="Jelco" className="text-xs">Jelco</SelectItem>
+                      <SelectItem value="Intracath" className="text-xs">Intracath</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Row 3: Infusion details - Correr em, Gotejamento, Concentração */}
+              <div className="flex items-center gap-2 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
+                <Droplets className="h-3 w-3 text-primary shrink-0" />
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground font-medium">Correr em:</span>
                   <Input
                     value={item.infusionTime || ''}
                     onChange={(e) => onUpdate(item.id, "infusionTime", e.target.value)}
-                    className="h-6 text-[11px] bg-background border-blue-200/50 dark:border-blue-800/40 w-20 text-center"
-                    placeholder="Tempo (min)"
+                    className="h-6 text-[11px] bg-background border-border/40 w-16 text-center"
+                    placeholder="min"
                   />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground font-medium">Vol total:</span>
+                  <Input
+                    value={item.volumeTotal || ''}
+                    onChange={(e) => onUpdate(item.id, "volumeTotal", e.target.value)}
+                    className="h-6 text-[11px] bg-background border-border/40 w-16 text-center"
+                    placeholder="mL"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground font-medium">Gotej:</span>
                   <Select value={item.infusionMode || 'BIC'} onValueChange={(v) => onUpdate(item.id, "infusionMode", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-background border-blue-200/50 dark:border-blue-800/40 w-20">
+                    <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-24">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -502,28 +567,38 @@ function SortablePrescriptionItemRow({
                       <SelectItem value="gts" className="text-xs">gts/min</SelectItem>
                     </SelectContent>
                   </Select>
-                  {item.volumeTotal && item.infusionTime && (
-                    <Badge variant="outline" className="text-[10px] font-mono bg-blue-100/50 dark:bg-blue-900/30 border-blue-300/50 text-blue-700 dark:text-blue-300">
-                      {calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC')}
-                    </Badge>
-                  )}
-                  {item.volumeTotal && item.posology && item.posology !== 'Contínuo' && item.posology !== 'Dose única' && (
-                    <span className="text-[10px] text-muted-foreground">
-                      ({posologyToIntervals(item.posology)}x/dia · {(parseFloat(item.volumeTotal || '0') * posologyToIntervals(item.posology)).toFixed(0)}mL/24h)
-                    </span>
-                  )}
-                  {item.posology === 'Contínuo' && item.volumeTotal && (
-                    <span className="text-[10px] text-muted-foreground">(infusão contínua 24h)</span>
-                  )}
                 </div>
-              )}
+                {/* Auto-calculated rate */}
+                {item.volumeTotal && item.infusionTime && (
+                  <Badge variant="outline" className="text-[10px] font-mono bg-primary/10 border-primary/30 text-primary">
+                    = {calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC')}
+                  </Badge>
+                )}
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground font-medium">Conc:</span>
+                  <Input
+                    value={item.concentration || ''}
+                    onChange={(e) => onUpdate(item.id, "concentration", e.target.value)}
+                    className="h-6 text-[11px] bg-background border-border/40 w-24 text-center"
+                    placeholder="mg/mL"
+                  />
+                </div>
+                {item.volumeTotal && item.posology && item.posology !== 'Contínuo' && item.posology !== 'Dose única' && (
+                  <span className="text-[10px] text-muted-foreground ml-auto">
+                    {posologyToIntervals(item.posology)}x/dia · {(parseFloat(item.volumeTotal || '0') * posologyToIntervals(item.posology)).toFixed(0)}mL/24h
+                  </span>
+                )}
+                {item.posology === 'Contínuo' && item.volumeTotal && (
+                  <span className="text-[10px] text-muted-foreground ml-auto">infusão contínua 24h</span>
+                )}
+              </div>
 
               {/* Instructions */}
               <Input
                 value={item.instructions}
                 onChange={(e) => onUpdate(item.id, "instructions", e.target.value)}
                 className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic"
-                placeholder="Preparo, diluição, observações..."
+                placeholder="Observações adicionais de preparo..."
               />
             </>
           )}
@@ -1191,9 +1266,15 @@ const PrescricaoPage = () => {
     flags: [],
     highAlert: med.highAlert || false,
     status: 'active',
-    infusionMode: isIVRoute(med.defaultRoute) ? 'BIC' : undefined,
+    infusionMode: 'BIC',
     infusionTime: '',
     volumeTotal: '',
+    quantity: '1',
+    action: 'fazer',
+    diluent: '',
+    diluentVolume: '',
+    accessType: '',
+    concentration: '',
   });
 
   const addItem = (med: MedicationEntry) => {
