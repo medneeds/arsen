@@ -1475,7 +1475,7 @@ export function UtiPatientCard({
                     alwaysShowAll
                   />
                   <div className="bg-muted/30 border border-border/30 rounded-md p-2">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">ADMISSÃO UTI</span>
+                    <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">Admissão UTI</span>
                     <InlineEditableField
                       value={getFieldArray("utiAdmissionDate")[0] || ""}
                       onUpdate={(v) => handleUpdateField("utiAdmissionDate", v ? [v] : [])}
