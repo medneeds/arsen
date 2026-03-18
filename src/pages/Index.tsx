@@ -883,7 +883,7 @@ const Index = () => {
                           </SelectTrigger>
                           <SelectContent>
                             {Object.entries(SECTOR_VISUAL).map(([key, cfg]) => (
-                              <SelectItem key={key} value={key} className="uppercase text-xs font-medium">
+                              <SelectItem key={key} value={key} className="text-xs font-medium">
                                 <span className="flex items-center gap-2">
                                   <span className={`w-2 h-2 rounded-full ${cfg.dotClass} border`} />
                                   {cfg.title}
