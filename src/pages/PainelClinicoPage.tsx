@@ -443,9 +443,9 @@ export default function PainelClinicoPage() {
                     {getSectorLabel(selectedPatient.sector)}
                   </Badge>
                 </div>
-                {selectedPatient.clinicalStatus && (
-                  <Badge variant="secondary" className="mt-2 text-xs capitalize">
-                    {selectedPatient.clinicalStatus.replace(/_/g, " ")}
+                {selectedPatient.clinicalStatus && clinicalStatusLabels[selectedPatient.clinicalStatus] && (
+                  <Badge className={cn("mt-2 text-xs", clinicalStatusLabels[selectedPatient.clinicalStatus].color)}>
+                    {clinicalStatusLabels[selectedPatient.clinicalStatus].label}
                   </Badge>
                 )}
               </div>
