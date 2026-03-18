@@ -153,6 +153,13 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
     try {
       const { data: userData } = await supabase.auth.getUser();
       
+      // If destination is UTI, set special status for the admission workflow
+      const isUtiDestination = form.destination_sector === "UTI 1" || form.destination_sector === "UTI 2";
+      const status = isUtiDestination ? "aguardando_leito_uti" : "pre_admissao";
+      const successMessage = isUtiDestination 
+        ? "Solicitação de leito UTI enviada para avaliação médica"
+        : "Aguardando classificação de risco";
+
       const { error } = await supabase.from("pre_admissions").insert({
         patient_name: form.patient_name.trim().toUpperCase(),
         social_name: form.social_name?.trim() || null,
@@ -172,12 +179,12 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
         state_id: currentState.id,
         department: currentDepartment,
         created_by: userData?.user?.id || null,
-        status: "pre_admissao",
+        status,
       });
 
       if (error) throw error;
 
-      toast({ title: "✅ Paciente cadastrado!", description: "Aguardando classificação de risco" });
+      toast({ title: "✅ Paciente cadastrado!", description: successMessage });
       setForm(EMPTY_FORM);
       setPreviewImage(null);
       setActiveTab("ai");
