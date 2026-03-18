@@ -73,7 +73,9 @@ interface ExamRequest {
 
 const SetorImagemPage = () => {
   const { user } = useAuth();
-  const { selectedHospitalId, selectedStateId } = useHospital();
+  const { currentHospital, currentState } = useHospital();
+  const selectedHospitalId = currentHospital?.id;
+  const selectedStateId = currentState?.id;
   const [requests, setRequests] = useState<ExamRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
