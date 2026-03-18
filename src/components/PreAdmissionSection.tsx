@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { PatientRegistrationDialog } from "./PatientRegistrationDialog";
 import { RiskClassificationDialog } from "./RiskClassificationDialog";
+import { AdmitPatientDialog } from "./AdmitPatientDialog";
 import { 
   UserPlus, Shield, Trash2, Edit, ChevronDown, ChevronUp, 
-  Clock, AlertTriangle, User, Calendar
+  Clock, AlertTriangle, User, Calendar, BedDouble
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -53,6 +54,7 @@ export function PreAdmissionSection() {
   const [isOpen, setIsOpen] = useState(true);
   const [showRegistration, setShowRegistration] = useState(false);
   const [classifyTarget, setClassifyTarget] = useState<PreAdmission | null>(null);
+  const [admitTarget, setAdmitTarget] = useState<PreAdmission | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PreAdmission | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { currentHospital, currentState } = useHospital();
@@ -193,11 +195,9 @@ export function PreAdmissionSection() {
                           <Button
                             size="sm"
                             className="flex-1 h-6 text-[10px] gap-1"
-                            onClick={() => {
-                              toast({ title: "Em breve", description: "Admissão em leito será implementada na próxima fase" });
-                            }}
+                            onClick={() => setAdmitTarget(pa)}
                           >
-                            <User className="h-3 w-3" />
+                            <BedDouble className="h-3 w-3" />
                             Admitir em Leito
                           </Button>
                         )}
@@ -229,6 +229,13 @@ export function PreAdmissionSection() {
         open={!!classifyTarget}
         onOpenChange={(open) => !open && setClassifyTarget(null)}
         preAdmission={classifyTarget}
+        onSuccess={fetchPreAdmissions}
+      />
+
+      <AdmitPatientDialog
+        open={!!admitTarget}
+        onOpenChange={(open) => !open && setAdmitTarget(null)}
+        preAdmission={admitTarget}
         onSuccess={fetchPreAdmissions}
       />
 
