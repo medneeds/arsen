@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   LogIn, User, Lock, Eye, EyeOff, Building2, ArrowRight, ArrowLeft,
   Activity, Brain, MapPin, Stethoscope, HeartPulse, Shield,
-  BarChart3, Users, ClipboardList, Bed, Pill
+  BarChart3, Users, ClipboardList, Bed, Pill, ScanLine
 } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { BigHelpLogo } from "@/components/BigHelpLogo";
@@ -37,7 +37,7 @@ const floatingIcons = [
   { Icon: Brain, x: "60%", y: "30%", delay: 3, duration: 5 },
 ];
 
-type AccessProfile = "medico" | "gestor" | "multi" | "administrativo" | "farmacia";
+type AccessProfile = "medico" | "gestor" | "multi" | "administrativo" | "farmacia" | "imagem";
 
 const ACCESS_PROFILES: {
   key: AccessProfile;
@@ -98,6 +98,16 @@ const ACCESS_PROFILES: {
     borderColor: "border-emerald-400/30 hover:border-emerald-400/60",
     bgGlow: "from-emerald-400/15 to-emerald-400/5",
     features: ["Validação de Prescrições", "Catálogo de Medicamentos", "Interações Medicamentosas", "Dispensação"],
+  },
+  {
+    key: "imagem",
+    label: "Setor de Imagem",
+    subtitle: "RX · TC · USG · ECO",
+    icon: ScanLine,
+    color: "text-rose-400",
+    borderColor: "border-rose-400/30 hover:border-rose-400/60",
+    bgGlow: "from-rose-400/15 to-rose-400/5",
+    features: ["Recepção de Requisições", "Execução de Exames", "Laudos e Resultados", "Fila de Prioridade"],
   },
 ];
 
@@ -178,7 +188,7 @@ export default function AuthPage() {
     <>
       {showLoadingScreen && (
         <LoadingScreen
-          onComplete={() => navigate("/")}
+          onComplete={() => navigate(selectedProfile === "imagem" ? "/setor-imagem" : "/")}
           duration={2000}
         />
       )}
@@ -417,6 +427,7 @@ export default function AuthPage() {
                           profile.key === "multi" && "bg-violet-400/10 border-violet-400/20",
                           profile.key === "administrativo" && "bg-sky-400/10 border-sky-400/20",
                           profile.key === "farmacia" && "bg-emerald-400/10 border-emerald-400/20",
+                          profile.key === "imagem" && "bg-rose-400/10 border-rose-400/20",
                         )}>
                           <profile.icon className={cn("h-5 w-5", profile.color)} />
                         </div>
