@@ -119,15 +119,6 @@ export function AppSidebar({
         { name: "ROUND", link: "/round", profiles: ["medico", "gestor"] },
         { name: "HEMODERIVADOS", link: "/hemoderivados", profiles: ["medico", "gestor"] },
         { name: "RELATÓRIO", link: "/relatorio", profiles: ["medico", "gestor"] },
-        { 
-          name: "REQUISIÇÕES", 
-          profiles: ["medico", "gestor"],
-          subsections: [
-            { name: "LABORATÓRIO", link: "/requisicao/laboratorio" },
-            { name: "IMAGENS", link: "/requisicao/imagens" },
-            { name: "PARECER", link: "/requisicao/parecer" },
-          ]
-        },
         { name: "REGULAÇÃO", link: "/regulacoes", profiles: ["medico", "gestor"] },
       ],
     },
@@ -154,6 +145,15 @@ export function AppSidebar({
         { name: "PRESCRIÇÃO", link: "/prescricao", profiles: ["medico", "gestor"] },
         { name: "VALIDAÇÃO FARMACÊUTICA", link: "/validacao-farmaceutica", profiles: ["gestor"] },
         { name: "EVOLUÇÃO", link: "/evolucao", profiles: ["medico", "gestor"] },
+        { 
+          name: "REQUISIÇÕES", 
+          profiles: ["medico", "gestor"],
+          subsections: [
+            { name: "LABORATÓRIO", link: "/requisicao/laboratorio" },
+            { name: "IMAGENS", link: "/requisicao/imagens" },
+            { name: "PARECER", link: "/requisicao/parecer" },
+          ]
+        },
         { name: "CATÁLOGO DE MEDICAMENTOS", link: "/catalogo-medicamentos", profiles: ["gestor"] },
         { name: "EXAMINUS AI", link: "/ia", profiles: ["medico", "gestor", "multi"] },
       ],
