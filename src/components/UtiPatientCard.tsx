@@ -1442,7 +1442,7 @@ export function UtiPatientCard({
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <FileText className="h-3.5 w-3.5 text-slate-400" />
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider">HISTÓRIA ADMISSIONAL</span>
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-500 tracking-wider">História admissional</span>
                 </div>
                 <div className="bg-muted/30 border border-border/30 rounded-md p-2">
                   <InlineEditableTextarea
