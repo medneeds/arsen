@@ -175,7 +175,7 @@ const AutoResizeTextarea = memo(({ value, onChange, onKeyDown, onBlur, placehold
       onBlur={onBlur}
       placeholder={placeholder}
       className={cn(
-        "resize-none overflow-hidden w-full min-h-[20px] text-[10px] uppercase text-foreground border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:outline-none",
+        "resize-none overflow-hidden w-full min-h-[20px] text-[10px] text-foreground border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:outline-none",
         className
       )}
       rows={1}
@@ -401,7 +401,7 @@ const SortablePendencyItemCollapsed = memo(function SortablePendencyItemCollapse
       ref={setNodeRef}
       style={style}
       className={cn(
-        "text-[10px] text-foreground leading-snug uppercase group/item rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5",
+        "text-[10px] text-foreground leading-snug group/item rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5",
         isDragging ? "bg-accent/50 z-50" : "hover:bg-accent/50",
         isHighlighted && `${highlightColors[sector]} border shadow-sm`
       )}
@@ -517,7 +517,7 @@ const SortableDiagnosisItemCollapsed = memo(function SortableDiagnosisItemCollap
       <li
         ref={setNodeRef}
         style={style}
-        className="text-[10px] text-foreground leading-snug uppercase group/item rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary"
+        className="text-[10px] text-foreground leading-snug group/item rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary"
       >
         <div className="flex-shrink-0 w-3" />
         <div className="flex items-start gap-1 flex-1">
@@ -570,7 +570,7 @@ const SortableDiagnosisItemCollapsed = memo(function SortableDiagnosisItemCollap
       ref={setNodeRef}
       style={style}
       className={cn(
-        "text-[10px] text-foreground leading-snug uppercase group/item rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5",
+        "text-[10px] text-foreground leading-snug group/item rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5",
         isDragging ? "bg-accent/50 z-50" : "hover:bg-accent/50"
       )}
     >
@@ -859,7 +859,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
     const updatedPatient = { ...patient };
     
     if (editingField === "name") {
-      updatedPatient.name = editValue.toUpperCase();
+      updatedPatient.name = editValue;
       // Auto-set admission date when name is first added
       if (!patient.admissionDate && editValue.trim()) {
         updatedPatient.admissionDate = new Date().toISOString();
@@ -886,173 +886,136 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
     } else if (editingField === "age") {
       // Tenta formatar idade usando IA (data de nascimento ou idade simples)
       const formattedAge = await calculateAge(editValue);
-      updatedPatient.age = formattedAge ?? editValue.toUpperCase();
+      updatedPatient.age = formattedAge ?? editValue;
     } else if (editingField === "diagnoses") {
       if (editingArrayIndex === -2) {
         // Adding new
         if (editValue.trim()) {
-          updatedPatient.diagnoses = [...patient.diagnoses, editValue.toUpperCase()];
+          updatedPatient.diagnoses = [...patient.diagnoses, editValue];
         }
       } else {
-        // Editing existing
         updatedPatient.diagnoses = patient.diagnoses.map((d, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : d
+          i === editingArrayIndex ? editValue : d
         );
       }
     } else if (editingField === "medicalHistory") {
       if (editingArrayIndex === -2) {
-        // Adding new
         if (editValue.trim()) {
-          updatedPatient.medicalHistory = [...patient.medicalHistory, editValue.toUpperCase()];
+          updatedPatient.medicalHistory = [...patient.medicalHistory, editValue];
         }
       } else {
-        // Editing existing
         updatedPatient.medicalHistory = patient.medicalHistory.map((h, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : h
+          i === editingArrayIndex ? editValue : h
         );
       }
     } else if (editingField === "relevantExams") {
       if (editingArrayIndex === -2) {
-        // Adding new
         if (editValue.trim()) {
-          updatedPatient.relevantExams = [...patient.relevantExams, editValue.toUpperCase()];
+          updatedPatient.relevantExams = [...patient.relevantExams, editValue];
         }
       } else {
-        // Editing existing
         updatedPatient.relevantExams = patient.relevantExams.map((e, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : e
+          i === editingArrayIndex ? editValue : e
         );
       }
     } else if (editingField === "pendencies") {
       if (editingArrayIndex === -2) {
-        // Adding new
         if (editValue.trim()) {
-          updatedPatient.pendencies = [...patient.pendencies, editValue.toUpperCase()];
+          updatedPatient.pendencies = [...patient.pendencies, editValue];
         }
       } else {
-        // Editing existing
         updatedPatient.pendencies = patient.pendencies.map((p, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : p
+          i === editingArrayIndex ? editValue : p
         );
       }
     } else if (editingField === "utiAdmissionDate") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiAdmissionDate = [...(patient.utiAdmissionDate || []), editValue.toUpperCase()];
+          updatedPatient.utiAdmissionDate = [...(patient.utiAdmissionDate || []), editValue];
         }
       } else {
         updatedPatient.utiAdmissionDate = (patient.utiAdmissionDate || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiDischargePrediction") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiDischargePrediction = [...(patient.utiDischargePrediction || []), editValue.toUpperCase()];
+          updatedPatient.utiDischargePrediction = [...(patient.utiDischargePrediction || []), editValue];
         }
       } else {
         updatedPatient.utiDischargePrediction = (patient.utiDischargePrediction || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiAllergies") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiAllergies = [...(patient.utiAllergies || []), editValue.toUpperCase()];
+          updatedPatient.utiAllergies = [...(patient.utiAllergies || []), editValue];
         }
       } else {
         updatedPatient.utiAllergies = (patient.utiAllergies || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiAdmissionReason") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiAdmissionReason = [...(patient.utiAdmissionReason || []), editValue.toUpperCase()];
+          updatedPatient.utiAdmissionReason = [...(patient.utiAdmissionReason || []), editValue];
         }
       } else {
         updatedPatient.utiAdmissionReason = (patient.utiAdmissionReason || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiCurrentStatus") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiCurrentStatus = [...(patient.utiCurrentStatus || []), editValue.toUpperCase()];
+          updatedPatient.utiCurrentStatus = [...(patient.utiCurrentStatus || []), editValue];
         }
       } else {
         updatedPatient.utiCurrentStatus = (patient.utiCurrentStatus || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiDevices") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiDevices = [...(patient.utiDevices || []), editValue.toUpperCase()];
+          updatedPatient.utiDevices = [...(patient.utiDevices || []), editValue];
         }
       } else {
         updatedPatient.utiDevices = (patient.utiDevices || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiSpecialties") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiSpecialties = [...(patient.utiSpecialties || []), editValue.toUpperCase()];
+          updatedPatient.utiSpecialties = [...(patient.utiSpecialties || []), editValue];
         }
       } else {
         updatedPatient.utiSpecialties = (patient.utiSpecialties || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiCulturesAntibiotics") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiCulturesAntibiotics = [...(patient.utiCulturesAntibiotics || []), editValue.toUpperCase()];
+          updatedPatient.utiCulturesAntibiotics = [...(patient.utiCulturesAntibiotics || []), editValue];
         }
       } else {
         updatedPatient.utiCulturesAntibiotics = (patient.utiCulturesAntibiotics || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiOriginSector") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiOriginSector = [...(patient.utiOriginSector || []), editValue.toUpperCase()];
+          updatedPatient.utiOriginSector = [...(patient.utiOriginSector || []), editValue];
         }
       } else {
         updatedPatient.utiOriginSector = (patient.utiOriginSector || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
-        );
-      }
-    } else if (editingField === "utiAdmissionReason") {
-      if (editingArrayIndex === -2) {
-        if (editValue.trim()) {
-          updatedPatient.utiAdmissionReason = [...(patient.utiAdmissionReason || []), editValue.toUpperCase()];
-        }
-      } else {
-        updatedPatient.utiAdmissionReason = (patient.utiAdmissionReason || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
-        );
-      }
-    } else if (editingField === "utiCurrentStatus") {
-      if (editingArrayIndex === -2) {
-        if (editValue.trim()) {
-          updatedPatient.utiCurrentStatus = [...(patient.utiCurrentStatus || []), editValue.toUpperCase()];
-        }
-      } else {
-        updatedPatient.utiCurrentStatus = (patient.utiCurrentStatus || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
-        );
-      }
-    } else if (editingField === "utiDevices") {
-      if (editingArrayIndex === -2) {
-        if (editValue.trim()) {
-          updatedPatient.utiDevices = [...(patient.utiDevices || []), editValue.toUpperCase()];
-        }
-      } else {
-        updatedPatient.utiDevices = (patient.utiDevices || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     }
@@ -1088,13 +1051,13 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
     const updatedPatient = { ...patient };
     
     if (editingField === "diagnoses") {
-      updatedPatient.diagnoses = [...patient.diagnoses, editValue.toUpperCase()];
+      updatedPatient.diagnoses = [...patient.diagnoses, editValue];
     } else if (editingField === "medicalHistory") {
-      updatedPatient.medicalHistory = [...patient.medicalHistory, editValue.toUpperCase()];
+      updatedPatient.medicalHistory = [...patient.medicalHistory, editValue];
     } else if (editingField === "relevantExams") {
-      updatedPatient.relevantExams = [...patient.relevantExams, editValue.toUpperCase()];
+      updatedPatient.relevantExams = [...patient.relevantExams, editValue];
     } else if (editingField === "pendencies") {
-      updatedPatient.pendencies = [...patient.pendencies, editValue.toUpperCase()];
+      updatedPatient.pendencies = [...patient.pendencies, editValue];
     }
 
     // Record conduct history for addition
@@ -1103,7 +1066,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
       recordChange({
         fieldName: editingField,
         oldValue: null,
-        newValue: `[ADICIONADO] ${editValue.toUpperCase()}`,
+        newValue: `[ADICIONADO] ${editValue}`,
       });
     }
 
@@ -1332,29 +1295,29 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
     
     // Map sector to display name
     const sectorDisplayName = {
-      'red': 'SALA DE CUIDADOS ESPECIAIS',
-      'yellow': 'OBSERVAÇÃO AMARELA',
-      'blue': 'OBSERVAÇÃO AZUL',
-      'Sala de Cuidados Especiais': 'SALA DE CUIDADOS ESPECIAIS',
-      'Observação Amarela': 'OBSERVAÇÃO AMARELA',
-      'Observação Azul': 'OBSERVAÇÃO AZUL',
-    }[requestedSector] || requestedSector.toUpperCase();
+      'red': 'Sala de Cuidados Especiais',
+      'yellow': 'Observação Amarela',
+      'blue': 'Observação Azul',
+      'Sala de Cuidados Especiais': 'Sala de Cuidados Especiais',
+      'Observação Amarela': 'Observação Amarela',
+      'Observação Azul': 'Observação Azul',
+    }[requestedSector] || requestedSector;
     
     const statusConfigs = {
       pending: {
-        label: "AGUARDANDO",
+        label: "Aguardando",
         statusClass: "status-pending",
         iconClass: "icon-pending",
         icon: Clock,
       },
       discussing: {
-        label: "EM DISCUSSÃO",
+        label: "Em discussão",
         statusClass: "status-discussing",
         iconClass: "icon-discussing",
         icon: MessageSquare,
       },
       rejected: {
-        label: "NEGADO",
+        label: "Negado",
         statusClass: "status-rejected",
         iconClass: "icon-rejected",
         icon: XCircle,
@@ -1391,7 +1354,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
             {allocationStatusBarConfig.icon === Clock && <Clock className={cn("h-3.5 w-3.5 relative z-10", allocationStatusBarConfig.iconClass)} />}
             {allocationStatusBarConfig.icon === MessageSquare && <MessageSquare className={cn("h-3.5 w-3.5 relative z-10", allocationStatusBarConfig.iconClass)} />}
             {allocationStatusBarConfig.icon === XCircle && <XCircle className={cn("h-3.5 w-3.5 relative z-10", allocationStatusBarConfig.iconClass)} />}
-            <span className={cn("text-xs font-semibold relative z-10 uppercase", allocationStatusBarConfig.statusClass)}>
+            <span className={cn("text-xs font-semibold relative z-10", allocationStatusBarConfig.statusClass)}>
               {allocationStatusBarConfig.label}
             </span>
             
@@ -1399,16 +1362,16 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
             <span className="separator relative z-10">•</span>
             
             {/* Destination */}
-            <span className="text-xs font-semibold relative z-10 status-destination uppercase">
-              PARA: {allocationStatusBarConfig.sectorDisplayName}
+            <span className="text-xs font-semibold relative z-10 status-destination">
+              Para: {allocationStatusBarConfig.sectorDisplayName}
             </span>
             
             {/* Time */}
             {allocationTimeElapsed && (
               <>
                 <span className="separator relative z-10">•</span>
-                <span className="text-xs font-semibold relative z-10 status-time uppercase">
-                  HÁ {allocationTimeElapsed.toUpperCase()}
+                <span className="text-xs font-semibold relative z-10 status-time">
+                  Há {allocationTimeElapsed}
                 </span>
               </>
             )}
@@ -1516,14 +1479,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="h-6 text-sm font-semibold uppercase"
+                            className="h-6 text-sm font-semibold"
                           />
                           <Button
                             size="icon"
@@ -1591,7 +1554,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                            
                            <p 
                             className={cn(
-                              "font-semibold text-base md:text-sm text-foreground leading-tight uppercase break-words rounded px-1 -mx-1",
+                              "font-semibold text-base md:text-sm text-foreground leading-tight break-words rounded px-1 -mx-1",
                               canEdit && "cursor-pointer hover:bg-accent/50"
                             )}
                             onClick={() => canEdit && startEditing("name", patient.name)}
@@ -1711,7 +1674,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             onCancel={cancelEditing}
                             onRemove={() => removeArrayItem("utiOriginSector", idx)}
                             onAddNew={() => startEditing("utiOriginSector", "", -2)}
-                            onEditValueChange={(val) => setEditValue(val.toUpperCase())}
+                            onEditValueChange={(val) => setEditValue(val)}
                             onKeyDown={handleKeyDown}
                             inputRef={inputRef}
                             isLast={idx === (patient.utiOriginSector || []).length - 1}
@@ -1720,7 +1683,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       </ol>
                     </SortableContext>
                     {editingField === "utiOriginSector" && editingArrayIndex === -2 ? (
-                      <li className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
                           <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiOriginSector || []).length + 1}.</span>
@@ -1731,15 +1694,15 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                            placeholder="NOVO SETOR"
+                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            placeholder="Novo setor"
                           />
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -1781,7 +1744,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                   <span className="text-xs md:text-[9px] font-medium text-muted-foreground mb-0">Admissão UTI</span>
                       <ol className="text-xs text-foreground space-y-0 print:text-[7.5px] list-none pl-0">
                         {(patient.utiAdmissionDate || []).map((item, idx) => (
-                          <li key={`uti-admission-date-${idx}`} className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5">
+                          <li key={`uti-admission-date-${idx}`} className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5">
                             {editingField === "utiAdmissionDate" && editingArrayIndex === idx ? (
                               <>
                                 <div className="flex items-center gap-1 flex-1">
@@ -1830,7 +1793,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                         ))}
                       </ol>
                     {editingField === "utiAdmissionDate" && editingArrayIndex === -2 && (
-                      <li className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                         <div className="flex items-center gap-1 flex-1">
                           <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiAdmissionDate || []).length + 1}.</span>
                           <Input
@@ -1870,7 +1833,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                         {(patient.utiDischargePrediction || []).map((item, idx) => {
                           const daysCalculation = calculateDaysUntilDischarge(item);
                           return (
-                            <li key={`uti-discharge-${idx}`} className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5">
+                            <li key={`uti-discharge-${idx}`} className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5">
                               {editingField === "utiDischargePrediction" && editingArrayIndex === idx ? (
                                 <>
                                   <div className="flex items-center gap-1 flex-1">
@@ -1925,7 +1888,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                         })}
                       </ol>
                     {editingField === "utiDischargePrediction" && editingArrayIndex === -2 && (
-                      <li className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                         <div className="flex items-center gap-1 flex-1">
                           <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiDischargePrediction || []).length + 1}.</span>
                           <Input
@@ -1992,7 +1955,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             onCancel={cancelEditing}
                             onRemove={() => removeArrayItem("utiAllergies", idx)}
                             onAddNew={() => startEditing("utiAllergies", "", -2)}
-                            onEditValueChange={(val) => setEditValue(val.toUpperCase())}
+                            onEditValueChange={(val) => setEditValue(val)}
                             onKeyDown={handleKeyDown}
                             inputRef={inputRef}
                             isLast={idx === (patient.utiAllergies || []).length - 1}
@@ -2001,7 +1964,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       </ol>
                     </SortableContext>
                     {editingField === "utiAllergies" && editingArrayIndex === -2 && (
-                      <li className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
                           <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiAllergies || []).length + 1}.</span>
@@ -2012,15 +1975,15 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                            placeholder="NOVA ALERGIA"
+                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            placeholder="Nova alergia"
                           />
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -2080,7 +2043,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             onCancel={cancelEditing}
                             onRemove={() => removeArrayItem("utiAdmissionReason", idx)}
                             onAddNew={() => startEditing("utiAdmissionReason", "", -2)}
-                            onEditValueChange={(val) => setEditValue(val.toUpperCase())}
+                            onEditValueChange={(val) => setEditValue(val)}
                             onKeyDown={handleKeyDown}
                             inputRef={inputRef}
                             isLast={idx === (patient.utiAdmissionReason || []).length - 1}
@@ -2089,7 +2052,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       </ol>
                     </SortableContext>
                     {editingField === "utiAdmissionReason" && editingArrayIndex === -2 && (
-                      <li className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
                           <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiAdmissionReason || []).length + 1}.</span>
@@ -2100,15 +2063,15 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                            placeholder="NOVO MOTIVO"
+                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            placeholder="Novo motivo"
                           />
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -2166,7 +2129,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             onCancel={cancelEditing}
                             onRemove={() => removeArrayItem("diagnoses", idx)}
                             onAddNew={() => startEditing("diagnoses", "", -2)}
-                            onEditValueChange={(val) => setEditValue(val.toUpperCase())}
+                            onEditValueChange={(val) => setEditValue(val)}
                             onKeyDown={handleKeyDown}
                             inputRef={inputRef}
                             isLast={idx === patient.diagnoses.length - 1}
@@ -2178,7 +2141,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                     </SortableContext>
 
                     {editingField === "diagnoses" && editingArrayIndex === -2 ? (
-                      <li className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
                           <span className="font-semibold text-muted-foreground flex-shrink-0">{patient.diagnoses.length + 1}.</span>
@@ -2189,15 +2152,15 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                            placeholder="NOVA HIPÓTESE/DIAGNÓSTICO"
+                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            placeholder="Nova hipótese/diagnóstico"
                           />
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -2269,7 +2232,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             onCancel={cancelEditing}
                             onRemove={() => removeArrayItem("utiCurrentStatus", idx)}
                             onAddNew={() => startEditing("utiCurrentStatus", "", -2)}
-                            onEditValueChange={(val) => setEditValue(val.toUpperCase())}
+                            onEditValueChange={(val) => setEditValue(val)}
                             onKeyDown={handleKeyDown}
                             inputRef={inputRef}
                             isLast={idx === (patient.utiCurrentStatus || []).length - 1}
@@ -2278,7 +2241,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       </ol>
                     </SortableContext>
                     {editingField === "utiCurrentStatus" && editingArrayIndex === -2 ? (
-                      <li className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
                           <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiCurrentStatus || []).length + 1}.</span>
@@ -2289,15 +2252,15 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                            placeholder="NOVO STATUS"
+                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            placeholder="Novo status"
                           />
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -2368,7 +2331,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             onCancel={cancelEditing}
                             onRemove={() => removeArrayItem("utiSpecialties", idx)}
                             onAddNew={() => startEditing("utiSpecialties", "", -2)}
-                            onEditValueChange={(val) => setEditValue(val.toUpperCase())}
+                            onEditValueChange={(val) => setEditValue(val)}
                             onKeyDown={handleKeyDown}
                             inputRef={inputRef}
                             isLast={idx === (patient.utiSpecialties || []).length - 1}
@@ -2377,7 +2340,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       </ol>
                     </SortableContext>
                     {editingField === "utiSpecialties" && editingArrayIndex === -2 ? (
-                      <li className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
                           <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiSpecialties || []).length + 1}.</span>
@@ -2388,15 +2351,15 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                            placeholder="NOVA ESPECIALIDADE"
+                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            placeholder="Nova especialidade"
                           />
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -2472,7 +2435,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             onCancel={cancelEditing}
                             onRemove={() => removeArrayItem("utiDevices", idx)}
                             onAddNew={() => startEditing("utiDevices", "", -2)}
-                            onEditValueChange={(val) => setEditValue(val.toUpperCase())}
+                            onEditValueChange={(val) => setEditValue(val)}
                             onKeyDown={handleKeyDown}
                             inputRef={inputRef}
                             isLast={idx === (patient.utiDevices || []).length - 1}
@@ -2481,7 +2444,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       </ol>
                     </SortableContext>
                     {editingField === "utiDevices" && editingArrayIndex === -2 ? (
-                      <li className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
                           <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiDevices || []).length + 1}.</span>
@@ -2492,15 +2455,15 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                            placeholder="NOVO DISPOSITIVO"
+                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            placeholder="Novo dispositivo"
                           />
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -2582,7 +2545,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             onCancel={cancelEditing}
                             onRemove={() => removeArrayItem("relevantExams", idx)}
                             onAddNew={() => startEditing("relevantExams", "", -2)}
-                            onEditValueChange={(val) => setEditValue(val.toUpperCase())}
+                            onEditValueChange={(val) => setEditValue(val)}
                             onKeyDown={handleKeyDown}
                             inputRef={inputRef}
                             isLast={idx === patient.relevantExams.length - 1}
@@ -2592,7 +2555,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                     </SortableContext>
 
                     {editingField === "relevantExams" && editingArrayIndex === -2 ? (
-                      <li className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
                           <span className="font-semibold text-muted-foreground flex-shrink-0">{patient.relevantExams.length + 1}.</span>
@@ -2603,15 +2566,15 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                            placeholder="NOVO EXAME"
+                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            placeholder="Novo exame"
                           />
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -2683,7 +2646,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             onCancel={cancelEditing}
                             onRemove={() => removeArrayItem("utiCulturesAntibiotics", idx)}
                             onAddNew={() => startEditing("utiCulturesAntibiotics", "", -2)}
-                            onEditValueChange={(val) => setEditValue(val.toUpperCase())}
+                            onEditValueChange={(val) => setEditValue(val)}
                             onKeyDown={handleKeyDown}
                             inputRef={inputRef}
                             isLast={idx === (patient.utiCulturesAntibiotics || []).length - 1}
@@ -2692,7 +2655,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       </ol>
                     </SortableContext>
                     {editingField === "utiCulturesAntibiotics" && editingArrayIndex === -2 ? (
-                      <li className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                         <div className="flex-shrink-0 w-3" />
                         <div className="flex items-center gap-1 flex-1">
                           <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiCulturesAntibiotics || []).length + 1}.</span>
@@ -2703,15 +2666,15 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                            placeholder="NOVA CULTURA/ATB"
+                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            placeholder="Nova cultura/ATB"
                           />
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -2758,7 +2721,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       <Badge 
                         variant="outline" 
                         className={cn(
-                          "h-4 px-1.5 text-[8px] font-semibold uppercase gap-0.5 print:hidden",
+                          "h-4 px-1.5 text-[8px] font-semibold gap-0.5 print:hidden",
                           internmentStatusConfig[patient.internmentStatus as keyof typeof internmentStatusConfig].color,
                           internmentStatusConfig[patient.internmentStatus as keyof typeof internmentStatusConfig].bgColor,
                           internmentStatusConfig[patient.internmentStatus as keyof typeof internmentStatusConfig].borderColor
@@ -2794,7 +2757,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       >
                         {patient.pendencies.map((pendency, idx) => (
                           editingField === "pendencies" && editingArrayIndex === idx ? (
-                            <div key={idx} className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                            <div key={idx} className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                               <div className="flex-shrink-0 w-3" />
                               <div className="flex items-start gap-1 flex-1">
                                 <span className="font-semibold text-muted-foreground flex-shrink-0 mt-0.5">{idx + 1}.</span>
@@ -2805,7 +2768,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                                     const target = e.target as HTMLTextAreaElement;
                                     const start = target.selectionStart;
                                     const end = target.selectionEnd;
-                                    setEditValue(e.target.value.toUpperCase());
+                                    setEditValue(e.target.value);
                                     requestAnimationFrame(() => {
                                       target.setSelectionRange(start, end);
                                     });
@@ -2823,7 +2786,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                                     }
                                   }}
                                   onBlur={saveInlineEdit}
-                                  className="min-h-[40px] text-[10px] flex-1 uppercase text-foreground resize-y border-0 bg-transparent p-0 focus-visible:ring-0"
+                                  className="min-h-[40px] text-[10px] flex-1 text-foreground resize-y border-0 bg-transparent p-0 focus-visible:ring-0"
                                   rows={2}
                                 />
                               </div>
@@ -2872,7 +2835,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       </SortableContext>
                       
                       {editingField === "pendencies" && editingArrayIndex === -2 ? (
-                        <div className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                        <div className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                           <div className="flex-shrink-0 w-3" />
                           <div className="flex items-start gap-1 flex-1">
                             <span className="font-semibold text-muted-foreground flex-shrink-0 mt-0.5">{patient.pendencies.length + 1}.</span>
@@ -2883,15 +2846,15 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                                 const target = e.target as HTMLTextAreaElement;
                                 const start = target.selectionStart ?? 0;
                                 const end = target.selectionEnd ?? 0;
-                                setEditValue(e.target.value.toUpperCase());
+                                setEditValue(e.target.value);
                                 requestAnimationFrame(() => {
                                   target.setSelectionRange(start, end);
                                 });
                               }}
                               onKeyDown={handleKeyDown}
                               onBlur={saveInlineEdit}
-                              className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                              placeholder="NOVA PENDÊNCIA"
+                              className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                              placeholder="Nova pendência"
                             />
                           </div>
                           <div className="flex items-start gap-0.5 flex-shrink-0">
@@ -2972,7 +2935,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                         onCancel={cancelEditing}
                         onRemove={() => removeArrayItem("diagnoses", idx)}
                         onAddNew={() => startEditing("diagnoses", "", -2)}
-                        onEditValueChange={(val) => setEditValue(val.toUpperCase())}
+                        onEditValueChange={(val) => setEditValue(val)}
                         onKeyDown={handleKeyDown}
                         inputRef={inputRef}
                         isLast={idx === patient.diagnoses.length - 1}
@@ -2984,7 +2947,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                 </SortableContext>
 
                 {editingField === "diagnoses" && editingArrayIndex === -2 ? (
-                  <li className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                  <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                     <div className="flex-shrink-0 w-3" />
                     <div className="flex items-center gap-1 flex-1">
                       <span className="font-semibold text-muted-foreground flex-shrink-0">{patient.diagnoses.length + 1}.</span>
@@ -2995,14 +2958,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                           const target = e.target as HTMLTextAreaElement;
                           const start = target.selectionStart ?? 0;
                           const end = target.selectionEnd ?? 0;
-                          setEditValue(e.target.value.toUpperCase());
+                          setEditValue(e.target.value);
                           requestAnimationFrame(() => {
                             target.setSelectionRange(start, end);
                           });
                         }}
                         onKeyDown={handleKeyDown}
-                        className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                        placeholder="NOVA HIPÓTESE"
+                        className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                        placeholder="Nova hipótese"
                       />
                     </div>
                     <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -3087,7 +3050,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                         onCancel={cancelEditing}
                         onRemove={() => removeArrayItem("medicalHistory", idx)}
                         onAddNew={() => startEditing("medicalHistory", "", -2)}
-                        onEditValueChange={(val) => setEditValue(val.toUpperCase())}
+                        onEditValueChange={(val) => setEditValue(val)}
                         onKeyDown={handleKeyDown}
                         inputRef={inputRef}
                         isLast={idx === patient.medicalHistory.length - 1}
@@ -3097,7 +3060,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                 </SortableContext>
 
                 {editingField === "medicalHistory" && editingArrayIndex === -2 ? (
-                  <li className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                  <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                     <div className="flex-shrink-0 w-3" />
                     <div className="flex items-center gap-1 flex-1">
                       <span className="font-semibold text-muted-foreground flex-shrink-0">{patient.medicalHistory.length + 1}.</span>
@@ -3108,14 +3071,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                           const target = e.target as HTMLTextAreaElement;
                           const start = target.selectionStart ?? 0;
                           const end = target.selectionEnd ?? 0;
-                          setEditValue(e.target.value.toUpperCase());
+                          setEditValue(e.target.value);
                           requestAnimationFrame(() => {
                             target.setSelectionRange(start, end);
                           });
                         }}
                         onKeyDown={handleKeyDown}
-                        className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                        placeholder="NOVO ANTECEDENTE"
+                        className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                        placeholder="Novo antecedente"
                       />
                     </div>
                     <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -3233,7 +3196,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                         onCancel={cancelEditing}
                         onRemove={() => removeArrayItem("relevantExams", idx)}
                         onAddNew={() => startEditing("relevantExams", "", -2)}
-                        onEditValueChange={(val) => setEditValue(val.toUpperCase())}
+                        onEditValueChange={(val) => setEditValue(val)}
                         onKeyDown={handleKeyDown}
                         inputRef={inputRef}
                         isLast={idx === patient.relevantExams.length - 1}
@@ -3243,7 +3206,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                 </SortableContext>
 
                 {editingField === "relevantExams" && editingArrayIndex === -2 ? (
-                  <li className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                  <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                     <div className="flex-shrink-0 w-3" />
                     <div className="flex items-center gap-1 flex-1">
                       <span className="font-semibold text-muted-foreground flex-shrink-0">{patient.relevantExams.length + 1}.</span>
@@ -3254,14 +3217,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                           const target = e.target as HTMLTextAreaElement;
                           const start = target.selectionStart ?? 0;
                           const end = target.selectionEnd ?? 0;
-                          setEditValue(e.target.value.toUpperCase());
+                          setEditValue(e.target.value);
                           requestAnimationFrame(() => {
                             target.setSelectionRange(start, end);
                           });
                         }}
                         onKeyDown={handleKeyDown}
-                        className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                        placeholder="NOVO EXAME"
+                        className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                        placeholder="Novo exame"
                       />
                     </div>
                     <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -3339,7 +3302,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                   >
                     {patient.pendencies.map((pendency, idx) => (
                       editingField === "pendencies" && editingArrayIndex === idx ? (
-                        <div key={idx} className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                        <div key={idx} className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                           <div className="flex-shrink-0 w-3" />
                           <div className="flex items-start gap-1 flex-1">
                             <span className="font-semibold text-muted-foreground flex-shrink-0 mt-0.5">{idx + 1}.</span>
@@ -3350,7 +3313,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                                 const target = e.target as HTMLTextAreaElement;
                                 const start = target.selectionStart;
                                 const end = target.selectionEnd;
-                                setEditValue(e.target.value.toUpperCase());
+                                setEditValue(e.target.value);
                                 // Restaura a posição do cursor após a atualização
                                 requestAnimationFrame(() => {
                                   target.setSelectionRange(start, end);
@@ -3369,7 +3332,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                                 }
                               }}
                               onBlur={saveInlineEdit}
-                              className="min-h-[40px] text-[10px] flex-1 uppercase text-foreground resize-y border-0 bg-transparent p-0 focus-visible:ring-0"
+                              className="min-h-[40px] text-[10px] flex-1 text-foreground resize-y border-0 bg-transparent p-0 focus-visible:ring-0"
                               rows={2}
                             />
                           </div>
@@ -3418,7 +3381,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                   </SortableContext>
                   
                   {editingField === "pendencies" && editingArrayIndex === -2 ? (
-                    <div className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                    <div className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                       <div className="flex-shrink-0 w-3" />
                       <div className="flex items-start gap-1 flex-1">
                         <span className="font-semibold text-muted-foreground flex-shrink-0 mt-0.5">{patient.pendencies.length + 1}.</span>
@@ -3429,7 +3392,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             const target = e.target as HTMLTextAreaElement;
                             const start = target.selectionStart ?? 0;
                             const end = target.selectionEnd ?? 0;
-                            setEditValue(e.target.value.toUpperCase());
+                            setEditValue(e.target.value);
                             // Restaura a posição do cursor após a atualização
                             requestAnimationFrame(() => {
                               target.setSelectionRange(start, end);
@@ -3437,8 +3400,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                           }}
                           onKeyDown={handleKeyDown}
                           onBlur={saveInlineEdit}
-                          className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                          placeholder="NOVA PENDÊNCIA"
+                          className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                          placeholder="Nova pendência"
                         />
                       </div>
                       <div className="flex items-start gap-0.5 flex-shrink-0">
@@ -3987,8 +3950,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
 
           {/* História Admissional */}
           <div className="pt-2 border-t border-border/50 print:pt-1">
-            <h4 className="font-semibold text-xs mb-1 text-foreground uppercase print:text-[8.5px] print:mb-0.5">História Admissional / Anamnese</h4>
-            <p className="text-xs leading-snug text-foreground whitespace-pre-wrap uppercase print:text-[7.5px] print:leading-tight">
+            <h4 className="font-semibold text-xs mb-1 text-foreground print:text-[8.5px] print:mb-0.5">História Admissional / Anamnese</h4>
+            <p className="text-xs leading-snug text-foreground whitespace-pre-wrap print:text-[7.5px] print:leading-tight">
               {patient.admissionHistory}
             </p>
           </div>
@@ -4078,7 +4041,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                   {patient.bedNumber}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-2xl font-bold uppercase tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                     {displayName}
                   </span>
                   <span className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
@@ -4093,7 +4056,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-border/30">
-              <h3 className="text-xl font-bold text-primary uppercase tracking-wide flex items-center gap-2">
+              <h3 className="text-xl font-bold text-primary tracking-wide flex items-center gap-2">
                 <div className="w-1 h-6 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
                 Hipóteses / Diagnósticos
               </h3>
@@ -4121,7 +4084,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
@@ -4134,7 +4097,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                                 cancelEditing();
                               }
                             }}
-                            className="text-base uppercase font-medium bg-background/50 border-primary/50 resize-none"
+                            className="text-base font-medium bg-background/50 border-primary/50 resize-none"
                           />
                           <Button
                             size="icon"
@@ -4155,7 +4118,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                         </div>
                       ) : (
                         <div className="flex items-start justify-between gap-3">
-                          <p className="text-base text-foreground leading-relaxed uppercase font-medium flex-1">
+                          <p className="text-base text-foreground leading-relaxed font-medium flex-1">
                             {diagnosis}
                           </p>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
@@ -4205,12 +4168,12 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
             {/* História Admissional / Anamnese */}
             {patient.admissionHistory && (
               <div className="mt-6 pt-6 border-t border-border/30">
-                <h4 className="text-lg font-bold text-primary uppercase mb-3 flex items-center gap-2">
+                <h4 className="text-lg font-bold text-primary mb-3 flex items-center gap-2">
                   <div className="w-1 h-5 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
                   História Admissional / Anamnese
                 </h4>
                 <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 shadow-sm">
-                  <p className="text-sm text-foreground leading-relaxed uppercase whitespace-pre-wrap">
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                     {patient.admissionHistory}
                   </p>
                 </div>
@@ -4233,7 +4196,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                   {patient.bedNumber}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-2xl font-bold uppercase tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                     {displayName}
                   </span>
                   <span className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
@@ -4248,7 +4211,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-border/30">
-              <h3 className="text-xl font-bold text-primary uppercase tracking-wide flex items-center gap-2">
+              <h3 className="text-xl font-bold text-primary tracking-wide flex items-center gap-2">
                 <div className="w-1 h-6 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
                 Exames
               </h3>
@@ -4276,7 +4239,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
@@ -4289,7 +4252,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                                 cancelEditing();
                               }
                             }}
-                            className="text-base uppercase font-medium bg-background/50 border-primary/50 resize-none"
+                            className="text-base font-medium bg-background/50 border-primary/50 resize-none"
                           />
                           <Button
                             size="icon"
@@ -4310,7 +4273,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                         </div>
                       ) : (
                         <div className="flex items-start justify-between gap-3">
-                          <p className="text-base text-foreground leading-relaxed uppercase font-medium flex-1">
+                          <p className="text-base text-foreground leading-relaxed font-medium flex-1">
                             {exam}
                           </p>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
@@ -4360,12 +4323,12 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
             {/* História Admissional / Anamnese */}
             {patient.admissionHistory && (
               <div className="mt-6 pt-6 border-t border-border/30">
-                <h4 className="text-lg font-bold text-primary uppercase mb-3 flex items-center gap-2">
+                <h4 className="text-lg font-bold text-primary mb-3 flex items-center gap-2">
                   <div className="w-1 h-5 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
                   História Admissional / Anamnese
                 </h4>
                 <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 shadow-sm">
-                  <p className="text-sm text-foreground leading-relaxed uppercase whitespace-pre-wrap">
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                     {patient.admissionHistory}
                   </p>
                 </div>
@@ -4388,7 +4351,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                   {patient.bedNumber}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-2xl font-bold uppercase tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                     {displayName}
                   </span>
                   <span className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
@@ -4403,7 +4366,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-border/30">
-              <h3 className="text-xl font-bold text-primary uppercase tracking-wide flex items-center gap-2">
+              <h3 className="text-xl font-bold text-primary tracking-wide flex items-center gap-2">
                 <div className="w-1 h-6 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
                 Antecedentes
               </h3>
@@ -4431,7 +4394,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
@@ -4444,7 +4407,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                                 cancelEditing();
                               }
                             }}
-                            className="text-base uppercase font-medium bg-background/50 border-primary/50 resize-none"
+                            className="text-base font-medium bg-background/50 border-primary/50 resize-none"
                           />
                           <Button
                             size="icon"
@@ -4465,7 +4428,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                         </div>
                       ) : (
                         <div className="flex items-start justify-between gap-3">
-                          <p className="text-base text-foreground leading-relaxed uppercase font-medium flex-1">
+                          <p className="text-base text-foreground leading-relaxed font-medium flex-1">
                             {history}
                           </p>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
@@ -4515,12 +4478,12 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
             {/* História Admissional / Anamnese */}
             {patient.admissionHistory && (
               <div className="mt-6 pt-6 border-t border-border/30">
-                <h4 className="text-lg font-bold text-primary uppercase mb-3 flex items-center gap-2">
+                <h4 className="text-lg font-bold text-primary mb-3 flex items-center gap-2">
                   <div className="w-1 h-5 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
                   História Admissional / Anamnese
                 </h4>
                 <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 shadow-sm">
-                  <p className="text-sm text-foreground leading-relaxed uppercase whitespace-pre-wrap">
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                     {patient.admissionHistory}
                   </p>
                 </div>
@@ -4543,7 +4506,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                   {patient.bedNumber}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-2xl font-bold uppercase tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  <span className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                     {displayName}
                   </span>
                   <span className="text-sm text-muted-foreground mt-1 flex items-center gap-2">
@@ -4558,7 +4521,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-border/30">
-              <h3 className="text-xl font-bold text-primary uppercase tracking-wide flex items-center gap-2">
+              <h3 className="text-xl font-bold text-primary tracking-wide flex items-center gap-2">
                 <div className="w-1 h-6 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
                 Programações / Pendências
               </h3>
@@ -4586,7 +4549,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               const target = e.target as HTMLTextAreaElement;
                               const start = target.selectionStart ?? 0;
                               const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value.toUpperCase());
+                              setEditValue(e.target.value);
                               requestAnimationFrame(() => {
                                 target.setSelectionRange(start, end);
                               });
@@ -4599,7 +4562,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                                 cancelEditing();
                               }
                             }}
-                            className="text-base uppercase font-medium bg-background/50 border-primary/50 resize-none"
+                            className="text-base font-medium bg-background/50 border-primary/50 resize-none"
                           />
                           <Button
                             size="icon"
@@ -4620,7 +4583,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                         </div>
                       ) : (
                         <div className="flex items-start justify-between gap-3">
-                          <p className="text-base text-foreground leading-relaxed uppercase font-medium flex-1">
+                          <p className="text-base text-foreground leading-relaxed font-medium flex-1">
                             {pendency}
                           </p>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
@@ -4670,12 +4633,12 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
             {/* História Admissional / Anamnese */}
             {patient.admissionHistory && (
               <div className="mt-6 pt-6 border-t border-border/30">
-                <h4 className="text-lg font-bold text-primary uppercase mb-3 flex items-center gap-2">
+                <h4 className="text-lg font-bold text-primary mb-3 flex items-center gap-2">
                   <div className="w-1 h-5 bg-gradient-to-b from-primary to-primary/50 rounded-full" />
                   História Admissional / Anamnese
                 </h4>
                 <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-xl p-5 shadow-sm">
-                  <p className="text-sm text-foreground leading-relaxed uppercase whitespace-pre-wrap">
+                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                     {patient.admissionHistory}
                   </p>
                 </div>

@@ -21,8 +21,7 @@ const CLINICAL_STATUS_OPTIONS = [
   { value: "protocolo_me", label: "EM PROTOCOLO DE ME", color: "bg-gray-800 text-white", borderColor: "border-gray-800" },
 ] as const;
 
-// Helper to force uppercase on all text inputs
-const toUpperCase = (value: string) => value.toUpperCase();
+// Text inputs no longer forced to uppercase
 import { cn } from "@/lib/utils";
 import { EditPatientDialog } from "./EditPatientDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
@@ -143,7 +142,7 @@ function SortableItem({ id, index, value, onEdit, onDelete, showDragHandle = tru
 
   const handleSave = () => {
     if (localValue.trim()) {
-      onEdit(localValue.trim().toUpperCase());
+      onEdit(localValue.trim());
     }
     setIsEditing(false);
   };
@@ -221,8 +220,8 @@ function SortableItem({ id, index, value, onEdit, onDelete, showDragHandle = tru
             ref={inputRef}
             type="text"
             value={localValue}
-            onChange={(e) => setLocalValue(e.target.value.toUpperCase())}
-            className="flex-1 text-[11px] bg-background border border-primary/30 rounded px-1.5 py-0.5 outline-none uppercase font-medium tracking-tight"
+            onChange={(e) => setLocalValue(e.target.value)}
+            className="flex-1 text-[11px] bg-background border border-primary/30 rounded px-1.5 py-0.5 outline-none font-medium tracking-tight"
             onKeyDown={handleKeyDownInternal}
             onBlur={handleSave}
             onClick={(e) => e.stopPropagation()}
@@ -424,7 +423,7 @@ function InlineEditableArray({
     if (newItemValue.trim()) {
       isInternalChangeRef.current = true;
       setItemIds((prev) => [...prev, makeId()]);
-      onUpdate([...items, newItemValue.trim().toUpperCase()]);
+      onUpdate([...items, newItemValue.trim()]);
       setNewItemValue("");
       if (!continueAdding) {
         setIsAddingNew(false);
@@ -480,7 +479,7 @@ function InlineEditableArray({
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-1.5">
             {icon}
-            <span className="text-[10px] font-semibold text-muted-foreground tracking-wide uppercase">{label}</span>
+            <span className="text-[10px] font-semibold text-muted-foreground tracking-wide">{label}</span>
             {items.length > 0 && (
               <Badge variant="secondary" className="h-3.5 px-1 text-[9px] font-medium">{items.length}</Badge>
             )}
@@ -566,9 +565,9 @@ function InlineEditableArray({
               ref={newInputRef}
               type="text"
               value={newItemValue}
-              onChange={(e) => setNewItemValue(e.target.value.toUpperCase())}
-              placeholder="NOVO ITEM..."
-              className="flex-1 text-[11px] bg-background border border-primary/30 rounded px-1.5 py-1 outline-none uppercase font-medium tracking-tight placeholder:font-normal placeholder:text-muted-foreground/50"
+              onChange={(e) => setNewItemValue(e.target.value)}
+              placeholder="Novo item..."
+              className="flex-1 text-[11px] bg-background border border-primary/30 rounded px-1.5 py-1 outline-none font-medium tracking-tight placeholder:font-normal placeholder:text-muted-foreground/50"
               onKeyDown={handleNewItemKeyDown}
               onBlur={() => handleAddItem(false)}
             />
@@ -631,7 +630,7 @@ function InlineEditableField({ value, onUpdate, placeholder = "-", className }: 
   }, [value]);
 
   const handleSave = () => {
-    onUpdate(localValue.toUpperCase());
+    onUpdate(localValue);
     setIsEditing(false);
   };
 
@@ -641,8 +640,8 @@ function InlineEditableField({ value, onUpdate, placeholder = "-", className }: 
         ref={inputRef}
         type="text"
         value={localValue}
-        onChange={(e) => setLocalValue(e.target.value.toUpperCase())}
-        className={cn("bg-background border border-primary/30 rounded px-1.5 py-0.5 outline-none text-sm w-full uppercase", className)}
+        onChange={(e) => setLocalValue(e.target.value)}
+        className={cn("bg-background border border-primary/30 rounded px-1.5 py-0.5 outline-none text-sm w-full", className)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleSave();
           if (e.key === 'Escape') setIsEditing(false);
@@ -702,7 +701,7 @@ function InlineEditableTextarea({ value, onUpdate, placeholder = "-" }: InlineEd
   }, [value]);
 
   const handleSave = () => {
-    onUpdate(localValue.toUpperCase());
+    onUpdate(localValue);
     setIsEditing(false);
   };
 
@@ -712,9 +711,9 @@ function InlineEditableTextarea({ value, onUpdate, placeholder = "-" }: InlineEd
         ref={textareaRef}
         value={localValue}
         onChange={(e) => {
-          setLocalValue(e.target.value.toUpperCase());
+          setLocalValue(e.target.value);
         }}
-        className="w-full bg-background border border-primary/30 rounded px-2 py-1.5 outline-none text-xs uppercase min-h-[80px] max-h-[300px] resize-y overflow-auto"
+        className="w-full bg-background border border-primary/30 rounded px-2 py-1.5 outline-none text-xs min-h-[80px] max-h-[300px] resize-y overflow-auto"
         onKeyDown={(e) => {
           if (e.key === 'Escape') setIsEditing(false);
         }}
@@ -1387,27 +1386,27 @@ export function UtiPatientCard({
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-                  <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">CRÍTICO</span>
+                  <span className="text-[10px] font-bold text-red-600 tracking-wider">Crítico</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <InlineEditableArray
                     items={dispositivos}
                     onUpdate={(items) => handleUpdateField("utiDevices", items)}
-                    label="DISPOSITIVOS"
+                    label="Dispositivos"
                     colorClass="bg-red-50/50 dark:bg-red-900/10 border border-red-200/30 dark:border-red-800/20"
                     alwaysShowAll
                   />
                   <InlineEditableArray
                     items={alergias}
                     onUpdate={(items) => handleUpdateField("utiAllergies", items)}
-                    label="ALERGIAS"
+                    label="Alergias"
                     colorClass="bg-red-50/50 dark:bg-red-900/10 border border-red-200/30 dark:border-red-800/20"
                     alwaysShowAll
                   />
                   <InlineEditableArray
                     items={culturasAtb}
                     onUpdate={(items) => handleUpdateField("utiCulturesAntibiotics", items)}
-                    label="CULTURAS / ATB"
+                    label="Culturas / ATB"
                     icon={<Pill className="h-3 w-3 text-red-400" />}
                     colorClass="bg-red-50/50 dark:bg-red-900/10 border border-red-200/30 dark:border-red-800/20"
                     alwaysShowAll
@@ -1419,20 +1418,20 @@ export function UtiPatientCard({
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Stethoscope className="h-3.5 w-3.5 text-slate-500" />
-                  <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">CLÍNICO</span>
+                  <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 tracking-wider">Clínico</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <InlineEditableArray
                     items={especialidades}
                     onUpdate={(items) => handleUpdateField("utiSpecialties", items)}
-                    label="ESPECIALIDADES"
+                    label="Especialidades"
                     colorClass="bg-muted/50 border border-border/50"
                     alwaysShowAll
                   />
                   <InlineEditableArray
                     items={exames}
                     onUpdate={(items) => handleUpdateField("relevantExams", items)}
-                    label="EXAMES"
+                    label="Exames"
                     colorClass="bg-muted/50 border border-border/50"
                     alwaysShowAll
                   />
@@ -1443,13 +1442,13 @@ export function UtiPatientCard({
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <FileText className="h-3.5 w-3.5 text-slate-400" />
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider">HISTÓRIA ADMISSIONAL</span>
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-500 tracking-wider">História admissional</span>
                 </div>
                 <div className="bg-muted/30 border border-border/30 rounded-md p-2">
                   <InlineEditableTextarea
                     value={patient.admissionHistory || ""}
                     onUpdate={(v) => handleUpdateField("admissionHistory", v)}
-                    placeholder="HISTÓRIA ADMISSIONAL / ANAMNESE..."
+                    placeholder="História admissional / Anamnese..."
                   />
                 </div>
               </div>
@@ -1458,25 +1457,25 @@ export function UtiPatientCard({
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <FolderOpen className="h-3.5 w-3.5 text-slate-400" />
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider">ADMINISTRATIVO</span>
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-500 tracking-wider">Administrativo</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   <InlineEditableArray
                     items={setorOrigem}
                     onUpdate={(items) => handleUpdateField("utiOriginSector", items)}
-                    label="SETOR DE ORIGEM"
+                    label="Setor de origem"
                     colorClass="bg-muted/30 border border-border/30"
                     alwaysShowAll
                   />
                   <InlineEditableArray
                     items={motivoAdmissao}
                     onUpdate={(items) => handleUpdateField("utiAdmissionReason", items)}
-                    label="MOTIVO DA ADMISSÃO"
+                    label="Motivo da admissão"
                     colorClass="bg-muted/30 border border-border/30"
                     alwaysShowAll
                   />
                   <div className="bg-muted/30 border border-border/30 rounded-md p-2">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">ADMISSÃO UTI</span>
+                    <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">Admissão UTI</span>
                     <InlineEditableField
                       value={getFieldArray("utiAdmissionDate")[0] || ""}
                       onUpdate={(v) => handleUpdateField("utiAdmissionDate", v ? [v] : [])}
@@ -1485,7 +1484,7 @@ export function UtiPatientCard({
                     />
                   </div>
                   <div className="bg-muted/30 border border-border/30 rounded-md p-2">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">PREVISÃO DE ALTA</span>
+                    <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">Previsão de alta</span>
                     <InlineEditableField
                       value={previsaoAlta[0] || ""}
                       onUpdate={(v) => handleUpdateField("utiDischargePrediction", v ? [v] : [])}
