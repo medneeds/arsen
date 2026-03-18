@@ -579,7 +579,7 @@ export default function UserManagementPage() {
 
               {/* Role Management */}
               <div className="space-y-2 pt-4 border-t">
-                <p className="text-xs text-muted-foreground uppercase font-semibold">Papel no Sistema</p>
+                <p className="text-xs text-muted-foreground font-semibold">Papel no Sistema</p>
                 <Select
                   value={selectedUser.role || "medico"}
                   onValueChange={(value) => handleUpdateRole(selectedUser.id, value)}
