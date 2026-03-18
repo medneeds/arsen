@@ -162,7 +162,7 @@ function MedicationAutocomplete({
           onFocus={() => setFocused(true)}
           onBlur={() => setTimeout(() => setFocused(false), 200)}
           placeholder={placeholder}
-          className="pl-9 bg-muted/30 border-border/50 focus:border-primary/50 transition-colors"
+          className="pl-9 bg-background/60 border-border/50 h-7 text-xs focus:border-primary/50 transition-colors"
         />
       </div>
       {focused && filtered.length > 0 && (
@@ -1826,34 +1826,33 @@ const PrescricaoPage = () => {
 
               return (
                 <div key={cat} className="rounded-xl border border-border bg-card overflow-hidden">
-                  {/* Category header */}
+                  {/* Category header with inline search */}
                   <div className={cn("flex items-center gap-2 px-3 py-2 border-b border-border/50", config.bgColor)}>
-                    <IconComp className={cn("h-3.5 w-3.5", config.color)} />
-                    <span className="text-xs font-semibold text-foreground">{config.label}</span>
-                    <Badge variant="secondary" className="text-[9px] h-4 px-1.5">{catItems.length}</Badge>
-                  </div>
-                  {/* Inline search bar for this category */}
-                  <div className="px-2 pt-2">
-                    {cat === 'nonstandard' ? (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={activeTab === 'nonstandard' ? nonStdName : ''}
-                          onChange={(e) => { setActiveTab('nonstandard'); setNonStdName(e.target.value); }}
-                          onKeyDown={(e) => { if (e.key === "Enter") addNonStandard(); }}
-                          placeholder="Adicionar item não padronizado..."
-                          className="bg-muted/30 border-border/50 h-8 text-xs"
+                    <IconComp className={cn("h-3.5 w-3.5 shrink-0", config.color)} />
+                    <span className="text-xs font-semibold text-foreground whitespace-nowrap">{config.label}</span>
+                    <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">{catItems.length}</Badge>
+                    <div className="flex-1 ml-2">
+                      {cat === 'nonstandard' ? (
+                        <div className="flex items-center gap-1.5">
+                          <Input
+                            value={activeTab === 'nonstandard' ? nonStdName : ''}
+                            onChange={(e) => { setActiveTab('nonstandard'); setNonStdName(e.target.value); }}
+                            onKeyDown={(e) => { if (e.key === "Enter") addNonStandard(); }}
+                            placeholder="Adicionar item não padronizado..."
+                            className="bg-background/60 border-border/50 h-7 text-xs"
+                          />
+                          <Button variant="outline" size="sm" onClick={addNonStandard} disabled={!nonStdName.trim()} className="h-7 px-2">
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <MedicationAutocomplete
+                          source={ALL_ITEMS_BY_CATEGORY[cat]}
+                          onSelect={addItem}
+                          placeholder={`Buscar ${config.label.toLowerCase()}...`}
                         />
-                        <Button variant="outline" size="sm" onClick={addNonStandard} disabled={!nonStdName.trim()} className="h-8 px-2">
-                          <Plus className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <MedicationAutocomplete
-                        source={ALL_ITEMS_BY_CATEGORY[cat]}
-                        onSelect={addItem}
-                        placeholder={`Buscar ${config.label.toLowerCase()}...`}
-                      />
-                    )}
+                      )}
+                    </div>
                   </div>
                   {/* Items */}
                   {catItems.length > 0 && (
