@@ -1484,7 +1484,7 @@ export function UtiPatientCard({
                     />
                   </div>
                   <div className="bg-muted/30 border border-border/30 rounded-md p-2">
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1">PREVISÃO DE ALTA</span>
+                    <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">Previsão de alta</span>
                     <InlineEditableField
                       value={previsaoAlta[0] || ""}
                       onUpdate={(v) => handleUpdateField("utiDischargePrediction", v ? [v] : [])}

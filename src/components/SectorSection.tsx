@@ -229,7 +229,7 @@ export function SectorSection({
               <ChevronDown className={`h-5 w-5 transition-transform print:hidden ${isOpen ? '' : '-rotate-90'}`} />
               <div className="flex items-center gap-2 print:gap-1">
                 <span className="text-lg print:text-sm">{displayIcon}</span>
-                <h2 className="text-lg font-bold text-foreground print:text-[10px] uppercase">{displayTitle}</h2>
+                <h2 className="text-lg font-bold text-foreground print:text-[10px]">{displayTitle}</h2>
               </div>
             </button>
           </CollapsibleTrigger>

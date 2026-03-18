@@ -965,87 +965,57 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
         }
       } else {
         updatedPatient.utiAdmissionReason = (patient.utiAdmissionReason || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiCurrentStatus") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiCurrentStatus = [...(patient.utiCurrentStatus || []), editValue.toUpperCase()];
+          updatedPatient.utiCurrentStatus = [...(patient.utiCurrentStatus || []), editValue];
         }
       } else {
         updatedPatient.utiCurrentStatus = (patient.utiCurrentStatus || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiDevices") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiDevices = [...(patient.utiDevices || []), editValue.toUpperCase()];
+          updatedPatient.utiDevices = [...(patient.utiDevices || []), editValue];
         }
       } else {
         updatedPatient.utiDevices = (patient.utiDevices || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiSpecialties") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiSpecialties = [...(patient.utiSpecialties || []), editValue.toUpperCase()];
+          updatedPatient.utiSpecialties = [...(patient.utiSpecialties || []), editValue];
         }
       } else {
         updatedPatient.utiSpecialties = (patient.utiSpecialties || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiCulturesAntibiotics") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiCulturesAntibiotics = [...(patient.utiCulturesAntibiotics || []), editValue.toUpperCase()];
+          updatedPatient.utiCulturesAntibiotics = [...(patient.utiCulturesAntibiotics || []), editValue];
         }
       } else {
         updatedPatient.utiCulturesAntibiotics = (patient.utiCulturesAntibiotics || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     } else if (editingField === "utiOriginSector") {
       if (editingArrayIndex === -2) {
         if (editValue.trim()) {
-          updatedPatient.utiOriginSector = [...(patient.utiOriginSector || []), editValue.toUpperCase()];
+          updatedPatient.utiOriginSector = [...(patient.utiOriginSector || []), editValue];
         }
       } else {
         updatedPatient.utiOriginSector = (patient.utiOriginSector || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
-        );
-      }
-    } else if (editingField === "utiAdmissionReason") {
-      if (editingArrayIndex === -2) {
-        if (editValue.trim()) {
-          updatedPatient.utiAdmissionReason = [...(patient.utiAdmissionReason || []), editValue.toUpperCase()];
-        }
-      } else {
-        updatedPatient.utiAdmissionReason = (patient.utiAdmissionReason || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
-        );
-      }
-    } else if (editingField === "utiCurrentStatus") {
-      if (editingArrayIndex === -2) {
-        if (editValue.trim()) {
-          updatedPatient.utiCurrentStatus = [...(patient.utiCurrentStatus || []), editValue.toUpperCase()];
-        }
-      } else {
-        updatedPatient.utiCurrentStatus = (patient.utiCurrentStatus || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
-        );
-      }
-    } else if (editingField === "utiDevices") {
-      if (editingArrayIndex === -2) {
-        if (editValue.trim()) {
-          updatedPatient.utiDevices = [...(patient.utiDevices || []), editValue.toUpperCase()];
-        }
-      } else {
-        updatedPatient.utiDevices = (patient.utiDevices || []).map((item, i) => 
-          i === editingArrayIndex ? editValue.toUpperCase() : item
+          i === editingArrayIndex ? editValue : item
         );
       }
     }
