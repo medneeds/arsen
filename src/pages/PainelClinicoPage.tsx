@@ -2,11 +2,12 @@ import { useState, useMemo } from "react";
 import { usePatients } from "@/hooks/usePatients";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { Patient } from "@/types/patient";
-import { differenceInDays, parseISO } from "date-fns";
+import { differenceInDays, parseISO, formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Filter, FileText, Pill, Activity, ClipboardList, FolderOpen } from "lucide-react";
+import { Search, Eye, Filter, FileText, Pill, Activity, ClipboardList, FolderOpen, User, Calendar, Clock, Stethoscope, Heart, TrendingUp, AlertTriangle, TestTubes, Syringe, Shield, Thermometer } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -15,6 +16,32 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+
+const parseTextArray = (input: string | string[] | undefined | null): string[] => {
+  if (!input) return [];
+  if (Array.isArray(input)) return input.filter(item => item && item.trim());
+  return input.split('\n').filter(item => item && item.trim());
+};
+
+const clinicalStatusLabels: Record<string, { label: string; color: string }> = {
+  gravissimo: { label: "Gravíssimo", color: "bg-red-600 text-white" },
+  grave: { label: "Grave", color: "bg-red-500 text-white" },
+  grave_estavel: { label: "Grave estável", color: "bg-orange-500 text-white" },
+  potencialmente_grave: { label: "Potencialmente grave", color: "bg-amber-500 text-white" },
+  regular: { label: "Regular", color: "bg-blue-500 text-white" },
+  paliativado: { label: "Paliativado", color: "bg-purple-500 text-white" },
+};
+
+const formatStayDuration = (admissionDate: string): string => {
+  if (!admissionDate) return "—";
+  try {
+    const date = parseISO(admissionDate);
+    if (isNaN(date.getTime())) return "—";
+    return formatDistanceToNow(date, { locale: ptBR, addSuffix: false });
+  } catch {
+    return "—";
+  }
+};
 
 // Helpers
 const calcDaysInternment = (admissionDate: string): number | null => {
