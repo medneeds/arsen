@@ -188,7 +188,7 @@ export default function AuthPage() {
     <>
       {showLoadingScreen && (
         <LoadingScreen
-          onComplete={() => navigate("/")}
+          onComplete={() => navigate(selectedProfile === "imagem" ? "/setor-imagem" : "/")}
           duration={2000}
         />
       )}
