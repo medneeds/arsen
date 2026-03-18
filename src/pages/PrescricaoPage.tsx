@@ -620,12 +620,21 @@ function SortablePrescriptionItemRow({
                 )}
               </div>
 
-              {/* Instructions */}
+              {/* Auto-synced preparation description */}
+              {(() => {
+                const autoDesc = buildPrepDescription(item);
+                return autoDesc ? (
+                  <p className="text-[11px] text-muted-foreground italic px-2.5 py-1 rounded bg-muted/20 border border-border/20 leading-relaxed">
+                    {autoDesc}
+                  </p>
+                ) : null;
+              })()}
+              {/* Additional manual notes */}
               <Input
                 value={item.instructions}
                 onChange={(e) => onUpdate(item.id, "instructions", e.target.value)}
                 className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic"
-                placeholder="Observações adicionais de preparo..."
+                placeholder="Observações adicionais..."
               />
             </>
           )}
