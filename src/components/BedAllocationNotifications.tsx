@@ -128,6 +128,7 @@ export function BedAllocationNotifications() {
   const { currentHospital } = useHospital();
   const { requests, pendingCount, approveRequest, setDiscussing, rejectRequest, refetch } = useBedAllocationRequests();
   const { playNotificationSound } = useNotificationSound();
+  const navigate = useNavigate();
   const [selectedRequest, setSelectedRequest] = useState<BedAllocationRequest | null>(null);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
