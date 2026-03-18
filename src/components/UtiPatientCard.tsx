@@ -630,7 +630,7 @@ function InlineEditableField({ value, onUpdate, placeholder = "-", className }: 
   }, [value]);
 
   const handleSave = () => {
-    onUpdate(localValue.toUpperCase());
+    onUpdate(localValue);
     setIsEditing(false);
   };
 
@@ -640,8 +640,8 @@ function InlineEditableField({ value, onUpdate, placeholder = "-", className }: 
         ref={inputRef}
         type="text"
         value={localValue}
-        onChange={(e) => setLocalValue(e.target.value.toUpperCase())}
-        className={cn("bg-background border border-primary/30 rounded px-1.5 py-0.5 outline-none text-sm w-full uppercase", className)}
+        onChange={(e) => setLocalValue(e.target.value)}
+        className={cn("bg-background border border-primary/30 rounded px-1.5 py-0.5 outline-none text-sm w-full", className)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleSave();
           if (e.key === 'Escape') setIsEditing(false);
