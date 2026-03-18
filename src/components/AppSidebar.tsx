@@ -169,16 +169,16 @@ export function AppSidebar({
     // Porta: minimal access
     if (isDoorUser) {
       return [
-        { title: "MAPA", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
-        { title: "ASSISTENTE CLÍNICO", icon: Brain, profiles: ["medico"], items: [
-          { name: "EXAMINUS AI", link: "/ia", profiles: ["medico"] },
+        { title: "Mapa", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
+        { title: "Assistente Clínico", icon: Brain, profiles: ["medico"], items: [
+          { name: "Examinus AI", link: "/ia", profiles: ["medico"] },
         ]},
       ];
     }
     // Visitante: read-only map
     if (role === "visitante") {
       return [
-        { title: "MAPA", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
+        { title: "Mapa", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
       ];
     }
     // Filter sections by profile, then filter sub-items within each section
