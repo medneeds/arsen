@@ -551,7 +551,7 @@ export default function UserManagementPage() {
                     <p className="text-sm">{selectedUser.specialty || "—"}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Phone className="h-3 w-3" /> Telefone
                     </p>
                     <p className="text-sm">{selectedUser.phone || "—"}</p>
