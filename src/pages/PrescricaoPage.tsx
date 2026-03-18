@@ -162,7 +162,7 @@ function MedicationAutocomplete({
           onFocus={() => setFocused(true)}
           onBlur={() => setTimeout(() => setFocused(false), 200)}
           placeholder={placeholder}
-          className="pl-9 bg-muted/30 border-border/50 focus:border-primary/50 transition-colors"
+          className="pl-9 bg-background/60 border-border/50 h-7 text-xs focus:border-primary/50 transition-colors"
         />
       </div>
       {focused && filtered.length > 0 && (
