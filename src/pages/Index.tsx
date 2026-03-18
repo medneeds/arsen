@@ -1262,7 +1262,7 @@ const Index = () => {
                               <ChevronDown className={`h-5 w-5 transition-transform ${isOutsideSectionOpen ? '' : '-rotate-90'}`} />
                               <div className="flex items-center gap-2">
                                 <span className="text-lg">📍</span>
-                                <h2 className="text-lg font-bold text-foreground uppercase">Fora das Alas</h2>
+                                <h2 className="text-lg font-bold text-foreground">Fora das Alas</h2>
                               </div>
                             </button>
                           </CollapsibleTrigger>
