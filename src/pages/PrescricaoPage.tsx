@@ -947,19 +947,17 @@ function parseScheduleSlots(schedule: string): string[] {
     .filter(s => /^\d{1,2}h?$/.test(s) || /^\d{1,2}:\d{2}$/.test(s));
 }
 
-// --- Print-only Item Row ---
+// --- Print-only Item Row (dynamic schedule slots) ---
 function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }) {
   const hasPreparo = item.diluent || item.diluentVolume || item.accessType || item.infusionTime;
   const slots = parseScheduleSlots(item.schedule);
   
   return (
     <tr style={{ pageBreakInside: 'avoid' }}>
-      {/* Nº */}
-      <td style={{ width: '24px', border: '0.5px solid #94a3b8', padding: '2px 0', textAlign: 'center', verticalAlign: 'top', fontSize: '8pt', fontWeight: 800, color: '#0f172a' }}>
+      <td style={{ width: '24px', border: '0.5px solid #cbd5e1', padding: '2px 0', textAlign: 'center', verticalAlign: 'top', fontSize: '8pt', fontWeight: 800, color: '#0f172a', backgroundColor: '#fff' }}>
         {index + 1}
       </td>
-      {/* Prescrição */}
-      <td style={{ border: '0.5px solid #94a3b8', padding: '3px 6px', verticalAlign: 'top' }}>
+      <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', verticalAlign: 'top', backgroundColor: '#fff' }}>
         <div style={{ fontSize: '8.5pt', lineHeight: '1.35', color: '#0f172a' }}>
           <span style={{ fontWeight: 700 }}>{item.name}</span>
           {item.presentation && item.presentation !== '-' && (
@@ -991,24 +989,23 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
           </div>
         )}
       </td>
-      {/* Aprazamento — up to 6 time slots */}
-      {[0,1,2,3,4,5].map(i => (
-        <td key={i} style={{ 
-          width: '38px', 
-          border: '0.5px solid #94a3b8', 
-          textAlign: 'center', 
-          verticalAlign: 'middle',
-          fontSize: '7.5pt',
-          fontWeight: 600,
-          fontFamily: 'monospace',
-          color: '#1e293b',
-          padding: '2px 1px'
-        }}>
-          {slots[i] || ''}
-        </td>
-      ))}
+      {/* Aprazamento — dynamic: times distributed in single cell */}
+      <td style={{ 
+        border: '0.5px solid #cbd5e1', 
+        textAlign: 'center', 
+        verticalAlign: 'middle',
+        fontSize: '7.5pt',
+        fontWeight: 600,
+        fontFamily: 'monospace',
+        color: '#1e293b',
+        padding: '2px 4px',
+        backgroundColor: '#fff',
+        whiteSpace: 'nowrap',
+      }}>
+        {slots.length > 0 ? slots.join('  ') : ''}
+      </td>
       {/* Checagem enfermagem */}
-      <td style={{ width: '28px', border: '0.5px solid #94a3b8', textAlign: 'center', verticalAlign: 'middle' }}>
+      <td style={{ width: '28px', border: '0.5px solid #cbd5e1', textAlign: 'center', verticalAlign: 'middle', backgroundColor: '#fff' }}>
         <div style={{ width: '10px', height: '10px', border: '1px solid #94a3b8', borderRadius: '2px', margin: '0 auto' }} />
       </td>
     </tr>
@@ -1018,23 +1015,23 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
 function PrintSimpleRow({ item, index }: { item: PrescriptionItem; index: number }) {
   return (
     <tr style={{ pageBreakInside: 'avoid' }}>
-      <td style={{ width: '24px', border: '0.5px solid #94a3b8', padding: '2px 0', textAlign: 'center', verticalAlign: 'top', fontSize: '8pt', fontWeight: 800, color: '#0f172a' }}>
+      <td style={{ width: '24px', border: '0.5px solid #cbd5e1', padding: '2px 0', textAlign: 'center', verticalAlign: 'top', fontSize: '8pt', fontWeight: 800, color: '#0f172a', backgroundColor: '#fff' }}>
         {index + 1}
       </td>
-      <td colSpan={7} style={{ border: '0.5px solid #94a3b8', padding: '2px 6px', verticalAlign: 'top' }}>
+      <td colSpan={2} style={{ border: '0.5px solid #cbd5e1', padding: '2px 6px', verticalAlign: 'top', backgroundColor: '#fff' }}>
         <div style={{ fontSize: '8.5pt', lineHeight: '1.35', color: '#0f172a' }}>
           {item.name}
           {item.dose && item.dose !== '-' ? ` — ${item.dose}` : ''}
           {item.posology && item.posology !== '-' ? ` — ${item.posology}` : ''}
         </div>
       </td>
-      <td style={{ width: '28px', border: '0.5px solid #94a3b8', textAlign: 'center', verticalAlign: 'middle' }}>
+      <td style={{ width: '28px', border: '0.5px solid #cbd5e1', textAlign: 'center', verticalAlign: 'middle', backgroundColor: '#fff' }}>
         <div style={{ width: '10px', height: '10px', border: '1px solid #94a3b8', borderRadius: '2px', margin: '0 auto' }} />
       </td>
     </tr>
   );
 }
-// --- Batch Action Bar ---
+
 function BatchActionBar({
   selectedCount,
   onSelectAll,
