@@ -3313,7 +3313,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                                 const target = e.target as HTMLTextAreaElement;
                                 const start = target.selectionStart;
                                 const end = target.selectionEnd;
-                                setEditValue(e.target.value.toUpperCase());
+                                setEditValue(e.target.value);
                                 // Restaura a posição do cursor após a atualização
                                 requestAnimationFrame(() => {
                                   target.setSelectionRange(start, end);
