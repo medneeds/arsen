@@ -807,28 +807,50 @@ function RenewalDialog({
 
 // --- Print-only Item Row ---
 function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }) {
+  const hasPreparo = item.diluent || item.diluentVolume || item.accessType || item.infusionTime;
   return (
     <tr style={{ pageBreakInside: 'avoid' }}>
-      <td className="border border-black/25 px-1 py-[2px] align-top" style={{ width: '75%' }}>
-        <p className="text-[9px] leading-[1.3]">
-          <span className="font-bold">{index + 1}. {item.name}</span>
-          {item.presentation && item.presentation !== '-' && <span className="font-normal"> ({item.presentation})</span>}
-          {item.dose && item.dose !== '-' && <span> — {item.dose}</span>}
-          {item.route && item.route !== '-' && <span> — {item.route}</span>}
-          {item.posology && item.posology !== '-' && <span> — {item.posology}</span>}
-          {item.schedule && item.schedule !== '-' && <span> — <span className="font-semibold">{item.schedule}</span></span>}
-          {item.flags.length > 0 && (
-            <span className="font-bold text-[8px]"> [{item.flags.join(', ')}]</span>
-          )}
-          {item.status === 'suspended' && <span className="text-red-600 font-bold"> [Suspenso]</span>}
-        </p>
-        {item.instructions && (
-          <p className="text-[8px] italic text-gray-600 ml-2 leading-[1.2]">↳ {item.instructions}</p>
-        )}
+      <td className="border border-black/20 px-1.5 py-[3px] align-top" style={{ width: '75%' }}>
+        <div className="flex items-baseline gap-1 text-[8.5pt] leading-[1.35]">
+          <span className="font-bold text-black shrink-0">{index + 1}.</span>
+          <div>
+            <span className="font-bold text-black">{item.name}</span>
+            {item.presentation && item.presentation !== '-' && (
+              <span className="text-gray-600 font-normal"> ({item.presentation})</span>
+            )}
+            {item.dose && item.dose !== '-' && <span className="text-black"> — {item.dose}</span>}
+            {item.route && item.route !== '-' && <span className="text-black"> — {item.route}</span>}
+            {item.posology && item.posology !== '-' && <span className="text-black"> — {item.posology}</span>}
+            {item.schedule && item.schedule !== '-' && (
+              <span className="font-semibold text-black"> — {item.schedule}</span>
+            )}
+            {item.flags.length > 0 && (
+              <span className="text-[7.5pt] font-bold text-black ml-1">[{item.flags.join(', ')}]</span>
+            )}
+            {item.status === 'suspended' && (
+              <span className="text-[7.5pt] font-bold text-red-700 ml-1">[SUSPENSO]</span>
+            )}
+            {hasPreparo && (
+              <div className="text-[7pt] text-gray-500 italic leading-[1.25] mt-[1px] ml-2">
+                ↳ {[
+                  item.action && item.action !== '-' ? item.action : null,
+                  item.diluent && item.diluent !== '-' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : null,
+                  item.accessType && item.accessType !== '-' ? item.accessType : null,
+                  item.infusionTime && item.infusionTime !== '-' ? `Correr em ${item.infusionTime}min` : null,
+                ].filter(Boolean).join(' · ')}
+              </div>
+            )}
+            {item.instructions && !hasPreparo && (
+              <div className="text-[7pt] text-gray-500 italic leading-[1.25] mt-[1px] ml-2">
+                ↳ {item.instructions}
+              </div>
+            )}
+          </div>
+        </div>
       </td>
       {[0,1,2,3,4,5].map(i => (
-        <td key={i} className="border border-black/25 text-center align-middle" style={{ width: '4.16%', minWidth: '24px' }}>
-          <div className="h-[18px]" />
+        <td key={i} className="border border-black/20 text-center align-middle" style={{ width: '4.16%', minWidth: '22px' }}>
+          <div className="h-[16px]" />
         </td>
       ))}
     </tr>
@@ -838,12 +860,13 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
 function PrintSimpleRow({ item, index }: { item: PrescriptionItem; index: number }) {
   return (
     <tr style={{ pageBreakInside: 'avoid' }}>
-      <td className="border border-black/25 px-1 py-[2px] align-top" colSpan={7}>
-        <p className="text-[9px] leading-[1.3]">
-          <span className="font-bold">{index + 1}.</span> {item.name}
-          {item.dose && item.dose !== '-' ? ` — ${item.dose}` : ''}
-          {item.posology && item.posology !== '-' ? ` — ${item.posology}` : ''}
-        </p>
+      <td className="border border-black/20 px-1.5 py-[2px] align-top" colSpan={7}>
+        <div className="text-[8.5pt] leading-[1.35]">
+          <span className="font-bold text-black">{index + 1}.</span>{' '}
+          <span className="text-black">{item.name}</span>
+          {item.dose && item.dose !== '-' ? <span className="text-black"> — {item.dose}</span> : ''}
+          {item.posology && item.posology !== '-' ? <span className="text-black"> — {item.posology}</span> : ''}
+        </div>
       </td>
     </tr>
   );
@@ -1820,34 +1843,56 @@ const PrescricaoPage = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-2 print:space-y-1 print:max-w-none print:text-black animate-fade-in">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-0 print:m-0 print:space-y-0 print:max-w-none print:text-black animate-fade-in">
+      {/* ===== PRINT STYLES ===== */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          @page { size: A4 portrait; margin: 6mm 8mm 10mm 8mm; }
+        }
+      ` }} />
+
       {/* ===== PRINT-ONLY LETTERHEAD ===== */}
-      <div className="hidden print:block prescription-print-section mb-1">
-        <div className="flex items-center justify-between border-b-2 border-black pb-1 mb-1">
-          <img src={socorraoLogo} alt="Socorrão I" className="h-8 object-contain" />
-          <div className="text-center flex-1 px-2">
-            <p className="text-[10px] font-bold uppercase tracking-wide leading-tight text-black">Hospital Municipal Djalma Marques — Socorrão I</p>
-            <p className="text-[8px] text-gray-500 leading-tight">Prescrição Médica Diária</p>
+      <div className="hidden print:block prescription-print-section mb-0">
+        {/* Header bar */}
+        <div className="flex items-center justify-between pb-1 mb-1" style={{ borderBottom: '1.5px solid #0f172a' }}>
+          <img src={socorraoLogo} alt="Socorrão I" className="h-7 object-contain" />
+          <div className="text-center flex-1 px-3">
+            <p className="text-[9pt] font-extrabold uppercase tracking-widest leading-none text-black">Hospital Municipal Djalma Marques — Socorrão I</p>
+            <p className="text-[7pt] text-gray-500 leading-tight mt-[1px]">Prescrição Médica Diária</p>
           </div>
-          <img src={bighelpLogo} alt="BigHelp Map" className="h-7 object-contain" />
+          <img src={bighelpLogo} alt="BigHelp Map" className="h-6 object-contain opacity-30" />
         </div>
-        <table className="w-full border-collapse border border-black/30 text-[9px] text-black">
-          <tbody>
-            <tr>
-              <td className="border border-black/20 px-1 py-[2px]" colSpan={3}><span className="font-bold">Paciente:</span> {patient.name || '___________________________________'}</td>
-              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Leito:</span> {patient.bed || '______'}</td>
-              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Prontuário:</span> {patient.record || '________'}</td>
-              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Data:</span> {prescriptionDate}</td>
-            </tr>
-            <tr>
-              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Idade:</span> {patient.age || '____'}</td>
-              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Sexo:</span> {patient.sex || '____'}</td>
-              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Peso:</span> {patient.weight ? `${patient.weight}kg` : '____'}</td>
-              <td className="border border-black/20 px-1 py-[2px]"><span className="font-bold">Admissão:</span> {patient.admissionDate || '__/__/____'}</td>
-              <td className="border border-black/20 px-1 py-[2px]" colSpan={2}><span className="font-bold text-red-600">Alergias:</span> <span className="text-red-600 font-semibold">{patient.allergies || 'NDAM'}</span></td>
-            </tr>
-          </tbody>
-        </table>
+        {/* Patient data — compact single-row grid */}
+        <div className="grid grid-cols-6 gap-0 text-[8pt] text-black" style={{ border: '0.5px solid #94a3b8' }}>
+          <div className="col-span-3 px-1.5 py-[2px]" style={{ borderRight: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold">Pac:</span> {patient.name || '___________________________________'}
+          </div>
+          <div className="px-1.5 py-[2px]" style={{ borderRight: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold">Leito:</span> {patient.bed || '______'}
+          </div>
+          <div className="px-1.5 py-[2px]" style={{ borderRight: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold">Pront:</span> {patient.record || '________'}
+          </div>
+          <div className="px-1.5 py-[2px]">
+            <span className="font-bold">Data:</span> {prescriptionDate}
+          </div>
+          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold">Idade:</span> {patient.age || '____'}
+          </div>
+          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold">Sexo:</span> {patient.sex || '____'}
+          </div>
+          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold">Peso:</span> {patient.weight ? `${patient.weight}kg` : '____'}
+          </div>
+          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold">Adm:</span> {patient.admissionDate || '__/__/____'}
+          </div>
+          <div className="col-span-2 px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1' }}>
+            <span className="font-bold text-red-700">Alergias:</span>{' '}
+            <span className="text-red-700 font-semibold">{patient.allergies || 'NDAM'}</span>
+          </div>
+        </div>
       </div>
 
       {/* Page Title */}
@@ -2226,15 +2271,15 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== PRINT-ONLY PRESCRIPTION BODY ===== */}
-      <div className="hidden print:block prescription-print-section">
-        <table className="w-full border-collapse text-black">
+      <div className="hidden print:block prescription-print-section" style={{ marginTop: '4px' }}>
+        <table className="w-full border-collapse text-black" style={{ borderSpacing: 0 }}>
           <thead>
             <tr>
-              <th className="border border-black/30 px-1 py-[2px] text-left text-[8px] font-bold uppercase tracking-wider bg-gray-100" style={{ width: '75%' }}>
+              <th className="px-1.5 py-[3px] text-left text-[7pt] font-bold uppercase tracking-wider text-white" style={{ width: '75%', backgroundColor: '#1e293b', border: '0.5px solid #1e293b' }}>
                 Prescrição
               </th>
               {['','','','','',''].map((_, i) => (
-                <th key={i} className="border border-black/30 px-0 py-[2px] text-center text-[7px] font-bold bg-gray-100 uppercase" style={{ width: '4.16%' }}>
+                <th key={i} className="px-0 py-[3px] text-center text-[6pt] font-bold uppercase text-white" style={{ width: '4.16%', backgroundColor: '#1e293b', border: '0.5px solid #1e293b' }}>
                   {i === 0 ? 'Apraz.' : ''}
                 </th>
               ))}
@@ -2248,7 +2293,11 @@ const PrescricaoPage = () => {
               const simple = isSimpleCategory(cat);
               return (
                 <React.Fragment key={cat}>
-                  <tr><td colSpan={7} className="border border-black/30 px-1 py-[1px] text-[8px] font-bold uppercase tracking-wider bg-gray-50">{config.label}</td></tr>
+                  <tr>
+                    <td colSpan={7} className="px-1.5 py-[2px] text-[7pt] font-bold uppercase tracking-wider" style={{ backgroundColor: '#f1f5f9', borderLeft: '3px solid #475569', border: '0.5px solid #e2e8f0', color: '#334155', letterSpacing: '0.6px' }}>
+                      {config.label}
+                    </td>
+                  </tr>
                   {catItems.map((item, i) => (
                     simple
                       ? <PrintSimpleRow key={item.id} item={item} index={i} />
@@ -2261,26 +2310,24 @@ const PrescricaoPage = () => {
         </table>
 
         {/* Print footer */}
-        <div className="pt-4 mt-2 border-t border-black/20 flex items-end justify-between" style={{ pageBreakInside: 'avoid' }}>
-          <div className="text-[7px] text-gray-500">
-            <p>Gerado em: {prescriptionDate}</p>
-            <p>BigHelp Map — Prescrição Digital</p>
+        <div className="flex items-end justify-between" style={{ paddingTop: '10px', marginTop: '6px', borderTop: '0.5px solid #e2e8f0', pageBreakInside: 'avoid' }}>
+          <div className="text-[6pt] text-gray-400" style={{ lineHeight: '1.4' }}>
+            <p>{prescriptionDate} • BigHelp Map</p>
           </div>
           {digitalSignature ? (
             <div className="text-center">
-              <div className="border border-black/40 rounded px-3 py-1.5 inline-block">
-                <p className="text-[9px] font-bold text-black">✓ ASSINADO DIGITALMENTE</p>
-                <p className="text-[8px] text-black font-medium">{digitalSignature.doctorName}</p>
-                <p className="text-[7px] text-gray-600">CRM: {digitalSignature.crm}</p>
-                <p className="text-[7px] text-gray-600">{digitalSignature.signedAt}</p>
-                <p className="text-[6px] text-gray-400 font-mono">Hash: {digitalSignature.hash}</p>
+              <div style={{ border: '1px solid #334155', borderRadius: '4px', padding: '4px 10px', display: 'inline-block' }}>
+                <p className="text-[8pt] font-bold text-black">✓ ASSINADO DIGITALMENTE</p>
+                <p className="text-[7pt] text-black font-medium">{digitalSignature.doctorName}</p>
+                <p className="text-[6pt] text-gray-600">CRM: {digitalSignature.crm} • {digitalSignature.signedAt}</p>
+                <p className="text-[5pt] text-gray-400 font-mono">Hash: {digitalSignature.hash}</p>
               </div>
             </div>
           ) : (
             <div className="text-center">
-              <div className="w-44 border-b border-black mb-1" />
-              <p className="text-[8px] text-black font-medium">Assinatura / Carimbo do Médico</p>
-              <p className="text-[7px] text-gray-500">CRM: _______________</p>
+              <div style={{ width: '160px', borderBottom: '1px solid #000', marginBottom: '3px' }} />
+              <p className="text-[7pt] text-black font-medium">Assinatura / Carimbo</p>
+              <p className="text-[6pt] text-gray-500">CRM: _______________</p>
             </div>
           )}
         </div>
