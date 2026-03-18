@@ -1785,7 +1785,7 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== PRESCRIPTION TABS ===== */}
-      <div className="rounded-xl border border-border bg-card print:hidden">
+      <div className={cn("rounded-xl border border-border bg-card print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as PrescriptionCategory)} className="w-full">
           <div className="border-b border-border px-2 pt-2">
             <TabsList className="h-auto flex-wrap gap-1 bg-transparent justify-start p-0 pb-2">
