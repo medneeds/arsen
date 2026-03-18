@@ -805,54 +805,79 @@ function RenewalDialog({
   );
 }
 
+// --- Parse schedule string into time slots ---
+function parseScheduleSlots(schedule: string): string[] {
+  if (!schedule || schedule === '-') return [];
+  return schedule
+    .split(/[,;/\s]+/)
+    .map(s => s.trim().replace(/[hH]$/, 'h'))
+    .filter(s => /^\d{1,2}h?$/.test(s) || /^\d{1,2}:\d{2}$/.test(s));
+}
+
 // --- Print-only Item Row ---
 function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }) {
   const hasPreparo = item.diluent || item.diluentVolume || item.accessType || item.infusionTime;
+  const slots = parseScheduleSlots(item.schedule);
+  
   return (
     <tr style={{ pageBreakInside: 'avoid' }}>
-      <td className="border border-black/20 px-1.5 py-[3px] align-top" style={{ width: '75%' }}>
-        <div className="flex items-baseline gap-1 text-[8.5pt] leading-[1.35]">
-          <span className="font-bold text-black shrink-0">{index + 1}.</span>
-          <div>
-            <span className="font-bold text-black">{item.name}</span>
-            {item.presentation && item.presentation !== '-' && (
-              <span className="text-gray-600 font-normal"> ({item.presentation})</span>
-            )}
-            {item.dose && item.dose !== '-' && <span className="text-black"> — {item.dose}</span>}
-            {item.route && item.route !== '-' && <span className="text-black"> — {item.route}</span>}
-            {item.posology && item.posology !== '-' && <span className="text-black"> — {item.posology}</span>}
-            {item.schedule && item.schedule !== '-' && (
-              <span className="font-semibold text-black"> — {item.schedule}</span>
-            )}
-            {item.flags.length > 0 && (
-              <span className="text-[7.5pt] font-bold text-black ml-1">[{item.flags.join(', ')}]</span>
-            )}
-            {item.status === 'suspended' && (
-              <span className="text-[7.5pt] font-bold text-red-700 ml-1">[SUSPENSO]</span>
-            )}
-            {hasPreparo && (
-              <div className="text-[7pt] text-gray-500 italic leading-[1.25] mt-[1px] ml-2">
-                ↳ {[
-                  item.action && item.action !== '-' ? item.action : null,
-                  item.diluent && item.diluent !== '-' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : null,
-                  item.accessType && item.accessType !== '-' ? item.accessType : null,
-                  item.infusionTime && item.infusionTime !== '-' ? `Correr em ${item.infusionTime}min` : null,
-                ].filter(Boolean).join(' · ')}
-              </div>
-            )}
-            {item.instructions && !hasPreparo && (
-              <div className="text-[7pt] text-gray-500 italic leading-[1.25] mt-[1px] ml-2">
-                ↳ {item.instructions}
-              </div>
-            )}
-          </div>
-        </div>
+      {/* Nº */}
+      <td style={{ width: '24px', border: '0.5px solid #94a3b8', padding: '2px 0', textAlign: 'center', verticalAlign: 'top', fontSize: '8pt', fontWeight: 800, color: '#0f172a' }}>
+        {index + 1}
       </td>
+      {/* Prescrição */}
+      <td style={{ border: '0.5px solid #94a3b8', padding: '3px 6px', verticalAlign: 'top' }}>
+        <div style={{ fontSize: '8.5pt', lineHeight: '1.35', color: '#0f172a' }}>
+          <span style={{ fontWeight: 700 }}>{item.name}</span>
+          {item.presentation && item.presentation !== '-' && (
+            <span style={{ fontWeight: 400, color: '#475569' }}> ({item.presentation})</span>
+          )}
+          {item.dose && item.dose !== '-' && <span> — {item.dose}</span>}
+          {item.route && item.route !== '-' && <span> — {item.route}</span>}
+          {item.posology && item.posology !== '-' && <span> — {item.posology}</span>}
+          {item.flags.length > 0 && (
+            <span style={{ fontSize: '7.5pt', fontWeight: 700, marginLeft: '3px', color: '#0f172a' }}>[{item.flags.join(', ')}]</span>
+          )}
+          {item.status === 'suspended' && (
+            <span style={{ fontSize: '7.5pt', fontWeight: 700, color: '#dc2626', marginLeft: '3px' }}>[SUSPENSO]</span>
+          )}
+        </div>
+        {hasPreparo && (
+          <div style={{ fontSize: '7pt', color: '#64748b', fontStyle: 'italic', lineHeight: '1.2', marginTop: '1px', paddingLeft: '8px' }}>
+            ↳ {[
+              item.action && item.action !== '-' ? item.action : null,
+              item.diluent && item.diluent !== '-' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : null,
+              item.accessType && item.accessType !== '-' ? item.accessType : null,
+              item.infusionTime && item.infusionTime !== '-' ? `Correr em ${item.infusionTime}min` : null,
+            ].filter(Boolean).join(' · ')}
+          </div>
+        )}
+        {item.instructions && !hasPreparo && (
+          <div style={{ fontSize: '7pt', color: '#64748b', fontStyle: 'italic', lineHeight: '1.2', marginTop: '1px', paddingLeft: '8px' }}>
+            ↳ {item.instructions}
+          </div>
+        )}
+      </td>
+      {/* Aprazamento — up to 6 time slots */}
       {[0,1,2,3,4,5].map(i => (
-        <td key={i} className="border border-black/20 text-center align-middle" style={{ width: '4.16%', minWidth: '22px' }}>
-          <div className="h-[16px]" />
+        <td key={i} style={{ 
+          width: '38px', 
+          border: '0.5px solid #94a3b8', 
+          textAlign: 'center', 
+          verticalAlign: 'middle',
+          fontSize: '7.5pt',
+          fontWeight: 600,
+          fontFamily: 'monospace',
+          color: '#1e293b',
+          padding: '2px 1px'
+        }}>
+          {slots[i] || ''}
         </td>
       ))}
+      {/* Checagem enfermagem */}
+      <td style={{ width: '28px', border: '0.5px solid #94a3b8', textAlign: 'center', verticalAlign: 'middle' }}>
+        <div style={{ width: '10px', height: '10px', border: '1px solid #94a3b8', borderRadius: '2px', margin: '0 auto' }} />
+      </td>
     </tr>
   );
 }
@@ -860,18 +885,22 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
 function PrintSimpleRow({ item, index }: { item: PrescriptionItem; index: number }) {
   return (
     <tr style={{ pageBreakInside: 'avoid' }}>
-      <td className="border border-black/20 px-1.5 py-[2px] align-top" colSpan={7}>
-        <div className="text-[8.5pt] leading-[1.35]">
-          <span className="font-bold text-black">{index + 1}.</span>{' '}
-          <span className="text-black">{item.name}</span>
-          {item.dose && item.dose !== '-' ? <span className="text-black"> — {item.dose}</span> : ''}
-          {item.posology && item.posology !== '-' ? <span className="text-black"> — {item.posology}</span> : ''}
+      <td style={{ width: '24px', border: '0.5px solid #94a3b8', padding: '2px 0', textAlign: 'center', verticalAlign: 'top', fontSize: '8pt', fontWeight: 800, color: '#0f172a' }}>
+        {index + 1}
+      </td>
+      <td colSpan={7} style={{ border: '0.5px solid #94a3b8', padding: '2px 6px', verticalAlign: 'top' }}>
+        <div style={{ fontSize: '8.5pt', lineHeight: '1.35', color: '#0f172a' }}>
+          {item.name}
+          {item.dose && item.dose !== '-' ? ` — ${item.dose}` : ''}
+          {item.posology && item.posology !== '-' ? ` — ${item.posology}` : ''}
         </div>
+      </td>
+      <td style={{ width: '28px', border: '0.5px solid #94a3b8', textAlign: 'center', verticalAlign: 'middle' }}>
+        <div style={{ width: '10px', height: '10px', border: '1px solid #94a3b8', borderRadius: '2px', margin: '0 auto' }} />
       </td>
     </tr>
   );
 }
-
 // --- Batch Action Bar ---
 function BatchActionBar({
   selectedCount,
@@ -1847,52 +1876,67 @@ const PrescricaoPage = () => {
       {/* ===== PRINT STYLES ===== */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          @page { size: A4 portrait; margin: 6mm 8mm 10mm 8mm; }
+          @page { size: A4 portrait; margin: 5mm 6mm 8mm 6mm; }
+          .prescription-print-section table { border-collapse: collapse; table-layout: fixed; width: 100%; }
         }
       ` }} />
 
       {/* ===== PRINT-ONLY LETTERHEAD ===== */}
-      <div className="hidden print:block prescription-print-section mb-0">
-        {/* Header bar */}
-        <div className="flex items-center justify-between pb-1 mb-1" style={{ borderBottom: '1.5px solid #0f172a' }}>
-          <img src={socorraoLogo} alt="Socorrão I" className="h-7 object-contain" />
-          <div className="text-center flex-1 px-3">
-            <p className="text-[9pt] font-extrabold uppercase tracking-widest leading-none text-black">Hospital Municipal Djalma Marques — Socorrão I</p>
-            <p className="text-[7pt] text-gray-500 leading-tight mt-[1px]">Prescrição Médica Diária</p>
-          </div>
-          <img src={bighelpLogo} alt="BigHelp Map" className="h-6 object-contain opacity-30" />
-        </div>
-        {/* Patient data — compact single-row grid */}
-        <div className="grid grid-cols-6 gap-0 text-[8pt] text-black" style={{ border: '0.5px solid #94a3b8' }}>
-          <div className="col-span-3 px-1.5 py-[2px]" style={{ borderRight: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold">Pac:</span> {patient.name || '___________________________________'}
-          </div>
-          <div className="px-1.5 py-[2px]" style={{ borderRight: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold">Leito:</span> {patient.bed || '______'}
-          </div>
-          <div className="px-1.5 py-[2px]" style={{ borderRight: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold">Pront:</span> {patient.record || '________'}
-          </div>
-          <div className="px-1.5 py-[2px]">
-            <span className="font-bold">Data:</span> {prescriptionDate}
-          </div>
-          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold">Idade:</span> {patient.age || '____'}
-          </div>
-          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold">Sexo:</span> {patient.sex || '____'}
-          </div>
-          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold">Peso:</span> {patient.weight ? `${patient.weight}kg` : '____'}
-          </div>
-          <div className="px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1', borderRight: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold">Adm:</span> {patient.admissionDate || '__/__/____'}
-          </div>
-          <div className="col-span-2 px-1.5 py-[2px]" style={{ borderTop: '0.5px solid #cbd5e1' }}>
-            <span className="font-bold text-red-700">Alergias:</span>{' '}
-            <span className="text-red-700 font-semibold">{patient.allergies || 'NDAM'}</span>
-          </div>
-        </div>
+      <div className="hidden print:block prescription-print-section" style={{ marginBottom: '2px' }}>
+        {/* Institutional header */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '3px' }}>
+          <tbody>
+            <tr>
+              <td style={{ width: '60px', verticalAlign: 'middle', padding: '0 4px 0 0' }}>
+                <img src={socorraoLogo} alt="Socorrão I" style={{ height: '28px', objectFit: 'contain' }} />
+              </td>
+              <td style={{ verticalAlign: 'middle', textAlign: 'center' }}>
+                <div style={{ fontSize: '9pt', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#0f172a', lineHeight: 1 }}>
+                  Hospital Municipal Djalma Marques — Socorrão I
+                </div>
+                <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '1px' }}>
+                  PRESCRIÇÃO MÉDICA DIÁRIA
+                </div>
+              </td>
+              <td style={{ width: '50px', verticalAlign: 'middle', textAlign: 'right', padding: '0 0 0 4px' }}>
+                <img src={bighelpLogo} alt="BigHelp Map" style={{ height: '22px', objectFit: 'contain', opacity: 0.25 }} />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div style={{ borderTop: '2px solid #0f172a', borderBottom: '0.5px solid #94a3b8' }} />
+
+        {/* Patient identification table */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt', color: '#0f172a', marginTop: '2px' }}>
+          <tbody>
+            <tr>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '50%' }}>
+                <span style={{ fontWeight: 700 }}>PACIENTE:</span> {patient.name || '___________________________________'}
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '12%' }}>
+                <span style={{ fontWeight: 700 }}>LEITO:</span> {patient.bed || '______'}
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '18%' }}>
+                <span style={{ fontWeight: 700 }}>PRONTUÁRIO:</span> {patient.record || '________'}
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '20%' }}>
+                <span style={{ fontWeight: 700 }}>DATA:</span> {prescriptionDate}
+              </td>
+            </tr>
+            <tr>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }} colSpan={2}>
+                <span style={{ fontWeight: 700, color: '#dc2626' }}>ALERGIAS:</span>{' '}
+                <span style={{ color: '#dc2626', fontWeight: 700 }}>{patient.allergies || 'NDAM'}</span>
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }}>
+                <span style={{ fontWeight: 700 }}>PESO:</span> {patient.weight ? `${patient.weight} kg` : '______ kg'}
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }}>
+                <span style={{ fontWeight: 700 }}>IDADE:</span> {patient.age || '____'} | <span style={{ fontWeight: 700 }}>SEXO:</span> {patient.sex || '__'}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       {/* Page Title */}
@@ -2271,18 +2315,35 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== PRINT-ONLY PRESCRIPTION BODY ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginTop: '4px' }}>
-        <table className="w-full border-collapse text-black" style={{ borderSpacing: 0 }}>
+      <div className="hidden print:block prescription-print-section" style={{ marginTop: '3px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '24px' }} />
+            <col />
+            <col style={{ width: '38px' }} />
+            <col style={{ width: '38px' }} />
+            <col style={{ width: '38px' }} />
+            <col style={{ width: '38px' }} />
+            <col style={{ width: '38px' }} />
+            <col style={{ width: '38px' }} />
+            <col style={{ width: '28px' }} />
+          </colgroup>
           <thead>
             <tr>
-              <th className="px-1.5 py-[3px] text-left text-[7pt] font-bold uppercase tracking-wider text-white" style={{ width: '75%', backgroundColor: '#1e293b', border: '0.5px solid #1e293b' }}>
-                Prescrição
+              <th style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '3px 2px', fontSize: '6pt', fontWeight: 700, textAlign: 'center' }}>
+                Nº
               </th>
-              {['','','','','',''].map((_, i) => (
-                <th key={i} className="px-0 py-[3px] text-center text-[6pt] font-bold uppercase text-white" style={{ width: '4.16%', backgroundColor: '#1e293b', border: '0.5px solid #1e293b' }}>
-                  {i === 0 ? 'Apraz.' : ''}
+              <th style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '3px 6px', fontSize: '7pt', fontWeight: 700, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                Prescrição Médica
+              </th>
+              {['1º','2º','3º','4º','5º','6º'].map((label, i) => (
+                <th key={i} style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '0.5px solid #334155', padding: '3px 1px', fontSize: '6pt', fontWeight: 700, textAlign: 'center', textTransform: 'uppercase' }}>
+                  {label}
                 </th>
               ))}
+              <th style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '0.5px solid #334155', padding: '3px 1px', fontSize: '5pt', fontWeight: 700, textAlign: 'center' }}>
+                ✓
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -2294,7 +2355,17 @@ const PrescricaoPage = () => {
               return (
                 <React.Fragment key={cat}>
                   <tr>
-                    <td colSpan={7} className="px-1.5 py-[2px] text-[7pt] font-bold uppercase tracking-wider" style={{ backgroundColor: '#f1f5f9', borderLeft: '3px solid #475569', border: '0.5px solid #e2e8f0', color: '#334155', letterSpacing: '0.6px' }}>
+                    <td colSpan={9} style={{ 
+                      padding: '2px 6px', 
+                      fontSize: '7pt', 
+                      fontWeight: 800, 
+                      textTransform: 'uppercase', 
+                      letterSpacing: '0.8px',
+                      backgroundColor: '#f1f5f9', 
+                      borderLeft: '3px solid #334155',
+                      border: '0.5px solid #cbd5e1',
+                      color: '#1e293b'
+                    }}>
                       {config.label}
                     </td>
                   </tr>
@@ -2309,27 +2380,32 @@ const PrescricaoPage = () => {
           </tbody>
         </table>
 
-        {/* Print footer */}
-        <div className="flex items-end justify-between" style={{ paddingTop: '10px', marginTop: '6px', borderTop: '0.5px solid #e2e8f0', pageBreakInside: 'avoid' }}>
-          <div className="text-[6pt] text-gray-400" style={{ lineHeight: '1.4' }}>
-            <p>{prescriptionDate} • BigHelp Map</p>
+        {/* Print footer — signature + timestamp */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: '12px', marginTop: '8px', borderTop: '1px solid #e2e8f0', pageBreakInside: 'avoid' }}>
+          <div style={{ fontSize: '6pt', color: '#94a3b8', lineHeight: '1.5' }}>
+            <div>{prescriptionDate}</div>
+            <div>BigHelp Map • Prescrição Digital</div>
           </div>
-          {digitalSignature ? (
-            <div className="text-center">
-              <div style={{ border: '1px solid #334155', borderRadius: '4px', padding: '4px 10px', display: 'inline-block' }}>
-                <p className="text-[8pt] font-bold text-black">✓ ASSINADO DIGITALMENTE</p>
-                <p className="text-[7pt] text-black font-medium">{digitalSignature.doctorName}</p>
-                <p className="text-[6pt] text-gray-600">CRM: {digitalSignature.crm} • {digitalSignature.signedAt}</p>
-                <p className="text-[5pt] text-gray-400 font-mono">Hash: {digitalSignature.hash}</p>
+          <div style={{ textAlign: 'center' }}>
+            {digitalSignature ? (
+              <div style={{ border: '1.5px solid #0f172a', borderRadius: '4px', padding: '6px 14px', display: 'inline-block' }}>
+                <div style={{ fontSize: '8pt', fontWeight: 800, color: '#0f172a' }}>✓ ASSINADO DIGITALMENTE</div>
+                <div style={{ fontSize: '7.5pt', fontWeight: 600, color: '#0f172a', marginTop: '2px' }}>{digitalSignature.doctorName}</div>
+                <div style={{ fontSize: '6.5pt', color: '#475569' }}>CRM: {digitalSignature.crm} • {digitalSignature.signedAt}</div>
+                <div style={{ fontSize: '5pt', color: '#94a3b8', fontFamily: 'monospace', marginTop: '2px' }}>Hash: {digitalSignature.hash}</div>
               </div>
-            </div>
-          ) : (
-            <div className="text-center">
-              <div style={{ width: '160px', borderBottom: '1px solid #000', marginBottom: '3px' }} />
-              <p className="text-[7pt] text-black font-medium">Assinatura / Carimbo</p>
-              <p className="text-[6pt] text-gray-500">CRM: _______________</p>
-            </div>
-          )}
+            ) : (
+              <>
+                <div style={{ width: '180px', borderBottom: '1px solid #0f172a', marginBottom: '4px', marginLeft: 'auto', marginRight: 'auto' }} />
+                <div style={{ fontSize: '7.5pt', fontWeight: 600, color: '#0f172a' }}>Assinatura / Carimbo do Médico</div>
+                <div style={{ fontSize: '6.5pt', color: '#64748b', marginTop: '1px' }}>CRM: _______________</div>
+              </>
+            )}
+          </div>
+          <div style={{ fontSize: '6pt', color: '#94a3b8', textAlign: 'right', lineHeight: '1.5' }}>
+            <div>Enfermagem: ___________</div>
+            <div>Hora: ____:____</div>
+          </div>
         </div>
       </div>
 
