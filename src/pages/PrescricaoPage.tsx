@@ -327,7 +327,7 @@ function SortablePrescriptionItemRow({
         {item.dose !== '-' && <Badge variant="outline" className="text-[10px]">{item.dose}</Badge>}
         {item.posology !== '-' && <Badge variant="secondary" className="text-[10px]">{item.posology}</Badge>}
         {item.status === 'suspended' && (
-          <Badge variant="destructive" className="text-[9px] px-1.5">SUSPENSO</Badge>
+           <Badge variant="destructive" className="text-[9px] px-1.5">Suspenso</Badge>
         )}
         <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
           {PRESCRIPTION_FLAGS.map(f => (
