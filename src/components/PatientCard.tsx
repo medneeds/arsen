@@ -3050,7 +3050,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                         onCancel={cancelEditing}
                         onRemove={() => removeArrayItem("medicalHistory", idx)}
                         onAddNew={() => startEditing("medicalHistory", "", -2)}
-                        onEditValueChange={(val) => setEditValue(val.toUpperCase())}
+                        onEditValueChange={(val) => setEditValue(val)}
                         onKeyDown={handleKeyDown}
                         inputRef={inputRef}
                         isLast={idx === patient.medicalHistory.length - 1}
