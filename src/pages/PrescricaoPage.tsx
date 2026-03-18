@@ -94,6 +94,37 @@ interface PrescriptionItem {
   status: 'active' | 'suspended';
   suspensionReason?: string;
   suspendedAt?: string;
+  // IV infusion fields
+  infusionMode?: 'BIC' | 'gts';
+  infusionTime?: string; // in minutes
+  volumeTotal?: string; // in mL
+}
+
+// Calculate infusion rate
+function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts'): string {
+  const volume = parseFloat(volumeStr);
+  const time = parseFloat(timeStr);
+  if (!volume || !time || time <= 0) return '';
+  if (mode === 'BIC') {
+    const mlPerHour = (volume / time) * 60;
+    return `${mlPerHour.toFixed(1)} mL/h`;
+  } else {
+    const gtsPerMin = (volume * 20) / (time); // 1mL = 20 gts (equipo padrão)
+    return `${gtsPerMin.toFixed(1)} gts/min`;
+  }
+}
+
+function isIVRoute(route: string): boolean {
+  return ['Intravenosa'].includes(route);
+}
+
+function posologyToIntervals(posology: string): number {
+  const map: Record<string, number> = {
+    '1x/dia': 1, '2x/dia': 2, '3x/dia': 3, '4x/dia': 4,
+    '6/6h': 4, '8/8h': 3, '12/12h': 2, '24/24h': 1,
+    '4/4h': 6, '2/2h': 12, 'Contínuo': 1, 'Dose única': 1,
+  };
+  return map[posology] || 1;
 }
 
 interface PatientHeader {
@@ -339,6 +370,10 @@ function SortablePrescriptionItemRow({
             />
           ))}
         </div>
+        {/* Schedule - far right aligned */}
+        <div className="shrink-0 flex items-center gap-1 pl-2 border-l border-border/30">
+          <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-24 font-mono text-center" placeholder="Horário" />
+        </div>
         <ItemActions />
       </div>
     );
@@ -359,6 +394,7 @@ function SortablePrescriptionItemRow({
       )}
     >
       <div className="flex items-start gap-2 p-2.5">
+        {/* Left: drag + checkbox */}
         <div className="flex flex-col items-center gap-1.5 shrink-0 pt-1">
           <button
             className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors touch-none"
@@ -375,7 +411,10 @@ function SortablePrescriptionItemRow({
         <span className="text-xs font-mono text-muted-foreground w-6 text-center shrink-0 pt-1.5">
           {index + 1}.
         </span>
+
+        {/* Center: main content */}
         <div className="flex-1 min-w-0 space-y-1.5">
+          {/* Name row with flags */}
           <div className="flex items-center gap-2 flex-wrap">
             <p className={cn("text-sm font-semibold text-foreground", item.status === 'suspended' && "line-through")}>
               {item.highAlert && <AlertTriangle className="inline h-3 w-3 mr-1 text-red-500" />}
@@ -410,26 +449,81 @@ function SortablePrescriptionItemRow({
           )}
           {item.status === 'active' && (
             <>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <Input value={item.dose} onChange={(e) => onUpdate(item.id, "dose", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-24" placeholder="Dose" />
-                <span className="text-muted-foreground text-[10px]">—</span>
-                <Select value={item.route} onValueChange={(v) => onUpdate(item.id, "route", v)}>
-                  <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-32"><SelectValue /></SelectTrigger>
-                  <SelectContent>{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
-                </Select>
-                <span className="text-muted-foreground text-[10px]">—</span>
-                <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
-                  <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-24"><SelectValue /></SelectTrigger>
-                  <SelectContent>{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
-                </Select>
-                <span className="text-muted-foreground text-[10px]">—</span>
-                <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-20" placeholder="Horário" />
+              {/* Dose + Route + Posology row with Schedule on far right */}
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
+                  <Input value={item.dose} onChange={(e) => onUpdate(item.id, "dose", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-24" placeholder="Dose" />
+                  <span className="text-muted-foreground text-[10px]">—</span>
+                  <Select value={item.route} onValueChange={(v) => {
+                    onUpdate(item.id, "route", v);
+                    if (isIVRoute(v) && !item.infusionMode) {
+                      onUpdate(item.id, "infusionMode", 'BIC');
+                    }
+                  }}>
+                    <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-32"><SelectValue /></SelectTrigger>
+                    <SelectContent>{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
+                  </Select>
+                  <span className="text-muted-foreground text-[10px]">—</span>
+                  <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
+                    <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-24"><SelectValue /></SelectTrigger>
+                    <SelectContent>{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
+                  </Select>
+                </div>
+                {/* Schedule - far right */}
+                <div className="shrink-0 flex items-center gap-1 ml-auto pl-3 border-l border-border/30">
+                  <span className="text-[10px] text-muted-foreground font-medium">Apraz:</span>
+                  <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-28 font-mono text-center" placeholder="08h, 14h, 20h" />
+                </div>
               </div>
+
+              {/* IV Infusion details - only for Intravenosa route */}
+              {isIVRoute(item.route) && (
+                <div className="flex items-center gap-2 flex-wrap px-2 py-1.5 rounded-md bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/40 dark:border-blue-800/30">
+                  <Droplets className="h-3 w-3 text-blue-500 shrink-0" />
+                  <span className="text-[10px] font-medium text-blue-700 dark:text-blue-400">Infusão:</span>
+                  <Input
+                    value={item.volumeTotal || ''}
+                    onChange={(e) => onUpdate(item.id, "volumeTotal", e.target.value)}
+                    className="h-6 text-[11px] bg-background border-blue-200/50 dark:border-blue-800/40 w-20 text-center"
+                    placeholder="Vol (mL)"
+                  />
+                  <Input
+                    value={item.infusionTime || ''}
+                    onChange={(e) => onUpdate(item.id, "infusionTime", e.target.value)}
+                    className="h-6 text-[11px] bg-background border-blue-200/50 dark:border-blue-800/40 w-20 text-center"
+                    placeholder="Tempo (min)"
+                  />
+                  <Select value={item.infusionMode || 'BIC'} onValueChange={(v) => onUpdate(item.id, "infusionMode", v)}>
+                    <SelectTrigger className="h-6 text-[11px] bg-background border-blue-200/50 dark:border-blue-800/40 w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BIC" className="text-xs">BIC (mL/h)</SelectItem>
+                      <SelectItem value="gts" className="text-xs">gts/min</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {item.volumeTotal && item.infusionTime && (
+                    <Badge variant="outline" className="text-[10px] font-mono bg-blue-100/50 dark:bg-blue-900/30 border-blue-300/50 text-blue-700 dark:text-blue-300">
+                      {calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC')}
+                    </Badge>
+                  )}
+                  {item.volumeTotal && item.posology && item.posology !== 'Contínuo' && item.posology !== 'Dose única' && (
+                    <span className="text-[10px] text-muted-foreground">
+                      ({posologyToIntervals(item.posology)}x/dia · {(parseFloat(item.volumeTotal || '0') * posologyToIntervals(item.posology)).toFixed(0)}mL/24h)
+                    </span>
+                  )}
+                  {item.posology === 'Contínuo' && item.volumeTotal && (
+                    <span className="text-[10px] text-muted-foreground">(infusão contínua 24h)</span>
+                  )}
+                </div>
+              )}
+
+              {/* Instructions */}
               <Input
                 value={item.instructions}
                 onChange={(e) => onUpdate(item.id, "instructions", e.target.value)}
                 className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic"
-                placeholder="Preparo, diluição, tempo de infusão, gotas/min, mL/h..."
+                placeholder="Preparo, diluição, observações..."
               />
             </>
           )}
@@ -1097,6 +1191,9 @@ const PrescricaoPage = () => {
     flags: [],
     highAlert: med.highAlert || false,
     status: 'active',
+    infusionMode: isIVRoute(med.defaultRoute) ? 'BIC' : undefined,
+    infusionTime: '',
+    volumeTotal: '',
   });
 
   const addItem = (med: MedicationEntry) => {
