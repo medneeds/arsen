@@ -1362,8 +1362,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
             <span className="separator relative z-10">•</span>
             
             {/* Destination */}
-            <span className="text-xs font-semibold relative z-10 status-destination uppercase">
-              PARA: {allocationStatusBarConfig.sectorDisplayName}
+            <span className="text-xs font-semibold relative z-10 status-destination">
+              Para: {allocationStatusBarConfig.sectorDisplayName}
             </span>
             
             {/* Time */}
