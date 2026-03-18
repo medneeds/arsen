@@ -315,6 +315,7 @@ const RequisicaoUnificadaPage = () => {
     try {
       const { error } = await supabase.from("exam_requests").insert({
         category: activeCategory,
+        patient_id: formPatientId || null,
         patient_name: formPatientName.trim(),
         patient_bed: formPatientBed.trim() || null,
         patient_sector: formPatientSector.trim() || null,
