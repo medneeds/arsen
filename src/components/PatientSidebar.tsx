@@ -200,7 +200,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             size="sm"
             className="flex-1 text-xs"
             onClick={() => {
-              navigate('/prescricao', { state: { patientId: patient.id, patientName: patient.name } });
+              navigate(`/prescricao?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}&patientBed=${encodeURIComponent(patient.bedNumber)}&patientSector=${encodeURIComponent(patient.sector)}`);
               onOpenChange(false);
             }}
           >
