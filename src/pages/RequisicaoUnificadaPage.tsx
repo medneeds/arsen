@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   TestTubes, ScanLine, UserCheck, Plus, Search, Clock, CheckCircle2,
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
-  ChevronDown, Filter, Eye, ClipboardList, Package, Zap,
+  ChevronDown, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -449,6 +449,11 @@ const RequisicaoUnificadaPage = () => {
                 <Badge variant="secondary" className="ml-1 h-5 min-w-5 px-1.5 text-[10px]">{completedRequests.length}</Badge>
               )}
             </TabsTrigger>
+            {activeCategory === "laboratorio" && (
+              <TabsTrigger value="comparativo" className="gap-1.5 text-xs">
+                <TrendingUp className="h-3.5 w-3.5" /> Comparativo
+              </TabsTrigger>
+            )}
           </TabsList>
           {activeSubTab !== "solicitar" && (
             <div className="relative w-full sm:w-64">
@@ -740,6 +745,20 @@ const RequisicaoUnificadaPage = () => {
             ))
           )}
         </TabsContent>
+
+        {/* ════════════════════════════════════════════ */}
+        {/* TAB: COMPARATIVO (somente laboratório)      */}
+        {/* ════════════════════════════════════════════ */}
+        {activeCategory === "laboratorio" && (
+          <TabsContent value="comparativo" className="mt-4">
+            <LabComparativeView
+              requests={completedRequests}
+              patientName={formPatientName}
+              patientId={formPatientId}
+              allRequests={requests.filter(r => r.status === "completed" && r.category === "laboratorio")}
+            />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* ── Result Dialog ── */}
@@ -896,6 +915,271 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ── Lab Comparative View ──
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+
+const CHART_COLORS = [
+  "hsl(var(--primary))",
+  "#f59e0b", "#10b981", "#ef4444", "#8b5cf6",
+  "#06b6d4", "#ec4899", "#f97316", "#14b8a6",
+];
+
+function LabComparativeView({ requests, patientName, patientId, allRequests }: {
+  requests: any[];
+  patientName: string;
+  patientId: string | null;
+  allRequests: any[];
+}) {
+  const [selectedExams, setSelectedExams] = useState<string[]>([]);
+
+  // Get all completed lab requests for this patient, sorted by date
+  const patientRequests = useMemo(() => {
+    const filtered = patientId
+      ? allRequests.filter(r => r.patient_id === patientId)
+      : allRequests.filter(r => r.patient_name === patientName);
+    return filtered.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }, [allRequests, patientId, patientName]);
+
+  // Extract unique exam names from all requests
+  const availableExams = useMemo(() => {
+    const examSet = new Set<string>();
+    patientRequests.forEach(req => {
+      const items = req.items as any[];
+      items.forEach((item: any) => {
+        const name = typeof item === "string" ? item : item.name;
+        if (name) examSet.add(name);
+      });
+    });
+    return Array.from(examSet).sort();
+  }, [patientRequests]);
+
+  // Build chart data: each data point is a request date, with exam names as keys
+  // We try to parse numeric values from results text
+  const chartData = useMemo(() => {
+    return patientRequests.map(req => {
+      const dateStr = format(new Date(req.created_at), "dd/MM HH:mm", { locale: ptBR });
+      const point: Record<string, any> = { date: dateStr, fullDate: req.created_at };
+
+      // Try to extract values from results text
+      if (req.results) {
+        const lines = req.results.split("\n");
+        lines.forEach((line: string) => {
+          // Try common patterns: "Exam Name: 12.5" or "Exam Name = 12.5" or "Exam Name - 12.5"
+          const match = line.match(/^(.+?)[\s]*[:=\-–]\s*([\d.,]+)/);
+          if (match) {
+            const examName = match[1].trim();
+            const value = parseFloat(match[2].replace(",", "."));
+            if (!isNaN(value)) {
+              point[examName] = value;
+            }
+          }
+        });
+      }
+
+      // Also check result_data JSON if available
+      if (req.result_data && typeof req.result_data === "object") {
+        Object.entries(req.result_data).forEach(([key, val]) => {
+          if (typeof val === "number") {
+            point[key] = val;
+          } else if (typeof val === "string") {
+            const num = parseFloat(val.replace(",", "."));
+            if (!isNaN(num)) point[key] = num;
+          }
+        });
+      }
+
+      return point;
+    });
+  }, [patientRequests]);
+
+  // Exams that have at least one numeric data point
+  const examsWithData = useMemo(() => {
+    const exams = new Set<string>();
+    chartData.forEach(point => {
+      Object.keys(point).forEach(key => {
+        if (key !== "date" && key !== "fullDate" && typeof point[key] === "number") {
+          exams.add(key);
+        }
+      });
+    });
+    return Array.from(exams).sort();
+  }, [chartData]);
+
+  const toggleExam = (exam: string) => {
+    setSelectedExams(prev =>
+      prev.includes(exam) ? prev.filter(e => e !== exam) : [...prev, exam]
+    );
+  };
+
+  if (!patientId && !patientName) {
+    return (
+      <div className="text-center py-12">
+        <TrendingUp className="h-10 w-10 mx-auto mb-3 opacity-20" />
+        <p className="text-sm text-muted-foreground">Selecione um paciente para visualizar o comparativo de exames</p>
+      </div>
+    );
+  }
+
+  if (patientRequests.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <TrendingUp className="h-10 w-10 mx-auto mb-3 opacity-20" />
+        <p className="text-sm text-muted-foreground">Nenhum resultado laboratorial encontrado para {patientName || "este paciente"}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Patient header */}
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <TrendingUp className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm text-foreground">{patientName || "Paciente"}</h3>
+              <p className="text-xs text-muted-foreground">
+                {patientRequests.length} coleta{patientRequests.length !== 1 ? "s" : ""} registrada{patientRequests.length !== 1 ? "s" : ""} · 
+                {" "}{availableExams.length} tipo{availableExams.length !== 1 ? "s" : ""} de exame
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {examsWithData.length > 0 ? (
+        <>
+          {/* Exam selector */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Selecione os exames para comparar
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pb-4">
+              <div className="flex flex-wrap gap-1.5">
+                {examsWithData.map((exam, i) => (
+                  <button
+                    key={exam}
+                    onClick={() => toggleExam(exam)}
+                    className={cn(
+                      "px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all",
+                      selectedExams.includes(exam)
+                        ? "bg-primary/15 border-primary/40 text-primary"
+                        : "bg-muted/30 border-border/50 text-muted-foreground hover:bg-muted/60"
+                    )}
+                  >
+                    <span
+                      className="inline-block h-2 w-2 rounded-full mr-1.5"
+                      style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
+                    />
+                    {exam}
+                  </button>
+                ))}
+              </div>
+              {selectedExams.length === 0 && (
+                <p className="text-[10px] text-muted-foreground mt-2">Clique nos exames acima para visualizar a tendência</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Chart */}
+          {selectedExams.length > 0 && (
+            <Card>
+              <CardContent className="p-4">
+                <ResponsiveContainer width="100%" height={320}>
+                  <LineChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 10 }}
+                      className="text-muted-foreground"
+                    />
+                    <YAxis tick={{ fontSize: 10 }} className="text-muted-foreground" />
+                    <Tooltip
+                      contentStyle={{
+                        fontSize: 11,
+                        borderRadius: 8,
+                        border: "1px solid hsl(var(--border))",
+                        backgroundColor: "hsl(var(--background))",
+                      }}
+                      labelFormatter={(label) => `Data: ${label}`}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    {selectedExams.map((exam, i) => (
+                      <Line
+                        key={exam}
+                        type="monotone"
+                        dataKey={exam}
+                        stroke={CHART_COLORS[examsWithData.indexOf(exam) % CHART_COLORS.length]}
+                        strokeWidth={2}
+                        dot={{ r: 4 }}
+                        activeDot={{ r: 6 }}
+                        connectNulls
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      ) : (
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center space-y-2">
+              <AlertTriangle className="h-8 w-8 mx-auto text-amber-500/60" />
+              <p className="text-sm font-medium text-foreground">Dados numéricos não encontrados</p>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                Para gerar gráficos comparativos, os resultados devem conter valores numéricos no formato: 
+                <span className="font-mono bg-muted/50 px-1.5 py-0.5 rounded mx-1">Nome do Exame: valor</span>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Raw results timeline */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Histórico de Resultados
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {patientRequests.map(req => (
+            <div key={req.id} className="border border-border/50 rounded-lg p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[10px]">
+                    {format(new Date(req.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                  </Badge>
+                  <span className="text-[10px] text-muted-foreground">por {req.requested_by_name || "—"}</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {(req.items as any[]).slice(0, 4).map((item: any, i: number) => (
+                    <Badge key={i} variant="secondary" className="text-[9px]">{typeof item === "string" ? item : item.name}</Badge>
+                  ))}
+                  {(req.items as any[]).length > 4 && (
+                    <Badge variant="secondary" className="text-[9px]">+{(req.items as any[]).length - 4}</Badge>
+                  )}
+                </div>
+              </div>
+              {req.results && (
+                <pre className="text-[11px] text-foreground/80 whitespace-pre-wrap bg-muted/20 rounded p-2 max-h-32 overflow-y-auto font-sans">
+                  {req.results}
+                </pre>
+              )}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
