@@ -1212,7 +1212,13 @@ export type Database = {
         Row: {
           address: string | null
           ai_extracted_data: Json | null
+          airway_intubated: boolean | null
+          airway_notes: string | null
+          airway_obstruction: boolean | null
+          airway_patent: boolean | null
+          allergies: string | null
           birth_date: string | null
+          chief_complaint: string | null
           city: string | null
           cns: string | null
           cpf: string | null
@@ -1221,14 +1227,24 @@ export type Database = {
           department: string
           destination_bed: string | null
           destination_sector: string | null
+          flu_symptoms: boolean | null
+          flu_symptoms_detail: string | null
+          glasgow_detail: Json | null
+          glasgow_score: number | null
           hospital_unit_id: string
           id: string
           medical_record: string | null
+          menstrual_status: string | null
           mother_name: string | null
           neighborhood: string | null
           notes: string | null
+          oxygen_therapy: boolean | null
+          oxygen_therapy_detail: string | null
+          pain_scale: number | null
           patient_name: string
+          peripheral_perfusion: string | null
           phone: string | null
+          pulse_quality: string | null
           risk_classification: string | null
           risk_classified_at: string | null
           risk_classified_by: string | null
@@ -1236,12 +1252,20 @@ export type Database = {
           social_name: string | null
           state_id: string
           status: string
+          triage_notes: string | null
           updated_at: string
+          vital_signs: Json | null
         }
         Insert: {
           address?: string | null
           ai_extracted_data?: Json | null
+          airway_intubated?: boolean | null
+          airway_notes?: string | null
+          airway_obstruction?: boolean | null
+          airway_patent?: boolean | null
+          allergies?: string | null
           birth_date?: string | null
+          chief_complaint?: string | null
           city?: string | null
           cns?: string | null
           cpf?: string | null
@@ -1250,14 +1274,24 @@ export type Database = {
           department?: string
           destination_bed?: string | null
           destination_sector?: string | null
+          flu_symptoms?: boolean | null
+          flu_symptoms_detail?: string | null
+          glasgow_detail?: Json | null
+          glasgow_score?: number | null
           hospital_unit_id: string
           id?: string
           medical_record?: string | null
+          menstrual_status?: string | null
           mother_name?: string | null
           neighborhood?: string | null
           notes?: string | null
+          oxygen_therapy?: boolean | null
+          oxygen_therapy_detail?: string | null
+          pain_scale?: number | null
           patient_name: string
+          peripheral_perfusion?: string | null
           phone?: string | null
+          pulse_quality?: string | null
           risk_classification?: string | null
           risk_classified_at?: string | null
           risk_classified_by?: string | null
@@ -1265,12 +1299,20 @@ export type Database = {
           social_name?: string | null
           state_id: string
           status?: string
+          triage_notes?: string | null
           updated_at?: string
+          vital_signs?: Json | null
         }
         Update: {
           address?: string | null
           ai_extracted_data?: Json | null
+          airway_intubated?: boolean | null
+          airway_notes?: string | null
+          airway_obstruction?: boolean | null
+          airway_patent?: boolean | null
+          allergies?: string | null
           birth_date?: string | null
+          chief_complaint?: string | null
           city?: string | null
           cns?: string | null
           cpf?: string | null
@@ -1279,14 +1321,24 @@ export type Database = {
           department?: string
           destination_bed?: string | null
           destination_sector?: string | null
+          flu_symptoms?: boolean | null
+          flu_symptoms_detail?: string | null
+          glasgow_detail?: Json | null
+          glasgow_score?: number | null
           hospital_unit_id?: string
           id?: string
           medical_record?: string | null
+          menstrual_status?: string | null
           mother_name?: string | null
           neighborhood?: string | null
           notes?: string | null
+          oxygen_therapy?: boolean | null
+          oxygen_therapy_detail?: string | null
+          pain_scale?: number | null
           patient_name?: string
+          peripheral_perfusion?: string | null
           phone?: string | null
+          pulse_quality?: string | null
           risk_classification?: string | null
           risk_classified_at?: string | null
           risk_classified_by?: string | null
@@ -1294,7 +1346,9 @@ export type Database = {
           social_name?: string | null
           state_id?: string
           status?: string
+          triage_notes?: string | null
           updated_at?: string
+          vital_signs?: Json | null
         }
         Relationships: [
           {
