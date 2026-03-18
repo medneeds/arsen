@@ -132,6 +132,7 @@ export function AppSidebar({
       items: [
         { name: "Protocolo Sepse", link: "/sepsis-protocol", profiles: ["medico", "gestor", "multi"] },
         { name: "Controle Glicêmico", link: "/controle-glicemico", profiles: ["medico", "gestor", "multi"] },
+        { name: "SAPS 3", link: "/saps3", profiles: ["medico", "gestor", "multi"] },
         { name: "Cuidados Paliativos", link: "/cuidados-paliativos", profiles: ["medico", "gestor"] },
         { name: "Priorização Cirúrgica", link: "/priorizacao-cirurgica", profiles: ["medico", "gestor"] },
         { name: "Alto Custo", link: "/alto-custo", profiles: ["medico", "gestor"] },
