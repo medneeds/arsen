@@ -1796,51 +1796,7 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== PRESCRIPTION SEARCH BAR (adapts to selected category) ===== */}
-      <div className={cn("rounded-xl border border-border bg-card p-3 print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
-        <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <span className="text-xs font-medium text-muted-foreground">Adicionar em:</span>
-          {TAB_ORDER.map(cat => {
-            const config = CATEGORY_CONFIG[cat];
-            const IconComp = CATEGORY_ICONS[config.icon] || Pill;
-            return (
-              <button
-                key={cat}
-                onClick={() => setActiveTab(cat)}
-                className={cn(
-                  "flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border transition-all",
-                  activeTab === cat
-                    ? "bg-primary/10 border-primary/30 text-primary font-medium shadow-sm"
-                    : "bg-muted/30 border-border/40 text-muted-foreground hover:bg-accent/50"
-                )}
-              >
-                <IconComp className={cn("h-3 w-3", activeTab === cat ? "text-primary" : config.color)} />
-                <span className="hidden sm:inline">{config.label}</span>
-              </button>
-            );
-          })}
-        </div>
-        {activeTab === 'nonstandard' ? (
-          <div className="flex items-center gap-2">
-            <Input
-              value={nonStdName}
-              onChange={(e) => setNonStdName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") addNonStandard(); }}
-              placeholder="Nome do item não padronizado..."
-              className="bg-muted/30 border-border/50"
-            />
-            <Button variant="outline" size="sm" onClick={addNonStandard} disabled={!nonStdName.trim()}>
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        ) : (
-          <MedicationAutocomplete
-            source={ALL_ITEMS_BY_CATEGORY[activeTab]}
-            onSelect={addItem}
-            placeholder={`Buscar ${CATEGORY_CONFIG[activeTab].label.toLowerCase()}...`}
-          />
-        )}
-      </div>
+      {/* Search bars are now inline within each category section below */}
 
       {/* ===== FULL PRESCRIPTION VIEW (all categories) ===== */}
       <div className={cn("space-y-3 print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
@@ -1868,8 +1824,6 @@ const PrescricaoPage = () => {
               const config = CATEGORY_CONFIG[cat];
               const catItems = itemsByCategory[cat];
               const simple = isSimpleCategory(cat);
-              if (catItems.length === 0) return null;
-
               const IconComp = CATEGORY_ICONS[config.icon] || Pill;
 
               return (
@@ -1880,25 +1834,50 @@ const PrescricaoPage = () => {
                     <span className="text-xs font-semibold text-foreground">{config.label}</span>
                     <Badge variant="secondary" className="text-[9px] h-4 px-1.5">{catItems.length}</Badge>
                   </div>
-                  {/* Items */}
-                  <div className="p-2 space-y-1.5">
-                    {catItems.map((item, i) => (
-                      <SortablePrescriptionItemRow
-                        key={item.id}
-                        item={item}
-                        index={i}
-                        onUpdate={updateItem}
-                        onRemove={removeItem}
-                        onToggleFlag={toggleFlag}
-                        isSimple={simple}
-                        selected={selectedIds.has(item.id)}
-                        onToggleSelect={toggleSelect}
-                        onDuplicate={duplicateItem}
-                        onRequestSuspend={requestSuspendItem}
-                        onReactivate={reactivateItem}
+                  {/* Inline search bar for this category */}
+                  <div className="px-2 pt-2">
+                    {cat === 'nonstandard' ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={activeTab === 'nonstandard' ? nonStdName : ''}
+                          onChange={(e) => { setActiveTab('nonstandard'); setNonStdName(e.target.value); }}
+                          onKeyDown={(e) => { if (e.key === "Enter") addNonStandard(); }}
+                          placeholder="Adicionar item não padronizado..."
+                          className="bg-muted/30 border-border/50 h-8 text-xs"
+                        />
+                        <Button variant="outline" size="sm" onClick={addNonStandard} disabled={!nonStdName.trim()} className="h-8 px-2">
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <MedicationAutocomplete
+                        source={ALL_ITEMS_BY_CATEGORY[cat]}
+                        onSelect={addItem}
+                        placeholder={`Buscar ${config.label.toLowerCase()}...`}
                       />
-                    ))}
+                    )}
                   </div>
+                  {/* Items */}
+                  {catItems.length > 0 && (
+                    <div className="p-2 space-y-1.5">
+                      {catItems.map((item, i) => (
+                        <SortablePrescriptionItemRow
+                          key={item.id}
+                          item={item}
+                          index={i}
+                          onUpdate={updateItem}
+                          onRemove={removeItem}
+                          onToggleFlag={toggleFlag}
+                          isSimple={simple}
+                          selected={selectedIds.has(item.id)}
+                          onToggleSelect={toggleSelect}
+                          onDuplicate={duplicateItem}
+                          onRequestSuspend={requestSuspendItem}
+                          onReactivate={reactivateItem}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
