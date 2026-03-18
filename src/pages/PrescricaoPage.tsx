@@ -94,10 +94,16 @@ interface PrescriptionItem {
   status: 'active' | 'suspended';
   suspensionReason?: string;
   suspendedAt?: string;
-  // IV infusion fields
-  infusionMode?: 'BIC' | 'gts';
-  infusionTime?: string; // in minutes
-  volumeTotal?: string; // in mL
+  // Detailed prescription fields
+  quantity?: string;          // Quantidade
+  action?: string;            // Fazer/Retirar
+  diluent?: string;           // Diluente (SF0,9%, SG5%, AD, etc.)
+  diluentVolume?: string;     // Volume do diluente (mL)
+  accessType?: string;        // Acesso (Periférico, Central, etc.)
+  infusionTime?: string;      // Correr em (min)
+  infusionMode?: 'BIC' | 'gts'; // mL/h vs gts/min
+  volumeTotal?: string;       // Volume total (mL)
+  concentration?: string;     // Concentração calculada ou manual
 }
 
 // Calculate infusion rate
