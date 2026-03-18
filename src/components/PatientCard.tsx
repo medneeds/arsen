@@ -1982,8 +1982,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             }}
                             onKeyDown={handleKeyDown}
                             onBlur={saveInlineEdit}
-                            className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                            placeholder="NOVA ALERGIA"
+                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                            placeholder="Nova alergia"
                           />
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
