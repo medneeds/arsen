@@ -116,15 +116,114 @@ const DOCUMENTS = [
   ]},
 ];
 
+// Mock UTI 2 patients for demo (L09-L18)
+const MOCK_UTI2_PATIENTS: Patient[] = [
+  {
+    id: "uti2-01", bedNumber: "L09", name: "Iglesio Ferreira da Silva", age: "26", sector: "yellow",
+    diagnoses: ["Politrauma", "Fratura de fêmur bilateral"], medicalHistory: ["Hígido previamente"],
+    relevantExams: ["TC tórax: contusão pulmonar", "Hb 8.2", "Lactato 4.1"],
+    pendencies: ["Parecer ortopedia", "Hemotransfusão 2 CH"], schedule: ["Reavaliação cirurgia 14h", "Controle Hb 6h"],
+    admissionHistory: "Vítima de acidente motociclístico em alta velocidade. Glasgow 15 na cena.", admissionDate: "2025-10-30 14:20",
+    clinicalStatus: "grave", medicalResponsibility: { type: "lider", leaderNames: "Dr. Marcos Antônio" },
+    utiDischargePrediction: ["Sem previsão"],
+  },
+  {
+    id: "uti2-02", bedNumber: "L10", name: "Ana Carolina Mendes Ribeiro", age: "54", sector: "yellow",
+    diagnoses: ["Sepse foco pulmonar", "SDRA moderada"], medicalHistory: ["DPOC", "Tabagismo 30 maços-ano"],
+    relevantExams: ["PaO2/FiO2 = 180", "PCT 12.5", "Hemocultura: S. pneumoniae"],
+    pendencies: ["Ajuste ATB conforme cultura", "Desmame VM"], schedule: ["Gasometria 4/4h", "Pronação 16h"],
+    admissionHistory: "Admitida por pneumonia comunitária grave evoluindo com choque séptico.", admissionDate: "2025-11-01 08:00",
+    clinicalStatus: "gravissimo", medicalResponsibility: { type: "lider", leaderNames: "Dra. Juliana Costa" },
+    utiDischargePrediction: ["7-10 dias"],
+  },
+  {
+    id: "uti2-03", bedNumber: "L11", name: "Francisco das Chagas Oliveira", age: "71", sector: "yellow",
+    diagnoses: ["IAM com supra ST anterior extenso", "Choque cardiogênico"], medicalHistory: ["HAS", "DM2", "ICC CF III"],
+    relevantExams: ["Troponina 15.800", "FEVE 22%", "BIA implantado"],
+    pendencies: ["Avaliação hemodinâmica", "Parecer cardiocirurgia"], schedule: ["Ecocardiograma controle", "Monitorizar DC"],
+    admissionHistory: "Dor torácica típica há 4h. IAMCSST anterior extenso. ATC primária com stent em DA.", admissionDate: "2025-11-05 22:10",
+    clinicalStatus: "gravissimo", medicalResponsibility: { type: "lider", leaderNames: "Dr. Ricardo Souza" },
+    utiDischargePrediction: ["Sem previsão"],
+  },
+  {
+    id: "uti2-04", bedNumber: "L12", name: "Tereza Cristina Barros", age: "63", sector: "yellow",
+    diagnoses: ["Pós-operatório craniotomia", "Meningioma frontal ressecado"], medicalHistory: ["Hipertireoidismo controlado"],
+    relevantExams: ["TC crânio PO: sem sangramento", "Glasgow 14", "Pupilas isocóricas"],
+    pendencies: ["Desmame sedação", "Avaliação fonoaudiologia"], schedule: ["TC crânio controle 48h", "Fisioterapia motora"],
+    admissionHistory: "Submetida a craniotomia para ressecção de meningioma frontal esquerdo. Procedimento sem intercorrências.", admissionDate: "2025-11-08 16:30",
+    clinicalStatus: "grave_estavel", medicalResponsibility: { type: "lider", leaderNames: "Dr. Alexandre Nunes" },
+    utiDischargePrediction: ["3-5 dias"],
+  },
+  {
+    id: "uti2-05", bedNumber: "L13", name: "Raimundo Nonato Pereira", age: "58", sector: "yellow",
+    diagnoses: ["Pancreatite aguda grave", "Necrose pancreática infectada"], medicalHistory: ["Etilismo crônico", "Litíase biliar"],
+    relevantExams: ["TC abdome: necrose >50%", "PCR 280", "Ranson 5"],
+    pendencies: ["Programar drenagem percutânea", "Suporte nutricional enteral"], schedule: ["TC abdome controle", "Parecer cirurgia"],
+    admissionHistory: "Quadro de dor abdominal epigástrica em faixa há 5 dias, evoluindo com instabilidade hemodinâmica.", admissionDate: "2025-11-03 10:45",
+    clinicalStatus: "grave", medicalResponsibility: { type: "lider", leaderNames: "Dra. Patrícia Lima" },
+    utiDischargePrediction: ["14+ dias"],
+  },
+  {
+    id: "uti2-06", bedNumber: "L14", name: "Maria do Socorro Santos", age: "45", sector: "yellow",
+    diagnoses: ["Lúpus eritematoso sistêmico", "Nefrite lúpica classe IV", "Hemorragia alveolar"], medicalHistory: ["LES diagnosticado há 10 anos"],
+    relevantExams: ["Cr 3.8", "Anti-dsDNA 1:640", "C3/C4 baixos", "Broncoscopia: hemorragia alveolar"],
+    pendencies: ["Pulsoterapia ciclofosfamida D3", "Plasmaférese programada"], schedule: ["Controle renal diário", "Hemodiálise seg/qua/sex"],
+    admissionHistory: "Paciente com LES em atividade, admitida por dispneia e hemoptise maciça.", admissionDate: "2025-11-06 07:00",
+    clinicalStatus: "grave", medicalResponsibility: { type: "lider", leaderNames: "Dr. Felipe Arraes" },
+    utiDischargePrediction: ["10-14 dias"],
+  },
+  {
+    id: "uti2-07", bedNumber: "L15", name: "José Antônio Rodrigues Lima", age: "82", sector: "yellow",
+    diagnoses: ["AVCi extenso em ACM direita", "Transformação hemorrágica"], medicalHistory: ["FA crônica sem anticoagulação", "HAS", "DM2"],
+    relevantExams: ["TC crânio: AVCi extenso + petéquias", "NIHSS 18", "Glasgow 10"],
+    pendencies: ["Avaliação neurocirurgia", "Monitorizar PIC"], schedule: ["TC crânio controle 24h", "Fisioterapia respiratória"],
+    admissionHistory: "Encontrado em casa com hemiplegia esquerda e rebaixamento de consciência. Janela terapêutica ultrapassada.", admissionDate: "2025-11-09 03:15",
+    clinicalStatus: "gravissimo", medicalResponsibility: { type: "lider", leaderNames: "Dra. Camila Torres" },
+    utiDischargePrediction: ["Sem previsão"],
+  },
+  {
+    id: "uti2-08", bedNumber: "L16", name: "Antônia Beatriz Carvalho", age: "37", sector: "yellow",
+    diagnoses: ["Cetoacidose diabética grave", "DM tipo 1"], medicalHistory: ["DM1 desde os 12 anos", "Má adesão"],
+    relevantExams: ["Glicemia 580", "pH 7.05", "HCO3 6", "K+ 6.2"],
+    pendencies: ["BIC venoso seriado", "Ajuste insulina conforme protocolo"], schedule: ["Glicemia capilar 1/1h", "Gasometria 2/2h"],
+    admissionHistory: "Admitida com quadro de polidipsia, poliúria e vômitos há 3 dias. Confusa na admissão.", admissionDate: "2025-11-11 19:30",
+    clinicalStatus: "grave_estavel", medicalResponsibility: { type: "lider", leaderNames: "Dr. André Luís" },
+    utiDischargePrediction: ["2-3 dias"],
+  },
+  {
+    id: "uti2-09", bedNumber: "L17", name: "Pedro Henrique Nascimento", age: "49", sector: "yellow",
+    diagnoses: ["Pós-PCR", "Protocolo hipotermia terapêutica"], medicalHistory: ["Doença coronariana", "Stent prévio em DA"],
+    relevantExams: ["ECG: ritmo sinusal pós-cardioversão", "Troponina 8.500", "Lactato 6.8"],
+    pendencies: ["Manter hipotermia 32-34°C por 24h", "Avaliação neurológica após reaquecimento"],
+    schedule: ["Controle temperatura horário", "EEG contínuo", "Reaquecer às 08h amanhã"],
+    admissionHistory: "PCR em FV testemunhada no domicílio. RCE após 12 min de RCP. Intubado em campo pelo SAMU.", admissionDate: "2025-11-11 06:45",
+    clinicalStatus: "gravissimo", medicalResponsibility: { type: "lider", leaderNames: "Dra. Renata Melo" },
+    utiDischargePrediction: ["Sem previsão"],
+  },
+  {
+    id: "uti2-10", bedNumber: "L18", name: "Luciana Gabriela Fonseca", age: "33", sector: "yellow",
+    diagnoses: ["Eclâmpsia", "HELLP síndrome", "Pós-cesárea de emergência"], medicalHistory: ["Pré-eclâmpsia gestação anterior"],
+    relevantExams: ["Plaquetas 42.000", "TGO 890", "LDH 1.200", "Cr 2.1"],
+    pendencies: ["Sulfato de magnésio 24h", "Controle plaquetário 6/6h", "Parecer hematologia"],
+    schedule: ["Controle PA 1/1h", "Diurese horária", "Hemograma controle 12h"],
+    admissionHistory: "Gestante 34 sem, admitida com convulsão tônico-clônica e PA 200x130. Cesárea de emergência realizada.", admissionDate: "2025-11-10 22:00",
+    clinicalStatus: "grave", medicalResponsibility: { type: "lider", leaderNames: "Dr. Bruno Cavalcante" },
+    utiDischargePrediction: ["5-7 dias"],
+  },
+];
+
 export default function PainelClinicoPage() {
   const { currentDepartment } = useDepartment();
-  const { patients, isLoading } = usePatients(currentDepartment);
+  const { patients: dbPatients, isLoading } = usePatients(currentDepartment);
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState<string>("all");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [sidebarTab, setSidebarTab] = useState("resumo");
+
+  // Use DB patients if available, otherwise fallback to mock UTI2 for demo
+  const patients = dbPatients.length > 0 ? dbPatients : MOCK_UTI2_PATIENTS;
 
   // Filter out vacant beds and apply search/sector filter
   const filteredPatients = useMemo(() => {
