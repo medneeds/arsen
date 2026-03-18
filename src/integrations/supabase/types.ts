@@ -1522,6 +1522,142 @@ export type Database = {
         }
         Relationships: []
       }
+      saps3_assessments: {
+        Row: {
+          admission_reason: string | null
+          admission_reason_detail: string | null
+          age: number | null
+          bilirubin_highest: number | null
+          box1_score: number | null
+          box2_score: number | null
+          box3_score: number | null
+          comorbidities: Json | null
+          created_at: string
+          created_by: string | null
+          creatinine_highest: number | null
+          department: string
+          gcs_score: number | null
+          heart_rate_highest: number | null
+          hospital_los_before_icu: number | null
+          hospital_unit_id: string
+          icu_admission_source: string | null
+          id: string
+          infection_at_admission: string | null
+          is_mechanically_ventilated: boolean | null
+          leukocytes: number | null
+          oxygenation_pao2_fio2: number | null
+          patient_id: string | null
+          patient_name: string
+          ph_lowest: number | null
+          planned_admission: boolean | null
+          platelets_lowest: number | null
+          predicted_mortality: number | null
+          state_id: string
+          surgery_type: string | null
+          surgical_status: string | null
+          systolic_bp_lowest: number | null
+          temperature_lowest: number | null
+          total_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          admission_reason?: string | null
+          admission_reason_detail?: string | null
+          age?: number | null
+          bilirubin_highest?: number | null
+          box1_score?: number | null
+          box2_score?: number | null
+          box3_score?: number | null
+          comorbidities?: Json | null
+          created_at?: string
+          created_by?: string | null
+          creatinine_highest?: number | null
+          department?: string
+          gcs_score?: number | null
+          heart_rate_highest?: number | null
+          hospital_los_before_icu?: number | null
+          hospital_unit_id: string
+          icu_admission_source?: string | null
+          id?: string
+          infection_at_admission?: string | null
+          is_mechanically_ventilated?: boolean | null
+          leukocytes?: number | null
+          oxygenation_pao2_fio2?: number | null
+          patient_id?: string | null
+          patient_name: string
+          ph_lowest?: number | null
+          planned_admission?: boolean | null
+          platelets_lowest?: number | null
+          predicted_mortality?: number | null
+          state_id: string
+          surgery_type?: string | null
+          surgical_status?: string | null
+          systolic_bp_lowest?: number | null
+          temperature_lowest?: number | null
+          total_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          admission_reason?: string | null
+          admission_reason_detail?: string | null
+          age?: number | null
+          bilirubin_highest?: number | null
+          box1_score?: number | null
+          box2_score?: number | null
+          box3_score?: number | null
+          comorbidities?: Json | null
+          created_at?: string
+          created_by?: string | null
+          creatinine_highest?: number | null
+          department?: string
+          gcs_score?: number | null
+          heart_rate_highest?: number | null
+          hospital_los_before_icu?: number | null
+          hospital_unit_id?: string
+          icu_admission_source?: string | null
+          id?: string
+          infection_at_admission?: string | null
+          is_mechanically_ventilated?: boolean | null
+          leukocytes?: number | null
+          oxygenation_pao2_fio2?: number | null
+          patient_id?: string | null
+          patient_name?: string
+          ph_lowest?: number | null
+          planned_admission?: boolean | null
+          platelets_lowest?: number | null
+          predicted_mortality?: number | null
+          state_id?: string
+          surgery_type?: string | null
+          surgical_status?: string | null
+          systolic_bp_lowest?: number | null
+          temperature_lowest?: number | null
+          total_score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saps3_assessments_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saps3_assessments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saps3_assessments_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sepsis_protocols: {
         Row: {
           antibiotic_prescription_date: string | null

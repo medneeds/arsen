@@ -51,6 +51,7 @@ import GestorPanelPage from "./pages/GestorPanelPage";
 import ValidacaoFarmaceuticaPage from "./pages/ValidacaoFarmaceuticaPage";
 import PainelClinicoPage from "./pages/PainelClinicoPage";
 import SetorImagemPage from "./pages/SetorImagemPage";
+import Saps3Page from "./pages/Saps3Page";
 
 const queryClient = new QueryClient();
 
@@ -459,6 +460,16 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
                 <SetorImagemPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/saps3"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <Saps3Page />
               </MainLayout>
             </ProtectedRoute>
           }
