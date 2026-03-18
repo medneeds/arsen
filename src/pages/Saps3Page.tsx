@@ -235,7 +235,9 @@ const COMORBIDITY_OPTIONS = [
 
 export default function Saps3Page() {
   const { user } = useAuth();
-  const { selectedHospital, selectedState } = useHospital();
+  const { currentHospital, currentState } = useHospital();
+  const selectedHospital = currentHospital?.id;
+  const selectedState = currentState?.id;
   
   const [records, setRecords] = useState<Saps3Record[]>([]);
   const [showForm, setShowForm] = useState(false);
