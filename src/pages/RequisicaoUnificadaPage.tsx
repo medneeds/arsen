@@ -463,22 +463,29 @@ const RequisicaoUnificadaPage = () => {
         {/* ════════════════════════════════════════════ */}
         <TabsContent value="solicitar" className="mt-4 space-y-4">
           {/* Patient info */}
-          <Card className="border-border/50">
+          <Card className={cn("border-border/50", formPatientId && "border-primary/30 bg-primary/5")}>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Dados do Paciente</CardTitle>
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                Dados do Paciente
+                {formPatientId && (
+                  <Badge variant="outline" className="text-[10px] border-primary/30 text-primary bg-primary/10">
+                    Vinculado ao mapa
+                  </Badge>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Nome do Paciente *</Label>
-                <Input placeholder="Nome completo" value={formPatientName} onChange={e => setFormPatientName(e.target.value)} />
+                <Input placeholder="Nome completo" value={formPatientName} onChange={e => setFormPatientName(e.target.value)} readOnly={!!formPatientId} className={formPatientId ? "bg-muted/50" : ""} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Leito</Label>
-                <Input placeholder="Ex: 01" value={formPatientBed} onChange={e => setFormPatientBed(e.target.value)} />
+                <Input placeholder="Ex: 01" value={formPatientBed} onChange={e => setFormPatientBed(e.target.value)} readOnly={!!formPatientId} className={formPatientId ? "bg-muted/50" : ""} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Setor</Label>
-                <Input placeholder="Ex: UTI 1" value={formPatientSector} onChange={e => setFormPatientSector(e.target.value)} />
+                <Input placeholder="Ex: UTI 1" value={formPatientSector} onChange={e => setFormPatientSector(e.target.value)} readOnly={!!formPatientId} className={formPatientId ? "bg-muted/50" : ""} />
               </div>
             </CardContent>
           </Card>
