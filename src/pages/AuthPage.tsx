@@ -37,7 +37,7 @@ const floatingIcons = [
   { Icon: Brain, x: "60%", y: "30%", delay: 3, duration: 5 },
 ];
 
-type AccessProfile = "medico" | "gestor" | "multi" | "administrativo" | "farmacia";
+type AccessProfile = "medico" | "gestor" | "multi" | "administrativo" | "farmacia" | "imagem";
 
 const ACCESS_PROFILES: {
   key: AccessProfile;
