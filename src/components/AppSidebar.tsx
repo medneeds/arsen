@@ -109,13 +109,10 @@ export function AppSidebar({
       profiles: ["gestor"],
     },
     {
-      title: "Pacientes",
+      title: "Movimentações",
       icon: Users,
+      link: "/movements",
       profiles: ["medico", "gestor", "multi", "administrativo"],
-      items: [
-        { name: "Movimentações", link: "/movements", profiles: ["medico", "gestor", "multi", "administrativo"] },
-        { name: "Histórico", link: "/internment-history", profiles: ["medico", "gestor", "multi"] },
-      ],
     },
     {
       title: "Documentos",
