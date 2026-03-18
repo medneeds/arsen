@@ -1420,30 +1420,36 @@ const PrescricaoPage = () => {
       suspendedAt: undefined,
     }));
 
-    // If current prescription is saved, save it first then create a new version linked to it
-    if (currentPrescriptionId && currentHospital && currentState) {
+    const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
+
+    if (currentHospital && currentState && patient.name.trim()) {
       setSaving(true);
       try {
-        // Save current state of existing prescription
-        await supabase
-          .from('prescriptions')
-          .update({
-            patient_data: patient as any,
-            items: items as any,
-            digital_signature: digitalSignature as any,
-            status: digitalSignature ? 'signed' : 'draft',
-          })
-          .eq('id', currentPrescriptionId);
+        // Save current prescription first if it exists
+        if (currentPrescriptionId) {
+          await supabase
+            .from('prescriptions')
+            .update({
+              patient_data: patient as any,
+              items: items as any,
+              digital_signature: digitalSignature as any,
+              status: digitalSignature ? 'signed' : 'draft',
+            })
+            .eq('id', currentPrescriptionId);
+        }
 
         // Get current version number
-        const { data: parentData } = await supabase
-          .from('prescriptions')
-          .select('version')
-          .eq('id', currentPrescriptionId)
-          .single();
-        const nextVersion = (parentData?.version || 1) + 1;
+        let nextVersion = 1;
+        if (currentPrescriptionId) {
+          const { data: parentData } = await supabase
+            .from('prescriptions')
+            .select('version')
+            .eq('id', currentPrescriptionId)
+            .single();
+          nextVersion = (parentData?.version || 1) + 1;
+        }
 
-        // Create new version linked to parent
+        // Create new version (auto-saved)
         const { data: newData, error } = await supabase
           .from('prescriptions')
           .insert({
@@ -1453,7 +1459,7 @@ const PrescricaoPage = () => {
             digital_signature: null,
             status: 'draft',
             version: nextVersion,
-            parent_id: currentPrescriptionId,
+            parent_id: currentPrescriptionId || undefined,
             department: 'URGÊNCIA E EMERGÊNCIA ADULTO',
             hospital_unit_id: currentHospital.id,
             state_id: currentState.id,
@@ -1468,8 +1474,7 @@ const PrescricaoPage = () => {
           fetchVersionHistory(newData.id);
         }
         fetchPrescriptions();
-        const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
-        toast.success(`Prescrição renovada para ${tomorrow} (v${nextVersion})`, {
+        toast.success(`Prescrição renovada e salva para ${tomorrow} (v${nextVersion})`, {
           description: `${renewedItems.length} itens renovados${includeSuspended ? ' (incluindo suspensos reativados)' : ''}.`,
         });
       } catch (err: any) {
@@ -1478,7 +1483,6 @@ const PrescricaoPage = () => {
         setSaving(false);
       }
     } else {
-      const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
       toast.success(`Prescrição renovada para ${tomorrow}`, {
         description: `${renewedItems.length} itens renovados${includeSuspended ? ' (incluindo suspensos reativados)' : ''}.`,
       });
