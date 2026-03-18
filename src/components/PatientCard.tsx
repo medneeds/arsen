@@ -1051,13 +1051,13 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
     const updatedPatient = { ...patient };
     
     if (editingField === "diagnoses") {
-      updatedPatient.diagnoses = [...patient.diagnoses, editValue.toUpperCase()];
+      updatedPatient.diagnoses = [...patient.diagnoses, editValue];
     } else if (editingField === "medicalHistory") {
-      updatedPatient.medicalHistory = [...patient.medicalHistory, editValue.toUpperCase()];
+      updatedPatient.medicalHistory = [...patient.medicalHistory, editValue];
     } else if (editingField === "relevantExams") {
-      updatedPatient.relevantExams = [...patient.relevantExams, editValue.toUpperCase()];
+      updatedPatient.relevantExams = [...patient.relevantExams, editValue];
     } else if (editingField === "pendencies") {
-      updatedPatient.pendencies = [...patient.pendencies, editValue.toUpperCase()];
+      updatedPatient.pendencies = [...patient.pendencies, editValue];
     }
 
     // Record conduct history for addition
