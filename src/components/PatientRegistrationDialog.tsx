@@ -368,6 +368,23 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
                 </SelectContent>
               </Select>
             </div>
+
+            {/* UTI destination notice */}
+            {(form.destination_sector === "UTI 1" || form.destination_sector === "UTI 2") && (
+              <Card className="border-amber-500/30 bg-amber-500/5">
+                <CardContent className="p-4 flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-medium text-amber-700 dark:text-amber-400">Solicitação de Leito UTI</p>
+                    <p className="text-muted-foreground mt-1">
+                      O cadastro será encaminhado como solicitação de leito. 
+                      O médico da UTI avaliará e definirá a alocação com preenchimento obrigatório do SAPS 3.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div>
               <Label className="text-xs">Observações</Label>
               <Textarea
