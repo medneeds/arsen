@@ -859,7 +859,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
     const updatedPatient = { ...patient };
     
     if (editingField === "name") {
-      updatedPatient.name = editValue.toUpperCase();
+      updatedPatient.name = editValue;
       // Auto-set admission date when name is first added
       if (!patient.admissionDate && editValue.trim()) {
         updatedPatient.admissionDate = new Date().toISOString();
