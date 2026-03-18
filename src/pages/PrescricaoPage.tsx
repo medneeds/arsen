@@ -572,10 +572,46 @@ function SortablePrescriptionItemRow({
                     <SelectContent>{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
-                {/* Schedule - far right, wider */}
+                {/* Schedule - far right, with presets */}
                 <div className="shrink-0 flex items-center gap-1.5 ml-auto pl-3 border-l border-border/30">
                   <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Apraz:</span>
-                  <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-44 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
+                  <div className="flex items-center gap-1">
+                    {(() => {
+                      const presets = getPresetsForPosology(item.posology);
+                      if (presets) {
+                        return (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-7 px-1.5 text-[10px] border-border/40 text-muted-foreground hover:text-foreground shrink-0">
+                                <ClipboardList className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                              <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                {presets.label} — Escolha um esquema
+                              </div>
+                              <DropdownMenuSeparator />
+                              {presets.options.map((opt) => (
+                                <DropdownMenuItem
+                                  key={opt.name}
+                                  onClick={() => onUpdate(item.id, "schedule", opt.times)}
+                                  className="text-xs gap-2 font-mono"
+                                >
+                                  {opt.times}
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-[10px] text-muted-foreground italic" onClick={() => {}}>
+                                Personalizado: edite o campo →
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        );
+                      }
+                      return null;
+                    })()}
+                    <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-52 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
+                  </div>
                 </div>
               </div>
 
