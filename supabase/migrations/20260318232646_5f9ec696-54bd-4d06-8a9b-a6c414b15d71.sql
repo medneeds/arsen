@@ -1,0 +1,2 @@
+ALTER TABLE pre_admissions DROP CONSTRAINT pre_admissions_status_check;
+ALTER TABLE pre_admissions ADD CONSTRAINT pre_admissions_status_check CHECK (status = ANY (ARRAY['pre_admissao'::text, 'classificado'::text, 'admitido'::text, 'cancelado'::text, 'aguardando_leito'::text, 'aguardando_leito_uti'::text]));
