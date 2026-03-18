@@ -2786,7 +2786,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                                     }
                                   }}
                                   onBlur={saveInlineEdit}
-                                  className="min-h-[40px] text-[10px] flex-1 uppercase text-foreground resize-y border-0 bg-transparent p-0 focus-visible:ring-0"
+                                  className="min-h-[40px] text-[10px] flex-1 text-foreground resize-y border-0 bg-transparent p-0 focus-visible:ring-0"
                                   rows={2}
                                 />
                               </div>
