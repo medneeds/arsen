@@ -4583,7 +4583,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                         </div>
                       ) : (
                         <div className="flex items-start justify-between gap-3">
-                          <p className="text-base text-foreground leading-relaxed uppercase font-medium flex-1">
+                          <p className="text-base text-foreground leading-relaxed font-medium flex-1">
                             {pendency}
                           </p>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
