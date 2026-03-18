@@ -610,7 +610,7 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
           {item.posology && item.posology !== '-' && <span> — {item.posology}</span>}
           {item.schedule && item.schedule !== '-' && <span> — <span className="font-semibold">{item.schedule}</span></span>}
           {item.flags.length > 0 && (
-            <span className="font-bold text-[8px]"> [{item.flags.map(f => f.toUpperCase()).join(', ')}]</span>
+            <span className="font-bold text-[8px]"> [{item.flags.join(', ')}]</span>
           )}
           {item.status === 'suspended' && <span className="text-red-600 font-bold"> [SUSPENSO]</span>}
         </p>
