@@ -2835,7 +2835,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       </SortableContext>
                       
                       {editingField === "pendencies" && editingArrayIndex === -2 ? (
-                        <div className="text-[10px] text-foreground leading-snug uppercase rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
+                        <div className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
                           <div className="flex-shrink-0 w-3" />
                           <div className="flex items-start gap-1 flex-1">
                             <span className="font-semibold text-muted-foreground flex-shrink-0 mt-0.5">{patient.pendencies.length + 1}.</span>
