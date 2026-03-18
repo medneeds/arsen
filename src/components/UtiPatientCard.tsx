@@ -1470,7 +1470,7 @@ export function UtiPatientCard({
                   <InlineEditableArray
                     items={motivoAdmissao}
                     onUpdate={(items) => handleUpdateField("utiAdmissionReason", items)}
-                    label="MOTIVO DA ADMISSÃO"
+                    label="Motivo da admissão"
                     colorClass="bg-muted/30 border border-border/30"
                     alwaysShowAll
                   />
