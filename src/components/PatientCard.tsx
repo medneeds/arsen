@@ -3392,7 +3392,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             const target = e.target as HTMLTextAreaElement;
                             const start = target.selectionStart ?? 0;
                             const end = target.selectionEnd ?? 0;
-                            setEditValue(e.target.value.toUpperCase());
+                            setEditValue(e.target.value);
                             // Restaura a posição do cursor após a atualização
                             requestAnimationFrame(() => {
                               target.setSelectionRange(start, end);
@@ -3400,8 +3400,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                           }}
                           onKeyDown={handleKeyDown}
                           onBlur={saveInlineEdit}
-                          className="text-[10px] uppercase text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                          placeholder="NOVA PENDÊNCIA"
+                          className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
+                          placeholder="Nova pendência"
                         />
                       </div>
                       <div className="flex items-start gap-0.5 flex-shrink-0">
