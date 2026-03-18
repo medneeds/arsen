@@ -550,7 +550,7 @@ export default function PainelClinicoPage() {
                       <FileText className="h-3 w-3 mr-1" /> Evolução
                     </TabsTrigger>
                     <TabsTrigger value="requisicoes" className="text-xs px-1">
-                      <ClipboardList className="h-3 w-3 mr-1" /> Exames
+                      <ClipboardList className="h-3 w-3 mr-1" /> Requisições
                     </TabsTrigger>
                     <TabsTrigger value="documentos" className="text-xs px-1">
                       <FolderOpen className="h-3 w-3 mr-1" /> Docs
