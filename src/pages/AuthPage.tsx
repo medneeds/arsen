@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   LogIn, User, Lock, Eye, EyeOff, Building2, ArrowRight, ArrowLeft,
   Activity, Brain, MapPin, Stethoscope, HeartPulse, Shield,
-  BarChart3, Users, ClipboardList, Bed
+  BarChart3, Users, ClipboardList, Bed, Pill
 } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { BigHelpLogo } from "@/components/BigHelpLogo";
