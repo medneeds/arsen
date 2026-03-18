@@ -220,8 +220,8 @@ function SortableItem({ id, index, value, onEdit, onDelete, showDragHandle = tru
             ref={inputRef}
             type="text"
             value={localValue}
-            onChange={(e) => setLocalValue(e.target.value.toUpperCase())}
-            className="flex-1 text-[11px] bg-background border border-primary/30 rounded px-1.5 py-0.5 outline-none uppercase font-medium tracking-tight"
+            onChange={(e) => setLocalValue(e.target.value)}
+            className="flex-1 text-[11px] bg-background border border-primary/30 rounded px-1.5 py-0.5 outline-none font-medium tracking-tight"
             onKeyDown={handleKeyDownInternal}
             onBlur={handleSave}
             onClick={(e) => e.stopPropagation()}
