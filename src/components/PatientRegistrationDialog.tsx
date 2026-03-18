@@ -251,8 +251,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
-                  capture="environment"
+                  accept="image/*,application/pdf"
                   onChange={handleImageUpload}
                   className="hidden"
                 />
