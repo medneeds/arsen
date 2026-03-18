@@ -1399,7 +1399,7 @@ export function UtiPatientCard({
                   <InlineEditableArray
                     items={alergias}
                     onUpdate={(items) => handleUpdateField("utiAllergies", items)}
-                    label="ALERGIAS"
+                    label="Alergias"
                     colorClass="bg-red-50/50 dark:bg-red-900/10 border border-red-200/30 dark:border-red-800/20"
                     alwaysShowAll
                   />
