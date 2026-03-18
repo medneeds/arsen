@@ -97,6 +97,12 @@ export function AppSidebar({
       profiles: ["medico", "gestor", "multi", "administrativo"],
     },
     {
+      title: "PAINEL CLÍNICO",
+      icon: ClipboardCheck,
+      link: "/painel-clinico",
+      profiles: ["medico", "gestor"],
+    },
+    {
       title: "PAINEL DO GESTOR",
       icon: BarChart3,
       link: "/painel-gestor",
