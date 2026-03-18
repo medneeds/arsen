@@ -43,9 +43,7 @@ import AdminCoordinatorsPage from "./pages/AdminCoordinatorsPage";
 import TherapeuticTemplatesPage from "./pages/TherapeuticTemplatesPage";
 import RoundPage from "./pages/RoundPage";
 import RelatorioPage from "./pages/RelatorioPage";
-import RequisicaoLaboratorioPage from "./pages/RequisicaoLaboratorioPage";
-import RequisicaoImagensPage from "./pages/RequisicaoImagensPage";
-import RequisicaoParecerPage from "./pages/RequisicaoParecerPage";
+import RequisicaoUnificadaPage from "./pages/RequisicaoUnificadaPage";
 import PrescricaoPage from "./pages/PrescricaoPage";
 import EvolucaoPage from "./pages/EvolucaoPage";
 import MedicationCatalogPage from "./pages/MedicationCatalogPage";
@@ -383,35 +381,18 @@ const App = () => {
           }
         />
         <Route
-          path="/requisicao/laboratorio"
+          path="/requisicoes"
           element={
             <ProtectedRoute>
               <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <RequisicaoLaboratorioPage />
+                <RequisicaoUnificadaPage />
               </MainLayout>
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/requisicao/imagens"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <RequisicaoImagensPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/requisicao/parecer"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <RequisicaoParecerPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/requisicao/laboratorio" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
+        <Route path="/requisicao/imagens" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
+        <Route path="/requisicao/parecer" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
         <Route
           path="/prescricao"
           element={

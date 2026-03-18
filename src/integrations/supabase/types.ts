@@ -446,6 +446,103 @@ export type Database = {
           },
         ]
       }
+      exam_requests: {
+        Row: {
+          category: string
+          clinical_indication: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          department: string
+          hospital_unit_id: string
+          id: string
+          items: Json
+          notes: string | null
+          patient_bed: string | null
+          patient_id: string | null
+          patient_name: string
+          patient_sector: string | null
+          priority: string
+          requested_by: string | null
+          requested_by_name: string | null
+          result_data: Json | null
+          results: string | null
+          state_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          clinical_indication?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          department?: string
+          hospital_unit_id: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          patient_bed?: string | null
+          patient_id?: string | null
+          patient_name: string
+          patient_sector?: string | null
+          priority?: string
+          requested_by?: string | null
+          requested_by_name?: string | null
+          result_data?: Json | null
+          results?: string | null
+          state_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          clinical_indication?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          department?: string
+          hospital_unit_id?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          patient_bed?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          patient_sector?: string | null
+          priority?: string
+          requested_by?: string | null
+          requested_by_name?: string | null
+          result_data?: Json | null
+          results?: string | null
+          state_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_requests_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_requests_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_requests_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hospital_units: {
         Row: {
           address: string | null
