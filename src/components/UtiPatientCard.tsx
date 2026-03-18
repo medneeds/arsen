@@ -1406,7 +1406,7 @@ export function UtiPatientCard({
                   <InlineEditableArray
                     items={culturasAtb}
                     onUpdate={(items) => handleUpdateField("utiCulturesAntibiotics", items)}
-                    label="CULTURAS / ATB"
+                    label="Culturas / ATB"
                     icon={<Pill className="h-3 w-3 text-red-400" />}
                     colorClass="bg-red-50/50 dark:bg-red-900/10 border border-red-200/30 dark:border-red-800/20"
                     alwaysShowAll
