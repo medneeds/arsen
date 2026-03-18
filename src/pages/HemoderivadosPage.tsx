@@ -34,10 +34,10 @@ export default function HemoderivadosPage() {
       <div className="p-6 md:p-8 space-y-8 max-w-6xl">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-rose-500 to-rose-400 bg-clip-text text-transparent uppercase">
-            HEMODERIVADOS
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-rose-500 to-rose-400 bg-clip-text text-transparent">
+            Hemoderivados
           </h1>
-          <p className="text-muted-foreground text-lg uppercase">
+          <p className="text-muted-foreground text-lg">
             Solicitações e termos de hemotransfusão
           </p>
           <Badge variant="secondary" className="mt-2">

@@ -222,8 +222,9 @@ export default function PainelClinicoPage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [sidebarTab, setSidebarTab] = useState("resumo");
 
-  // Use DB patients if available, otherwise fallback to mock UTI2 for demo
-  const patients = dbPatients.length > 0 ? dbPatients : MOCK_UTI2_PATIENTS;
+  // Use DB patients if available (occupied ones), otherwise fallback to mock UTI2 for demo
+  const occupiedDbPatients = dbPatients.filter(p => !p.isVacant && p.name && p.name.trim() !== "");
+  const patients = occupiedDbPatients.length > 0 ? dbPatients : MOCK_UTI2_PATIENTS;
 
   // Filter out vacant beds and apply search/sector filter
   const filteredPatients = useMemo(() => {

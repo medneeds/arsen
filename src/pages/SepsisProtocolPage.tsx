@@ -22,7 +22,7 @@ export default function SepsisProtocolPage() {
           <Button variant="ghost" size="icon" onClick={() => navigate("/documents")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold uppercase">PROTOCOLO SEPSE</h1>
+          <h1 className="text-2xl font-bold">Protocolo Sepse</h1>
         </div>
 
         <div className="bg-card border rounded-lg p-8 space-y-6">

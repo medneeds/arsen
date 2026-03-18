@@ -320,7 +320,7 @@ export default function UserManagementPage() {
               <Users className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground uppercase tracking-tight">
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">
                 Gestão de Usuários
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -375,12 +375,12 @@ export default function UserManagementPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead className="font-bold uppercase text-xs">Usuário</TableHead>
-                <TableHead className="font-bold uppercase text-xs">CRM</TableHead>
-                <TableHead className="font-bold uppercase text-xs">Status</TableHead>
-                <TableHead className="font-bold uppercase text-xs">Papel</TableHead>
-                <TableHead className="font-bold uppercase text-xs">Cadastro</TableHead>
-                <TableHead className="font-bold uppercase text-xs text-right">Ações</TableHead>
+                <TableHead className="font-bold text-xs">Usuário</TableHead>
+                <TableHead className="font-bold text-xs">CRM</TableHead>
+                <TableHead className="font-bold text-xs">Status</TableHead>
+                <TableHead className="font-bold text-xs">Papel</TableHead>
+                <TableHead className="font-bold text-xs">Cadastro</TableHead>
+                <TableHead className="font-bold text-xs text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -533,31 +533,31 @@ export default function UserManagementPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Mail className="h-3 w-3" /> Email/Login
                     </p>
                     <p className="text-sm font-mono">{selectedUser.email?.replace("@sistema.local", "") || "—"}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Stethoscope className="h-3 w-3" /> CRM
                     </p>
                     <p className="text-sm font-mono">{selectedUser.crm || "—"}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Building2 className="h-3 w-3" /> Especialidade
                     </p>
                     <p className="text-sm">{selectedUser.specialty || "—"}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Phone className="h-3 w-3" /> Telefone
                     </p>
                     <p className="text-sm">{selectedUser.phone || "—"}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                       <Calendar className="h-3 w-3" /> Data de Cadastro
                     </p>
                     <p className="text-sm">
@@ -566,7 +566,7 @@ export default function UserManagementPage() {
                   </div>
                   {selectedUser.approved_at && (
                     <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground uppercase font-semibold flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
                         <CheckCircle className="h-3 w-3" /> Data de Aprovação
                       </p>
                       <p className="text-sm">
@@ -579,7 +579,7 @@ export default function UserManagementPage() {
 
               {/* Role Management */}
               <div className="space-y-2 pt-4 border-t">
-                <p className="text-xs text-muted-foreground uppercase font-semibold">Papel no Sistema</p>
+                <p className="text-xs text-muted-foreground font-semibold">Papel no Sistema</p>
                 <Select
                   value={selectedUser.role || "medico"}
                   onValueChange={(value) => handleUpdateRole(selectedUser.id, value)}

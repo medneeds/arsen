@@ -37,20 +37,20 @@ export default function ControleGlicemicoPage() {
                 <Activity className="h-7 w-7 text-emerald-500" />
               </div>
               <div>
-                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent uppercase">
+                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                   Protocolo de Controle Glicêmico
                 </h1>
-                <p className="text-muted-foreground text-lg uppercase mt-1">
+                <p className="text-muted-foreground text-lg mt-1">
                   Formulário de controle glicêmico e protocolo de insulina
                 </p>
               </div>
             </div>
             
             <div className="flex gap-2 flex-wrap">
-              <Badge variant="secondary" className="uppercase bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+              <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
                 Rede Hapvida
               </Badge>
-              <Badge variant="secondary" className="uppercase">
+              <Badge variant="secondary">
                 Protocolo Institucional
               </Badge>
             </div>
@@ -60,25 +60,25 @@ export default function ControleGlicemicoPage() {
         {/* Content Card */}
         <Card className="border-emerald-500/20 shadow-lg">
           <CardHeader className="bg-emerald-500/5">
-            <CardTitle className="text-2xl uppercase flex items-center gap-2">
+            <CardTitle className="text-2xl flex items-center gap-2">
               <Activity className="h-6 w-6 text-emerald-500" />
               Formulário de Controle Glicêmico
             </CardTitle>
-            <CardDescription className="text-base uppercase">
-              Protocolo de Insulina - Rede Hapvida
+            <CardDescription className="text-base">
+              Protocolo de Insulina — Rede Hapvida
             </CardDescription>
           </CardHeader>
           <CardContent className="p-8 space-y-6">
             <div className="prose prose-sm max-w-none dark:prose-invert">
-              <h3 className="text-lg font-semibold uppercase text-foreground mb-4">Sobre o Protocolo</h3>
-              <p className="text-muted-foreground uppercase leading-relaxed">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Sobre o Protocolo</h3>
+              <p className="text-muted-foreground leading-relaxed">
                 Formulário padronizado para registro e acompanhamento do controle glicêmico de pacientes 
                 em uso de protocolo de insulina. Permite o monitoramento sistemático dos níveis glicêmicos 
                 e ajuste das velocidades de infusão conforme protocolo institucional.
               </p>
               
-              <h3 className="text-lg font-semibold uppercase text-foreground mt-6 mb-4">Informações Registradas</h3>
-              <ul className="space-y-2 text-muted-foreground uppercase">
+              <h3 className="text-lg font-semibold text-foreground mt-6 mb-4">Informações Registradas</h3>
+              <ul className="space-y-2 text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-500 font-bold">•</span>
                   <span>Dados do paciente (Nome completo, Data de nascimento, Setor, Leito)</span>
@@ -117,7 +117,7 @@ export default function ControleGlicemicoPage() {
                 onClick={handleDownload}
               >
                 <Download className="mr-2 h-5 w-5" />
-                DOWNLOAD DO FORMULÁRIO
+                Download do Formulário
               </Button>
             </div>
           </CardContent>

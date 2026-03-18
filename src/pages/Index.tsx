@@ -874,16 +874,16 @@ const Index = () => {
                   <SidebarTrigger className="print:hidden flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
                   
                     <div className="min-w-0 flex-1">
-                      <h1 className="text-base sm:text-2xl font-bold text-white print:text-xs uppercase tracking-tight truncate">BigHelp Map</h1>
+                      <h1 className="text-base sm:text-2xl font-bold text-white print:text-xs tracking-tight truncate">BigHelp Map</h1>
                       <div className="flex items-center gap-2 print:hidden">
                         <span className={`w-2 h-2 rounded-full ${SECTOR_VISUAL[activeSector]?.dotClass} border`} />
                         <Select value={activeSector} onValueChange={handleSectorChange}>
-                          <SelectTrigger className="h-5 w-auto gap-1 bg-transparent border-none text-[10px] sm:text-xs text-white/60 font-light uppercase tracking-widest p-0 focus:ring-0 focus:ring-offset-0 hover:text-white/90 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/40">
+                          <SelectTrigger className="h-5 w-auto gap-1 bg-transparent border-none text-[10px] sm:text-xs text-white/60 font-light tracking-widest p-0 focus:ring-0 focus:ring-offset-0 hover:text-white/90 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/40">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {Object.entries(SECTOR_VISUAL).map(([key, cfg]) => (
-                              <SelectItem key={key} value={key} className="uppercase text-xs font-medium">
+                              <SelectItem key={key} value={key} className="text-xs font-medium">
                                 <span className="flex items-center gap-2">
                                   <span className={`w-2 h-2 rounded-full ${cfg.dotClass} border`} />
                                   {cfg.title}
@@ -1130,17 +1130,17 @@ const Index = () => {
                           <Users className="h-3.5 w-3.5 text-white" />
                         </div>
                         <div className="flex flex-col justify-center">
-                          <p className="text-[8px] text-white/70 uppercase leading-none tracking-wide font-medium">Total</p>
+                          <p className="text-[8px] text-white/70 leading-none tracking-wide font-medium">Total</p>
                           <p className="text-base font-bold text-white leading-tight">{totalPatients}</p>
                         </div>
                       </div>
 
                       <div className="hidden lg:flex items-center gap-2 print:hidden">
                         <div className="text-right">
-                          <p className="text-[10px] font-semibold text-white uppercase tracking-tight">
+                          <p className="text-[10px] font-semibold text-white tracking-tight">
                             {user?.user_metadata?.username || user?.email?.split('@')[0]}
                           </p>
-                          <p className="text-[9px] text-white/70 uppercase">
+                          <p className="text-[9px] text-white/70">
                             {role === 'admin' ? 'Administrador' : 'Médico'}
                           </p>
                         </div>
@@ -1262,7 +1262,7 @@ const Index = () => {
                               <ChevronDown className={`h-5 w-5 transition-transform ${isOutsideSectionOpen ? '' : '-rotate-90'}`} />
                               <div className="flex items-center gap-2">
                                 <span className="text-lg">📍</span>
-                                <h2 className="text-lg font-bold text-foreground uppercase">Fora das Alas</h2>
+                                <h2 className="text-lg font-bold text-foreground">Fora das Alas</h2>
                               </div>
                             </button>
                           </CollapsibleTrigger>
@@ -1341,7 +1341,7 @@ const Index = () => {
                         <ChevronDown className={`h-5 w-5 transition-transform ${isNotesSectionOpen ? '' : '-rotate-90'}`} />
                         <div className="flex items-center gap-2">
                           <span className="text-lg">📝</span>
-                          <h2 className="text-lg font-bold text-foreground uppercase">Anotações, Lembretes e Check-lists</h2>
+                          <h2 className="text-lg font-bold text-foreground">Anotações, Lembretes e Check-lists</h2>
                         </div>
                       </button>
                     </CollapsibleTrigger>

@@ -39,10 +39,10 @@ export default function TomografiasPage() {
       <div className="p-6 md:p-8 space-y-8 max-w-6xl">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-500 to-blue-400 bg-clip-text text-transparent uppercase">
-            TOMOGRAFIAS
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-500 to-blue-400 bg-clip-text text-transparent">
+            Tomografias
           </h1>
-          <p className="text-muted-foreground text-lg uppercase">
+          <p className="text-muted-foreground text-lg">
             Questionários e documentos para exames tomográficos
           </p>
           <Badge variant="secondary" className="mt-2">

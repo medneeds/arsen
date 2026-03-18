@@ -91,73 +91,73 @@ export function AppSidebar({
   // "porta" and "visitante" roles get special handling below
   const allMenuItems = [
     {
-      title: "MAPA",
+      title: "Mapa",
       icon: LayoutDashboard,
       link: "/",
       profiles: ["medico", "gestor", "multi", "administrativo"],
     },
     {
-      title: "PAINEL CLÍNICO",
+      title: "Painel Clínico",
       icon: ClipboardCheck,
       link: "/painel-clinico",
       profiles: ["medico", "gestor"],
     },
     {
-      title: "PAINEL DO GESTOR",
+      title: "Painel do Gestor",
       icon: BarChart3,
       link: "/painel-gestor",
       profiles: ["gestor"],
     },
     {
-      title: "PACIENTES",
+      title: "Pacientes",
       icon: Users,
       profiles: ["medico", "gestor", "multi", "administrativo"],
       items: [
-        { name: "MOVIMENTAÇÕES", link: "/movements", profiles: ["medico", "gestor", "multi", "administrativo"] },
-        { name: "HISTÓRICO", link: "/internment-history", profiles: ["medico", "gestor", "multi"] },
+        { name: "Movimentações", link: "/movements", profiles: ["medico", "gestor", "multi", "administrativo"] },
+        { name: "Histórico", link: "/internment-history", profiles: ["medico", "gestor", "multi"] },
       ],
     },
     {
-      title: "DOCUMENTOS",
+      title: "Documentos",
       icon: FolderOpen,
       profiles: ["medico", "gestor"],
       items: [
-        { name: "ROUND", link: "/round", profiles: ["medico", "gestor"] },
-        { name: "HEMODERIVADOS", link: "/hemoderivados", profiles: ["medico", "gestor"] },
-        { name: "RELATÓRIO", link: "/relatorio", profiles: ["medico", "gestor"] },
-        { name: "REGULAÇÃO", link: "/regulacoes", profiles: ["medico", "gestor"] },
+        { name: "Round", link: "/round", profiles: ["medico", "gestor"] },
+        { name: "Hemoderivados", link: "/hemoderivados", profiles: ["medico", "gestor"] },
+        { name: "Relatório", link: "/relatorio", profiles: ["medico", "gestor"] },
+        { name: "Regulação", link: "/regulacoes", profiles: ["medico", "gestor"] },
       ],
     },
     {
-      title: "PROTOCOLOS",
+      title: "Protocolos",
       icon: Stethoscope,
       profiles: ["medico", "gestor", "multi"],
       items: [
-        { name: "PROTOCOLO SEPSE", link: "/sepsis-protocol", profiles: ["medico", "gestor", "multi"] },
-        { name: "CONTROLE GLICÊMICO", link: "/controle-glicemico", profiles: ["medico", "gestor", "multi"] },
-        { name: "CUIDADOS PALIATIVOS", link: "/cuidados-paliativos", profiles: ["medico", "gestor"] },
-        { name: "PRIORIZAÇÃO CIRÚRGICA", link: "/priorizacao-cirurgica", profiles: ["medico", "gestor"] },
-        { name: "ALTO CUSTO", link: "/alto-custo", profiles: ["medico", "gestor"] },
+        { name: "Protocolo Sepse", link: "/sepsis-protocol", profiles: ["medico", "gestor", "multi"] },
+        { name: "Controle Glicêmico", link: "/controle-glicemico", profiles: ["medico", "gestor", "multi"] },
+        { name: "Cuidados Paliativos", link: "/cuidados-paliativos", profiles: ["medico", "gestor"] },
+        { name: "Priorização Cirúrgica", link: "/priorizacao-cirurgica", profiles: ["medico", "gestor"] },
+        { name: "Alto Custo", link: "/alto-custo", profiles: ["medico", "gestor"] },
         { name: "OPME", link: "/opme", profiles: ["medico", "gestor"] },
         { name: "SADT", link: "/sadt", profiles: ["medico", "gestor"] },
-        { name: "TOMOGRAFIAS", link: "/tomografias", profiles: ["medico", "gestor"] },
+        { name: "Tomografias", link: "/tomografias", profiles: ["medico", "gestor"] },
       ],
     },
     {
-      title: "ASSISTENTE CLÍNICO",
+      title: "Assistente Clínico",
       icon: Brain,
       profiles: ["medico", "gestor"],
       items: [
-        { name: "PRESCRIÇÃO", link: "/prescricao", profiles: ["medico", "gestor"] },
-        { name: "VALIDAÇÃO FARMACÊUTICA", link: "/validacao-farmaceutica", profiles: ["gestor"] },
-        { name: "EVOLUÇÃO", link: "/evolucao", profiles: ["medico", "gestor"] },
-        { name: "REQUISIÇÕES", link: "/requisicoes", profiles: ["medico", "gestor"] },
-        { name: "CATÁLOGO DE MEDICAMENTOS", link: "/catalogo-medicamentos", profiles: ["gestor"] },
-        { name: "EXAMINUS AI", link: "/ia", profiles: ["medico", "gestor", "multi"] },
+        { name: "Prescrição", link: "/prescricao", profiles: ["medico", "gestor"] },
+        { name: "Validação Farmacêutica", link: "/validacao-farmaceutica", profiles: ["gestor"] },
+        { name: "Evolução", link: "/evolucao", profiles: ["medico", "gestor"] },
+        { name: "Requisições", link: "/requisicoes", profiles: ["medico", "gestor"] },
+        { name: "Catálogo de Medicamentos", link: "/catalogo-medicamentos", profiles: ["gestor"] },
+        { name: "Examinus AI", link: "/ia", profiles: ["medico", "gestor", "multi"] },
       ],
     },
     {
-      title: "VERSÕES",
+      title: "Versões",
       icon: History,
       link: "/versions",
       profiles: ["medico", "gestor"],
@@ -169,16 +169,16 @@ export function AppSidebar({
     // Porta: minimal access
     if (isDoorUser) {
       return [
-        { title: "MAPA", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
-        { title: "ASSISTENTE CLÍNICO", icon: Brain, profiles: ["medico"], items: [
-          { name: "EXAMINUS AI", link: "/ia", profiles: ["medico"] },
+        { title: "Mapa", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
+        { title: "Assistente Clínico", icon: Brain, profiles: ["medico"], items: [
+          { name: "Examinus AI", link: "/ia", profiles: ["medico"] },
         ]},
       ];
     }
     // Visitante: read-only map
     if (role === "visitante") {
       return [
-        { title: "MAPA", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
+        { title: "Mapa", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
       ];
     }
     // Filter sections by profile, then filter sub-items within each section
@@ -293,7 +293,7 @@ export function AppSidebar({
             {!isCollapsed ? (
               <div className="flex flex-col items-center gap-1">
                 <BigHelpLogo size="sm" showText={false} />
-                <span className="text-[9px] text-muted-foreground/60 tracking-widest uppercase font-light">Socorrão I</span>
+                <span className="text-[9px] text-muted-foreground/60 tracking-widest font-light">Socorrão I</span>
               </div>
             ) : (
               <BigHelpLogo size="xs" />
@@ -333,7 +333,7 @@ export function AppSidebar({
                       )}
                     >
                       <section.icon className="h-5 w-5 text-primary transition-all duration-200" />
-                      <span className="text-xs font-medium uppercase tracking-wide text-foreground">
+                      <span className="text-xs font-medium tracking-wide text-foreground">
                         {section.title}
                       </span>
                     </SidebarMenuButton>
@@ -367,7 +367,7 @@ export function AppSidebar({
                       )} />
                       {!isCollapsed && (
                         <>
-                          <span className="text-xs font-medium uppercase tracking-wide text-foreground flex-1 text-left">
+                          <span className="text-xs font-medium tracking-wide text-foreground flex-1 text-left">
                             {section.title}
                           </span>
                           <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
@@ -391,7 +391,7 @@ export function AppSidebar({
                               <CollapsibleTrigger className="w-full">
                                 <SidebarMenuItem>
                                   <SidebarMenuButton
-                                    className="group/item hover:bg-accent/80 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 uppercase text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 mb-1 justify-between"
+                                    className="group/item hover:bg-accent/80 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 mb-1 justify-between"
                                     tooltip={itemName}
                                   >
                                     <div className="flex items-center gap-3 flex-1">
@@ -409,7 +409,7 @@ export function AppSidebar({
                                   {item.subsections && Array.isArray(item.subsections) && item.subsections.map((subitem: any) => (
                                     <SidebarMenuItem key={subitem.name}>
                                       <SidebarMenuButton
-                                        className="group/subitem hover:bg-accent/60 transition-all duration-200 uppercase text-[10px] rounded-lg cursor-pointer gap-2 hover:translate-x-1 mb-1"
+                                        className="group/subitem hover:bg-accent/60 transition-all duration-200 text-[10px] rounded-lg cursor-pointer gap-2 hover:translate-x-1 mb-1"
                                         tooltip={subitem.name}
                                         onClick={() => handleItemClick(subitem)}
                                       >
@@ -432,7 +432,7 @@ export function AppSidebar({
                         return (
                           <SidebarMenuItem key={itemKey}>
                                      <SidebarMenuButton
-                                        className="group/item hover:bg-accent/80 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 uppercase text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 hover:translate-x-1 mb-1"
+                                        className="group/item hover:bg-accent/80 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 hover:translate-x-1 mb-1"
                                         tooltip={itemName}
                                         onClick={() => handleItemClick(item, section)}
                                       >
@@ -504,7 +504,7 @@ export function AppSidebar({
       <Drawer open={openMobile} onOpenChange={setOpenMobile} modal={true}>
         <DrawerContent className="max-h-[85vh]">
           <DrawerHeader className="border-b pb-3 pt-2">
-            <DrawerTitle className="text-center text-sm font-semibold uppercase tracking-wide">Menu de Navegação</DrawerTitle>
+            <DrawerTitle className="text-center text-sm font-semibold tracking-wide">Menu de Navegação</DrawerTitle>
           </DrawerHeader>
           <div className="overflow-y-auto flex-1 px-2">
             {sidebarContent}

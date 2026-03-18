@@ -30,10 +30,10 @@ export default function SadtPage() {
       <div className="p-6 md:p-8 space-y-8 max-w-6xl">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-cyan-500 to-cyan-400 bg-clip-text text-transparent uppercase">
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-cyan-500 to-cyan-400 bg-clip-text text-transparent">
             SADT
           </h1>
-          <p className="text-muted-foreground text-lg uppercase">
+          <p className="text-muted-foreground text-lg">
             Serviço Auxiliar de Diagnóstico e Terapia
           </p>
           <Badge variant="secondary" className="mt-2">

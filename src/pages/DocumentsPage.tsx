@@ -136,10 +136,10 @@ export default function DocumentsPage() {
       <div className="p-6 md:p-8 space-y-8 max-w-7xl">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent uppercase">
-            DOCUMENTOS
+          <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Documentos
           </h1>
-          <p className="text-muted-foreground text-lg uppercase">
+          <p className="text-muted-foreground text-lg">
             Central de documentos médicos institucionais
           </p>
           <Badge variant="secondary" className="mt-2">
