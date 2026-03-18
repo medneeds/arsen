@@ -210,6 +210,8 @@ interface PendingRequest {
   notes: string | null;
   created_at: string;
   medical_record: string | null;
+  patient_id?: string | null;
+  allocation_request_id?: string | null;
 }
 
 interface Saps3Record {
