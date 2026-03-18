@@ -464,6 +464,16 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/saps3"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <Saps3Page />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
