@@ -612,7 +612,7 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
           {item.flags.length > 0 && (
             <span className="font-bold text-[8px]"> [{item.flags.join(', ')}]</span>
           )}
-          {item.status === 'suspended' && <span className="text-red-600 font-bold"> [SUSPENSO]</span>}
+          {item.status === 'suspended' && <span className="text-red-600 font-bold"> [Suspenso]</span>}
         </p>
         {item.instructions && (
           <p className="text-[8px] italic text-gray-600 ml-2 leading-[1.2]">↳ {item.instructions}</p>
