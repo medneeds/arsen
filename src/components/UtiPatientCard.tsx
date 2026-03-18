@@ -1457,7 +1457,7 @@ export function UtiPatientCard({
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <FolderOpen className="h-3.5 w-3.5 text-slate-400" />
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider">ADMINISTRATIVO</span>
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-500 tracking-wider">Administrativo</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   <InlineEditableArray
