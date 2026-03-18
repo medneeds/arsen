@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { format, addDays } from "date-fns";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
 import socorraoLogo from "@/assets/socorrao1-logo.png";
+import { BigHelpLogo } from "@/components/BigHelpLogo";
 import { ptBR } from "date-fns/locale";
 import {
   Pill, Plus, Trash2, Copy, Printer, Save, RefreshCw,
@@ -1500,8 +1501,48 @@ const PrescricaoPage = () => {
   const selectedInCurrentTab = currentCatItems.filter(i => selectedIds.has(i.id)).length;
   const allSelectedInTab = currentCatItems.length > 0 && selectedInCurrentTab === currentCatItems.length;
 
+  // Show loading animation while contexts are resolving
+  const isReady = !!currentHospital && !!currentState && patient.name !== '';
+  
+  if (!isReady) {
+    return (
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
+        <div className="flex flex-col items-center gap-6">
+          <div className="animate-pulse">
+            <BigHelpLogo size="md" glow />
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-sm font-medium">Carregando prescrição...</span>
+            </div>
+            {patient.name && (
+              <p className="text-xs text-muted-foreground/70">
+                Paciente: {patient.name} — Leito {patient.bed}
+              </p>
+            )}
+          </div>
+          <div className="w-40 h-1 rounded-full bg-muted overflow-hidden">
+            <div className="h-full bg-primary/60 rounded-full animate-[loading_1.5s_ease-in-out_infinite]"
+              style={{
+                animation: 'loading 1.5s ease-in-out infinite',
+              }}
+            />
+          </div>
+        </div>
+        <style>{`
+          @keyframes loading {
+            0% { width: 0%; margin-left: 0; }
+            50% { width: 60%; margin-left: 20%; }
+            100% { width: 0%; margin-left: 100%; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-2 print:space-y-1 print:max-w-none print:text-black">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-2 print:space-y-1 print:max-w-none print:text-black animate-fade-in">
       {/* ===== PRINT-ONLY LETTERHEAD ===== */}
       <div className="hidden print:block prescription-print-section mb-1">
         <div className="flex items-center justify-between border-b-2 border-black pb-1 mb-1">
