@@ -99,6 +99,16 @@ const ACCESS_PROFILES: {
     bgGlow: "from-emerald-400/15 to-emerald-400/5",
     features: ["Validação de Prescrições", "Catálogo de Medicamentos", "Interações Medicamentosas", "Dispensação"],
   },
+  {
+    key: "imagem",
+    label: "Setor de Imagem",
+    subtitle: "RX · TC · USG · ECO",
+    icon: ScanLine,
+    color: "text-rose-400",
+    borderColor: "border-rose-400/30 hover:border-rose-400/60",
+    bgGlow: "from-rose-400/15 to-rose-400/5",
+    features: ["Recepção de Requisições", "Execução de Exames", "Laudos e Resultados", "Fila de Prioridade"],
+  },
 ];
 
 export default function AuthPage() {
