@@ -50,6 +50,7 @@ import MedicationCatalogPage from "./pages/MedicationCatalogPage";
 import GestorPanelPage from "./pages/GestorPanelPage";
 import ValidacaoFarmaceuticaPage from "./pages/ValidacaoFarmaceuticaPage";
 import PainelClinicoPage from "./pages/PainelClinicoPage";
+import SetorImagemPage from "./pages/SetorImagemPage";
 
 const queryClient = new QueryClient();
 
