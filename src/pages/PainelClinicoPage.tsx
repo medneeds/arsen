@@ -475,40 +475,66 @@ export default function PainelClinicoPage() {
                 <ScrollArea className="flex-1">
                   {/* RESUMO */}
                   <TabsContent value="resumo" className="p-4 space-y-4 mt-0">
-                    <Section title="Hipóteses / Diagnósticos">
-                      {selectedPatient.diagnoses.length > 0
-                        ? selectedPatient.diagnoses.map((d, i) => <li key={i} className="text-sm text-foreground">{d}</li>)
-                        : <p className="text-sm text-muted-foreground italic">Nenhum diagnóstico registrado</p>
-                      }
-                    </Section>
-                    <Section title="Antecedentes / Comorbidades">
-                      {selectedPatient.medicalHistory.length > 0
-                        ? selectedPatient.medicalHistory.map((h, i) => <li key={i} className="text-sm text-foreground">{h}</li>)
-                        : <p className="text-sm text-muted-foreground italic">Nenhum antecedente registrado</p>
-                      }
-                    </Section>
-                    <Section title="Exames Relevantes">
-                      {selectedPatient.relevantExams.length > 0
-                        ? selectedPatient.relevantExams.map((e, i) => <li key={i} className="text-sm text-foreground">{e}</li>)
-                        : <p className="text-sm text-muted-foreground italic">Nenhum exame registrado</p>
-                      }
-                    </Section>
-                    <Section title="Plano Terapêutico / Condutas">
-                      {selectedPatient.schedule.length > 0
-                        ? selectedPatient.schedule.map((s, i) => <li key={i} className="text-sm text-foreground">{s}</li>)
-                        : <p className="text-sm text-muted-foreground italic">Nenhuma conduta registrada</p>
-                      }
-                    </Section>
-                    <Section title="Programações / Pendências">
-                      {selectedPatient.pendencies.length > 0
-                        ? selectedPatient.pendencies.map((p, i) => <li key={i} className="text-sm text-foreground">{p}</li>)
-                        : <p className="text-sm text-muted-foreground italic">Nenhuma pendência</p>
-                      }
-                    </Section>
+                    {/* Quick Stats - synced with map sidebar */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-muted/50 rounded-lg p-2 text-center border border-border/30">
+                        <User className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
+                        <p className="text-[10px] text-muted-foreground">Idade</p>
+                        <p className="text-xs font-semibold">{selectedPatient.age ? `${selectedPatient.age} anos` : "—"}</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-2 text-center border border-border/30">
+                        <Calendar className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
+                        <p className="text-[10px] text-muted-foreground">Admissão</p>
+                        <p className="text-xs font-semibold">
+                          {selectedPatient.admissionDate
+                            ? new Date(selectedPatient.admissionDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+                            : "—"}
+                        </p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-2 text-center border border-border/30">
+                        <Clock className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
+                        <p className="text-[10px] text-muted-foreground">Tempo</p>
+                        <p className="text-xs font-semibold">{formatStayDuration(selectedPatient.admissionDate)}</p>
+                      </div>
+                    </div>
+
+                    <InfoSection icon={Stethoscope} title="Hipóteses / Diagnósticos" items={parseTextArray(selectedPatient.diagnoses)} />
+                    <InfoSection icon={Heart} title="Antecedentes / Comorbidades" items={parseTextArray(selectedPatient.medicalHistory)} />
+                    <InfoSection icon={TrendingUp} title="Exames Relevantes" items={parseTextArray(selectedPatient.relevantExams)} />
+                    <InfoSection icon={ClipboardList} title="Plano Terapêutico / Condutas" items={parseTextArray(selectedPatient.schedule)} />
+                    <InfoSection icon={AlertTriangle} title="Programações / Pendências" items={parseTextArray(selectedPatient.pendencies)} />
+
+                    {/* UTI-specific fields */}
+                    {parseTextArray(selectedPatient.utiAdmissionReason).length > 0 && (
+                      <InfoSection icon={Thermometer} title="Motivo da Admissão UTI" items={parseTextArray(selectedPatient.utiAdmissionReason)} />
+                    )}
+                    {parseTextArray(selectedPatient.utiCurrentStatus).length > 0 && (
+                      <InfoSection icon={Activity} title="Status Atual UTI" items={parseTextArray(selectedPatient.utiCurrentStatus)} />
+                    )}
+                    {parseTextArray(selectedPatient.utiDevices).length > 0 && (
+                      <InfoSection icon={Syringe} title="Dispositivos" items={parseTextArray(selectedPatient.utiDevices)} />
+                    )}
+                    {parseTextArray(selectedPatient.utiCulturesAntibiotics).length > 0 && (
+                      <InfoSection icon={Shield} title="Culturas / Antibióticos" items={parseTextArray(selectedPatient.utiCulturesAntibiotics)} />
+                    )}
+                    {parseTextArray(selectedPatient.utiAllergies).length > 0 && (
+                      <InfoSection icon={AlertTriangle} title="Alergias" items={parseTextArray(selectedPatient.utiAllergies)} />
+                    )}
+                    {parseTextArray(selectedPatient.utiDailyConducts).length > 0 && (
+                      <InfoSection icon={ClipboardList} title="Condutas do Dia" items={parseTextArray(selectedPatient.utiDailyConducts)} />
+                    )}
+                    {parseTextArray(selectedPatient.utiDischargePrediction).length > 0 && (
+                      <InfoSection icon={Calendar} title="Previsão de Alta" items={parseTextArray(selectedPatient.utiDischargePrediction)} />
+                    )}
+
                     {selectedPatient.admissionHistory && (
-                      <Section title="História Admissional">
-                        <p className="text-sm text-foreground whitespace-pre-wrap">{selectedPatient.admissionHistory}</p>
-                      </Section>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">História Admissional</h4>
+                        </div>
+                        <p className="text-sm text-foreground pl-5 leading-relaxed whitespace-pre-line">{selectedPatient.admissionHistory}</p>
+                      </div>
                     )}
                   </TabsContent>
 
