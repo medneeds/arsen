@@ -148,6 +148,7 @@ export function AppSidebar({
       profiles: ["medico", "gestor"],
       items: [
         { name: "PRESCRIÇÃO", link: "/prescricao" },
+        { name: "VALIDAÇÃO FARMACÊUTICA", link: "/validacao-farmaceutica" },
         { name: "EVOLUÇÃO", link: "/evolucao" },
         { name: "CATÁLOGO DE MEDICAMENTOS", link: "/catalogo-medicamentos" },
         { name: "EXAMINUS AI", link: "/ia" },
