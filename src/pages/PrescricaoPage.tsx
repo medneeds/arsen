@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { format, addDays } from "date-fns";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
 import socorraoLogo from "@/assets/socorrao1-logo.png";
+import { BigHelpLogo } from "@/components/BigHelpLogo";
 import { ptBR } from "date-fns/locale";
 import {
   Pill, Plus, Trash2, Copy, Printer, Save, RefreshCw,
