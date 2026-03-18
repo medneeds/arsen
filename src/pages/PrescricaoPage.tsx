@@ -1671,7 +1671,7 @@ const PrescricaoPage = () => {
             onClick={() => setShowHistory(!showHistory)}
             className="w-full flex items-center justify-between text-xs"
           >
-            <span className="flex items-center gap-2 font-semibold text-muted-foreground uppercase tracking-wider">
+            <span className="flex items-center gap-2 font-semibold text-muted-foreground tracking-wider">
               <History className="h-3.5 w-3.5" /> Histórico de Versões ({versionHistory.length})
             </span>
             <span className="text-muted-foreground text-[10px]">{showHistory ? 'Ocultar' : 'Expandir'}</span>
