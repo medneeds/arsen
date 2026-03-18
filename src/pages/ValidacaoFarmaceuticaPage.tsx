@@ -69,7 +69,9 @@ const STATUS_CONFIG = {
 
 const ValidacaoFarmaceuticaPage = () => {
   const { user } = useAuth();
-  const { selectedUnit, selectedState } = useHospital();
+  const { currentHospital, currentState } = useHospital();
+  const selectedUnit = currentHospital?.id;
+  const selectedState = currentState?.id;
   const [prescriptions, setPrescriptions] = useState<PrescriptionWithValidation[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
