@@ -397,7 +397,7 @@ export default function AuthPage() {
           /* ─── ACCESS PROFILES SCREEN ─────────────────────────── */
           <motion.div
             key="profiles"
-            className={bgClasses}
+            className={cn(bgClasses, "!py-0")}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, scale: 0.96 }}
@@ -408,21 +408,25 @@ export default function AuthPage() {
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full blur-[150px] bg-[#2dd4bf]/[0.04]" />
             </div>
 
-            <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6">
-              {/* Header */}
+            <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col min-h-screen justify-center">
+              {/* Compact Header */}
               <motion.div
-                className="text-center mb-6"
+                className="text-center mb-5"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <BigHelpLogo size="md" glow />
-                <h2 className="text-xl sm:text-2xl text-white font-bold tracking-tight mt-3">
-                  Selecione o Tipo de Acesso
-                </h2>
-                <p className="text-slate-400 text-xs mt-1.5 tracking-wide uppercase">
-                  Hospital Mun. Djalma Marques — Socorrão I
-                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <BigHelpLogo size="sm" glow />
+                  <div className="text-left">
+                    <h2 className="text-lg sm:text-xl text-white font-bold tracking-tight leading-tight">
+                      Selecione o Tipo de Acesso
+                    </h2>
+                    <p className="text-slate-400 text-[10px] tracking-wide uppercase">
+                      Hospital Mun. Djalma Marques — Socorrão I
+                    </p>
+                  </div>
+                </div>
               </motion.div>
 
               {/* Access Cards Grid — 3 columns on md+ */}
