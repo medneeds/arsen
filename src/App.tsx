@@ -453,6 +453,16 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/setor-imagem"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <SetorImagemPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

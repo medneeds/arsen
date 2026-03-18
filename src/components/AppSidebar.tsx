@@ -181,6 +181,13 @@ export function AppSidebar({
         ]},
       ];
     }
+    // Imagem: imaging sector environment
+    if (accessProfile === "imagem") {
+      return [
+        { title: "Painel de Imagem", icon: LayoutDashboard, link: "/setor-imagem", profiles: ["imagem"] },
+        { title: "Movimentações", icon: Users, link: "/movements", profiles: ["imagem"] },
+      ];
+    }
     // Filter sections by profile, then filter sub-items within each section
     return allMenuItems
       .filter(section => !section.profiles || section.profiles.includes(accessProfile))
