@@ -136,6 +136,73 @@ function posologyToIntervals(posology: string): number {
   return map[posology] || 1;
 }
 
+// --- Common schedule presets ---
+const SCHEDULE_PRESETS: Record<string, { label: string; options: { name: string; times: string }[] }> = {
+  '24/24h': {
+    label: '24/24h (1x)',
+    options: [
+      { name: '06h', times: '06h' },
+      { name: '08h', times: '08h' },
+      { name: '10h', times: '10h' },
+      { name: '14h', times: '14h' },
+      { name: '22h', times: '22h' },
+    ],
+  },
+  '12/12h': {
+    label: '12/12h (2x)',
+    options: [
+      { name: '06h–18h', times: '06h, 18h' },
+      { name: '08h–20h', times: '08h, 20h' },
+      { name: '10h–22h', times: '10h, 22h' },
+      { name: '00h–12h', times: '00h, 12h' },
+    ],
+  },
+  '8/8h': {
+    label: '8/8h (3x)',
+    options: [
+      { name: '06h–14h–22h', times: '06h, 14h, 22h' },
+      { name: '08h–16h–00h', times: '08h, 16h, 00h' },
+      { name: '00h–08h–16h', times: '00h, 08h, 16h' },
+      { name: '02h–10h–18h', times: '02h, 10h, 18h' },
+    ],
+  },
+  '6/6h': {
+    label: '6/6h (4x)',
+    options: [
+      { name: '06h–12h–18h–00h', times: '06h, 12h, 18h, 00h' },
+      { name: '08h–14h–20h–02h', times: '08h, 14h, 20h, 02h' },
+      { name: '00h–06h–12h–18h', times: '00h, 06h, 12h, 18h' },
+      { name: '02h–08h–14h–20h', times: '02h, 08h, 14h, 20h' },
+    ],
+  },
+  '4/4h': {
+    label: '4/4h (6x)',
+    options: [
+      { name: '06h–10h–14h–18h–22h–02h', times: '06h, 10h, 14h, 18h, 22h, 02h' },
+      { name: '00h–04h–08h–12h–16h–20h', times: '00h, 04h, 08h, 12h, 16h, 20h' },
+      { name: '02h–06h–10h–14h–18h–22h', times: '02h, 06h, 10h, 14h, 18h, 22h' },
+    ],
+  },
+  '3/3h': {
+    label: '3/3h (8x)',
+    options: [
+      { name: '00–03–06–09–12–15–18–21', times: '00h, 03h, 06h, 09h, 12h, 15h, 18h, 21h' },
+      { name: '01–04–07–10–13–16–19–22', times: '01h, 04h, 07h, 10h, 13h, 16h, 19h, 22h' },
+    ],
+  },
+  '2/2h': {
+    label: '2/2h (12x)',
+    options: [
+      { name: 'Padrão pares', times: '00h, 02h, 04h, 06h, 08h, 10h, 12h, 14h, 16h, 18h, 20h, 22h' },
+      { name: 'Padrão ímpares', times: '01h, 03h, 05h, 07h, 09h, 11h, 13h, 15h, 17h, 19h, 21h, 23h' },
+    ],
+  },
+};
+
+function getPresetsForPosology(posology: string): typeof SCHEDULE_PRESETS[string] | null {
+  return SCHEDULE_PRESETS[posology] || null;
+}
+
 // Build synced preparation description from structured fields
 function buildPrepDescription(item: PrescriptionItem): string {
   const parts: string[] = [];
