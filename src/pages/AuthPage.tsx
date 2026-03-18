@@ -494,7 +494,7 @@ export default function AuthPage() {
 
               {/* Back button */}
               <motion.div
-                className="text-center"
+                className="text-center mt-4"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
