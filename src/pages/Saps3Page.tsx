@@ -376,6 +376,27 @@ export default function Saps3Page() {
     loadOccupiedBeds();
   }, [hospitalId, stateId]);
 
+  // ─── Pre-fill from allocation navigation ───
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.fromAllocation && state?.patientName) {
+      setPatientName(state.patientName);
+      if (state.patientAge) {
+        const ageStr = String(state.patientAge).replace(/\D/g, "");
+        if (ageStr) setAge(ageStr);
+      }
+      setSelectedSector(""); setSelectedBed("");
+      setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
+      setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
+      setInfectionAtAdmission(""); setGcs(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
+      setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
+      setPao2Fio2(""); setIsVentilated(false);
+      setBox1Open(true); setBox2Open(true); setBox3Open(true);
+      toast.info(`Preencha o SAPS 3 para ${state.patientName}`);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
   // ─── Start admission from pending request ───
   const startAdmission = (req: PendingRequest) => {
     setSelectedRequest(req);
