@@ -2454,33 +2454,26 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== PRINT-ONLY PRESCRIPTION BODY ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginTop: '3px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+      <div className="hidden print:block prescription-print-section" style={{ marginTop: '4px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <colgroup>
             <col style={{ width: '24px' }} />
             <col />
-            <col style={{ width: '38px' }} />
-            <col style={{ width: '38px' }} />
-            <col style={{ width: '38px' }} />
-            <col style={{ width: '38px' }} />
-            <col style={{ width: '38px' }} />
-            <col style={{ width: '38px' }} />
+            <col style={{ width: '180px' }} />
             <col style={{ width: '28px' }} />
           </colgroup>
           <thead>
             <tr>
-              <th style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '3px 2px', fontSize: '6pt', fontWeight: 700, textAlign: 'center' }}>
+              <th className="print-header-bar" style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '4px 2px', fontSize: '6.5pt', fontWeight: 700, textAlign: 'center' }}>
                 Nº
               </th>
-              <th style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '3px 6px', fontSize: '7pt', fontWeight: 700, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+              <th className="print-header-bar" style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '4px 6px', fontSize: '7.5pt', fontWeight: 700, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '1px' }}>
                 Prescrição Médica
               </th>
-              {['1º','2º','3º','4º','5º','6º'].map((label, i) => (
-                <th key={i} style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '0.5px solid #334155', padding: '3px 1px', fontSize: '6pt', fontWeight: 700, textAlign: 'center', textTransform: 'uppercase' }}>
-                  {label}
-                </th>
-              ))}
-              <th style={{ backgroundColor: '#1e293b', color: '#e2e8f0', border: '0.5px solid #334155', padding: '3px 1px', fontSize: '5pt', fontWeight: 700, textAlign: 'center' }}>
+              <th className="print-header-bar" style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '4px 4px', fontSize: '7pt', fontWeight: 700, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                Aprazamento
+              </th>
+              <th className="print-header-bar" style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '4px 1px', fontSize: '6pt', fontWeight: 700, textAlign: 'center' }}>
                 ✓
               </th>
             </tr>
@@ -2494,14 +2487,14 @@ const PrescricaoPage = () => {
               return (
                 <React.Fragment key={cat}>
                   <tr>
-                    <td colSpan={9} style={{ 
-                      padding: '2px 6px', 
+                    <td colSpan={4} className="print-cat-header" style={{ 
+                      padding: '3px 8px', 
                       fontSize: '7pt', 
                       fontWeight: 800, 
                       textTransform: 'uppercase', 
-                      letterSpacing: '0.8px',
-                      backgroundColor: '#f1f5f9', 
-                      borderLeft: '3px solid #334155',
+                      letterSpacing: '1px',
+                      backgroundColor: '#f8fafc', 
+                      borderLeft: '3px solid #1e293b',
                       border: '0.5px solid #cbd5e1',
                       color: '#1e293b'
                     }}>
