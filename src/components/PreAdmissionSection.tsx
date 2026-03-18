@@ -69,7 +69,7 @@ export function PreAdmissionSection() {
         .select("*")
         .eq("hospital_unit_id", currentHospital.id)
         .eq("state_id", currentState.id)
-        .in("status", ["pre_admissao", "classificado"])
+        .in("status", ["pre_admissao", "classificado", "aguardando_leito"])
         .order("created_at", { ascending: false });
 
       if (error) throw error;
