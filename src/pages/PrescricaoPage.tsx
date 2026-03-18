@@ -1796,51 +1796,7 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== PRESCRIPTION SEARCH BAR (adapts to selected category) ===== */}
-      <div className={cn("rounded-xl border border-border bg-card p-3 print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
-        <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <span className="text-xs font-medium text-muted-foreground">Adicionar em:</span>
-          {TAB_ORDER.map(cat => {
-            const config = CATEGORY_CONFIG[cat];
-            const IconComp = CATEGORY_ICONS[config.icon] || Pill;
-            return (
-              <button
-                key={cat}
-                onClick={() => setActiveTab(cat)}
-                className={cn(
-                  "flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border transition-all",
-                  activeTab === cat
-                    ? "bg-primary/10 border-primary/30 text-primary font-medium shadow-sm"
-                    : "bg-muted/30 border-border/40 text-muted-foreground hover:bg-accent/50"
-                )}
-              >
-                <IconComp className={cn("h-3 w-3", activeTab === cat ? "text-primary" : config.color)} />
-                <span className="hidden sm:inline">{config.label}</span>
-              </button>
-            );
-          })}
-        </div>
-        {activeTab === 'nonstandard' ? (
-          <div className="flex items-center gap-2">
-            <Input
-              value={nonStdName}
-              onChange={(e) => setNonStdName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") addNonStandard(); }}
-              placeholder="Nome do item não padronizado..."
-              className="bg-muted/30 border-border/50"
-            />
-            <Button variant="outline" size="sm" onClick={addNonStandard} disabled={!nonStdName.trim()}>
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        ) : (
-          <MedicationAutocomplete
-            source={ALL_ITEMS_BY_CATEGORY[activeTab]}
-            onSelect={addItem}
-            placeholder={`Buscar ${CATEGORY_CONFIG[activeTab].label.toLowerCase()}...`}
-          />
-        )}
-      </div>
+      {/* Search bars are now inline within each category section below */}
 
       {/* ===== FULL PRESCRIPTION VIEW (all categories) ===== */}
       <div className={cn("space-y-3 print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
