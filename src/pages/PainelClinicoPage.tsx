@@ -142,7 +142,187 @@ const DOCUMENTS = [
     { name: "Imunoglobulina Humana", path: "/documents/alto-custo/imunoglobulina-humana.odt" },
     { name: "Teicoplanina", path: "/documents/alto-custo/teicoplanina.odt" },
   ]},
+
+
+// Mock UTI 2 patients for demo (L09-L18)
+const MOCK_UTI2_PATIENTS: Patient[] = [
+  {
+    id: "uti2-01", bedNumber: "L09", name: "Iglesio Ferreira da Silva", age: "26", sector: "yellow",
+    diagnoses: "Politrauma\nFratura de fêmur bilateral", medicalHistory: "Hígido previamente",
+    relevantExams: "TC tórax: contusão pulmonar\nHb 8.2\nLactato 4.1",
+    pendencies: "Parecer ortopedia\nHemotransfusão 2 CH", schedule: "Reavaliação cirurgia 14h\nControle Hb 6h",
+    admissionHistory: "Vítima de acidente motociclístico em alta velocidade. Glasgow 15 na cena.", admissionDate: "2025-10-30T14:20:00",
+    clinicalStatus: "grave", medicalResponsibility: { type: "lider", leaderNames: "Dr. Marcos Antônio" },
+    utiDischargePrediction: "Sem previsão", isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uti2-02", bedNumber: "L10", name: "Ana Carolina Mendes Ribeiro", age: "54", sector: "yellow",
+    diagnoses: "Sepse foco pulmonar\nSDRA moderada", medicalHistory: "DPOC\nTabagismo 30 maços-ano",
+    relevantExams: "PaO2/FiO2 = 180\nPCT 12.5\nHemocultura: S. pneumoniae",
+    pendencies: "Ajuste ATB conforme cultura\nDesmame VM", schedule: "Gasometria 4/4h\nPronação 16h",
+    admissionHistory: "Admitida por pneumonia comunitária grave evoluindo com choque séptico.", admissionDate: "2025-11-01T08:00:00",
+    clinicalStatus: "gravissimo", medicalResponsibility: { type: "lider", leaderNames: "Dra. Juliana Costa" },
+    utiDischargePrediction: "7-10 dias", isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uti2-03", bedNumber: "L11", name: "Francisco das Chagas Oliveira", age: "71", sector: "yellow",
+    diagnoses: "IAM com supra ST anterior extenso\nChoque cardiogênico", medicalHistory: "HAS\nDM2\nICC CF III",
+    relevantExams: "Troponina 15.800\nFEVE 22%\nBIA implantado",
+    pendencies: "Avaliação hemodinâmica\nParecer cardiocirurgia", schedule: "Ecocardiograma controle\nMonitorizar DC",
+    admissionHistory: "Dor torácica típica há 4h. IAMCSST anterior extenso. ATC primária com stent em DA.", admissionDate: "2025-11-05T22:10:00",
+    clinicalStatus: "gravissimo", medicalResponsibility: { type: "lider", leaderNames: "Dr. Ricardo Souza" },
+    utiDischargePrediction: "Sem previsão", isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uti2-04", bedNumber: "L12", name: "Tereza Cristina Barros", age: "63", sector: "yellow",
+    diagnoses: "Pós-operatório craniotomia\nMeningioma frontal ressecado", medicalHistory: "Hipertireoidismo controlado",
+    relevantExams: "TC crânio PO: sem sangramento\nGlasgow 14\nPupilas isocóricas",
+    pendencies: "Desmame sedação\nAvaliação fonoaudiologia", schedule: "TC crânio controle 48h\nFisioterapia motora",
+    admissionHistory: "Submetida a craniotomia para ressecção de meningioma frontal esquerdo.", admissionDate: "2025-11-08T16:30:00",
+    clinicalStatus: "grave_estavel", medicalResponsibility: { type: "lider", leaderNames: "Dr. Alexandre Nunes" },
+    utiDischargePrediction: "3-5 dias", isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uti2-05", bedNumber: "L13", name: "Raimundo Nonato Pereira", age: "58", sector: "yellow",
+    diagnoses: "Pancreatite aguda grave\nNecrose pancreática infectada", medicalHistory: "Etilismo crônico\nLitíase biliar",
+    relevantExams: "TC abdome: necrose >50%\nPCR 280\nRanson 5",
+    pendencies: "Programar drenagem percutânea\nSuporte nutricional enteral", schedule: "TC abdome controle\nParecer cirurgia",
+    admissionHistory: "Quadro de dor abdominal epigástrica em faixa há 5 dias, evoluindo com instabilidade hemodinâmica.", admissionDate: "2025-11-03T10:45:00",
+    clinicalStatus: "grave", medicalResponsibility: { type: "lider", leaderNames: "Dra. Patrícia Lima" },
+    utiDischargePrediction: "14+ dias", isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uti2-06", bedNumber: "L14", name: "Maria do Socorro Santos", age: "45", sector: "yellow",
+    diagnoses: "Lúpus eritematoso sistêmico\nNefrite lúpica classe IV\nHemorragia alveolar", medicalHistory: "LES diagnosticado há 10 anos",
+    relevantExams: "Cr 3.8\nAnti-dsDNA 1:640\nC3/C4 baixos\nBroncoscopia: hemorragia alveolar",
+    pendencies: "Pulsoterapia ciclofosfamida D3\nPlasmaférese programada", schedule: "Controle renal diário\nHemodiálise seg/qua/sex",
+    admissionHistory: "Paciente com LES em atividade, admitida por dispneia e hemoptise maciça.", admissionDate: "2025-11-06T07:00:00",
+    clinicalStatus: "grave", medicalResponsibility: { type: "lider", leaderNames: "Dr. Felipe Arraes" },
+    utiDischargePrediction: "10-14 dias", isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uti2-07", bedNumber: "L15", name: "José Antônio Rodrigues Lima", age: "82", sector: "yellow",
+    diagnoses: "AVCi extenso em ACM direita\nTransformação hemorrágica", medicalHistory: "FA crônica sem anticoagulação\nHAS\nDM2",
+    relevantExams: "TC crânio: AVCi extenso + petéquias\nNIHSS 18\nGlasgow 10",
+    pendencies: "Avaliação neurocirurgia\nMonitorizar PIC", schedule: "TC crânio controle 24h\nFisioterapia respiratória",
+    admissionHistory: "Encontrado em casa com hemiplegia esquerda e rebaixamento de consciência.", admissionDate: "2025-11-09T03:15:00",
+    clinicalStatus: "gravissimo", medicalResponsibility: { type: "lider", leaderNames: "Dra. Camila Torres" },
+    utiDischargePrediction: "Sem previsão", isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uti2-08", bedNumber: "L16", name: "Antônia Beatriz Carvalho", age: "37", sector: "yellow",
+    diagnoses: "Cetoacidose diabética grave\nDM tipo 1", medicalHistory: "DM1 desde os 12 anos\nMá adesão",
+    relevantExams: "Glicemia 580\npH 7.05\nHCO3 6\nK+ 6.2",
+    pendencies: "BIC venoso seriado\nAjuste insulina conforme protocolo", schedule: "Glicemia capilar 1/1h\nGasometria 2/2h",
+    admissionHistory: "Admitida com quadro de polidipsia, poliúria e vômitos há 3 dias.", admissionDate: "2025-11-11T19:30:00",
+    clinicalStatus: "grave_estavel", medicalResponsibility: { type: "lider", leaderNames: "Dr. André Luís" },
+    utiDischargePrediction: "2-3 dias", isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uti2-09", bedNumber: "L17", name: "Pedro Henrique Nascimento", age: "49", sector: "yellow",
+    diagnoses: "Pós-PCR\nProtocolo hipotermia terapêutica", medicalHistory: "Doença coronariana\nStent prévio em DA",
+    relevantExams: "ECG: ritmo sinusal pós-cardioversão\nTroponina 8.500\nLactato 6.8",
+    pendencies: "Manter hipotermia 32-34°C por 24h\nAvaliação neurológica após reaquecimento",
+    schedule: "Controle temperatura horário\nEEG contínuo\nReaquecer às 08h amanhã",
+    admissionHistory: "PCR em FV testemunhada no domicílio. RCE após 12 min de RCP.", admissionDate: "2025-11-11T06:45:00",
+    clinicalStatus: "gravissimo", medicalResponsibility: { type: "lider", leaderNames: "Dra. Renata Melo" },
+    utiDischargePrediction: "Sem previsão", isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uti2-10", bedNumber: "L18", name: "Luciana Gabriela Fonseca", age: "33", sector: "yellow",
+    diagnoses: "Eclâmpsia\nHELLP síndrome\nPós-cesárea de emergência", medicalHistory: "Pré-eclâmpsia gestação anterior",
+    relevantExams: "Plaquetas 42.000\nTGO 890\nLDH 1.200\nCr 2.1",
+    pendencies: "Sulfato de magnésio 24h\nControle plaquetário 6/6h\nParecer hematologia",
+    schedule: "Controle PA 1/1h\nDiurese horária\nHemograma controle 12h",
+    admissionHistory: "Gestante 34 sem, admitida com convulsão tônico-clônica e PA 200x130.", admissionDate: "2025-11-10T22:00:00",
+    clinicalStatus: "grave", medicalResponsibility: { type: "lider", leaderNames: "Dr. Bruno Cavalcante" },
+    utiDischargePrediction: "5-7 dias", isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
 ];
+
+// Mock prescription data per patient
+const MOCK_PRESCRIPTIONS: Record<string, Array<{ category: string; items: Array<{ name: string; dose: string; route: string; frequency: string; notes?: string }> }>> = {
+  "uti2-01": [
+    { category: "Analgesia", items: [
+      { name: "Dipirona 1g", dose: "1g", route: "EV", frequency: "6/6h", notes: "Diluir em 100ml SF 0,9%" },
+      { name: "Tramadol 100mg", dose: "100mg", route: "EV", frequency: "8/8h", notes: "Infundir em 30 min" },
+    ]},
+    { category: "Antibiótico", items: [
+      { name: "Ceftriaxona 2g", dose: "2g", route: "EV", frequency: "12/12h" },
+    ]},
+    { category: "Profilaxia", items: [
+      { name: "Enoxaparina 40mg", dose: "40mg", route: "SC", frequency: "1x/dia" },
+      { name: "Omeprazol 40mg", dose: "40mg", route: "EV", frequency: "1x/dia" },
+    ]},
+  ],
+  "uti2-02": [
+    { category: "Antibiótico", items: [
+      { name: "Meropenem 1g", dose: "1g", route: "EV", frequency: "8/8h", notes: "Infusão estendida 3h" },
+      { name: "Vancomicina 1g", dose: "1g", route: "EV", frequency: "12/12h", notes: "Monitorar vancocinemia" },
+    ]},
+    { category: "Sedação", items: [
+      { name: "Midazolam", dose: "5mg/h", route: "BIC", frequency: "Contínuo" },
+      { name: "Fentanil", dose: "100mcg/h", route: "BIC", frequency: "Contínuo" },
+    ]},
+    { category: "Suporte", items: [
+      { name: "Noradrenalina", dose: "0.3mcg/kg/min", route: "BIC", frequency: "Contínuo", notes: "Titular para PAM >65" },
+    ]},
+  ],
+  "uti2-03": [
+    { category: "Cardiovascular", items: [
+      { name: "Dobutamina", dose: "10mcg/kg/min", route: "BIC", frequency: "Contínuo", notes: "Titular conforme DC" },
+      { name: "AAS 100mg", dose: "100mg", route: "VO/SNE", frequency: "1x/dia" },
+      { name: "Clopidogrel 75mg", dose: "75mg", route: "VO/SNE", frequency: "1x/dia" },
+    ]},
+    { category: "Anticoagulação", items: [
+      { name: "Heparina não fracionada", dose: "1.000UI/h", route: "BIC", frequency: "Contínuo", notes: "Controle TTPa 6/6h" },
+    ]},
+  ],
+};
+
+// Mock evolution data per patient
+const MOCK_EVOLUTIONS: Record<string, Array<{ date: string; author: string; content: string; type: string }>> = {
+  "uti2-01": [
+    { date: "2025-11-11 07:00", author: "Dr. Marcos Antônio", type: "Evolução Médica", content: "Paciente estável hemodinamicamente. Dor controlada com analgesia atual. Aguardando parecer da ortopedia para programação cirúrgica de fixação de fêmur bilateral. Ferida operatória limpa. Diurese satisfatória. Plano: manter analgesia, solicitar pré-operatório." },
+    { date: "2025-11-10 19:00", author: "Dra. Fernanda Reis", type: "Evolução Médica", content: "Admitido na UTI procedente do bloco cirúrgico. Politrauma com fratura de fêmur bilateral. Estabilizado com fixador externo. Recebeu 2 CH. Hb pós-transfusão 9.1. Vigil, orientado. Sem sinais de sangramento ativo." },
+  ],
+  "uti2-02": [
+    { date: "2025-11-11 07:00", author: "Dra. Juliana Costa", type: "Evolução Médica", content: "Paciente em VM modo PCV, FiO2 60%, PEEP 12. P/F ratio melhorou para 200 após sessão de prona de 16h. Noradrenalina em desmame (0.15mcg/kg/min). Hemocultura com S. pneumoniae sensível a ceftriaxona — considerar descalonamento. Diurese 0.8ml/kg/h." },
+    { date: "2025-11-10 19:00", author: "Dr. Paulo Henrique", type: "Evolução Médica", content: "Paciente mantém quadro de SDRA moderada. Iniciada pronação às 16h conforme protocolo. Noradrenalina estável em 0.3mcg/kg/min. Lactato em queda: 3.2 → 2.1. Mantidos ATB de amplo espectro até resultado de culturas." },
+  ],
+  "uti2-03": [
+    { date: "2025-11-11 07:00", author: "Dr. Ricardo Souza", type: "Evolução Médica", content: "Paciente em choque cardiogênico refratário. BIA em funcionamento. Dobutamina 10mcg/kg/min. PA 90x60 com suporte. FEVE estimada 22% ao eco beira-leito. Débito cardíaco 3.2L/min. Programado cateterismo de revisão. Discussão com equipe de cardiocirurgia sobre indicação de ECMO." },
+  ],
+};
+
+// Mock exam requisitions per patient
+const MOCK_REQUISITIONS: Record<string, Array<{ date: string; category: string; status: string; items: string[]; requestedBy: string; results?: string }>> = {
+  "uti2-01": [
+    { date: "2025-11-11 06:00", category: "Laboratório", status: "Resultado disponível", requestedBy: "Dr. Marcos Antônio", items: ["Hemograma completo", "Coagulograma", "Função renal", "Eletrólitos"], results: "Hb 9.1 | Leuco 12.400 | Plaq 198.000 | Cr 0.9 | Na 138 | K 4.2" },
+    { date: "2025-11-11 08:00", category: "Imagem", status: "Solicitado", requestedBy: "Dr. Marcos Antônio", items: ["RX tórax AP leito", "RX pelve AP"] },
+    { date: "2025-11-10 20:00", category: "Parecer", status: "Respondido", requestedBy: "Dr. Marcos Antônio", items: ["Parecer Ortopedia"], results: "Programar fixação interna fêmur bilateral em 48-72h após estabilização clínica. Manter fixador externo." },
+  ],
+  "uti2-02": [
+    { date: "2025-11-11 04:00", category: "Laboratório", status: "Resultado disponível", requestedBy: "Dra. Juliana Costa", items: ["Gasometria arterial", "Lactato", "Procalcitonina", "Hemograma"], results: "pH 7.32 | PaO2 85 | PaCO2 38 | HCO3 19 | Lactato 2.1 | PCT 8.3" },
+    { date: "2025-11-11 06:00", category: "Laboratório", status: "Em processamento", requestedBy: "Dra. Juliana Costa", items: ["Vancocinemia vale", "Função hepática", "PCR"] },
+    { date: "2025-11-10 22:00", category: "Imagem", status: "Resultado disponível", requestedBy: "Dr. Paulo Henrique", items: ["RX tórax AP leito"], results: "Infiltrado bilateral difuso, sem pneumotórax. TOT em posição adequada." },
+  ],
+  "uti2-03": [
+    { date: "2025-11-11 06:00", category: "Laboratório", status: "Resultado disponível", requestedBy: "Dr. Ricardo Souza", items: ["Troponina", "BNP", "Gasometria venosa mista", "Lactato"], results: "Troponina 12.300 (em queda) | BNP 4.500 | SvO2 58% | Lactato 4.8" },
+    { date: "2025-11-11 08:00", category: "Imagem", status: "Solicitado", requestedBy: "Dr. Ricardo Souza", items: ["Ecocardiograma transtorácico beira-leito"] },
+    { date: "2025-11-11 07:00", category: "Parecer", status: "Aguardando", requestedBy: "Dr. Ricardo Souza", items: ["Parecer Cardiocirurgia — avaliar indicação ECMO"] },
+  ],
+};
 
 export default function PainelClinicoPage() {
   const { currentDepartment } = useDepartment();
@@ -154,8 +334,9 @@ export default function PainelClinicoPage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [sidebarTab, setSidebarTab] = useState("resumo");
 
-  // Always use DB patients directly from the map
-  const patients = dbPatients;
+  // Use DB patients if available (occupied ones), otherwise fallback to mock for demo
+  const occupiedDbPatients = dbPatients.filter(p => !p.isVacant && p.name && p.name.trim() !== "");
+  const patients = occupiedDbPatients.length > 0 ? dbPatients : MOCK_UTI2_PATIENTS;
 
   // Filter out vacant beds and apply search/sector filter
   const filteredPatients = useMemo(() => {
