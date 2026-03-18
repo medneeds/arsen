@@ -1463,7 +1463,7 @@ export function UtiPatientCard({
                   <InlineEditableArray
                     items={setorOrigem}
                     onUpdate={(items) => handleUpdateField("utiOriginSector", items)}
-                    label="SETOR DE ORIGEM"
+                    label="Setor de origem"
                     colorClass="bg-muted/30 border border-border/30"
                     alwaysShowAll
                   />
