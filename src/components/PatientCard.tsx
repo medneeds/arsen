@@ -2646,7 +2646,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             onCancel={cancelEditing}
                             onRemove={() => removeArrayItem("utiCulturesAntibiotics", idx)}
                             onAddNew={() => startEditing("utiCulturesAntibiotics", "", -2)}
-                            onEditValueChange={(val) => setEditValue(val.toUpperCase())}
+                            onEditValueChange={(val) => setEditValue(val)}
                             onKeyDown={handleKeyDown}
                             inputRef={inputRef}
                             isLast={idx === (patient.utiCulturesAntibiotics || []).length - 1}
