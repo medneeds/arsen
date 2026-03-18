@@ -119,6 +119,26 @@ const ACCESS_PROFILES: {
     bgGlow: "from-amber-400/15 to-amber-400/5",
     features: ["Recepção de Amostras", "Processamento", "Liberação de Resultados", "Controle de Qualidade"],
   },
+  {
+    key: "centro_cirurgico",
+    label: "Centro Cirúrgico",
+    subtitle: "Agendamento · Segurança · Mapa",
+    icon: Scissors,
+    color: "text-orange-400",
+    borderColor: "border-orange-400/30 hover:border-orange-400/60",
+    bgGlow: "from-orange-400/15 to-orange-400/5",
+    features: ["Agendamento Cirúrgico", "Checklist de Segurança", "Mapa Cirúrgico", "Pós-Operatório"],
+  },
+  {
+    key: "ccih",
+    label: "CCIH",
+    subtitle: "Controle de Infecção Hospitalar",
+    icon: ShieldAlert,
+    color: "text-red-400",
+    borderColor: "border-red-400/30 hover:border-red-400/60",
+    bgGlow: "from-red-400/15 to-red-400/5",
+    features: ["Vigilância de Infecções", "Culturas e Antibiogramas", "Protocolos de Isolamento", "Indicadores CCIH"],
+  },
 ];
 
 export default function AuthPage() {
