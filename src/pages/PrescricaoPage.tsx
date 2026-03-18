@@ -2002,67 +2002,76 @@ const PrescricaoPage = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-0 print:m-0 print:space-y-0 print:max-w-none print:text-black animate-fade-in">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-0 print:m-0 print:space-y-0 print:max-w-none print:text-black animate-fade-in" style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' } as React.CSSProperties}>
       {/* ===== PRINT STYLES ===== */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          @page { size: A4 portrait; margin: 5mm 6mm 8mm 6mm; }
-          .prescription-print-section table { border-collapse: collapse; table-layout: fixed; width: 100%; }
+          @page { size: A4 portrait; margin: 6mm 7mm 10mm 7mm; }
+          body, html { background: #fff !important; }
+          * { background-color: transparent !important; }
+          .prescription-print-section table { border-collapse: collapse; width: 100%; }
+          .prescription-print-section td, .prescription-print-section th { background-color: #fff !important; }
+          .print-header-bar { background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-cat-header { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       ` }} />
 
       {/* ===== PRINT-ONLY LETTERHEAD ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginBottom: '2px' }}>
-        {/* Institutional header */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '3px' }}>
-          <tbody>
-            <tr>
-              <td style={{ width: '60px', verticalAlign: 'middle', padding: '0 4px 0 0' }}>
-                <img src={socorraoLogo} alt="Socorrão I" style={{ height: '28px', objectFit: 'contain' }} />
-              </td>
-              <td style={{ verticalAlign: 'middle', textAlign: 'center' }}>
-                <div style={{ fontSize: '9pt', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#0f172a', lineHeight: 1 }}>
-                  Hospital Municipal Djalma Marques — Socorrão I
-                </div>
-                <div style={{ fontSize: '7pt', color: '#64748b', marginTop: '1px' }}>
-                  PRESCRIÇÃO MÉDICA DIÁRIA
-                </div>
-              </td>
-              <td style={{ width: '50px', verticalAlign: 'middle', textAlign: 'right', padding: '0 0 0 4px' }}>
-                <img src={bighelpLogo} alt="BigHelp Map" style={{ height: '22px', objectFit: 'contain', opacity: 0.25 }} />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div style={{ borderTop: '2px solid #0f172a', borderBottom: '0.5px solid #94a3b8' }} />
+      <div className="hidden print:block prescription-print-section" style={{ marginBottom: '4px' }}>
+        {/* Institutional header — clean & elegant */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0 6px 0' }}>
+          <img src={socorraoLogo} alt="Socorrão I" style={{ height: '32px', objectFit: 'contain' }} />
+          <div style={{ textAlign: 'center', flex: 1, padding: '0 12px' }}>
+            <div style={{ fontSize: '10pt', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.2px', color: '#0f172a', lineHeight: 1.1 }}>
+              Hospital Municipal Djalma Marques — Socorrão I
+            </div>
+            <div style={{ fontSize: '7.5pt', fontWeight: 600, color: '#475569', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '2px' }}>
+              Prescrição Médica Diária
+            </div>
+          </div>
+          <img src={bighelpLogo} alt="BigHelp Map" style={{ height: '20px', objectFit: 'contain', opacity: 0.2 }} />
+        </div>
+        <div style={{ height: '2px', background: 'linear-gradient(to right, #0f172a, #475569, #0f172a)', borderRadius: '1px' }} />
 
-        {/* Patient identification table */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt', color: '#0f172a', marginTop: '2px' }}>
+        {/* Patient identification — elegant grid */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt', color: '#0f172a', marginTop: '4px' }}>
           <tbody>
             <tr>
-              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '50%' }}>
-                <span style={{ fontWeight: 700 }}>PACIENTE:</span> {patient.name || '___________________________________'}
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '48%' }}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Paciente</span>
+                <div style={{ fontWeight: 700, fontSize: '9pt', marginTop: '1px' }}>{patient.name || '___________________________________'}</div>
               </td>
-              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '12%' }}>
-                <span style={{ fontWeight: 700 }}>LEITO:</span> {patient.bed || '______'}
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '10%', textAlign: 'center' }}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Leito</span>
+                <div style={{ fontWeight: 800, fontSize: '10pt', marginTop: '1px' }}>{patient.bed || '—'}</div>
               </td>
-              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '18%' }}>
-                <span style={{ fontWeight: 700 }}>PRONTUÁRIO:</span> {patient.record || '________'}
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '14%' }}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Prontuário</span>
+                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>{patient.record || '________'}</div>
               </td>
-              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '20%' }}>
-                <span style={{ fontWeight: 700 }}>DATA:</span> {prescriptionDate}
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '14%' }}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Data</span>
+                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>{prescriptionDate}</div>
+              </td>
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '14%', textAlign: 'center' }}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Idade / Sexo</span>
+                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>
+                  {patient.age || '—'} / {patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'M' : patient.sex.toLowerCase().startsWith('f') ? 'F' : patient.sex.charAt(0).toUpperCase()) : '—'}
+                </div>
               </td>
             </tr>
             <tr>
-              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }} colSpan={2}>
-                <span style={{ fontWeight: 700, color: '#dc2626' }}>ALERGIAS:</span>{' '}
-                <span style={{ color: '#dc2626', fontWeight: 700 }}>{patient.allergies || 'NDAM'}</span>
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px' }} colSpan={2}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Alergias</span>
+                <div style={{ fontWeight: 700, fontSize: '8.5pt', color: '#dc2626', marginTop: '1px' }}>{patient.allergies || 'NDAM'}</div>
               </td>
-              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }}>
-                <span style={{ fontWeight: 700 }}>PESO:</span> {patient.weight ? `${patient.weight} kg` : '______ kg'}
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px' }}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Peso</span>
+                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>{patient.weight ? `${patient.weight} kg` : '— kg'}</div>
               </td>
-              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }}>
-                <span style={{ fontWeight: 700 }}>IDADE:</span> {patient.age || '____'} | <span style={{ fontWeight: 700 }}>SEXO:</span> {patient.sex || '__'}
+              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px' }} colSpan={2}>
+                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Unidade</span>
+                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>{patient.unit || '—'}</div>
               </td>
             </tr>
           </tbody>
