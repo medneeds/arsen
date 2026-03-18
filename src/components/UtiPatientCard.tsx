@@ -21,8 +21,7 @@ const CLINICAL_STATUS_OPTIONS = [
   { value: "protocolo_me", label: "EM PROTOCOLO DE ME", color: "bg-gray-800 text-white", borderColor: "border-gray-800" },
 ] as const;
 
-// Helper to force uppercase on all text inputs
-const toUpperCase = (value: string) => value.toUpperCase();
+// Text inputs no longer forced to uppercase
 import { cn } from "@/lib/utils";
 import { EditPatientDialog } from "./EditPatientDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
