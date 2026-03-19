@@ -243,8 +243,12 @@ interface PatientHeader {
   unit: string;
   record: string;
   admissionDate: string;
+  utiAdmissionDate: string;
   weight: string;
   allergies: string;
+  motherName: string;
+  address: string;
+  city: string;
 }
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
