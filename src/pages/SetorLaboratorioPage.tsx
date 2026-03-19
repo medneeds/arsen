@@ -94,6 +94,8 @@ const SetorLaboratorioPage = () => {
   const [resultText, setResultText] = useState("");
   const [resultFiles, setResultFiles] = useState<ResultFile[]>([]);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [dateStart, setDateStart] = useState<Date>(startOfDay(new Date()));
+  const [dateEnd, setDateEnd] = useState<Date>(endOfDay(new Date()));
 
   const fetchRequests = async () => {
     if (!selectedHospitalId || !selectedStateId) return;

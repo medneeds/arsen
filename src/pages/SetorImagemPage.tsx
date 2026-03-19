@@ -98,6 +98,8 @@ const SetorImagemPage = () => {
   const [resultText, setResultText] = useState("");
   const [resultFiles, setResultFiles] = useState<ResultFile[]>([]);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [dateStart, setDateStart] = useState<Date>(startOfDay(new Date()));
+  const [dateEnd, setDateEnd] = useState<Date>(endOfDay(new Date()));
 
   // Fetch imaging requests
   const fetchRequests = async () => {
