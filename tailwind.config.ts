@@ -177,6 +177,7 @@ export default {
         "float": "float 6s ease-in-out infinite",
         "fade-in": "fade-in 0.6s ease-out forwards",
         "scale-in": "scale-in 0.5s ease-out forwards",
+        "pulse-soft": "pulse-soft 2.5s ease-in-out infinite",
       },
     },
   },
