@@ -149,7 +149,7 @@ export default function MedicalCodesPage() {
     const { error } = await supabase.from("medical_codes").delete().eq("id", id);
 
     if (error) {
-      toast.error("ERRO AO DELETAR CÓDIGO");
+      toast.error("Erro ao deletar código");
       if (import.meta.env.DEV) {
         console.error(error);
       }
