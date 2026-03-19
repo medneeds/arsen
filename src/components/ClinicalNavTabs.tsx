@@ -7,12 +7,19 @@ const tabs = [
   { label: "Painel Clínico", path: "/painel-clinico", icon: ClipboardCheck },
 ];
 
-export function ClinicalNavTabs() {
+interface ClinicalNavTabsProps {
+  variant?: "default" | "dark";
+}
+
+export function ClinicalNavTabs({ variant = "default" }: ClinicalNavTabsProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
   return (
-    <div className="flex gap-1 bg-muted/50 rounded-lg p-1">
+    <div className={cn(
+      "flex gap-0.5 rounded-lg p-0.5",
+      variant === "dark" ? "bg-white/10" : "bg-muted/50"
+    )}>
       {tabs.map((tab) => {
         const isActive = location.pathname === tab.path;
         return (
@@ -20,14 +27,18 @@ export function ClinicalNavTabs() {
             key={tab.path}
             onClick={() => navigate(tab.path)}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200",
-              isActive
-                ? "bg-background text-primary shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200",
+              variant === "dark"
+                ? isActive
+                  ? "bg-white/20 text-white shadow-sm"
+                  : "text-white/60 hover:text-white hover:bg-white/10"
+                : isActive
+                  ? "bg-background text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
             )}
           >
-            <tab.icon className="h-4 w-4" />
-            {tab.label}
+            <tab.icon className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{tab.label}</span>
           </button>
         );
       })}
