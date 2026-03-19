@@ -263,6 +263,11 @@ function getPresetsForPosology(posology: string): typeof SCHEDULE_PRESETS[string
 // Build synced preparation description from structured fields
 function buildPrepDescription(item: PrescriptionItem): string {
   const parts: string[] = [];
+  if (item.quantity && item.quantity !== '1' && item.quantityUnit) {
+    parts.push(`${item.quantity} ${item.quantityUnit}.`);
+  } else if (item.quantityUnit) {
+    parts.push(`1 ${item.quantityUnit}.`);
+  }
   if (item.dose && item.dose !== '-') parts.push(item.dose);
   if (item.diluent) {
     let dilPart = `Diluir em ${item.diluent}`;
