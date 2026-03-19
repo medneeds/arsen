@@ -174,6 +174,15 @@ function rotateSchedule(schedule: string): string {
   return rotated.join(', ');
 }
 
+// Round gts/min to practical hospital values (multiples of 7: 7, 14, 21, 28, 35, 42...)
+function roundGtsToHospital(gts: number): number {
+  if (gts <= 0) return 0;
+  // For very slow rates, round to nearest integer
+  if (gts < 5) return Math.round(gts);
+  // Round to nearest 7 (standard equipo macro 20gts/mL patterns)
+  return Math.round(gts / 7) * 7 || 7;
+}
+
 // Calculate infusion rate — timeStr is raw value, timeUnit is 'min' or 'h'
 function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts', timeUnit: 'min' | 'h' = 'min'): string {
   const volume = parseFloat(volumeStr);
@@ -184,17 +193,22 @@ function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts
     const mlPerHour = (volume / timeInMin) * 60;
     return `${mlPerHour.toFixed(1)} mL/h`;
   } else {
-    const gtsPerMin = (volume * 20) / timeInMin; // 1mL = 20 gts (equipo padrão)
-    return `${gtsPerMin.toFixed(1)} gts/min`;
+    const rawGts = (volume * 20) / timeInMin;
+    const rounded = roundGtsToHospital(rawGts);
+    return `${rounded} gts/min`;
   }
 }
 
-// Auto-calculate volume total from dose + diluent volume
+// Auto-calculate volume total from dose + diluent volume (or dose alone if no diluent)
 function calcVolumeTotal(item: PrescriptionItem): string {
   const doseVol = parseFloat(item.dose?.replace(/[^\d.,]/g, '').replace(',', '.') || '');
   const dilVol = parseFloat(item.diluentVolume || '');
-  if (dilVol > 0 && doseVol > 0) return String(Math.round(dilVol + doseVol));
-  if (dilVol > 0) return String(Math.round(dilVol));
+  // With diluent: dose volume + diluent volume
+  if (item.diluent && item.diluent !== 'sem_diluente' && dilVol > 0 && doseVol > 0) return String(Math.round(dilVol + doseVol));
+  if (item.diluent && item.diluent !== 'sem_diluente' && dilVol > 0) return String(Math.round(dilVol));
+  // Without diluent: use dose volume directly (if dose is in mL)
+  if (item.diluent === 'sem_diluente' && doseVol > 0 && item.dose?.toLowerCase().includes('ml')) return String(Math.round(doseVol));
+  if (!item.diluent && doseVol > 0 && item.dose?.toLowerCase().includes('ml')) return String(Math.round(doseVol));
   return '';
 }
 
@@ -302,10 +316,12 @@ function buildPrepDescription(item: PrescriptionItem): string {
     parts.push(`1 ${item.quantityUnit}.`);
   }
   if (item.dose && item.dose !== '-') parts.push(item.dose);
-  if (item.diluent) {
+  if (item.diluent && item.diluent !== 'sem_diluente') {
     let dilPart = `Diluir em ${item.diluent}`;
     if (item.diluentVolume) dilPart += ` ${item.diluentVolume}mL`;
     parts.push(dilPart + '.');
+  } else if (item.diluent === 'sem_diluente') {
+    parts.push('Sem diluição.');
   }
   if (item.accessType) parts.push(`Acesso ${item.accessType.toLowerCase()}.`);
   if (item.volumeTotal) parts.push(`Volume total: ${item.volumeTotal}mL.`);
@@ -968,13 +984,20 @@ function SortablePrescriptionItemRow({
                   <span className="text-[10px] text-muted-foreground">Diluente:</span>
                   <Select value={item.diluent || ''} onValueChange={(v) => {
                     onUpdate(item.id, "diluent", v);
-                    // Auto-recalculate volume total when diluent changes
                     const tempItem = { ...item, diluent: v };
                     const autoVol = calcVolumeTotal(tempItem);
-                    if (autoVol) onUpdate(item.id, "volumeTotal", autoVol);
+                    if (autoVol) {
+                      onUpdate(item.id, "volumeTotal", autoVol);
+                      const autoConc = calcConcentration({ ...tempItem, volumeTotal: autoVol });
+                      if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                    }
+                    if (v === 'sem_diluente') {
+                      onUpdate(item.id, "diluentVolume", '');
+                    }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-24"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-28"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="sem_diluente" className="text-xs font-medium">Sem diluente</SelectItem>
                       <SelectItem value="SF0,9%" className="text-xs">SF 0,9%</SelectItem>
                       <SelectItem value="SG5%" className="text-xs">SG 5%</SelectItem>
                       <SelectItem value="SG10%" className="text-xs">SG 10%</SelectItem>
@@ -985,6 +1008,7 @@ function SortablePrescriptionItemRow({
                     </SelectContent>
                   </Select>
                 </div>
+                {item.diluent && item.diluent !== 'sem_diluente' && (
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Vol dil:</span>
                   <Input value={item.diluentVolume || ''} onChange={(e) => {
@@ -999,6 +1023,7 @@ function SortablePrescriptionItemRow({
                     if (autoConc) onUpdate(item.id, "concentration", autoConc);
                   }} className="h-6 text-[11px] bg-muted/10 border-border/30 w-16 text-center" placeholder="mL" />
                 </div>
+                )}
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Acesso:</span>
                   <Select value={item.accessType || ''} onValueChange={(v) => onUpdate(item.id, "accessType", v)}>
@@ -1547,7 +1572,7 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
         {hasPreparo && (
           <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: '1.2', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #cbd5e1' }}>
             {[
-              item.diluent && item.diluent !== '-' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : null,
+              item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'Sem diluição' : null,
               item.accessType && item.accessType !== '-' ? item.accessType : null,
               item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
               item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
