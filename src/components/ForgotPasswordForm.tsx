@@ -63,7 +63,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
 
       // Verificar se o CRM confere
       if (profile.crm?.toUpperCase() !== validated.crm.toUpperCase()) {
-        toast.error("CRM NÃO CONFERE COM O CADASTRO");
+        toast.error("CRM não confere com o cadastro");
         setLoading(false);
         return;
       }
