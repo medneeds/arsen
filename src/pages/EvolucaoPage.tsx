@@ -221,7 +221,7 @@ const EvolucaoPage = () => {
                 <p className="text-sm font-medium">{patient.age}</p>
               </div>
               <div>
-                <Label className="text-[10px] text-muted-foreground uppercase">Sexo</Label>
+                <Label className="text-[10px] text-muted-foreground">Sexo</Label>
                 <p className="text-sm font-medium">{patient.sex}</p>
               </div>
             </div>
