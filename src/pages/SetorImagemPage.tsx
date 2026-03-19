@@ -46,11 +46,12 @@ const classifyExam = (examName: string): string => {
   return "outros";
 };
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-  pending: { label: "Pendente", color: "bg-amber-500/15 text-amber-700 border-amber-300", icon: Clock },
-  in_progress: { label: "Em Execução", color: "bg-blue-500/15 text-blue-700 border-blue-300", icon: Loader2 },
-  completed: { label: "Concluído", color: "bg-emerald-500/15 text-emerald-700 border-emerald-300", icon: CheckCircle2 },
-  cancelled: { label: "Cancelado", color: "bg-red-500/15 text-red-700 border-red-300", icon: XCircle },
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock; dotColor: string; pulsing: boolean }> = {
+  pending: { label: "Pendente", color: "bg-amber-500/15 text-amber-700 border-amber-300", icon: Clock, dotColor: "bg-amber-500", pulsing: true },
+  acknowledged: { label: "Ciência", color: "bg-indigo-500/15 text-indigo-700 border-indigo-300", icon: Eye, dotColor: "bg-indigo-500", pulsing: true },
+  in_progress: { label: "Em Execução", color: "bg-blue-500/15 text-blue-700 border-blue-300", icon: Loader2, dotColor: "bg-blue-500", pulsing: true },
+  completed: { label: "Concluído", color: "bg-emerald-500/15 text-emerald-700 border-emerald-300", icon: CheckCircle2, dotColor: "bg-emerald-500", pulsing: false },
+  cancelled: { label: "Cancelado", color: "bg-red-500/15 text-red-700 border-red-300", icon: XCircle, dotColor: "bg-red-500", pulsing: false },
 };
 
 interface ExamRequest {
@@ -138,9 +139,9 @@ const SetorImagemPage = () => {
     return requests.filter((r) => {
       // Status tab filter
       if (activeTab === "pending" && r.status !== "pending") return false;
+      if (activeTab === "acknowledged" && r.status !== "acknowledged") return false;
       if (activeTab === "in_progress" && r.status !== "in_progress") return false;
       if (activeTab === "completed" && r.status !== "completed") return false;
-      if (activeTab === "all" && false) return false; // show all
 
       // Modality filter
       if (selectedModality !== "all") {
@@ -168,9 +169,10 @@ const SetorImagemPage = () => {
   // Stats
   const stats = useMemo(() => ({
     pending: requests.filter(r => r.status === "pending").length,
+    acknowledged: requests.filter(r => r.status === "acknowledged").length,
     inProgress: requests.filter(r => r.status === "in_progress").length,
     completed: requests.filter(r => r.status === "completed").length,
-    urgent: requests.filter(r => r.priority === "urgente" && r.status === "pending").length,
+    urgent: requests.filter(r => r.priority === "urgente" && (r.status === "pending" || r.status === "acknowledged")).length,
   }), [requests]);
 
   // Update request status
@@ -194,6 +196,7 @@ const SetorImagemPage = () => {
       if (error) throw error;
 
       toast.success(
+        newStatus === "acknowledged" ? "Ciência declarada" :
         newStatus === "in_progress" ? "Exame em execução" :
         newStatus === "completed" ? "Exame concluído" :
         "Status atualizado"
@@ -316,12 +319,15 @@ const SetorImagemPage = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="pending" className="gap-1.5 text-xs">
             <Clock className="h-3.5 w-3.5" /> Pendentes ({stats.pending})
           </TabsTrigger>
+          <TabsTrigger value="acknowledged" className="gap-1.5 text-xs">
+            <Eye className="h-3.5 w-3.5" /> Ciência ({stats.acknowledged})
+          </TabsTrigger>
           <TabsTrigger value="in_progress" className="gap-1.5 text-xs">
-            <Loader2 className="h-3.5 w-3.5" /> Em Execução ({stats.inProgress})
+            <Loader2 className="h-3.5 w-3.5" /> Execução ({stats.inProgress})
           </TabsTrigger>
           <TabsTrigger value="completed" className="gap-1.5 text-xs">
             <CheckCircle2 className="h-3.5 w-3.5" /> Concluídos ({stats.completed})
@@ -332,7 +338,7 @@ const SetorImagemPage = () => {
         </TabsList>
 
         {/* Content for all tabs uses same list */}
-        {["pending", "in_progress", "completed", "all"].map((tab) => (
+        {["pending", "acknowledged", "in_progress", "completed", "all"].map((tab) => (
           <TabsContent key={tab} value={tab} className="mt-4 space-y-2">
             {loading ? (
               <div className="flex items-center justify-center py-16">
@@ -343,10 +349,11 @@ const SetorImagemPage = () => {
                 <ScanLine className="h-12 w-12 mx-auto mb-3 opacity-30" />
                 <p className="font-medium">Nenhuma requisição encontrada</p>
                 <p className="text-sm mt-1">
-                  {tab === "pending" ? "Sem exames pendentes no momento" :
-                   tab === "in_progress" ? "Nenhum exame em execução" :
-                   tab === "completed" ? "Nenhum exame concluído" :
-                   "Nenhuma requisição de imagem"}
+                   {tab === "pending" ? "Sem exames pendentes no momento" :
+                    tab === "acknowledged" ? "Nenhum exame com ciência declarada" :
+                    tab === "in_progress" ? "Nenhum exame em execução" :
+                    tab === "completed" ? "Nenhum exame concluído" :
+                    "Nenhuma requisição de imagem"}
                 </p>
               </div>
             ) : (
@@ -412,11 +419,18 @@ const SetorImagemPage = () => {
                           </div>
                         </div>
 
-                        {/* Status badge */}
-                        <Badge className={cn("text-[10px] shrink-0 border", statusCfg.color)}>
-                          <statusCfg.icon className={cn("h-3 w-3 mr-1", req.status === "in_progress" && "animate-spin")} />
-                          {statusCfg.label}
-                        </Badge>
+                        {/* Status badge with pulsing dot */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className={cn(
+                            "inline-block h-2.5 w-2.5 rounded-full",
+                            statusCfg.dotColor,
+                            statusCfg.pulsing && "animate-pulse-soft"
+                          )} />
+                          <Badge className={cn("text-[10px] border", statusCfg.color)}>
+                            <statusCfg.icon className={cn("h-3 w-3 mr-1", req.status === "in_progress" && "animate-spin")} />
+                            {statusCfg.label}
+                          </Badge>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -493,7 +507,7 @@ const SetorImagemPage = () => {
               )}
 
               {/* Results area (for completing) */}
-              {selectedRequest.status !== "completed" && (
+              {selectedRequest.status !== "completed" && selectedRequest.status !== "pending" && (
                 <div>
                   <p className="text-xs font-semibold text-foreground mb-1.5">Resultado / Laudo</p>
                   <Textarea
@@ -531,13 +545,22 @@ const SetorImagemPage = () => {
                   <XCircle className="h-4 w-4 mr-1" /> Recusar
                 </Button>
                 <Button
-                  onClick={() => handleUpdateStatus(selectedRequest.id, "in_progress")}
+                  onClick={() => handleUpdateStatus(selectedRequest.id, "acknowledged")}
                   disabled={updatingStatus}
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                  className="bg-indigo-500 hover:bg-indigo-600 text-white"
                 >
-                  <Loader2 className="h-4 w-4 mr-1" /> Iniciar Execução
+                  <Eye className="h-4 w-4 mr-1" /> Declarar Ciência
                 </Button>
               </>
+            )}
+            {selectedRequest?.status === "acknowledged" && (
+              <Button
+                onClick={() => handleUpdateStatus(selectedRequest.id, "in_progress")}
+                disabled={updatingStatus}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                <Loader2 className="h-4 w-4 mr-1" /> Iniciar Execução
+              </Button>
             )}
             {selectedRequest?.status === "in_progress" && (
               <Button

@@ -89,12 +89,12 @@ const getResponsibleDoctor = (patient: Patient): string => {
   return "—";
 };
 
-const getPrescriptionStatus = (patient: Patient): { label: string; variant: "default" | "secondary" | "outline" | "destructive" } => {
+const getPrescriptionStatus = (patient: Patient): { label: string; variant: "default" | "secondary" | "outline" | "destructive"; dotColor: string; pulsing: boolean } => {
   const scheduleItems = parseTextArray(patient.schedule);
   if (scheduleItems.length > 0) {
-    return { label: "Ativa", variant: "default" };
+    return { label: "Validada", variant: "default", dotColor: "bg-emerald-500", pulsing: false };
   }
-  return { label: "Pendente", variant: "secondary" };
+  return { label: "Pendente", variant: "secondary", dotColor: "bg-amber-500", pulsing: true };
 };
 
 const getDischargeText = (patient: Patient): string => {
@@ -670,9 +670,16 @@ export default function PainelClinicoPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant={prescStatus.variant} className="text-[11px]">
-                          {prescStatus.label}
-                        </Badge>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span className={cn(
+                            "inline-block h-2.5 w-2.5 rounded-full shrink-0",
+                            prescStatus.dotColor,
+                            prescStatus.pulsing && "animate-pulse-soft"
+                          )} />
+                          <Badge variant={prescStatus.variant} className="text-[11px]">
+                            {prescStatus.label}
+                          </Badge>
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <span className={cn("font-mono font-bold text-sm", days !== null && days > 7 ? "text-destructive" : "text-foreground")}>
