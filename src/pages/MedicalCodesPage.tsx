@@ -163,7 +163,7 @@ export default function MedicalCodesPage() {
   const handleCopy = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      toast.success(`${label.toUpperCase()} COPIADO`);
+      toast.success(`${label} copiado`);
     } catch (error) {
       toast.error("ERRO AO COPIAR");
     }
