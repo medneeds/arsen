@@ -240,8 +240,8 @@ const NotesTabOptimized = () => {
     }
 
     toast({
-      title: "AGENDADO",
-      description: `LEMBRETE PROGRAMADO PARA ${new Date(scheduledDateTime).toLocaleString("pt-BR")}`,
+      title: "Agendado",
+      description: `Lembrete programado para ${new Date(scheduledDateTime).toLocaleString("pt-BR")}`,
     });
 
     setScheduledContent("");
