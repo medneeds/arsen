@@ -363,7 +363,7 @@ export const NotificationCenter = () => {
                     <Clock className="h-4 w-4 text-amber-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-bold uppercase tracking-tight">Lembretes Programados</h3>
+                    <h3 className="text-sm font-bold tracking-tight">Lembretes Programados</h3>
                     <p className="text-xs text-muted-foreground">
                       {scheduledItems.length} agendado(s)
                     </p>
