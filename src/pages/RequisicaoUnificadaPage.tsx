@@ -993,7 +993,7 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
                 variant={request.priority === "urgente" ? "destructive" : "secondary"} 
                 className={cn("text-[10px]", request.priority === "urgente" && "animate-pulse")}
               >
-                {request.priority === "urgente" ? "⚡ Urgente" : "📅 Programado"}
+                {request.priority === "urgente" ? "⚡ Urgente" : request.priority === "rotina" ? "🔵 Rotina" : "📅 Programado"}
               </Badge>
             </div>
             <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-2">
