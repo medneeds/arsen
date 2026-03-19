@@ -176,13 +176,22 @@ const SetorLaboratorioPage = () => {
     });
   }, [requests, activeTab, selectedCategory, search, dateStart, dateEnd]);
 
+  const dateFilteredRequests = useMemo(() => {
+    return requests.filter((r) => {
+      try {
+        const createdDate = parseISO(r.created_at);
+        return isWithinInterval(createdDate, { start: dateStart, end: dateEnd });
+      } catch { return false; }
+    });
+  }, [requests, dateStart, dateEnd]);
+
   const stats = useMemo(() => ({
-    pending: requests.filter(r => r.status === "pending").length,
-    acknowledged: requests.filter(r => r.status === "acknowledged").length,
-    inProgress: requests.filter(r => r.status === "in_progress").length,
-    completed: requests.filter(r => r.status === "completed").length,
-    urgent: requests.filter(r => r.priority === "urgente" && (r.status === "pending" || r.status === "acknowledged")).length,
-  }), [requests]);
+    pending: dateFilteredRequests.filter(r => r.status === "pending").length,
+    acknowledged: dateFilteredRequests.filter(r => r.status === "acknowledged").length,
+    inProgress: dateFilteredRequests.filter(r => r.status === "in_progress").length,
+    completed: dateFilteredRequests.filter(r => r.status === "completed").length,
+    urgent: dateFilteredRequests.filter(r => r.priority === "urgente" && (r.status === "pending" || r.status === "acknowledged")).length,
+  }), [dateFilteredRequests]);
 
   const handleUpdateStatus = async (requestId: string, newStatus: string) => {
     setUpdatingStatus(true);
