@@ -188,7 +188,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
                     selectedItems.length === editableItems.length ? [] : editableItems.map((_, i) => String(i))
                   )
                 }
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 {selectedItems.length === editableItems.length ? "Desmarcar Todos" : "Selecionar Todos"}
               </Button>
