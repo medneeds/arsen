@@ -178,7 +178,7 @@ export function InternmentStatusDialog({
     } catch (error) {
       console.error("Error clearing internment status:", error);
       toast({
-        title: "ERRO",
+        title: "Erro",
         description: "Não foi possível remover o status",
         variant: "destructive",
       });
