@@ -20,6 +20,12 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
+import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
+
+const getSectorLabel = (sector: string | null) => {
+  if (!sector) return "";
+  return SECTOR_BED_CONFIG[sector]?.label || sector;
+};
 
 // ── Lab exam categories ──
 const LAB_CATEGORIES = [
@@ -147,7 +153,7 @@ const SetorLaboratorioPage = () => {
         const term = search.toLowerCase();
         const matchName = r.patient_name?.toLowerCase().includes(term);
         const matchBed = r.patient_bed?.toLowerCase().includes(term);
-        const matchSector = r.patient_sector?.toLowerCase().includes(term);
+        const matchSector = getSectorLabel(r.patient_sector)?.toLowerCase().includes(term);
         const matchItems = Array.isArray(r.items) && r.items.some((item: any) =>
           (item.name || item).toString().toLowerCase().includes(term)
         );
@@ -373,7 +379,7 @@ const SetorLaboratorioPage = () => {
                             <span className="font-bold text-sm text-foreground truncate">{req.patient_name}</span>
                             {req.patient_bed && (
                               <Badge variant="outline" className="text-[10px] shrink-0">
-                                {req.patient_sector && `${req.patient_sector} · `}Leito {req.patient_bed}
+                                {req.patient_sector && `${getSectorLabel(req.patient_sector)} · `}Leito {req.patient_bed}
                               </Badge>
                             )}
                             {getPriorityBadge(req.priority)}
@@ -447,7 +453,7 @@ const SetorLaboratorioPage = () => {
                   {getPriorityBadge(selectedRequest.priority)}
                 </div>
                 <div className="text-xs text-muted-foreground flex gap-3">
-                  {selectedRequest.patient_sector && <span>Setor: {selectedRequest.patient_sector}</span>}
+                  {selectedRequest.patient_sector && <span>Setor: {getSectorLabel(selectedRequest.patient_sector)}</span>}
                   {selectedRequest.patient_bed && <span>Leito: {selectedRequest.patient_bed}</span>}
                 </div>
                 {selectedRequest.clinical_indication && (

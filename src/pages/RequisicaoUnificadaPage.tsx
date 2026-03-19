@@ -26,6 +26,12 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
+import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
+
+const getSectorLabel = (sector: string | null) => {
+  if (!sector) return "";
+  return SECTOR_BED_CONFIG[sector]?.label || sector;
+};
 
 // ── UTI Exam Combos ──
 type ComboCategory = "laboratorio" | "imagem";
@@ -795,7 +801,7 @@ const RequisicaoUnificadaPage = () => {
                 {viewingRequest.patient_bed && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Leito/Setor</span>
-                    <span className="text-foreground">{viewingRequest.patient_sector} · L{viewingRequest.patient_bed}</span>
+                    <span className="text-foreground">{getSectorLabel(viewingRequest.patient_sector)} · L{viewingRequest.patient_bed}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -901,7 +907,7 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
               )}
             </div>
             <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-2">
-              {request.patient_bed && <span>{request.patient_sector} · L{request.patient_bed}</span>}
+              {request.patient_bed && <span>{getSectorLabel(request.patient_sector)} · L{request.patient_bed}</span>}
               <span>{format(new Date(request.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
               <span>por {request.requested_by_name}</span>
             </div>
