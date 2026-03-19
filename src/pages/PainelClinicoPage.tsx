@@ -334,6 +334,28 @@ export default function PainelClinicoPage() {
   const [sectorFilter, setSectorFilter] = useState<string>("all");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [sidebarTab, setSidebarTab] = useState("resumo");
+  const [sapsScores, setSapsScores] = useState<Record<string, { score: number; mortality: number }>>({});
+
+  // Fetch SAPS 3 scores for all patients
+  useEffect(() => {
+    const fetchSaps = async () => {
+      const { data } = await supabase
+        .from("saps3_assessments" as any)
+        .select("patient_name, total_score, predicted_mortality")
+        .order("created_at", { ascending: false });
+      if (data) {
+        const map: Record<string, { score: number; mortality: number }> = {};
+        (data as any[]).forEach((r: any) => {
+          // Keep only the latest per patient name
+          if (!map[r.patient_name]) {
+            map[r.patient_name] = { score: r.total_score ?? 0, mortality: r.predicted_mortality ?? 0 };
+          }
+        });
+        setSapsScores(map);
+      }
+    };
+    fetchSaps();
+  }, []);
 
   // Use DB patients if available (occupied ones), otherwise fallback to mock for demo
   const occupiedDbPatients = dbPatients.filter(p => !p.isVacant && p.name && p.name.trim() !== "");
