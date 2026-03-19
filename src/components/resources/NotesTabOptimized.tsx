@@ -323,10 +323,10 @@ const NotesTabOptimized = () => {
                 size="sm"
                 onClick={handleSaveFreeText}
                 disabled={!notes}
-                className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all uppercase"
+                className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all"
               >
                 <Save className="h-4 w-4" />
-                SALVAR NA CENTRAL
+                Salvar na central
               </Button>
 
               <Button
