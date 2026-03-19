@@ -294,7 +294,7 @@ const InternmentHistoryPage = () => {
                 variant={selectedPeriod === "quarter" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("quarter")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Último Trimestre
               </Button>
