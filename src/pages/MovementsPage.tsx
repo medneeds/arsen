@@ -313,8 +313,8 @@ export default function MovementsPage() {
       <div className="p-4 md:p-6 space-y-6">
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground uppercase">Histórico de Movimentações</h1>
-            <p className="text-sm text-muted-foreground mt-1 uppercase">
+            <h1 className="text-3xl font-bold text-foreground">Histórico de Movimentações</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               Registro de altas, óbitos e transferências de pacientes
             </p>
           </div>

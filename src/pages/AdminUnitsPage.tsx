@@ -267,7 +267,7 @@ export default function AdminUnitsPage() {
                     placeholder="Endereço completo da unidade"
                     value={formData.address}
                     onChange={(e) =>
-                      setFormData({ ...formData, address: e.target.value.toUpperCase() })
+                      setFormData({ ...formData, address: e.target.value })
                     }
                   />
                 </div>

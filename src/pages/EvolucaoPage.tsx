@@ -351,7 +351,7 @@ const EvolucaoPage = () => {
           <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-xs font-semibold text-muted-foreground uppercase">Preview da Evolução</span>
+              <span className="text-xs font-semibold text-muted-foreground">Preview da Evolução</span>
             </div>
             <div className="text-xs text-foreground space-y-1.5 leading-relaxed">
               {soap.subjective && <p><strong className="text-blue-500">S:</strong> {soap.subjective}</p>}
