@@ -158,7 +158,7 @@ export function EditTherapeuticTemplateDialog({
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold uppercase">Descrição (opcional)</Label>
+            <Label className="text-xs font-semibold">Descrição (opcional)</Label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
