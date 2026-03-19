@@ -112,8 +112,8 @@ const NotesTabOptimized = () => {
     }
 
     toast({
-      title: "SALVO",
-      description: "ANOTAÇÃO SALVA NA CENTRAL DE NOTIFICAÇÕES",
+      title: "Salvo",
+      description: "Anotação salva na central de notificações",
     });
     
     setNotes("");
