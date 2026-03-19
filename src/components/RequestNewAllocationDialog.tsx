@@ -436,10 +436,10 @@ export function RequestNewAllocationDialog({
                     ref={doctorNameRef}
                     id="doctor-name"
                     value={doctorName}
-                    onChange={(e) => setDoctorName(e.target.value.toUpperCase())}
+                    onChange={(e) => setDoctorName(e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, officeNumberRef)}
-                    placeholder="DR. NOME"
-                    className="uppercase h-9 text-sm"
+                    placeholder="Dr. Nome"
+                    className="h-9 text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
