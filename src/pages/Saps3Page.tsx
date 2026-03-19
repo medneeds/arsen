@@ -493,8 +493,16 @@ export default function Saps3Page() {
     pending_since: statusVal === 'pending' ? new Date().toISOString() : null,
   });
 
-  // ─── Admit patient (shared logic for both complete and pending) ───
-  const admitPatient = async (sapsPayload: any) => {
+  // ─── Save: SAPS3 + finalize allocation/admission ───
+  const handleSave = async (asPending = false) => {
+    if (!patientName.trim()) { toast.error("Nome do paciente é obrigatório"); return; }
+    if (!selectedSector) { toast.error("Selecione o setor da UTI"); return; }
+    if (!selectedBed) { toast.error("Selecione o leito"); return; }
+    if (!hospitalId || !stateId) { toast.error("Hospital/Estado não selecionado"); return; }
+
+    setSaving(true);
+    try {
+      const sapsPayload = buildSapsPayload(asPending ? 'pending' : 'completed');
       const { error: sapsError } = await supabase.from("saps3_assessments" as any).insert(sapsPayload as any);
       if (sapsError) throw sapsError;
 
@@ -584,13 +592,17 @@ export default function Saps3Page() {
         }
       }
 
+      if (asPending) {
+        toast.success(`Paciente admitido no leito ${selectedBed}. SAPS 3 ficou como pendente — aguardando resultados laboratoriais.`);
+      }
+
       const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector;
       setConfirmationData({
         patientName,
         bedNumber: selectedBed,
         sectorLabel,
-        totalScore: scores.total,
-        predictedMortality: scores.mortality,
+        totalScore: asPending ? 0 : scores.total,
+        predictedMortality: asPending ? 0 : scores.mortality,
       });
       setSelectedRequest(null);
       loadPendingRequests();
