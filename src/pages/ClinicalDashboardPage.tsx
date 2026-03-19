@@ -129,23 +129,32 @@ const ClinicalDashboardPage = () => {
           .limit(8),
       ]);
 
-      const patients = patientsRes.data || [];
+      const allPatients = patientsRes.data || [];
       const bedRequests = bedRequestsRes.data || [];
-      const movements = movementsRes.data || [];
+      const allMovements = movementsRes.data || [];
 
-      // Build occupancy data
+      // Filter by active sector
+      const patients = allPatients.filter((p) => p.sector === activeSector);
+      const movements = allMovements.filter((m) => m.patient_sector === activeSector);
+
+      // Build occupancy data for active sector only
+      const sectorPatients = patients;
+      const occupied = sectorPatients.filter((p) => p.name && p.name.trim() !== "").length;
+      const occData: OccupancyData[] = [{
+        sector: activeSector,
+        label: SECTOR_LABELS[activeSector] || activeSector,
+        total: sectorPatients.length,
+        occupied,
+      }];
+
+      // Also build global occupancy for the overview cards
       const sectors = ["red", "yellow", "blue", "outside"];
-      const occData: OccupancyData[] = sectors.map((s) => {
-        const sectorPatients = patients.filter((p) => p.sector === s);
-        const occupied = sectorPatients.filter((p) => p.name && p.name.trim() !== "").length;
-        return {
-          sector: s,
-          label: SECTOR_LABELS[s] || s,
-          total: sectorPatients.length,
-          occupied,
-        };
+      const allOccData: OccupancyData[] = sectors.map((s) => {
+        const sp = allPatients.filter((p) => p.sector === s);
+        const occ = sp.filter((p) => p.name && p.name.trim() !== "").length;
+        return { sector: s, label: SECTOR_LABELS[s] || s, total: sp.length, occupied: occ };
       });
-      setOccupancy(occData);
+      setOccupancy(allOccData);
       setPendingBedRequests(bedRequests.length);
       setRecentMovements(movements);
 
@@ -258,7 +267,7 @@ const ClinicalDashboardPage = () => {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [currentDepartment]);
+  }, [currentDepartment, activeSector]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -266,8 +275,10 @@ const ClinicalDashboardPage = () => {
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
-  const totalOccupied = occupancy.reduce((sum, s) => sum + s.occupied, 0);
-  const totalBeds = occupancy.reduce((sum, s) => sum + s.total, 0);
+  // Sector-specific occupancy
+  const activeSectorOcc = occupancy.find(s => s.sector === activeSector);
+  const totalOccupied = activeSectorOcc?.occupied ?? 0;
+  const totalBeds = activeSectorOcc?.total ?? 0;
   const occupancyRate = totalBeds > 0 ? Math.round((totalOccupied / totalBeds) * 100) : 0;
 
   const criticalAlerts = alerts.filter((a) => a.severity === "critical");
@@ -354,7 +365,7 @@ const ClinicalDashboardPage = () => {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-[11px] font-medium text-muted-foreground tracking-wider">Ocupação</p>
+                          <p className="text-[11px] font-medium text-muted-foreground tracking-wider">Ocupação {SECTOR_LABELS[activeSector]}</p>
                           <p className="text-2xl font-bold text-foreground mt-1">{occupancyRate}%</p>
                           <p className="text-[10px] text-muted-foreground">{totalOccupied}/{totalBeds} leitos</p>
                         </div>
@@ -444,7 +455,7 @@ const ClinicalDashboardPage = () => {
                       {occupancy.map((s) => {
                         const rate = s.total > 0 ? Math.round((s.occupied / s.total) * 100) : 0;
                         return (
-                          <div key={s.sector} className="flex flex-col gap-2 p-3 rounded-lg bg-muted/30 border border-border/40">
+                          <div key={s.sector} className={cn("flex flex-col gap-2 p-3 rounded-lg border cursor-pointer transition-all", s.sector === activeSector ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30" : "bg-muted/30 border-border/40 opacity-60")} onClick={() => handleSectorChange(s.sector)}>
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-semibold text-foreground">{s.label}</span>
                               <span className={cn(
