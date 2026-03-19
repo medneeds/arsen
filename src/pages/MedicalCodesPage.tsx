@@ -267,7 +267,7 @@ export default function MedicalCodesPage() {
               ) : (
                 filteredCodes.map((code) => (
                   <TableRow key={code.id} className="hover:bg-muted/20 transition-colors">
-                    <TableCell className="font-mono font-semibold text-primary uppercase">
+                    <TableCell className="font-mono font-semibold text-primary">
                       <div className="group relative flex items-center gap-2">
                         <span>{code.code}</span>
                         <Button
