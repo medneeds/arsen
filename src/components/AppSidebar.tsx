@@ -17,6 +17,8 @@ import {
   PanelLeft,
   Stethoscope,
   Brain,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { whitelabel } from "@/config/whitelabel";
@@ -56,6 +58,23 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePendingPasswordResets } from "@/hooks/usePendingPasswordResets";
+import { useTheme } from "next-themes";
+
+function ThemeToggleInline() {
+  const { theme, setTheme } = useTheme();
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      className="h-7 w-7 text-muted-foreground hover:text-foreground"
+      title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+    >
+      <Sun className="h-3.5 w-3.5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <Moon className="absolute h-3.5 w-3.5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+    </Button>
+  );
+}
 
 
 export function AppSidebar({ 
@@ -467,7 +486,19 @@ export function AppSidebar({
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border/50 p-3 bg-muted/30">
+      <SidebarFooter className="border-t border-border/50 p-3 bg-muted/30 space-y-2">
+        {/* Theme toggle */}
+        <div className={cn(
+          "flex items-center rounded-lg p-1.5 transition-all duration-200",
+          isCollapsed ? "justify-center" : "justify-between bg-card/30 px-3"
+        )}>
+          {!isCollapsed && (
+            <span className="text-[10px] text-muted-foreground font-medium">Tema</span>
+          )}
+          <ThemeToggleInline />
+        </div>
+
+        {/* User info + logout */}
         <div className={cn(
           "flex items-center gap-3 rounded-xl p-2 transition-all duration-200",
           isCollapsed ? "justify-center" : "bg-card/50"
@@ -523,19 +554,6 @@ export function AppSidebar({
         className="border-r border-border bg-card transition-all duration-300 data-[state=collapsed]:w-[72px]"
       >
         {sidebarContent}
-        {isCollapsed && (
-          <div className="flex justify-center py-2 border-t border-border/30">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setOpen(true)}
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              title="Expandir menu"
-            >
-              <PanelLeft className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
       </Sidebar>
 
       <AlertDialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>

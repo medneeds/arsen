@@ -40,7 +40,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -870,35 +869,29 @@ const Index = () => {
             <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent print:hidden"></div>
             <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3 print:py-0.5 print:px-1">
               <div className="flex items-center justify-between gap-2">
-                {/* Left side: Sidebar button + Title + Department selector */}
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                  <SidebarTrigger className="print:hidden flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
+                {/* Left side: Sidebar trigger + Breadcrumb navigation */}
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 print:hidden">
+                  <SidebarTrigger className="flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
                   
-                  <div className="print:hidden">
+                  {/* Breadcrumb: Institution > Sector > View */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Socorrão I</span>
+                    <span className="text-white/30 text-xs">/</span>
+                    <Select value={activeSector} onValueChange={handleSectorChange}>
+                      <SelectTrigger className="h-7 w-auto gap-1 bg-white/10 border-white/20 text-xs text-white font-medium px-2.5 focus:ring-0 focus:ring-offset-0 hover:bg-white/20 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/60 rounded-md">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(SECTOR_VISUAL).map(([key, cfg]) => (
+                          <SelectItem key={key} value={key} className="text-xs font-medium">
+                            {cfg.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-white/30 text-xs">/</span>
                     <ClinicalNavTabs variant="dark" />
                   </div>
-
-                    <div className="min-w-0 flex-1">
-                      <h1 className="text-base sm:text-2xl font-bold text-white print:text-xs tracking-tight truncate">BigHelp Map</h1>
-                      <div className="flex items-center gap-2 print:hidden">
-                        <span className={`w-2 h-2 rounded-full ${SECTOR_VISUAL[activeSector]?.dotClass} border`} />
-                        <Select value={activeSector} onValueChange={handleSectorChange}>
-                          <SelectTrigger className="h-5 w-auto gap-1 bg-transparent border-none text-[10px] sm:text-xs text-white/60 font-light tracking-widest p-0 focus:ring-0 focus:ring-offset-0 hover:text-white/90 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/40">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(SECTOR_VISUAL).map(([key, cfg]) => (
-                              <SelectItem key={key} value={key} className="text-xs font-medium">
-                                <span className="flex items-center gap-2">
-                                  <span className={`w-2 h-2 rounded-full ${cfg.dotClass} border`} />
-                                  {cfg.title}
-                                </span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
                 </div>
 
                 {/* Right side: Action buttons */}
@@ -958,9 +951,6 @@ const Index = () => {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      <div className="print:hidden">
-                        <ThemeToggle />
-                      </div>
                     </>
                   ) : (
                     <>
@@ -1044,9 +1034,6 @@ const Index = () => {
                         </Tooltip>
                       </div>
                       </TooltipProvider>
-                      <div className="print:hidden">
-                        <ThemeToggle />
-                      </div>
                     </>
                   )}
                 </div>
