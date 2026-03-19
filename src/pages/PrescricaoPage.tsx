@@ -174,6 +174,15 @@ function rotateSchedule(schedule: string): string {
   return rotated.join(', ');
 }
 
+// Round gts/min to practical hospital values (multiples of 7: 7, 14, 21, 28, 35, 42...)
+function roundGtsToHospital(gts: number): number {
+  if (gts <= 0) return 0;
+  // For very slow rates, round to nearest integer
+  if (gts < 5) return Math.round(gts);
+  // Round to nearest 7 (standard equipo macro 20gts/mL patterns)
+  return Math.round(gts / 7) * 7 || 7;
+}
+
 // Calculate infusion rate — timeStr is raw value, timeUnit is 'min' or 'h'
 function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts', timeUnit: 'min' | 'h' = 'min'): string {
   const volume = parseFloat(volumeStr);
@@ -184,8 +193,9 @@ function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts
     const mlPerHour = (volume / timeInMin) * 60;
     return `${mlPerHour.toFixed(1)} mL/h`;
   } else {
-    const gtsPerMin = (volume * 20) / timeInMin; // 1mL = 20 gts (equipo padrão)
-    return `${gtsPerMin.toFixed(1)} gts/min`;
+    const rawGts = (volume * 20) / timeInMin;
+    const rounded = roundGtsToHospital(rawGts);
+    return `${rounded} gts/min`;
   }
 }
 
