@@ -554,19 +554,6 @@ export function AppSidebar({
         className="border-r border-border bg-card transition-all duration-300 data-[state=collapsed]:w-[72px]"
       >
         {sidebarContent}
-        {isCollapsed && (
-          <div className="flex justify-center py-2 border-t border-border/30">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setOpen(true)}
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              title="Expandir menu"
-            >
-              <PanelLeft className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
       </Sidebar>
 
       <AlertDialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
