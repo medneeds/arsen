@@ -419,7 +419,7 @@ export default function VersionsPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleRestore(version.id)}
-                      className="gap-2 uppercase hover:bg-green-500/10 hover:text-green-600"
+                      className="gap-2 hover:bg-green-500/10 hover:text-green-600"
                     >
                       <RotateCcw className="h-4 w-4" />
                       Restaurar
