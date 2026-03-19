@@ -154,8 +154,8 @@ const NotesTabOptimized = () => {
     loadChecklistFromDB();
     
     toast({
-      title: "ADICIONADO",
-      description: "ITEM ADICIONADO AO CHECKLIST",
+      title: "Adicionado",
+      description: "Item adicionado ao checklist",
     });
   };
 
