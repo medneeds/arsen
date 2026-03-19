@@ -182,7 +182,7 @@ export function ResetUserPasswordDialog({
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Confirmar Nova Senha *</Label>
+                <Label className="text-xs font-semibold text-gray-600">Confirmar Nova Senha *</Label>
                 <div className="relative">
                   <Input
                     type={showConfirmPassword ? "text" : "password"}
