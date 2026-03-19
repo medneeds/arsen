@@ -1175,3 +1175,35 @@ export default function Saps3Page() {
     </div>
   );
 }
+
+// Timer component for pending SAPS
+function SapsPendingTimer({ pendingSince }: { pendingSince: string | null }) {
+  const [elapsed, setElapsed] = useState("");
+
+  useEffect(() => {
+    if (!pendingSince) return;
+    const update = () => {
+      const diff = Date.now() - new Date(pendingSince).getTime();
+      const hours = Math.floor(diff / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      setElapsed(
+        `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+      );
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [pendingSince]);
+
+  if (!pendingSince) return null;
+
+  return (
+    <div className="flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-700">
+      <Clock className="h-3.5 w-3.5 animate-pulse" />
+      <span className="font-mono font-bold text-sm">{elapsed}</span>
+    </div>
+  );
+}
+
+export { SapsPendingTimer };
