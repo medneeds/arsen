@@ -12,7 +12,7 @@ import {
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal,
   Play, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
-  Zap, Loader2, CalendarDays, Circle,
+  Zap, Loader2, CalendarDays, Circle, RotateCw,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -103,6 +103,7 @@ interface PrescriptionItem {
   validatedAt?: string;
   // Detailed prescription fields
   quantity?: string;          // Quantidade
+  quantityUnit?: string;      // Unidade da quantidade (mL, ampola, frasco-ampola, comp, gota, mg, etc.)
   action?: string;            // Fazer/Retirar
   diluent?: string;           // Diluente (SF0,9%, SG5%, AD, etc.)
   diluentVolume?: string;     // Volume do diluente (mL)
@@ -111,6 +112,58 @@ interface PrescriptionItem {
   infusionMode?: 'BIC' | 'gts'; // mL/h vs gts/min
   volumeTotal?: string;       // Volume total (mL)
   concentration?: string;     // Concentração calculada ou manual
+}
+
+// Quantity units for prescription items
+const QUANTITY_UNITS = [
+  'mL', 'ampola', 'frasco-ampola', 'comprimido', 'gota', 'mg', 'g', 'mcg',
+  'UI', 'bolsa', 'unidade', 'cápsula', 'sachê', 'envelope', 'adesivo',
+  'supositório', 'óvulo', 'bisnaga', 'frasco',
+];
+
+// Auto-detect quantity unit from medication presentation
+function detectQuantityUnit(presentation: string, dose: string): string {
+  const p = presentation.toLowerCase();
+  const d = dose.toLowerCase();
+  if (p.includes('ampola') && !p.includes('frasco')) return 'ampola';
+  if (p.includes('frasco-ampola') || p.includes('frasco ampola')) return 'frasco-ampola';
+  if (p.includes('frasco') && !p.includes('ampola')) return 'frasco';
+  if (p.includes('comprimido') || p.includes('comp')) return 'comprimido';
+  if (p.includes('cápsula')) return 'cápsula';
+  if (p.includes('bolsa')) return 'bolsa';
+  if (d.includes('gota') || d.includes('gts')) return 'gota';
+  if (d.includes('ml') || p.includes('ml')) return 'mL';
+  if (d.includes('ui') || p.includes('ui')) return 'UI';
+  return '';
+}
+
+// Auto-detect default diluent and volume from instructions
+function detectDiluentDefaults(instructions: string): { diluent: string; diluentVolume: string; infusionTime: string } {
+  const result = { diluent: '', diluentVolume: '', infusionTime: '' };
+  if (!instructions) return result;
+  const inst = instructions.toLowerCase();
+  // Detect diluent
+  if (inst.includes('sf0,9%') || inst.includes('sf 0,9%') || inst.includes('soro fisiológico')) result.diluent = 'SF0,9%';
+  else if (inst.includes('sg5%') || inst.includes('sg 5%') || inst.includes('soro glicosado')) result.diluent = 'SG5%';
+  else if (inst.includes('água destilada') || inst.includes(' ad ')) result.diluent = 'AD';
+  else if (inst.includes('ringer')) result.diluent = 'RL';
+  // Detect volume
+  const volMatch = inst.match(/(?:diluir em|em)\s+(\d+)\s*ml/i);
+  if (volMatch) result.diluentVolume = volMatch[1];
+  // Detect infusion time
+  const timeMatch = inst.match(/(?:infundir em|correr em|infusão em)\s+(\d+)\s*(?:min|minutos)/i);
+  if (timeMatch) result.infusionTime = timeMatch[1];
+  const timeHMatch = inst.match(/(?:infundir em|correr em)\s+(\d+)\s*h/i);
+  if (timeHMatch) result.infusionTime = String(parseInt(timeHMatch[1]) * 60);
+  return result;
+}
+
+// Rotate schedule: shift the first time to the end
+function rotateSchedule(schedule: string): string {
+  const parts = schedule.split(/,\s*/).map(s => s.trim()).filter(Boolean);
+  if (parts.length <= 1) return schedule;
+  const rotated = [...parts.slice(1), parts[0]];
+  return rotated.join(', ');
 }
 
 // Calculate infusion rate
@@ -210,6 +263,11 @@ function getPresetsForPosology(posology: string): typeof SCHEDULE_PRESETS[string
 // Build synced preparation description from structured fields
 function buildPrepDescription(item: PrescriptionItem): string {
   const parts: string[] = [];
+  if (item.quantity && item.quantity !== '1' && item.quantityUnit) {
+    parts.push(`${item.quantity} ${item.quantityUnit}.`);
+  } else if (item.quantityUnit) {
+    parts.push(`1 ${item.quantityUnit}.`);
+  }
   if (item.dose && item.dose !== '-') parts.push(item.dose);
   if (item.diluent) {
     let dilPart = `Diluir em ${item.diluent}`;
@@ -542,7 +600,22 @@ function SortablePrescriptionItemRow({
             }
             return null;
           })()}
-          <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-48 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
+          <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-44 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
+          {item.schedule && item.schedule.includes(',') && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 w-6 p-0 border-border/40 text-muted-foreground hover:text-primary shrink-0"
+                  onClick={() => onUpdate(item.id, "schedule", rotateSchedule(item.schedule))}
+                >
+                  <RotateCw className="h-2.5 w-2.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">Rotacionar aprazamento</TooltipContent>
+            </Tooltip>
+          )}
         </div>
         <ItemActions />
       </div>
@@ -678,7 +751,22 @@ function SortablePrescriptionItemRow({
                       }
                       return null;
                     })()}
-                    <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-52 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
+                    <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-48 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
+                    {item.schedule && item.schedule.includes(',') && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 w-7 p-0 border-border/40 text-muted-foreground hover:text-primary shrink-0"
+                            onClick={() => onUpdate(item.id, "schedule", rotateSchedule(item.schedule))}
+                          >
+                            <RotateCw className="h-3 w-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs">Rotacionar aprazamento</TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
                 </div>
               </div>
@@ -687,7 +775,15 @@ function SortablePrescriptionItemRow({
               <div className="flex items-center gap-1.5 flex-wrap">
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Qtd:</span>
-                  <Input value={item.quantity || ''} onChange={(e) => onUpdate(item.id, "quantity", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-16 text-center" placeholder="1" />
+                  <Input value={item.quantity || ''} onChange={(e) => onUpdate(item.id, "quantity", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-12 text-center" placeholder="1" />
+                  <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
+                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-[110px]"><SelectValue placeholder="unidade" /></SelectTrigger>
+                    <SelectContent>
+                      {QUANTITY_UNITS.map(u => (
+                        <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Ação:</span>
@@ -1001,11 +1097,14 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
           {item.presentation && item.presentation !== '-' && (
             <span style={{ fontWeight: 400, color: '#475569' }}> ({item.presentation})</span>
           )}
+          {item.quantity && item.quantityUnit && (
+            <span style={{ fontWeight: 600, color: '#334155' }}> — {item.quantity} {item.quantityUnit}</span>
+          )}
           {item.dose && item.dose !== '-' && <span> — {item.dose}</span>}
           {item.route && item.route !== '-' && <span> — {item.route}</span>}
           {item.posology && item.posology !== '-' && <span> — {item.posology}</span>}
           {item.flags.length > 0 && (
-            <span style={{ fontSize: '7.5pt', fontWeight: 700, marginLeft: '3px', color: '#0f172a' }}>[{item.flags.join(', ')}]</span>
+            <span style={{ fontSize: '7.5pt', fontWeight: 700, marginLeft: '3px', color: '#0f172a' }}>[{item.flags.join(', ').toUpperCase()}]</span>
           )}
           {item.status === 'suspended' && (
             <span style={{ fontSize: '7.5pt', fontWeight: 700, color: '#dc2626', marginLeft: '3px' }}>[SUSPENSO]</span>
@@ -1549,29 +1648,35 @@ const PrescricaoPage = () => {
   );
 
   // --- Handlers ---
-  const createItem = (med: MedicationEntry): PrescriptionItem => ({
-    id: crypto.randomUUID(),
-    name: med.name,
-    presentation: med.presentation,
-    dose: med.defaultDose,
-    route: med.defaultRoute,
-    posology: med.defaultPosology,
-    schedule: med.defaultSchedule,
-    instructions: med.instructions || "",
-    category: med.category,
-    flags: [],
-    highAlert: med.highAlert || false,
-    status: 'active',
-    infusionMode: 'BIC',
-    infusionTime: '',
-    volumeTotal: '',
-    quantity: '1',
-    action: 'fazer',
-    diluent: '',
-    diluentVolume: '',
-    accessType: '',
-    concentration: '',
-  });
+  const createItem = (med: MedicationEntry): PrescriptionItem => {
+    const autoUnit = detectQuantityUnit(med.presentation, med.defaultDose);
+    const autoDefaults = detectDiluentDefaults(med.instructions || '');
+    const isIV = isIVRoute(med.defaultRoute);
+    return {
+      id: crypto.randomUUID(),
+      name: med.name,
+      presentation: med.presentation,
+      dose: med.defaultDose,
+      route: med.defaultRoute,
+      posology: med.defaultPosology,
+      schedule: med.defaultSchedule,
+      instructions: med.instructions || "",
+      category: med.category,
+      flags: med.instructions?.toLowerCase().includes('bomba de infusão') ? ['bi' as PrescriptionFlag] : [],
+      highAlert: med.highAlert || false,
+      status: 'active',
+      infusionMode: 'BIC',
+      infusionTime: autoDefaults.infusionTime,
+      volumeTotal: autoDefaults.diluentVolume,
+      quantity: '1',
+      quantityUnit: autoUnit,
+      action: 'fazer',
+      diluent: isIV ? autoDefaults.diluent : '',
+      diluentVolume: isIV ? autoDefaults.diluentVolume : '',
+      accessType: '',
+      concentration: '',
+    };
+  };
 
   const addItem = (med: MedicationEntry) => {
     setItems((prev) => [...prev, createItem(med)]);
