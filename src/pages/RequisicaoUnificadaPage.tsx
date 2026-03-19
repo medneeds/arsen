@@ -879,9 +879,17 @@ const RequisicaoUnificadaPage = () => {
                   <span className="text-foreground">{format(new Date(viewingRequest.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</span>
                 </div>
                 {viewingRequest.clinical_indication && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Indicação</span>
-                    <span className="text-foreground">{viewingRequest.clinical_indication}</span>
+                  <div className="p-2 rounded-md bg-amber-50/50 border border-amber-200 dark:bg-amber-500/5 dark:border-amber-500/20">
+                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Justificativa Clínica:</span>
+                    <p className="text-xs text-foreground mt-0.5">{viewingRequest.clinical_indication}</p>
+                  </div>
+                )}
+                {viewingRequest.notes && viewingRequest.notes.includes("[PROGRAMADO:") && (
+                  <div className="p-2 rounded-md bg-blue-50/50 border border-blue-200 dark:bg-blue-500/5 dark:border-blue-500/20">
+                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">📅 Agendamento:</span>
+                    <p className="text-xs text-foreground mt-0.5">
+                      {viewingRequest.notes.match(/\[PROGRAMADO: ([^\]]+)\]/)?.[1] || ""}
+                    </p>
                   </div>
                 )}
                 <div className="pt-1.5 border-t border-border/50">
