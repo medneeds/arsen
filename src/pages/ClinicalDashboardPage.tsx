@@ -81,6 +81,7 @@ function DashboardHeader({ children }: { children: React.ReactNode }) {
 const ClinicalDashboardPage = () => {
   const { user } = useAuth();
   const { currentDepartment } = useDepartment();
+  const { currentHospital, currentState } = useHospital();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
