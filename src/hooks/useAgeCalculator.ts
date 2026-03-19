@@ -18,7 +18,7 @@ export function useAgeCalculator(isPediatric: boolean = false) {
         // Se for um número, retornar como anos
         if (/^\d+$/.test(trimmed)) {
           const age = parseInt(trimmed);
-          return age === 1 ? "1 ANO" : `${age} ANOS`;
+          return age === 1 ? "1 ano" : `${age} anos`;
         }
         
         // Tentar parsear como data de nascimento
