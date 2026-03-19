@@ -259,7 +259,7 @@ export const NotificationCenter = () => {
                   variant="outline"
                   size="sm"
                   onClick={markAllAsRead}
-                  className="h-7 text-xs uppercase hover:bg-primary/10 hover:text-primary transition-all"
+                  className="h-7 text-xs hover:bg-primary/10 hover:text-primary transition-all"
                 >
                   Marcar todas como lidas
                 </Button>
