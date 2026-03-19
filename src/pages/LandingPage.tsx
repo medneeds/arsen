@@ -175,7 +175,7 @@ export default function LandingPage() {
                 <div className="h-10 w-10 rounded-xl bg-gray-900 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform duration-300">
                   <item.icon className="h-5 w-5 text-white" />
                 </div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2 tracking-wide">
                   {item.title}
                 </h3>
                 <p className="text-xs text-gray-500 leading-relaxed font-light">
