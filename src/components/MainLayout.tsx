@@ -44,6 +44,7 @@ export function MainLayout({ children, onOpenHandover }: MainLayoutProps) {
 
       <GlobalSearchDialog />
       <KeyboardShortcutsDialog open={showShortcuts} onOpenChange={setShowShortcuts} />
+      <CultureNotifications />
     </SidebarProvider>
   );
 }
