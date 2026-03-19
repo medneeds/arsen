@@ -154,6 +154,14 @@ const CATEGORIES = {
       { group: "Apoio", items: ["Fisioterapia", "Fonoaudiologia", "Nutrição", "Psicologia", "Assistência Social", "Farmácia Clínica", "Cuidados Paliativos"] },
     ],
   },
+  apac: {
+    label: "APAC — Alta Complexidade",
+    shortLabel: "APAC",
+    icon: FileCheck,
+    color: "text-orange-600",
+    bg: "bg-orange-500/10",
+    presets: [],
+  },
 } as const;
 
 type CategoryKey = keyof typeof CATEGORIES;
