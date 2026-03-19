@@ -17,6 +17,10 @@ export const SECTOR_BED_CONFIG: Record<string, SectorBedConfig> = {
   yellow: { prefix: 'L', maxRegularBeds: 10, label: 'UTI 2', startNumber: 9 },
   blue: { prefix: 'L', maxRegularBeds: 8, label: 'UCI 1', startNumber: 19 },
   outside: { prefix: 'L', maxRegularBeds: 8, label: 'UCI 2', startNumber: 27 },
+  sala_vermelha: { prefix: 'SV', maxRegularBeds: 6, label: 'Sala Vermelha' },
+  sala_laranja: { prefix: 'OL', maxRegularBeds: 12, label: 'Obs. Laranja' },
+  ue_vertical: { prefix: 'EV', maxRegularBeds: 20, label: 'UE Vertical' },
+  ue_horizontal: { prefix: 'EH', maxRegularBeds: 20, label: 'UE Horizontal' },
 };
 
 /**
