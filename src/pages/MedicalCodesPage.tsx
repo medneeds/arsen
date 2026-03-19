@@ -331,7 +331,7 @@ export default function MedicalCodesPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="uppercase flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2">
               {editingCode ? <><Pencil className="h-5 w-5 text-primary" /> Editar Código</> : <><Plus className="h-5 w-5 text-primary" /> Adicionar Código</>}
             </DialogTitle>
           </DialogHeader>
