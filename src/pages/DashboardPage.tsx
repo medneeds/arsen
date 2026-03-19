@@ -988,9 +988,9 @@ const DashboardPage = () => {
                 <div className="rounded-lg bg-primary/10 p-2">
                   <Users className="h-5 w-5 text-primary" />
                 </div>
-                <CardTitle className="uppercase text-lg font-bold">Distribuição por Setor</CardTitle>
+                <CardTitle className="uppercase text-lg font-bold">Ocupação — {activeSectorLabel}</CardTitle>
               </div>
-              <CardDescription className="text-sm">Pacientes ativos distribuídos por ala</CardDescription>
+              <CardDescription className="text-sm">Leitos ocupados vs vagos neste setor</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
