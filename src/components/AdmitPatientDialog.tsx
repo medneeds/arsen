@@ -401,7 +401,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           <div className={cn("gap-3", isUtiAdmission ? "grid grid-cols-1" : "grid grid-cols-2")}>
             <div className="space-y-1.5">
               <Label className="text-xs">Setor</Label>
-              <Select value={selectedSector} onValueChange={(v) => { setSelectedSector(v); setSelectedBed(""); }}>
+              <Select value={selectedSector} onValueChange={(v) => { setSelectedSector(v); setSelectedBed(""); setExtraBedRequested(false); }}>
                 <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar setor" /></SelectTrigger>
                 <SelectContent>
                   {SECTORS.map(s => (
