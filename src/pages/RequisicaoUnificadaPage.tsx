@@ -7,7 +7,7 @@ import {
   TestTubes, ScanLine, UserCheck, Plus, Search, Clock, CheckCircle2,
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
   ChevronDown, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
-  CalendarIcon,
+  CalendarIcon, Printer,
 } from "lucide-react";
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { printRequisitionGuide } from "@/components/PrintableRequisitionGuide";
 import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 
@@ -161,6 +162,7 @@ type CategoryKey = keyof typeof CATEGORIES;
 
 const PRIORITY_OPTIONS = [
   { value: "programado", label: "Programado", color: "text-blue-600" },
+  { value: "rotina", label: "Rotina", color: "text-cyan-600" },
   { value: "urgente", label: "Urgente", color: "text-red-600" },
 ];
 
@@ -192,7 +194,7 @@ const RequisicaoUnificadaPage = () => {
   const [formPatientName, setFormPatientName] = useState("");
   const [formPatientBed, setFormPatientBed] = useState("");
   const [formPatientSector, setFormPatientSector] = useState("");
-  const [formPriority, setFormPriority] = useState("programado");
+  const [formPriority, setFormPriority] = useState("rotina");
   const [formScheduledDate, setFormScheduledDate] = useState("");
   const [formScheduledTime, setFormScheduledTime] = useState("");
   const [formIndication, setFormIndication] = useState("");
@@ -310,7 +312,7 @@ const RequisicaoUnificadaPage = () => {
     setFormPatientName("");
     setFormPatientBed("");
     setFormPatientSector("");
-    setFormPriority("programado");
+    setFormPriority("rotina");
     setFormScheduledDate("");
     setFormScheduledTime("");
     setFormIndication("");
@@ -542,6 +544,20 @@ const RequisicaoUnificadaPage = () => {
               >
                 <AlertTriangle className="h-4.5 w-4.5" />
                 Urgente
+              </Button>
+              <Button
+                type="button"
+                variant={formPriority === "rotina" ? "default" : "outline"}
+                className={cn(
+                  "flex-1 gap-2 h-12 text-sm font-semibold transition-all",
+                  formPriority === "rotina"
+                    ? "bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600 shadow-lg shadow-cyan-500/20"
+                    : "border-cyan-300 text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-500/10"
+                )}
+                onClick={() => setFormPriority("rotina")}
+              >
+                <Clock className="h-4.5 w-4.5" />
+                Rotina
               </Button>
               <Button
                 type="button"
@@ -978,7 +994,7 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
                 variant={request.priority === "urgente" ? "destructive" : "secondary"} 
                 className={cn("text-[10px]", request.priority === "urgente" && "animate-pulse")}
               >
-                {request.priority === "urgente" ? "⚡ Urgente" : "📅 Programado"}
+                {request.priority === "urgente" ? "⚡ Urgente" : request.priority === "rotina" ? "🔵 Rotina" : "📅 Programado"}
               </Badge>
             </div>
             <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-2">
@@ -999,6 +1015,15 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
             )}
           </div>
           <div className="flex gap-1.5 shrink-0">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+              onClick={(e) => { e.stopPropagation(); printRequisitionGuide(request, (s) => getSectorLabel(s)); }}
+              title="Imprimir Guia"
+            >
+              <Printer className="h-3.5 w-3.5" />
+            </Button>
             <Button size="sm" variant="outline" className="h-8 px-2.5 text-xs gap-1" onClick={onViewResult}>
               <Eye className="h-3.5 w-3.5" />
               {showResult ? "Ver" : "Resultado"}

@@ -4,7 +4,7 @@ import { ptBR } from "date-fns/locale";
 import {
   TestTubes, Search, Clock, CheckCircle2, XCircle, Eye, Loader2,
   RefreshCw, AlertTriangle, FileText, Droplets, Flame, Beaker,
-  Microscope, Heart, CalendarIcon,
+  Microscope, Heart, CalendarIcon, Printer,
 } from "lucide-react";
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
+import { printRequisitionGuide } from "@/components/PrintableRequisitionGuide";
 
 const getSectorLabel = (sector: string | null) => {
   if (!sector) return "";
@@ -244,6 +245,11 @@ const SetorLaboratorioPage = () => {
     if (priority === "urgente") return (
       <Badge className="bg-red-500/15 text-red-700 border-red-300 text-[10px] font-bold animate-pulse">
         <AlertTriangle className="h-3 w-3 mr-1" /> URGENTE
+      </Badge>
+    );
+    if (priority === "rotina") return (
+      <Badge variant="outline" className="text-[10px] text-cyan-600 border-cyan-300 bg-cyan-500/10">
+        <Clock className="h-3 w-3 mr-1" /> Rotina
       </Badge>
     );
     return (
@@ -600,6 +606,16 @@ const SetorLaboratorioPage = () => {
           )}
 
           <DialogFooter className="gap-2 sm:gap-0">
+            {selectedRequest && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs mr-auto"
+                onClick={() => printRequisitionGuide(selectedRequest, (s) => getSectorLabel(s))}
+              >
+                <Printer className="h-3.5 w-3.5" /> Imprimir Guia
+              </Button>
+            )}
             {selectedRequest?.status === "pending" && (
               <>
                 <Button
