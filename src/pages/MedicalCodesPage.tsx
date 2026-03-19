@@ -225,8 +225,8 @@ export default function MedicalCodesPage() {
               <Input
                 placeholder="Buscar por código, nome ou descritivo..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
-                className="pl-10 uppercase h-12"
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-12"
               />
             </div>
             <Button 
