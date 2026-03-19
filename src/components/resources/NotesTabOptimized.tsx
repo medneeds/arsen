@@ -505,8 +505,8 @@ const NotesTabOptimized = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="scheduled-date" className="uppercase">
-                  DATA
+                <Label htmlFor="scheduled-date">
+                  Data
                 </Label>
                 <Input
                   id="scheduled-date"
