@@ -144,7 +144,7 @@ export default function MedicalCodesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("TEM CERTEZA QUE DESEJA DELETAR ESTE CÓDIGO?")) return;
+    if (!confirm("Tem certeza que deseja deletar este código?")) return;
 
     const { error } = await supabase.from("medical_codes").delete().eq("id", id);
 
