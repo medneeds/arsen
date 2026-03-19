@@ -262,6 +262,11 @@ const SetorImagemPage = () => {
         <AlertTriangle className="h-3 w-3 mr-1" /> URGENTE
       </Badge>
     );
+    if (priority === "rotina") return (
+      <Badge variant="outline" className="text-[10px] text-cyan-600 border-cyan-300 bg-cyan-500/10">
+        <Clock className="h-3 w-3 mr-1" /> Rotina
+      </Badge>
+    );
     return (
       <Badge variant="outline" className="text-[10px] text-blue-600 border-blue-300 bg-blue-500/10">
         <CalendarIcon className="h-3 w-3 mr-1" /> Programado
