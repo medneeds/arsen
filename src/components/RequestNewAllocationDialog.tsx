@@ -464,7 +464,7 @@ export function RequestNewAllocationDialog({
             <div className="p-4 rounded-lg bg-muted/30 border space-y-3">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Identificação do Paciente</p>
+                <p className="text-sm font-semibold text-muted-foreground tracking-wide">Identificação do Paciente</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
