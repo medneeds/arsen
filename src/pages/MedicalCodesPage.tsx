@@ -247,10 +247,10 @@ export default function MedicalCodesPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
-                <TableHead className="font-bold uppercase w-32">Código</TableHead>
-                <TableHead className="font-bold uppercase w-64">Nome</TableHead>
-                <TableHead className="font-bold uppercase">Descritivo no Sistema</TableHead>
-                <TableHead className="font-bold uppercase w-24 text-right">Ações</TableHead>
+                <TableHead className="font-bold w-32">Código</TableHead>
+                <TableHead className="font-bold w-64">Nome</TableHead>
+                <TableHead className="font-bold">Descritivo no sistema</TableHead>
+                <TableHead className="font-bold w-24 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
