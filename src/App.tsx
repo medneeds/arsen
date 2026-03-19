@@ -56,6 +56,9 @@ import Saps3Page from "./pages/Saps3Page";
 import ClinicalDashboardPage from "./pages/ClinicalDashboardPage";
 import ProtocolosUtiPage from "./pages/ProtocolosUtiPage";
 import CcihDashboardPage from "./pages/CcihDashboardPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
+import TriageQueuePage from "./pages/TriageQueuePage";
+import TriageQueueTVPage from "./pages/TriageQueueTVPage";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +68,7 @@ function ProfileHomeRedirect() {
   if (profile === "ccih") return <Navigate to="/ccih" replace />;
   if (profile === "imagem") return <Navigate to="/setor-imagem" replace />;
   if (profile === "laboratorio") return <Navigate to="/setor-laboratorio" replace />;
+  if (profile === "administrativo") return <Navigate to="/recepcao" replace />;
   return <ClinicalDashboardPage />;
 }
 
