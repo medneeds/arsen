@@ -827,9 +827,7 @@ export default function PainelClinicoPage() {
                     {parseTextArray(selectedPatient.utiDailyConducts).length > 0 && (
                       <EditableInfoSection icon={ClipboardList} title="Condutas do Dia" items={parseTextArray(selectedPatient.utiDailyConducts)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiDailyConducts', items)} />
                     )}
-                    {parseTextArray(selectedPatient.utiDischargePrediction).length > 0 && (
-                      <EditableInfoSection icon={Calendar} title="Previsão de Alta" items={parseTextArray(selectedPatient.utiDischargePrediction)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiDischargePrediction', items)} />
-                    )}
+                    <EditableInfoSection icon={Calendar} title="Previsão de Alta" items={parseTextArray(selectedPatient.utiDischargePrediction)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiDischargePrediction', items)} />
 
                     {selectedPatient.admissionHistory && (
                       <div className="space-y-1.5">
