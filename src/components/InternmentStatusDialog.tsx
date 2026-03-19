@@ -271,7 +271,7 @@ export function InternmentStatusDialog({
             type="button"
             onClick={handleSave}
             disabled={isSubmitting || !status}
-            className="uppercase"
+            className=""
           >
             {isSubmitting ? "Salvando..." : "Salvar"}
           </Button>
