@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
+import { SapsConfirmationScreen } from "@/components/SapsConfirmationScreen";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -254,6 +255,13 @@ export default function Saps3Page() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [occupiedBeds, setOccupiedBeds] = useState<string[]>([]);
+  const [confirmationData, setConfirmationData] = useState<{
+    patientName: string;
+    bedNumber: string;
+    sectorLabel: string;
+    totalScore: number;
+    predictedMortality: number;
+  } | null>(null);
 
   // Allocation
   const [selectedSector, setSelectedSector] = useState<string>("");
@@ -580,7 +588,14 @@ export default function Saps3Page() {
         }
       }
 
-      toast.success(`Paciente admitido no leito ${selectedBed} com SAPS 3 = ${scores.total} (mortalidade ${scores.mortality}%)`);
+      const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector;
+      setConfirmationData({
+        patientName,
+        bedNumber: selectedBed,
+        sectorLabel,
+        totalScore: scores.total,
+        predictedMortality: scores.mortality,
+      });
       setSelectedRequest(null);
       loadPendingRequests();
       loadRecords();
@@ -619,6 +634,16 @@ export default function Saps3Page() {
 
   return (
     <div className="space-y-6">
+      {confirmationData && (
+        <SapsConfirmationScreen
+          patientName={confirmationData.patientName}
+          bedNumber={confirmationData.bedNumber}
+          sectorLabel={confirmationData.sectorLabel}
+          totalScore={confirmationData.totalScore}
+          predictedMortality={confirmationData.predictedMortality}
+          onComplete={() => setConfirmationData(null)}
+        />
+      )}
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">

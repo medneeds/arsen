@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { usePatients } from "@/hooks/usePatients";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { Patient } from "@/types/patient";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, Eye, Filter, FileText, Pill, Activity, ClipboardList, FolderOpen, User, Calendar, Clock, Stethoscope, Heart, TrendingUp, AlertTriangle, TestTubes, Syringe, Shield, Thermometer } from "lucide-react";
+import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -16,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const parseTextArray = (input: string | string[] | undefined | null): string[] => {
   if (!input) return [];
@@ -333,6 +335,28 @@ export default function PainelClinicoPage() {
   const [sectorFilter, setSectorFilter] = useState<string>("all");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [sidebarTab, setSidebarTab] = useState("resumo");
+  const [sapsScores, setSapsScores] = useState<Record<string, { score: number; mortality: number }>>({});
+
+  // Fetch SAPS 3 scores for all patients
+  useEffect(() => {
+    const fetchSaps = async () => {
+      const { data } = await supabase
+        .from("saps3_assessments" as any)
+        .select("patient_name, total_score, predicted_mortality")
+        .order("created_at", { ascending: false });
+      if (data) {
+        const map: Record<string, { score: number; mortality: number }> = {};
+        (data as any[]).forEach((r: any) => {
+          // Keep only the latest per patient name
+          if (!map[r.patient_name]) {
+            map[r.patient_name] = { score: r.total_score ?? 0, mortality: r.predicted_mortality ?? 0 };
+          }
+        });
+        setSapsScores(map);
+      }
+    };
+    fetchSaps();
+  }, []);
 
   // Use DB patients if available (occupied ones), otherwise fallback to mock for demo
   const occupiedDbPatients = dbPatients.filter(p => !p.isVacant && p.name && p.name.trim() !== "");
@@ -365,12 +389,8 @@ export default function PainelClinicoPage() {
       {/* Header */}
       <div className="border-b bg-card px-4 py-3">
         <div className="flex items-center justify-between mb-3">
-          <div>
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-primary" />
-              Painel Clínico
-            </h1>
-            <p className="text-sm text-muted-foreground">Prontuário e gestão integrada de pacientes</p>
+          <div className="flex items-center gap-4">
+            <ClinicalNavTabs />
           </div>
           <Badge variant="outline" className="text-sm">
             {filteredPatients.length} paciente{filteredPatients.length !== 1 ? "s" : ""}
@@ -420,7 +440,8 @@ export default function PainelClinicoPage() {
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-24">Leito</TableHead>
-                  <TableHead>Paciente</TableHead>
+                   <TableHead>Paciente</TableHead>
+                  <TableHead className="w-24 text-center">SAPS 3</TableHead>
                   <TableHead className="w-48">Pendências</TableHead>
                   <TableHead className="w-28 text-center">Prescrição</TableHead>
                   <TableHead className="w-24 text-center">Dias Int.</TableHead>
@@ -461,6 +482,23 @@ export default function PainelClinicoPage() {
                             </p>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {sapsScores[patient.name] ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="font-mono font-bold text-sm text-foreground">{sapsScores[patient.name].score}</span>
+                            <Badge variant="outline" className={cn("text-[10px] px-1.5",
+                              sapsScores[patient.name].mortality < 10 ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400" :
+                              sapsScores[patient.name].mortality < 25 ? "text-yellow-600 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400" :
+                              sapsScores[patient.name].mortality < 50 ? "text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400" :
+                              "text-red-600 border-red-200 bg-red-50 dark:bg-red-900/20 dark:text-red-400"
+                            )}>
+                              {sapsScores[patient.name].mortality}%
+                            </Badge>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         {pendencies.length > 0 ? (

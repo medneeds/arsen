@@ -15,6 +15,7 @@ import { MainLayout } from "@/components/MainLayout";
 import { ShiftReminderDialog } from "@/components/ShiftReminderDialog";
 import { Patient, SectorType } from "@/types/patient";
 import { Activity, Users, Clock, Printer, Eye, EyeOff, ClipboardList, LogOut, CheckSquare, Trash2, Undo, Redo, Plus, StickyNote, Edit, List, X, FileText, ChevronDown, GripVertical, ClipboardCheck, Save, MoreVertical, Building2, RefreshCw, Bell, Maximize2, Minimize2, Search, ArrowLeftRight } from "lucide-react";
+import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { NotificationCenter } from "@/components/NotificationCenter";
@@ -873,6 +874,10 @@ const Index = () => {
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                   <SidebarTrigger className="print:hidden flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
                   
+                  <div className="print:hidden">
+                    <ClinicalNavTabs variant="dark" />
+                  </div>
+
                     <div className="min-w-0 flex-1">
                       <h1 className="text-base sm:text-2xl font-bold text-white print:text-xs tracking-tight truncate">BigHelp Map</h1>
                       <div className="flex items-center gap-2 print:hidden">
