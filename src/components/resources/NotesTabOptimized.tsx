@@ -133,7 +133,7 @@ const NotesTabOptimized = () => {
 
     const { error } = await supabase.from("notes_reminders").insert({
       department: currentDepartment,
-      content: newChecklistItem.toUpperCase(),
+      content: newChecklistItem,
       type: "checklist_item",
       completed: false,
       is_active: true,
