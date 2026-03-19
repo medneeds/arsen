@@ -163,7 +163,7 @@ const SetorImagemPage = () => {
         const term = search.toLowerCase();
         const matchName = r.patient_name?.toLowerCase().includes(term);
         const matchBed = r.patient_bed?.toLowerCase().includes(term);
-        const matchSector = r.patient_sector?.toLowerCase().includes(term);
+        const matchSector = getSectorLabel(r.patient_sector)?.toLowerCase().includes(term);
         const matchItems = Array.isArray(r.items) && r.items.some((item: any) =>
           (item.name || item).toString().toLowerCase().includes(term)
         );
