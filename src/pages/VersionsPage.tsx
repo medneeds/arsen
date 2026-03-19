@@ -219,8 +219,8 @@ export default function VersionsPage() {
         <Input
           placeholder="Buscar por descrição..."
           value={searchDescription}
-          onChange={(e) => setSearchDescription(e.target.value.toUpperCase())}
-          className="pl-10 uppercase"
+          onChange={(e) => setSearchDescription(e.target.value)}
+          className="pl-10"
         />
       </div>
 
