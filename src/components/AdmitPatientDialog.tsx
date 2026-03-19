@@ -442,18 +442,24 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             <p className="text-sm font-semibold flex items-center gap-2">
               <BedDouble className="h-4 w-4" /> Alocação
             </p>
-            <Badge variant="outline" className="text-xs font-medium">
-              {SECTORS.find(s => s.value === selectedSector)?.label || "—"}
-            </Badge>
-          </div>
-
-          {/* Loading state */}
-          {!bedsLoaded && selectedSector && (
-            <div className="flex items-center justify-center py-3">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              <span className="text-xs text-muted-foreground ml-2">Verificando leitos...</span>
+            <div className="flex items-center gap-2">
+              {bedsLoaded && (() => {
+                const freeCount = availableBeds.filter(b => b !== "EXTRA" && !occupiedBeds.includes(b)).length;
+                return freeCount > 0 ? (
+                  <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30">
+                    {freeCount} {freeCount === 1 ? "leito livre" : "leitos livres"}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-xs text-destructive border-destructive/30 bg-destructive/10">
+                    Lotado
+                  </Badge>
+                );
+              })()}
+              <Badge variant="outline" className="text-xs font-medium">
+                {SECTORS.find(s => s.value === selectedSector)?.label || "—"}
+              </Badge>
             </div>
-          )}
+          </div>
 
           {/* Sector full alert */}
           {bedsLoaded && sectorFullAlert && !extraBedRequested && (
