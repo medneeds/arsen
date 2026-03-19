@@ -94,6 +94,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [occupiedBeds, setOccupiedBeds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fullData, setFullData] = useState<PreAdmissionFull | null>(null);
+  const [sectorFullAlert, setSectorFullAlert] = useState(false);
 
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
@@ -118,6 +119,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   useEffect(() => {
     if (!selectedSector || !currentHospital?.id || !currentState?.id) {
       setAvailableBeds([]);
+      setSectorFullAlert(false);
       return;
     }
     const fetchBeds = async () => {
@@ -138,12 +140,17 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       const start = config.startNumber ?? 1;
       const end = start + config.maxRegularBeds - 1;
       const beds: string[] = [];
+      let freeCount = 0;
       for (let i = start; i <= end; i++) {
         const bedNum = `${config.prefix}${String(i).padStart(2, '0')}`;
         beds.push(bedNum);
+        if (!occupied.includes(bedNum)) freeCount++;
       }
       beds.push("EXTRA");
       setAvailableBeds(beds);
+
+      // Check if all regular beds are occupied
+      setSectorFullAlert(freeCount === 0);
     };
     fetchBeds();
   }, [selectedSector, currentHospital?.id, currentState?.id, currentDepartment]);
@@ -432,7 +439,23 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             )}
           </div>
 
-          {isUtiAdmission && (
+          {sectorFullAlert && (
+            <Card className="border-destructive/40 bg-destructive/10">
+              <CardContent className="p-3 flex items-start gap-2.5">
+                <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold text-destructive">Setor lotado — Admissão bloqueada</p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    Todos os leitos regulares de <span className="font-medium">{SECTORS.find(s => s.value === selectedSector)?.label}</span> estão ocupados. 
+                    Não é possível admitir neste setor até que um leito seja liberado. 
+                    Selecione outro setor ou aguarde uma alta/transferência.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {isUtiAdmission && !sectorFullAlert && (
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="p-3 text-xs text-muted-foreground">
                 Para admissão em UTI, o leito só será definido após o preenchimento completo do SAPS 3.
@@ -457,7 +480,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           </Button>
           <Button
             onClick={handleAdmit}
-            disabled={!selectedSector || (!isUtiAdmission && !selectedBed) || isSubmitting}
+            disabled={!selectedSector || (!isUtiAdmission && !selectedBed) || isSubmitting || sectorFullAlert}
             className="gap-1"
           >
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <BedDouble className="h-4 w-4" />}
