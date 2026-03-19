@@ -350,19 +350,24 @@ const RequisicaoUnificadaPage = () => {
     if (!viewingRequest) return;
     setSavingResult(true);
     try {
+      const updateData: any = {
+        status: "completed",
+        results: resultText.trim() || null,
+        completed_at: new Date().toISOString(),
+        completed_by: user?.email?.split("@")[0] || "Sistema",
+      };
+      if (resultFiles.length > 0) {
+        updateData.result_data = { files: resultFiles };
+      }
       const { error } = await supabase
         .from("exam_requests")
-        .update({
-          status: "completed",
-          results: resultText.trim() || null,
-          completed_at: new Date().toISOString(),
-          completed_by: user?.email?.split("@")[0] || "Sistema",
-        })
+        .update(updateData)
         .eq("id", viewingRequest.id);
       if (error) throw error;
       toast.success("Resultado registrado");
       setViewingRequest(null);
       setResultText("");
+      setResultFiles([]);
       fetchRequests();
     } catch {
       toast.error("Erro ao salvar resultado");
