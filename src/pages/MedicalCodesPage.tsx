@@ -122,7 +122,7 @@ export default function MedicalCodesPage() {
         return;
       }
 
-      toast.success("CÓDIGO ATUALIZADO COM SUCESSO");
+      toast.success("Código atualizado com sucesso");
     } else {
       const { error } = await supabase.from("medical_codes").insert(dataToSave);
 
