@@ -161,6 +161,7 @@ type CategoryKey = keyof typeof CATEGORIES;
 
 const PRIORITY_OPTIONS = [
   { value: "programado", label: "Programado", color: "text-blue-600" },
+  { value: "rotina", label: "Rotina", color: "text-cyan-600" },
   { value: "urgente", label: "Urgente", color: "text-red-600" },
 ];
 
