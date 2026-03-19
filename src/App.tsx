@@ -59,6 +59,7 @@ import CcihDashboardPage from "./pages/CcihDashboardPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import TriageQueuePage from "./pages/TriageQueuePage";
 import TriageQueueTVPage from "./pages/TriageQueueTVPage";
+import AltaDesfechoPage from "./pages/AltaDesfechoPage";
 
 const queryClient = new QueryClient();
 
@@ -551,6 +552,16 @@ const App = () => {
           element={
             <ProtectedRoute>
               <TriageQueueTVPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/alta-desfecho"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <AltaDesfechoPage />
+              </MainLayout>
             </ProtectedRoute>
           }
         />
