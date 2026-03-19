@@ -13,7 +13,7 @@ import {
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal,
   Play, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
-  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash,
+  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, Heart,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
