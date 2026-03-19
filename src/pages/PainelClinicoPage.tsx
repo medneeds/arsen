@@ -1,13 +1,15 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { usePatients } from "@/hooks/usePatients";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { Patient } from "@/types/patient";
 import { differenceInDays, parseISO, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Filter, FileText, Pill, Activity, ClipboardList, FolderOpen, User, Calendar, Clock, Stethoscope, Heart, TrendingUp, AlertTriangle, TestTubes, Syringe, Shield, Thermometer } from "lucide-react";
+import { Search, Eye, Filter, FileText, Pill, Activity, ClipboardList, FolderOpen, User, Calendar, Clock, Stethoscope, Heart, TrendingUp, AlertTriangle, TestTubes, Syringe, Shield, Thermometer, Pencil, Check, X, ClipboardCheck } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -468,7 +470,7 @@ const MOCK_REQUISITIONS: Record<string, Array<{ date: string; category: string; 
 
 export default function PainelClinicoPage() {
   const { currentDepartment } = useDepartment();
-  const { patients: dbPatients, isLoading } = usePatients(currentDepartment);
+  const { patients: dbPatients, isLoading, updatePatient } = usePatients(currentDepartment);
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
@@ -520,6 +522,12 @@ export default function PainelClinicoPage() {
         );
       });
   }, [patients, search, sectorFilter]);
+
+  const handleInlineSave = useCallback(async (patientId: string, field: string, items: string[]) => {
+    await updatePatient(patientId, { [field]: items } as Partial<Patient>);
+    // Update local selectedPatient state
+    setSelectedPatient(prev => prev ? { ...prev, [field]: items } : prev);
+  }, [updatePatient]);
 
   const openPatient = (patient: Patient) => {
     setSelectedPatient(patient);
@@ -769,40 +777,60 @@ export default function PainelClinicoPage() {
                       </div>
                     </div>
 
-                    <InfoSection icon={Stethoscope} title="Hipóteses / Diagnósticos" items={parseTextArray(selectedPatient.diagnoses)} />
-                    <InfoSection icon={Heart} title="Antecedentes / Comorbidades" items={parseTextArray(selectedPatient.medicalHistory)} />
-                    <InfoSection icon={TrendingUp} title="Exames Relevantes" items={parseTextArray(selectedPatient.relevantExams)} />
-                    <InfoSection icon={ClipboardList} title="Plano Terapêutico / Condutas" items={parseTextArray(selectedPatient.schedule)} />
-                    <InfoSection icon={AlertTriangle} title="Programações / Pendências" items={parseTextArray(selectedPatient.pendencies)} />
+                    <EditableInfoSection
+                      icon={Stethoscope} title="Hipóteses / Diagnósticos"
+                      items={parseTextArray(selectedPatient.diagnoses)}
+                      onSave={(items) => handleInlineSave(selectedPatient.id, 'diagnoses', items)}
+                    />
+                    <EditableInfoSection
+                      icon={Heart} title="Antecedentes / Comorbidades"
+                      items={parseTextArray(selectedPatient.medicalHistory)}
+                      onSave={(items) => handleInlineSave(selectedPatient.id, 'medicalHistory', items)}
+                    />
+                    <EditableInfoSection
+                      icon={TrendingUp} title="Exames Relevantes"
+                      items={parseTextArray(selectedPatient.relevantExams)}
+                      onSave={(items) => handleInlineSave(selectedPatient.id, 'relevantExams', items)}
+                    />
+                    <EditableInfoSection
+                      icon={ClipboardList} title="Plano Terapêutico / Condutas"
+                      items={parseTextArray(selectedPatient.schedule)}
+                      onSave={(items) => handleInlineSave(selectedPatient.id, 'schedule', items)}
+                    />
+                    <EditableInfoSection
+                      icon={AlertTriangle} title="Programações / Pendências"
+                      items={parseTextArray(selectedPatient.pendencies)}
+                      onSave={(items) => handleInlineSave(selectedPatient.id, 'pendencies', items)}
+                    />
 
                     {/* UTI-specific fields */}
                     {parseTextArray(selectedPatient.utiAdmissionReason).length > 0 && (
-                      <InfoSection icon={Thermometer} title="Motivo da Admissão UTI" items={parseTextArray(selectedPatient.utiAdmissionReason)} />
+                      <EditableInfoSection icon={Thermometer} title="Motivo da Admissão UTI" items={parseTextArray(selectedPatient.utiAdmissionReason)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiAdmissionReason', items)} />
                     )}
                     {parseTextArray(selectedPatient.utiCurrentStatus).length > 0 && (
-                      <InfoSection icon={Activity} title="Status Atual UTI" items={parseTextArray(selectedPatient.utiCurrentStatus)} />
+                      <EditableInfoSection icon={Activity} title="Status Atual UTI" items={parseTextArray(selectedPatient.utiCurrentStatus)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiCurrentStatus', items)} />
                     )}
                     {parseTextArray(selectedPatient.utiDevices).length > 0 && (
-                      <InfoSection icon={Syringe} title="Dispositivos" items={parseTextArray(selectedPatient.utiDevices)} />
+                      <EditableInfoSection icon={Syringe} title="Dispositivos" items={parseTextArray(selectedPatient.utiDevices)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiDevices', items)} />
                     )}
                     {parseTextArray(selectedPatient.utiCulturesAntibiotics).length > 0 && (
-                      <InfoSection icon={Shield} title="Culturas / Antibióticos" items={parseTextArray(selectedPatient.utiCulturesAntibiotics)} />
+                      <EditableInfoSection icon={Shield} title="Culturas / Antibióticos" items={parseTextArray(selectedPatient.utiCulturesAntibiotics)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiCulturesAntibiotics', items)} />
                     )}
                     {parseTextArray(selectedPatient.utiAllergies).length > 0 && (
-                      <InfoSection icon={AlertTriangle} title="Alergias" items={parseTextArray(selectedPatient.utiAllergies)} />
+                      <EditableInfoSection icon={AlertTriangle} title="Alergias" items={parseTextArray(selectedPatient.utiAllergies)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiAllergies', items)} />
                     )}
                     {parseTextArray(selectedPatient.utiDailyConducts).length > 0 && (
-                      <InfoSection icon={ClipboardList} title="Condutas do Dia" items={parseTextArray(selectedPatient.utiDailyConducts)} />
+                      <EditableInfoSection icon={ClipboardList} title="Condutas do Dia" items={parseTextArray(selectedPatient.utiDailyConducts)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiDailyConducts', items)} />
                     )}
                     {parseTextArray(selectedPatient.utiDischargePrediction).length > 0 && (
-                      <InfoSection icon={Calendar} title="Previsão de Alta" items={parseTextArray(selectedPatient.utiDischargePrediction)} />
+                      <EditableInfoSection icon={Calendar} title="Previsão de Alta" items={parseTextArray(selectedPatient.utiDischargePrediction)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiDischargePrediction', items)} />
                     )}
 
                     {selectedPatient.admissionHistory && (
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-1.5">
                           <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">História Admissional</h4>
+                          <h4 className="text-xs font-semibold text-muted-foreground tracking-wide">História Admissional</h4>
                         </div>
                         <p className="text-sm text-foreground pl-5 leading-relaxed whitespace-pre-line">{selectedPatient.admissionHistory}</p>
                       </div>
@@ -942,9 +970,25 @@ export default function PainelClinicoPage() {
                       Documentos institucionais disponíveis para <strong>{selectedPatient.name}</strong> — Leito {selectedPatient.bedNumber}.
                     </p>
                     <div className="space-y-4">
+                      {/* Round do Paciente */}
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground tracking-wider mb-2">Round Multiprofissional</p>
+                        <div className="space-y-1">
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start gap-2 px-3 py-2 h-auto text-sm text-foreground hover:bg-accent/50"
+                            onClick={() => navigate(`/round?patientId=${selectedPatient.id}&patientName=${encodeURIComponent(selectedPatient.name)}&patientBed=${encodeURIComponent(selectedPatient.bedNumber)}&patientSector=${encodeURIComponent(selectedPatient.sector)}&patientAge=${encodeURIComponent(selectedPatient.age?.toString() || '')}`)}
+                          >
+                            <ClipboardCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+                            Abrir Round — {selectedPatient.name}
+                          </Button>
+                        </div>
+                        <Separator className="mt-3" />
+                      </div>
+
                       {DOCUMENTS.map((group) => (
                         <div key={group.group}>
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.group}</p>
+                          <p className="text-xs font-semibold text-muted-foreground tracking-wider mb-2">{group.group}</p>
                           <div className="space-y-1">
                             {group.items.map((doc) => (
                               <a
@@ -974,22 +1018,76 @@ export default function PainelClinicoPage() {
   );
 }
 
-// InfoSection component - synced with map sidebar style
-function InfoSection({ icon: Icon, title, items }: { icon: React.ElementType; title: string; items: string[] }) {
+// EditableInfoSection component - click to edit inline, syncs with map
+function EditableInfoSection({ icon: Icon, title, items, onSave }: { icon: React.ElementType; title: string; items: string[]; onSave: (items: string[]) => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const startEdit = () => {
+    setDraft(items.join("\n"));
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+    setDraft("");
+  };
+
+  const saveEdit = async () => {
+    setSaving(true);
+    try {
+      const newItems = draft.split("\n").filter(l => l.trim());
+      await onSave(newItems);
+      setEditing(false);
+    } catch {
+      // error handled by updatePatient
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 group/section">
       <div className="flex items-center gap-1.5">
         <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{title}</h4>
+        <h4 className="text-xs font-semibold text-muted-foreground tracking-wide flex-1">{title}</h4>
+        {!editing && (
+          <button
+            onClick={startEdit}
+            className="opacity-0 group-hover/section:opacity-100 transition-opacity p-0.5 rounded hover:bg-accent"
+            title="Editar"
+          >
+            <Pencil className="h-3 w-3 text-muted-foreground" />
+          </button>
+        )}
       </div>
-      {items.length > 0 ? (
-        <ul className="space-y-0.5 list-disc list-inside pl-5">
+      {editing ? (
+        <div className="pl-5 space-y-2">
+          <Textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="text-sm min-h-[60px] resize-y"
+            placeholder="Um item por linha..."
+            autoFocus
+          />
+          <div className="flex gap-1.5">
+            <Button size="sm" variant="default" onClick={saveEdit} disabled={saving} className="h-7 text-xs gap-1">
+              <Check className="h-3 w-3" /> Salvar
+            </Button>
+            <Button size="sm" variant="ghost" onClick={cancelEdit} disabled={saving} className="h-7 text-xs gap-1">
+              <X className="h-3 w-3" /> Cancelar
+            </Button>
+          </div>
+        </div>
+      ) : items.length > 0 ? (
+        <ul className="space-y-0.5 list-disc list-inside pl-5 cursor-pointer" onClick={startEdit}>
           {items.map((item, i) => (
             <li key={i} className="text-sm text-foreground">{item}</li>
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground italic pl-5">Nenhum registro</p>
+        <p className="text-sm text-muted-foreground italic pl-5 cursor-pointer" onClick={startEdit}>Nenhum registro — clique para adicionar</p>
       )}
     </div>
   );
