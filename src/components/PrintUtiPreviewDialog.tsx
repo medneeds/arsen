@@ -11,35 +11,61 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type UtiSelection = 'both' | 'uti1' | 'uti2';
+type SectorSelection = 'all' | 'red' | 'yellow' | 'blue' | 'outside';
+
+const SECTOR_LABELS: Record<SectorSelection, string> = {
+  all: "Todos os setores",
+  red: "UTI 1",
+  yellow: "UTI 2",
+  blue: "UCI 1",
+  outside: "UCI 2",
+};
+
+const SECTOR_PRINT_CONFIG: Record<string, { name: string; bg: string; border: string; text: string; variant: string }> = {
+  red: { name: "Unidade de Terapia Intensiva 1", bg: "#fef2f2", border: "#ef4444", text: "#b91c1c", variant: "red" },
+  yellow: { name: "Unidade de Terapia Intensiva 2", bg: "#fefce8", border: "#eab308", text: "#a16207", variant: "yellow" },
+  blue: { name: "Unidade de Cuidados Intermediários 1", bg: "#eff6ff", border: "#3b82f6", text: "#1d4ed8", variant: "blue" },
+  outside: { name: "Unidade de Cuidados Intermediários 2", bg: "#f0fdf4", border: "#22c55e", text: "#15803d", variant: "green" },
+};
 
 interface PrintUtiPreviewDialogProps {
-  uti1Patients: Patient[];
-  uti2Patients: Patient[];
+  redPatients: Patient[];
+  yellowPatients: Patient[];
+  bluePatients: Patient[];
   outsidePatients: Patient[];
+  defaultSector?: SectorSelection;
   mode: 'compact' | 'detailed';
   onClose: () => void;
 }
 
 export function PrintUtiPreviewDialog({ 
-  uti1Patients, 
-  uti2Patients,
-  outsidePatients, 
+  redPatients,
+  yellowPatients,
+  bluePatients,
+  outsidePatients,
+  defaultSector = 'all',
   mode,
   onClose 
 }: PrintUtiPreviewDialogProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const isCompact = mode === 'compact';
-  const [selectedUti, setSelectedUti] = useState<UtiSelection>('both');
+  const [selectedSector, setSelectedSector] = useState<SectorSelection>(defaultSector);
 
-  // Filter patients based on selection
-  const displayUti1 = selectedUti === 'both' || selectedUti === 'uti1' ? uti1Patients : [];
-  const displayUti2 = selectedUti === 'both' || selectedUti === 'uti2' ? uti2Patients : [];
-  const displayOutside = selectedUti === 'both' ? outsidePatients : [];
-  
-  const totalPatients = displayUti1.length + displayUti2.length + displayOutside.length;
-  const utiLabel = selectedUti === 'both' ? 'Ambas' : selectedUti === 'uti1' ? 'UTI 1' : 'UTI 2';
-  const utiTitle = selectedUti === 'both' ? 'Mapa UTI' : selectedUti === 'uti1' ? 'Mapa UTI 1' : 'Mapa UTI 2';
+  // Build sectors to display
+  const allSectors: { key: string; patients: Patient[] }[] = [
+    { key: 'red', patients: redPatients },
+    { key: 'yellow', patients: yellowPatients },
+    { key: 'blue', patients: bluePatients },
+    { key: 'outside', patients: outsidePatients },
+  ];
+
+  const sectorsToDisplay = selectedSector === 'all'
+    ? allSectors.filter(s => s.patients.length > 0)
+    : allSectors.filter(s => s.key === selectedSector && s.patients.length > 0);
+
+  const totalPatients = sectorsToDisplay.reduce((sum, s) => sum + s.patients.length, 0);
+  const sectorLabel = SECTOR_LABELS[selectedSector];
+  const printTitle = selectedSector === 'all' ? 'Mapa de Pacientes' : `Mapa ${SECTOR_LABELS[selectedSector]}`;
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -57,7 +83,7 @@ export function PrintUtiPreviewDialog({
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${getPrintTitle(utiTitle)}</title>
+          <title>${getPrintTitle(printTitle)}</title>
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
             * {
@@ -88,16 +114,6 @@ export function PrintUtiPreviewDialog({
                 height: auto !important;
                 background: #ffffff !important;
               }
-              .page-header {
-                position: running(header);
-              }
-              .page-footer {
-                position: running(footer);
-              }
-              @page {
-                @top-center { content: element(header); }
-                @bottom-center { content: element(footer); }
-              }
             }
             .print-page {
               position: relative;
@@ -113,30 +129,6 @@ export function PrintUtiPreviewDialog({
               opacity: 0.30;
               z-index: 0;
             }
-            .header-block {
-              position: fixed;
-              top: 0;
-              left: 0;
-              right: 0;
-              padding: 8mm 10mm 0 10mm;
-              background: #ffffff;
-              z-index: 1;
-            }
-            .header-icon {
-              height: ${isCompact ? '28px' : '32px'};
-              width: ${isCompact ? '28px' : '32px'};
-              background: linear-gradient(135deg, #3b82f6, #eab308);
-              border-radius: 5px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              flex-shrink: 0;
-            }
-            .header-icon svg {
-              height: ${isCompact ? '14px' : '16px'};
-              width: ${isCompact ? '14px' : '16px'};
-              color: #ffffff;
-            }
             .sector-section {
               margin-bottom: ${isCompact ? '8px' : '12px'};
               page-break-inside: avoid;
@@ -147,7 +139,6 @@ export function PrintUtiPreviewDialog({
               margin-bottom: ${isCompact ? '5px' : '6px'};
               font-weight: 600;
               font-size: ${isCompact ? '8.5pt' : '9.5pt'};
-              text-transform: uppercase;
             }
             .patient-row {
               display: grid;
@@ -170,7 +161,6 @@ export function PrintUtiPreviewDialog({
             }
             .patient-name {
               font-weight: 600;
-              text-transform: uppercase;
             }
             .patient-details {
               color: #6b7280;
@@ -227,36 +217,27 @@ export function PrintUtiPreviewDialog({
       <div className="sticky top-0 z-10 bg-card border-b border-border p-3 sm:p-4 flex items-center justify-between shadow-sm gap-2">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <h2 className="text-sm sm:text-lg font-semibold text-foreground truncate">
-            {utiTitle} {mode === 'compact' ? '(Compacto)' : '(Detalhado)'}
+            {printTitle} {mode === 'compact' ? '(Compacto)' : '(Detalhado)'}
           </h2>
           
-          {/* UTI Selection Dropdown */}
+          {/* Sector Selection Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1.5 h-8 px-3">
-                <span className="text-xs font-medium">{utiLabel}</span>
+                <span className="text-xs font-medium">{sectorLabel}</span>
                 <ChevronDown className="h-3.5 w-3.5 opacity-70" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="min-w-[140px]">
-              <DropdownMenuItem 
-                onClick={() => setSelectedUti('both')}
-                className={selectedUti === 'both' ? 'bg-accent' : ''}
-              >
-                Ambas UTIs
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => setSelectedUti('uti1')}
-                className={selectedUti === 'uti1' ? 'bg-accent' : ''}
-              >
-                Apenas UTI 1
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => setSelectedUti('uti2')}
-                className={selectedUti === 'uti2' ? 'bg-accent' : ''}
-              >
-                Apenas UTI 2
-              </DropdownMenuItem>
+            <DropdownMenuContent align="start" className="min-w-[180px]">
+              {(Object.keys(SECTOR_LABELS) as SectorSelection[]).map(key => (
+                <DropdownMenuItem
+                  key={key}
+                  onClick={() => setSelectedSector(key)}
+                  className={selectedSector === key ? 'bg-accent' : ''}
+                >
+                  {SECTOR_LABELS[key]}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -292,7 +273,7 @@ export function PrintUtiPreviewDialog({
               lineHeight: isCompact ? '1.25' : '1.35',
             }}
           >
-            {/* Watermark - Fixed position for all pages */}
+            {/* Watermark */}
             <img 
               src={whitelabel.logos.networkFull} 
               alt={whitelabel.institution.networkLogoAlt}
@@ -307,7 +288,7 @@ export function PrintUtiPreviewDialog({
               }}
             />
             
-            {/* Header - Will repeat on each page */}
+            {/* Header */}
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -333,12 +314,11 @@ export function PrintUtiPreviewDialog({
               <h1 style={{ 
                 fontSize: isCompact ? '14pt' : '16pt', 
                 fontWeight: 'bold', 
-                textTransform: 'uppercase',
                 margin: 0,
                 color: '#000000',
                 letterSpacing: '0.4px'
               }}>
-                {getPrintTitle(utiTitle)}
+                {getPrintTitle(printTitle)}
               </h1>
             </div>
             
@@ -359,46 +339,32 @@ export function PrintUtiPreviewDialog({
               <div><strong>Data:</strong> {new Date().toLocaleDateString('pt-BR')}</div>
               <div><strong>Hora:</strong> {new Date().toLocaleTimeString('pt-BR')}</div>
               <div><strong>Total:</strong> {totalPatients} pacientes</div>
-              <div><strong>Modo:</strong> {mode === 'compact' ? 'Retraído' : 'Detalhado'}</div>
+              <div><strong>Setor:</strong> {sectorLabel}</div>
             </div>
             
-            {/* UTI Sectors - Only show selected */}
+            {/* Sectors */}
             <div className="content-area">
-              {displayUti1.length > 0 && (
-                <PrintableSectorSection
-                  patients={displayUti1}
-                  sectorName="Unidade de Terapia Intensiva 1"
-                  bgColor="#eff6ff"
-                  borderColor="#3b82f6"
-                  textColor="#1d4ed8"
-                  mode={mode}
-                  isUti={true}
-                  utiColorVariant="blue"
-                />
-              )}
-              {displayUti2.length > 0 && (
-                <PrintableSectorSection
-                  patients={displayUti2}
-                  sectorName="Unidade de Terapia Intensiva 2"
-                  bgColor="#fefce8"
-                  borderColor="#eab308"
-                  textColor="#a16207"
-                  mode={mode}
-                  isUti={true}
-                  utiColorVariant="yellow"
-                />
-              )}
-              {displayOutside.length > 0 && (
-                <PrintableSectorSection
-                  patients={displayOutside}
-                  sectorName="Solicitações de Leito UTI"
-                  bgColor="#f9fafb"
-                  borderColor="#6b7280"
-                  textColor="#4b5563"
-                  mode={mode}
-                  isUti={true}
-                  utiColorVariant="blue"
-                />
+              {sectorsToDisplay.map(({ key, patients }) => {
+                const config = SECTOR_PRINT_CONFIG[key];
+                if (!config) return null;
+                return (
+                  <PrintableSectorSection
+                    key={key}
+                    patients={patients}
+                    sectorName={config.name}
+                    bgColor={config.bg}
+                    borderColor={config.border}
+                    textColor={config.text}
+                    mode={mode}
+                    isUti={key === 'red' || key === 'yellow'}
+                    utiColorVariant={config.variant}
+                  />
+                );
+              })}
+              {sectorsToDisplay.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af', fontSize: '10pt' }}>
+                  Nenhum paciente neste setor
+                </div>
               )}
             </div>
             
@@ -414,7 +380,7 @@ export function PrintUtiPreviewDialog({
               letterSpacing: '0.2px',
               opacity: 0.85
             }}>
-              Unidade de Terapia Intensiva • {whitelabel.institution.hospitalName} • Documento gerado automaticamente • {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}
+              {whitelabel.institution.hospitalName} • Documento gerado automaticamente • {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}
             </div>
             
             {/* Developer Signature */}
