@@ -545,13 +545,22 @@ const SetorImagemPage = () => {
                   <XCircle className="h-4 w-4 mr-1" /> Recusar
                 </Button>
                 <Button
-                  onClick={() => handleUpdateStatus(selectedRequest.id, "in_progress")}
+                  onClick={() => handleUpdateStatus(selectedRequest.id, "acknowledged")}
                   disabled={updatingStatus}
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                  className="bg-indigo-500 hover:bg-indigo-600 text-white"
                 >
-                  <Loader2 className="h-4 w-4 mr-1" /> Iniciar Execução
+                  <Eye className="h-4 w-4 mr-1" /> Declarar Ciência
                 </Button>
               </>
+            )}
+            {selectedRequest?.status === "acknowledged" && (
+              <Button
+                onClick={() => handleUpdateStatus(selectedRequest.id, "in_progress")}
+                disabled={updatingStatus}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                <Loader2 className="h-4 w-4 mr-1" /> Iniciar Execução
+              </Button>
             )}
             {selectedRequest?.status === "in_progress" && (
               <Button
