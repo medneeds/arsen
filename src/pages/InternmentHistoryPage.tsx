@@ -239,16 +239,16 @@ const InternmentHistoryPage = () => {
         <CardContent className="pt-6 space-y-6">
           {/* Search by Name */}
           <div className="space-y-3">
-            <Label htmlFor="search-name" className="uppercase text-sm font-semibold flex items-center gap-2">
+            <Label htmlFor="search-name" className="text-sm font-semibold flex items-center gap-2">
               <Search className="h-4 w-4" />
-              Buscar por Nome do Paciente
+              Buscar por nome do paciente
             </Label>
             <Input
               id="search-name"
               value={searchName}
-              onChange={(e) => setSearchName(e.target.value.toUpperCase())}
+              onChange={(e) => setSearchName(e.target.value)}
               placeholder="Digite o nome..."
-              className="uppercase h-12"
+              className="h-12"
             />
           </div>
 
