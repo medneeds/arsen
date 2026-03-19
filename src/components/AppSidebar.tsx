@@ -116,18 +116,6 @@ export function AppSidebar({
       profiles: ["gestor"],
     },
     {
-      title: "Painel do Gestor",
-      icon: BarChart3,
-      link: "/painel-gestor",
-      profiles: ["gestor"],
-    },
-    {
-      title: "Movimentações",
-      icon: Users,
-      link: "/movements",
-      profiles: ["medico", "gestor", "multi", "administrativo"],
-    },
-    {
       title: "Documentos",
       icon: FolderOpen,
       profiles: ["medico", "gestor"],
@@ -189,7 +177,6 @@ export function AppSidebar({
         { title: "Mapa", icon: LayoutDashboard, link: "/", profiles: ["farmacia"] },
         { title: "Validação Farmacêutica", icon: ClipboardCheck, link: "/validacao-farmaceutica", profiles: ["farmacia"] },
         { title: "Catálogo de Medicamentos", icon: BookOpen, link: "/catalogo-medicamentos", profiles: ["farmacia"] },
-        { title: "Movimentações", icon: Users, link: "/movements", profiles: ["farmacia"] },
         { title: "Assistente Clínico", icon: Brain, profiles: ["farmacia"], items: [
           { name: "Examinus AI", link: "/ia", profiles: ["farmacia"] },
         ]},
@@ -199,7 +186,6 @@ export function AppSidebar({
     if (accessProfile === "imagem") {
       return [
         { title: "Painel de Imagem", icon: LayoutDashboard, link: "/setor-imagem", profiles: ["imagem"] },
-        { title: "Movimentações", icon: Users, link: "/movements", profiles: ["imagem"] },
       ];
     }
     // Filter sections by profile, then filter sub-items within each section
