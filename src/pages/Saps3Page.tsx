@@ -254,6 +254,13 @@ export default function Saps3Page() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [occupiedBeds, setOccupiedBeds] = useState<string[]>([]);
+  const [confirmationData, setConfirmationData] = useState<{
+    patientName: string;
+    bedNumber: string;
+    sectorLabel: string;
+    totalScore: number;
+    predictedMortality: number;
+  } | null>(null);
 
   // Allocation
   const [selectedSector, setSelectedSector] = useState<string>("");
