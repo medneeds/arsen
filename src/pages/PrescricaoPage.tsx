@@ -560,8 +560,9 @@ function SortablePrescriptionItemRow({
       )}
     >
       <div className="flex items-start gap-2 p-2.5">
-        {/* Left: drag + checkbox */}
+        {/* Left: validation dot + drag + checkbox */}
         <div className="flex flex-col items-center gap-1.5 shrink-0 pt-1">
+          <ValidationDot />
           <button
             className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors touch-none"
             {...attributes}
