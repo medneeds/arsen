@@ -400,7 +400,7 @@ const ClinicalDashboardPage = () => {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Solicitações</p>
+                          <p className="text-[11px] font-medium text-muted-foreground tracking-wider">Solicitações</p>
                           <p className="text-2xl font-bold text-foreground mt-1">{pendingBedRequests}</p>
                           <p className="text-[10px] text-muted-foreground">pedido(s) de leito</p>
                         </div>
