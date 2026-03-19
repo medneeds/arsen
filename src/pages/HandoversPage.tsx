@@ -168,10 +168,10 @@ export default function HandoversPage() {
 
   const getSectorLabel = (sector: string) => {
     const labels: Record<string, string> = {
-      red: "SALA VERMELHA",
-      yellow: "OBSERVAÇÃO AMARELA",
-      blue: "OBSERVAÇÃO AZUL",
-      outside: "FORA DAS ALAS",
+      red: "UTI 1",
+      yellow: "UTI 2",
+      blue: "UCI 1",
+      outside: "UCI 2",
     };
     return labels[sector] || sector;
   };

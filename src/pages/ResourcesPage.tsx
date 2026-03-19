@@ -300,10 +300,10 @@ const ResourcesPage = () => {
 
   const getSectorLabel = (sector: string) => {
     switch (sector) {
-      case 'red': return 'SALA VERMELHA';
-      case 'yellow': return 'OBSERVAÇÃO AMARELA';
-      case 'blue': return 'OBSERVAÇÃO AZUL';
-      case 'outside': return 'FORA DAS ALAS';
+      case 'red': return 'UTI 1';
+      case 'yellow': return 'UTI 2';
+      case 'blue': return 'UCI 1';
+      case 'outside': return 'UCI 2';
       default: return sector;
     }
   };

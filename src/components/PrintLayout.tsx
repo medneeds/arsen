@@ -147,7 +147,7 @@ export function PrintLayout({
           />
           <PrintableSectorSection
             patients={outsidePatients}
-            sectorName="Fora das Alas"
+            sectorName="UCI 2"
             bgColor="#f8fafc"
             borderColor="#64748b"
             textColor="#475569"

@@ -49,20 +49,20 @@ interface SectorSectionProps {
 
 const sectorInfo = {
   red: {
-    title: "Cuidados Especiais",
-    subtitle: "Sala Vermelha",
+    title: "UTI 1",
+    subtitle: "Unidade de Terapia Intensiva 1",
     icon: "🔴",
     gradientClass: "bg-gradient-critical"
   },
   yellow: {
-    title: "Observação Amarela",
-    subtitle: "Em monitorização",
+    title: "UTI 2",
+    subtitle: "Unidade de Terapia Intensiva 2",
     icon: "🟡",
     gradientClass: "bg-gradient-warning"
   },
   blue: {
-    title: "Observação Azul",
-    subtitle: "Sem monitorização",
+    title: "UCI 1",
+    subtitle: "Unidade de Cuidados Intermediários 1",
     icon: "🔵",
     gradientClass: "bg-gradient-stable"
   }

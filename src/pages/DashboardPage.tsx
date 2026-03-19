@@ -46,10 +46,10 @@ const COLORS = ['#ef4444', '#eab308', '#3b82f6', '#6b7280', '#8b5cf6', '#ec4899'
 
 // Sector color mapping based on hospital identity
 const SECTOR_COLORS: Record<string, string> = {
-  'Cuidados Especiais': '#ef4444',     // Red
-  'Observação Amarela': '#eab308',      // Yellow
-  'Observação Azul': '#3b82f6',         // Blue
-  'Fora das Alas': '#6b7280',           // Gray
+  'UTI 1': '#ef4444',
+  'UTI 2': '#eab308',
+  'UCI 1': '#3b82f6',
+  'UCI 2': '#6b7280',
 };
 
 const DashboardPage = () => {

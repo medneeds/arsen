@@ -309,7 +309,7 @@ export function PrintMapPreviewDialog({
               />
               <PrintableSectorSection
                 patients={outsidePatients}
-                sectorName="Fora das Alas"
+                sectorName="UCI 2"
                 bgColor="#f9fafb"
                 borderColor="#6b7280"
                 textColor="#4b5563"

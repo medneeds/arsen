@@ -242,32 +242,32 @@ interface PatientCardProps {
 
 const sectorConfig = {
   red: {
-    label: "Sala Vermelha",
+    label: "UTI 1",
     color: "bg-critical/10 border-critical/30 text-critical-foreground",
     badgeColor: "bg-critical text-critical-foreground hover:bg-critical/90"
   },
   yellow: {
-    label: "Observação Amarela",
+    label: "UTI 2",
     color: "bg-warning/10 border-warning/30 text-warning-foreground",
     badgeColor: "bg-warning text-warning-foreground hover:bg-warning/90"
   },
   blue: {
-    label: "Observação Azul",
+    label: "UCI 1",
     color: "bg-stable/10 border-stable/30 text-stable-foreground",
     badgeColor: "bg-stable text-stable-foreground hover:bg-stable/90"
   },
   outside: {
-    label: "Fora das Alas",
+    label: "UCI 2",
     color: "bg-muted/50 border-muted-foreground/30 text-foreground",
     badgeColor: "bg-muted-foreground text-background hover:bg-muted-foreground/90"
   }
 };
 
 const sectorLabels = {
-  red: "Cuidados Especiais",
-  yellow: "Observação Amarela",
-  blue: "Observação Azul",
-  outside: "Fora das Alas"
+  red: "UTI 1",
+  yellow: "UTI 2",
+  blue: "UCI 1",
+  outside: "UCI 2"
 };
 
 interface SortablePendencyItemProps {

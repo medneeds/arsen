@@ -36,10 +36,10 @@ interface SearchMovement {
 }
 
 const sectorLabel: Record<string, string> = {
-  red: "Sala Vermelha",
-  yellow: "Obs. Amarela",
-  blue: "Obs. Azul",
-  outside: "Fora das Alas",
+  red: "UTI 1",
+  yellow: "UTI 2",
+  blue: "UCI 1",
+  outside: "UCI 2",
 };
 
 const movementTypeLabel: Record<string, string> = {

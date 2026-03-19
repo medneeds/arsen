@@ -11,10 +11,10 @@ interface PrintPatientPreviewDialogProps {
 }
 
 const sectorLabels = {
-  red: "Sala Vermelha",
-  yellow: "Observação Amarela",
-  blue: "Observação Azul",
-  outside: "Fora das Alas"
+  red: "UTI 1",
+  yellow: "UTI 2",
+  blue: "UCI 1",
+  outside: "UCI 2"
 };
 
 const sectorColors = {
