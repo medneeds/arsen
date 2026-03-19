@@ -62,6 +62,7 @@ import TriageQueueTVPage from "./pages/TriageQueueTVPage";
 import AltaDesfechoPage from "./pages/AltaDesfechoPage";
 import EmergenciaSectorPage from "./pages/EmergenciaSectorPage";
 import MonitoramentoClinicoPage from "./pages/MonitoramentoClinicoPage";
+import RequisicaoImagensPage from "./pages/RequisicaoImagensPage";
 
 const queryClient = new QueryClient();
 
@@ -280,6 +281,16 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
                 <PriorizacaoCirurgicaPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/documents/apac"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <RequisicaoImagensPage />
               </MainLayout>
             </ProtectedRoute>
           }

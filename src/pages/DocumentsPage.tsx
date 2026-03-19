@@ -11,7 +11,8 @@ import {
   Scissors,
   Activity,
   Heart,
-  Workflow
+  Workflow,
+  ScanLine
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -123,6 +124,15 @@ export default function DocumentsPage() {
       icon: Scissors,
       color: "text-orange-500",
       bgColor: "bg-orange-500/10"
+    },
+    { 
+      id: "apac", 
+      title: "APAC — Alta Complexidade", 
+      description: "Laudo para solicitação de TC, RM, Doppler e outros exames de alta complexidade (SUS)",
+      route: "/documents/apac",
+      icon: ScanLine,
+      color: "text-sky-500",
+      bgColor: "bg-sky-500/10"
     },
   ];
 
