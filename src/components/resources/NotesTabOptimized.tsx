@@ -222,7 +222,7 @@ const NotesTabOptimized = () => {
 
     const { error } = await supabase.from("notes_reminders").insert({
       department: currentDepartment,
-      content: scheduledContent.toUpperCase(),
+      content: scheduledContent,
       type: "free_text",
       scheduled_popup_time: scheduledDateTime,
       is_active: true,
