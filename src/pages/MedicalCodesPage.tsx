@@ -338,17 +338,17 @@ export default function MedicalCodesPage() {
           <Separator className="my-4" />
           <div className="grid gap-6 py-4">
             <div className="grid gap-3">
-              <Label htmlFor="code" className="uppercase text-sm font-semibold">
+              <Label htmlFor="code" className="text-sm font-semibold">
                 Código
               </Label>
               <Input
                 id="code"
                 value={formData.code}
                 onChange={(e) =>
-                  setFormData({ ...formData, code: e.target.value.toUpperCase() })
+                  setFormData({ ...formData, code: e.target.value })
                 }
                 placeholder="Código"
-                className="uppercase h-12"
+                className="h-12"
               />
             </div>
             <div className="grid gap-3">
