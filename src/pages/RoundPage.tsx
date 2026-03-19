@@ -218,7 +218,7 @@ export default function RoundPage() {
             patient_id: selectedPatient.id,
             patient_name: selectedPatient.name,
             patient_age: selectedPatient.age,
-            patient_sector: selectedPatient.sector,
+            patient_sector: getSectorLabel(selectedPatient.sector),
             patient_bed: selectedPatient.bed_number,
             round_date: roundDate,
             hospital_unit_id: currentHospital.id,
