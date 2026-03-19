@@ -1428,8 +1428,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
               {/* ── PROCEDIMENTO PRINCIPAL ── */}
               <tr><td colSpan={5} className="sec">Procedimento(s) Solicitado(s)</td></tr>
               <tr>
-                <td><span className="lbl">15 — Código do Procedimento Principal</span><div className="val-mono">{selectedProcedures[0]?.code || ""}</div></td>
-                <td colSpan={3}><span className="lbl">16 — Nome do Procedimento Principal</span><div className="val">{selectedProcedures[0]?.name || ""}</div></td>
+                <td colSpan={2}><span className="lbl">15 — Código do Procedimento Principal</span><div className="val-mono">{selectedProcedures[0]?.code || ""}</div></td>
+                <td colSpan={2}><span className="lbl">16 — Nome do Procedimento Principal</span><div className="val">{selectedProcedures[0]?.name || ""}</div></td>
                 <td><span className="lbl">17 — Qtde.</span><div className="val" style={{ textAlign: "center" }}>{selectedProcedures[0]?.qty || ""}</div></td>
               </tr>
 
@@ -1440,8 +1440,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                 const fn = 18 + (idx - 1) * 3;
                 return (
                   <tr key={idx}>
-                    <td><span className="lbl">{fn} — Código</span><div className="val-mono">{proc?.code || ""}</div></td>
-                    <td colSpan={3}><span className="lbl">{fn + 1} — Nome do Procedimento</span><div className="val">{proc?.name || ""}</div></td>
+                    <td colSpan={2}><span className="lbl">{fn} — Código</span><div className="val-mono">{proc?.code || ""}</div></td>
+                    <td colSpan={2}><span className="lbl">{fn + 1} — Nome do Procedimento</span><div className="val">{proc?.name || ""}</div></td>
                     <td><span className="lbl">{fn + 2} — Qtde.</span><div className="val" style={{ textAlign: "center" }}>{proc?.qty || ""}</div></td>
                   </tr>
                 );
