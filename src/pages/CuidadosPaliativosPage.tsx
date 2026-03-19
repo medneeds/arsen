@@ -63,11 +63,11 @@ export default function CuidadosPaliativosPage() {
         {/* Content Card */}
         <Card className="border-pink-500/20 shadow-lg">
           <CardHeader className="bg-pink-500/5">
-            <CardTitle className="text-2xl uppercase flex items-center gap-2">
+            <CardTitle className="text-2xl flex items-center gap-2">
               <Heart className="h-6 w-6 text-pink-500" />
               Termo de Aceite de Tratamento – Cuidados Paliativos
             </CardTitle>
-            <CardDescription className="text-base uppercase">
+            <CardDescription className="text-base">
               Medidas de conforto e proporcionalidade do cuidado
             </CardDescription>
           </CardHeader>
