@@ -1218,6 +1218,7 @@ const CcihDashboardPage = () => {
                     )}
                   </div>
                 </>
+              )}
 
               {/* Action buttons */}
               <div className="flex gap-2 pt-2 border-t">
