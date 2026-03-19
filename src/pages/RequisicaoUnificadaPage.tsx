@@ -1332,11 +1332,11 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
             table-layout: fixed;
             flex: 1;
           }
-          .apac-form col.c1 { width: 20%; }
-          .apac-form col.c2 { width: 20%; }
-          .apac-form col.c3 { width: 20%; }
-          .apac-form col.c4 { width: 20%; }
-          .apac-form col.c5 { width: 20%; }
+          .apac-form col.c1 { width: 22%; }
+          .apac-form col.c2 { width: 22%; }
+          .apac-form col.c3 { width: 22%; }
+          .apac-form col.c4 { width: 17%; }
+          .apac-form col.c5 { width: 17%; }
           .apac-form td, .apac-form th {
             border: 0.5pt solid #000;
             padding: 2px 4px;
