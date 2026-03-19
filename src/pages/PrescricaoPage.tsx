@@ -308,20 +308,19 @@ function buildPrepDescription(item: PrescriptionItem): string {
     parts.push(dilPart + '.');
   }
   if (item.accessType) parts.push(`Acesso ${item.accessType.toLowerCase()}.`);
-  if (item.infusionTime && item.volumeTotal) {
-    const rate = calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC');
-    const timeH = parseFloat(item.infusionTime) >= 60
-      ? `${(parseFloat(item.infusionTime) / 60).toFixed(1)}h`
-      : `${item.infusionTime}min`;
-    parts.push(`Correr em ${timeH} (${rate}).`);
-  } else if (item.infusionTime) {
-    const timeH = parseFloat(item.infusionTime) >= 60
-      ? `${(parseFloat(item.infusionTime) / 60).toFixed(1)}h`
-      : `${item.infusionTime}min`;
-    parts.push(`Correr em ${timeH}.`);
+  if (item.volumeTotal) parts.push(`Volume total: ${item.volumeTotal}mL.`);
+  if (item.infusionTime) {
+    const unit = item.infusionTimeUnit || 'min';
+    const timeLabel = `${item.infusionTime}${unit === 'h' ? 'h' : 'min'}`;
+    if (item.volumeTotal) {
+      const rate = calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', unit);
+      const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'BIC';
+      parts.push(`Correr em ${timeLabel} — ${modeLabel}: ${rate}.`);
+    } else {
+      parts.push(`Correr em ${timeLabel}.`);
+    }
   }
   if (item.concentration) parts.push(`Concentração: ${item.concentration}.`);
-  if (item.flags.includes('bi' as PrescriptionFlag)) parts.push('Uso em bomba de infusão.');
   return parts.join(' ');
 }
 
