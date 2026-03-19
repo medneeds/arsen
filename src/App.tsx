@@ -67,6 +67,8 @@ function ProfileHomeRedirect() {
   if (profile === "laboratorio") return <Navigate to="/setor-laboratorio" replace />;
   return <ClinicalDashboardPage />;
 }
+
+const App = () => {
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
   
   return (
