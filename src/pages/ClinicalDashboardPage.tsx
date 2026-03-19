@@ -7,7 +7,6 @@ import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
-import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
