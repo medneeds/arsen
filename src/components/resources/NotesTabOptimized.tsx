@@ -104,8 +104,8 @@ const NotesTabOptimized = () => {
 
     if (error) {
       toast({
-        title: "ERRO",
-        description: "NÃO FOI POSSÍVEL SALVAR A ANOTAÇÃO",
+        title: "Erro",
+        description: "Não foi possível salvar a anotação",
         variant: "destructive",
       });
       return;
