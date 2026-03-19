@@ -293,7 +293,7 @@ export default function HandoversPage() {
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             {Object.entries(handover.snapshot_data.sectors).map(([sector, count]) => (
                               <div key={sector} className="p-3 bg-muted/30 rounded-lg">
-                                <p className="text-xs uppercase font-semibold text-muted-foreground mb-1">
+                                <p className="text-xs font-semibold text-muted-foreground mb-1">
                                   {getSectorLabel(sector)}
                                 </p>
                                 <p className="text-lg font-bold text-foreground">{count}</p>
