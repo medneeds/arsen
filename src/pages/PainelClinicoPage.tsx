@@ -771,40 +771,60 @@ export default function PainelClinicoPage() {
                       </div>
                     </div>
 
-                    <InfoSection icon={Stethoscope} title="Hipóteses / Diagnósticos" items={parseTextArray(selectedPatient.diagnoses)} />
-                    <InfoSection icon={Heart} title="Antecedentes / Comorbidades" items={parseTextArray(selectedPatient.medicalHistory)} />
-                    <InfoSection icon={TrendingUp} title="Exames Relevantes" items={parseTextArray(selectedPatient.relevantExams)} />
-                    <InfoSection icon={ClipboardList} title="Plano Terapêutico / Condutas" items={parseTextArray(selectedPatient.schedule)} />
-                    <InfoSection icon={AlertTriangle} title="Programações / Pendências" items={parseTextArray(selectedPatient.pendencies)} />
+                    <EditableInfoSection
+                      icon={Stethoscope} title="Hipóteses / Diagnósticos"
+                      items={parseTextArray(selectedPatient.diagnoses)}
+                      onSave={(items) => handleInlineSave(selectedPatient.id, 'diagnoses', items)}
+                    />
+                    <EditableInfoSection
+                      icon={Heart} title="Antecedentes / Comorbidades"
+                      items={parseTextArray(selectedPatient.medicalHistory)}
+                      onSave={(items) => handleInlineSave(selectedPatient.id, 'medicalHistory', items)}
+                    />
+                    <EditableInfoSection
+                      icon={TrendingUp} title="Exames Relevantes"
+                      items={parseTextArray(selectedPatient.relevantExams)}
+                      onSave={(items) => handleInlineSave(selectedPatient.id, 'relevantExams', items)}
+                    />
+                    <EditableInfoSection
+                      icon={ClipboardList} title="Plano Terapêutico / Condutas"
+                      items={parseTextArray(selectedPatient.schedule)}
+                      onSave={(items) => handleInlineSave(selectedPatient.id, 'schedule', items)}
+                    />
+                    <EditableInfoSection
+                      icon={AlertTriangle} title="Programações / Pendências"
+                      items={parseTextArray(selectedPatient.pendencies)}
+                      onSave={(items) => handleInlineSave(selectedPatient.id, 'pendencies', items)}
+                    />
 
                     {/* UTI-specific fields */}
                     {parseTextArray(selectedPatient.utiAdmissionReason).length > 0 && (
-                      <InfoSection icon={Thermometer} title="Motivo da Admissão UTI" items={parseTextArray(selectedPatient.utiAdmissionReason)} />
+                      <EditableInfoSection icon={Thermometer} title="Motivo da Admissão UTI" items={parseTextArray(selectedPatient.utiAdmissionReason)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiAdmissionReason', items)} />
                     )}
                     {parseTextArray(selectedPatient.utiCurrentStatus).length > 0 && (
-                      <InfoSection icon={Activity} title="Status Atual UTI" items={parseTextArray(selectedPatient.utiCurrentStatus)} />
+                      <EditableInfoSection icon={Activity} title="Status Atual UTI" items={parseTextArray(selectedPatient.utiCurrentStatus)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiCurrentStatus', items)} />
                     )}
                     {parseTextArray(selectedPatient.utiDevices).length > 0 && (
-                      <InfoSection icon={Syringe} title="Dispositivos" items={parseTextArray(selectedPatient.utiDevices)} />
+                      <EditableInfoSection icon={Syringe} title="Dispositivos" items={parseTextArray(selectedPatient.utiDevices)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiDevices', items)} />
                     )}
                     {parseTextArray(selectedPatient.utiCulturesAntibiotics).length > 0 && (
-                      <InfoSection icon={Shield} title="Culturas / Antibióticos" items={parseTextArray(selectedPatient.utiCulturesAntibiotics)} />
+                      <EditableInfoSection icon={Shield} title="Culturas / Antibióticos" items={parseTextArray(selectedPatient.utiCulturesAntibiotics)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiCulturesAntibiotics', items)} />
                     )}
                     {parseTextArray(selectedPatient.utiAllergies).length > 0 && (
-                      <InfoSection icon={AlertTriangle} title="Alergias" items={parseTextArray(selectedPatient.utiAllergies)} />
+                      <EditableInfoSection icon={AlertTriangle} title="Alergias" items={parseTextArray(selectedPatient.utiAllergies)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiAllergies', items)} />
                     )}
                     {parseTextArray(selectedPatient.utiDailyConducts).length > 0 && (
-                      <InfoSection icon={ClipboardList} title="Condutas do Dia" items={parseTextArray(selectedPatient.utiDailyConducts)} />
+                      <EditableInfoSection icon={ClipboardList} title="Condutas do Dia" items={parseTextArray(selectedPatient.utiDailyConducts)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiDailyConducts', items)} />
                     )}
                     {parseTextArray(selectedPatient.utiDischargePrediction).length > 0 && (
-                      <InfoSection icon={Calendar} title="Previsão de Alta" items={parseTextArray(selectedPatient.utiDischargePrediction)} />
+                      <EditableInfoSection icon={Calendar} title="Previsão de Alta" items={parseTextArray(selectedPatient.utiDischargePrediction)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiDischargePrediction', items)} />
                     )}
 
                     {selectedPatient.admissionHistory && (
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-1.5">
                           <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">História Admissional</h4>
+                          <h4 className="text-xs font-semibold text-muted-foreground tracking-wide">História Admissional</h4>
                         </div>
                         <p className="text-sm text-foreground pl-5 leading-relaxed whitespace-pre-line">{selectedPatient.admissionHistory}</p>
                       </div>
