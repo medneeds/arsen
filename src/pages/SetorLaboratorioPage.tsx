@@ -247,7 +247,9 @@ const SetorLaboratorioPage = () => {
       </Badge>
     );
     return (
-      <Badge variant="outline" className="text-[10px] text-muted-foreground">Rotina</Badge>
+      <Badge variant="outline" className="text-[10px] text-blue-600 border-blue-300 bg-blue-500/10">
+        <CalendarIcon className="h-3 w-3 mr-1" /> Programado
+      </Badge>
     );
   };
 
