@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -90,6 +91,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [selectedSector, setSelectedSector] = useState("");
   const [selectedBed, setSelectedBed] = useState("");
   const [admissionNotes, setAdmissionNotes] = useState("");
+  const [dischargePrediction, setDischargePrediction] = useState("");
   const [availableBeds, setAvailableBeds] = useState<string[]>([]);
   const [occupiedBeds, setOccupiedBeds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -274,6 +276,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         diagnoses: fullData.chief_complaint || null,
         medical_history: fullData.allergies ? `Alergias: ${fullData.allergies}` : null,
         pendencies: admissionNotes || null,
+        uti_discharge_prediction: dischargePrediction || null,
       });
 
       if (patientError) throw patientError;
@@ -565,6 +568,16 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
               </Select>
             </div>
           )}
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Previsão de alta</Label>
+            <Input
+              value={dischargePrediction}
+              onChange={(e) => setDischargePrediction(e.target.value)}
+              placeholder="Ex: 5-7 dias, 48h, Sem previsão..."
+              className="h-9 text-xs"
+            />
+          </div>
 
           <div className="space-y-1.5">
             <Label className="text-xs">Observações da admissão (opcional)</Label>
