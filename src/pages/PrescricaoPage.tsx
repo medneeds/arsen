@@ -3069,6 +3069,91 @@ const PrescricaoPage = () => {
           allergies: patient.allergies,
         }}
       />
+
+      {/* ===== DISPENSATION SLIP DIALOG ===== */}
+      <Dialog open={!!dispensationSlip} onOpenChange={(o) => !o && setDispensationSlip(null)}>
+        <DialogContent className="max-w-md print:max-w-none print:border-0 print:shadow-none">
+          <DialogHeader className="print:hidden">
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" /> Guia de Dispensação
+            </DialogTitle>
+            <DialogDescription>
+              Dispensação registrada com sucesso. Imprima a guia abaixo.
+            </DialogDescription>
+          </DialogHeader>
+          {dispensationSlip && (
+            <div className="border border-border rounded-lg p-4 space-y-3" id="dispensation-slip">
+              <div className="text-center border-b border-border pb-2">
+                <div className="text-xs font-bold tracking-wider uppercase text-foreground">Guia de Dispensação Farmacêutica</div>
+                <div className="font-mono text-lg font-extrabold text-primary mt-1">{dispensationSlip.code}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                <div><span className="text-muted-foreground">Paciente:</span> <span className="font-semibold text-foreground">{dispensationSlip.patientName}</span></div>
+                <div><span className="text-muted-foreground">Leito:</span> <span className="font-semibold text-foreground">{dispensationSlip.bed}</span></div>
+                <div><span className="text-muted-foreground">Data/Hora:</span> <span className="font-medium text-foreground">{dispensationSlip.date}</span></div>
+                {patient.encounterCode && <div><span className="text-muted-foreground">Atendimento:</span> <span className="font-mono font-medium text-foreground">{patient.encounterCode}</span></div>}
+              </div>
+              <div className="border-t border-border pt-2">
+                <div className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-1.5">ITENS DISPENSADOS ({dispensationSlip.items.length})</div>
+                <div className="space-y-1">
+                  {dispensationSlip.items.map((item, i) => (
+                    <div key={item.id} className="flex items-start gap-2 text-xs py-0.5 border-b border-border/30 last:border-0">
+                      <span className="font-mono text-muted-foreground w-5 shrink-0 text-right">{i + 1}.</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-foreground">{item.name}</span>
+                        {item.presentation && item.presentation !== '-' && (
+                          <span className="text-muted-foreground ml-1">({item.presentation})</span>
+                        )}
+                        <span className="text-muted-foreground ml-1">
+                          — {item.quantity || '1'} {item.quantityUnit || 'un'}
+                          {item.dose && item.dose !== '-' ? ` · ${item.dose}` : ''}
+                          {item.route && item.route !== '-' ? ` · ${item.route}` : ''}
+                          {item.posology && item.posology !== '-' ? ` · ${item.posology}` : ''}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-border text-[10px] text-muted-foreground">
+                <span>Dispensado por: {user?.email?.split('@')[0] || '—'}</span>
+                <span>BigHelp Map · Dispensação Digital</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="print:hidden">
+            <Button variant="outline" size="sm" onClick={() => setDispensationSlip(null)}>Fechar</Button>
+            <Button size="sm" onClick={() => {
+              const el = document.getElementById('dispensation-slip');
+              if (el) {
+                const printW = window.open('', '_blank', 'width=400,height=600');
+                if (printW) {
+                  printW.document.write(`<html><head><title>Guia ${dispensationSlip?.code}</title><style>body{font-family:system-ui,-apple-system,sans-serif;padding:12px;font-size:11px;color:#0f172a}*{margin:0;padding:0;box-sizing:border-box}.slip{border:1px solid #cbd5e1;border-radius:6px;padding:12px}.center{text-align:center}.mono{font-family:monospace}.bold{font-weight:700}.code{font-size:18px;font-weight:800;margin:4px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}.sep{border-top:1px solid #e2e8f0;padding-top:6px;margin-top:6px}.item{display:flex;gap:6px;padding:2px 0;border-bottom:1px solid #f1f5f9}.muted{color:#64748b}.footer{display:flex;justify-content:space-between;font-size:9px;color:#94a3b8}</style></head><body>`);
+                  printW.document.write('<div class="slip">');
+                  printW.document.write(`<div class="center"><div class="bold" style="text-transform:uppercase;letter-spacing:1px;font-size:9px">Guia de Dispensação Farmacêutica</div><div class="mono code">${dispensationSlip?.code}</div></div>`);
+                  printW.document.write('<div class="sep grid">');
+                  printW.document.write(`<div><span class="muted">Paciente:</span> <strong>${dispensationSlip?.patientName}</strong></div>`);
+                  printW.document.write(`<div><span class="muted">Leito:</span> <strong>${dispensationSlip?.bed}</strong></div>`);
+                  printW.document.write(`<div><span class="muted">Data:</span> ${dispensationSlip?.date}</div>`);
+                  if (patient.encounterCode) printW.document.write(`<div><span class="muted">Atend:</span> <span class="mono">${patient.encounterCode}</span></div>`);
+                  printW.document.write('</div>');
+                  printW.document.write('<div class="sep"><div class="bold" style="font-size:9px;letter-spacing:1px;margin-bottom:4px">ITENS DISPENSADOS</div>');
+                  dispensationSlip?.items.forEach((item, i) => {
+                    printW.document.write(`<div class="item"><span class="mono muted" style="width:16px;text-align:right">${i+1}.</span><div><strong>${item.name}</strong>${item.presentation && item.presentation !== '-' ? ` (${item.presentation})` : ''} — ${item.quantity||'1'} ${item.quantityUnit||'un'}${item.dose && item.dose !== '-' ? ` · ${item.dose}` : ''}${item.route && item.route !== '-' ? ` · ${item.route}` : ''}</div></div>`);
+                  });
+                  printW.document.write('</div>');
+                  printW.document.write(`<div class="sep footer"><span>Dispensado por: ${user?.email?.split('@')[0] || '—'}</span><span>BigHelp Map</span></div>`);
+                  printW.document.write('</div></body></html>');
+                  printW.document.close();
+                  printW.print();
+                }
+              }
+            }} className="gap-1.5">
+              <Printer className="h-3.5 w-3.5" /> Imprimir Guia
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
