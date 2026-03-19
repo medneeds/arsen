@@ -60,7 +60,7 @@ export function ShiftReminderDialog() {
           <Button
             variant="outline"
             onClick={handleDismiss}
-            className="uppercase"
+            className=""
           >
             Dispensar
           </Button>
