@@ -446,6 +446,79 @@ export type Database = {
           },
         ]
       }
+      dispensations: {
+        Row: {
+          created_at: string
+          department: string
+          dispensation_code: string
+          dispensed_at: string
+          dispensed_by: string | null
+          dispensed_by_name: string | null
+          dispensed_items: Json
+          encounter_code: string | null
+          hospital_unit_id: string
+          id: string
+          notes: string | null
+          patient_name: string
+          prescription_id: string
+          state_id: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string
+          dispensation_code: string
+          dispensed_at?: string
+          dispensed_by?: string | null
+          dispensed_by_name?: string | null
+          dispensed_items?: Json
+          encounter_code?: string | null
+          hospital_unit_id: string
+          id?: string
+          notes?: string | null
+          patient_name: string
+          prescription_id: string
+          state_id: string
+        }
+        Update: {
+          created_at?: string
+          department?: string
+          dispensation_code?: string
+          dispensed_at?: string
+          dispensed_by?: string | null
+          dispensed_by_name?: string | null
+          dispensed_items?: Json
+          encounter_code?: string | null
+          hospital_unit_id?: string
+          id?: string
+          notes?: string | null
+          patient_name?: string
+          prescription_id?: string
+          state_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispensations_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispensations_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispensations_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_requests: {
         Row: {
           category: string
@@ -755,6 +828,7 @@ export type Database = {
           generic_name: string
           high_alert: boolean
           id: string
+          internal_code: string | null
           notes: string | null
           pharmacological_group: string | null
           requires_dilution: boolean
@@ -768,6 +842,7 @@ export type Database = {
           generic_name: string
           high_alert?: boolean
           id?: string
+          internal_code?: string | null
           notes?: string | null
           pharmacological_group?: string | null
           requires_dilution?: boolean
@@ -781,6 +856,7 @@ export type Database = {
           generic_name?: string
           high_alert?: boolean
           id?: string
+          internal_code?: string | null
           notes?: string | null
           pharmacological_group?: string | null
           requires_dilution?: boolean
@@ -944,6 +1020,76 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_encounters: {
+        Row: {
+          admission_date: string | null
+          created_at: string
+          created_by: string | null
+          department: string
+          discharge_date: string | null
+          encounter_code: string
+          hospital_unit_id: string
+          id: string
+          patient_id: string | null
+          patient_name: string
+          state_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admission_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          discharge_date?: string | null
+          encounter_code: string
+          hospital_unit_id: string
+          id?: string
+          patient_id?: string | null
+          patient_name: string
+          state_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admission_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          discharge_date?: string | null
+          encounter_code?: string
+          hospital_unit_id?: string
+          id?: string
+          patient_id?: string | null
+          patient_name?: string
+          state_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_encounters_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_encounters_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_encounters_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_movements: {
         Row: {
           created_at: string
@@ -1085,6 +1231,7 @@ export type Database = {
           is_door_patient: boolean | null
           is_vacant: boolean | null
           medical_history: string | null
+          medical_record: string | null
           medical_responsibility: Json | null
           name: string
           pendencies: string | null
@@ -1128,6 +1275,7 @@ export type Database = {
           is_door_patient?: boolean | null
           is_vacant?: boolean | null
           medical_history?: string | null
+          medical_record?: string | null
           medical_responsibility?: Json | null
           name?: string
           pendencies?: string | null
@@ -1171,6 +1319,7 @@ export type Database = {
           is_door_patient?: boolean | null
           is_vacant?: boolean | null
           medical_history?: string | null
+          medical_record?: string | null
           medical_responsibility?: Json | null
           name?: string
           pendencies?: string | null
@@ -1452,6 +1601,7 @@ export type Database = {
           created_by: string | null
           department: string
           digital_signature: Json | null
+          encounter_id: string | null
           hospital_unit_id: string
           id: string
           items: Json
@@ -1469,6 +1619,7 @@ export type Database = {
           created_by?: string | null
           department?: string
           digital_signature?: Json | null
+          encounter_id?: string | null
           hospital_unit_id: string
           id?: string
           items?: Json
@@ -1486,6 +1637,7 @@ export type Database = {
           created_by?: string | null
           department?: string
           digital_signature?: Json | null
+          encounter_id?: string | null
           hospital_unit_id?: string
           id?: string
           items?: Json
@@ -1499,6 +1651,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "prescriptions_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "patient_encounters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "prescriptions_hospital_unit_id_fkey"
             columns: ["hospital_unit_id"]
