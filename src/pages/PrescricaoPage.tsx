@@ -3391,6 +3391,23 @@ const PrescricaoPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Extra Prescription Dialog */}
+      <ExtraPrescriptionDialog
+        open={extraPrescriptionOpen}
+        onClose={() => setExtraPrescriptionOpen(false)}
+        onAddItems={(newItems) => {
+          setItems(prev => [...prev, ...newItems]);
+          const agoraCount = newItems.filter(i => i.flags.includes('ag' as PrescriptionFlag)).length;
+          const scheduledCount = newItems.length - agoraCount;
+          toast.success(`${newItems.length} item(ns) extra adicionado(s)`, {
+            description: agoraCount > 0
+              ? `${agoraCount} "Agora" (não renovam)${scheduledCount > 0 ? ` + ${scheduledCount} de horário (renovam)` : ''}`
+              : `${scheduledCount} de horário (serão incorporados na renovação)`,
+          });
+        }}
+        allMedications={Object.values(ALL_ITEMS_BY_CATEGORY).flat()}
+      />
     </div>
   );
 };
