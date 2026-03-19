@@ -529,6 +529,30 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/recepcao"
+          element={
+            <ProtectedRoute>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/triagem-fila"
+          element={
+            <ProtectedRoute>
+              <TriageQueuePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/triagem-tv"
+          element={
+            <ProtectedRoute>
+              <TriageQueueTVPage />
+            </ProtectedRoute>
+          }
+        />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
