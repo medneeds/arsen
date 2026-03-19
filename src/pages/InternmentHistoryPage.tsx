@@ -399,11 +399,11 @@ const InternmentHistoryPage = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30">
-                  <TableHead className="uppercase font-bold">Nome do Paciente</TableHead>
-                  <TableHead className="uppercase font-bold">Idade</TableHead>
-                  <TableHead className="uppercase font-bold">Destino</TableHead>
-                  <TableHead className="uppercase font-bold">Data</TableHead>
-                  <TableHead className="uppercase text-right font-bold">Ações</TableHead>
+                  <TableHead className="font-bold">Nome do Paciente</TableHead>
+                  <TableHead className="font-bold">Idade</TableHead>
+                  <TableHead className="font-bold">Destino</TableHead>
+                  <TableHead className="font-bold">Data</TableHead>
+                  <TableHead className="text-right font-bold">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
