@@ -523,6 +523,12 @@ export default function PainelClinicoPage() {
       });
   }, [patients, search, sectorFilter]);
 
+  const handleInlineSave = useCallback(async (patientId: string, field: string, items: string[]) => {
+    await updatePatient(patientId, { [field]: items } as Partial<Patient>);
+    // Update local selectedPatient state
+    setSelectedPatient(prev => prev ? { ...prev, [field]: items } : prev);
+  }, [updatePatient]);
+
   const openPatient = (patient: Patient) => {
     setSelectedPatient(patient);
     setSidebarTab("resumo");
