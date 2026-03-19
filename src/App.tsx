@@ -82,7 +82,7 @@ function ProfileHomeRedirect() {
             path="/"
             element={
               <ProtectedRoute>
-                <ClinicalDashboardPage />
+                <ProfileHomeRedirect />
               </ProtectedRoute>
             }
           />
