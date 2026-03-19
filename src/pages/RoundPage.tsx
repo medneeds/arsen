@@ -71,6 +71,11 @@ const STATUS_BADGE_COLORS: Record<string, string> = {
   D: "bg-violet-500/20 text-violet-700 dark:text-violet-400 border-violet-500/30",
 };
 
+const getSectorLabel = (sector: string): string => {
+  const map: Record<string, string> = { red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2" };
+  return map[sector] || sector;
+};
+
 export default function RoundPage() {
   const { currentHospital, currentState } = useHospital();
   const { user } = useAuth();
@@ -188,7 +193,7 @@ export default function RoundPage() {
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.bed_number.toLowerCase().includes(q) ||
-        p.sector.toLowerCase().includes(q)
+        getSectorLabel(p.sector).toLowerCase().includes(q)
     );
   }, [patients, patientSearch]);
 
@@ -213,7 +218,7 @@ export default function RoundPage() {
             patient_id: selectedPatient.id,
             patient_name: selectedPatient.name,
             patient_age: selectedPatient.age,
-            patient_sector: selectedPatient.sector,
+            patient_sector: getSectorLabel(selectedPatient.sector),
             patient_bed: selectedPatient.bed_number,
             round_date: roundDate,
             hospital_unit_id: currentHospital.id,
@@ -365,7 +370,7 @@ export default function RoundPage() {
                   >
                     <div className="font-medium text-foreground group-hover:text-primary transition-colors truncate">{p.name}</div>
                     <div className="text-xs text-muted-foreground mt-0.5">
-                      {p.sector} • Leito {p.bed_number} {p.age ? `• ${p.age}` : ""}
+                      {getSectorLabel(p.sector)} • Leito {p.bed_number} {p.age ? `• ${p.age}` : ""}
                     </div>
                   </button>
                 ))}
@@ -385,7 +390,7 @@ export default function RoundPage() {
                 <div className="min-w-0">
                   <div className="font-semibold text-foreground truncate">{selectedPatient.name}</div>
                   <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-                    <span className="flex items-center gap-1"><BedDouble className="h-3 w-3" />{selectedPatient.sector} – Leito {selectedPatient.bed_number}</span>
+                    <span className="flex items-center gap-1"><BedDouble className="h-3 w-3" />{getSectorLabel(selectedPatient.sector)} – Leito {selectedPatient.bed_number}</span>
                     {selectedPatient.age && <span>• {selectedPatient.age}</span>}
                     <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{format(new Date(roundDate), "dd/MM/yyyy")}</span>
                   </div>
@@ -544,7 +549,7 @@ export default function RoundPage() {
         <PrintableRound
           ref={printRef}
           patientName={selectedPatient.name}
-          patientSector={selectedPatient.sector}
+          patientSector={getSectorLabel(selectedPatient.sector)}
           patientBed={selectedPatient.bed_number}
           patientAge={selectedPatient.age}
           roundDate={roundDate}
