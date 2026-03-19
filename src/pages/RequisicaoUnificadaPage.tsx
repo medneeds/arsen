@@ -323,10 +323,19 @@ const RequisicaoUnificadaPage = () => {
   const handleSubmitRequest = async () => {
     if (!formPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
     if (formSelectedItems.length === 0) { toast.error("Selecione ao menos um item"); return; }
+    if (!formIndication.trim()) { toast.error("Informe a justificativa clínica"); return; }
+    if (formPriority === "programado" && !formScheduledDate) { toast.error("Informe a data programada"); return; }
     if (!unitId || !stateId || !user) return;
 
     setSubmitting(true);
     try {
+      // Build notes with scheduled info if programado
+      let notesContent = formNotes.trim() || "";
+      if (formPriority === "programado" && formScheduledDate) {
+        const scheduledInfo = `[PROGRAMADO: ${formScheduledDate}${formScheduledTime ? " às " + formScheduledTime : ""}]`;
+        notesContent = scheduledInfo + (notesContent ? "\n" + notesContent : "");
+      }
+
       const { error } = await supabase.from("exam_requests").insert({
         category: activeCategory,
         patient_id: formPatientId || null,
@@ -336,7 +345,7 @@ const RequisicaoUnificadaPage = () => {
         items: formSelectedItems.map(name => ({ name })),
         clinical_indication: formIndication.trim() || null,
         priority: formPriority,
-        notes: formNotes.trim() || null,
+        notes: notesContent || null,
         requested_by: user.id,
         requested_by_name: user.user_metadata?.username || user.email?.split("@")[0] || "Médico",
         hospital_unit_id: unitId,
