@@ -234,7 +234,7 @@ const CcihDashboardPage = () => {
       const [examRes, prescRes] = await Promise.all([
         supabase
           .from("exam_requests")
-          .select("id, items, status, priority, created_at, requested_by_name, results")
+          .select("id, items, status, priority, created_at, requested_by_name, results, category")
           .eq("hospital_unit_id", hospitalId!)
           .eq("state_id", stateId!)
           .eq("patient_id", patient.id)
