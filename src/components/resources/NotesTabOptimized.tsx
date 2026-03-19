@@ -294,8 +294,8 @@ const NotesTabOptimized = () => {
   const handleClear = () => {
     setNotes("");
     toast({
-      title: "LIMPO",
-      description: "TODO O TEXTO FOI REMOVIDO",
+      title: "Limpo",
+      description: "Todo o texto foi removido",
     });
   };
 
