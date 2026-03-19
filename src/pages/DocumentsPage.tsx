@@ -11,7 +11,8 @@ import {
   Scissors,
   Activity,
   Heart,
-  Workflow
+  Workflow,
+  ScanLine
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
