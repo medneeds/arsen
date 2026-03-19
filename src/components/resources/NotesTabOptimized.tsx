@@ -418,9 +418,9 @@ const NotesTabOptimized = () => {
           <div className="flex gap-2">
             <Input
               value={newChecklistItem}
-              onChange={(e) => setNewChecklistItem(e.target.value.toUpperCase())}
-              placeholder="ADICIONAR NOVO ITEM..."
-              className="uppercase"
+              onChange={(e) => setNewChecklistItem(e.target.value)}
+              placeholder="Adicionar novo item..."
+              className=""
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   handleAddChecklistItem();
