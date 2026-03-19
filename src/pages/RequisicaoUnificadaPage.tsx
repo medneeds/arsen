@@ -801,7 +801,7 @@ const RequisicaoUnificadaPage = () => {
                 {viewingRequest.patient_bed && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Leito/Setor</span>
-                    <span className="text-foreground">{viewingRequest.patient_sector} · L{viewingRequest.patient_bed}</span>
+                    <span className="text-foreground">{getSectorLabel(viewingRequest.patient_sector)} · L{viewingRequest.patient_bed}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
