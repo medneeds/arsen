@@ -14,7 +14,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { MainLayout } from "@/components/MainLayout";
 import { ShiftReminderDialog } from "@/components/ShiftReminderDialog";
 import { Patient, SectorType } from "@/types/patient";
-import { Activity, Users, Clock, Printer, Eye, EyeOff, ClipboardList, LogOut, CheckSquare, Trash2, Undo, Redo, Plus, StickyNote, Edit, List, X, FileText, ChevronDown, GripVertical, ClipboardCheck, Save, MoreVertical, Building2, RefreshCw, Bell, Maximize2, Minimize2, Search, ArrowLeftRight } from "lucide-react";
+import { Activity, Users, Clock, Printer, Eye, EyeOff, ClipboardList, LogOut, CheckSquare, Trash2, Plus, StickyNote, Edit, List, X, FileText, ChevronDown, GripVertical, ClipboardCheck, MoreVertical, Building2, RefreshCw, Maximize2, Minimize2, ArrowLeftRight } from "lucide-react";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -901,20 +901,8 @@ const Index = () => {
                     </div>
                 </div>
 
-                {/* Right side: Action buttons + Theme toggle */}
-                <div className="flex gap-1.5 sm:gap-3 print:gap-2 items-center flex-shrink-0">
-                  {/* Search button - always visible */}
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setSearchOpen(true)}
-                    className="print:hidden h-11 w-11 sm:h-8 sm:w-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200"
-                    title="Buscar paciente (Ctrl+K)"
-                  >
-                    <Search className="h-4 w-4" />
-                  </Button>
-
-                  {/* Mobile: Show only essential buttons + dropdown menu */}
+                {/* Right side: Action buttons */}
+                <div className="flex gap-1.5 sm:gap-2 print:gap-2 items-center flex-shrink-0">
                   {isMobile ? (
                     <>
                       <Button
@@ -928,75 +916,45 @@ const Index = () => {
                       </Button>
                       {selectionMode && selectedPatients.size > 0 && (
                         <>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={handlePrintSelected}
-                            className="print:hidden h-11 w-11 bg-gradient-to-br from-critical via-warning to-stable text-white border-0"
-                            title={`Imprimir ${selectedPatients.size}`}
-                          >
+                          <Button variant="outline" size="icon" onClick={handlePrintSelected}
+                            className="print:hidden h-11 w-11 bg-gradient-to-br from-critical via-warning to-stable text-white border-0">
                             <Printer className="h-5 w-5" />
                           </Button>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={handleDeleteSelected}
-                            className="print:hidden h-11 w-11 bg-red-600 text-white hover:bg-red-700 border-0"
-                            title={`Deletar ${selectedPatients.size}`}
-                          >
+                          <Button variant="destructive" size="icon" onClick={handleDeleteSelected}
+                            className="print:hidden h-11 w-11 bg-red-600 text-white hover:bg-red-700 border-0">
                             <Trash2 className="h-5 w-5" />
                           </Button>
                         </>
                       )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="print:hidden h-11 w-11 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200"
-                          >
+                          <Button variant="outline" size="icon"
+                            className="print:hidden h-11 w-11 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200">
                             <MoreVertical className="h-5 w-5" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48 bg-background z-50">
-                          <DropdownMenuItem onClick={handleUndo} disabled={history.length === 0}>
-                            <Undo className="mr-2 h-4 w-4" />
-                            Desfazer
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={handleRedo} disabled={redoHistory.length === 0}>
-                            <Redo className="mr-2 h-4 w-4" />
-                            Refazer
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={handleSaveVersion}>
-                            <Save className="mr-2 h-4 w-4" />
-                            Salvar Versão
-                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={handleRefreshMap} disabled={isRefreshing}>
                             <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                            Atualizar Mapa
+                            Atualizar mapa
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={handlePrintCompact}>
                             <Printer className="mr-2 h-4 w-4" />
-                            Imprimir Mapa
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={toggleFullscreen}>
-                            {isFullscreen ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}
-                            {isFullscreen ? "Sair Tela Cheia" : "Tela Cheia"}
+                            Imprimir mapa
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => setShowOnlyOccupied(!showOnlyOccupied)}>
                             {showOnlyOccupied ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
-                            {showOnlyOccupied ? "Mostrar Vazios" : "Ocultar Vazios"}
+                            {showOnlyOccupied ? "Mostrar vazios" : "Ocultar vazios"}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={toggleNamesHidden}>
                             {namesHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
-                            {namesHidden ? "Mostrar Nomes" : "Ocultar Nomes (LGPD)"}
+                            {namesHidden ? "Mostrar nomes" : "Ocultar nomes (LGPD)"}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={signOut} className="text-red-600">
-                            <LogOut className="mr-2 h-4 w-4" />
-                            Sair
+                          <DropdownMenuItem onClick={toggleFullscreen}>
+                            {isFullscreen ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}
+                            {isFullscreen ? "Sair tela cheia" : "Tela cheia"}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -1005,38 +963,9 @@ const Index = () => {
                       </div>
                     </>
                   ) : (
-                    /* Desktop: Show all buttons */
                     <>
                       <TooltipProvider delayDuration={300}>
-                      {/* Action buttons group */}
                       <div className="flex items-center gap-1 print:hidden">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={handleUndo} disabled={history.length === 0}
-                              className="h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 disabled:opacity-40 transition-all duration-200">
-                              <Undo className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Desfazer última ação</p></TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={handleRedo} disabled={redoHistory.length === 0}
-                              className="h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 disabled:opacity-40 transition-all duration-200">
-                              <Redo className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Refazer ação</p></TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={handleSaveVersion}
-                              className="h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200">
-                              <Save className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Salvar versão atual</p></TooltipContent>
-                        </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button variant="outline" size="icon" onClick={handleRefreshMap} disabled={isRefreshing}
@@ -1046,13 +975,18 @@ const Index = () => {
                           </TooltipTrigger>
                           <TooltipContent><p>Atualizar mapa</p></TooltipContent>
                         </Tooltip>
-                      </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" size="icon" onClick={handlePrintCompact}
+                              className="h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200">
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Imprimir mapa</p></TooltipContent>
+                        </Tooltip>
 
-                      {/* Separator */}
-                      <div className="h-6 w-px bg-white/20 print:hidden hidden sm:block" />
+                        <div className="h-6 w-px bg-white/20" />
 
-                      {/* Selection & Print group */}
-                      <div className="flex items-center gap-1 print:hidden">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
@@ -1063,7 +997,7 @@ const Index = () => {
                               <CheckSquare className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent><p>Modo de seleção múltipla</p></TooltipContent>
+                          <TooltipContent><p>Modo de seleção</p></TooltipContent>
                         </Tooltip>
                         {selectionMode && selectedPatients.size > 0 && (
                           <>
@@ -1087,79 +1021,28 @@ const Index = () => {
                             </Tooltip>
                           </>
                         )}
+
+                        <div className="h-6 w-px bg-white/20" />
+
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={handlePrintCompact}
-                              className="hidden sm:flex h-8 w-8 bg-gradient-to-br from-critical via-warning to-stable text-white border-0 hover:shadow-lg hover:scale-105 transition-all">
-                              <Printer className="h-4 w-4" />
+                            <Button variant="outline" size="icon" onClick={toggleNamesHidden}
+                              className={`h-8 w-8 transition-all duration-200 ${namesHidden ? 'bg-white text-[#013ba6] shadow-md' : 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40'}`}>
+                              {namesHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent><p>Imprimir mapa</p></TooltipContent>
+                          <TooltipContent><p>{namesHidden ? "Mostrar nomes" : "Ocultar nomes (LGPD)"}</p></TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button variant="outline" size="icon" onClick={toggleFullscreen}
-                              className="hidden sm:flex h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200">
+                              className="h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200">
                               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent><p>{isFullscreen ? "Sair da tela cheia" : "Tela cheia"}</p></TooltipContent>
                         </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={toggleNamesHidden}
-                              className={`hidden sm:flex h-8 w-8 transition-all duration-200 ${namesHidden ? 'bg-white text-[#013ba6] shadow-md' : 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40'}`}>
-                              {namesHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>{namesHidden ? "Mostrar nomes dos pacientes" : "Ocultar nomes (Proteção de Dados)"}</p></TooltipContent>
-                        </Tooltip>
                       </div>
-
-                      {/* Separator */}
-                      <div className="h-6 w-px bg-white/20 print:hidden hidden sm:block" />
-
-                      {/* Notifications & Info group */}
-                      <div className="flex items-center gap-1 print:hidden">
-                        <NotificationCenter />
-                        <BedAllocationNotifications />
-                        <DoorPatientNotifications />
-                      </div>
-
-                      {/* Separator */}
-                      <div className="h-6 w-px bg-white/20 print:hidden hidden md:block" />
-
-                      {/* Patient count + User info */}
-                      <div className="hidden md:flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg backdrop-blur-sm border border-white/20">
-                        <div className="flex items-center justify-center w-7 h-7 rounded-md bg-white/10 border border-white/20">
-                          <Users className="h-3.5 w-3.5 text-white" />
-                        </div>
-                        <div className="flex flex-col justify-center">
-                          <p className="text-[8px] text-white/70 leading-none tracking-wide font-medium">Total</p>
-                          <p className="text-base font-bold text-white leading-tight">{totalPatients}</p>
-                        </div>
-                      </div>
-
-                      <div className="hidden lg:flex items-center gap-2 print:hidden">
-                        <div className="text-right">
-                          <p className="text-[10px] font-semibold text-white tracking-tight">
-                            {user?.user_metadata?.username || user?.email?.split('@')[0]}
-                          </p>
-                          <p className="text-[9px] text-white/70">
-                            {role === 'admin' ? 'Administrador' : 'Médico'}
-                          </p>
-                        </div>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={signOut}
-                              className="h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-red-500/80 hover:text-white hover:border-red-400/50 transition-all duration-200">
-                              <LogOut className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Sair do sistema</p></TooltipContent>
-                        </Tooltip>
-                      </div>
-
                       </TooltipProvider>
                       <div className="print:hidden">
                         <ThemeToggle />
