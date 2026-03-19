@@ -275,8 +275,10 @@ const ClinicalDashboardPage = () => {
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
-  const totalOccupied = occupancy.reduce((sum, s) => sum + s.occupied, 0);
-  const totalBeds = occupancy.reduce((sum, s) => sum + s.total, 0);
+  // Sector-specific occupancy
+  const activeSectorOcc = occupancy.find(s => s.sector === activeSector);
+  const totalOccupied = activeSectorOcc?.occupied ?? 0;
+  const totalBeds = activeSectorOcc?.total ?? 0;
   const occupancyRate = totalBeds > 0 ? Math.round((totalOccupied / totalBeds) * 100) : 0;
 
   const criticalAlerts = alerts.filter((a) => a.severity === "critical");
