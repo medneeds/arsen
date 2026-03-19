@@ -829,15 +829,17 @@ export default function PainelClinicoPage() {
                     )}
                     <EditableInfoSection icon={Calendar} title="Previsão de Alta" items={parseTextArray(selectedPatient.utiDischargePrediction)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiDischargePrediction', items)} />
 
-                    {selectedPatient.admissionHistory && (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                          <h4 className="text-xs font-semibold text-muted-foreground tracking-wide">História Admissional</h4>
-                        </div>
-                        <p className="text-sm text-foreground pl-5 leading-relaxed whitespace-pre-line">{selectedPatient.admissionHistory}</p>
-                      </div>
-                    )}
+                    <EditableTextBlock
+                      icon={FileText}
+                      title="História Admissional"
+                      value={selectedPatient.admissionHistory || ""}
+                      onSave={async (val) => {
+                        const fieldMap: Record<string, string> = { admissionHistory: "admission_history" };
+                        const { error } = await supabase.from("patients").update({ admission_history: val }).eq("id", selectedPatient.id);
+                        if (error) { toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" }); throw error; }
+                        toast({ title: "Salvo", description: "História admissional atualizada" });
+                      }}
+                    />
                   </TabsContent>
 
                   {/* PRESCRIÇÃO */}
