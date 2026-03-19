@@ -199,12 +199,16 @@ function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts
   }
 }
 
-// Auto-calculate volume total from dose + diluent volume
+// Auto-calculate volume total from dose + diluent volume (or dose alone if no diluent)
 function calcVolumeTotal(item: PrescriptionItem): string {
   const doseVol = parseFloat(item.dose?.replace(/[^\d.,]/g, '').replace(',', '.') || '');
   const dilVol = parseFloat(item.diluentVolume || '');
-  if (dilVol > 0 && doseVol > 0) return String(Math.round(dilVol + doseVol));
-  if (dilVol > 0) return String(Math.round(dilVol));
+  // With diluent: dose volume + diluent volume
+  if (item.diluent && item.diluent !== 'sem_diluente' && dilVol > 0 && doseVol > 0) return String(Math.round(dilVol + doseVol));
+  if (item.diluent && item.diluent !== 'sem_diluente' && dilVol > 0) return String(Math.round(dilVol));
+  // Without diluent: use dose volume directly (if dose is in mL)
+  if (item.diluent === 'sem_diluente' && doseVol > 0 && item.dose?.toLowerCase().includes('ml')) return String(Math.round(doseVol));
+  if (!item.diluent && doseVol > 0 && item.dose?.toLowerCase().includes('ml')) return String(Math.round(doseVol));
   return '';
 }
 
