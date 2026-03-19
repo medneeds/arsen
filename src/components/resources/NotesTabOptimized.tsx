@@ -254,8 +254,8 @@ const NotesTabOptimized = () => {
     try {
       await navigator.clipboard.writeText(notes);
       toast({
-        title: "COPIADO",
-        description: "TEXTO COPIADO PARA A ÁREA DE TRANSFERÊNCIA",
+        title: "Copiado",
+        description: "Texto copiado para a área de transferência",
       });
     } catch (err) {
       toast({
