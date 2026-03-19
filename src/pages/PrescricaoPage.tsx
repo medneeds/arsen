@@ -669,6 +669,9 @@ function SortablePrescriptionItemRow({
                 <span className="font-normal text-muted-foreground ml-1">({item.presentation})</span>
               )}
             </p>
+            {item.isExtra && (
+              <Badge variant="outline" className="text-[9px] px-1.5 bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800">EXTRA</Badge>
+            )}
             {item.status === 'suspended' && (
               <Badge variant="destructive" className="text-[9px] px-1.5">Suspenso</Badge>
             )}
