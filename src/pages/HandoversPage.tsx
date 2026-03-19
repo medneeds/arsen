@@ -246,11 +246,11 @@ export default function HandoversPage() {
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Bed className="h-3.5 w-3.5" />
-                                <span className="uppercase">{handover.occupied_beds} OCUPADOS</span>
+                                <span>{handover.occupied_beds} ocupados</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Users className="h-3.5 w-3.5" />
-                                <span className="uppercase">{handover.total_patients} TOTAL</span>
+                                <span>{handover.total_patients} total</span>
                               </div>
                             </div>
                           </div>
