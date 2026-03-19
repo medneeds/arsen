@@ -472,7 +472,7 @@ const RequisicaoUnificadaPage = () => {
 
       {/* ── APAC mode: show embedded APAC form ── */}
       {activeCategory === "apac" ? (
-        <ApacEmbeddedForm patientName={formPatientName} patientBed={formPatientBed} patientSector={formPatientSector} />
+        <ApacEmbeddedForm patientName={formPatientName} patientBed={formPatientBed} patientSector={formPatientSector} patientId={formPatientId} />
       ) : (
       <>
       {/* ── Sub Tabs: Solicitar | Solicitados | Resultados ── */}
