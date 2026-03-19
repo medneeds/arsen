@@ -240,10 +240,10 @@ export const NotificationCenter = () => {
                 <Bell className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <SheetTitle className="text-lg font-bold uppercase tracking-tight">
+                <SheetTitle className="text-lg font-bold tracking-tight">
                   Central de Notificações
                 </SheetTitle>
-                <p className="text-xs text-muted-foreground uppercase mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {currentDepartment}
                 </p>
               </div>
@@ -259,7 +259,7 @@ export const NotificationCenter = () => {
                   variant="outline"
                   size="sm"
                   onClick={markAllAsRead}
-                  className="h-7 text-xs uppercase hover:bg-primary/10 hover:text-primary transition-all"
+                  className="h-7 text-xs hover:bg-primary/10 hover:text-primary transition-all"
                 >
                   Marcar todas como lidas
                 </Button>
@@ -278,7 +278,7 @@ export const NotificationCenter = () => {
                     <ListChecks className="h-4 w-4 text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-bold uppercase tracking-tight">Check-list</h3>
+                    <h3 className="text-sm font-bold tracking-tight">Check-list</h3>
                     <p className="text-xs text-muted-foreground">
                       {checklistItems.filter(i => !i.completed).length} pendente(s)
                     </p>
@@ -313,7 +313,7 @@ export const NotificationCenter = () => {
                         </Button>
                         <div className="flex-1 space-y-1 min-w-0">
                           <p className={cn(
-                            "text-sm font-medium uppercase leading-tight break-words",
+                            "text-sm font-medium leading-tight break-words",
                             item.completed && "line-through text-muted-foreground"
                           )}>
                             {item.content}
@@ -363,7 +363,7 @@ export const NotificationCenter = () => {
                     <Clock className="h-4 w-4 text-amber-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-bold uppercase tracking-tight">Lembretes Programados</h3>
+                    <h3 className="text-sm font-bold tracking-tight">Lembretes Programados</h3>
                     <p className="text-xs text-muted-foreground">
                       {scheduledItems.length} agendado(s)
                     </p>
@@ -383,7 +383,7 @@ export const NotificationCenter = () => {
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-2 flex-1 min-w-0">
                             <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm font-medium uppercase leading-tight break-words">{item.content}</p>
+                            <p className="text-sm font-medium leading-tight break-words">{item.content}</p>
                           </div>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                             {!item.read && (
@@ -427,7 +427,7 @@ export const NotificationCenter = () => {
                     <FileText className="h-4 w-4 text-orange-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-bold uppercase tracking-tight">Anotações Salvas</h3>
+                    <h3 className="text-sm font-bold tracking-tight">Anotações Salvas</h3>
                     <p className="text-xs text-muted-foreground">
                       {freeTextItems.length} anotação(ões)
                     </p>
@@ -446,7 +446,7 @@ export const NotificationCenter = () => {
                       <CardContent className="p-3 space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium uppercase leading-tight whitespace-pre-wrap break-words">
+                            <p className="text-sm font-medium leading-tight whitespace-pre-wrap break-words">
                               {item.content}
                             </p>
                           </div>
@@ -492,7 +492,7 @@ export const NotificationCenter = () => {
                   <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center mx-auto mb-4 animate-pulse">
                     <Bell className="h-8 w-8 text-muted-foreground opacity-50" />
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  <p className="text-sm font-medium text-muted-foreground tracking-wide">
                     Nenhuma Notificação
                   </p>
                   <p className="text-xs text-muted-foreground/70 mt-1">

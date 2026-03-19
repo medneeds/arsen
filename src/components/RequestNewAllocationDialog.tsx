@@ -89,10 +89,10 @@ function EditableListItem({
       <Input
         ref={inputRef}
         value={value}
-        onChange={(e) => onChange(e.target.value.toUpperCase())}
+        onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="h-8 text-xs uppercase flex-1"
+        className="h-8 text-xs flex-1"
       />
       <Button
         type="button"
@@ -424,7 +424,7 @@ export function RequestNewAllocationDialog({
             <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-primary" />
-                <p className="text-sm font-semibold text-primary uppercase tracking-wide">Médico Solicitante</p>
+                <p className="text-sm font-semibold text-primary tracking-wide">Médico Solicitante</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -436,10 +436,10 @@ export function RequestNewAllocationDialog({
                     ref={doctorNameRef}
                     id="doctor-name"
                     value={doctorName}
-                    onChange={(e) => setDoctorName(e.target.value.toUpperCase())}
+                    onChange={(e) => setDoctorName(e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, officeNumberRef)}
-                    placeholder="DR. NOME"
-                    className="uppercase h-9 text-sm"
+                    placeholder="Dr. Nome"
+                    className="h-9 text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -464,7 +464,7 @@ export function RequestNewAllocationDialog({
             <div className="p-4 rounded-lg bg-muted/30 border space-y-3">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Identificação do Paciente</p>
+                <p className="text-sm font-semibold text-muted-foreground tracking-wide">Identificação do Paciente</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -476,10 +476,10 @@ export function RequestNewAllocationDialog({
                     ref={patientNameRef}
                     id="patient-name"
                     value={patientName}
-                    onChange={(e) => setPatientName(e.target.value.toUpperCase())}
+                    onChange={(e) => setPatientName(e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, patientAgeRef)}
-                    placeholder="NOME COMPLETO"
-                    className="uppercase h-9 text-sm"
+                    placeholder="Nome completo"
+                    className="h-9 text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -512,7 +512,7 @@ export function RequestNewAllocationDialog({
                   <button className="w-full p-4 flex items-center justify-between bg-accent/30 hover:bg-accent/50 transition-colors">
                     <div className="flex items-center gap-2">
                       <Stethoscope className="h-4 w-4 text-accent-foreground" />
-                      <span className="text-sm font-semibold text-accent-foreground uppercase tracking-wide">
+                      <span className="text-sm font-semibold text-accent-foreground tracking-wide">
                         Dados Clínicos
                       </span>
                       <Badge variant="secondary" className="h-4 text-[10px] px-1.5 opacity-60">Opcional</Badge>

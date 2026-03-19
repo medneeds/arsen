@@ -51,7 +51,7 @@ const SectionLabel = ({ children, isCompact }: { children: string; isCompact: bo
     fontSize: isCompact ? '6pt' : '6.5pt', 
     color: '#64748b', 
     marginBottom: '2px', 
-    textTransform: 'uppercase', 
+    textTransform: 'none' as const, 
     fontWeight: '700',
     letterSpacing: '0.5px'
   }}>

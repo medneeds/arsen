@@ -356,7 +356,7 @@ export function PasswordResetRequestsPanel() {
                   }
                   placeholder="EX: ABC123"
                   maxLength={6}
-                  className="uppercase"
+                   className=""
                 />
               </div>
               <div className="space-y-2">
@@ -369,7 +369,7 @@ export function PasswordResetRequestsPanel() {
                   }
                   placeholder="REPITA A SENHA"
                   maxLength={6}
-                  className="uppercase"
+                  className=""
                 />
               </div>
             </div>

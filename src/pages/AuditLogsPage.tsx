@@ -360,27 +360,27 @@ export default function AuditLogsPage() {
                                   <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                       <div className="bg-gray-50 rounded-lg p-3">
-                                        <p className="text-[10px] text-gray-500 uppercase font-medium">Data/Hora</p>
+                                        <p className="text-[10px] text-gray-500 font-medium">Data/Hora</p>
                                         <p className="text-sm font-medium">{formatDate(selectedLog.created_at)}</p>
                                       </div>
                                       <div className="bg-gray-50 rounded-lg p-3">
-                                        <p className="text-[10px] text-gray-500 uppercase font-medium">Ação</p>
+                                        <p className="text-[10px] text-gray-500 font-medium">Ação</p>
                                         <Badge className={`${ACTION_LABELS[selectedLog.action]?.color} mt-1`}>
                                           {ACTION_LABELS[selectedLog.action]?.label}
                                         </Badge>
                                       </div>
                                       <div className="bg-gray-50 rounded-lg p-3">
-                                        <p className="text-[10px] text-gray-500 uppercase font-medium">Tabela</p>
+                                        <p className="text-[10px] text-gray-500 font-medium">Tabela</p>
                                         <p className="text-sm font-medium">
                                           {TABLE_LABELS[selectedLog.table_name] || selectedLog.table_name}
                                         </p>
                                       </div>
                                       <div className="bg-gray-50 rounded-lg p-3">
-                                        <p className="text-[10px] text-gray-500 uppercase font-medium">ID do Registro</p>
+                                        <p className="text-[10px] text-gray-500 font-medium">ID do Registro</p>
                                         <p className="text-xs font-mono">{selectedLog.record_id || "-"}</p>
                                       </div>
                                       <div className="bg-gray-50 rounded-lg p-3 col-span-2">
-                                        <p className="text-[10px] text-gray-500 uppercase font-medium">Usuário</p>
+                                        <p className="text-[10px] text-gray-500 font-medium">Usuário</p>
                                         <p className="text-sm font-medium">{selectedLog.user_email || "Sistema"}</p>
                                         {selectedLog.user_role && (
                                           <Badge variant="outline" className="text-[10px] mt-1">

@@ -133,7 +133,7 @@ export function ResetUserPasswordDialog({
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* User Info */}
             <div className="bg-gray-50 rounded-lg p-3 border">
-              <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Usuário</p>
+              <p className="text-xs text-gray-500 font-semibold mb-1">Usuário</p>
               <p className="font-medium">{userName || "—"}</p>
               <p className="text-xs text-gray-500">{userEmail?.replace("@sistema.local", "") || "—"}</p>
             </div>
@@ -152,7 +152,7 @@ export function ResetUserPasswordDialog({
             {/* Password Fields */}
             <div className="space-y-3">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Nova Senha *</Label>
+                <Label className="text-xs font-semibold text-gray-600">Nova Senha *</Label>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
@@ -162,7 +162,7 @@ export function ResetUserPasswordDialog({
                       newPassword: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) 
                     })}
                     placeholder="EX: ABC123"
-                    className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm uppercase font-mono tracking-widest"
+                    className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono tracking-widest"
                     disabled={loading}
                     maxLength={6}
                   />
@@ -182,7 +182,7 @@ export function ResetUserPasswordDialog({
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Confirmar Nova Senha *</Label>
+                <Label className="text-xs font-semibold text-gray-600">Confirmar Nova Senha *</Label>
                 <div className="relative">
                   <Input
                     type={showConfirmPassword ? "text" : "password"}
@@ -192,7 +192,7 @@ export function ResetUserPasswordDialog({
                       confirmPassword: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) 
                     })}
                     placeholder="REPITA A SENHA"
-                    className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm uppercase font-mono tracking-widest"
+                    className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono tracking-widest"
                     disabled={loading}
                     maxLength={6}
                   />

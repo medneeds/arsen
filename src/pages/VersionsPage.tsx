@@ -187,7 +187,7 @@ export default function VersionsPage() {
   if (isLoading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[60vh]">
-        <div className="text-muted-foreground uppercase">Carregando versões...</div>
+        <div className="text-muted-foreground">Carregando versões...</div>
       </div>
     );
   }
@@ -201,10 +201,10 @@ export default function VersionsPage() {
             <History className="h-6 w-6 text-purple-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight uppercase">
+            <h1 className="text-3xl font-bold tracking-tight">
               Versões Salvas
             </h1>
-            <p className="text-muted-foreground uppercase text-sm">
+            <p className="text-muted-foreground text-sm">
               {currentDepartment} • Histórico de versões do mapa de pacientes
             </p>
           </div>
@@ -219,8 +219,8 @@ export default function VersionsPage() {
         <Input
           placeholder="Buscar por descrição..."
           value={searchDescription}
-          onChange={(e) => setSearchDescription(e.target.value.toUpperCase())}
-          className="pl-10 uppercase"
+          onChange={(e) => setSearchDescription(e.target.value)}
+          className="pl-10"
         />
       </div>
 
@@ -229,22 +229,22 @@ export default function VersionsPage() {
         <CardHeader className="bg-gradient-to-r from-muted/50 to-transparent">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-primary" />
-            <CardTitle className="uppercase text-lg">Filtros de Busca</CardTitle>
+            <CardTitle className="text-lg">Filtros de Busca</CardTitle>
           </div>
-          <CardDescription className="uppercase text-xs">
+          <CardDescription className="text-xs">
             Busque versões por descrição ou período
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6 space-y-6">
           {/* Quick Period Buttons */}
           <div className="space-y-3">
-            <Label className="uppercase text-sm font-semibold">Período Rápido</Label>
+            <Label className="text-sm font-semibold">Período Rápido</Label>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={selectedPeriod === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("all")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Todos
               </Button>
@@ -252,7 +252,7 @@ export default function VersionsPage() {
                 variant={selectedPeriod === "today" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("today")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Hoje
               </Button>
@@ -260,7 +260,7 @@ export default function VersionsPage() {
                 variant={selectedPeriod === "week" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("week")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Última Semana
               </Button>
@@ -268,7 +268,7 @@ export default function VersionsPage() {
                 variant={selectedPeriod === "month" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("month")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Último Mês
               </Button>
@@ -276,7 +276,7 @@ export default function VersionsPage() {
                 variant={selectedPeriod === "quarter" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("quarter")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Último Trimestre
               </Button>
@@ -288,13 +288,13 @@ export default function VersionsPage() {
           {/* Date Pickers */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium uppercase">Data Inicial</Label>
+              <Label className="text-sm font-medium">Data Inicial</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal uppercase",
+                      "w-full justify-start text-left font-normal",
                       !tempStartDate && "text-muted-foreground"
                     )}
                   >
@@ -318,13 +318,13 @@ export default function VersionsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium uppercase">Data Final</Label>
+              <Label className="text-sm font-medium">Data Final</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal uppercase",
+                      "w-full justify-start text-left font-normal",
                       !tempEndDate && "text-muted-foreground"
                     )}
                   >
@@ -374,12 +374,12 @@ export default function VersionsPage() {
         <Card className="shadow-lg">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Clock className="h-16 w-16 text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground font-semibold uppercase text-lg">
+            <p className="text-muted-foreground font-semibold text-lg">
               {searchDescription || appliedStartDate || appliedEndDate 
-                ? "Nenhuma Versão Encontrada" 
-                : "Nenhuma Versão Salva Ainda"}
+                ? "Nenhuma versão encontrada" 
+                : "Nenhuma versão salva ainda"}
             </p>
-            <p className="text-muted-foreground text-sm uppercase mt-2">
+            <p className="text-muted-foreground text-sm mt-2">
               {searchDescription || appliedStartDate || appliedEndDate 
                 ? "Tente ajustar os filtros de busca" 
                 : "Salve uma versão do mapa para criar um histórico"}
@@ -397,10 +397,10 @@ export default function VersionsPage() {
                       <Clock className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="uppercase text-lg">
+                      <CardTitle className="text-lg">
                         {version.description}
                       </CardTitle>
-                      <CardDescription className="uppercase text-xs">
+                      <CardDescription className="text-xs">
                         {version.snapshot_data.length} {version.snapshot_data.length === 1 ? 'paciente salvo' : 'pacientes salvos'}
                       </CardDescription>
                     </div>
@@ -410,7 +410,7 @@ export default function VersionsPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handlePreview(version)}
-                      className="gap-2 uppercase hover:bg-primary/10 hover:text-primary"
+                      className="gap-2 hover:bg-primary/10 hover:text-primary"
                     >
                       <Eye className="h-4 w-4" />
                       Prévia
@@ -419,7 +419,7 @@ export default function VersionsPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleRestore(version.id)}
-                      className="gap-2 uppercase hover:bg-green-500/10 hover:text-green-600"
+                      className="gap-2 hover:bg-green-500/10 hover:text-green-600"
                     >
                       <RotateCcw className="h-4 w-4" />
                       Restaurar
@@ -443,8 +443,8 @@ export default function VersionsPage() {
       <AlertDialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="uppercase">Confirmar Restauração</AlertDialogTitle>
-            <AlertDialogDescription className="uppercase">
+            <AlertDialogTitle>Confirmar Restauração</AlertDialogTitle>
+            <AlertDialogDescription>
               Isso irá substituir todos os pacientes atuais pelos pacientes da versão selecionada. Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>

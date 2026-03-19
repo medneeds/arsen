@@ -199,39 +199,39 @@ const EvolucaoPage = () => {
         <div className="rounded-xl border border-border bg-card p-3">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <Label className="text-[10px] text-muted-foreground uppercase">Paciente</Label>
+              <Label className="text-[10px] text-muted-foreground">Paciente</Label>
               <p className="text-sm font-semibold text-foreground truncate">{patient.name}</p>
             </div>
             <div className="flex gap-3">
               <div>
-                <Label className="text-[10px] text-muted-foreground uppercase">Leito</Label>
+                <Label className="text-[10px] text-muted-foreground">Leito</Label>
                 <div className="flex items-center gap-1">
                   <BedDouble className="h-3 w-3 text-muted-foreground" />
                   <p className="text-sm font-semibold">{patient.bed}</p>
                 </div>
               </div>
               <div>
-                <Label className="text-[10px] text-muted-foreground uppercase">Setor</Label>
+                <Label className="text-[10px] text-muted-foreground">Setor</Label>
                 <p className="text-sm font-medium">{patient.unit}</p>
               </div>
             </div>
             <div className="flex gap-3">
               <div>
-                <Label className="text-[10px] text-muted-foreground uppercase">Idade</Label>
+                <Label className="text-[10px] text-muted-foreground">Idade</Label>
                 <p className="text-sm font-medium">{patient.age}</p>
               </div>
               <div>
-                <Label className="text-[10px] text-muted-foreground uppercase">Sexo</Label>
+                <Label className="text-[10px] text-muted-foreground">Sexo</Label>
                 <p className="text-sm font-medium">{patient.sex}</p>
               </div>
             </div>
             <div className="flex gap-3">
               <div>
-                <Label className="text-[10px] text-muted-foreground uppercase">Peso</Label>
+                <Label className="text-[10px] text-muted-foreground">Peso</Label>
                 <p className="text-sm font-medium">{patient.weight} kg</p>
               </div>
               <div>
-                <Label className="text-[10px] text-muted-foreground uppercase">Alergias</Label>
+                <Label className="text-[10px] text-muted-foreground">Alergias</Label>
                 <Badge variant={patient.allergies === 'NDAM' ? 'secondary' : 'destructive'} className="text-[10px]">
                   {patient.allergies}
                 </Badge>
@@ -258,7 +258,7 @@ const EvolucaoPage = () => {
               { key: 'dor' as const, label: 'Dor', placeholder: '0', unit: 'EVA' },
             ]).map(v => (
               <div key={v.key}>
-                <Label className="text-[9px] text-muted-foreground uppercase">{v.label}</Label>
+                <Label className="text-[9px] text-muted-foreground">{v.label}</Label>
                 <div className="relative">
                   <Input
                     value={vitals[v.key]}
@@ -297,7 +297,7 @@ const EvolucaoPage = () => {
                     {section.key === 'objective' ? (
                       <div className="space-y-3">
                         {/* Physical Exam subsections */}
-                        <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Exame Físico</p>
+                        <p className="text-[10px] text-muted-foreground font-semibold tracking-wider">Exame Físico</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {([
                             { key: 'general' as const, label: 'Estado Geral' },
@@ -322,7 +322,7 @@ const EvolucaoPage = () => {
                         </div>
                         <Separator />
                         <div>
-                          <Label className="text-[10px] text-muted-foreground uppercase">Dados objetivos adicionais (exames, imagem, etc.)</Label>
+                          <Label className="text-[10px] text-muted-foreground">Dados objetivos adicionais (exames, imagem, etc.)</Label>
                           <Textarea
                             value={soap.objective}
                             onChange={e => updateSOAP('objective', e.target.value)}
@@ -351,7 +351,7 @@ const EvolucaoPage = () => {
           <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-xs font-semibold text-muted-foreground uppercase">Preview da Evolução</span>
+              <span className="text-xs font-semibold text-muted-foreground">Preview da Evolução</span>
             </div>
             <div className="text-xs text-foreground space-y-1.5 leading-relaxed">
               {soap.subjective && <p><strong className="text-blue-500">S:</strong> {soap.subjective}</p>}

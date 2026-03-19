@@ -46,11 +46,11 @@ export function ShiftReminderDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="uppercase flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-amber-600 animate-pulse" />
             Lembrete de Passagem de Plantão
           </DialogTitle>
-          <DialogDescription className="uppercase text-base pt-4">
+          <DialogDescription className="text-base pt-4">
             Faltam 15 minutos para a passagem do plantão <span className="font-bold text-primary">{shiftTime}</span>.
             <br /><br />
             Não esqueça de salvar uma versão do mapa de pacientes antes da passagem!
@@ -60,13 +60,13 @@ export function ShiftReminderDialog() {
           <Button
             variant="outline"
             onClick={handleDismiss}
-            className="uppercase"
+            className=""
           >
             Dispensar
           </Button>
           <Button
             onClick={handleSaveVersion}
-            className="uppercase gap-2"
+            className="gap-2"
           >
             <Save className="h-4 w-4" />
             Salvar Versão Agora

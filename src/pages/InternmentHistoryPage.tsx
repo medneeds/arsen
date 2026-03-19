@@ -213,11 +213,11 @@ const InternmentHistoryPage = () => {
             <History className="h-6 w-6 text-amber-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight uppercase">
+            <h1 className="text-3xl font-bold tracking-tight">
               Histórico de Solicitações
             </h1>
-            <p className="text-muted-foreground uppercase text-sm">
-              {currentDepartment} • {filteredRequests.length} Registros Encontrados
+            <p className="text-muted-foreground text-sm">
+              {currentDepartment} • {filteredRequests.length} registros encontrados
             </p>
           </div>
         </div>
@@ -230,25 +230,25 @@ const InternmentHistoryPage = () => {
         <CardHeader className="bg-gradient-to-r from-muted/50 to-transparent">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-primary" />
-            <CardTitle className="uppercase text-lg">Filtros de Busca</CardTitle>
+            <CardTitle className="text-lg">Filtros de Busca</CardTitle>
           </div>
-          <CardDescription className="uppercase text-xs">
+          <CardDescription className="text-xs">
             Busque solicitações por nome do paciente ou período
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6 space-y-6">
           {/* Search by Name */}
           <div className="space-y-3">
-            <Label htmlFor="search-name" className="uppercase text-sm font-semibold flex items-center gap-2">
+            <Label htmlFor="search-name" className="text-sm font-semibold flex items-center gap-2">
               <Search className="h-4 w-4" />
-              Buscar por Nome do Paciente
+              Buscar por nome do paciente
             </Label>
             <Input
               id="search-name"
               value={searchName}
-              onChange={(e) => setSearchName(e.target.value.toUpperCase())}
+              onChange={(e) => setSearchName(e.target.value)}
               placeholder="Digite o nome..."
-              className="uppercase h-12"
+              className="h-12"
             />
           </div>
 
@@ -256,13 +256,13 @@ const InternmentHistoryPage = () => {
 
           {/* Quick Period Buttons */}
           <div className="space-y-3">
-            <Label className="uppercase text-sm font-semibold">Período Rápido</Label>
+            <Label className="text-sm font-semibold">Período Rápido</Label>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={selectedPeriod === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("all")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Todos
               </Button>
@@ -270,7 +270,7 @@ const InternmentHistoryPage = () => {
                 variant={selectedPeriod === "today" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("today")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Hoje
               </Button>
@@ -278,7 +278,7 @@ const InternmentHistoryPage = () => {
                 variant={selectedPeriod === "week" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("week")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Última Semana
               </Button>
@@ -286,7 +286,7 @@ const InternmentHistoryPage = () => {
                 variant={selectedPeriod === "month" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("month")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Último Mês
               </Button>
@@ -294,7 +294,7 @@ const InternmentHistoryPage = () => {
                 variant={selectedPeriod === "quarter" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("quarter")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Último Trimestre
               </Button>
@@ -304,13 +304,13 @@ const InternmentHistoryPage = () => {
           {/* Date Pickers */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium uppercase">Data Inicial</Label>
+              <Label className="text-sm font-medium">Data Inicial</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal uppercase",
+                      "w-full justify-start text-left font-normal",
                       !tempStartDate && "text-muted-foreground"
                     )}
                   >
@@ -334,13 +334,13 @@ const InternmentHistoryPage = () => {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium uppercase">Data Final</Label>
+              <Label className="text-sm font-medium">Data Final</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal uppercase",
+                      "w-full justify-start text-left font-normal",
                       !tempEndDate && "text-muted-foreground"
                     )}
                   >
@@ -368,7 +368,7 @@ const InternmentHistoryPage = () => {
           <div className="flex gap-2 pt-2">
             <Button
               onClick={handleApplyFilters}
-              className="flex-1 uppercase font-semibold"
+              className="flex-1 font-semibold"
               size="lg"
             >
               <Filter className="mr-2 h-4 w-4" />
@@ -377,7 +377,7 @@ const InternmentHistoryPage = () => {
             <Button
               variant="outline"
               onClick={handleClearFilters}
-              className="flex-1 uppercase"
+              className="flex-1"
               size="lg"
             >
               Limpar Filtro
@@ -389,8 +389,8 @@ const InternmentHistoryPage = () => {
       {/* Results Table */}
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="uppercase text-lg">Solicitações Encontradas</CardTitle>
-          <CardDescription className="uppercase text-xs">
+          <CardTitle className="text-lg">Solicitações Encontradas</CardTitle>
+          <CardDescription className="text-xs">
             {filteredRequests.length} {filteredRequests.length === 1 ? 'registro' : 'registros'} no histórico
           </CardDescription>
         </CardHeader>
@@ -399,17 +399,17 @@ const InternmentHistoryPage = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/30">
-                  <TableHead className="uppercase font-bold">Nome do Paciente</TableHead>
-                  <TableHead className="uppercase font-bold">Idade</TableHead>
-                  <TableHead className="uppercase font-bold">Destino</TableHead>
-                  <TableHead className="uppercase font-bold">Data</TableHead>
-                  <TableHead className="uppercase text-right font-bold">Ações</TableHead>
+                  <TableHead className="font-bold">Nome do Paciente</TableHead>
+                  <TableHead className="font-bold">Idade</TableHead>
+                  <TableHead className="font-bold">Destino</TableHead>
+                  <TableHead className="font-bold">Data</TableHead>
+                  <TableHead className="text-right font-bold">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredRequests.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground uppercase py-12">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
                       <div className="flex flex-col items-center gap-2">
                         <History className="h-12 w-12 text-muted-foreground/50" />
                         <p className="font-semibold">Nenhuma Solicitação Encontrada</p>

@@ -107,18 +107,18 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
               <FileText className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1">
-              <DialogTitle className="text-lg font-bold tracking-wide uppercase text-primary">
-                {selectedTemplate ? selectedTemplate.name : "TEMPLATES TERAPÊUTICOS"}
+              <DialogTitle className="text-lg font-bold tracking-wide text-primary">
+                {selectedTemplate ? selectedTemplate.name : "Templates terapêuticos"}
               </DialogTitle>
               <p className="text-sm font-semibold text-foreground mt-0.5 tracking-wide">
                 {patientName}
               </p>
             </div>
           </div>
-          <DialogDescription className="text-xs uppercase tracking-wider text-muted-foreground">
+          <DialogDescription className="text-xs tracking-wider text-muted-foreground">
             {selectedTemplate
-              ? "SELECIONE E EDITE OS ITENS ANTES DE APLICAR (DUPLO CLIQUE PARA EDITAR)"
-              : "SELECIONE UM PROTOCOLO PARA APLICAR"}
+              ? "Selecione e edite os itens antes de aplicar (duplo clique para editar)"
+              : "Selecione um protocolo para aplicar"}
           </DialogDescription>
         </DialogHeader>
 
@@ -131,14 +131,14 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
                 placeholder="Pesquisar protocolos..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 uppercase"
+                className="pl-9"
               />
             </div>
             <ScrollArea className="h-[350px]">
               {isLoading ? (
-                <div className="text-center py-8 text-sm text-muted-foreground uppercase">Carregando...</div>
+                <div className="text-center py-8 text-sm text-muted-foreground">Carregando...</div>
               ) : filtered.length === 0 ? (
-                <div className="text-center py-8 text-sm text-muted-foreground uppercase">
+                <div className="text-center py-8 text-sm text-muted-foreground">
                   Nenhum template disponível
                 </div>
               ) : (
@@ -161,7 +161,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
                               {template.items.length} itens
                             </span>
                           </div>
-                          <p className="text-sm font-semibold uppercase">{template.name}</p>
+                          <p className="text-sm font-semibold">{template.name}</p>
                           {template.description && (
                             <p className="text-xs text-muted-foreground mt-0.5">{template.description}</p>
                           )}
@@ -177,7 +177,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
           // Item selection view
           <>
             <div className="flex gap-2 pb-2">
-              <Button variant="outline" size="sm" onClick={handleBack} className="uppercase text-xs">
+              <Button variant="outline" size="sm" onClick={handleBack} className="text-xs">
                 ← Voltar
               </Button>
               <Button
@@ -188,7 +188,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
                     selectedItems.length === editableItems.length ? [] : editableItems.map((_, i) => String(i))
                   )
                 }
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 {selectedItems.length === editableItems.length ? "Desmarcar Todos" : "Selecionar Todos"}
               </Button>
@@ -197,7 +197,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
             <Button
               onClick={handleApply}
               disabled={selectedItems.length === 0}
-              className="w-full uppercase tracking-wider font-bold shadow-lg"
+              className="w-full tracking-wider font-bold shadow-lg"
             >
               ⚡ APLICAR {selectedItems.length > 0 && `(${selectedItems.length} ITENS)`}
             </Button>

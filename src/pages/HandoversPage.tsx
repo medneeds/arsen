@@ -192,10 +192,10 @@ export default function HandoversPage() {
             <ClipboardList className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground uppercase tracking-tight">
-              PASSAGENS DE PLANTÃO
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
+              Passagens de Plantão
             </h1>
-            <p className="text-sm text-muted-foreground uppercase tracking-wide">
+            <p className="text-sm text-muted-foreground tracking-wide">
               Histórico de Registros
             </p>
           </div>
@@ -220,7 +220,7 @@ export default function HandoversPage() {
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 space-y-2">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <CardTitle className="text-base font-bold uppercase">
+                              <CardTitle className="text-base font-bold">
                                 {formatHandoverDatetime(handover.handover_datetime)}
                               </CardTitle>
                             </div>
@@ -232,13 +232,13 @@ export default function HandoversPage() {
                                 </Badge>
                               )}
                               {handover.handover_from && (
-                                <Badge variant="outline" className="uppercase text-xs">
-                                  DE: {handover.handover_from}
+                                <Badge variant="outline" className="text-xs">
+                                  De: {handover.handover_from}
                                 </Badge>
                               )}
                               {handover.handover_to && (
-                                <Badge variant="outline" className="uppercase text-xs">
-                                  PARA: {handover.handover_to}
+                                <Badge variant="outline" className="text-xs">
+                                  Para: {handover.handover_to}
                                 </Badge>
                               )}
                             </div>
@@ -246,11 +246,11 @@ export default function HandoversPage() {
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Bed className="h-3.5 w-3.5" />
-                                <span className="uppercase">{handover.occupied_beds} OCUPADOS</span>
+                                <span>{handover.occupied_beds} ocupados</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Users className="h-3.5 w-3.5" />
-                                <span className="uppercase">{handover.total_patients} TOTAL</span>
+                                <span>{handover.total_patients} total</span>
                               </div>
                             </div>
                           </div>
@@ -258,7 +258,7 @@ export default function HandoversPage() {
                           <div className="flex items-center gap-2">
                             <CollapsibleTrigger asChild>
                               <Button variant="ghost" size="sm" className="gap-1">
-                                <span className="text-xs uppercase">Detalhes</span>
+                                <span className="text-xs">Detalhes</span>
                                 <ChevronDown className="h-4 w-4 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
                               </Button>
                             </CollapsibleTrigger>
@@ -281,7 +281,7 @@ export default function HandoversPage() {
                         <CardContent className="space-y-4 pt-0">
                           {handover.notes && (
                             <div className="p-3 bg-muted/50 rounded-lg">
-                              <p className="text-xs uppercase font-semibold text-muted-foreground mb-1">
+                              <p className="text-xs font-semibold text-muted-foreground mb-1">
                                 Observações
                               </p>
                               <p className="text-sm text-foreground whitespace-pre-wrap">
@@ -293,7 +293,7 @@ export default function HandoversPage() {
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             {Object.entries(handover.snapshot_data.sectors).map(([sector, count]) => (
                               <div key={sector} className="p-3 bg-muted/30 rounded-lg">
-                                <p className="text-xs uppercase font-semibold text-muted-foreground mb-1">
+                                <p className="text-xs font-semibold text-muted-foreground mb-1">
                                   {getSectorLabel(sector)}
                                 </p>
                                 <p className="text-lg font-bold text-foreground">{count}</p>
@@ -302,7 +302,7 @@ export default function HandoversPage() {
                           </div>
 
                           <div className="space-y-2">
-                            <p className="text-xs uppercase font-semibold text-muted-foreground">
+                            <p className="text-xs font-semibold text-muted-foreground">
                               Pacientes Registrados ({handover.snapshot_data.patients.filter(p => p.name.trim() !== "").length})
                             </p>
                             <div className="space-y-1.5 max-h-[300px] overflow-y-auto">

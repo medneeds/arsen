@@ -486,7 +486,7 @@ function SortablePrescriptionItemRow({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground tracking-wider">
                       {presets.label}
                     </div>
                     <DropdownMenuSeparator />
@@ -617,7 +617,7 @@ function SortablePrescriptionItemRow({
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
-                              <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                              <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground tracking-wider">
                                 {presets.label} — Escolha um esquema
                               </div>
                               <DropdownMenuSeparator />
@@ -2353,7 +2353,7 @@ const PrescricaoPage = () => {
                     <div className="border-b border-border/50 bg-muted/20 p-3 space-y-3">
                       {/* Profile buttons */}
                       <div>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Perfis de Cuidados</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-2">Perfis de Cuidados</p>
                         <div className="flex flex-wrap gap-1.5">
                           {CARE_PROFILES.map(profile => {
                             const ProfileIcon = CATEGORY_ICONS[profile.icon] || ClipboardList;
@@ -2388,7 +2388,7 @@ const PrescricaoPage = () => {
 
                       {/* Free recommendation input */}
                       <div>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Recomendação Avulsa</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-1.5">Recomendação Avulsa</p>
                         <div className="flex items-start gap-1.5">
                           <Textarea
                             value={freeRecommendation}

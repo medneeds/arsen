@@ -92,10 +92,10 @@ function EditableListItem({
       <Input
         ref={inputRef}
         value={value}
-        onChange={(e) => onChange(e.target.value.toUpperCase())}
+        onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="h-8 text-xs uppercase flex-1"
+        className="h-8 text-xs flex-1"
       />
       <Button
         type="button"
@@ -333,7 +333,7 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
         <div className="space-y-4 py-4">
           {/* UTI Selection */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold uppercase">UTI de Destino</Label>
+            <Label className="text-xs font-semibold">UTI de Destino</Label>
             <Select value={targetUti} onValueChange={(v) => setTargetUti(v as "UTI 1" | "UTI 2")}>
               <SelectTrigger className="h-10">
                 <SelectValue />
@@ -358,22 +358,22 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
           {/* Requesting Doctor Info */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase">Médico Solicitante</Label>
+              <Label className="text-xs font-semibold">Médico Solicitante</Label>
               <Input
                 ref={doctorNameRef}
                 value={requestingDoctorName}
-                onChange={(e) => setRequestingDoctorName(e.target.value.toUpperCase())}
-                placeholder="NOME DO MÉDICO"
-                className="h-9 text-xs uppercase"
+                onChange={(e) => setRequestingDoctorName(e.target.value)}
+                placeholder="Nome do médico"
+                className="h-9 text-xs"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase">Setor de Origem</Label>
+              <Label className="text-xs font-semibold">Setor de Origem</Label>
               <Input
                 value={originSector}
-                onChange={(e) => setOriginSector(e.target.value.toUpperCase())}
-                placeholder="EX: EMERGÊNCIA, ENFERMARIA..."
-                className="h-9 text-xs uppercase"
+                onChange={(e) => setOriginSector(e.target.value)}
+                placeholder="Ex: Emergência, Enfermaria..."
+                className="h-9 text-xs"
               />
             </div>
           </div>
@@ -386,16 +386,16 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
             </div>
             <div className="grid grid-cols-4 gap-2">
               <div className="col-span-2 space-y-1">
-                <Label className="text-[10px] uppercase text-muted-foreground">Nome *</Label>
+                <Label className="text-[10px] text-muted-foreground">Nome *</Label>
                 <Input
                   value={patientName}
-                  onChange={(e) => setPatientName(e.target.value.toUpperCase())}
-                  placeholder="NOME COMPLETO"
-                  className="h-8 text-xs uppercase"
+                  onChange={(e) => setPatientName(e.target.value)}
+                  placeholder="Nome completo"
+                  className="h-8 text-xs"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] uppercase text-muted-foreground">Idade</Label>
+                <Label className="text-[10px] text-muted-foreground">Idade</Label>
                 <Input
                   value={patientAge}
                   onChange={(e) => setPatientAge(e.target.value)}
@@ -404,7 +404,7 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] uppercase text-muted-foreground">Sexo</Label>
+                <Label className="text-[10px] text-muted-foreground">Sexo</Label>
                 <Select value={patientSex} onValueChange={setPatientSex}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="—" />
@@ -569,9 +569,9 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
               <Textarea
                 ref={historyRef}
                 value={admissionHistory}
-                onChange={(e) => setAdmissionHistory(e.target.value.toUpperCase())}
-                placeholder="HISTÓRIA CLÍNICA COMPLETA, EVOLUÇÃO, CONDUTAS..."
-                className="min-h-[120px] text-xs uppercase"
+                onChange={(e) => setAdmissionHistory(e.target.value)}
+                placeholder="História clínica completa, evolução, condutas..."
+                className="min-h-[120px] text-xs"
               />
             </CollapsibleContent>
           </Collapsible>

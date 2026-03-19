@@ -137,8 +137,8 @@ export default function AdminUnitsPage() {
     setIsSaving(true);
     try {
       const dataToSave = {
-        name: formData.name.toUpperCase().trim(),
-        address: formData.address.toUpperCase().trim() || null,
+        name: formData.name.trim(),
+        address: formData.address.trim() || null,
         state_id: formData.state_id,
       };
 
@@ -256,7 +256,7 @@ export default function AdminUnitsPage() {
                     placeholder="Ex: Hospital Central"
                     value={formData.name}
                     onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value.toUpperCase() })
+                      setFormData({ ...formData, name: e.target.value })
                     }
                   />
                 </div>
@@ -267,7 +267,7 @@ export default function AdminUnitsPage() {
                     placeholder="Endereço completo da unidade"
                     value={formData.address}
                     onChange={(e) =>
-                      setFormData({ ...formData, address: e.target.value.toUpperCase() })
+                      setFormData({ ...formData, address: e.target.value })
                     }
                   />
                 </div>
