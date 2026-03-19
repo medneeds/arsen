@@ -26,7 +26,7 @@ export function useAgeCalculator(isPediatric: boolean = false) {
         if (birthDate) {
           const ageData = calculateDetailedAge(birthDate);
           const years = ageData.years || 0;
-          return years === 1 ? "1 ANO" : `${years} ANOS`;
+          return years === 1 ? "1 ano" : `${years} anos`;
         }
         
         // Se não conseguir parsear, retornar como está em uppercase
