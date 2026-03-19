@@ -1,13 +1,15 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { usePatients } from "@/hooks/usePatients";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { Patient } from "@/types/patient";
 import { differenceInDays, parseISO, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Eye, Filter, FileText, Pill, Activity, ClipboardList, FolderOpen, User, Calendar, Clock, Stethoscope, Heart, TrendingUp, AlertTriangle, TestTubes, Syringe, Shield, Thermometer } from "lucide-react";
+import { Search, Eye, Filter, FileText, Pill, Activity, ClipboardList, FolderOpen, User, Calendar, Clock, Stethoscope, Heart, TrendingUp, AlertTriangle, TestTubes, Syringe, Shield, Thermometer, Pencil, Check, X, ClipboardCheck } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
