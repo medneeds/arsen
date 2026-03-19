@@ -422,7 +422,7 @@ export default function AuthPage() {
                     <h2 className="text-lg sm:text-xl text-white font-bold tracking-tight leading-tight">
                       Selecione o Tipo de Acesso
                     </h2>
-                    <p className="text-slate-400 text-[10px] tracking-wide uppercase">
+                    <p className="text-slate-400 text-[10px] tracking-wide">
                       Hospital Mun. Djalma Marques — Socorrão I
                     </p>
                   </div>
