@@ -232,8 +232,8 @@ const NotesTabOptimized = () => {
 
     if (error) {
       toast({
-        title: "ERRO",
-        description: "NÃO FOI POSSÍVEL AGENDAR O LEMBRETE",
+        title: "Erro",
+        description: "Não foi possível agendar o lembrete",
         variant: "destructive",
       });
       return;
