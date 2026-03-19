@@ -146,6 +146,60 @@ const DOCUMENTS = [
   ]},
 ];
 
+// Mock UTI 1 patients (L01-L08)
+const MOCK_UTI1_PATIENTS: Patient[] = [
+  {
+    id: "uti1-01", bedNumber: "L01", name: "Carlos Eduardo Machado", age: "67", sector: "red",
+    diagnoses: ["Choque séptico foco abdominal", "Peritonite secundária"], medicalHistory: ["HAS", "DM2", "Colecistectomia prévia"],
+    relevantExams: ["Lactato 5.2", "PCT 18.4", "Hemocultura: E. coli ESBL"],
+    pendencies: ["Ajuste ATB conforme antibiograma", "Avaliação cirúrgica para reabordagem"], schedule: ["Gasometria 4/4h", "Controle lactato 6h"],
+    admissionHistory: "Admitido por quadro de abdome agudo perfurativo, submetido a laparotomia exploradora.", admissionDate: "2026-03-10T08:30:00",
+    clinicalStatus: "gravissimo", medicalResponsibility: { type: "lider", leaderNames: "Dr. Fernando Almeida" },
+    utiDischargePrediction: ["Sem previsão"], isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uti1-02", bedNumber: "L02", name: "Josefa Maria Lopes", age: "73", sector: "red",
+    diagnoses: ["SDRA grave", "Pneumonia aspirativa"], medicalHistory: ["Alzheimer avançado", "Disfagia"],
+    relevantExams: ["PaO2/FiO2 = 95", "TC tórax: vidro fosco bilateral", "Hb 10.1"],
+    pendencies: ["Avaliação fonoaudiologia", "Discutir limitação terapêutica com família"], schedule: ["Pronação 16h", "Gasometria 2/2h"],
+    admissionHistory: "Trazida por familiares após episódio de broncoaspiração maciça.", admissionDate: "2026-03-12T14:00:00",
+    clinicalStatus: "gravissimo", medicalResponsibility: { type: "lider", leaderNames: "Dra. Mariana Costa" },
+    utiDischargePrediction: ["Sem previsão"], isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uti1-03", bedNumber: "L03", name: "Antônio Marcos Vieira", age: "55", sector: "red",
+    diagnoses: ["TCE grave", "Hematoma subdural agudo operado"], medicalHistory: ["Etilismo crônico"],
+    relevantExams: ["Glasgow 8T", "TC crânio PO: sem ressangramento", "Na+ 152"],
+    pendencies: ["Correção hipernatremia", "PIC monitoring"], schedule: ["TC crânio controle 48h", "Controle Na+ 6/6h"],
+    admissionHistory: "Vítima de queda de própria altura em uso de álcool. Glasgow 6 na admissão.", admissionDate: "2026-03-14T22:45:00",
+    clinicalStatus: "grave", medicalResponsibility: { type: "lider", leaderNames: "Dr. Paulo Sérgio" },
+    utiDischargePrediction: ["Sem previsão"], isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uti1-04", bedNumber: "L04", name: "Rita de Cássia Ferreira", age: "41", sector: "red",
+    diagnoses: ["Tromboembolia pulmonar maciça", "Cor pulmonale agudo"], medicalHistory: ["Obesidade grau III", "Uso de ACO"],
+    relevantExams: ["AngioTC: TEP bilateral", "Troponina 3.200", "BNP 5.800", "FEVE 35%"],
+    pendencies: ["Avaliação para trombólise sistêmica", "Ecocardiograma controle"], schedule: ["Heparina BIC", "Monitorização contínua"],
+    admissionHistory: "Dispneia súbita e síncope no domicílio. Hipotensa na chegada ao PS.", admissionDate: "2026-03-16T11:20:00",
+    clinicalStatus: "gravissimo", medicalResponsibility: { type: "lider", leaderNames: "Dra. Luciana Prado" },
+    utiDischargePrediction: ["7-10 dias"], isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uti1-05", bedNumber: "L05", name: "João Batista Sousa Neto", age: "62", sector: "red",
+    diagnoses: ["Estado de mal epiléptico", "Encefalopatia pós-anóxica"], medicalHistory: ["Epilepsia refratária", "AVC prévio"],
+    relevantExams: ["EEG: atividade epileptiforme contínua", "Glasgow 3T", "RM crânio: encefalopatia difusa"],
+    pendencies: ["Ajuste anticonvulsivantes", "Avaliação neurologia"], schedule: ["EEG contínuo", "Controle glicemia 4/4h"],
+    admissionHistory: "Encontrado em estado de mal epiléptico no domicílio. Duração estimada > 30 min.", admissionDate: "2026-03-15T06:00:00",
+    clinicalStatus: "gravissimo", medicalResponsibility: { type: "lider", leaderNames: "Dr. Rodrigo Mendes" },
+    utiDischargePrediction: ["Sem previsão"], isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+];
+
 // Mock UTI 2 patients for demo (L09-L18)
 const MOCK_UTI2_PATIENTS: Patient[] = [
   {
@@ -252,6 +306,92 @@ const MOCK_UTI2_PATIENTS: Patient[] = [
   },
 ];
 
+// Mock UCI 1 patients (L19-L26)
+const MOCK_UCI1_PATIENTS: Patient[] = [
+  {
+    id: "uci1-01", bedNumber: "L19", name: "Sebastião Alves da Cruz", age: "74", sector: "blue",
+    diagnoses: ["Pós-operatório revascularização miocárdica", "DAC triarterial"], medicalHistory: ["HAS", "DM2", "Dislipidemia"],
+    relevantExams: ["ECG: ritmo sinusal", "Hb 9.8", "Cr 1.4"],
+    pendencies: ["Fisioterapia respiratória intensiva", "Controle glicêmico"], schedule: ["RX tórax controle", "Deambulação assistida"],
+    admissionHistory: "PO D3 de CRM x3 sem intercorrências. Estável para step-down.", admissionDate: "2026-03-13T10:00:00",
+    clinicalStatus: "grave_estavel", medicalResponsibility: { type: "lider", leaderNames: "Dr. Henrique Bastos" },
+    utiDischargePrediction: ["3-4 dias"], isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uci1-02", bedNumber: "L20", name: "Francisca Soares Lima", age: "68", sector: "blue",
+    diagnoses: ["ICC descompensada", "FA de alta resposta"], medicalHistory: ["Valvopatia mitral reumática", "HAS"],
+    relevantExams: ["BNP 2.800", "FEVE 38%", "RX: congestão pulmonar"],
+    pendencies: ["Otimizar diuréticos", "Controle frequência cardíaca"], schedule: ["Balanço hídrico rigoroso", "ECG controle"],
+    admissionHistory: "Dispneia progressiva há 7 dias com ortopneia e edema de MMII.", admissionDate: "2026-03-15T16:30:00",
+    clinicalStatus: "potencialmente_grave", medicalResponsibility: { type: "lider", leaderNames: "Dra. Cristina Rocha" },
+    utiDischargePrediction: ["5-7 dias"], isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uci1-03", bedNumber: "L21", name: "Manuel Ribeiro dos Santos", age: "59", sector: "blue",
+    diagnoses: ["Pneumonia comunitária grave", "Derrame pleural volumoso drenado"], medicalHistory: ["DPOC Gold III", "Ex-tabagista"],
+    relevantExams: ["Líquido pleural: exsudato", "PCT 4.2", "Hb 11.5"],
+    pendencies: ["Controle débito dreno", "Fisioterapia respiratória"], schedule: ["RX tórax pós-drenagem", "ATB D7"],
+    admissionHistory: "Internado por pneumonia com derrame pleural volumoso à direita.", admissionDate: "2026-03-11T09:15:00",
+    clinicalStatus: "regular", medicalResponsibility: { type: "lider", leaderNames: "Dr. Augusto Pereira" },
+    utiDischargePrediction: ["2-3 dias"], isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uci1-04", bedNumber: "L22", name: "Conceição Aparecida Moura", age: "81", sector: "blue",
+    diagnoses: ["Fratura de fêmur proximal operada", "Delirium pós-operatório"], medicalHistory: ["Osteoporose", "HAS", "Demência leve"],
+    relevantExams: ["Hb 8.9", "Cr 1.1", "Na+ 134"],
+    pendencies: ["Manejo de delirium", "Profilaxia TVP", "Parecer geriatria"], schedule: ["Fisioterapia motora", "Controle dor"],
+    admissionHistory: "Queda da própria altura. PO D2 de osteossíntese de fêmur.", admissionDate: "2026-03-16T20:00:00",
+    clinicalStatus: "potencialmente_grave", medicalResponsibility: { type: "lider", leaderNames: "Dra. Ana Beatriz" },
+    utiDischargePrediction: ["4-5 dias"], isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+];
+
+// Mock UCI 2 patients (L27-L34)
+const MOCK_UCI2_PATIENTS: Patient[] = [
+  {
+    id: "uci2-01", bedNumber: "L27", name: "Domingos Sávio Carvalho", age: "52", sector: "outside",
+    diagnoses: ["Pielonefrite complicada", "IRA pré-renal em resolução"], medicalHistory: ["DM2", "Litíase renal recorrente"],
+    relevantExams: ["Cr 2.8 (era 4.5)", "Urocultura: E. coli sensível", "USG: hidronefrose leve"],
+    pendencies: ["Controle função renal", "Avaliação urologia"], schedule: ["ATB EV D10", "Hidratação vigorosa"],
+    admissionHistory: "Febre alta e dor lombar direita há 5 dias. IRA na admissão.", admissionDate: "2026-03-08T12:00:00",
+    clinicalStatus: "regular", medicalResponsibility: { type: "lider", leaderNames: "Dr. Marcos Tavares" },
+    utiDischargePrediction: ["2-3 dias"], isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uci2-02", bedNumber: "L28", name: "Maria Nazaré Oliveira", age: "78", sector: "outside",
+    diagnoses: ["AVCi lacunar", "HAS mal controlada"], medicalHistory: ["HAS", "DM2", "Dislipidemia", "AVCi prévio"],
+    relevantExams: ["TC crânio: lacunas talâmicas", "NIHSS 4", "Glasgow 15"],
+    pendencies: ["Ajuste anti-hipertensivos", "Fonoaudiologia para disfagia leve"], schedule: ["Fisioterapia neuro", "Controle PA 4/4h"],
+    admissionHistory: "Disartria e hemiparesia direita sutil de início há 12h.", admissionDate: "2026-03-17T07:30:00",
+    clinicalStatus: "potencialmente_grave", medicalResponsibility: { type: "lider", leaderNames: "Dra. Patrícia Nogueira" },
+    utiDischargePrediction: ["3-5 dias"], isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+  {
+    id: "uci2-03", bedNumber: "L29", name: "Raimunda Ferreira Costa", age: "65", sector: "outside",
+    diagnoses: ["DPOC exacerbado", "Insuficiência respiratória hipercápnica"], medicalHistory: ["DPOC Gold IV", "Cor pulmonale", "Tabagismo 45 maços-ano"],
+    relevantExams: ["Gasometria: pH 7.32, pCO2 58", "RX: hiperinsuflação", "BNP 450"],
+    pendencies: ["Desmame VNI", "Otimizar broncodilatadores"], schedule: ["Gasometria 8/8h", "Fisioterapia respiratória 3x/dia"],
+    admissionHistory: "Piora progressiva da dispneia há 3 dias após IVAS.", admissionDate: "2026-03-14T18:00:00",
+    clinicalStatus: "grave_estavel", medicalResponsibility: { type: "lider", leaderNames: "Dr. Leonardo Barros" },
+    utiDischargePrediction: ["3-4 dias"], isVacant: false,
+    highlightedDiagnoses: [], highlightedMedicalHistory: [], highlightedPendencies: [], highlightedConducts: [],
+  },
+];
+
+// All mock patients combined
+const ALL_MOCK_PATIENTS: Patient[] = [
+  ...MOCK_UTI1_PATIENTS,
+  ...MOCK_UTI2_PATIENTS,
+  ...MOCK_UCI1_PATIENTS,
+  ...MOCK_UCI2_PATIENTS,
+];
+
 // Mock prescription data per patient
 const MOCK_PRESCRIPTIONS: Record<string, Array<{ category: string; items: Array<{ name: string; dose: string; route: string; frequency: string; notes?: string }> }>> = {
   "uti2-01": [
@@ -332,7 +472,9 @@ export default function PainelClinicoPage() {
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
-  const [sectorFilter, setSectorFilter] = useState<string>("all");
+  const [sectorFilter, setSectorFilter] = useState<string>(() => {
+    return localStorage.getItem("selected_sector") || "all";
+  });
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [sidebarTab, setSidebarTab] = useState("resumo");
   const [sapsScores, setSapsScores] = useState<Record<string, { score: number; mortality: number }>>({});
@@ -360,7 +502,7 @@ export default function PainelClinicoPage() {
 
   // Use DB patients if available (occupied ones), otherwise fallback to mock for demo
   const occupiedDbPatients = dbPatients.filter(p => !p.isVacant && p.name && p.name.trim() !== "");
-  const patients = occupiedDbPatients.length > 0 ? dbPatients : MOCK_UTI2_PATIENTS;
+  const patients = occupiedDbPatients.length > 0 ? dbPatients : ALL_MOCK_PATIENTS;
 
   // Filter out vacant beds and apply search/sector filter
   const filteredPatients = useMemo(() => {
@@ -392,7 +534,7 @@ export default function PainelClinicoPage() {
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Socorrão I</span>
             <span className="text-white/30 text-xs">/</span>
-            <Select value={sectorFilter} onValueChange={setSectorFilter}>
+            <Select value={sectorFilter} onValueChange={(val) => { setSectorFilter(val); if (val !== "all") localStorage.setItem("selected_sector", val); }}>
               <SelectTrigger className="h-7 w-auto gap-1 bg-white/10 border-white/20 text-xs text-white font-medium px-2.5 focus:ring-0 focus:ring-offset-0 hover:bg-white/20 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/60 rounded-md">
                 <SelectValue placeholder="Setor" />
               </SelectTrigger>
