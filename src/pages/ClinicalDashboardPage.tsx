@@ -102,9 +102,9 @@ const ClinicalDashboardPage = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const hospitalUnitId = localStorage.getItem("selected_hospital_unit");
-      const stateId = localStorage.getItem("selected_state");
-      if (!hospitalUnitId || !stateId) return;
+      if (!currentHospital || !currentState) return;
+      const hospitalUnitId = currentHospital.id;
+      const stateId = currentState.id;
 
       // Parallel fetches
       const [patientsRes, bedRequestsRes, movementsRes] = await Promise.all([
