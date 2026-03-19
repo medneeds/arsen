@@ -569,6 +569,16 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           )}
 
           <div className="space-y-1.5">
+            <Label className="text-xs">Previsão de alta</Label>
+            <Input
+              value={dischargePrediction}
+              onChange={(e) => setDischargePrediction(e.target.value)}
+              placeholder="Ex: 5-7 dias, 48h, Sem previsão..."
+              className="h-9 text-xs"
+            />
+          </div>
+
+          <div className="space-y-1.5">
             <Label className="text-xs">Observações da admissão (opcional)</Label>
             <Textarea
               value={admissionNotes}

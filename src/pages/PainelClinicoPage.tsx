@@ -1026,23 +1026,23 @@ export default function PainelClinicoPage() {
 // EditableInfoSection component - click to edit inline, syncs with map
 function EditableInfoSection({ icon: Icon, title, items, onSave }: { icon: React.ElementType; title: string; items: string[]; onSave: (items: string[]) => Promise<void> }) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState("");
+  const [entries, setEntries] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const startEdit = () => {
-    setDraft(items.join("\n"));
+    setEntries(items.length > 0 ? [...items] : [""]);
     setEditing(true);
   };
 
   const cancelEdit = () => {
     setEditing(false);
-    setDraft("");
+    setEntries([]);
   };
 
   const saveEdit = async () => {
     setSaving(true);
     try {
-      const newItems = draft.split("\n").filter(l => l.trim());
+      const newItems = entries.filter(l => l.trim());
       await onSave(newItems);
       setEditing(false);
     } catch {
@@ -1050,6 +1050,28 @@ function EditableInfoSection({ icon: Icon, title, items, onSave }: { icon: React
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleEntryChange = (index: number, value: string) => {
+    const updated = [...entries];
+    updated[index] = value;
+    setEntries(updated);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveEdit();
+    }
+  };
+
+  const addEntry = () => {
+    setEntries([...entries, ""]);
+  };
+
+  const removeEntry = (index: number) => {
+    if (entries.length <= 1) return;
+    setEntries(entries.filter((_, i) => i !== index));
   };
 
   return (
@@ -1068,15 +1090,29 @@ function EditableInfoSection({ icon: Icon, title, items, onSave }: { icon: React
         )}
       </div>
       {editing ? (
-        <div className="pl-5 space-y-2">
-          <Textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="text-sm min-h-[60px] resize-y"
-            placeholder="Um item por linha..."
-            autoFocus
-          />
-          <div className="flex gap-1.5">
+        <div className="pl-5 space-y-1.5">
+          {entries.map((entry, i) => (
+            <div key={i} className="flex items-center gap-1">
+              <Input
+                value={entry}
+                onChange={(e) => handleEntryChange(i, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, i)}
+                className="text-sm h-8 flex-1"
+                placeholder={`Item ${i + 1}...`}
+                autoFocus={i === entries.length - 1}
+              />
+              {entries.length > 1 && (
+                <button onClick={() => removeEntry(i)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          ))}
+          <div className="flex items-center gap-1.5">
+            <Button size="sm" variant="ghost" onClick={addEntry} className="h-7 text-xs gap-1 text-muted-foreground">
+              <Plus className="h-3 w-3" /> Adicionar
+            </Button>
+            <div className="flex-1" />
             <Button size="sm" variant="default" onClick={saveEdit} disabled={saving} className="h-7 text-xs gap-1">
               <Check className="h-3 w-3" /> Salvar
             </Button>
@@ -1091,6 +1127,66 @@ function EditableInfoSection({ icon: Icon, title, items, onSave }: { icon: React
             <li key={i} className="text-sm text-foreground">{item}</li>
           ))}
         </ul>
+      ) : (
+        <p className="text-sm text-muted-foreground italic pl-5 cursor-pointer" onClick={startEdit}>Nenhum registro — clique para adicionar</p>
+      )}
+    </div>
+  );
+}
+
+// Editable text block component - for free-form text like admission history
+function EditableTextBlock({ icon: Icon, title, value, onSave }: { icon: React.ElementType; title: string; value: string; onSave: (val: string) => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const startEdit = () => {
+    setDraft(value);
+    setEditing(true);
+  };
+
+  const saveEdit = async () => {
+    setSaving(true);
+    try {
+      await onSave(draft);
+      setEditing(false);
+    } catch {} finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-1.5 group/section">
+      <div className="flex items-center gap-1.5">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+        <h4 className="text-xs font-semibold text-muted-foreground tracking-wide flex-1">{title}</h4>
+        {!editing && (
+          <button onClick={startEdit} className="opacity-0 group-hover/section:opacity-100 transition-opacity p-0.5 rounded hover:bg-accent" title="Editar">
+            <Pencil className="h-3 w-3 text-muted-foreground" />
+          </button>
+        )}
+      </div>
+      {editing ? (
+        <div className="pl-5 space-y-2">
+          <Textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="text-sm min-h-[80px] resize-y"
+            placeholder="História admissional..."
+            autoFocus
+            style={{ minHeight: "80px" }}
+          />
+          <div className="flex gap-1.5">
+            <Button size="sm" variant="default" onClick={saveEdit} disabled={saving} className="h-7 text-xs gap-1">
+              <Check className="h-3 w-3" /> Salvar
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditing(false)} disabled={saving} className="h-7 text-xs gap-1">
+              <X className="h-3 w-3" /> Cancelar
+            </Button>
+          </div>
+        </div>
+      ) : value ? (
+        <p className="text-sm text-foreground pl-5 leading-relaxed whitespace-pre-line cursor-pointer" onClick={startEdit}>{value}</p>
       ) : (
         <p className="text-sm text-muted-foreground italic pl-5 cursor-pointer" onClick={startEdit}>Nenhum registro — clique para adicionar</p>
       )}
