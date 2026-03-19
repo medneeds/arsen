@@ -486,7 +486,7 @@ function SortablePrescriptionItemRow({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground tracking-wider">
                       {presets.label}
                     </div>
                     <DropdownMenuSeparator />
