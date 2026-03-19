@@ -2172,13 +2172,17 @@ const PrescricaoPage = () => {
   };
 
   const confirmRenewal = useCallback(async (includeSuspended: boolean) => {
-    const sourceItems = includeSuspended ? items : items.filter(i => i.status === 'active');
+    const sourceItems = (includeSuspended ? items : items.filter(i => i.status === 'active'))
+      // Exclude extra "Agora" items — they are one-time and should NOT renew
+      .filter(i => !(i.isExtra && i.flags.includes('ag' as PrescriptionFlag)));
     const renewedItems: PrescriptionItem[] = sourceItems.map(item => ({
       ...item,
       id: crypto.randomUUID(),
       status: 'active' as const,
       suspensionReason: undefined,
       suspendedAt: undefined,
+      // Extra items with scheduled times become routine items on renewal
+      isExtra: false,
     }));
 
     const tomorrow = format(addDays(new Date(), 1), "dd/MM/yyyy", { locale: ptBR });
