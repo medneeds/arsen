@@ -196,6 +196,7 @@ const SetorImagemPage = () => {
       if (error) throw error;
 
       toast.success(
+        newStatus === "acknowledged" ? "Ciência declarada" :
         newStatus === "in_progress" ? "Exame em execução" :
         newStatus === "completed" ? "Exame concluído" :
         "Status atualizado"
