@@ -195,7 +195,7 @@ export default function GestorPanelPage() {
         ["Movimentações Recentes (últimas 48h)"],
         ["Paciente", "Tipo", "Destino", "Setor", "Leito", "Data"],
         ...recentMovements.slice(0, 20).map(m => [
-          m.patient_name, m.movement_type, m.destination || "", m.patient_sector || "", m.patient_bed || "",
+          m.patient_name, m.movement_type, m.destination || "", getSectorDisplayLabel(m.patient_sector) || "", m.patient_bed || "",
           format(new Date(m.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }),
         ]),
       ];
