@@ -419,11 +419,18 @@ const SetorImagemPage = () => {
                           </div>
                         </div>
 
-                        {/* Status badge */}
-                        <Badge className={cn("text-[10px] shrink-0 border", statusCfg.color)}>
-                          <statusCfg.icon className={cn("h-3 w-3 mr-1", req.status === "in_progress" && "animate-spin")} />
-                          {statusCfg.label}
-                        </Badge>
+                        {/* Status badge with pulsing dot */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className={cn(
+                            "inline-block h-2.5 w-2.5 rounded-full",
+                            statusCfg.dotColor,
+                            statusCfg.pulsing && "animate-pulse-soft"
+                          )} />
+                          <Badge className={cn("text-[10px] border", statusCfg.color)}>
+                            <statusCfg.icon className={cn("h-3 w-3 mr-1", req.status === "in_progress" && "animate-spin")} />
+                            {statusCfg.label}
+                          </Badge>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
