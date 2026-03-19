@@ -651,9 +651,9 @@ export default function AuthPage() {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full h-11 bg-gradient-to-r from-[#2dd4bf]/20 to-[#2dd4bf]/10 hover:from-[#2dd4bf]/30 hover:to-[#2dd4bf]/15 text-white font-semibold uppercase text-xs rounded-xl border border-[#2dd4bf]/20 hover:border-[#2dd4bf]/40 tracking-[0.2em] transition-all duration-300"
+                    className="w-full h-11 bg-gradient-to-r from-[#2dd4bf]/20 to-[#2dd4bf]/10 hover:from-[#2dd4bf]/30 hover:to-[#2dd4bf]/15 text-white font-semibold text-xs rounded-xl border border-[#2dd4bf]/20 hover:border-[#2dd4bf]/40 tracking-[0.2em] transition-all duration-300"
                   >
-                    {loading ? "ENTRANDO..." : "ENTRAR"}
+                    {loading ? "Entrando..." : "Entrar"}
                   </Button>
                 </form>
               </motion.div>
