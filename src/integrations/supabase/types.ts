@@ -2697,6 +2697,157 @@ export type Database = {
         }
         Relationships: []
       }
+      vital_signs: {
+        Row: {
+          base_excess: number | null
+          consciousness_level: string | null
+          created_at: string
+          creatinine: number | null
+          department: string
+          diastolic_bp: number | null
+          fio2: number | null
+          hco3: number | null
+          heart_rate: number | null
+          hematocrit: number | null
+          hemoglobin: number | null
+          hospital_unit_id: string
+          id: string
+          inr: number | null
+          lactate: number | null
+          leukocytes: number | null
+          news2_risk: string | null
+          news2_score: number | null
+          notes: string | null
+          patient_id: string
+          pco2: number | null
+          pcr: number | null
+          ph: number | null
+          platelets: number | null
+          po2: number | null
+          potassium: number | null
+          procalcitonin: number | null
+          pvc: number | null
+          recorded_at: string
+          recorded_by: string | null
+          recorded_by_name: string | null
+          respiratory_rate: number | null
+          sao2: number | null
+          sodium: number | null
+          spo2: number | null
+          state_id: string
+          supplemental_oxygen: boolean | null
+          systolic_bp: number | null
+          temperature: number | null
+          urea: number | null
+        }
+        Insert: {
+          base_excess?: number | null
+          consciousness_level?: string | null
+          created_at?: string
+          creatinine?: number | null
+          department?: string
+          diastolic_bp?: number | null
+          fio2?: number | null
+          hco3?: number | null
+          heart_rate?: number | null
+          hematocrit?: number | null
+          hemoglobin?: number | null
+          hospital_unit_id: string
+          id?: string
+          inr?: number | null
+          lactate?: number | null
+          leukocytes?: number | null
+          news2_risk?: string | null
+          news2_score?: number | null
+          notes?: string | null
+          patient_id: string
+          pco2?: number | null
+          pcr?: number | null
+          ph?: number | null
+          platelets?: number | null
+          po2?: number | null
+          potassium?: number | null
+          procalcitonin?: number | null
+          pvc?: number | null
+          recorded_at?: string
+          recorded_by?: string | null
+          recorded_by_name?: string | null
+          respiratory_rate?: number | null
+          sao2?: number | null
+          sodium?: number | null
+          spo2?: number | null
+          state_id: string
+          supplemental_oxygen?: boolean | null
+          systolic_bp?: number | null
+          temperature?: number | null
+          urea?: number | null
+        }
+        Update: {
+          base_excess?: number | null
+          consciousness_level?: string | null
+          created_at?: string
+          creatinine?: number | null
+          department?: string
+          diastolic_bp?: number | null
+          fio2?: number | null
+          hco3?: number | null
+          heart_rate?: number | null
+          hematocrit?: number | null
+          hemoglobin?: number | null
+          hospital_unit_id?: string
+          id?: string
+          inr?: number | null
+          lactate?: number | null
+          leukocytes?: number | null
+          news2_risk?: string | null
+          news2_score?: number | null
+          notes?: string | null
+          patient_id?: string
+          pco2?: number | null
+          pcr?: number | null
+          ph?: number | null
+          platelets?: number | null
+          po2?: number | null
+          potassium?: number | null
+          procalcitonin?: number | null
+          pvc?: number | null
+          recorded_at?: string
+          recorded_by?: string | null
+          recorded_by_name?: string | null
+          respiratory_rate?: number | null
+          sao2?: number | null
+          sodium?: number | null
+          spo2?: number | null
+          state_id?: string
+          supplemental_oxygen?: boolean | null
+          systolic_bp?: number | null
+          temperature?: number | null
+          urea?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vital_signs_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vital_signs_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vital_signs_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
