@@ -675,7 +675,7 @@ export default function AuthPage() {
                   <ArrowLeft className="h-3 w-3" />
                   Alterar tipo de acesso
                 </button>
-                <p className="text-[9px] text-slate-600 tracking-[0.3em] uppercase font-light">
+                <p className="text-[9px] text-slate-600 tracking-[0.3em] font-light">
                   {whitelabel.credits.authorSignature}
                 </p>
               </motion.div>
