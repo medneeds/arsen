@@ -89,7 +89,8 @@ interface Encounter {
 
 const AdminDashboardPage = () => {
   const { user } = useAuth();
-  const { selectedHospitalId } = useHospital();
+  const { currentHospital } = useHospital();
+  const selectedHospitalId = currentHospital?.id;
   const { currentDepartment } = useDepartment();
 
   // Search state
