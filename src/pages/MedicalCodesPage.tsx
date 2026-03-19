@@ -304,7 +304,7 @@ export default function MedicalCodesPage() {
                           onClick={() => openDialog(code)}
                           className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
                           disabled={role !== 'admin'}
-                          title={role !== 'admin' ? 'APENAS ADMINISTRADORES' : 'Editar'}
+                          title={role !== 'admin' ? 'Apenas administradores' : 'Editar'}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
