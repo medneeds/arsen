@@ -984,10 +984,16 @@ function SortablePrescriptionItemRow({
                   <span className="text-[10px] text-muted-foreground">Diluente:</span>
                   <Select value={item.diluent || ''} onValueChange={(v) => {
                     onUpdate(item.id, "diluent", v);
-                    // Auto-recalculate volume total when diluent changes
                     const tempItem = { ...item, diluent: v };
                     const autoVol = calcVolumeTotal(tempItem);
-                    if (autoVol) onUpdate(item.id, "volumeTotal", autoVol);
+                    if (autoVol) {
+                      onUpdate(item.id, "volumeTotal", autoVol);
+                      const autoConc = calcConcentration({ ...tempItem, volumeTotal: autoVol });
+                      if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                    }
+                    if (v === 'sem_diluente') {
+                      onUpdate(item.id, "diluentVolume", '');
+                    }
                   }}>
                     <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-28"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
