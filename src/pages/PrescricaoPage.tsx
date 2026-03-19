@@ -2980,6 +2980,18 @@ const PrescricaoPage = () => {
 
       {/* ===== FULL PRESCRIPTION VIEW (all categories) ===== */}
       <div className={cn("space-y-3 print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
+        {/* Global search bar with category filters */}
+        <div className="rounded-xl border border-border bg-card p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-xs font-semibold text-foreground whitespace-nowrap">Adicionar item</span>
+          </div>
+          <GlobalPrescriptionSearch
+            onAddItem={addItem}
+            onAddNonStandard={(name: string) => { setNonStdName(name); addNonStandard(); }}
+          />
+        </div>
+
         {/* Batch action bar */}
         <BatchActionBar
           selectedCount={selectedIds.size}
