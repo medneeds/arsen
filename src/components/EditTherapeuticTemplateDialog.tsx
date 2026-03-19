@@ -146,13 +146,13 @@ export function EditTherapeuticTemplateDialog({
 
           {/* Name */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold uppercase">Nome do Template</Label>
+            <Label className="text-xs font-semibold">Nome do template</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onBlur={(e) => setName(e.target.value.toUpperCase())}
-              placeholder="EX: PROTOCOLO SEPSE - PACOTE 1H"
-              className="uppercase text-sm"
+              onBlur={(e) => setName(e.target.value)}
+              placeholder="Ex: Protocolo Sepse - Pacote 1h"
+              className="text-sm"
             />
           </div>
 
