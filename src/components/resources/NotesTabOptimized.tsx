@@ -86,8 +86,8 @@ const NotesTabOptimized = () => {
 
     if (!currentHospital || !currentState) {
       toast({
-        title: "ERRO",
-        description: "UNIDADE HOSPITALAR NÃO SELECIONADA",
+        title: "Erro",
+        description: "Unidade hospitalar não selecionada",
         variant: "destructive",
       });
       return;
