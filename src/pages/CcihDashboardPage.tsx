@@ -487,7 +487,7 @@ const CcihDashboardPage = () => {
                       Nenhum paciente neste setor
                     </p>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                    <div className="grid grid-cols-1 gap-2">
                       {sectorPatients.map(patient => {
                         const pCultures = culturesForPatient(patient.id);
                         const hasPending = pCultures.some(c => c.status === "pending");
