@@ -278,7 +278,7 @@ export const NotificationCenter = () => {
                     <ListChecks className="h-4 w-4 text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-sm font-bold uppercase tracking-tight">Check-list</h3>
+                    <h3 className="text-sm font-bold tracking-tight">Check-list</h3>
                     <p className="text-xs text-muted-foreground">
                       {checklistItems.filter(i => !i.completed).length} pendente(s)
                     </p>
