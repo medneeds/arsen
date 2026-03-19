@@ -160,6 +160,14 @@ export default {
             opacity: "1",
           },
         },
+        "pulse-soft": {
+          "0%, 100%": {
+            opacity: "1",
+          },
+          "50%": {
+            opacity: "0.4",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
