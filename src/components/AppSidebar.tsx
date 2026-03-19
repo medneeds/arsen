@@ -137,6 +137,7 @@ export function AppSidebar({
       icon: Stethoscope,
       profiles: ["medico", "gestor", "multi"],
       items: [
+        { name: "Protocolos UTI", link: "/protocolos-uti", profiles: ["medico", "gestor", "multi"] },
         { name: "Protocolo Sepse", link: "/sepsis-protocol", profiles: ["medico", "gestor", "multi"] },
         { name: "Controle Glicêmico", link: "/controle-glicemico", profiles: ["medico", "gestor", "multi"] },
         { name: "SAPS 3", link: "/saps3", profiles: ["medico", "gestor", "multi"] },

@@ -156,6 +156,16 @@ const App = () => {
           }
         />
         <Route
+          path="/protocolos-uti"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <ProtocolosUtiPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/documents/controle-glicemico"
           element={
             <ProtectedRoute>
