@@ -243,7 +243,7 @@ export const NotificationCenter = () => {
                 <SheetTitle className="text-lg font-bold tracking-tight">
                   Central de Notificações
                 </SheetTitle>
-                <p className="text-xs text-muted-foreground uppercase mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {currentDepartment}
                 </p>
               </div>
