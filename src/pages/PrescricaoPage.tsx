@@ -595,7 +595,22 @@ function SortablePrescriptionItemRow({
             }
             return null;
           })()}
-          <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-48 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
+          <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-44 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
+          {item.schedule && item.schedule.includes(',') && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 w-6 p-0 border-border/40 text-muted-foreground hover:text-primary shrink-0"
+                  onClick={() => onUpdate(item.id, "schedule", rotateSchedule(item.schedule))}
+                >
+                  <RotateCw className="h-2.5 w-2.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">Rotacionar aprazamento</TooltipContent>
+            </Tooltip>
+          )}
         </div>
         <ItemActions />
       </div>
