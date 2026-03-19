@@ -332,7 +332,9 @@ export default function PainelClinicoPage() {
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
-  const [sectorFilter, setSectorFilter] = useState<string>("all");
+  const [sectorFilter, setSectorFilter] = useState<string>(() => {
+    return localStorage.getItem("selected_sector") || "all";
+  });
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [sidebarTab, setSidebarTab] = useState("resumo");
   const [sapsScores, setSapsScores] = useState<Record<string, { score: number; mortality: number }>>({});
