@@ -95,3 +95,18 @@ export function formatBedDisplay(bedNumber: string): string {
   }
   return bedNumber;
 }
+
+/**
+ * Derives the UTI/UCI sector name from a bed number (L-prefixed).
+ * UTI 1: L01–L08, UTI 2: L09–L18, UCI 1: L19–L26, UCI 2: L27–L34
+ */
+export function getSectorFromBedNumber(bedNumber: string): string | null {
+  const match = bedNumber.match(/^L(\d+)$/i);
+  if (!match) return null;
+  const num = parseInt(match[1], 10);
+  if (num >= 1 && num <= 8) return 'UTI 1';
+  if (num >= 9 && num <= 18) return 'UTI 2';
+  if (num >= 19 && num <= 26) return 'UCI 1';
+  if (num >= 27 && num <= 34) return 'UCI 2';
+  return null;
+}
