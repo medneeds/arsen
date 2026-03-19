@@ -333,7 +333,7 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
         <div className="space-y-4 py-4">
           {/* UTI Selection */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold uppercase">UTI de Destino</Label>
+            <Label className="text-xs font-semibold">UTI de Destino</Label>
             <Select value={targetUti} onValueChange={(v) => setTargetUti(v as "UTI 1" | "UTI 2")}>
               <SelectTrigger className="h-10">
                 <SelectValue />
