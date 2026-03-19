@@ -275,6 +275,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         diagnoses: fullData.chief_complaint || null,
         medical_history: fullData.allergies ? `Alergias: ${fullData.allergies}` : null,
         pendencies: admissionNotes || null,
+        uti_discharge_prediction: dischargePrediction || null,
       });
 
       if (patientError) throw patientError;
