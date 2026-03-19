@@ -9,7 +9,7 @@ import {
   ChevronDown, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
   CalendarIcon, Printer, RotateCcw, FileCheck,
 } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
