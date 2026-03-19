@@ -13,7 +13,7 @@ import {
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal,
   Play, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
-  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash,
+  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, Heart,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -396,7 +396,145 @@ function MedicationAutocomplete({
   );
 }
 
-// --- Flag Toggle ---
+// --- Global Prescription Search with Category Filters ---
+function GlobalPrescriptionSearch({
+  onAddItem,
+  onAddNonStandard,
+}: {
+  onAddItem: (med: MedicationEntry) => void;
+  onAddNonStandard: (name: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [focused, setFocused] = useState(false);
+  const [selectedCat, setSelectedCat] = useState<PrescriptionCategory | 'all'>('all');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [freeText, setFreeText] = useState("");
+
+  const allItems = useMemo(() => Object.values(ALL_ITEMS_BY_CATEGORY).flat(), []);
+
+  const filtered = useMemo(() => {
+    const source = selectedCat === 'all' ? allItems : (ALL_ITEMS_BY_CATEGORY[selectedCat] || []);
+    if (!query.trim()) return source.slice(0, 12);
+    const q = query.toLowerCase();
+    return source.filter(
+      (m) =>
+        m.name.toLowerCase().includes(q) ||
+        m.presentation.toLowerCase().includes(q) ||
+        (m.aliases && m.aliases.some(a => a.toLowerCase().includes(q)))
+    ).slice(0, 15);
+  }, [query, selectedCat, allItems]);
+
+  const handleSelect = (med: MedicationEntry) => {
+    onAddItem(med);
+    setQuery("");
+    setFocused(false);
+    inputRef.current?.blur();
+  };
+
+      {/* Category filter chips */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <button
+          type="button"
+          onClick={() => setSelectedCat('all')}
+          className={cn(
+            "text-[10px] font-medium px-2.5 py-1 rounded-full border transition-all",
+            selectedCat === 'all'
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
+          )}
+        >
+          Todos
+        </button>
+        {TAB_ORDER.map(cat => {
+          const config = CATEGORY_CONFIG[cat];
+          const Icon = CATEGORY_ICONS[config.icon] || Pill;
+          return (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setSelectedCat(cat)}
+              className={cn(
+                "text-[10px] font-medium px-2.5 py-1 rounded-full border transition-all flex items-center gap-1",
+                selectedCat === cat
+                  ? cn("border-current", config.color, config.bgColor)
+                  : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
+              )}
+            >
+              <Icon className="h-3 w-3" />
+              {config.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Search input */}
+      <div className="relative">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setTimeout(() => setFocused(false), 200)}
+            placeholder={selectedCat === 'all' ? "Buscar em todas as categorias..." : `Buscar em ${CATEGORY_CONFIG[selectedCat]?.label.toLowerCase()}...`}
+            className="pl-9 bg-background/60 border-border/50 h-9 text-sm focus:border-primary/50 transition-colors"
+          />
+        </div>
+        {focused && filtered.length > 0 && (
+          <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-border bg-popover shadow-lg max-h-72 overflow-y-auto">
+            {filtered.map((med) => {
+              const catConfig = CATEGORY_CONFIG[med.category];
+              return (
+                <button
+                  key={med.id}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleSelect(med)}
+                  className="w-full px-3 py-2 text-left hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 border-b border-border/30 last:border-0"
+                >
+                  <div className="min-w-0 flex-1">
+                    <span className="text-sm font-medium text-foreground block truncate">
+                      {med.name}
+                      {med.highAlert && <AlertTriangle className="inline h-3 w-3 ml-1 text-destructive" />}
+                    </span>
+                    <span className="text-xs text-muted-foreground block truncate">{med.presentation}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {selectedCat === 'all' && catConfig && (
+                      <Badge variant="outline" className={cn("text-[9px] px-1.5", catConfig.color)}>{catConfig.label}</Badge>
+                    )}
+                    {med.defaultRoute !== '-' && (
+                      <Badge variant="outline" className="text-[9px]">{med.defaultRoute}</Badge>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Free text for nonstandard */}
+      {selectedCat === 'nonstandard' && (
+        <div className="flex items-center gap-1.5">
+          <Input
+            value={freeText}
+            onChange={(e) => setFreeText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && freeText.trim()) { onAddNonStandard(freeText.trim()); setFreeText(''); } }}
+            placeholder="Ou adicionar item não padronizado..."
+            className="bg-background/60 border-border/50 h-8 text-xs flex-1"
+          />
+          <Button variant="outline" size="sm" onClick={() => { if (freeText.trim()) { onAddNonStandard(freeText.trim()); setFreeText(''); } }} disabled={!freeText.trim()} className="h-8 px-2">
+            <Plus className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function FlagToggle({ flag, active, onToggle }: {
   flag: typeof PRESCRIPTION_FLAGS[number];
   active: boolean;
@@ -2980,6 +3118,18 @@ const PrescricaoPage = () => {
 
       {/* ===== FULL PRESCRIPTION VIEW (all categories) ===== */}
       <div className={cn("space-y-3 print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
+        {/* Global search bar with category filters */}
+        <div className="rounded-xl border border-border bg-card p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-xs font-semibold text-foreground whitespace-nowrap">Adicionar item</span>
+          </div>
+          <GlobalPrescriptionSearch
+            onAddItem={addItem}
+            onAddNonStandard={(name: string) => { setNonStdName(name); addNonStandard(); }}
+          />
+        </div>
+
         {/* Batch action bar */}
         <BatchActionBar
           selectedCount={selectedIds.size}
