@@ -1114,8 +1114,6 @@ function CihdottSection() {
   );
 }
 
-// Missing import for Users icon used in CihdottSection
-import { Users as UsersIcon } from "lucide-react";
 
 // ── Main Page ──
 export default function AltaDesfechoPage() {
