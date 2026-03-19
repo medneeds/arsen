@@ -421,12 +421,12 @@ function GlobalPrescriptionSearch({
   const filtered = useMemo(() => {
     const source = selectedCat === 'all' ? allItems : (ALL_ITEMS_BY_CATEGORY[selectedCat] || []);
     if (!query.trim()) return source.slice(0, 12);
-    const q = query.toLowerCase();
+    const q = normalizeSearch(query);
     return source.filter(
       (m) =>
-        m.name.toLowerCase().includes(q) ||
-        m.presentation.toLowerCase().includes(q) ||
-        (m.aliases && m.aliases.some(a => a.toLowerCase().includes(q)))
+        normalizeSearch(m.name).includes(q) ||
+        normalizeSearch(m.presentation).includes(q) ||
+        (m.aliases && m.aliases.some(a => normalizeSearch(a).includes(q)))
     ).slice(0, 15);
   }, [query, selectedCat, allItems]);
 
