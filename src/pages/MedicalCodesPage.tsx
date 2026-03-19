@@ -65,9 +65,9 @@ export default function MedicalCodesPage() {
     if (searchTerm) {
       const filtered = codes.filter(
         (code) =>
-          code.code.toUpperCase().includes(searchTerm.toUpperCase()) ||
-          code.name.toUpperCase().includes(searchTerm.toUpperCase()) ||
-          code.system_description.toUpperCase().includes(searchTerm.toUpperCase())
+          code.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          code.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          code.system_description.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredCodes(filtered);
     } else {

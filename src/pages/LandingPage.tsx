@@ -223,7 +223,7 @@ export default function LandingPage() {
           alt="Axius"
           className="h-6 object-contain mx-auto opacity-40 mb-3"
         />
-        <p className="text-[9px] text-slate-600 uppercase tracking-[0.2em]">
+        <p className="text-[9px] text-slate-600 tracking-[0.2em]">
           {whitelabel.credits.developerLabel} •{" "}
           {whitelabel.credits.developerName}
         </p>

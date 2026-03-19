@@ -233,7 +233,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
       <Button
         type="submit"
         disabled={loading}
-        className="w-full h-11 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold uppercase rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl"
+        className="w-full h-11 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl"
       >
         {loading ? (
           <div className="flex items-center gap-2">

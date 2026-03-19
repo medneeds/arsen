@@ -30,7 +30,7 @@ export function useAgeCalculator(isPediatric: boolean = false) {
         }
         
         // Se não conseguir parsear, retornar como está em uppercase
-        return trimmed.toUpperCase();
+        return trimmed;
       }
 
       // Para setor pediátrico, usar a edge function
