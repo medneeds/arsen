@@ -551,7 +551,7 @@ export default function MovementsPage() {
                                 {movement.patient_sector && (
                                   <>
                                     {movement.patient_bed && <span>•</span>}
-                                    <span>Setor: {movement.patient_sector}</span>
+                                    <span>Setor: {getSectorDisplayLabel(movement.patient_sector)}</span>
                                   </>
                                 )}
                               </div>

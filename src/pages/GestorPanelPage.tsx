@@ -462,7 +462,7 @@ export default function GestorPanelPage() {
                           {mov.movement_type}{mov.destination ? ` → ${mov.destination}` : ""}
                         </p>
                       </div>
-                      <Badge variant="outline" className="text-[9px] shrink-0">{mov.patient_sector} · {mov.patient_bed}</Badge>
+                      <Badge variant="outline" className="text-[9px] shrink-0">{getSectorDisplayLabel(mov.patient_sector)} · {mov.patient_bed}</Badge>
                       <span className="text-[9px] text-muted-foreground shrink-0">
                         {format(new Date(mov.created_at), "dd/MM HH:mm", { locale: ptBR })}
                       </span>

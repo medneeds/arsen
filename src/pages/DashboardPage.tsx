@@ -424,9 +424,9 @@ const DashboardPage = () => {
 
     if (data) {
       const sectorCounts = data.reduce((acc: any, patient: any) => {
-        const sector = patient.sector === 'red' ? 'Cuidados Especiais' :
-                      patient.sector === 'yellow' ? 'Observação Amarela' :
-                      patient.sector === 'blue' ? 'Observação Azul' : 'Fora das Alas';
+        const sector = patient.sector === 'red' ? 'UTI 1' :
+                      patient.sector === 'yellow' ? 'UTI 2' :
+                      patient.sector === 'blue' ? 'UCI 1' : 'UCI 2';
         acc[sector] = (acc[sector] || 0) + 1;
         return acc;
       }, {});
