@@ -178,7 +178,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           .update({
             status: "aguardando_leito_uti",
             destination_sector: destinationSectorLabel,
-            destination_bed: null,
+            destination_bed: extraBedRequested ? "EXTRA" : null,
             notes: admissionNotes || fullData.notes || null,
           })
           .eq("id", fullData.id);
@@ -192,6 +192,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           patientAge: age ? String(age) : "",
           destinationSector: destinationSectorLabel,
         });
+        if (extraBedRequested) params.set("extraBed", "true");
 
         toast({
           title: "Encaminhado para admissão UTI",
