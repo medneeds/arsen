@@ -855,9 +855,11 @@ const Index = () => {
         {/* UTI preview dialog with unit selection */}
         {previewUtiMapMode && (
           <PrintUtiPreviewDialog
-            uti1Patients={bluePatients}
-            uti2Patients={yellowPatients}
+            redPatients={redPatients}
+            yellowPatients={yellowPatients}
+            bluePatients={bluePatients}
             outsidePatients={outsidePatients}
+            defaultSector={activeSector as any}
             mode={previewUtiMapMode}
             onClose={() => setPreviewUtiMapMode(null)}
           />
