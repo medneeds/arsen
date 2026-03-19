@@ -232,7 +232,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
             </TabsTrigger>
             <TabsTrigger value="destino" className="text-xs gap-1">
               <MapPin className="h-3.5 w-3.5" />
-              Setor Destino
+              Pedido de Leito
             </TabsTrigger>
           </TabsList>
 
