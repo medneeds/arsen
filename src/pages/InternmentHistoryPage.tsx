@@ -278,7 +278,7 @@ const InternmentHistoryPage = () => {
                 variant={selectedPeriod === "week" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("week")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Última Semana
               </Button>
