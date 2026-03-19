@@ -197,10 +197,10 @@ export function InternmentStatusDialog({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-xl uppercase">
+          <DialogTitle className="text-xl">
             Status de Internação
           </DialogTitle>
-          <DialogDescription className="uppercase">
+          <DialogDescription>
             Gerenciar status de solicitação de internação para{" "}
             <span className="font-semibold">{patientName}</span>
           </DialogDescription>
