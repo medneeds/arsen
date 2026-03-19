@@ -1110,6 +1110,49 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     window.print();
   };
 
+  const importAdmission = async () => {
+    if (!patientId) { toast.error("Paciente não vinculado ao mapa"); return; }
+    setImportingAdmission(true);
+    try {
+      const { data } = await supabase
+        .from("admission_histories")
+        .select("chief_complaint, clinical_history, diagnostic_hypothesis, initial_conduct")
+        .eq("patient_id", patientId)
+        .maybeSingle();
+      if (!data) { toast.error("Nenhuma admissão encontrada para este paciente"); return; }
+      const parts: string[] = [];
+      if (data.chief_complaint) parts.push(`QP: ${data.chief_complaint}`);
+      if (data.clinical_history) parts.push(`HDA: ${data.clinical_history}`);
+      if (data.diagnostic_hypothesis) parts.push(`HD: ${data.diagnostic_hypothesis}`);
+      if (data.initial_conduct) parts.push(`Conduta: ${data.initial_conduct}`);
+      if (parts.length === 0) { toast.info("Admissão sem dados preenchidos"); return; }
+      setObservations(prev => prev ? prev + "\n\n" + parts.join("\n") : parts.join("\n"));
+      toast.success("Dados da admissão importados");
+    } catch { toast.error("Erro ao importar admissão"); }
+    finally { setImportingAdmission(false); }
+  };
+
+  const importEvolution = async () => {
+    if (!patientId) { toast.error("Paciente não vinculado ao mapa"); return; }
+    setImportingEvolution(true);
+    try {
+      const { data: patient } = await supabase
+        .from("patients")
+        .select("diagnoses, medical_history, pendencies")
+        .eq("id", patientId)
+        .maybeSingle();
+      if (!patient) { toast.error("Dados do paciente não encontrados"); return; }
+      const parts: string[] = [];
+      if (patient.diagnoses) parts.push(`Diagnósticos: ${patient.diagnoses}`);
+      if (patient.medical_history) parts.push(`Antecedentes: ${patient.medical_history}`);
+      if (patient.pendencies) parts.push(`Pendências: ${patient.pendencies}`);
+      if (parts.length === 0) { toast.info("Sem dados de evolução preenchidos"); return; }
+      setObservations(prev => prev ? prev + "\n\n" + parts.join("\n") : parts.join("\n"));
+      toast.success("Dados da evolução importados");
+    } catch { toast.error("Erro ao importar evolução"); }
+    finally { setImportingEvolution(false); }
+  };
+
   const filteredProcedures = APAC_PROCEDURES.filter((p) => {
     const matchSearch = searchProcedure === "" || p.name.toLowerCase().includes(searchProcedure.toLowerCase()) || p.code.includes(searchProcedure);
     const matchCategory = categoryFilter === "all" || p.category === categoryFilter;
