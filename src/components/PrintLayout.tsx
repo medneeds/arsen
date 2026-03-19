@@ -123,7 +123,7 @@ export function PrintLayout({
         <div>
           <PrintableSectorSection
             patients={redPatients}
-            sectorName="Ala Vermelha"
+            sectorName="UTI 1"
             bgColor="#fef2f2"
             borderColor="#dc2626"
             textColor="#991b1b"
