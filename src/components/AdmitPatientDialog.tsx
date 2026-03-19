@@ -96,11 +96,23 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [fullData, setFullData] = useState<PreAdmissionFull | null>(null);
   const [sectorFullAlert, setSectorFullAlert] = useState(false);
   const [extraBedRequested, setExtraBedRequested] = useState(false);
+  const [bedsLoaded, setBedsLoaded] = useState(false);
 
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Auto-select sector from header on open
+  useEffect(() => {
+    if (!open) return;
+    const storedSector = localStorage.getItem("selected_sector") || "red";
+    setSelectedSector(storedSector);
+    setSelectedBed("");
+    setExtraBedRequested(false);
+    setSectorFullAlert(false);
+    setBedsLoaded(false);
+  }, [open]);
 
   // Fetch full pre-admission data with triage info
   useEffect(() => {
@@ -152,6 +164,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
       // Check if all regular beds are occupied
       setSectorFullAlert(freeCount === 0);
+      setBedsLoaded(true);
     };
     fetchBeds();
   }, [selectedSector, currentHospital?.id, currentState?.id, currentDepartment]);
@@ -397,55 +410,27 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
         <Separator />
 
-        {/* Bed Selection */}
+        {/* Allocation */}
         <div className="space-y-3">
-          <p className="text-sm font-semibold flex items-center gap-2">
-            <BedDouble className="h-4 w-4" /> Alocação
-          </p>
-
-          <div className={cn("gap-3", isUtiAdmission ? "grid grid-cols-1" : "grid grid-cols-2")}>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Setor</Label>
-              <Select value={selectedSector} onValueChange={(v) => { setSelectedSector(v); setSelectedBed(""); setExtraBedRequested(false); }}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar setor" /></SelectTrigger>
-                <SelectContent>
-                  {SECTORS.map(s => (
-                    <SelectItem key={s.value} value={s.value}>
-                      <span className={s.color}>{s.label}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {!isUtiAdmission && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">Leito</Label>
-                <Select value={selectedBed} onValueChange={setSelectedBed} disabled={!selectedSector}>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar leito" /></SelectTrigger>
-                  <SelectContent>
-                    {availableBeds.map(bed => {
-                      const isOccupied = occupiedBeds.includes(bed);
-                      if (bed === "EXTRA") {
-                        return (
-                          <SelectItem key="EXTRA" value="EXTRA">
-                            ➕ Leito Extra
-                          </SelectItem>
-                        );
-                      }
-                      return (
-                        <SelectItem key={bed} value={bed} disabled={isOccupied}>
-                          {bed} {isOccupied ? "(Ocupado)" : "✓"}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold flex items-center gap-2">
+              <BedDouble className="h-4 w-4" /> Alocação
+            </p>
+            <Badge variant="outline" className="text-xs font-medium">
+              {SECTORS.find(s => s.value === selectedSector)?.label || "—"}
+            </Badge>
           </div>
 
-          {sectorFullAlert && !extraBedRequested && (
+          {/* Loading state */}
+          {!bedsLoaded && selectedSector && (
+            <div className="flex items-center justify-center py-3">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <span className="text-xs text-muted-foreground ml-2">Verificando leitos...</span>
+            </div>
+          )}
+
+          {/* Sector full alert */}
+          {bedsLoaded && sectorFullAlert && !extraBedRequested && (
             <Card className="border-destructive/40 bg-destructive/10">
               <CardContent className="p-3 flex items-start gap-2.5">
                 <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
@@ -453,43 +438,55 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                   <p className="text-sm font-semibold text-destructive">Setor lotado — Admissão bloqueada</p>
                   <p className="text-muted-foreground mt-1 text-xs">
                     Todos os leitos regulares de <span className="font-medium">{SECTORS.find(s => s.value === selectedSector)?.label}</span> estão ocupados. 
-                    Selecione outro setor ou solicite uma maca extra para alocação provisória.
+                    Solicite uma maca extra para alocação provisória ou altere o setor.
                   </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-2 h-7 text-xs gap-1.5 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
-                    onClick={() => {
-                      setExtraBedRequested(true);
-                      setSelectedBed("EXTRA");
-                    }}
-                  >
-                    <BedDouble className="h-3.5 w-3.5" />
-                    Solicitar Maca Extra
-                  </Button>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1.5 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                      onClick={() => {
+                        setExtraBedRequested(true);
+                        setSelectedBed("EXTRA");
+                      }}
+                    >
+                      <BedDouble className="h-3.5 w-3.5" />
+                      Solicitar Maca Extra
+                    </Button>
+                    <Select value={selectedSector} onValueChange={(v) => { setSelectedSector(v); setSelectedBed(""); setExtraBedRequested(false); setBedsLoaded(false); }}>
+                      <SelectTrigger className="h-7 w-auto text-xs px-2">
+                        <SelectValue placeholder="Alterar setor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SECTORS.map(s => (
+                          <SelectItem key={s.value} value={s.value}>
+                            <span className={s.color}>{s.label}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {sectorFullAlert && extraBedRequested && (
+          {/* Extra bed confirmed */}
+          {bedsLoaded && sectorFullAlert && extraBedRequested && (
             <Card className="border-amber-500/40 bg-amber-500/10">
               <CardContent className="p-3 flex items-start gap-2.5">
                 <BedDouble className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Maca extra solicitada</p>
                   <p className="text-muted-foreground mt-1 text-xs">
-                    O paciente será alocado provisoriamente em maca extra no setor <span className="font-medium">{SECTORS.find(s => s.value === selectedSector)?.label}</span>. 
+                    O paciente será alocado provisoriamente em maca extra no setor <span className="font-medium">{SECTORS.find(s => s.value === selectedSector)?.label}</span>.
                     Transfira para leito regular assim que houver disponibilidade.
                   </p>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="mt-1 h-6 text-[10px] text-muted-foreground px-1"
-                    onClick={() => {
-                      setExtraBedRequested(false);
-                      setSelectedBed("");
-                    }}
+                    onClick={() => { setExtraBedRequested(false); setSelectedBed(""); }}
                   >
                     Cancelar maca extra
                   </Button>
@@ -498,12 +495,41 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             </Card>
           )}
 
-          {isUtiAdmission && !sectorFullAlert && (
+          {/* UTI with beds available — auto proceed to SAPS */}
+          {bedsLoaded && isUtiAdmission && !sectorFullAlert && (
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="p-3 text-xs text-muted-foreground">
-                Para admissão em UTI, o leito só será definido após o preenchimento completo do SAPS 3.
+                Leitos disponíveis em <span className="font-medium">{SECTORS.find(s => s.value === selectedSector)?.label}</span>. 
+                O leito será definido após o preenchimento do SAPS 3.
               </CardContent>
             </Card>
+          )}
+
+          {/* Non-UTI bed selector (only when beds available) */}
+          {bedsLoaded && !isUtiAdmission && !sectorFullAlert && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">Leito</Label>
+              <Select value={selectedBed} onValueChange={setSelectedBed}>
+                <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar leito" /></SelectTrigger>
+                <SelectContent>
+                  {availableBeds.map(bed => {
+                    const isOccupied = occupiedBeds.includes(bed);
+                    if (bed === "EXTRA") {
+                      return (
+                        <SelectItem key="EXTRA" value="EXTRA">
+                          ➕ Leito Extra
+                        </SelectItem>
+                      );
+                    }
+                    return (
+                      <SelectItem key={bed} value={bed} disabled={isOccupied}>
+                        {bed} {isOccupied ? "(Ocupado)" : "✓"}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
           )}
 
           <div className="space-y-1.5">
