@@ -129,7 +129,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           .eq("hospital_unit_id", currentHospital.id)
           .eq("state_id", currentState.id)
           .eq("department", currentDepartment)
-          .eq("sector", storedSector),
+          .eq("sector", storedSector)
+          .or("is_vacant.is.null,is_vacant.eq.false"),
       ]);
 
       if (preAdmRes.data) setFullData(preAdmRes.data as unknown as PreAdmissionFull);
@@ -172,7 +173,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       .eq("hospital_unit_id", currentHospital.id)
       .eq("state_id", currentState.id)
       .eq("department", currentDepartment)
-      .eq("sector", newSector);
+      .eq("sector", newSector)
+      .or("is_vacant.is.null,is_vacant.eq.false");
 
     const occupied = (data || []).map(p => p.bed_number);
     setOccupiedBeds(occupied);
