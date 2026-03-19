@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
-import { format, addDays } from "date-fns";
+import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay } from "date-fns";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
 import socorraoLogo from "@/assets/socorrao1-logo.png";
 import { BigHelpLogo } from "@/components/BigHelpLogo";
@@ -12,8 +12,10 @@ import {
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal,
   Play, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
-  Zap, Loader2,
+  Zap, Loader2, CalendarDays, Circle,
 } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -97,6 +99,8 @@ interface PrescriptionItem {
   status: 'active' | 'suspended';
   suspensionReason?: string;
   suspendedAt?: string;
+  validated?: boolean;
+  validatedAt?: string;
   // Detailed prescription fields
   quantity?: string;          // Quantidade
   action?: string;            // Fazer/Retirar
@@ -365,6 +369,8 @@ function SortablePrescriptionItemRow({
   onDuplicate,
   onRequestSuspend,
   onReactivate,
+  onToggleValidation,
+  isPastRenewalTime,
 }: {
   item: PrescriptionItem;
   index: number;
@@ -377,6 +383,8 @@ function SortablePrescriptionItemRow({
   onDuplicate: (id: string) => void;
   onRequestSuspend: (id: string) => void;
   onReactivate: (id: string) => void;
+  onToggleValidation: (id: string) => void;
+  isPastRenewalTime: boolean;
 }) {
   const {
     attributes,
@@ -423,6 +431,30 @@ function SortablePrescriptionItemRow({
     </DropdownMenu>
   );
 
+  const ValidationDot = () => {
+    const isValidated = item.validated && !isPastRenewalTime;
+    const isPending = !item.validated || isPastRenewalTime;
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={() => onToggleValidation(item.id)}
+            className="shrink-0 transition-transform hover:scale-125"
+          >
+            <Circle className={cn(
+              "h-3 w-3 fill-current",
+              isValidated ? "text-emerald-500" : "text-amber-500"
+            )} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          {isValidated ? "Validado — clique para desmarcar" : "Pendente validação — clique para validar"}
+        </TooltipContent>
+      </Tooltip>
+    );
+  };
+
   if (isSimple) {
     return (
       <div
@@ -437,6 +469,7 @@ function SortablePrescriptionItemRow({
           isDragging && "shadow-lg"
         )}
       >
+        <ValidationDot />
         <button
           className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0 touch-none"
           {...attributes}
@@ -527,8 +560,9 @@ function SortablePrescriptionItemRow({
       )}
     >
       <div className="flex items-start gap-2 p-2.5">
-        {/* Left: drag + checkbox */}
+        {/* Left: validation dot + drag + checkbox */}
         <div className="flex flex-col items-center gap-1.5 shrink-0 pt-1">
+          <ValidationDot />
           <button
             className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors touch-none"
             {...attributes}
@@ -1444,6 +1478,7 @@ const PrescricaoPage = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [freeRecommendation, setFreeRecommendation] = useState("");
   const [appliedCareProfiles, setAppliedCareProfiles] = useState<Set<string>>(new Set());
+  const [historyDate, setHistoryDate] = useState<Date | undefined>(undefined);
 
   // Phase 3 state
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
@@ -1464,6 +1499,40 @@ const PrescricaoPage = () => {
   const [loadingList, setLoadingList] = useState(false);
   const [versionHistory, setVersionHistory] = useState<Array<{ id: string; version: number; status: string; created_at: string; digital_signature: DigitalSignature | null }>>([]);
   const [showHistory, setShowHistory] = useState(false);
+
+  // Validation: check if past 05:00 renewal time
+  const isPastRenewalTime = useMemo(() => {
+    const now = new Date();
+    const renewalTime = setSeconds(setMinutes(setHours(startOfDay(now), 5), 0), 0);
+    return isAfter(now, renewalTime);
+  }, []);
+
+  // All items validated check
+  const allItemsValidated = useMemo(() => {
+    const activeItems = items.filter(i => i.status === 'active');
+    return activeItems.length > 0 && activeItems.every(i => i.validated && !isPastRenewalTime || (i.validated && i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)));
+  }, [items, isPastRenewalTime]);
+
+  // Toggle validation
+  const toggleValidation = useCallback((id: string) => {
+    setItems(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      return {
+        ...item,
+        validated: !item.validated,
+        validatedAt: !item.validated ? new Date().toISOString() : undefined,
+      };
+    }));
+  }, []);
+
+  // Validate all items at once
+  const validateAllItems = useCallback(() => {
+    const now = new Date().toISOString();
+    setItems(prev => prev.map(item =>
+      item.status === 'active' ? { ...item, validated: true, validatedAt: now } : item
+    ));
+    toast.success("Todos os itens validados");
+  }, []);
 
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 
@@ -1709,18 +1778,27 @@ const PrescricaoPage = () => {
   const activeItemsCount = items.filter(i => i.status === 'active').length;
   const suspendedItemsCount = items.filter(i => i.status === 'suspended').length;
 
-  // Fetch saved prescriptions
+  // Fetch saved prescriptions — filtered by current patient
   const fetchPrescriptions = useCallback(async () => {
-    if (!currentHospital || !currentState) return;
+    if (!currentHospital || !currentState || !patient.name.trim()) return;
     setLoadingList(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('prescriptions')
         .select('id, patient_name, status, version, created_at, digital_signature')
         .eq('hospital_unit_id', currentHospital.id)
         .eq('state_id', currentState.id)
+        .eq('patient_name', patient.name.trim())
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(30);
+
+      if (historyDate) {
+        const dayStart = startOfDay(historyDate).toISOString();
+        const dayEnd = startOfDay(addDays(historyDate, 1)).toISOString();
+        query = query.gte('created_at', dayStart).lt('created_at', dayEnd);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       setSavedPrescriptions((data || []).map(d => ({
         ...d,
@@ -1731,7 +1809,7 @@ const PrescricaoPage = () => {
     } finally {
       setLoadingList(false);
     }
-  }, [currentHospital, currentState]);
+  }, [currentHospital, currentState, patient.name, historyDate]);
 
   useEffect(() => { fetchPrescriptions(); }, [fetchPrescriptions]);
 
@@ -2114,8 +2192,27 @@ const PrescricaoPage = () => {
           >
             <Zap className="h-3.5 w-3.5" /> Interações
           </Button>
-          <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (!allItemsValidated) {
+                toast.error("Valide todos os itens antes de imprimir", { description: "Clique nos círculos à esquerda de cada item ou use 'Validar todos'." });
+                return;
+              }
+              handlePrint();
+            }}
+            className="gap-1.5"
+          >
             <Printer className="h-3.5 w-3.5" /> Imprimir
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={validateAllItems}
+            className="gap-1.5 text-xs text-emerald-600 hover:text-emerald-700"
+          >
+            <Check className="h-3.5 w-3.5" /> Validar todos
           </Button>
           <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
             {saving ? <span className="animate-spin h-3.5 w-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> : <Save className="h-3.5 w-3.5" />}
@@ -2124,15 +2221,43 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== SAVED PRESCRIPTIONS ===== */}
-      {savedPrescriptions.length > 0 && (
+      {/* ===== SAVED PRESCRIPTIONS FOR THIS PATIENT ===== */}
         <div className="rounded-xl border border-border bg-card p-3 print:hidden">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-semibold text-muted-foreground tracking-wider">Prescrições salvas</h2>
-            <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-6 text-[10px] gap-1">
-              <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
-            </Button>
+            <h2 className="text-xs font-semibold text-muted-foreground tracking-wider">
+              Prescrições de {patient.name || 'paciente'}
+            </h2>
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1">
+                    <CalendarDays className="h-3 w-3" />
+                    {historyDate ? format(historyDate, "dd/MM/yyyy") : "Calendário"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="single"
+                    selected={historyDate}
+                    onSelect={(d) => { setHistoryDate(d); }}
+                    locale={ptBR}
+                    initialFocus
+                  />
+                  {historyDate && (
+                    <div className="p-2 border-t">
+                      <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setHistoryDate(undefined)}>
+                        Limpar filtro
+                      </Button>
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
+              <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-6 text-[10px] gap-1">
+                <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
+              </Button>
+            </div>
           </div>
+          {savedPrescriptions.length > 0 ? (
           <div className="flex gap-2 overflow-x-auto pb-1">
             {savedPrescriptions.map(p => (
               <button
@@ -2143,7 +2268,6 @@ const PrescricaoPage = () => {
                   currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border"
                 )}
               >
-                <p className="font-medium truncate max-w-[160px]">{p.patient_name}</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
                     {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
@@ -2154,8 +2278,10 @@ const PrescricaoPage = () => {
               </button>
             ))}
           </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic py-2">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
+          )}
         </div>
-      )}
 
       {/* ===== VERSION HISTORY ===== */}
       {versionHistory.length > 1 && currentPrescriptionId && (
@@ -2285,9 +2411,38 @@ const PrescricaoPage = () => {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Search bars are now inline within each category section below */}
+        {/* Items summary strip below patient header */}
+        {items.length > 0 && (
+          <div className="px-4 py-2 border-t border-border/30 bg-muted/20">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[10px] font-semibold text-muted-foreground tracking-wider">Itens:</span>
+              {TAB_ORDER.map(cat => {
+                const count = itemsByCategory[cat].length;
+                if (count === 0) return null;
+                const config = CATEGORY_CONFIG[cat];
+                const validatedCount = itemsByCategory[cat].filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
+                return (
+                  <div key={cat} className="flex items-center gap-1">
+                    <Circle className={cn("h-2 w-2 fill-current", validatedCount === count ? "text-emerald-500" : "text-amber-500")} />
+                    <span className="text-[10px] text-foreground font-medium">{count} {config.label.toLowerCase()}</span>
+                  </div>
+                );
+              })}
+              {!allItemsValidated && (
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-300 text-amber-600 bg-amber-50 dark:bg-amber-950/20 ml-auto">
+                  Pendente validação
+                </Badge>
+              )}
+              {allItemsValidated && (
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-300 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 ml-auto">
+                  ✓ Validada
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* ===== FULL PRESCRIPTION VIEW (all categories) ===== */}
       <div className={cn("space-y-3 print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
@@ -2434,6 +2589,8 @@ const PrescricaoPage = () => {
                           onDuplicate={duplicateItem}
                           onRequestSuspend={requestSuspendItem}
                           onReactivate={reactivateItem}
+                          onToggleValidation={toggleValidation}
+                          isPastRenewalTime={isPastRenewalTime}
                         />
                       ))}
                     </div>
