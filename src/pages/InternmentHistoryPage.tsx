@@ -213,11 +213,11 @@ const InternmentHistoryPage = () => {
             <History className="h-6 w-6 text-amber-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight uppercase">
+            <h1 className="text-3xl font-bold tracking-tight">
               Histórico de Solicitações
             </h1>
-            <p className="text-muted-foreground uppercase text-sm">
-              {currentDepartment} • {filteredRequests.length} Registros Encontrados
+            <p className="text-muted-foreground text-sm">
+              {currentDepartment} • {filteredRequests.length} registros encontrados
             </p>
           </div>
         </div>
