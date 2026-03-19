@@ -263,7 +263,7 @@ export function InternmentStatusDialog({
             variant="outline"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="uppercase"
+            className=""
           >
             Cancelar
           </Button>
