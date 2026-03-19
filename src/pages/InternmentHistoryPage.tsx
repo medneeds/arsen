@@ -340,7 +340,7 @@ const InternmentHistoryPage = () => {
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal uppercase",
+                      "w-full justify-start text-left font-normal",
                       !tempEndDate && "text-muted-foreground"
                     )}
                   >
