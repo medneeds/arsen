@@ -255,6 +255,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       setSelectedBed("");
       setAdmissionNotes("");
       setFullData(null);
+      setExtraBedRequested(false);
+      setSectorFullAlert(false);
     } catch (err: any) {
       toast({ title: "Erro na admissão", description: err.message, variant: "destructive" });
     } finally {
