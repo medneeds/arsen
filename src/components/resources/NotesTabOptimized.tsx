@@ -381,10 +381,10 @@ const NotesTabOptimized = () => {
                     size="sm"
                     onClick={handleDownload}
                     disabled={!notes}
-                    className="gap-2 hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/50 transition-all uppercase"
+                    className="gap-2 hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/50 transition-all"
                   >
                     <Download className="h-4 w-4" />
-                    BAIXAR
+                    Baixar
                   </Button>
 
                   <Button
