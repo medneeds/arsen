@@ -133,12 +133,12 @@ export function EditTherapeuticTemplateDialog({
             </div>
             {protocolType === "OUTRO" && (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold uppercase">Especificar</Label>
+                <Label className="text-xs font-semibold">Especificar</Label>
                 <Input
                   value={customProtocol}
                   onChange={(e) => setCustomProtocol(e.target.value)}
-                  placeholder="NOME DO PROTOCOLO"
-                  className="uppercase text-sm"
+                  placeholder="Nome do protocolo"
+                  className="text-sm"
                 />
               </div>
             )}
