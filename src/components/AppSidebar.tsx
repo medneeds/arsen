@@ -113,13 +113,19 @@ export function AppSidebar({
       title: "Início",
       icon: LayoutDashboard,
       link: "/",
-      profiles: ["medico", "gestor", "multi", "administrativo"],
+      profiles: ["medico", "gestor", "multi"],
     },
     {
       title: "Painel do Gestor",
       icon: BarChart3,
       link: "/painel-gestor",
       profiles: ["gestor"],
+    },
+    {
+      title: "Fila de Triagem",
+      icon: Users,
+      link: "/triagem-fila",
+      profiles: ["multi"],
     },
     {
       title: "Documentos",
@@ -197,6 +203,12 @@ export function AppSidebar({
     if (accessProfile === "ccih") {
       return [
         { title: "Painel CCIH", icon: LayoutDashboard, link: "/ccih", profiles: ["ccih"] },
+      ];
+    }
+    // Administrativo: reception/registration environment
+    if (accessProfile === "administrativo") {
+      return [
+        { title: "Recepção", icon: LayoutDashboard, link: "/recepcao", profiles: ["administrativo"] },
       ];
     }
     // Filter sections by profile, then filter sub-items within each section
