@@ -95,6 +95,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fullData, setFullData] = useState<PreAdmissionFull | null>(null);
   const [sectorFullAlert, setSectorFullAlert] = useState(false);
+  const [extraBedRequested, setExtraBedRequested] = useState(false);
 
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
