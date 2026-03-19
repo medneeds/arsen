@@ -61,6 +61,7 @@ import TriageQueuePage from "./pages/TriageQueuePage";
 import TriageQueueTVPage from "./pages/TriageQueueTVPage";
 import AltaDesfechoPage from "./pages/AltaDesfechoPage";
 import EmergenciaSectorPage from "./pages/EmergenciaSectorPage";
+import MonitoramentoClinicoPage from "./pages/MonitoramentoClinicoPage";
 
 const queryClient = new QueryClient();
 
