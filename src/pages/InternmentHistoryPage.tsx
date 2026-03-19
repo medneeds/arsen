@@ -368,7 +368,7 @@ const InternmentHistoryPage = () => {
           <div className="flex gap-2 pt-2">
             <Button
               onClick={handleApplyFilters}
-              className="flex-1 uppercase font-semibold"
+              className="flex-1 font-semibold"
               size="lg"
             >
               <Filter className="mr-2 h-4 w-4" />
