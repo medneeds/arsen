@@ -625,7 +625,7 @@ export default function AuthPage() {
                   {/* Sector select - only for medico & gestor */}
                   {(selectedProfile === "medico" || selectedProfile === "gestor") && (
                     <div>
-                      <Label htmlFor="sector" className="text-[10px] font-medium text-white/40 uppercase mb-1.5 block tracking-[0.15em]">Setor</Label>
+                      <Label htmlFor="sector" className="text-[10px] font-medium text-white/40 mb-1.5 block tracking-[0.15em]">Setor</Label>
                       <div className="relative">
                         <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10 pointer-events-none" />
                         <Select
@@ -633,12 +633,12 @@ export default function AuthPage() {
                           onValueChange={(val) => setSelectedSector(val)}
                           disabled={loading}
                         >
-                          <SelectTrigger className="pl-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm uppercase font-medium text-white focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all">
-                            <SelectValue placeholder="SELECIONE O SETOR" />
+                          <SelectTrigger className="pl-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm font-medium text-white focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all">
+                            <SelectValue placeholder="Selecione o setor" />
                           </SelectTrigger>
                           <SelectContent>
                             {SECTORS.map((sector) => (
-                              <SelectItem key={sector.key} value={sector.key} className="uppercase text-xs font-medium">
+                              <SelectItem key={sector.key} value={sector.key} className="text-xs font-medium">
                                 {sector.label}
                               </SelectItem>
                             ))}
