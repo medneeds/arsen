@@ -197,6 +197,7 @@ const RequisicaoUnificadaPage = () => {
   // ── Result dialog ──
   const [viewingRequest, setViewingRequest] = useState<any | null>(null);
   const [resultText, setResultText] = useState("");
+  const [resultFiles, setResultFiles] = useState<ResultFile[]>([]);
   const [savingResult, setSavingResult] = useState(false);
 
   // ── Pre-fill from navigation state or URL params ──
