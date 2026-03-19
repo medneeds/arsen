@@ -94,6 +94,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [occupiedBeds, setOccupiedBeds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fullData, setFullData] = useState<PreAdmissionFull | null>(null);
+  const [sectorFullAlert, setSectorFullAlert] = useState(false);
 
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
@@ -118,6 +119,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   useEffect(() => {
     if (!selectedSector || !currentHospital?.id || !currentState?.id) {
       setAvailableBeds([]);
+      setSectorFullAlert(false);
       return;
     }
     const fetchBeds = async () => {
@@ -138,12 +140,17 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       const start = config.startNumber ?? 1;
       const end = start + config.maxRegularBeds - 1;
       const beds: string[] = [];
+      let freeCount = 0;
       for (let i = start; i <= end; i++) {
         const bedNum = `${config.prefix}${String(i).padStart(2, '0')}`;
         beds.push(bedNum);
+        if (!occupied.includes(bedNum)) freeCount++;
       }
       beds.push("EXTRA");
       setAvailableBeds(beds);
+
+      // Check if all regular beds are occupied
+      setSectorFullAlert(freeCount === 0);
     };
     fetchBeds();
   }, [selectedSector, currentHospital?.id, currentState?.id, currentDepartment]);
