@@ -2428,8 +2428,11 @@ const PrescricaoPage = () => {
               { label: 'Idade', value: patient.age || '—' },
               { label: 'Sexo', value: patient.sex || '—' },
               { label: 'Prontuário', value: patient.record || '—' },
-              { label: 'Admissão', value: patient.admissionDate ? format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '—' },
+              { label: 'Nome da Mãe', value: patient.motherName || '—' },
+              { label: 'Admissão Hospital', value: patient.admissionDate ? format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '—' },
+              { label: 'Admissão UTI', value: patient.utiAdmissionDate ? format(new Date(patient.utiAdmissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '—' },
               { label: 'Unidade', value: patient.unit || '—' },
+              { label: 'Endereço', value: patient.address ? `${patient.address}${patient.city ? ` — ${patient.city}` : ''}` : '—' },
             ].map(({ label, value }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <span className="text-muted-foreground">{label}:</span>
