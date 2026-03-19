@@ -750,7 +750,7 @@ const RequisicaoUnificadaPage = () => {
                 key={req.id}
                 request={req}
                 category={activeCategory}
-                onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); }}
+                onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
                 showResult
               />
             ))
