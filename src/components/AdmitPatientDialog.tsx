@@ -479,7 +479,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                       <BedDouble className="h-3.5 w-3.5" />
                       Solicitar Maca Extra
                     </Button>
-                    <Select value={selectedSector} onValueChange={(v) => { setSelectedSector(v); setSelectedBed(""); setExtraBedRequested(false); setBedsLoaded(false); }}>
+                    <Select value={selectedSector} onValueChange={handleSectorChange}>
                       <SelectTrigger className="h-7 w-auto text-xs px-2">
                         <SelectValue placeholder="Alterar setor" />
                       </SelectTrigger>
