@@ -845,6 +845,7 @@ const RequisicaoUnificadaPage = () => {
           )}
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };
