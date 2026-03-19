@@ -231,7 +231,7 @@ const EvolucaoPage = () => {
                 <p className="text-sm font-medium">{patient.weight} kg</p>
               </div>
               <div>
-                <Label className="text-[10px] text-muted-foreground uppercase">Alergias</Label>
+                <Label className="text-[10px] text-muted-foreground">Alergias</Label>
                 <Badge variant={patient.allergies === 'NDAM' ? 'secondary' : 'destructive'} className="text-[10px]">
                   {patient.allergies}
                 </Badge>
