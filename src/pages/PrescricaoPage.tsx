@@ -1333,6 +1333,9 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
           {item.flags.length > 0 && (
             <span style={{ fontSize: '7.5pt', fontWeight: 700, marginLeft: '3px', color: '#0f172a' }}>[{item.flags.join(', ').toUpperCase()}]</span>
           )}
+          {item.isExtra && (
+            <span style={{ fontSize: '7pt', fontWeight: 700, marginLeft: '3px', color: '#ea580c', backgroundColor: '#fff7ed', padding: '0 3px', borderRadius: '2px', border: '0.5px solid #fed7aa' }}>EXTRA</span>
+          )}
           {item.status === 'suspended' && (
             <span style={{ fontSize: '7.5pt', fontWeight: 700, color: '#dc2626', marginLeft: '3px' }}>[SUSPENSO]</span>
           )}
