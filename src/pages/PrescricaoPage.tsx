@@ -110,10 +110,16 @@ interface PrescriptionItem {
   diluent?: string;           // Diluente (SF0,9%, SG5%, AD, etc.)
   diluentVolume?: string;     // Volume do diluente (mL)
   accessType?: string;        // Acesso (Periférico, Central, etc.)
-  infusionTime?: string;      // Correr em (min)
+  infusionTime?: string;      // Correr em (valor numérico)
+  infusionTimeUnit?: 'min' | 'h'; // Unidade do tempo de infusão
   infusionMode?: 'BIC' | 'gts'; // mL/h vs gts/min
   volumeTotal?: string;       // Volume total (mL)
   concentration?: string;     // Concentração calculada ou manual
+}
+
+// Normalize text for accent-insensitive search
+function normalizeSearch(text: string): string {
+  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 // Quantity units for prescription items
@@ -168,18 +174,43 @@ function rotateSchedule(schedule: string): string {
   return rotated.join(', ');
 }
 
-// Calculate infusion rate
-function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts'): string {
+// Calculate infusion rate — timeStr is raw value, timeUnit is 'min' or 'h'
+function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts', timeUnit: 'min' | 'h' = 'min'): string {
   const volume = parseFloat(volumeStr);
-  const time = parseFloat(timeStr);
-  if (!volume || !time || time <= 0) return '';
+  const rawTime = parseFloat(timeStr);
+  if (!volume || !rawTime || rawTime <= 0) return '';
+  const timeInMin = timeUnit === 'h' ? rawTime * 60 : rawTime;
   if (mode === 'BIC') {
-    const mlPerHour = (volume / time) * 60;
+    const mlPerHour = (volume / timeInMin) * 60;
     return `${mlPerHour.toFixed(1)} mL/h`;
   } else {
-    const gtsPerMin = (volume * 20) / (time); // 1mL = 20 gts (equipo padrão)
+    const gtsPerMin = (volume * 20) / timeInMin; // 1mL = 20 gts (equipo padrão)
     return `${gtsPerMin.toFixed(1)} gts/min`;
   }
+}
+
+// Auto-calculate volume total from dose + diluent volume
+function calcVolumeTotal(item: PrescriptionItem): string {
+  const doseVol = parseFloat(item.dose?.replace(/[^\d.,]/g, '').replace(',', '.') || '');
+  const dilVol = parseFloat(item.diluentVolume || '');
+  if (dilVol > 0 && doseVol > 0) return String(Math.round(dilVol + doseVol));
+  if (dilVol > 0) return String(Math.round(dilVol));
+  return '';
+}
+
+// Auto-calculate concentration from dose and volume total
+function calcConcentration(item: PrescriptionItem): string {
+  const doseMatch = item.dose?.match(/([\d.,]+)\s*(mg|g|mcg|UI)/i);
+  if (!doseMatch) return '';
+  let doseVal = parseFloat(doseMatch[1].replace(',', '.'));
+  const doseUnit = doseMatch[2].toLowerCase();
+  if (doseUnit === 'g') doseVal *= 1000; // convert to mg
+  const volTotal = parseFloat(item.volumeTotal || '');
+  if (!doseVal || !volTotal || volTotal <= 0) return '';
+  const conc = doseVal / volTotal;
+  if (doseUnit === 'ui') return `${conc.toFixed(1)} UI/mL`;
+  if (doseUnit === 'mcg') return `${conc.toFixed(1)} mcg/mL`;
+  return `${conc.toFixed(2)} mg/mL`;
 }
 
 function isIVRoute(route: string): boolean {
@@ -277,20 +308,19 @@ function buildPrepDescription(item: PrescriptionItem): string {
     parts.push(dilPart + '.');
   }
   if (item.accessType) parts.push(`Acesso ${item.accessType.toLowerCase()}.`);
-  if (item.infusionTime && item.volumeTotal) {
-    const rate = calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC');
-    const timeH = parseFloat(item.infusionTime) >= 60
-      ? `${(parseFloat(item.infusionTime) / 60).toFixed(1)}h`
-      : `${item.infusionTime}min`;
-    parts.push(`Correr em ${timeH} (${rate}).`);
-  } else if (item.infusionTime) {
-    const timeH = parseFloat(item.infusionTime) >= 60
-      ? `${(parseFloat(item.infusionTime) / 60).toFixed(1)}h`
-      : `${item.infusionTime}min`;
-    parts.push(`Correr em ${timeH}.`);
+  if (item.volumeTotal) parts.push(`Volume total: ${item.volumeTotal}mL.`);
+  if (item.infusionTime) {
+    const unit = item.infusionTimeUnit || 'min';
+    const timeLabel = `${item.infusionTime}${unit === 'h' ? 'h' : 'min'}`;
+    if (item.volumeTotal) {
+      const rate = calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', unit);
+      const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'BIC';
+      parts.push(`Correr em ${timeLabel} — ${modeLabel}: ${rate}.`);
+    } else {
+      parts.push(`Correr em ${timeLabel}.`);
+    }
   }
   if (item.concentration) parts.push(`Concentração: ${item.concentration}.`);
-  if (item.flags.includes('bi' as PrescriptionFlag)) parts.push('Uso em bomba de infusão.');
   return parts.join(' ');
 }
 
@@ -338,12 +368,12 @@ function MedicationAutocomplete({
 
   const filtered = useMemo(() => {
     if (!query.trim()) return source.slice(0, 8);
-    const q = query.toLowerCase();
+    const q = normalizeSearch(query);
     return source.filter(
       (m) =>
-        m.name.toLowerCase().includes(q) ||
-        m.presentation.toLowerCase().includes(q) ||
-        (m.aliases && m.aliases.some(a => a.toLowerCase().includes(q)))
+        normalizeSearch(m.name).includes(q) ||
+        normalizeSearch(m.presentation).includes(q) ||
+        (m.aliases && m.aliases.some(a => normalizeSearch(a).includes(q)))
     ).slice(0, 10);
   }, [query, source]);
 
@@ -415,12 +445,12 @@ function GlobalPrescriptionSearch({
   const filtered = useMemo(() => {
     const source = selectedCat === 'all' ? allItems : (ALL_ITEMS_BY_CATEGORY[selectedCat] || []);
     if (!query.trim()) return source.slice(0, 12);
-    const q = query.toLowerCase();
+    const q = normalizeSearch(query);
     return source.filter(
       (m) =>
-        m.name.toLowerCase().includes(q) ||
-        m.presentation.toLowerCase().includes(q) ||
-        (m.aliases && m.aliases.some(a => a.toLowerCase().includes(q)))
+        normalizeSearch(m.name).includes(q) ||
+        normalizeSearch(m.presentation).includes(q) ||
+        (m.aliases && m.aliases.some(a => normalizeSearch(a).includes(q)))
     ).slice(0, 15);
   }, [query, selectedCat, allItems]);
 
@@ -920,7 +950,7 @@ function SortablePrescriptionItemRow({
                 </div>
               </div>
 
-              {/* Row 2: Detailed fields - Quantidade, Fazer/Retirar, Diluente, Vol Diluente, Acesso */}
+              {/* Row 2: Quantidade, Diluente, Vol Diluente, Acesso */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Qtd:</span>
@@ -935,20 +965,14 @@ function SortablePrescriptionItemRow({
                   </Select>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Ação:</span>
-                  <Select value={item.action || 'fazer'} onValueChange={(v) => onUpdate(item.id, "action", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-24"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fazer" className="text-xs">Fazer</SelectItem>
-                      <SelectItem value="retirar" className="text-xs">Retirar</SelectItem>
-                      <SelectItem value="manter" className="text-xs">Manter</SelectItem>
-                      <SelectItem value="suspender" className="text-xs">Suspender</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Diluente:</span>
-                  <Select value={item.diluent || ''} onValueChange={(v) => onUpdate(item.id, "diluent", v)}>
+                  <Select value={item.diluent || ''} onValueChange={(v) => {
+                    onUpdate(item.id, "diluent", v);
+                    // Auto-recalculate volume total when diluent changes
+                    const tempItem = { ...item, diluent: v };
+                    const autoVol = calcVolumeTotal(tempItem);
+                    if (autoVol) onUpdate(item.id, "volumeTotal", autoVol);
+                  }}>
                     <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-24"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="SF0,9%" className="text-xs">SF 0,9%</SelectItem>
@@ -962,8 +986,18 @@ function SortablePrescriptionItemRow({
                   </Select>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Vol:</span>
-                  <Input value={item.diluentVolume || ''} onChange={(e) => onUpdate(item.id, "diluentVolume", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-16 text-center" placeholder="mL" />
+                  <span className="text-[10px] text-muted-foreground">Vol dil:</span>
+                  <Input value={item.diluentVolume || ''} onChange={(e) => {
+                    onUpdate(item.id, "diluentVolume", e.target.value);
+                    // Auto-recalculate volume total
+                    const tempItem = { ...item, diluentVolume: e.target.value };
+                    const autoVol = calcVolumeTotal(tempItem);
+                    if (autoVol) onUpdate(item.id, "volumeTotal", autoVol);
+                    // Auto-recalculate concentration
+                    const tempItem2 = { ...tempItem, volumeTotal: autoVol || item.volumeTotal || '' };
+                    const autoConc = calcConcentration(tempItem2);
+                    if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                  }} className="h-6 text-[11px] bg-muted/10 border-border/30 w-16 text-center" placeholder="mL" />
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Acesso:</span>
@@ -981,26 +1015,43 @@ function SortablePrescriptionItemRow({
                 </div>
               </div>
 
-              {/* Row 3: Infusion details - Correr em, Gotejamento, Concentração */}
+              {/* Row 3: Infusion — Vol total → Correr em (com unidade) → Gotejamento + Rate | Concentração */}
               <div className="flex items-center gap-2 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
                 <Droplets className="h-3 w-3 text-primary shrink-0" />
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground font-medium">Vol total:</span>
+                  <Input
+                    value={item.volumeTotal || ''}
+                    onChange={(e) => {
+                      onUpdate(item.id, "volumeTotal", e.target.value);
+                      // Auto-recalculate concentration
+                      const tempItem = { ...item, volumeTotal: e.target.value };
+                      const autoConc = calcConcentration(tempItem);
+                      if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                    }}
+                    className="h-6 text-[11px] bg-background border-border/40 w-16 text-center font-medium"
+                    placeholder="mL"
+                  />
+                  <span className="text-[10px] text-muted-foreground">mL</span>
+                </div>
+                <span className="text-muted-foreground/40">│</span>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground font-medium">Correr em:</span>
                   <Input
                     value={item.infusionTime || ''}
                     onChange={(e) => onUpdate(item.id, "infusionTime", e.target.value)}
-                    className="h-6 text-[11px] bg-background border-border/40 w-16 text-center"
-                    placeholder="min"
+                    className="h-6 text-[11px] bg-background border-border/40 w-14 text-center"
+                    placeholder="—"
                   />
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">Vol total:</span>
-                  <Input
-                    value={item.volumeTotal || ''}
-                    onChange={(e) => onUpdate(item.id, "volumeTotal", e.target.value)}
-                    className="h-6 text-[11px] bg-background border-border/40 w-16 text-center"
-                    placeholder="mL"
-                  />
+                  <Select value={item.infusionTimeUnit || 'min'} onValueChange={(v) => onUpdate(item.id, "infusionTimeUnit", v)}>
+                    <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-16">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="min" className="text-xs">min</SelectItem>
+                      <SelectItem value="h" className="text-xs">horas</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground font-medium">Gotej:</span>
@@ -1016,17 +1067,18 @@ function SortablePrescriptionItemRow({
                 </div>
                 {/* Auto-calculated rate */}
                 {item.volumeTotal && item.infusionTime && (
-                  <Badge variant="outline" className="text-[10px] font-mono bg-primary/10 border-primary/30 text-primary">
-                    = {calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC')}
+                  <Badge variant="outline" className="text-[10px] font-mono bg-primary/10 border-primary/30 text-primary font-bold">
+                    = {calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', item.infusionTimeUnit || 'min')}
                   </Badge>
                 )}
+                <span className="text-muted-foreground/40">│</span>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground font-medium">Conc:</span>
                   <Input
                     value={item.concentration || ''}
                     onChange={(e) => onUpdate(item.id, "concentration", e.target.value)}
                     className="h-6 text-[11px] bg-background border-border/40 w-24 text-center"
-                    placeholder="mg/mL"
+                    placeholder="auto"
                   />
                 </div>
                 {item.volumeTotal && item.posology && item.posology !== 'Contínuo' && item.posology !== 'Dose única' && (
@@ -1196,10 +1248,10 @@ function ExtraPrescriptionDialog({
       isExtra: true,
       infusionMode: 'BIC',
       infusionTime: autoDefaults.infusionTime,
+      infusionTimeUnit: 'min' as const,
       volumeTotal: autoDefaults.diluentVolume,
       quantity: '1',
       quantityUnit: autoUnit,
-      action: 'fazer',
       diluent: isIV ? autoDefaults.diluent : '',
       diluentVolume: isIV ? autoDefaults.diluentVolume : '',
       accessType: '',
@@ -1495,10 +1547,12 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
         {hasPreparo && (
           <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: '1.2', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #cbd5e1' }}>
             {[
-              item.action && item.action !== '-' ? item.action : null,
               item.diluent && item.diluent !== '-' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : null,
               item.accessType && item.accessType !== '-' ? item.accessType : null,
-              item.infusionTime && item.infusionTime !== '-' ? `Correr em ${item.infusionTime}min` : null,
+              item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
+              item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
+              item.volumeTotal && item.infusionTime ? calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', item.infusionTimeUnit || 'min') : null,
+              item.concentration ? `Conc: ${item.concentration}` : null,
             ].filter(Boolean).join(' · ')}
           </div>
         )}
@@ -2167,10 +2221,10 @@ const PrescricaoPage = () => {
       status: 'active',
       infusionMode: 'BIC',
       infusionTime: autoDefaults.infusionTime,
+      infusionTimeUnit: 'min' as const,
       volumeTotal: autoDefaults.diluentVolume,
       quantity: '1',
       quantityUnit: autoUnit,
-      action: 'fazer',
       diluent: isIV ? autoDefaults.diluent : '',
       diluentVolume: isIV ? autoDefaults.diluentVolume : '',
       accessType: '',
