@@ -286,8 +286,8 @@ const NotesTabOptimized = () => {
   const handlePrint = () => {
     window.print();
     toast({
-      title: "IMPRESSÃO INICIADA",
-      description: "PREPARANDO DOCUMENTO PARA IMPRESSÃO",
+      title: "Impressão iniciada",
+      description: "Preparando documento para impressão",
     });
   };
 
