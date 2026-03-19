@@ -2565,14 +2565,9 @@ const PrescricaoPage = () => {
           .prescription-print-section table { border-collapse: collapse; width: 100%; }
           .prescription-print-section td, .prescription-print-section th { background-color: #fff !important; }
           .print-header-bar { background-color: #0c4a6e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-header-subtle { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-cat-header { background-color: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-inst-bar { background: linear-gradient(135deg, #0a1628 0%, #0f2847 50%, #1a3a5c 100%) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-nav-chip { background-color: rgba(255,255,255,0.12) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-module-chip { background-color: rgba(56,189,248,0.18) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-patient-bar { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-avatar { background-color: #e0f2fe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-allergy-bar { background-color: #fef2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-field-bg { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-row-alt td { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-num-pill { background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-flag-chip { background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -2583,92 +2578,71 @@ const PrescricaoPage = () => {
         }
       ` }} />
 
-      {/* ===== PRINT-ONLY LETTERHEAD — mirrors on-screen clinical header ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginBottom: '2px' }}>
+      {/* ===== PRINT-ONLY LETTERHEAD ===== */}
+      <div className="hidden print:block prescription-print-section" style={{ marginBottom: '6px' }}>
         
-        {/* ── TOP BAR: dark institutional nav bar ── */}
-        <div className="print-inst-bar" style={{
+        {/* ── ROW 1: Institutional bar — light gray bg, logo + title ── */}
+        <div className="print-header-subtle" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '5px 10px', borderRadius: '4px 4px 0 0',
+          padding: '3px 8px', backgroundColor: '#f1f5f9', borderBottom: '0.5px solid #e2e8f0',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <img src={socorraoLogo} alt="Socorrão I" style={{ height: '20px', objectFit: 'contain', borderRadius: '2px' }} />
-            <div style={{ height: '14px', width: '1px', background: 'rgba(255,255,255,0.2)' }} />
-            <span style={{ fontSize: '8pt', fontWeight: 700, color: '#fff', letterSpacing: '0.5px' }}>Socorrão I</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}>
-              <span className="print-nav-chip" style={{ fontSize: '6pt', color: 'rgba(255,255,255,0.7)', padding: '1px 6px', borderRadius: '3px', fontWeight: 500 }}>Painel Clínico</span>
-              <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '7pt' }}>/</span>
-              <span className="print-module-chip" style={{ fontSize: '6.5pt', color: '#38bdf8', padding: '1px 8px', borderRadius: '3px', fontWeight: 700 }}>Prescrição Médica</span>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <img src={socorraoLogo} alt="Socorrão I" style={{ height: '16px', objectFit: 'contain', opacity: 0.8 }} />
+            <span style={{ fontSize: '7pt', fontWeight: 700, color: '#475569', letterSpacing: '0.3px' }}>Socorrão I</span>
+            <span style={{ fontSize: '6pt', color: '#94a3b8', fontWeight: 500 }}>·</span>
+            <span style={{ fontSize: '6.5pt', fontWeight: 600, color: '#64748b' }}>Prescrição Médica Diária</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '6.5pt', color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{prescriptionDate}</span>
-            <img src={bighelpLogo} alt="BigHelp Map" style={{ height: '14px', objectFit: 'contain', opacity: 0.25 }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '6pt', color: '#94a3b8', fontWeight: 500 }}>{prescriptionDate}</span>
+            <img src={bighelpLogo} alt="BigHelp Map" style={{ height: '10px', objectFit: 'contain', opacity: 0.1 }} />
           </div>
         </div>
 
-        {/* ── PATIENT IDENTIFICATION — compact unified grid ── */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', borderLeft: '0.5px solid #bae6fd', borderRight: '0.5px solid #bae6fd' }}>
-          <tbody>
-            {/* Row 1: Name (spanning) + Leito + Peso + Idade + Sexo + Prontuário + Data */}
-            <tr className="print-patient-bar">
-              <td colSpan={4} style={{ padding: '4px 8px', verticalAlign: 'middle', borderBottom: '0.5px solid #bae6fd' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <div className="print-avatar" style={{
-                    width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: '1px solid #7dd3fc',
-                  }}>
-                    <span style={{ fontSize: '9pt', fontWeight: 800, color: '#0369a1' }}>{patient.name ? patient.name.charAt(0).toUpperCase() : '?'}</span>
-                  </div>
-                  <span style={{ fontSize: '9.5pt', fontWeight: 800, color: '#0c4a6e', letterSpacing: '0.2px', lineHeight: 1 }}>
-                    {patient.name || '___________________________________'}
-                  </span>
-                </div>
-              </td>
-              {[
-                { label: 'Leito', value: patient.bed || '—', mono: false, w: '6%' },
-                { label: 'Peso', value: patient.weight ? `${patient.weight}kg` : '—', mono: false, w: '6%' },
-                { label: 'Idade', value: patient.age || '—', mono: false, w: '7%' },
-                { label: 'Sexo', value: patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'M' : 'F') : '—', mono: false, w: '4%' },
-                { label: 'Prontuário', value: patient.record || '————', mono: true, w: '11%' },
-                { label: 'Data Prescr.', value: prescriptionDate, mono: false, w: '10%' },
-              ].map((f, i) => (
-                <td key={i} style={{ padding: '3px 4px', textAlign: 'center', verticalAlign: 'middle', borderBottom: '0.5px solid #bae6fd', borderLeft: '0.5px solid #bae6fd', width: f.w }}>
-                  <div style={{ fontSize: '5pt', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.3px', lineHeight: 1 }}>{f.label}</div>
-                  <div style={{ fontSize: '8pt', fontWeight: 700, color: '#0c4a6e', marginTop: '1px', fontFamily: f.mono ? 'monospace' : 'inherit', lineHeight: 1 }}>{f.value}</div>
-                </td>
-              ))}
-            </tr>
-            {/* Row 2: Alergias + Data Nasc + Nome Mãe + Admissões + Endereço */}
-            <tr>
-              <td colSpan={2} className="print-allergy-bar" style={{ padding: '2px 8px', borderBottom: '0.5px solid #fecaca', borderLeft: '3px solid #dc2626', verticalAlign: 'middle' }}>
-                <span style={{ fontSize: '5.5pt', fontWeight: 800, color: '#dc2626', letterSpacing: '0.5px' }}>⚠ Alergias: </span>
-                <span style={{ fontSize: '7.5pt', fontWeight: 800, color: '#991b1b' }}>{patient.allergies || 'NDAM'}</span>
-              </td>
-              <td className="print-field-bg" style={{ padding: '2px 5px', border: '0.5px solid #e2e8f0', verticalAlign: 'top' }}>
-                <div style={{ fontSize: '5pt', fontWeight: 700, color: '#94a3b8', lineHeight: 1 }}>Data Nasc.</div>
-                <div style={{ fontSize: '7pt', fontWeight: 600, color: '#1e293b', lineHeight: 1.2 }}>{patient.birthDate ? format(new Date(patient.birthDate + 'T12:00:00'), 'dd/MM/yyyy') : '___/___/___'}</div>
-              </td>
-              <td className="print-field-bg" style={{ padding: '2px 5px', border: '0.5px solid #e2e8f0', verticalAlign: 'top' }} colSpan={2}>
-                <div style={{ fontSize: '5pt', fontWeight: 700, color: '#94a3b8', lineHeight: 1 }}>Nome da Mãe</div>
-                <div style={{ fontSize: '7pt', fontWeight: 600, color: '#1e293b', lineHeight: 1.2 }}>{patient.motherName || '________________________'}</div>
-              </td>
-              <td className="print-field-bg" style={{ padding: '2px 5px', border: '0.5px solid #e2e8f0', verticalAlign: 'top' }}>
-                <div style={{ fontSize: '5pt', fontWeight: 700, color: '#94a3b8', lineHeight: 1 }}>Adm. Hosp.</div>
-                <div style={{ fontSize: '7pt', fontWeight: 600, color: '#1e293b', lineHeight: 1.2 }}>{patient.admissionDate ? format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yy') : '__/__/__'}</div>
-              </td>
-              <td className="print-field-bg" style={{ padding: '2px 5px', border: '0.5px solid #e2e8f0', verticalAlign: 'top' }}>
-                <div style={{ fontSize: '5pt', fontWeight: 700, color: '#94a3b8', lineHeight: 1 }}>Adm. UTI</div>
-                <div style={{ fontSize: '7pt', fontWeight: 600, color: '#1e293b', lineHeight: 1.2 }}>{patient.utiAdmissionDate ? format(new Date(patient.utiAdmissionDate + 'T12:00:00'), 'dd/MM/yy') : '__/__/__'}</div>
-              </td>
-              <td className="print-field-bg" style={{ padding: '2px 5px', border: '0.5px solid #e2e8f0', verticalAlign: 'top' }} colSpan={3}>
-                <div style={{ fontSize: '5pt', fontWeight: 700, color: '#94a3b8', lineHeight: 1 }}>Endereço / Cidade</div>
-                <div style={{ fontSize: '7pt', fontWeight: 600, color: '#1e293b', lineHeight: 1.2 }}>{patient.address ? `${patient.address}${patient.city ? ` — ${patient.city}` : ''}` : '________________________________'}</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        {/* ── ROW 2: Patient main line — Name, Age, Bed, Weight, Sex, Record, Date ── */}
+        <div style={{
+          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+          padding: '3px 8px', borderBottom: '0.5px solid #e2e8f0',
+        }}>
+          <div style={{ fontSize: '9pt', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+            {patient.name || '___________________________________'}
+            <span style={{ fontWeight: 600, color: '#475569', fontSize: '8pt' }}>, {patient.age || '—'}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '7pt', color: '#334155', flexShrink: 0 }}>
+            <span><strong>L:</strong> {patient.bed || '—'}</span>
+            <span style={{ color: '#cbd5e1' }}>·</span>
+            <span><strong>P:</strong> {patient.weight ? `${patient.weight}kg` : '—'}</span>
+            <span style={{ color: '#cbd5e1' }}>·</span>
+            <span>{patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'M' : 'F') : '—'}</span>
+            <span style={{ color: '#cbd5e1' }}>·</span>
+            <span style={{ fontFamily: 'monospace', fontSize: '6.5pt' }}>{patient.record || '————'}</span>
+            <span style={{ color: '#cbd5e1' }}>·</span>
+            <span style={{ fontSize: '6.5pt', color: '#64748b' }}>{prescriptionDate}</span>
+          </div>
+        </div>
+
+        {/* ── ROW 3: Allergy strip ── */}
+        <div className="print-allergy-bar" style={{
+          padding: '2px 8px', borderLeft: '3px solid #dc2626',
+          borderBottom: '0.5px solid #fecaca',
+        }}>
+          <span style={{ fontSize: '5.5pt', fontWeight: 800, color: '#dc2626', letterSpacing: '0.5px' }}>⚠ Alergias: </span>
+          <span style={{ fontSize: '7.5pt', fontWeight: 800, color: '#991b1b' }}>{patient.allergies || 'NDAM'}</span>
+        </div>
+
+        {/* ── ROW 4: Secondary fields inline ── */}
+        <div style={{
+          padding: '2px 8px', fontSize: '6.5pt', color: '#475569', lineHeight: 1.3, borderBottom: '0.5px solid #e2e8f0',
+        }}>
+          {[
+            patient.birthDate ? `Nasc: ${format(new Date(patient.birthDate + 'T12:00:00'), 'dd/MM/yyyy')}` : null,
+            patient.motherName ? `Mãe: ${patient.motherName}` : null,
+            patient.admissionDate ? `Adm. Hosp: ${format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yy')}` : null,
+            patient.utiAdmissionDate ? `Adm. UTI: ${format(new Date(patient.utiAdmissionDate + 'T12:00:00'), 'dd/MM/yy')}` : null,
+            patient.unit ? `Unid: ${patient.unit}` : null,
+            patient.address ? `End: ${patient.address}${patient.city ? ` — ${patient.city}` : ''}` : null,
+            patient.encounterCode ? `Atend: #${patient.encounterCode}` : null,
+          ].filter(Boolean).join(' · ')}
+        </div>
       </div>
 
       {/* Page Title */}
@@ -3171,7 +3145,7 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== PRINT-ONLY PRESCRIPTION BODY ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginTop: '3px' }}>
+      <div className="hidden print:block prescription-print-section" style={{ marginTop: '0' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '0 0 4px 4px', overflow: 'hidden' }}>
           <colgroup>
             <col style={{ width: '26px' }} />
