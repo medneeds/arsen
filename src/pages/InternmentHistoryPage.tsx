@@ -256,7 +256,7 @@ const InternmentHistoryPage = () => {
 
           {/* Quick Period Buttons */}
           <div className="space-y-3">
-            <Label className="uppercase text-sm font-semibold">Período Rápido</Label>
+            <Label className="text-sm font-semibold">Período Rápido</Label>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={selectedPeriod === "all" ? "default" : "outline"}
