@@ -1602,29 +1602,35 @@ const PrescricaoPage = () => {
   );
 
   // --- Handlers ---
-  const createItem = (med: MedicationEntry): PrescriptionItem => ({
-    id: crypto.randomUUID(),
-    name: med.name,
-    presentation: med.presentation,
-    dose: med.defaultDose,
-    route: med.defaultRoute,
-    posology: med.defaultPosology,
-    schedule: med.defaultSchedule,
-    instructions: med.instructions || "",
-    category: med.category,
-    flags: [],
-    highAlert: med.highAlert || false,
-    status: 'active',
-    infusionMode: 'BIC',
-    infusionTime: '',
-    volumeTotal: '',
-    quantity: '1',
-    action: 'fazer',
-    diluent: '',
-    diluentVolume: '',
-    accessType: '',
-    concentration: '',
-  });
+  const createItem = (med: MedicationEntry): PrescriptionItem => {
+    const autoUnit = detectQuantityUnit(med.presentation, med.defaultDose);
+    const autoDefaults = detectDiluentDefaults(med.instructions || '');
+    const isIV = isIVRoute(med.defaultRoute);
+    return {
+      id: crypto.randomUUID(),
+      name: med.name,
+      presentation: med.presentation,
+      dose: med.defaultDose,
+      route: med.defaultRoute,
+      posology: med.defaultPosology,
+      schedule: med.defaultSchedule,
+      instructions: med.instructions || "",
+      category: med.category,
+      flags: med.instructions?.toLowerCase().includes('bomba de infusão') ? ['bi' as PrescriptionFlag] : [],
+      highAlert: med.highAlert || false,
+      status: 'active',
+      infusionMode: 'BIC',
+      infusionTime: autoDefaults.infusionTime,
+      volumeTotal: autoDefaults.diluentVolume,
+      quantity: '1',
+      quantityUnit: autoUnit,
+      action: 'fazer',
+      diluent: isIV ? autoDefaults.diluent : '',
+      diluentVolume: isIV ? autoDefaults.diluentVolume : '',
+      accessType: '',
+      concentration: '',
+    };
+  };
 
   const addItem = (med: MedicationEntry) => {
     setItems((prev) => [...prev, createItem(med)]);
