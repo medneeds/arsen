@@ -740,7 +740,15 @@ function SortablePrescriptionItemRow({
               <div className="flex items-center gap-1.5 flex-wrap">
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Qtd:</span>
-                  <Input value={item.quantity || ''} onChange={(e) => onUpdate(item.id, "quantity", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-16 text-center" placeholder="1" />
+                  <Input value={item.quantity || ''} onChange={(e) => onUpdate(item.id, "quantity", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-12 text-center" placeholder="1" />
+                  <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
+                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-[110px]"><SelectValue placeholder="unidade" /></SelectTrigger>
+                    <SelectContent>
+                      {QUANTITY_UNITS.map(u => (
+                        <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Ação:</span>
