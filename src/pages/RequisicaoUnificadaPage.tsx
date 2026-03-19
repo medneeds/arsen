@@ -160,9 +160,8 @@ const CATEGORIES = {
 type CategoryKey = keyof typeof CATEGORIES;
 
 const PRIORITY_OPTIONS = [
-  { value: "rotina", label: "Rotina", color: "text-muted-foreground" },
-  { value: "urgente", label: "Urgente", color: "text-amber-600" },
-  { value: "emergencia", label: "Emergência", color: "text-destructive" },
+  { value: "programado", label: "Programado", color: "text-blue-600" },
+  { value: "urgente", label: "Urgente", color: "text-red-600" },
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock; dotColor: string; pulsing: boolean }> = {
