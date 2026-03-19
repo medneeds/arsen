@@ -1925,11 +1925,13 @@ export type Database = {
           oxygenation_pao2_fio2: number | null
           patient_id: string | null
           patient_name: string
+          pending_since: string | null
           ph_lowest: number | null
           planned_admission: boolean | null
           platelets_lowest: number | null
           predicted_mortality: number | null
           state_id: string
+          status: string
           surgery_type: string | null
           surgical_status: string | null
           systolic_bp_lowest: number | null
@@ -1962,11 +1964,13 @@ export type Database = {
           oxygenation_pao2_fio2?: number | null
           patient_id?: string | null
           patient_name: string
+          pending_since?: string | null
           ph_lowest?: number | null
           planned_admission?: boolean | null
           platelets_lowest?: number | null
           predicted_mortality?: number | null
           state_id: string
+          status?: string
           surgery_type?: string | null
           surgical_status?: string | null
           systolic_bp_lowest?: number | null
@@ -1999,11 +2003,13 @@ export type Database = {
           oxygenation_pao2_fio2?: number | null
           patient_id?: string | null
           patient_name?: string
+          pending_since?: string | null
           ph_lowest?: number | null
           planned_admission?: boolean | null
           platelets_lowest?: number | null
           predicted_mortality?: number | null
           state_id?: string
+          status?: string
           surgery_type?: string | null
           surgical_status?: string | null
           systolic_bp_lowest?: number | null

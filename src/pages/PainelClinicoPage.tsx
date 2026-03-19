@@ -479,21 +479,20 @@ export default function PainelClinicoPage() {
   });
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [sidebarTab, setSidebarTab] = useState("resumo");
-  const [sapsScores, setSapsScores] = useState<Record<string, { score: number; mortality: number }>>({});
+  const [sapsScores, setSapsScores] = useState<Record<string, { score: number; mortality: number; status: string; pending_since: string | null }>>({});
 
   // Fetch SAPS 3 scores for all patients
   useEffect(() => {
     const fetchSaps = async () => {
       const { data } = await supabase
         .from("saps3_assessments" as any)
-        .select("patient_name, total_score, predicted_mortality")
+        .select("patient_name, total_score, predicted_mortality, status, pending_since")
         .order("created_at", { ascending: false });
       if (data) {
-        const map: Record<string, { score: number; mortality: number }> = {};
+        const map: Record<string, { score: number; mortality: number; status: string; pending_since: string | null }> = {};
         (data as any[]).forEach((r: any) => {
-          // Keep only the latest per patient name
           if (!map[r.patient_name]) {
-            map[r.patient_name] = { score: r.total_score ?? 0, mortality: r.predicted_mortality ?? 0 };
+            map[r.patient_name] = { score: r.total_score ?? 0, mortality: r.predicted_mortality ?? 0, status: r.status ?? 'completed', pending_since: r.pending_since ?? null };
           }
         });
         setSapsScores(map);
@@ -640,17 +639,27 @@ export default function PainelClinicoPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         {sapsScores[patient.name] ? (
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span className="font-mono font-bold text-sm text-foreground">{sapsScores[patient.name].score}</span>
-                            <Badge variant="outline" className={cn("text-[10px] px-1.5",
-                              sapsScores[patient.name].mortality < 10 ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400" :
-                              sapsScores[patient.name].mortality < 25 ? "text-yellow-600 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400" :
-                              sapsScores[patient.name].mortality < 50 ? "text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400" :
-                              "text-red-600 border-red-200 bg-red-50 dark:bg-red-900/20 dark:text-red-400"
-                            )}>
-                              {sapsScores[patient.name].mortality}%
-                            </Badge>
-                          </div>
+                          sapsScores[patient.name].status === 'pending' ? (
+                            <div className="flex flex-col items-center gap-0.5">
+                              <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                <Clock className="h-3.5 w-3.5 animate-pulse" />
+                                <span className="text-[10px] font-semibold">Pendente</span>
+                              </div>
+                              <SapsPendingMiniTimer pendingSince={sapsScores[patient.name].pending_since} />
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="font-mono font-bold text-sm text-foreground">{sapsScores[patient.name].score}</span>
+                              <Badge variant="outline" className={cn("text-[10px] px-1.5",
+                                sapsScores[patient.name].mortality < 10 ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400" :
+                                sapsScores[patient.name].mortality < 25 ? "text-yellow-600 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400" :
+                                sapsScores[patient.name].mortality < 50 ? "text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400" :
+                                "text-red-600 border-red-200 bg-red-50 dark:bg-red-900/20 dark:text-red-400"
+                              )}>
+                                {sapsScores[patient.name].mortality}%
+                              </Badge>
+                            </div>
+                          )
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
@@ -1198,5 +1207,31 @@ function EditableTextBlock({ icon: Icon, title, value, onSave }: { icon: React.E
         <p className="text-sm text-muted-foreground italic pl-5 cursor-pointer" onClick={startEdit}>Nenhum registro — clique para adicionar</p>
       )}
     </div>
+  );
+}
+
+// Mini timer for pending SAPS in table
+function SapsPendingMiniTimer({ pendingSince }: { pendingSince: string | null }) {
+  const [elapsed, setElapsed] = useState("");
+
+  useEffect(() => {
+    if (!pendingSince) return;
+    const update = () => {
+      const diff = Date.now() - new Date(pendingSince).getTime();
+      const hours = Math.floor(diff / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      setElapsed(`${hours}h${String(minutes).padStart(2, "0")}m`);
+    };
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [pendingSince]);
+
+  if (!pendingSince) return null;
+
+  return (
+    <span className="font-mono text-[10px] font-bold text-amber-600 dark:text-amber-400 animate-pulse">
+      ⏱ {elapsed}
+    </span>
   );
 }

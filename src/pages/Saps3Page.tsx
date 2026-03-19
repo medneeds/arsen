@@ -221,6 +221,8 @@ interface Saps3Record {
   total_score: number | null;
   predicted_mortality: number | null;
   created_at: string;
+  status: string;
+  pending_since: string | null;
 }
 
 const COMORBIDITY_OPTIONS = [
@@ -244,6 +246,7 @@ export default function Saps3Page() {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const hospitalId = currentHospital?.id;
   const stateId = currentState?.id;
@@ -362,7 +365,7 @@ export default function Saps3Page() {
     if (!hospitalId || !stateId) return;
     const { data } = await supabase
       .from("saps3_assessments" as any)
-      .select("id, patient_name, total_score, predicted_mortality, created_at")
+      .select("id, patient_name, total_score, predicted_mortality, created_at, status, pending_since")
       .eq("hospital_unit_id", hospitalId)
       .eq("state_id", stateId)
       .order("created_at", { ascending: false })
@@ -457,8 +460,44 @@ export default function Saps3Page() {
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
   };
 
+  // ─── Build SAPS payload ───
+  const buildSapsPayload = (statusVal: 'completed' | 'pending') => ({
+    patient_name: patientName,
+    hospital_unit_id: hospitalId,
+    state_id: stateId,
+    created_by: user?.id,
+    age: age ? parseInt(age) : null,
+    comorbidities,
+    hospital_los_before_icu: losBeforeIcu ? parseInt(losBeforeIcu) : null,
+    icu_admission_source: admissionSource || null,
+    planned_admission: plannedAdmission,
+    admission_reason: admissionReason || null,
+    admission_reason_detail: admissionReasonDetail || null,
+    surgical_status: surgicalStatus || null,
+    surgery_type: surgeryType || null,
+    infection_at_admission: infectionAtAdmission || null,
+    gcs_score: gcs ? parseInt(gcs) : null,
+    heart_rate_highest: hrHighest ? parseInt(hrHighest) : null,
+    systolic_bp_lowest: sbpLowest ? parseInt(sbpLowest) : null,
+    bilirubin_highest: bilirubinHighest ? parseFloat(bilirubinHighest) : null,
+    temperature_lowest: tempLowest ? parseFloat(tempLowest) : null,
+    creatinine_highest: creatinineHighest ? parseFloat(creatinineHighest) : null,
+    leukocytes: leukocytes ? parseFloat(leukocytes) : null,
+    ph_lowest: phLowest ? parseFloat(phLowest) : null,
+    platelets_lowest: plateletsLowest ? parseInt(plateletsLowest) : null,
+    oxygenation_pao2_fio2: pao2Fio2 ? parseFloat(pao2Fio2) : null,
+    is_mechanically_ventilated: isVentilated,
+    box1_score: scores.box1,
+    box2_score: scores.box2,
+    box3_score: scores.box3,
+    total_score: scores.total,
+    predicted_mortality: scores.mortality,
+    status: statusVal,
+    pending_since: statusVal === 'pending' ? new Date().toISOString() : null,
+  });
+
   // ─── Save: SAPS3 + finalize allocation/admission ───
-  const handleSave = async () => {
+  const handleSave = async (asPending = false) => {
     if (!patientName.trim()) { toast.error("Nome do paciente é obrigatório"); return; }
     if (!selectedSector) { toast.error("Selecione o setor da UTI"); return; }
     if (!selectedBed) { toast.error("Selecione o leito"); return; }
@@ -466,39 +505,7 @@ export default function Saps3Page() {
 
     setSaving(true);
     try {
-      const sapsPayload = {
-        patient_name: patientName,
-        hospital_unit_id: hospitalId,
-        state_id: stateId,
-        created_by: user?.id,
-        age: age ? parseInt(age) : null,
-        comorbidities,
-        hospital_los_before_icu: losBeforeIcu ? parseInt(losBeforeIcu) : null,
-        icu_admission_source: admissionSource || null,
-        planned_admission: plannedAdmission,
-        admission_reason: admissionReason || null,
-        admission_reason_detail: admissionReasonDetail || null,
-        surgical_status: surgicalStatus || null,
-        surgery_type: surgeryType || null,
-        infection_at_admission: infectionAtAdmission || null,
-        gcs_score: gcs ? parseInt(gcs) : null,
-        heart_rate_highest: hrHighest ? parseInt(hrHighest) : null,
-        systolic_bp_lowest: sbpLowest ? parseInt(sbpLowest) : null,
-        bilirubin_highest: bilirubinHighest ? parseFloat(bilirubinHighest) : null,
-        temperature_lowest: tempLowest ? parseFloat(tempLowest) : null,
-        creatinine_highest: creatinineHighest ? parseFloat(creatinineHighest) : null,
-        leukocytes: leukocytes ? parseFloat(leukocytes) : null,
-        ph_lowest: phLowest ? parseFloat(phLowest) : null,
-        platelets_lowest: plateletsLowest ? parseInt(plateletsLowest) : null,
-        oxygenation_pao2_fio2: pao2Fio2 ? parseFloat(pao2Fio2) : null,
-        is_mechanically_ventilated: isVentilated,
-        box1_score: scores.box1,
-        box2_score: scores.box2,
-        box3_score: scores.box3,
-        total_score: scores.total,
-        predicted_mortality: scores.mortality,
-      };
-
+      const sapsPayload = buildSapsPayload(asPending ? 'pending' : 'completed');
       const { error: sapsError } = await supabase.from("saps3_assessments" as any).insert(sapsPayload as any);
       if (sapsError) throw sapsError;
 
@@ -588,13 +595,17 @@ export default function Saps3Page() {
         }
       }
 
+      if (asPending) {
+        toast.success(`Paciente admitido no leito ${selectedBed}. SAPS 3 ficou como pendente — aguardando resultados laboratoriais.`);
+      }
+
       const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector;
       setConfirmationData({
         patientName,
         bedNumber: selectedBed,
         sectorLabel,
-        totalScore: scores.total,
-        predictedMortality: scores.mortality,
+        totalScore: asPending ? 0 : scores.total,
+        predictedMortality: asPending ? 0 : scores.mortality,
       });
       setSelectedRequest(null);
       loadPendingRequests();
@@ -1029,14 +1040,75 @@ export default function Saps3Page() {
           </Collapsible>
 
           {/* Save */}
-          <div className="flex gap-3 justify-end">
+          <div className="flex gap-3 justify-end flex-wrap">
             <Button variant="outline" onClick={() => setSelectedRequest(null)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving || !selectedBed} className="gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => handleSave(true)} 
+              disabled={saving || !selectedBed} 
+              className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-400 dark:hover:bg-amber-900/20"
+            >
+              <Clock className="h-4 w-4" />
+              {saving ? "Admitindo..." : "Admitir com SAPS pendente"}
+            </Button>
+            <Button onClick={() => handleSave(false)} disabled={saving || !selectedBed} className="gap-2">
               <Save className="h-4 w-4" />
               {saving ? "Admitindo..." : `Admitir no ${selectedBed || "leito"}`}
             </Button>
           </div>
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-300">
+            <p className="font-medium flex items-center gap-1.5">
+              <AlertTriangle className="h-4 w-4" /> Exames laboratoriais ainda pendentes?
+            </p>
+            <p className="text-xs mt-1 text-amber-700 dark:text-amber-400">
+              Utilize "Admitir com SAPS pendente" para alocar o paciente no leito agora e completar a ficha SAPS 3 
+              quando os resultados de gasometria, hemograma, função renal e demais exames admissionais estiverem disponíveis. 
+              Um cronômetro será ativado para rastrear o tempo de pendência.
+            </p>
+          </div>
         </div>
+      )}
+
+      {/* ─── Pending SAPS ─── */}
+      {!isFormMode && records.some(r => r.status === 'pending') && (
+        <Card className="border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base text-amber-800 dark:text-amber-300">
+              <Clock className="h-5 w-5 animate-pulse" />
+              SAPS 3 Pendentes — Aguardando Exames Laboratoriais
+              <Badge variant="destructive" className="ml-1">
+                {records.filter(r => r.status === 'pending').length}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {records.filter(r => r.status === 'pending').map(r => (
+                <div key={r.id} className="flex items-center justify-between p-3 rounded-lg border border-amber-200 dark:border-amber-700 bg-card hover:bg-muted/50 transition-colors">
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{r.patient_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Admitido: {format(new Date(r.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <SapsPendingTimer pendingSince={r.pending_since} />
+                    <Button 
+                      size="sm" 
+                      className="gap-1.5"
+                      onClick={() => navigate(`/saps3?completeSapsId=${r.id}&patientName=${encodeURIComponent(r.patient_name)}`)}
+                    >
+                      <ClipboardList className="h-3.5 w-3.5" /> Completar SAPS
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setDeleteId(r.id)} className="text-destructive/60 hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* ─── History ─── */}
@@ -1048,13 +1120,13 @@ export default function Saps3Page() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {records.length === 0 ? (
+            {records.filter(r => r.status !== 'pending').length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Nenhuma admissão com SAPS 3 registrada.
+                Nenhuma admissão com SAPS 3 completada.
               </p>
             ) : (
               <div className="space-y-2">
-                {records.map(r => (
+                {records.filter(r => r.status !== 'pending').map(r => (
                   <div key={r.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                     <div className="flex-1">
                       <p className="font-medium text-foreground">{r.patient_name}</p>
@@ -1103,3 +1175,35 @@ export default function Saps3Page() {
     </div>
   );
 }
+
+// Timer component for pending SAPS
+function SapsPendingTimer({ pendingSince }: { pendingSince: string | null }) {
+  const [elapsed, setElapsed] = useState("");
+
+  useEffect(() => {
+    if (!pendingSince) return;
+    const update = () => {
+      const diff = Date.now() - new Date(pendingSince).getTime();
+      const hours = Math.floor(diff / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      setElapsed(
+        `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+      );
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [pendingSince]);
+
+  if (!pendingSince) return null;
+
+  return (
+    <div className="flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-700">
+      <Clock className="h-3.5 w-3.5 animate-pulse" />
+      <span className="font-mono font-bold text-sm">{elapsed}</span>
+    </div>
+  );
+}
+
+export { SapsPendingTimer };
