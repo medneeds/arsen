@@ -161,7 +161,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
                               {template.items.length} itens
                             </span>
                           </div>
-                          <p className="text-sm font-semibold uppercase">{template.name}</p>
+                          <p className="text-sm font-semibold">{template.name}</p>
                           {template.description && (
                             <p className="text-xs text-muted-foreground mt-0.5">{template.description}</p>
                           )}
