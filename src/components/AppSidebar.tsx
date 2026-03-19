@@ -116,18 +116,6 @@ export function AppSidebar({
       profiles: ["gestor"],
     },
     {
-      title: "Painel do Gestor",
-      icon: BarChart3,
-      link: "/painel-gestor",
-      profiles: ["gestor"],
-    },
-    {
-      title: "Movimentações",
-      icon: Users,
-      link: "/movements",
-      profiles: ["medico", "gestor", "multi", "administrativo"],
-    },
-    {
       title: "Documentos",
       icon: FolderOpen,
       profiles: ["medico", "gestor"],
