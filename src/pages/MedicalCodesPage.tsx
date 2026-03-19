@@ -165,7 +165,7 @@ export default function MedicalCodesPage() {
       await navigator.clipboard.writeText(text);
       toast.success(`${label} copiado`);
     } catch (error) {
-      toast.error("ERRO AO COPIAR");
+      toast.error("Erro ao copiar");
     }
   };
 
