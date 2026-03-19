@@ -383,9 +383,9 @@ export default function AuthPage() {
                 transition={{ duration: 1, delay: 1.8 }}
               >
                 <div className="h-px w-12 bg-gradient-to-r from-transparent via-slate-500/30 to-transparent mb-3" />
-                <p className="text-[9px] text-slate-600 uppercase tracking-[0.4em]">by</p>
-                <p className="text-sm sm:text-base text-slate-300 font-bold tracking-[0.25em] uppercase mt-0.5">Medora</p>
-                <p className="text-[8px] text-[#2dd4bf]/40 uppercase tracking-[0.35em] font-light mt-1">Clinical Intelligent Platform</p>
+                <p className="text-[9px] text-slate-600 tracking-[0.4em]">by</p>
+                <p className="text-sm sm:text-base text-slate-300 font-bold tracking-[0.25em] mt-0.5">Medora</p>
+                <p className="text-[8px] text-[#2dd4bf]/40 tracking-[0.35em] font-light mt-1">Clinical Intelligent Platform</p>
               </motion.div>
             </div>
 
