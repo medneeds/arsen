@@ -211,7 +211,7 @@ const EvolucaoPage = () => {
                 </div>
               </div>
               <div>
-                <Label className="text-[10px] text-muted-foreground uppercase">Setor</Label>
+                <Label className="text-[10px] text-muted-foreground">Setor</Label>
                 <p className="text-sm font-medium">{patient.unit}</p>
               </div>
             </div>
