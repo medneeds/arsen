@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { format } from "date-fns";
@@ -7,8 +7,9 @@ import {
   TestTubes, ScanLine, UserCheck, Plus, Search, Clock, CheckCircle2,
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
   ChevronDown, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
-  CalendarIcon, Printer,
+  CalendarIcon, Printer, RotateCcw, FileCheck,
 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
