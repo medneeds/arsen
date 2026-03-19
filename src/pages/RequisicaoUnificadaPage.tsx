@@ -440,7 +440,7 @@ const RequisicaoUnificadaPage = () => {
       </div>
 
       {/* ── Category Selector ── */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1 print:hidden">
         {(Object.keys(CATEGORIES) as CategoryKey[]).map(key => {
           const cat = CATEGORIES[key];
           const Icon = cat.icon;
