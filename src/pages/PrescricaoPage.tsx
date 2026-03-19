@@ -316,10 +316,12 @@ function buildPrepDescription(item: PrescriptionItem): string {
     parts.push(`1 ${item.quantityUnit}.`);
   }
   if (item.dose && item.dose !== '-') parts.push(item.dose);
-  if (item.diluent) {
+  if (item.diluent && item.diluent !== 'sem_diluente') {
     let dilPart = `Diluir em ${item.diluent}`;
     if (item.diluentVolume) dilPart += ` ${item.diluentVolume}mL`;
     parts.push(dilPart + '.');
+  } else if (item.diluent === 'sem_diluente') {
+    parts.push('Sem diluição.');
   }
   if (item.accessType) parts.push(`Acesso ${item.accessType.toLowerCase()}.`);
   if (item.volumeTotal) parts.push(`Volume total: ${item.volumeTotal}mL.`);
