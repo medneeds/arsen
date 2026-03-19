@@ -110,10 +110,10 @@ export default function CuidadosPaliativosPage() {
                 <Separator className="my-4" />
 
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-red-600 dark:text-red-400 uppercase flex items-center gap-2">
+                  <h4 className="font-semibold text-red-600 dark:text-red-400 flex items-center gap-2">
                     Medidas Não Autorizadas:
                   </h4>
-                  <ul className="space-y-2 text-muted-foreground uppercase ml-6">
+                  <ul className="space-y-2 text-muted-foreground ml-6">
                     <li className="flex items-start gap-2">
                       <span className="text-red-500 font-bold">✗</span>
                       <span>Intubação orotraqueal</span>
