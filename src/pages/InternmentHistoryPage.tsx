@@ -270,7 +270,7 @@ const InternmentHistoryPage = () => {
                 variant={selectedPeriod === "today" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("today")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Hoje
               </Button>
