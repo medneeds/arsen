@@ -519,9 +519,9 @@ export default function RoundPage() {
 
             {/* Footer actions */}
             <div className="flex justify-end gap-2 pb-4">
-              <Button variant="outline" onClick={handleExportJSON} className="text-xs gap-1.5">
-                <Download className="h-3.5 w-3.5" />
-                Exportar JSON
+              <Button variant="outline" onClick={handlePrintPDF} className="text-xs gap-1.5">
+                <Printer className="h-3.5 w-3.5" />
+                Imprimir PDF
               </Button>
               <Button onClick={handleSave} disabled={saving} className="text-xs gap-1.5">
                 <Save className="h-3.5 w-3.5" />
