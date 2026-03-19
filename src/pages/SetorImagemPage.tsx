@@ -188,6 +188,9 @@ const SetorImagemPage = () => {
         if (resultText.trim()) {
           updateData.results = resultText.trim();
         }
+        if (resultFiles.length > 0) {
+          updateData.result_data = { files: resultFiles };
+        }
       }
 
       const { error } = await supabase
@@ -205,6 +208,7 @@ const SetorImagemPage = () => {
       );
       setShowDetailDialog(false);
       setResultText("");
+      setResultFiles([]);
       fetchRequests();
     } catch (err) {
       toast.error("Erro ao atualizar status");
