@@ -281,7 +281,7 @@ export default function HandoversPage() {
                         <CardContent className="space-y-4 pt-0">
                           {handover.notes && (
                             <div className="p-3 bg-muted/50 rounded-lg">
-                              <p className="text-xs uppercase font-semibold text-muted-foreground mb-1">
+                              <p className="text-xs font-semibold text-muted-foreground mb-1">
                                 Observações
                               </p>
                               <p className="text-sm text-foreground whitespace-pre-wrap">
