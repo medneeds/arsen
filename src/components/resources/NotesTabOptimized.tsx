@@ -538,13 +538,13 @@ const NotesTabOptimized = () => {
                 setScheduledDate("");
                 setScheduledTime("");
               }}
-              className="uppercase"
+              className=""
             >
-              CANCELAR
+              Cancelar
             </Button>
-            <Button type="button" onClick={handleSchedulePopup} className="uppercase">
+            <Button type="button" onClick={handleSchedulePopup}>
               <Clock className="h-4 w-4 mr-2" />
-              AGENDAR
+              Agendar
             </Button>
           </DialogFooter>
         </DialogContent>
