@@ -334,7 +334,7 @@ const InternmentHistoryPage = () => {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium uppercase">Data Final</Label>
+              <Label className="text-sm font-medium">Data Final</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
