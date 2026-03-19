@@ -383,7 +383,7 @@ export const NotificationCenter = () => {
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-2 flex-1 min-w-0">
                             <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm font-medium uppercase leading-tight break-words">{item.content}</p>
+                            <p className="text-sm font-medium leading-tight break-words">{item.content}</p>
                           </div>
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                             {!item.read && (
