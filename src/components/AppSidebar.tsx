@@ -121,19 +121,13 @@ export function AppSidebar({
       title: "Início",
       icon: LayoutDashboard,
       link: "/",
-      profiles: ["medico", "gestor", "multi"],
+      profiles: ["medico", "gestor"],
     },
     {
       title: "Painel do Gestor",
       icon: BarChart3,
       link: "/painel-gestor",
       profiles: ["gestor"],
-    },
-    {
-      title: "Fila de Triagem",
-      icon: Users,
-      link: "/triagem-fila",
-      profiles: ["multi"],
     },
     {
       title: "Documentos",
@@ -149,10 +143,10 @@ export function AppSidebar({
     {
       title: "Protocolos",
       icon: Stethoscope,
-      profiles: ["medico", "gestor", "multi"],
+      profiles: ["medico", "gestor"],
       items: [
-        { name: "Protocolos UTI", link: "/protocolos-uti", profiles: ["medico", "gestor", "multi"] },
-        { name: "SAPS 3", link: "/saps3", profiles: ["medico", "gestor", "multi"] },
+        { name: "Protocolos UTI", link: "/protocolos-uti", profiles: ["medico", "gestor"] },
+        { name: "SAPS 3", link: "/saps3", profiles: ["medico", "gestor"] },
       ],
     },
     {
@@ -162,7 +156,7 @@ export function AppSidebar({
       items: [
         { name: "Validação Farmacêutica", link: "/validacao-farmaceutica", profiles: ["gestor"] },
         { name: "Catálogo de Medicamentos", link: "/catalogo-medicamentos", profiles: ["gestor"] },
-        { name: "Examinus AI", link: "/ia", profiles: ["medico", "gestor", "multi"] },
+        { name: "Examinus AI", link: "/ia", profiles: ["medico", "gestor"] },
       ],
     },
   ];
@@ -195,28 +189,43 @@ export function AppSidebar({
         ]},
       ];
     }
-    // Imagem: imaging sector environment
+    // Imagem
     if (accessProfile === "imagem") {
       return [
         { title: "Painel de Imagem", icon: LayoutDashboard, link: "/setor-imagem", profiles: ["imagem"] },
       ];
     }
-    // Laboratorio: lab sector environment
+    // Laboratorio
     if (accessProfile === "laboratorio") {
       return [
         { title: "Painel Laboratorial", icon: LayoutDashboard, link: "/setor-laboratorio", profiles: ["laboratorio"] },
       ];
     }
-    // CCIH: infection control environment
+    // CCIH
     if (accessProfile === "ccih") {
       return [
         { title: "Painel CCIH", icon: LayoutDashboard, link: "/ccih", profiles: ["ccih"] },
       ];
     }
-    // Administrativo: reception/registration environment
+    // Administrativo
     if (accessProfile === "administrativo") {
       return [
         { title: "Recepção", icon: LayoutDashboard, link: "/recepcao", profiles: ["administrativo"] },
+      ];
+    }
+    // Equipe Multi: dedicated sidebar with all specialties
+    if (accessProfile === "multi") {
+      return [
+        { title: "Fila de Triagem", icon: Users, link: "/triagem-fila", profiles: ["multi"] },
+        { title: "Equipe Multi", icon: HeartPulse, profiles: ["multi"], items: [
+          { name: "Enfermagem", link: "/triagem-fila", profiles: ["multi"], badge: "Ativo" },
+          { name: "Nutrição", link: "/triagem-fila", profiles: ["multi"], badge: "Em breve" },
+          { name: "Fisioterapia", link: "/triagem-fila", profiles: ["multi"], badge: "Em breve" },
+          { name: "Serviço Social", link: "/triagem-fila", profiles: ["multi"], badge: "Em breve" },
+          { name: "Psicologia", link: "/triagem-fila", profiles: ["multi"], badge: "Em breve" },
+          { name: "Fonoaudiologia", link: "/triagem-fila", profiles: ["multi"], badge: "Em breve" },
+        ]},
+        { title: "Leitos", icon: BedDouble, link: "/mapa", profiles: ["multi"], badge: "Em breve" },
       ];
     }
     // Filter sections by profile, then filter sub-items within each section
