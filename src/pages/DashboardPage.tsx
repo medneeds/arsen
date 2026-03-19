@@ -276,14 +276,15 @@ const DashboardPage = () => {
   };
 
   const fetchPriorityAlerts = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     const alerts: PriorityAlert[] = [];
 
-    // Critical: Patients with clinical_status 'gravissimo'
+    // Critical: Patients with clinical_status 'gravissimo' in this sector
     const { data: criticalPatients } = await supabase
       .from('patients')
       .select('id, name, bed_number, clinical_status, created_at')
       .match(departmentFilter)
+      .eq('sector', activeSector)
       .eq('clinical_status', 'gravissimo');
 
     criticalPatients?.forEach(p => {
@@ -316,11 +317,12 @@ const DashboardPage = () => {
       });
     });
 
-    // Info: Pending bed allocation requests
+    // Info: Pending bed allocation requests for THIS sector
     const { data: pendingAllocations } = await supabase
       .from('bed_allocation_requests')
       .select('id, patient_id, requested_sector, created_at')
       .match(departmentFilter)
+      .eq('requested_sector', activeSector)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
       .limit(5);
@@ -329,27 +331,26 @@ const DashboardPage = () => {
       alerts.push({
         id: `info-alloc-${a.id}`,
         level: 'info',
-        message: `Solicitação de leito pendente para ${a.requested_sector}`,
+        message: `Solicitação de leito pendente para ${activeSectorLabel}`,
         timestamp: a.created_at,
       });
     });
 
-    // Sort: critical first, then warning, then info
     const levelOrder = { critical: 0, warning: 1, info: 2 };
     alerts.sort((a, b) => levelOrder[a.level] - levelOrder[b.level]);
     setPriorityAlerts(alerts);
   };
 
   const fetchRecentActivities = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     const activities: RecentActivity[] = [];
 
-    // Recent movements (last 48h)
     const fortyEightHoursAgo = subHours(new Date(), 48);
     const { data: movements } = await supabase
       .from('patient_movements')
       .select('id, patient_name, movement_type, created_at')
       .match(departmentFilter)
+      .eq('patient_sector', activeSector)
       .gte('created_at', fortyEightHoursAgo.toISOString())
       .order('created_at', { ascending: false })
       .limit(5);
@@ -363,7 +364,6 @@ const DashboardPage = () => {
       });
     });
 
-    // Recent prescriptions
     const { data: rxs } = await supabase
       .from('prescriptions')
       .select('id, patient_name, status, created_at')
@@ -381,11 +381,11 @@ const DashboardPage = () => {
       });
     });
 
-    // Recent patients created
     const { data: newPatients } = await supabase
       .from('patients')
       .select('id, name, created_at')
       .match(departmentFilter)
+      .eq('sector', activeSector)
       .gte('created_at', fortyEightHoursAgo.toISOString())
       .order('created_at', { ascending: false })
       .limit(5);
@@ -399,18 +399,18 @@ const DashboardPage = () => {
       });
     });
 
-    // Sort by timestamp desc
     activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     setRecentActivities(activities.slice(0, 10));
   };
 
   const fetchMovementsOverTime = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     
     const { data } = await supabase
       .from('patient_movements')
       .select('*')
       .match(departmentFilter)
+      .eq('patient_sector', activeSector)
       .gte('created_at', dateRange.from.toISOString())
       .lte('created_at', dateRange.to.toISOString())
       .order('created_at');
@@ -430,35 +430,36 @@ const DashboardPage = () => {
   };
 
   const fetchSectorDistribution = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     
+    // Only fetch data for the active sector
     const { data } = await supabase
       .from('patients')
-      .select('sector')
-      .match(departmentFilter);
+      .select('sector, is_vacant, name')
+      .match(departmentFilter)
+      .eq('sector', activeSector);
 
     if (data) {
-      const sectorCounts = data.reduce((acc: any, patient: any) => {
-        const sector = patient.sector === 'red' ? 'UTI 1' :
-                      patient.sector === 'yellow' ? 'UTI 2' :
-                      patient.sector === 'blue' ? 'UCI 1' : 'UCI 2';
-        acc[sector] = (acc[sector] || 0) + 1;
-        return acc;
-      }, {});
+      const occupied = data.filter(p => !p.is_vacant && p.name?.trim()).length;
+      const sectorConfig = SECTOR_BED_CONFIG[activeSector];
+      const total = sectorConfig?.maxRegularBeds || data.length;
+      const vacant = total - occupied;
 
-      setSectorDistribution(
-        Object.entries(sectorCounts).map(([name, value]) => ({ name, value }))
-      );
+      setSectorDistribution([
+        { name: 'Ocupados', value: occupied },
+        { name: 'Vagos', value: Math.max(0, vacant) },
+      ]);
     }
   };
 
   const fetchMovementsByType = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     
     const { data } = await supabase
       .from('patient_movements')
       .select('movement_type')
       .match(departmentFilter)
+      .eq('patient_sector', activeSector)
       .gte('created_at', dateRange.from.toISOString())
       .lte('created_at', dateRange.to.toISOString());
 
@@ -475,12 +476,13 @@ const DashboardPage = () => {
   };
 
   const fetchBedOccupancy = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     
     const { data } = await supabase
       .from('patients')
       .select('sector, created_at')
       .match(departmentFilter)
+      .eq('sector', activeSector)
       .gte('created_at', dateRange.from.toISOString())
       .lte('created_at', dateRange.to.toISOString())
       .order('created_at');
@@ -500,35 +502,19 @@ const DashboardPage = () => {
   };
 
   const fetchRequestsByDestination = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     
     const { data } = await supabase
       .from('patient_movements')
       .select('destination')
       .match(departmentFilter)
+      .eq('patient_sector', activeSector)
       .eq('movement_type', 'TRANSFERÊNCIA')
       .gte('created_at', dateRange.from.toISOString())
       .lte('created_at', dateRange.to.toISOString());
 
     if (data) {
-      // Filter out pediatric destinations when in adult department and vice versa
-      const filteredData = data.filter((movement: any) => {
-        const dest = movement.destination || '';
-        
-        // If in adult department, exclude pediatric destinations
-        if (selectedDepartment === 'URGÊNCIA E EMERGÊNCIA ADULTO') {
-          return !dest.toLowerCase().includes('pediátr');
-        }
-        
-        // If in pediatric department, exclude adult destinations
-        if (selectedDepartment === 'URGÊNCIA E EMERGÊNCIA PEDIÁTRICA') {
-          return !dest.toLowerCase().includes('adulto');
-        }
-        
-        return true;
-      });
-      
-      const destCounts = filteredData.reduce((acc: any, movement: any) => {
+      const destCounts = data.reduce((acc: any, movement: any) => {
         const dest = movement.destination || 'Não especificado';
         acc[dest] = (acc[dest] || 0) + 1;
         return acc;
