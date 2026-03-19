@@ -552,7 +552,7 @@ export default function AuthPage() {
 
                   {/* Profile badge */}
                   <div className={cn(
-                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-semibold uppercase tracking-[0.15em]",
+                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-semibold tracking-[0.15em]",
                     currentProfileConfig.key === "medico" && "border-[#2dd4bf]/30 text-[#2dd4bf] bg-[#2dd4bf]/5",
                     currentProfileConfig.key === "gestor" && "border-amber-400/30 text-amber-400 bg-amber-400/5",
                     currentProfileConfig.key === "multi" && "border-violet-400/30 text-violet-400 bg-violet-400/5",
