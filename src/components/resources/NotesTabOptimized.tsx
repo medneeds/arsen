@@ -143,8 +143,8 @@ const NotesTabOptimized = () => {
 
     if (error) {
       toast({
-        title: "ERRO",
-        description: "NÃO FOI POSSÍVEL ADICIONAR O ITEM",
+        title: "Erro",
+        description: "Não foi possível adicionar o item",
         variant: "destructive",
       });
       return;
