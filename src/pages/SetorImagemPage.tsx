@@ -507,7 +507,7 @@ const SetorImagemPage = () => {
               )}
 
               {/* Results area (for completing) */}
-              {selectedRequest.status !== "completed" && (
+              {selectedRequest.status !== "completed" && selectedRequest.status !== "pending" && (
                 <div>
                   <p className="text-xs font-semibold text-foreground mb-1.5">Resultado / Laudo</p>
                   <Textarea
