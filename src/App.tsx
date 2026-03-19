@@ -51,6 +51,7 @@ import GestorPanelPage from "./pages/GestorPanelPage";
 import ValidacaoFarmaceuticaPage from "./pages/ValidacaoFarmaceuticaPage";
 import PainelClinicoPage from "./pages/PainelClinicoPage";
 import SetorImagemPage from "./pages/SetorImagemPage";
+import SetorLaboratorioPage from "./pages/SetorLaboratorioPage";
 import Saps3Page from "./pages/Saps3Page";
 import ClinicalDashboardPage from "./pages/ClinicalDashboardPage";
 import ProtocolosUtiPage from "./pages/ProtocolosUtiPage";
@@ -480,6 +481,16 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
                 <SetorImagemPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/setor-laboratorio"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <SetorLaboratorioPage />
               </MainLayout>
             </ProtectedRoute>
           }
