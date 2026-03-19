@@ -311,7 +311,7 @@ const RequisicaoUnificadaPage = () => {
     setFormPatientName("");
     setFormPatientBed("");
     setFormPatientSector("");
-    setFormPriority("programado");
+    setFormPriority("rotina");
     setFormScheduledDate("");
     setFormScheduledTime("");
     setFormIndication("");
