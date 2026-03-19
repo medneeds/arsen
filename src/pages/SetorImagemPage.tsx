@@ -28,13 +28,10 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
-import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
+import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
 import { printRequisitionGuide } from "@/components/PrintableRequisitionGuide";
 
-const getSectorLabel = (sector: string | null) => {
-  if (!sector) return "";
-  return SECTOR_BED_CONFIG[sector]?.label || sector;
-};
+const getSectorLabel = getSectorDisplayLabel;
 
 // ── Imaging modality categories ──
 const MODALITIES = [
