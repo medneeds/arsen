@@ -156,7 +156,7 @@ export default function MedicalCodesPage() {
       return;
     }
 
-    toast.success("CÓDIGO DELETADO COM SUCESSO");
+    toast.success("Código deletado com sucesso");
     fetchCodes();
   };
 
