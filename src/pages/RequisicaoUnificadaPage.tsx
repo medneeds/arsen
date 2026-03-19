@@ -546,6 +546,20 @@ const RequisicaoUnificadaPage = () => {
               </Button>
               <Button
                 type="button"
+                variant={formPriority === "rotina" ? "default" : "outline"}
+                className={cn(
+                  "flex-1 gap-2 h-12 text-sm font-semibold transition-all",
+                  formPriority === "rotina"
+                    ? "bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600 shadow-lg shadow-cyan-500/20"
+                    : "border-cyan-300 text-cyan-600 hover:bg-cyan-50 dark:hover:bg-cyan-500/10"
+                )}
+                onClick={() => setFormPriority("rotina")}
+              >
+                <Clock className="h-4.5 w-4.5" />
+                Rotina
+              </Button>
+              <Button
+                type="button"
                 variant={formPriority === "programado" ? "default" : "outline"}
                 className={cn(
                   "flex-1 gap-2 h-12 text-sm font-semibold transition-all",
