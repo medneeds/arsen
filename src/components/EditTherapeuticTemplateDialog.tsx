@@ -187,9 +187,9 @@ export function EditTherapeuticTemplateDialog({
                   <Input
                     value={item}
                     onChange={(e) => updateItem(idx, e.target.value)}
-                    onBlur={(e) => updateItem(idx, e.target.value.toUpperCase())}
+                    onBlur={(e) => updateItem(idx, e.target.value)}
                     placeholder={`Item ${idx + 1} do protocolo`}
-                    className="h-9 text-sm uppercase flex-1"
+                    className="h-9 text-sm flex-1"
                   />
                   <Button
                     type="button"
