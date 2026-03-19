@@ -360,7 +360,7 @@ export default function AuditLogsPage() {
                                   <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                       <div className="bg-gray-50 rounded-lg p-3">
-                                        <p className="text-[10px] text-gray-500 uppercase font-medium">Data/Hora</p>
+                                        <p className="text-[10px] text-gray-500 font-medium">Data/Hora</p>
                                         <p className="text-sm font-medium">{formatDate(selectedLog.created_at)}</p>
                                       </div>
                                       <div className="bg-gray-50 rounded-lg p-3">
