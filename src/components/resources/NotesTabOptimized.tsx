@@ -300,7 +300,7 @@ const NotesTabOptimized = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNotes(e.target.value.toUpperCase());
+    setNotes(e.target.value);
   };
 
   return (
