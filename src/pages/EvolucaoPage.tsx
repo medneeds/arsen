@@ -297,7 +297,7 @@ const EvolucaoPage = () => {
                     {section.key === 'objective' ? (
                       <div className="space-y-3">
                         {/* Physical Exam subsections */}
-                        <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Exame Físico</p>
+                        <p className="text-[10px] text-muted-foreground font-semibold tracking-wider">Exame Físico</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {([
                             { key: 'general' as const, label: 'Estado Geral' },
