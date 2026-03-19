@@ -1209,3 +1209,29 @@ function EditableTextBlock({ icon: Icon, title, value, onSave }: { icon: React.E
     </div>
   );
 }
+
+// Mini timer for pending SAPS in table
+function SapsPendingMiniTimer({ pendingSince }: { pendingSince: string | null }) {
+  const [elapsed, setElapsed] = useState("");
+
+  useEffect(() => {
+    if (!pendingSince) return;
+    const update = () => {
+      const diff = Date.now() - new Date(pendingSince).getTime();
+      const hours = Math.floor(diff / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      setElapsed(`${hours}h${String(minutes).padStart(2, "0")}m`);
+    };
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [pendingSince]);
+
+  if (!pendingSince) return null;
+
+  return (
+    <span className="font-mono text-[10px] font-bold text-amber-600 dark:text-amber-400 animate-pulse">
+      ⏱ {elapsed}
+    </span>
+  );
+}
