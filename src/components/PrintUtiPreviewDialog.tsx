@@ -21,11 +21,11 @@ const SECTOR_LABELS: Record<SectorSelection, string> = {
   outside: "UCI 2",
 };
 
-const SECTOR_PRINT_CONFIG: Record<string, { name: string; bg: string; border: string; text: string; variant: string }> = {
-  red: { name: "Unidade de Terapia Intensiva 1", bg: "#fef2f2", border: "#ef4444", text: "#b91c1c", variant: "red" },
+const SECTOR_PRINT_CONFIG: Record<string, { name: string; bg: string; border: string; text: string; variant: 'blue' | 'yellow' }> = {
+  red: { name: "Unidade de Terapia Intensiva 1", bg: "#fef2f2", border: "#ef4444", text: "#b91c1c", variant: "blue" },
   yellow: { name: "Unidade de Terapia Intensiva 2", bg: "#fefce8", border: "#eab308", text: "#a16207", variant: "yellow" },
   blue: { name: "Unidade de Cuidados Intermediários 1", bg: "#eff6ff", border: "#3b82f6", text: "#1d4ed8", variant: "blue" },
-  outside: { name: "Unidade de Cuidados Intermediários 2", bg: "#f0fdf4", border: "#22c55e", text: "#15803d", variant: "green" },
+  outside: { name: "Unidade de Cuidados Intermediários 2", bg: "#f0fdf4", border: "#22c55e", text: "#15803d", variant: "blue" },
 };
 
 interface PrintUtiPreviewDialogProps {
