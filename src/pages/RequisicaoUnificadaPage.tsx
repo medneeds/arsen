@@ -1440,8 +1440,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                 const fn = 18 + (idx - 1) * 3;
                 return (
                   <tr key={idx}>
-                    <td><span className="lbl">{fn} — Código</span><div className="val-mono">{proc?.code || ""}</div></td>
-                    <td colSpan={3}><span className="lbl">{fn + 1} — Nome do Procedimento</span><div className="val">{proc?.name || ""}</div></td>
+                    <td colSpan={2}><span className="lbl">{fn} — Código</span><div className="val-mono">{proc?.code || ""}</div></td>
+                    <td colSpan={2}><span className="lbl">{fn + 1} — Nome do Procedimento</span><div className="val">{proc?.name || ""}</div></td>
                     <td><span className="lbl">{fn + 2} — Qtde.</span><div className="val" style={{ textAlign: "center" }}>{proc?.qty || ""}</div></td>
                   </tr>
                 );
