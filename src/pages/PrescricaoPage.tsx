@@ -110,10 +110,16 @@ interface PrescriptionItem {
   diluent?: string;           // Diluente (SF0,9%, SG5%, AD, etc.)
   diluentVolume?: string;     // Volume do diluente (mL)
   accessType?: string;        // Acesso (Periférico, Central, etc.)
-  infusionTime?: string;      // Correr em (min)
+  infusionTime?: string;      // Correr em (valor numérico)
+  infusionTimeUnit?: 'min' | 'h'; // Unidade do tempo de infusão
   infusionMode?: 'BIC' | 'gts'; // mL/h vs gts/min
   volumeTotal?: string;       // Volume total (mL)
   concentration?: string;     // Concentração calculada ou manual
+}
+
+// Normalize text for accent-insensitive search
+function normalizeSearch(text: string): string {
+  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 // Quantity units for prescription items
