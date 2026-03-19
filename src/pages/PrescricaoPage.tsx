@@ -2559,7 +2559,7 @@ const PrescricaoPage = () => {
       {/* ===== PRINT STYLES ===== */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          @page { size: A4 portrait; margin: 5mm 6mm 8mm 6mm; }
+          @page { size: A4 portrait; margin: 5mm 12mm 8mm 12mm; }
           body, html { background: #fff !important; }
           * { background-color: transparent !important; }
           .prescription-print-section table { border-collapse: collapse; width: 100%; }
