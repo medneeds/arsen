@@ -145,7 +145,7 @@ export function InternmentStatusDialog({
     } catch (error) {
       console.error("Error updating internment status:", error);
       toast({
-        title: "ERRO",
+        title: "Erro",
         description: "Não foi possível atualizar o status",
         variant: "destructive",
       });
