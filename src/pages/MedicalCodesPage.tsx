@@ -352,17 +352,17 @@ export default function MedicalCodesPage() {
               />
             </div>
             <div className="grid gap-3">
-              <Label htmlFor="name" className="uppercase text-sm font-semibold">
+              <Label htmlFor="name" className="text-sm font-semibold">
                 Nome
               </Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value.toUpperCase() })
+                  setFormData({ ...formData, name: e.target.value })
                 }
                 placeholder="Nome do exame/procedimento/material/medicação"
-                className="uppercase h-12"
+                className="h-12"
               />
             </div>
             <div className="grid gap-3">
