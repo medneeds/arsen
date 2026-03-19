@@ -159,7 +159,8 @@ export default function MonitoramentoClinicoPage() {
   const selectedUnit = currentHospital?.id;
   const selectedState = currentState?.id;
   const [patients, setPatients] = useState<PatientOption[]>([]);
-  const [selectedPatientId, setSelectedPatientId] = useState<string>("");
+  const urlParams = new URLSearchParams(window.location.search);
+  const [selectedPatientId, setSelectedPatientId] = useState<string>(urlParams.get("patientId") || "");
   const [records, setRecords] = useState<VitalRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
