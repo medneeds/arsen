@@ -199,7 +199,7 @@ const EvolucaoPage = () => {
         <div className="rounded-xl border border-border bg-card p-3">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <Label className="text-[10px] text-muted-foreground uppercase">Paciente</Label>
+              <Label className="text-[10px] text-muted-foreground">Paciente</Label>
               <p className="text-sm font-semibold text-foreground truncate">{patient.name}</p>
             </div>
             <div className="flex gap-3">
