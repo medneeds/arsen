@@ -1300,7 +1300,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
       <div ref={printRef} className="hidden print:block">
         <style>{`
           @media print {
-            @page { size: A4 portrait; margin: 10mm 12mm; }
+            @page { size: A4 portrait; margin: 15mm 12mm; }
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .print\\:block { display: block !important; }
             .print\\:hidden { display: none !important; }
