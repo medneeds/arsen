@@ -443,8 +443,8 @@ export default function VersionsPage() {
       <AlertDialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="uppercase">Confirmar Restauração</AlertDialogTitle>
-            <AlertDialogDescription className="uppercase">
+            <AlertDialogTitle>Confirmar Restauração</AlertDialogTitle>
+            <AlertDialogDescription>
               Isso irá substituir todos os pacientes atuais pelos pacientes da versão selecionada. Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>

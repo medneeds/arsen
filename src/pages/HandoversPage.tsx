@@ -302,7 +302,7 @@ export default function HandoversPage() {
                           </div>
 
                           <div className="space-y-2">
-                            <p className="text-xs uppercase font-semibold text-muted-foreground">
+                            <p className="text-xs font-semibold text-muted-foreground">
                               Pacientes Registrados ({handover.snapshot_data.patients.filter(p => p.name.trim() !== "").length})
                             </p>
                             <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
