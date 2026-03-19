@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { SectorSection } from "@/components/SectorSection";
 import { UtiSectorSection } from "@/components/UtiSectorSection";
 import { PreAdmissionSection } from "@/components/PreAdmissionSection";
@@ -163,6 +164,18 @@ function DynamicHeader({ children }: { children: React.ReactNode }) {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
+  
+  // Redirect sector-specific profiles to their dedicated panels
+  const accessProfile = typeof window !== 'undefined' ? localStorage.getItem("access_profile") || "medico" : "medico";
+  useEffect(() => {
+    if (accessProfile === "imagem") {
+      navigate("/setor-imagem", { replace: true });
+    } else if (accessProfile === "laboratorio") {
+      navigate("/setor-laboratorio", { replace: true });
+    }
+  }, [accessProfile, navigate]);
+
   // Use department context
   const { currentDepartment, setCurrentDepartment } = useDepartment();
   
