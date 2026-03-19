@@ -164,6 +164,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
       // Check if all regular beds are occupied
       setSectorFullAlert(freeCount === 0);
+      setBedsLoaded(true);
     };
     fetchBeds();
   }, [selectedSector, currentHospital?.id, currentState?.id, currentDepartment]);
