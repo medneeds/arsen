@@ -2192,8 +2192,27 @@ const PrescricaoPage = () => {
           >
             <Zap className="h-3.5 w-3.5" /> Interações
           </Button>
-          <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (!allItemsValidated) {
+                toast.error("Valide todos os itens antes de imprimir", { description: "Clique nos círculos à esquerda de cada item ou use 'Validar todos'." });
+                return;
+              }
+              handlePrint();
+            }}
+            className="gap-1.5"
+          >
             <Printer className="h-3.5 w-3.5" /> Imprimir
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={validateAllItems}
+            className="gap-1.5 text-xs text-emerald-600 hover:text-emerald-700"
+          >
+            <Check className="h-3.5 w-3.5" /> Validar todos
           </Button>
           <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
             {saving ? <span className="animate-spin h-3.5 w-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> : <Save className="h-3.5 w-3.5" />}
