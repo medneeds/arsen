@@ -551,10 +551,9 @@ const DashboardPage = () => {
 
   const handleApplyFilters = () => {
     setDateRange(tempDateRange);
-    setSelectedDepartment(tempSelectedDepartment);
     toast({
       title: "FILTROS APLICADOS COM SUCESSO",
-      description: "Dashboard atualizado com os novos filtros",
+      description: `Dashboard atualizado — ${activeSectorLabel}`,
     });
   };
 
@@ -565,8 +564,6 @@ const DashboardPage = () => {
     };
     setTempDateRange(defaultDateRange);
     setDateRange(defaultDateRange);
-    setTempSelectedDepartment(currentDepartment);
-    setSelectedDepartment(currentDepartment);
     toast({
       title: "FILTROS LIMPOS",
       description: "Filtros restaurados aos valores padrão",
@@ -626,13 +623,13 @@ const DashboardPage = () => {
             <Loader2 className="h-12 w-12 text-primary animate-spin" />
             <div className="text-center space-y-2">
               <p className="text-lg font-semibold text-foreground">ATUALIZANDO DASHBOARD</p>
-              <p className="text-sm text-muted-foreground">Carregando dados do setor...</p>
+              <p className="text-sm text-muted-foreground">Carregando dados — {activeSectorLabel}</p>
             </div>
           </div>
         </div>
       )}
       
-      <div className="container mx-auto p-6 space-y-8 dashboard-screen-content">{/* Changed: Added dashboard-screen-content class */}
+      <div className="container mx-auto p-6 space-y-8 dashboard-screen-content">
         {/* Header com gradiente */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-primary p-8 shadow-glow animate-scale-in">
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,white)]" />
@@ -644,15 +641,11 @@ const DashboardPage = () => {
                   <BarChart3 className="h-6 w-6 text-white" />
                 </div>
                 <h1 className="text-3xl font-bold tracking-tight uppercase text-white">
-                  Dashboard de Gestão
+                  Visão Geral — {activeSectorLabel}
                 </h1>
               </div>
               <p className="text-white/80 text-sm ml-[100px]">
-                {selectedDepartment === "URGÊNCIA E EMERGÊNCIA ADULTO" && "Visão geral da Urgência e Emergência Adulto"}
-                {selectedDepartment === "URGÊNCIA E EMERGÊNCIA PEDIÁTRICA" && "Visão geral da Urgência e Emergência Pediátrica"}
-                {selectedDepartment === "UTI" && "Visão geral da Unidade de Terapia Intensiva"}
-                {selectedDepartment === "POSTO INTERNAÇÃO" && "Visão geral do Posto de Internação"}
-                {selectedDepartment === "all" && "Visão geral de todos os setores"}
+                Dashboard segmentado por setor · Ocupação {kpis.occupiedBeds}/{kpis.totalBeds} leitos ({kpis.occupancyRate}%)
               </p>
             </div>
             <div className="flex gap-2">
@@ -664,15 +657,6 @@ const DashboardPage = () => {
               >
                 <Download className="h-4 w-4 mr-2" />
                 Exportar PDF
-              </Button>
-              <Button 
-                onClick={handleExportExcel} 
-                variant="secondary" 
-                size="sm"
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm transition-all duration-300 hover:scale-105"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Exportar Excel
               </Button>
               <ThemeToggle />
             </div>
