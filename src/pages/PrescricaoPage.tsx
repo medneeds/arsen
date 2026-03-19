@@ -1008,7 +1008,224 @@ function SuspensionDialog({
   );
 }
 
-// --- Renewal Dialog ---
+// --- Extra Prescription Dialog ---
+function ExtraPrescriptionDialog({
+  open,
+  onClose,
+  onAddItems,
+  allMedications,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onAddItems: (items: PrescriptionItem[]) => void;
+  allMedications: MedicationEntry[];
+}) {
+  const [extraItems, setExtraItems] = useState<PrescriptionItem[]>([]);
+  const [freeText, setFreeText] = useState("");
+
+  const handleClose = () => {
+    setExtraItems([]);
+    setFreeText("");
+    onClose();
+  };
+
+  const addFromAutocomplete = (med: MedicationEntry) => {
+    const autoUnit = detectQuantityUnit(med.presentation, med.defaultDose);
+    const autoDefaults = detectDiluentDefaults(med.instructions || '');
+    const isIV = isIVRoute(med.defaultRoute);
+    const item: PrescriptionItem = {
+      id: crypto.randomUUID(),
+      name: med.name,
+      presentation: med.presentation,
+      dose: med.defaultDose,
+      route: med.defaultRoute,
+      posology: med.defaultPosology,
+      schedule: med.defaultSchedule,
+      instructions: med.instructions || "",
+      category: med.category,
+      flags: ['ag' as PrescriptionFlag], // Default to "Agora"
+      highAlert: med.highAlert || false,
+      status: 'active',
+      isExtra: true,
+      infusionMode: 'BIC',
+      infusionTime: autoDefaults.infusionTime,
+      volumeTotal: autoDefaults.diluentVolume,
+      quantity: '1',
+      quantityUnit: autoUnit,
+      action: 'fazer',
+      diluent: isIV ? autoDefaults.diluent : '',
+      diluentVolume: isIV ? autoDefaults.diluentVolume : '',
+      accessType: '',
+      concentration: '',
+    };
+    setExtraItems(prev => [...prev, item]);
+  };
+
+  const addFreeItem = () => {
+    if (!freeText.trim()) return;
+    setExtraItems(prev => [...prev, {
+      id: crypto.randomUUID(),
+      name: freeText.trim(),
+      presentation: '-', dose: '-', route: '-',
+      posology: '-', schedule: '-', instructions: '',
+      category: 'medication', flags: ['ag' as PrescriptionFlag],
+      highAlert: false, status: 'active', isExtra: true,
+    }]);
+    setFreeText("");
+  };
+
+  const updateExtraItem = (id: string, field: keyof PrescriptionItem, value: string) => {
+    setExtraItems(prev => prev.map(i => i.id === id ? { ...i, [field]: value } : i));
+  };
+
+  const toggleExtraFlag = (id: string, flag: PrescriptionFlag) => {
+    setExtraItems(prev => prev.map(i => {
+      if (i.id !== id) return i;
+      const flags = i.flags.includes(flag) ? i.flags.filter(f => f !== flag) : [...i.flags, flag];
+      return { ...i, flags };
+    }));
+  };
+
+  const removeExtraItem = (id: string) => {
+    setExtraItems(prev => prev.filter(i => i.id !== id));
+  };
+
+  const handleConfirm = () => {
+    if (extraItems.length === 0) {
+      toast.error("Adicione pelo menos 1 item à prescrição extra");
+      return;
+    }
+    onAddItems(extraItems);
+    handleClose();
+  };
+
+  const agoraCount = extraItems.filter(i => i.flags.includes('ag' as PrescriptionFlag)).length;
+  const scheduledCount = extraItems.length - agoraCount;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-orange-500" />
+            Prescrição Extra
+          </DialogTitle>
+          <DialogDescription>
+            Adicione medicações avulsas durante o plantão. Itens marcados como <strong>"Agora"</strong> não serão renovados automaticamente.
+            Itens com aprazamento (de horário) serão incorporados à rotina na próxima renovação.
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Search */}
+        <div className="space-y-2">
+          <MedicationAutocomplete
+            source={allMedications}
+            onSelect={addFromAutocomplete}
+            placeholder="Buscar medicação para prescrição extra..."
+          />
+          <div className="flex gap-2">
+            <Input
+              value={freeText}
+              onChange={(e) => setFreeText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addFreeItem()}
+              placeholder="Ou digite item livre..."
+              className="flex-1 h-8 text-xs"
+            />
+            <Button variant="outline" size="sm" onClick={addFreeItem} disabled={!freeText.trim()} className="h-8 gap-1 text-xs">
+              <Plus className="h-3 w-3" /> Adicionar
+            </Button>
+          </div>
+        </div>
+
+        {/* Items list */}
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-2">
+          {extraItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <Syringe className="h-8 w-8 mb-2 opacity-30" />
+              <p className="text-sm">Nenhum item adicionado</p>
+              <p className="text-xs">Use a busca acima para adicionar medicações</p>
+            </div>
+          ) : (
+            extraItems.map((item, idx) => (
+              <div key={item.id} className="rounded-lg border border-border/50 bg-card/50 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-muted-foreground w-5">{idx + 1}.</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">
+                      {item.highAlert && <AlertTriangle className="inline h-3 w-3 mr-1 text-red-500" />}
+                      {item.name}
+                      {item.presentation !== '-' && <span className="font-normal text-muted-foreground ml-1">({item.presentation})</span>}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-[9px] bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800 shrink-0">
+                    EXTRA
+                  </Badge>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeExtraItem(item.id)}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+                {/* Row: Dose, Via, Posologia, Flags */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <Input value={item.dose} onChange={(e) => updateExtraItem(item.id, "dose", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-24" placeholder="Dose" />
+                  <Select value={item.route} onValueChange={(v) => updateExtraItem(item.id, "route", v)}>
+                    <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-28"><SelectValue /></SelectTrigger>
+                    <SelectContent>{ROUTES.map(r => <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Select value={item.posology} onValueChange={(v) => updateExtraItem(item.id, "posology", v)}>
+                    <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-24"><SelectValue /></SelectTrigger>
+                    <SelectContent>{POSOLOGIES.map(p => <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <div className="flex gap-0.5 ml-auto">
+                    {PRESCRIPTION_FLAGS.map(f => (
+                      <FlagToggle
+                        key={f.key}
+                        flag={f}
+                        active={item.flags.includes(f.key)}
+                        onToggle={() => toggleExtraFlag(item.id, f.key)}
+                      />
+                    ))}
+                  </div>
+                </div>
+                {/* Row: Schedule */}
+                <div className="flex items-center gap-1.5">
+                  <Input value={item.schedule} onChange={(e) => updateExtraItem(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/10 border-border/30 w-44 font-mono" placeholder="Aprazamento (ex: 14h, 22h)" />
+                  <Input value={item.instructions} onChange={(e) => updateExtraItem(item.id, "instructions", e.target.value)} className="h-7 text-[11px] bg-muted/10 border-border/20 flex-1 text-muted-foreground italic" placeholder="Observações..." />
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Summary footer */}
+        {extraItems.length > 0 && (
+          <div className="p-2.5 rounded-lg bg-muted/50 border border-border text-xs space-y-1">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Total de itens</span>
+              <span className="font-semibold">{extraItems.length}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Itens "Agora" <span className="text-orange-500">(não renovam)</span></span>
+              <span className="font-semibold text-orange-600">{agoraCount}</span>
+            </div>
+            {scheduledCount > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Itens com horário <span className="text-primary">(entram na rotina)</span></span>
+                <span className="font-semibold text-primary">{scheduledCount}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={handleClose}>Cancelar</Button>
+          <Button size="sm" onClick={handleConfirm} disabled={extraItems.length === 0} className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white">
+            <Zap className="h-3.5 w-3.5" /> Adicionar {extraItems.length} item{extraItems.length !== 1 ? 's' : ''} à prescrição
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
 function RenewalDialog({
   open,
   onClose,
