@@ -136,7 +136,7 @@ export function InternmentStatusDialog({
       if (error) throw error;
 
       toast({
-        title: "STATUS ATUALIZADO",
+        title: "Status atualizado",
         description: "Status de internação atualizado com sucesso",
       });
 
