@@ -1182,7 +1182,7 @@ const DashboardPage = () => {
 
       {/* Printable Dashboard - Hidden on screen, visible in print */}
       <PrintableDashboard
-        department={selectedDepartment}
+        department={activeSectorLabel}
         dateRange={dateRange}
         kpis={{
           requests: {
