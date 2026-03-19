@@ -868,6 +868,34 @@ const CcihDashboardPage = () => {
                 </div>
               </div>
 
+              {/* Diagnoses */}
+              {detailPatient.diagnoses && (
+                <div className="p-3 rounded-lg bg-blue-50/50 border border-blue-200 dark:bg-blue-500/5 dark:border-blue-500/20">
+                  <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1 flex items-center gap-1.5">
+                    <Stethoscope className="h-3.5 w-3.5" /> Diagnósticos
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {detailPatient.diagnoses.split("\n").filter(Boolean).map((d, i) => (
+                      <Badge key={i} variant="secondary" className="text-[10px]">{d.trim()}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Invasive Devices */}
+              {detailPatient.uti_devices && (
+                <div className="p-3 rounded-lg bg-orange-50/50 border border-orange-200 dark:bg-orange-500/5 dark:border-orange-500/20">
+                  <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 mb-1 flex items-center gap-1.5">
+                    <Activity className="h-3.5 w-3.5" /> Dispositivos invasivos
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {detailPatient.uti_devices.split("\n").filter(Boolean).map((d, i) => (
+                      <Badge key={i} variant="outline" className="text-[10px] border-orange-300 text-orange-700 dark:text-orange-400">{d.trim()}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Cultures / ATB field from patient card */}
               {detailPatient.uti_cultures_antibiotics && (
                 <div className="p-3 rounded-lg bg-violet-50/50 border border-violet-200 dark:bg-violet-500/5 dark:border-violet-500/20">
