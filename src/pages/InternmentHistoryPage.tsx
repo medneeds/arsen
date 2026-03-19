@@ -377,7 +377,7 @@ const InternmentHistoryPage = () => {
             <Button
               variant="outline"
               onClick={handleClearFilters}
-              className="flex-1 uppercase"
+              className="flex-1"
               size="lg"
             >
               Limpar Filtro
