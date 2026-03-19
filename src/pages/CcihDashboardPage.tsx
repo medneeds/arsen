@@ -217,6 +217,71 @@ const CcihDashboardPage = () => {
     unread: cultureResults.filter(c => !c.read_by_doctor && c.status === "completed").length,
   }), [cultureResults]);
 
+  const openPatientDetail = async (patient: PatientBasic) => {
+    setDetailPatient(patient);
+    setShowPatientDetail(true);
+    setLoadingDetail(true);
+    setDetailCultureRequests([]);
+    setDetailPrescriptions([]);
+
+    try {
+      // Fetch culture-related exam requests and prescriptions in parallel
+      const [examRes, prescRes] = await Promise.all([
+        supabase
+          .from("exam_requests")
+          .select("id, items, status, priority, created_at, requested_by_name, results")
+          .eq("hospital_unit_id", hospitalId!)
+          .eq("state_id", stateId!)
+          .eq("patient_id", patient.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("prescriptions")
+          .select("id, patient_name, items, status, created_at, version")
+          .eq("hospital_unit_id", hospitalId!)
+          .eq("state_id", stateId!)
+          .eq("patient_name", patient.name)
+          .order("created_at", { ascending: false })
+          .limit(20),
+      ]);
+
+      // Filter exam requests that contain culture-related items
+      const cultureKeywords = ["cultura", "hemocultura", "urocultura", "antibiograma", "gram", "microbiologia"];
+      const cultureExams = (examRes.data || []).filter((req: any) => {
+        const items = Array.isArray(req.items) ? req.items : [];
+        return items.some((item: any) => {
+          const name = (item.name || item || "").toString().toLowerCase();
+          return cultureKeywords.some(kw => name.includes(kw));
+        });
+      });
+      setDetailCultureRequests(cultureExams as CultureExamRequest[]);
+
+      // Filter prescriptions that contain antibiotic items
+      const antibioticKeywords = [
+        "antibiótico", "antimicrobiano", "amoxicilina", "ampicilina", "azitromicina",
+        "ceftriaxona", "cefazolina", "cefepima", "ceftazidima", "ciprofloxacino",
+        "clindamicina", "gentamicina", "amicacina", "levofloxacino", "meropenem",
+        "imipenem", "ertapenem", "metronidazol", "oxacilina", "penicilina",
+        "piperacilina", "tazobactam", "polimixina", "vancomicina", "teicoplanina",
+        "linezolida", "daptomicina", "sulfametoxazol", "trimetoprima",
+        "cefuroxima", "cefalexina", "doxiciclina", "claritromicina",
+        "fluconazol", "anfotericina", "micafungina", "anidulafungina", "caspofungina",
+        "aciclovir", "oseltamivir", "colistina", "tigeciclina", "rifampicina",
+      ];
+      const abxPrescriptions = (prescRes.data || []).filter((rx: any) => {
+        const items = Array.isArray(rx.items) ? rx.items : [];
+        return items.some((item: any) => {
+          const name = (item.name || item.medication || "").toString().toLowerCase();
+          return antibioticKeywords.some(kw => name.includes(kw));
+        });
+      });
+      setDetailPrescriptions(abxPrescriptions as AntibioticPrescription[]);
+    } catch (err) {
+      console.error("Erro ao carregar detalhes:", err);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
   const openNewCulture = (patient: PatientBasic) => {
     setSelectedPatient(patient);
     setCultureType("hemocultura");
