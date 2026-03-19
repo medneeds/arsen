@@ -338,7 +338,7 @@ const SetorImagemPage = () => {
         </TabsList>
 
         {/* Content for all tabs uses same list */}
-        {["pending", "in_progress", "completed", "all"].map((tab) => (
+        {["pending", "acknowledged", "in_progress", "completed", "all"].map((tab) => (
           <TabsContent key={tab} value={tab} className="mt-4 space-y-2">
             {loading ? (
               <div className="flex items-center justify-center py-16">
