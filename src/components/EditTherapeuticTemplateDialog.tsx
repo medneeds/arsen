@@ -170,7 +170,7 @@ export function EditTherapeuticTemplateDialog({
           {/* Items */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold uppercase">
+              <Label className="text-xs font-semibold">
                 Itens do Protocolo ({items.filter((i) => i.trim()).length})
               </Label>
               <Button type="button" size="sm" variant="outline" onClick={addItem} className="h-7 px-2 text-xs gap-1">
