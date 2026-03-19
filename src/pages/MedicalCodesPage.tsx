@@ -115,7 +115,7 @@ export default function MedicalCodesPage() {
         .eq("id", editingCode.id);
 
       if (error) {
-        toast.error("ERRO AO ATUALIZAR CÓDIGO");
+        toast.error("Erro ao atualizar código");
         if (import.meta.env.DEV) {
           console.error(error);
         }
