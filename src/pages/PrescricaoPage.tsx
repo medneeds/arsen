@@ -2411,9 +2411,38 @@ const PrescricaoPage = () => {
             </div>
           )}
         </div>
-      </div>
 
-      {/* Search bars are now inline within each category section below */}
+        {/* Items summary strip below patient header */}
+        {items.length > 0 && (
+          <div className="px-4 py-2 border-t border-border/30 bg-muted/20">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[10px] font-semibold text-muted-foreground tracking-wider">Itens:</span>
+              {TAB_ORDER.map(cat => {
+                const count = itemsByCategory[cat].length;
+                if (count === 0) return null;
+                const config = CATEGORY_CONFIG[cat];
+                const validatedCount = itemsByCategory[cat].filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
+                return (
+                  <div key={cat} className="flex items-center gap-1">
+                    <Circle className={cn("h-2 w-2 fill-current", validatedCount === count ? "text-emerald-500" : "text-amber-500")} />
+                    <span className="text-[10px] text-foreground font-medium">{count} {config.label.toLowerCase()}</span>
+                  </div>
+                );
+              })}
+              {!allItemsValidated && (
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-300 text-amber-600 bg-amber-50 dark:bg-amber-950/20 ml-auto">
+                  Pendente validação
+                </Badge>
+              )}
+              {allItemsValidated && (
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-300 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 ml-auto">
+                  ✓ Validada
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* ===== FULL PRESCRIPTION VIEW (all categories) ===== */}
       <div className={cn("space-y-3 print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
