@@ -3420,6 +3420,7 @@ const PrescricaoPage = () => {
         }}
         allMedications={Object.values(ALL_ITEMS_BY_CATEGORY).flat()}
       />
+      </div>
     </div>
   );
 };
