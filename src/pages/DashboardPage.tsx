@@ -1013,7 +1013,7 @@ const DashboardPage = () => {
                     {sectorDistribution.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={SECTOR_COLORS[entry.name] || COLORS[index % COLORS.length]}
+                        fill={entry.name === 'Ocupados' ? 'hsl(var(--primary))' : 'hsl(var(--muted))'}
                         className="hover:opacity-80 transition-opacity cursor-pointer"
                       />
                     ))}
