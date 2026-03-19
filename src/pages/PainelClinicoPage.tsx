@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const parseTextArray = (input: string | string[] | undefined | null): string[] => {
   if (!input) return [];
