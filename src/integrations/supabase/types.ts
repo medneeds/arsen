@@ -1123,47 +1123,62 @@ export type Database = {
       patient_encounters: {
         Row: {
           admission_date: string | null
+          called_at: string | null
+          called_by: string | null
           created_at: string
           created_by: string | null
           department: string
+          destination_sector: string | null
           discharge_date: string | null
           encounter_code: string
           hospital_unit_id: string
           id: string
           patient_id: string | null
           patient_name: string
+          registry_id: string | null
           state_id: string
           status: string
+          triage_status: string | null
           updated_at: string
         }
         Insert: {
           admission_date?: string | null
+          called_at?: string | null
+          called_by?: string | null
           created_at?: string
           created_by?: string | null
           department?: string
+          destination_sector?: string | null
           discharge_date?: string | null
           encounter_code: string
           hospital_unit_id: string
           id?: string
           patient_id?: string | null
           patient_name: string
+          registry_id?: string | null
           state_id: string
           status?: string
+          triage_status?: string | null
           updated_at?: string
         }
         Update: {
           admission_date?: string | null
+          called_at?: string | null
+          called_by?: string | null
           created_at?: string
           created_by?: string | null
           department?: string
+          destination_sector?: string | null
           discharge_date?: string | null
           encounter_code?: string
           hospital_unit_id?: string
           id?: string
           patient_id?: string | null
           patient_name?: string
+          registry_id?: string | null
           state_id?: string
           status?: string
+          triage_status?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1179,6 +1194,13 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_encounters_registry_id_fkey"
+            columns: ["registry_id"]
+            isOneToOne: false
+            referencedRelation: "patient_registry"
             referencedColumns: ["id"]
           },
           {
@@ -1252,6 +1274,99 @@ export type Database = {
           },
           {
             foreignKeyName: "patient_movements_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_registry: {
+        Row: {
+          address: string | null
+          allergies: string | null
+          birth_date: string | null
+          blood_type: string | null
+          city: string | null
+          cns: string | null
+          comorbidities: string | null
+          cpf: string | null
+          created_at: string
+          created_by: string | null
+          full_name: string
+          hospital_unit_id: string | null
+          id: string
+          medical_record: string | null
+          mother_name: string | null
+          neighborhood: string | null
+          notes: string | null
+          phone: string | null
+          sex: string | null
+          social_name: string | null
+          state: string | null
+          state_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          allergies?: string | null
+          birth_date?: string | null
+          blood_type?: string | null
+          city?: string | null
+          cns?: string | null
+          comorbidities?: string | null
+          cpf?: string | null
+          created_at?: string
+          created_by?: string | null
+          full_name: string
+          hospital_unit_id?: string | null
+          id?: string
+          medical_record?: string | null
+          mother_name?: string | null
+          neighborhood?: string | null
+          notes?: string | null
+          phone?: string | null
+          sex?: string | null
+          social_name?: string | null
+          state?: string | null
+          state_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          allergies?: string | null
+          birth_date?: string | null
+          blood_type?: string | null
+          city?: string | null
+          cns?: string | null
+          comorbidities?: string | null
+          cpf?: string | null
+          created_at?: string
+          created_by?: string | null
+          full_name?: string
+          hospital_unit_id?: string | null
+          id?: string
+          medical_record?: string | null
+          mother_name?: string | null
+          neighborhood?: string | null
+          notes?: string | null
+          phone?: string | null
+          sex?: string | null
+          social_name?: string | null
+          state?: string | null
+          state_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_registry_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_registry_state_id_fkey"
             columns: ["state_id"]
             isOneToOne: false
             referencedRelation: "states"
