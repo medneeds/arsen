@@ -24,6 +24,12 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
+import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
+
+const getSectorLabel = (sector: string | null) => {
+  if (!sector) return "";
+  return SECTOR_BED_CONFIG[sector]?.label || sector;
+};
 
 // ── Imaging modality categories ──
 const MODALITIES = [
