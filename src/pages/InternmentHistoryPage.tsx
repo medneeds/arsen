@@ -286,7 +286,7 @@ const InternmentHistoryPage = () => {
                 variant={selectedPeriod === "month" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("month")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Último Mês
               </Button>
