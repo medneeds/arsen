@@ -548,14 +548,24 @@ const CcihDashboardPage = () => {
                                 </div>
                               )}
 
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-full text-[10px] h-7 gap-1 border-violet-200 text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-500/10"
-                                onClick={() => openNewCulture(patient)}
-                              >
-                                <Plus className="h-3 w-3" /> Registrar cultura
-                              </Button>
+                              <div className="flex gap-1.5">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1 text-[10px] h-7 gap-1 border-blue-200 text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+                                  onClick={() => openPatientDetail(patient)}
+                                >
+                                  <Info className="h-3 w-3" /> Detalhes
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1 text-[10px] h-7 gap-1 border-violet-200 text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-500/10"
+                                  onClick={() => openNewCulture(patient)}
+                                >
+                                  <Plus className="h-3 w-3" /> Cultura
+                                </Button>
+                              </div>
                             </CardContent>
                           </Card>
                         );
