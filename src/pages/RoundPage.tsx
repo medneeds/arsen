@@ -538,6 +538,21 @@ export default function RoundPage() {
           <span className="text-sm text-muted-foreground">Carregando round...</span>
         </div>
       )}
+
+      {/* Printable layout */}
+      {selectedPatient && (
+        <PrintableRound
+          ref={printRef}
+          patientName={selectedPatient.name}
+          patientSector={selectedPatient.sector}
+          patientBed={selectedPatient.bed_number}
+          patientAge={selectedPatient.age}
+          roundDate={roundDate}
+          responses={responses}
+          goals={goals}
+          observations={observations}
+        />
+      )}
     </div>
   );
 }
