@@ -1040,14 +1040,17 @@ interface ApacSelectedProcedure {
   qty: number;
 }
 
-function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patientSector }: {
+function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patientSector, patientId }: {
   patientName: string;
   patientBed: string;
   patientSector: string;
+  patientId: string | null;
 }) {
   const { user } = useAuth();
+  const { currentHospital, currentState } = useHospital();
   const printRef = useRef<HTMLDivElement>(null);
-
+  const [importingAdmission, setImportingAdmission] = useState(false);
+  const [importingEvolution, setImportingEvolution] = useState(false);
   const [doctorName, setDoctorName] = useState("");
   const [doctorCRM, setDoctorCRM] = useState("");
   const [doctorCPF, setDoctorCPF] = useState("");
