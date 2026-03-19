@@ -219,7 +219,7 @@ export function InternmentStatusDialog({
                 {Object.entries(statusConfig).map(([key, config]) => {
                   const Icon = config.icon;
                   return (
-                    <SelectItem key={key} value={key} className="uppercase">
+                    <SelectItem key={key} value={key}>
                       <div className="flex items-center gap-2">
                         <Icon className={`h-4 w-4 ${config.color}`} />
                         {config.label}
