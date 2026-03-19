@@ -137,8 +137,8 @@ export default function AdminUnitsPage() {
     setIsSaving(true);
     try {
       const dataToSave = {
-        name: formData.name.toUpperCase().trim(),
-        address: formData.address.toUpperCase().trim() || null,
+        name: formData.name.trim(),
+        address: formData.address.trim() || null,
         state_id: formData.state_id,
       };
 
