@@ -1645,6 +1645,118 @@ const PrescricaoPage = () => {
 
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 
+  // Auto-create encounter code for patient if not yet assigned
+  const ensureEncounterCode = useCallback(async () => {
+    if (!currentHospital || !currentState || !patient.name.trim() || patient.encounterCode) return;
+    try {
+      // Check if patient already has an active encounter
+      const patientId = searchParams.get('patientId');
+      const { data: existing } = await supabase
+        .from('patient_encounters')
+        .select('encounter_code')
+        .eq('hospital_unit_id', currentHospital.id)
+        .eq('state_id', currentState.id)
+        .eq('patient_name', patient.name.trim())
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (existing && existing.length > 0) {
+        setPatient(prev => ({ ...prev, encounterCode: existing[0].encounter_code }));
+        return;
+      }
+
+      // Create new encounter
+      const { data: newEnc, error } = await supabase
+        .from('patient_encounters')
+        .insert({
+          patient_name: patient.name.trim(),
+          patient_id: patientId || undefined,
+          hospital_unit_id: currentHospital.id,
+          state_id: currentState.id,
+          created_by: user?.id || undefined,
+          encounter_code: '', // trigger will generate
+        })
+        .select('encounter_code')
+        .single();
+      
+      if (!error && newEnc) {
+        setPatient(prev => ({ ...prev, encounterCode: newEnc.encounter_code }));
+      }
+    } catch (err) {
+      console.error('Error ensuring encounter code:', err);
+    }
+  }, [currentHospital, currentState, patient.name, patient.encounterCode, user, searchParams]);
+
+  useEffect(() => { ensureEncounterCode(); }, [ensureEncounterCode]);
+
+  // Fetch dispensations for current prescription
+  const fetchDispensations = useCallback(async () => {
+    if (!currentPrescriptionId) { setDispensations([]); return; }
+    try {
+      const { data } = await supabase
+        .from('dispensations')
+        .select('id, dispensation_code, dispensed_at, dispensed_by_name')
+        .eq('prescription_id', currentPrescriptionId)
+        .order('dispensed_at', { ascending: false });
+      setDispensations(data || []);
+    } catch (err) {
+      console.error('Error fetching dispensations:', err);
+    }
+  }, [currentPrescriptionId]);
+
+  useEffect(() => { fetchDispensations(); }, [fetchDispensations]);
+
+  // Dispense prescription (pharmacy action)
+  const handleDispense = useCallback(async () => {
+    if (!currentPrescriptionId || !currentHospital || !currentState) {
+      toast.error("Salve a prescrição antes de dispensar");
+      return;
+    }
+    const activeItems = items.filter(i => i.status === 'active');
+    if (activeItems.length === 0) { toast.error("Nenhum item ativo para dispensar"); return; }
+
+    try {
+      const { data, error } = await supabase
+        .from('dispensations')
+        .insert({
+          prescription_id: currentPrescriptionId,
+          patient_name: patient.name.trim(),
+          encounter_code: patient.encounterCode || null,
+          dispensed_items: activeItems.map(i => ({
+            name: i.name,
+            presentation: i.presentation,
+            dose: i.dose,
+            route: i.route,
+            posology: i.posology,
+            quantity: i.quantity || '1',
+            quantityUnit: i.quantityUnit || '',
+          })) as any,
+          dispensed_by: user?.id || null,
+          dispensed_by_name: user?.email?.split('@')[0] || 'Farmácia',
+          hospital_unit_id: currentHospital.id,
+          state_id: currentState.id,
+          dispensation_code: '', // trigger generates
+        })
+        .select('dispensation_code')
+        .single();
+
+      if (error) throw error;
+      
+      toast.success(`Dispensação registrada: ${data.dispensation_code}`);
+      setDispensationSlip({
+        code: data.dispensation_code,
+        items: activeItems,
+        patientName: patient.name,
+        bed: patient.bed,
+        date: format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR }),
+      });
+      fetchDispensations();
+    } catch (err: any) {
+      toast.error("Erro ao registrar dispensação", { description: err.message });
+    }
+  }, [currentPrescriptionId, currentHospital, currentState, items, patient, user, fetchDispensations]);
+
   // (Patient header and demo items are now initialized synchronously from URL params above)
 
   // dnd-kit sensors
