@@ -431,6 +431,30 @@ function SortablePrescriptionItemRow({
     </DropdownMenu>
   );
 
+  const ValidationDot = () => {
+    const isValidated = item.validated && !isPastRenewalTime;
+    const isPending = !item.validated || isPastRenewalTime;
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={() => onToggleValidation(item.id)}
+            className="shrink-0 transition-transform hover:scale-125"
+          >
+            <Circle className={cn(
+              "h-3 w-3 fill-current",
+              isValidated ? "text-emerald-500" : "text-amber-500"
+            )} />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          {isValidated ? "Validado — clique para desmarcar" : "Pendente validação — clique para validar"}
+        </TooltipContent>
+      </Tooltip>
+    );
+  };
+
   if (isSimple) {
     return (
       <div
@@ -445,6 +469,7 @@ function SortablePrescriptionItemRow({
           isDragging && "shadow-lg"
         )}
       >
+        <ValidationDot />
         <button
           className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0 touch-none"
           {...attributes}
