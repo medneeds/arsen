@@ -987,8 +987,9 @@ function SortablePrescriptionItemRow({
                     const autoVol = calcVolumeTotal(tempItem);
                     if (autoVol) onUpdate(item.id, "volumeTotal", autoVol);
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-24"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-28"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="sem_diluente" className="text-xs font-medium">Sem diluente</SelectItem>
                       <SelectItem value="SF0,9%" className="text-xs">SF 0,9%</SelectItem>
                       <SelectItem value="SG5%" className="text-xs">SG 5%</SelectItem>
                       <SelectItem value="SG10%" className="text-xs">SG 10%</SelectItem>
@@ -999,6 +1000,7 @@ function SortablePrescriptionItemRow({
                     </SelectContent>
                   </Select>
                 </div>
+                {item.diluent && item.diluent !== 'sem_diluente' && (
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Vol dil:</span>
                   <Input value={item.diluentVolume || ''} onChange={(e) => {
