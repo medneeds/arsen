@@ -285,7 +285,7 @@ export function PrintMapPreviewDialog({
             <div>
               <PrintableSectorSection
                 patients={redPatients}
-                sectorName="Ala Vermelha"
+                sectorName="UTI 1"
                 bgColor="#fef2f2"
                 borderColor="#ef4444"
                 textColor="#b91c1c"
