@@ -197,7 +197,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
       {/* Form Fields */}
       <div className="space-y-3">
         <div className="space-y-1">
-          <Label className="text-[10px] font-semibold text-gray-600 uppercase">Seu Usuário *</Label>
+          <Label className="text-[10px] font-semibold text-gray-600">Seu usuário *</Label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
