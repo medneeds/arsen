@@ -131,7 +131,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
                 placeholder="Pesquisar protocolos..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 uppercase"
+                className="pl-9"
               />
             </div>
             <ScrollArea className="h-[350px]">
