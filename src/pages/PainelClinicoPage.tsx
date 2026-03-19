@@ -754,8 +754,8 @@ export default function PainelClinicoPage() {
                 <ScrollArea className="flex-1">
                   {/* RESUMO */}
                   <TabsContent value="resumo" className="p-4 space-y-4 mt-0">
-                    {/* Quick Stats - synced with map sidebar */}
-                    <div className="grid grid-cols-3 gap-2">
+                     {/* Quick Stats */}
+                    <div className="grid grid-cols-4 gap-2">
                       <div className="bg-muted/50 rounded-lg p-2 text-center border border-border/30">
                         <User className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
                         <p className="text-[10px] text-muted-foreground">Idade</p>
@@ -772,8 +772,13 @@ export default function PainelClinicoPage() {
                       </div>
                       <div className="bg-muted/50 rounded-lg p-2 text-center border border-border/30">
                         <Clock className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
-                        <p className="text-[10px] text-muted-foreground">Tempo</p>
+                        <p className="text-[10px] text-muted-foreground">Internação</p>
                         <p className="text-xs font-semibold">{formatStayDuration(selectedPatient.admissionDate)}</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-2 text-center border border-border/30">
+                        <LogOut className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
+                        <p className="text-[10px] text-muted-foreground">Prev. Alta</p>
+                        <p className="text-xs font-semibold">{getDischargeText(selectedPatient)}</p>
                       </div>
                     </div>
 
