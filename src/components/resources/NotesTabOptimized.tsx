@@ -516,8 +516,8 @@ const NotesTabOptimized = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="scheduled-time" className="uppercase">
-                  HORA
+                <Label htmlFor="scheduled-time">
+                  Hora
                 </Label>
                 <Input
                   id="scheduled-time"
