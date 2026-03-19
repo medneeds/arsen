@@ -1302,17 +1302,17 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           @media print {
             @page { size: A4 portrait; margin: 15mm 12mm; }
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .print\\:block { display: block !important; }
-            .print\\:hidden { display: none !important; }
+            .print\:block { display: block !important; }
+            .print\:hidden { display: none !important; }
           }
-          .apac-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
-          .apac-table th, .apac-table td { border: 1px solid #000; padding: 2px 4px; text-align: left; vertical-align: top; }
-          .apac-table th { background: #e5e7eb; font-weight: bold; font-size: 7pt; text-transform: uppercase; }
-          .apac-section-title { background: #1e293b; color: white; font-weight: bold; font-size: 8pt; padding: 3px 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-          .apac-field-label { font-size: 6.5pt; color: #666; display: block; }
-          .apac-field-value { font-size: 9pt; font-weight: 500; min-height: 14px; }
+          .apac-table { width: 100%; border-collapse: collapse; font-size: 7.2pt; margin-top: 2px; page-break-inside: avoid; break-inside: avoid; }
+          .apac-table th, .apac-table td { border: 1px solid #000; padding: 1px 3px; text-align: left; vertical-align: top; line-height: 1.15; }
+          .apac-table th { background: #e5e7eb; font-weight: bold; font-size: 6.5pt; text-transform: uppercase; }
+          .apac-section-title { background: #1e293b; color: white; font-weight: bold; font-size: 7pt; padding: 2px 5px; text-transform: uppercase; letter-spacing: 0.3px; }
+          .apac-field-label { font-size: 6pt; color: #666; display: block; line-height: 1.05; }
+          .apac-field-value { font-size: 8pt; font-weight: 500; min-height: 12px; line-height: 1.1; }
         `}</style>
-        <div style={{ fontFamily: "'Arial', sans-serif", color: "#000", padding: "8mm" }}>
+        <div style={{ fontFamily: "'Arial', sans-serif", color: "#000", padding: "4mm" }}>
           <div style={{ borderBottom: "2px solid #000", paddingBottom: "4px", marginBottom: "8px", textAlign: "center" }}>
             <p style={{ fontSize: "7pt", margin: 0 }}>Sistema Único de Saúde — Ministério da Saúde</p>
             <h1 style={{ fontSize: "11pt", fontWeight: "bold", margin: "2px 0" }}>LAUDO PARA SOLICITAÇÃO / AUTORIZAÇÃO DE PROCEDIMENTO AMBULATORIAL</h1>
