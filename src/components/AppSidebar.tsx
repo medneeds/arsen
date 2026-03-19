@@ -139,6 +139,7 @@ export function AppSidebar({
         { name: "Hemoderivados", link: "/hemoderivados", profiles: ["medico", "gestor"] },
         { name: "Relatório", link: "/relatorio", profiles: ["medico", "gestor"] },
         { name: "Regulação", link: "/regulacoes", profiles: ["medico", "gestor"] },
+        { name: "Alta e Desfecho", link: "/alta-desfecho", profiles: ["medico", "gestor"] },
       ],
     },
     {
