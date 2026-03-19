@@ -208,12 +208,12 @@ export function InternmentStatusDialog({
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="status" className="uppercase text-xs font-semibold">
+            <Label htmlFor="status" className="text-xs font-semibold">
               Status da Solicitação
             </Label>
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger id="status" className="uppercase">
-                <SelectValue placeholder="SELECIONE O STATUS" />
+              <SelectTrigger id="status">
+                <SelectValue placeholder="Selecione o status" />
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(statusConfig).map(([key, config]) => {
