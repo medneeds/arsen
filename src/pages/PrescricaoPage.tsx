@@ -3145,7 +3145,7 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== PRINT-ONLY PRESCRIPTION BODY ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginTop: '3px' }}>
+      <div className="hidden print:block prescription-print-section" style={{ marginTop: '0' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '0 0 4px 4px', overflow: 'hidden' }}>
           <colgroup>
             <col style={{ width: '26px' }} />
