@@ -281,8 +281,8 @@ export default function MedicalCodesPage() {
                         </Button>
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium uppercase">{code.name}</TableCell>
-                    <TableCell className="text-muted-foreground uppercase">
+                    <TableCell className="font-medium">{code.name}</TableCell>
+                    <TableCell className="text-muted-foreground">
                       <div className="group relative flex items-center gap-2">
                         <span className="flex-1">{code.system_description}</span>
                         <Button
