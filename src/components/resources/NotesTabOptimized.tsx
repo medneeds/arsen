@@ -278,8 +278,8 @@ const NotesTabOptimized = () => {
     URL.revokeObjectURL(url);
 
     toast({
-      title: "DOWNLOAD REALIZADO",
-      description: "ARQUIVO SALVO COM SUCESSO",
+      title: "Download realizado",
+      description: "Arquivo salvo com sucesso",
     });
   };
 
