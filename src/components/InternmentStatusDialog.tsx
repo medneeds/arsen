@@ -232,15 +232,15 @@ export function InternmentStatusDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes" className="uppercase text-xs font-semibold">
+            <Label htmlFor="notes" className="text-xs font-semibold">
               Observações (opcional)
             </Label>
             <Textarea
               id="notes"
               value={notes}
-              onChange={(e) => setNotes(e.target.value.toUpperCase())}
-              placeholder="ADICIONE OBSERVAÇÕES SOBRE A SOLICITAÇÃO..."
-              className="min-h-[100px] uppercase resize-none"
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Adicione observações sobre a solicitação..."
+              className="min-h-[100px] resize-none"
             />
           </div>
         </div>
