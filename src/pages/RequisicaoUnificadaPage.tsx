@@ -773,7 +773,7 @@ const RequisicaoUnificadaPage = () => {
       </Tabs>
 
       {/* ── Result Dialog ── */}
-      <Dialog open={!!viewingRequest} onOpenChange={() => { setViewingRequest(null); setResultText(""); }}>
+      <Dialog open={!!viewingRequest} onOpenChange={() => { setViewingRequest(null); setResultText(""); setResultFiles([]); }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -822,18 +822,15 @@ const RequisicaoUnificadaPage = () => {
                 </div>
               </div>
 
-              {/* Result input */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Resultado</Label>
-                <Textarea
-                  placeholder="Digite os resultados do exame/parecer..."
-                  value={resultText}
-                  onChange={e => setResultText(e.target.value)}
-                  rows={8}
-                  readOnly={viewingRequest.status === "completed"}
-                  className={viewingRequest.status === "completed" ? "bg-muted/30" : ""}
-                />
-              </div>
+              {/* Result input with text + image + PDF */}
+              <ExamResultInput
+                resultText={resultText}
+                onResultTextChange={setResultText}
+                resultFiles={resultFiles}
+                onResultFilesChange={setResultFiles}
+                readOnly={viewingRequest.status === "completed"}
+                requestId={viewingRequest.id}
+              />
 
               {viewingRequest.completed_at && (
                 <p className="text-[10px] text-muted-foreground">
@@ -845,7 +842,7 @@ const RequisicaoUnificadaPage = () => {
           {viewingRequest?.status !== "completed" && (
             <DialogFooter>
               <Button variant="outline" onClick={() => setViewingRequest(null)}>Cancelar</Button>
-              <Button onClick={handleSaveResult} disabled={savingResult || !resultText.trim()} className="gap-2">
+              <Button onClick={handleSaveResult} disabled={savingResult || (!resultText.trim() && resultFiles.length === 0)} className="gap-2">
                 {savingResult ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 Salvar Resultado
               </Button>
