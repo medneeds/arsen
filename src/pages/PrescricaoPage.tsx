@@ -1314,37 +1314,47 @@ function parseScheduleSlots(schedule: string): string[] {
 function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }) {
   const hasPreparo = item.diluent || item.diluentVolume || item.accessType || item.infusionTime;
   const slots = parseScheduleSlots(item.schedule);
+  const isEven = index % 2 === 0;
+  const rowBg = isEven ? '#ffffff' : '#f8fafc';
   
   return (
-    <tr style={{ pageBreakInside: 'avoid' }}>
-      <td style={{ width: '24px', border: '0.5px solid #cbd5e1', padding: '2px 0', textAlign: 'center', verticalAlign: 'top', fontSize: '8pt', fontWeight: 800, color: '#0f172a', backgroundColor: '#fff' }}>
-        {index + 1}
+    <tr style={{ pageBreakInside: 'avoid' }} className={isEven ? '' : 'print-row-alt'}>
+      {/* Nº — pill style */}
+      <td style={{ width: '26px', borderBottom: '0.5px solid #e2e8f0', borderLeft: '0.5px solid #e2e8f0', padding: '3px 0', textAlign: 'center', verticalAlign: 'top', backgroundColor: rowBg }}>
+        <div style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: '#0f172a', color: '#fff', fontSize: '7pt', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', lineHeight: 1 }} className="print-num-pill">
+          {index + 1}
+        </div>
       </td>
-      <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', verticalAlign: 'top', backgroundColor: '#fff' }}>
-        <div style={{ fontSize: '8.5pt', lineHeight: '1.35', color: '#0f172a' }}>
-          <span style={{ fontWeight: 700 }}>{item.name}</span>
+      {/* Descrição do item */}
+      <td style={{ borderBottom: '0.5px solid #e2e8f0', padding: '3px 8px', verticalAlign: 'top', backgroundColor: rowBg }}>
+        <div style={{ fontSize: '8pt', lineHeight: '1.4', color: '#0f172a' }}>
+          <span style={{ fontWeight: 800, letterSpacing: '-0.1px' }}>{item.name}</span>
           {item.presentation && item.presentation !== '-' && (
-            <span style={{ fontWeight: 400, color: '#475569' }}> ({item.presentation})</span>
+            <span style={{ fontWeight: 400, color: '#64748b', fontSize: '7.5pt' }}> ({item.presentation})</span>
           )}
           {item.quantity && item.quantityUnit && (
-            <span style={{ fontWeight: 600, color: '#334155' }}> — {item.quantity} {item.quantityUnit}</span>
+            <span style={{ fontWeight: 600, color: '#334155', fontSize: '7.5pt' }}> — {item.quantity} {item.quantityUnit}</span>
           )}
-          {item.dose && item.dose !== '-' && <span> — {item.dose}</span>}
-          {item.route && item.route !== '-' && <span> — {item.route}</span>}
-          {item.posology && item.posology !== '-' && <span> — {item.posology}</span>}
+        </div>
+        <div style={{ fontSize: '7.5pt', color: '#334155', lineHeight: '1.3', marginTop: '1px' }}>
+          {[
+            item.dose && item.dose !== '-' ? item.dose : null,
+            item.route && item.route !== '-' ? item.route : null,
+            item.posology && item.posology !== '-' ? item.posology : null,
+          ].filter(Boolean).join(' · ')}
           {item.flags.length > 0 && (
-            <span style={{ fontSize: '7.5pt', fontWeight: 700, marginLeft: '3px', color: '#0f172a' }}>[{item.flags.join(', ').toUpperCase()}]</span>
+            <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }} className="print-flag-chip">{item.flags.join(', ').toUpperCase()}</span>
           )}
           {item.isExtra && (
-            <span style={{ fontSize: '7pt', fontWeight: 700, marginLeft: '3px', color: '#ea580c', backgroundColor: '#fff7ed', padding: '0 3px', borderRadius: '2px', border: '0.5px solid #fed7aa' }}>EXTRA</span>
+            <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '3px', color: '#ea580c', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fed7aa', letterSpacing: '0.3px' }}>EXTRA</span>
           )}
           {item.status === 'suspended' && (
-            <span style={{ fontSize: '7.5pt', fontWeight: 700, color: '#dc2626', marginLeft: '3px' }}>[SUSPENSO]</span>
+            <span style={{ fontSize: '6.5pt', fontWeight: 700, color: '#fff', backgroundColor: '#dc2626', padding: '0.5px 4px', borderRadius: '2px', marginLeft: '3px' }} className="print-suspended-chip">SUSPENSO</span>
           )}
         </div>
         {hasPreparo && (
-          <div style={{ fontSize: '7pt', color: '#64748b', fontStyle: 'italic', lineHeight: '1.2', marginTop: '1px', paddingLeft: '8px' }}>
-            ↳ {[
+          <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: '1.2', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #cbd5e1' }}>
+            {[
               item.action && item.action !== '-' ? item.action : null,
               item.diluent && item.diluent !== '-' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : null,
               item.accessType && item.accessType !== '-' ? item.accessType : null,
@@ -1353,49 +1363,48 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
           </div>
         )}
         {item.instructions && !hasPreparo && (
-          <div style={{ fontSize: '7pt', color: '#64748b', fontStyle: 'italic', lineHeight: '1.2', marginTop: '1px', paddingLeft: '8px' }}>
-            ↳ {item.instructions}
+          <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: '1.2', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #cbd5e1' }}>
+            {item.instructions}
           </div>
         )}
       </td>
-      {/* Aprazamento — dynamic: times distributed in single cell */}
+      {/* Aprazamento */}
       <td style={{ 
-        border: '0.5px solid #cbd5e1', 
-        textAlign: 'center', 
-        verticalAlign: 'middle',
-        fontSize: '7.5pt',
-        fontWeight: 600,
-        fontFamily: 'monospace',
-        color: '#1e293b',
-        padding: '2px 4px',
-        backgroundColor: '#fff',
-        whiteSpace: 'nowrap',
+        borderBottom: '0.5px solid #e2e8f0',
+        textAlign: 'center', verticalAlign: 'middle',
+        fontSize: '7pt', fontWeight: 700, fontFamily: 'monospace',
+        color: '#0c4a6e', padding: '2px 4px', backgroundColor: rowBg,
+        whiteSpace: 'nowrap', letterSpacing: '0.5px',
       }}>
-        {slots.length > 0 ? slots.join('  ') : ''}
+        {slots.length > 0 ? slots.join('  ') : '—'}
       </td>
       {/* Checagem enfermagem */}
-      <td style={{ width: '28px', border: '0.5px solid #cbd5e1', textAlign: 'center', verticalAlign: 'middle', backgroundColor: '#fff' }}>
-        <div style={{ width: '10px', height: '10px', border: '1px solid #94a3b8', borderRadius: '2px', margin: '0 auto' }} />
+      <td style={{ width: '28px', borderBottom: '0.5px solid #e2e8f0', borderRight: '0.5px solid #e2e8f0', textAlign: 'center', verticalAlign: 'middle', backgroundColor: rowBg }}>
+        <div style={{ width: '12px', height: '12px', border: '1.5px solid #94a3b8', borderRadius: '3px', margin: '0 auto' }} />
       </td>
     </tr>
   );
 }
 
 function PrintSimpleRow({ item, index }: { item: PrescriptionItem; index: number }) {
+  const isEven = index % 2 === 0;
+  const rowBg = isEven ? '#ffffff' : '#f8fafc';
   return (
-    <tr style={{ pageBreakInside: 'avoid' }}>
-      <td style={{ width: '24px', border: '0.5px solid #cbd5e1', padding: '2px 0', textAlign: 'center', verticalAlign: 'top', fontSize: '8pt', fontWeight: 800, color: '#0f172a', backgroundColor: '#fff' }}>
-        {index + 1}
-      </td>
-      <td colSpan={2} style={{ border: '0.5px solid #cbd5e1', padding: '2px 6px', verticalAlign: 'top', backgroundColor: '#fff' }}>
-        <div style={{ fontSize: '8.5pt', lineHeight: '1.35', color: '#0f172a' }}>
-          {item.name}
-          {item.dose && item.dose !== '-' ? ` — ${item.dose}` : ''}
-          {item.posology && item.posology !== '-' ? ` — ${item.posology}` : ''}
+    <tr style={{ pageBreakInside: 'avoid' }} className={isEven ? '' : 'print-row-alt'}>
+      <td style={{ width: '26px', borderBottom: '0.5px solid #e2e8f0', borderLeft: '0.5px solid #e2e8f0', padding: '3px 0', textAlign: 'center', verticalAlign: 'top', backgroundColor: rowBg }}>
+        <div style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: '#0f172a', color: '#fff', fontSize: '7pt', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', lineHeight: 1 }} className="print-num-pill">
+          {index + 1}
         </div>
       </td>
-      <td style={{ width: '28px', border: '0.5px solid #cbd5e1', textAlign: 'center', verticalAlign: 'middle', backgroundColor: '#fff' }}>
-        <div style={{ width: '10px', height: '10px', border: '1px solid #94a3b8', borderRadius: '2px', margin: '0 auto' }} />
+      <td colSpan={2} style={{ borderBottom: '0.5px solid #e2e8f0', padding: '3px 8px', verticalAlign: 'top', backgroundColor: rowBg }}>
+        <div style={{ fontSize: '8pt', lineHeight: '1.4', color: '#0f172a' }}>
+          <span style={{ fontWeight: 800 }}>{item.name}</span>
+          {item.dose && item.dose !== '-' ? <span style={{ color: '#334155', fontWeight: 500 }}> — {item.dose}</span> : ''}
+          {item.posology && item.posology !== '-' ? <span style={{ color: '#64748b', fontWeight: 500 }}> — {item.posology}</span> : ''}
+        </div>
+      </td>
+      <td style={{ width: '28px', borderBottom: '0.5px solid #e2e8f0', borderRight: '0.5px solid #e2e8f0', textAlign: 'center', verticalAlign: 'middle', backgroundColor: rowBg }}>
+        <div style={{ width: '12px', height: '12px', border: '1.5px solid #94a3b8', borderRadius: '3px', margin: '0 auto' }} />
       </td>
     </tr>
   );
@@ -2555,8 +2564,8 @@ const PrescricaoPage = () => {
           * { background-color: transparent !important; }
           .prescription-print-section table { border-collapse: collapse; width: 100%; }
           .prescription-print-section td, .prescription-print-section th { background-color: #fff !important; }
-          .print-header-bar { background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-cat-header { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-header-bar { background-color: #0c4a6e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-cat-header { background-color: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-inst-bar { background: linear-gradient(135deg, #0a1628 0%, #0f2847 50%, #1a3a5c 100%) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-nav-chip { background-color: rgba(255,255,255,0.12) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-module-chip { background-color: rgba(56,189,248,0.18) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -2564,6 +2573,13 @@ const PrescricaoPage = () => {
           .print-avatar { background-color: #e0f2fe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-allergy-bar { background-color: #fef2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-field-bg { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-row-alt td { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-num-pill { background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-flag-chip { background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-suspended-chip { background-color: #dc2626 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-cat-accent { background-color: #0c4a6e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-sig-box { background-color: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-footer-bar { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       ` }} />
 
@@ -3163,26 +3179,26 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== PRINT-ONLY PRESCRIPTION BODY ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginTop: '4px' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="hidden print:block prescription-print-section" style={{ marginTop: '3px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '0 0 4px 4px', overflow: 'hidden' }}>
           <colgroup>
-            <col style={{ width: '24px' }} />
+            <col style={{ width: '26px' }} />
             <col />
-            <col style={{ width: '180px' }} />
+            <col style={{ width: '170px' }} />
             <col style={{ width: '28px' }} />
           </colgroup>
           <thead>
             <tr>
-              <th className="print-header-bar" style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '4px 2px', fontSize: '6.5pt', fontWeight: 700, textAlign: 'center' }}>
+              <th className="print-header-bar" style={{ backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 2px', fontSize: '6.5pt', fontWeight: 700, textAlign: 'center', borderBottom: '2px solid #0369a1', letterSpacing: '0.5px' }}>
                 Nº
               </th>
-              <th className="print-header-bar" style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '4px 6px', fontSize: '7.5pt', fontWeight: 700, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              <th className="print-header-bar" style={{ backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 8px', fontSize: '7.5pt', fontWeight: 700, textAlign: 'left', letterSpacing: '0.8px', borderBottom: '2px solid #0369a1' }}>
                 Prescrição Médica
               </th>
-              <th className="print-header-bar" style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '4px 4px', fontSize: '7pt', fontWeight: 700, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+              <th className="print-header-bar" style={{ backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 4px', fontSize: '7pt', fontWeight: 700, textAlign: 'center', letterSpacing: '0.6px', borderBottom: '2px solid #0369a1' }}>
                 Aprazamento
               </th>
-              <th className="print-header-bar" style={{ backgroundColor: '#0f172a', color: '#fff', border: '0.5px solid #0f172a', padding: '4px 1px', fontSize: '6pt', fontWeight: 700, textAlign: 'center' }}>
+              <th className="print-header-bar" style={{ backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 1px', fontSize: '6pt', fontWeight: 700, textAlign: 'center', borderBottom: '2px solid #0369a1' }}>
                 ✓
               </th>
             </tr>
@@ -3197,17 +3213,19 @@ const PrescricaoPage = () => {
                 <React.Fragment key={cat}>
                   <tr>
                     <td colSpan={4} className="print-cat-header" style={{ 
-                      padding: '3px 8px', 
-                      fontSize: '7pt', 
-                      fontWeight: 800, 
-                      textTransform: 'uppercase', 
-                      letterSpacing: '1px',
-                      backgroundColor: '#f8fafc', 
-                      borderLeft: '3px solid #1e293b',
-                      border: '0.5px solid #cbd5e1',
-                      color: '#1e293b'
+                      padding: '0',
+                      border: 'none',
                     }}>
-                      {config.label}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
+                        <div className="print-cat-accent" style={{ width: '4px', height: '20px', backgroundColor: '#0c4a6e', borderRadius: '0 2px 2px 0' }} />
+                        <div style={{
+                          flex: 1, padding: '3px 10px', fontSize: '7pt', fontWeight: 800,
+                          letterSpacing: '0.8px', color: '#0c4a6e',
+                          backgroundColor: '#f0f9ff', borderBottom: '0.5px solid #bae6fd', borderTop: '0.5px solid #bae6fd',
+                        }}>
+                          {config.label} <span style={{ fontWeight: 500, color: '#64748b', fontSize: '6pt', marginLeft: '4px' }}>({catItems.length})</span>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                   {catItems.map((item, i) => (
@@ -3221,31 +3239,44 @@ const PrescricaoPage = () => {
           </tbody>
         </table>
 
-        {/* Print footer — signature + timestamp */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: '12px', marginTop: '8px', borderTop: '1px solid #e2e8f0', pageBreakInside: 'avoid' }}>
-          <div style={{ fontSize: '6pt', color: '#94a3b8', lineHeight: '1.5' }}>
-            <div>{prescriptionDate}</div>
-            <div>BigHelp Map • Prescrição Digital</div>
+        {/* Print footer — elegant signature block */}
+        <div style={{ pageBreakInside: 'avoid', marginTop: '10px' }}>
+          {/* Signature area */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '12px', padding: '10px 0' }}>
+            {/* Left: Doctor signature */}
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              {digitalSignature ? (
+                <div className="print-sig-box" style={{ border: '1.5px solid #0c4a6e', borderRadius: '6px', padding: '8px 16px', display: 'inline-block', backgroundColor: '#f0f9ff' }}>
+                  <div style={{ fontSize: '7pt', fontWeight: 800, color: '#0c4a6e', letterSpacing: '1px' }}>✓ ASSINADO DIGITALMENTE</div>
+                  <div style={{ fontSize: '8pt', fontWeight: 700, color: '#0f172a', marginTop: '3px' }}>{digitalSignature.doctorName}</div>
+                  <div style={{ fontSize: '6.5pt', color: '#475569', marginTop: '1px' }}>CRM: {digitalSignature.crm} · {digitalSignature.signedAt}</div>
+                  <div style={{ fontSize: '5pt', color: '#94a3b8', fontFamily: 'monospace', marginTop: '3px', borderTop: '0.5px solid #e2e8f0', paddingTop: '2px' }}>Hash: {digitalSignature.hash}</div>
+                </div>
+              ) : (
+                <div style={{ paddingTop: '14px' }}>
+                  <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+                  <div style={{ fontSize: '7.5pt', fontWeight: 700, color: '#0f172a' }}>Assinatura / Carimbo do Médico</div>
+                  <div style={{ fontSize: '6.5pt', color: '#64748b', marginTop: '1px' }}>CRM: _______________</div>
+                </div>
+              )}
+            </div>
+            {/* Right: Nursing signature */}
+            <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
+              <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+              <div style={{ fontSize: '7.5pt', fontWeight: 700, color: '#0f172a' }}>Enfermeiro(a) Responsável</div>
+              <div style={{ fontSize: '6.5pt', color: '#64748b', marginTop: '1px' }}>COREN: _______________</div>
+            </div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            {digitalSignature ? (
-              <div style={{ border: '1.5px solid #0f172a', borderRadius: '4px', padding: '6px 14px', display: 'inline-block' }}>
-                <div style={{ fontSize: '8pt', fontWeight: 800, color: '#0f172a' }}>✓ ASSINADO DIGITALMENTE</div>
-                <div style={{ fontSize: '7.5pt', fontWeight: 600, color: '#0f172a', marginTop: '2px' }}>{digitalSignature.doctorName}</div>
-                <div style={{ fontSize: '6.5pt', color: '#475569' }}>CRM: {digitalSignature.crm} • {digitalSignature.signedAt}</div>
-                <div style={{ fontSize: '5pt', color: '#94a3b8', fontFamily: 'monospace', marginTop: '2px' }}>Hash: {digitalSignature.hash}</div>
-              </div>
-            ) : (
-              <>
-                <div style={{ width: '180px', borderBottom: '1px solid #0f172a', marginBottom: '4px', marginLeft: 'auto', marginRight: 'auto' }} />
-                <div style={{ fontSize: '7.5pt', fontWeight: 600, color: '#0f172a' }}>Assinatura / Carimbo do Médico</div>
-                <div style={{ fontSize: '6.5pt', color: '#64748b', marginTop: '1px' }}>CRM: _______________</div>
-              </>
-            )}
-          </div>
-          <div style={{ fontSize: '6pt', color: '#94a3b8', textAlign: 'right', lineHeight: '1.5' }}>
-            <div>Enfermagem: ___________</div>
-            <div>Hora: ____:____</div>
+
+          {/* Bottom bar */}
+          <div className="print-footer-bar" style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '4px 10px', borderTop: '1px solid #e2e8f0', borderRadius: '0 0 4px 4px',
+            backgroundColor: '#f8fafc', fontSize: '5.5pt', color: '#94a3b8',
+          }}>
+            <span>{prescriptionDate} · BigHelp Map · Prescrição Digital</span>
+            <span>Hospital Municipal Djalma Marques — Socorrão I</span>
+            <span>Pág. 1</span>
           </div>
         </div>
       </div>
