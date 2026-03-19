@@ -1257,7 +1257,20 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                   <div><Label className="text-xs text-muted-foreground">CID-10 Secundário</Label><Input value={cidSecondary} onChange={(e) => setCidSecondary(e.target.value)} className="font-mono" /></div>
                   <div><Label className="text-xs text-muted-foreground">CID-10 Associado</Label><Input value={cidAssociated} onChange={(e) => setCidAssociated(e.target.value)} className="font-mono" /></div>
                 </div>
-                <div><Label className="text-xs text-muted-foreground">Observações</Label><Textarea value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Informações clínicas relevantes..." rows={3} /></div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label className="text-xs text-muted-foreground">Observações</Label>
+                    <div className="flex gap-1.5">
+                      <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={importAdmission} disabled={!patientId || importingAdmission}>
+                        <FileText className="h-3 w-3" /> {importingAdmission ? "Importando..." : "Importar Admissão"}
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={importEvolution} disabled={!patientId || importingEvolution}>
+                        <ClipboardList className="h-3 w-3" /> {importingEvolution ? "Importando..." : "Importar Evolução"}
+                      </Button>
+                    </div>
+                  </div>
+                  <Textarea value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Informações clínicas relevantes..." rows={3} />
+                </div>
               </CardContent>
             </Card>
           </div>
