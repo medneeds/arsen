@@ -138,7 +138,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
               {isLoading ? (
                 <div className="text-center py-8 text-sm text-muted-foreground">Carregando...</div>
               ) : filtered.length === 0 ? (
-                <div className="text-center py-8 text-sm text-muted-foreground uppercase">
+                <div className="text-center py-8 text-sm text-muted-foreground">
                   Nenhum template disponível
                 </div>
               ) : (
