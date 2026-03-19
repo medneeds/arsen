@@ -1,9 +1,10 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ClipboardCheck } from "lucide-react";
+import { LayoutDashboard, ClipboardCheck, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { label: "Mapa de Leitos", path: "/", icon: LayoutDashboard },
+  { label: "Visão Geral", path: "/", icon: Activity },
+  { label: "Mapa de Leitos", path: "/mapa", icon: LayoutDashboard },
   { label: "Painel Clínico", path: "/painel-clinico", icon: ClipboardCheck },
 ];
 
@@ -27,7 +28,7 @@ export function ClinicalNavTabs({ variant = "default" }: ClinicalNavTabsProps) {
             key={tab.path}
             onClick={() => navigate(tab.path)}
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200",
+              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all duration-200",
               variant === "dark"
                 ? isActive
                   ? "bg-white/20 text-white shadow-sm"
