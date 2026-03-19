@@ -59,7 +59,14 @@ import CcihDashboardPage from "./pages/CcihDashboardPage";
 
 const queryClient = new QueryClient();
 
-const App = () => {
+/** Redirects profile-specific roles to their dedicated panels */
+function ProfileHomeRedirect() {
+  const profile = typeof window !== "undefined" ? localStorage.getItem("access_profile") || "medico" : "medico";
+  if (profile === "ccih") return <Navigate to="/ccih" replace />;
+  if (profile === "imagem") return <Navigate to="/setor-imagem" replace />;
+  if (profile === "laboratorio") return <Navigate to="/setor-laboratorio" replace />;
+  return <ClinicalDashboardPage />;
+}
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
   
   return (
