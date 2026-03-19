@@ -126,6 +126,8 @@ const CcihDashboardPage = () => {
   const [showPatientDetail, setShowPatientDetail] = useState(false);
   const [detailPatient, setDetailPatient] = useState<PatientBasic | null>(null);
   const [detailCultureRequests, setDetailCultureRequests] = useState<CultureExamRequest[]>([]);
+  const [detailLabExams, setDetailLabExams] = useState<CultureExamRequest[]>([]);
+  const [detailImagingExams, setDetailImagingExams] = useState<CultureExamRequest[]>([]);
   const [detailPrescriptions, setDetailPrescriptions] = useState<AntibioticPrescription[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
