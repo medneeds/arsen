@@ -431,6 +431,8 @@ function GlobalPrescriptionSearch({
     inputRef.current?.blur();
   };
 
+  return (
+    <div className="space-y-2">
       {/* Category filter chips */}
       <div className="flex items-center gap-1.5 flex-wrap">
         <button
