@@ -313,7 +313,7 @@ export const NotificationCenter = () => {
                         </Button>
                         <div className="flex-1 space-y-1 min-w-0">
                           <p className={cn(
-                            "text-sm font-medium uppercase leading-tight break-words",
+                            "text-sm font-medium leading-tight break-words",
                             item.completed && "line-through text-muted-foreground"
                           )}>
                             {item.content}
