@@ -470,7 +470,7 @@ const MOCK_REQUISITIONS: Record<string, Array<{ date: string; category: string; 
 
 export default function PainelClinicoPage() {
   const { currentDepartment } = useDepartment();
-  const { patients: dbPatients, isLoading } = usePatients(currentDepartment);
+  const { patients: dbPatients, isLoading, updatePatient } = usePatients(currentDepartment);
   const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
