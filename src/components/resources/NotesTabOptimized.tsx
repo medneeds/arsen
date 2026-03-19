@@ -333,10 +333,10 @@ const NotesTabOptimized = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setIsScheduleDialogOpen(true)}
-                className="gap-2 hover:bg-amber-500/10 hover:text-amber-600 hover:border-amber-500/50 transition-all uppercase"
+                className="gap-2 hover:bg-amber-500/10 hover:text-amber-600 hover:border-amber-500/50 transition-all"
               >
                 <Clock className="h-4 w-4" />
-                PROGRAMAR LEMBRETE
+                Programar lembrete
               </Button>
             </div>
           </div>
