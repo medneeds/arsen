@@ -162,7 +162,7 @@ export function ResetUserPasswordDialog({
                       newPassword: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) 
                     })}
                     placeholder="EX: ABC123"
-                    className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm uppercase font-mono tracking-widest"
+                    className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono tracking-widest"
                     disabled={loading}
                     maxLength={6}
                   />
