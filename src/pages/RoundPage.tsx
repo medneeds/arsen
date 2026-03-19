@@ -314,9 +314,9 @@ export default function RoundPage() {
           />
           {selectedPatient && (
             <>
-              <Button size="sm" variant="outline" onClick={handleExportJSON} className="text-xs gap-1.5">
-                <Download className="h-3.5 w-3.5" />
-                JSON
+              <Button size="sm" variant="outline" onClick={handlePrintPDF} className="text-xs gap-1.5">
+                <Printer className="h-3.5 w-3.5" />
+                PDF
               </Button>
               <Button size="sm" onClick={handleSave} disabled={saving} className="text-xs gap-1.5">
                 <Save className="h-3.5 w-3.5" />
