@@ -72,6 +72,14 @@ const App = () => {
             path="/"
             element={
               <ProtectedRoute>
+                <ClinicalDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/mapa"
+            element={
+              <ProtectedRoute>
                 <Index />
               </ProtectedRoute>
             }
