@@ -5,6 +5,7 @@ import {
   Microscope, Search, Clock, CheckCircle2, Upload, RefreshCw,
   AlertTriangle, User, BedDouble, Plus, FileText, Loader2, Eye,
   Pill, History, FlaskConical, CalendarDays, Info, ChevronRight,
+  Stethoscope, Activity, TestTubes, ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,7 @@ interface PatientBasic {
   diagnoses: string | null;
   admission_date: string | null;
   uti_cultures_antibiotics: string | null;
+  uti_devices: string | null;
 }
 
 interface CultureExamRequest {
@@ -125,6 +127,8 @@ const CcihDashboardPage = () => {
   const [showPatientDetail, setShowPatientDetail] = useState(false);
   const [detailPatient, setDetailPatient] = useState<PatientBasic | null>(null);
   const [detailCultureRequests, setDetailCultureRequests] = useState<CultureExamRequest[]>([]);
+  const [detailLabExams, setDetailLabExams] = useState<CultureExamRequest[]>([]);
+  const [detailImagingExams, setDetailImagingExams] = useState<CultureExamRequest[]>([]);
   const [detailPrescriptions, setDetailPrescriptions] = useState<AntibioticPrescription[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
@@ -139,7 +143,7 @@ const CcihDashboardPage = () => {
       const [patientsRes, culturesRes] = await Promise.all([
         supabase
           .from("patients")
-          .select("id, name, bed_number, sector, age, diagnoses, admission_date, uti_cultures_antibiotics")
+          .select("id, name, bed_number, sector, age, diagnoses, admission_date, uti_cultures_antibiotics, uti_devices")
           .eq("hospital_unit_id", hospitalId)
           .eq("state_id", stateId)
           .eq("is_vacant", false)
@@ -222,6 +226,8 @@ const CcihDashboardPage = () => {
     setShowPatientDetail(true);
     setLoadingDetail(true);
     setDetailCultureRequests([]);
+    setDetailLabExams([]);
+    setDetailImagingExams([]);
     setDetailPrescriptions([]);
 
     try {
@@ -229,7 +235,7 @@ const CcihDashboardPage = () => {
       const [examRes, prescRes] = await Promise.all([
         supabase
           .from("exam_requests")
-          .select("id, items, status, priority, created_at, requested_by_name, results")
+          .select("id, items, status, priority, created_at, requested_by_name, results, category")
           .eq("hospital_unit_id", hospitalId!)
           .eq("state_id", stateId!)
           .eq("patient_id", patient.id)
@@ -254,6 +260,13 @@ const CcihDashboardPage = () => {
         });
       });
       setDetailCultureRequests(cultureExams as CultureExamRequest[]);
+
+      // Separate lab and imaging exams (non-culture)
+      const allExams = examRes.data || [];
+      const labExams = allExams.filter((req: any) => (req.category === "laboratorio") && !cultureExams.some((c: any) => c.id === req.id));
+      const imagingExams = allExams.filter((req: any) => req.category === "imagem");
+      setDetailLabExams(labExams as CultureExamRequest[]);
+      setDetailImagingExams(imagingExams as CultureExamRequest[]);
 
       // Filter prescriptions that contain antibiotic items
       const antibioticKeywords = [
@@ -855,6 +868,34 @@ const CcihDashboardPage = () => {
                 </div>
               </div>
 
+              {/* Diagnoses */}
+              {detailPatient.diagnoses && (
+                <div className="p-3 rounded-lg bg-blue-50/50 border border-blue-200 dark:bg-blue-500/5 dark:border-blue-500/20">
+                  <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1 flex items-center gap-1.5">
+                    <Stethoscope className="h-3.5 w-3.5" /> Diagnósticos
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {detailPatient.diagnoses.split("\n").filter(Boolean).map((d, i) => (
+                      <Badge key={i} variant="secondary" className="text-[10px]">{d.trim()}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Invasive Devices */}
+              {detailPatient.uti_devices && (
+                <div className="p-3 rounded-lg bg-orange-50/50 border border-orange-200 dark:bg-orange-500/5 dark:border-orange-500/20">
+                  <p className="text-xs font-semibold text-orange-700 dark:text-orange-400 mb-1 flex items-center gap-1.5">
+                    <Activity className="h-3.5 w-3.5" /> Dispositivos invasivos
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {detailPatient.uti_devices.split("\n").filter(Boolean).map((d, i) => (
+                      <Badge key={i} variant="outline" className="text-[10px] border-orange-300 text-orange-700 dark:text-orange-400">{d.trim()}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Cultures / ATB field from patient card */}
               {detailPatient.uti_cultures_antibiotics && (
                 <div className="p-3 rounded-lg bg-violet-50/50 border border-violet-200 dark:bg-violet-500/5 dark:border-violet-500/20">
@@ -1058,6 +1099,118 @@ const CcihDashboardPage = () => {
                                   </div>
                                 ))}
                               </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Lab exams */}
+                  <div>
+                    <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                      <TestTubes className="h-3.5 w-3.5 text-blue-500" />
+                      Exames laboratoriais
+                    </p>
+                    {detailLabExams.length === 0 ? (
+                      <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 text-center">
+                        Nenhuma requisição laboratorial encontrada
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {detailLabExams.map(req => {
+                          const items = Array.isArray(req.items) ? req.items : [];
+                          return (
+                            <div key={req.id} className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-[10px] font-medium text-foreground">
+                                    {format(new Date(req.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                                  </span>
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className={cn("text-[9px]",
+                                    req.status === "completed" ? "text-emerald-600 border-emerald-300" :
+                                    req.status === "pending" ? "text-amber-600 border-amber-300" :
+                                    "text-blue-600 border-blue-300"
+                                  )}
+                                >
+                                  {req.status === "completed" ? "Concluído" :
+                                   req.status === "pending" ? "Pendente" :
+                                   req.status === "in_progress" ? "Em execução" :
+                                   req.status === "acknowledged" ? "Ciência" : req.status}
+                                </Badge>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {items.map((item: any, idx: number) => (
+                                  <Badge key={idx} variant="secondary" className="text-[9px]">
+                                    {item.name || item}
+                                  </Badge>
+                                ))}
+                              </div>
+                              {req.results && (
+                                <p className="text-[10px] text-foreground bg-emerald-50/50 dark:bg-emerald-500/5 p-1.5 rounded border border-emerald-200 dark:border-emerald-500/20">
+                                  <strong className="text-emerald-700 dark:text-emerald-400">Resultado:</strong> {req.results}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Imaging exams */}
+                  <div>
+                    <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                      <ImageIcon className="h-3.5 w-3.5 text-indigo-500" />
+                      Exames de imagem
+                    </p>
+                    {detailImagingExams.length === 0 ? (
+                      <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 text-center">
+                        Nenhuma requisição de imagem encontrada
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {detailImagingExams.map(req => {
+                          const items = Array.isArray(req.items) ? req.items : [];
+                          return (
+                            <div key={req.id} className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-[10px] font-medium text-foreground">
+                                    {format(new Date(req.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                                  </span>
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className={cn("text-[9px]",
+                                    req.status === "completed" ? "text-emerald-600 border-emerald-300" :
+                                    req.status === "pending" ? "text-amber-600 border-amber-300" :
+                                    "text-blue-600 border-blue-300"
+                                  )}
+                                >
+                                  {req.status === "completed" ? "Concluído" :
+                                   req.status === "pending" ? "Pendente" :
+                                   req.status === "in_progress" ? "Em execução" :
+                                   req.status === "acknowledged" ? "Ciência" : req.status}
+                                </Badge>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {items.map((item: any, idx: number) => (
+                                  <Badge key={idx} variant="secondary" className="text-[9px]">
+                                    {item.name || item}
+                                  </Badge>
+                                ))}
+                              </div>
+                              {req.results && (
+                                <p className="text-[10px] text-foreground bg-emerald-50/50 dark:bg-emerald-500/5 p-1.5 rounded border border-emerald-200 dark:border-emerald-500/20">
+                                  <strong className="text-emerald-700 dark:text-emerald-400">Resultado:</strong> {req.results}
+                                </p>
+                              )}
                             </div>
                           );
                         })}
