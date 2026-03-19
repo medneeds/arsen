@@ -134,7 +134,7 @@ export default function MedicalCodesPage() {
         return;
       }
 
-      toast.success("CÓDIGO CRIADO COM SUCESSO");
+      toast.success("Código criado com sucesso");
     }
 
     setIsDialogOpen(false);
