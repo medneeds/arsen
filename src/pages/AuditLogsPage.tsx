@@ -370,7 +370,7 @@ export default function AuditLogsPage() {
                                         </Badge>
                                       </div>
                                       <div className="bg-gray-50 rounded-lg p-3">
-                                        <p className="text-[10px] text-gray-500 uppercase font-medium">Tabela</p>
+                                        <p className="text-[10px] text-gray-500 font-medium">Tabela</p>
                                         <p className="text-sm font-medium">
                                           {TABLE_LABELS[selectedLog.table_name] || selectedLog.table_name}
                                         </p>
