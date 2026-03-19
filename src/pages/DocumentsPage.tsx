@@ -125,6 +125,15 @@ export default function DocumentsPage() {
       color: "text-orange-500",
       bgColor: "bg-orange-500/10"
     },
+    { 
+      id: "apac", 
+      title: "APAC — Alta Complexidade", 
+      description: "Laudo para solicitação de TC, RM, Doppler e outros exames de alta complexidade (SUS)",
+      route: "/documents/apac",
+      icon: ScanLine,
+      color: "text-sky-500",
+      bgColor: "bg-sky-500/10"
+    },
   ];
 
   const filteredDocuments = documents.filter(doc =>

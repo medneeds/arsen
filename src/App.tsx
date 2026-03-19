@@ -286,6 +286,16 @@ const App = () => {
           }
         />
         <Route
+          path="/documents/apac"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <RequisicaoImagensPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/movements"
           element={
             <ProtectedRoute>
