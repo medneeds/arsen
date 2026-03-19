@@ -1816,7 +1816,9 @@ const PrescricaoPage = () => {
   // Phase 5 state — AI Drug Interactions
   const [interactionDialogOpen, setInteractionDialogOpen] = useState(false);
 
-  // Phase 6 state — Codes & Dispensation
+  // Phase 7 state — Extra Prescription
+  const [extraPrescriptionOpen, setExtraPrescriptionOpen] = useState(false);
+
   const [dispensationDialogOpen, setDispensationDialogOpen] = useState(false);
   const [dispensations, setDispensations] = useState<Array<{ id: string; dispensation_code: string; dispensed_at: string; dispensed_by_name: string | null }>>([]);
   const [dispensationSlip, setDispensationSlip] = useState<{ code: string; items: PrescriptionItem[]; patientName: string; bed: string; date: string } | null>(null);
