@@ -907,7 +907,7 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
               )}
             </div>
             <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-2">
-              {request.patient_bed && <span>{request.patient_sector} · L{request.patient_bed}</span>}
+              {request.patient_bed && <span>{getSectorLabel(request.patient_sector)} · L{request.patient_bed}</span>}
               <span>{format(new Date(request.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
               <span>por {request.requested_by_name}</span>
             </div>

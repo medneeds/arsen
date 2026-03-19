@@ -453,7 +453,7 @@ const SetorLaboratorioPage = () => {
                   {getPriorityBadge(selectedRequest.priority)}
                 </div>
                 <div className="text-xs text-muted-foreground flex gap-3">
-                  {selectedRequest.patient_sector && <span>Setor: {selectedRequest.patient_sector}</span>}
+                  {selectedRequest.patient_sector && <span>Setor: {getSectorLabel(selectedRequest.patient_sector)}</span>}
                   {selectedRequest.patient_bed && <span>Leito: {selectedRequest.patient_bed}</span>}
                 </div>
                 {selectedRequest.clinical_indication && (
