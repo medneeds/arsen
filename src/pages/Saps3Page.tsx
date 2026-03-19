@@ -1069,6 +1069,48 @@ export default function Saps3Page() {
         </div>
       )}
 
+      {/* ─── Pending SAPS ─── */}
+      {!isFormMode && records.some(r => r.status === 'pending') && (
+        <Card className="border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base text-amber-800 dark:text-amber-300">
+              <Clock className="h-5 w-5 animate-pulse" />
+              SAPS 3 Pendentes — Aguardando Exames Laboratoriais
+              <Badge variant="destructive" className="ml-1">
+                {records.filter(r => r.status === 'pending').length}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {records.filter(r => r.status === 'pending').map(r => (
+                <div key={r.id} className="flex items-center justify-between p-3 rounded-lg border border-amber-200 dark:border-amber-700 bg-card hover:bg-muted/50 transition-colors">
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{r.patient_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Admitido: {format(new Date(r.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <SapsPendingTimer pendingSince={r.pending_since} />
+                    <Button 
+                      size="sm" 
+                      className="gap-1.5"
+                      onClick={() => navigate(`/saps3?completeSapsId=${r.id}&patientName=${encodeURIComponent(r.patient_name)}`)}
+                    >
+                      <ClipboardList className="h-3.5 w-3.5" /> Completar SAPS
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setDeleteId(r.id)} className="text-destructive/60 hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ─── History ─── */}
       {!isFormMode && (
         <Card>
@@ -1078,13 +1120,13 @@ export default function Saps3Page() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {records.length === 0 ? (
+            {records.filter(r => r.status !== 'pending').length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Nenhuma admissão com SAPS 3 registrada.
+                Nenhuma admissão com SAPS 3 completada.
               </p>
             ) : (
               <div className="space-y-2">
-                {records.map(r => (
+                {records.filter(r => r.status !== 'pending').map(r => (
                   <div key={r.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                     <div className="flex-1">
                       <p className="font-medium text-foreground">{r.patient_name}</p>
