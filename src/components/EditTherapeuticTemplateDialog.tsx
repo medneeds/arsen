@@ -117,14 +117,14 @@ export function EditTherapeuticTemplateDialog({
           {/* Protocol Type */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold uppercase">Tipo de Protocolo</Label>
+              <Label className="text-xs font-semibold">Tipo de protocolo</Label>
               <Select value={protocolType} onValueChange={setProtocolType}>
-                <SelectTrigger className="uppercase text-sm">
+                <SelectTrigger className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {PROTOCOL_TYPES.map((t) => (
-                    <SelectItem key={t} value={t} className="uppercase text-sm">
+                    <SelectItem key={t} value={t} className="text-sm">
                       {t}
                     </SelectItem>
                   ))}
