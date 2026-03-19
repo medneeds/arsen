@@ -195,7 +195,7 @@ export default function LandingPage() {
               <FileCheck className="h-5 w-5 text-emerald-400" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-white/90 uppercase tracking-wide">
+              <p className="text-xs font-semibold text-white/90 tracking-wide">
                 {whitelabel.compliance.complianceBadgeTitle}
               </p>
               <p className="text-[10px] text-slate-400">
