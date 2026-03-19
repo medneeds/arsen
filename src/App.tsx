@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
 import { PrivacyProvider } from "@/contexts/PrivacyContext";
@@ -59,6 +59,15 @@ import CcihDashboardPage from "./pages/CcihDashboardPage";
 
 const queryClient = new QueryClient();
 
+/** Redirects profile-specific roles to their dedicated panels */
+function ProfileHomeRedirect() {
+  const profile = typeof window !== "undefined" ? localStorage.getItem("access_profile") || "medico" : "medico";
+  if (profile === "ccih") return <Navigate to="/ccih" replace />;
+  if (profile === "imagem") return <Navigate to="/setor-imagem" replace />;
+  if (profile === "laboratorio") return <Navigate to="/setor-laboratorio" replace />;
+  return <ClinicalDashboardPage />;
+}
+
 const App = () => {
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
   
@@ -75,7 +84,7 @@ const App = () => {
             path="/"
             element={
               <ProtectedRoute>
-                <ClinicalDashboardPage />
+                <ProfileHomeRedirect />
               </ProtectedRoute>
             }
           />
