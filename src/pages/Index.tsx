@@ -875,7 +875,7 @@ const Index = () => {
                   <SidebarTrigger className="print:hidden flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
                   
                   <div className="print:hidden">
-                    <ClinicalNavTabs />
+                    <ClinicalNavTabs variant="dark" />
                   </div>
 
                     <div className="min-w-0 flex-1">
