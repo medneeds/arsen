@@ -2565,14 +2565,9 @@ const PrescricaoPage = () => {
           .prescription-print-section table { border-collapse: collapse; width: 100%; }
           .prescription-print-section td, .prescription-print-section th { background-color: #fff !important; }
           .print-header-bar { background-color: #0c4a6e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-header-subtle { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-cat-header { background-color: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-inst-bar { background: linear-gradient(135deg, #0a1628 0%, #0f2847 50%, #1a3a5c 100%) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-nav-chip { background-color: rgba(255,255,255,0.12) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-module-chip { background-color: rgba(56,189,248,0.18) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-patient-bar { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-avatar { background-color: #e0f2fe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-allergy-bar { background-color: #fef2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-field-bg { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-row-alt td { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-num-pill { background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-flag-chip { background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
