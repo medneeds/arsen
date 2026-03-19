@@ -107,8 +107,8 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
               <FileText className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1">
-              <DialogTitle className="text-lg font-bold tracking-wide uppercase text-primary">
-                {selectedTemplate ? selectedTemplate.name : "TEMPLATES TERAPÊUTICOS"}
+              <DialogTitle className="text-lg font-bold tracking-wide text-primary">
+                {selectedTemplate ? selectedTemplate.name : "Templates terapêuticos"}
               </DialogTitle>
               <p className="text-sm font-semibold text-foreground mt-0.5 tracking-wide">
                 {patientName}
