@@ -4,7 +4,7 @@ import { ptBR } from "date-fns/locale";
 import {
   ScanLine, Search, Clock, CheckCircle2, XCircle, Eye, Loader2,
   Filter, RefreshCw, ImageIcon, Zap, MonitorSpeaker, Heart,
-  Bone, Baby, AlertTriangle, FileText, CalendarIcon,
+  Bone, Baby, AlertTriangle, FileText, CalendarIcon, Printer,
 } from "lucide-react";
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
