@@ -880,9 +880,16 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h3 className="font-semibold text-sm text-foreground">{request.patient_name}</h3>
-              <Badge variant="outline" className={cn("text-[10px] border", statusCfg.color)}>
-                <StatusIcon className="h-3 w-3 mr-1" />{statusCfg.label}
-              </Badge>
+              <div className="flex items-center gap-1.5">
+                <span className={cn(
+                  "inline-block h-2 w-2 rounded-full",
+                  statusCfg.dotColor,
+                  statusCfg.pulsing && "animate-pulse-soft"
+                )} />
+                <Badge variant="outline" className={cn("text-[10px] border", statusCfg.color)}>
+                  <StatusIcon className="h-3 w-3 mr-1" />{statusCfg.label}
+                </Badge>
+              </div>
               {request.priority !== "rotina" && (
                 <Badge variant={request.priority === "emergencia" ? "destructive" : "secondary"} className="text-[10px]">
                   {priorityCfg?.label}
