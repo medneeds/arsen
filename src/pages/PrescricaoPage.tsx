@@ -1015,6 +1015,7 @@ function SortablePrescriptionItemRow({
                     if (autoConc) onUpdate(item.id, "concentration", autoConc);
                   }} className="h-6 text-[11px] bg-muted/10 border-border/30 w-16 text-center" placeholder="mL" />
                 </div>
+                )}
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Acesso:</span>
                   <Select value={item.accessType || ''} onValueChange={(v) => onUpdate(item.id, "accessType", v)}>
