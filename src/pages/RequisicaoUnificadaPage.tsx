@@ -1313,6 +1313,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
+            margin: 0 auto;
           }
           .apac-root * { box-sizing: border-box; }
           /* Header */
