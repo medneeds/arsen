@@ -232,13 +232,13 @@ export default function HandoversPage() {
                                 </Badge>
                               )}
                               {handover.handover_from && (
-                                <Badge variant="outline" className="uppercase text-xs">
-                                  DE: {handover.handover_from}
+                                <Badge variant="outline" className="text-xs">
+                                  De: {handover.handover_from}
                                 </Badge>
                               )}
                               {handover.handover_to && (
-                                <Badge variant="outline" className="uppercase text-xs">
-                                  PARA: {handover.handover_to}
+                                <Badge variant="outline" className="text-xs">
+                                  Para: {handover.handover_to}
                                 </Badge>
                               )}
                             </div>
