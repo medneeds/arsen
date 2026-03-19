@@ -2353,7 +2353,7 @@ const PrescricaoPage = () => {
                     <div className="border-b border-border/50 bg-muted/20 p-3 space-y-3">
                       {/* Profile buttons */}
                       <div>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Perfis de Cuidados</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-2">Perfis de Cuidados</p>
                         <div className="flex flex-wrap gap-1.5">
                           {CARE_PROFILES.map(profile => {
                             const ProfileIcon = CATEGORY_ICONS[profile.icon] || ClipboardList;
