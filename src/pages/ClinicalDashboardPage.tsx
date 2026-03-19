@@ -129,23 +129,32 @@ const ClinicalDashboardPage = () => {
           .limit(8),
       ]);
 
-      const patients = patientsRes.data || [];
+      const allPatients = patientsRes.data || [];
       const bedRequests = bedRequestsRes.data || [];
-      const movements = movementsRes.data || [];
+      const allMovements = movementsRes.data || [];
 
-      // Build occupancy data
+      // Filter by active sector
+      const patients = allPatients.filter((p) => p.sector === activeSector);
+      const movements = allMovements.filter((m) => m.patient_sector === activeSector);
+
+      // Build occupancy data for active sector only
+      const sectorPatients = patients;
+      const occupied = sectorPatients.filter((p) => p.name && p.name.trim() !== "").length;
+      const occData: OccupancyData[] = [{
+        sector: activeSector,
+        label: SECTOR_LABELS[activeSector] || activeSector,
+        total: sectorPatients.length,
+        occupied,
+      }];
+
+      // Also build global occupancy for the overview cards
       const sectors = ["red", "yellow", "blue", "outside"];
-      const occData: OccupancyData[] = sectors.map((s) => {
-        const sectorPatients = patients.filter((p) => p.sector === s);
-        const occupied = sectorPatients.filter((p) => p.name && p.name.trim() !== "").length;
-        return {
-          sector: s,
-          label: SECTOR_LABELS[s] || s,
-          total: sectorPatients.length,
-          occupied,
-        };
+      const allOccData: OccupancyData[] = sectors.map((s) => {
+        const sp = allPatients.filter((p) => p.sector === s);
+        const occ = sp.filter((p) => p.name && p.name.trim() !== "").length;
+        return { sector: s, label: SECTOR_LABELS[s] || s, total: sp.length, occupied: occ };
       });
-      setOccupancy(occData);
+      setOccupancy(allOccData);
       setPendingBedRequests(bedRequests.length);
       setRecentMovements(movements);
 
