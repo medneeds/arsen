@@ -492,7 +492,7 @@ export const NotificationCenter = () => {
                   <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center mx-auto mb-4 animate-pulse">
                     <Bell className="h-8 w-8 text-muted-foreground opacity-50" />
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  <p className="text-sm font-medium text-muted-foreground tracking-wide">
                     Nenhuma Notificação
                   </p>
                   <p className="text-xs text-muted-foreground/70 mt-1">
