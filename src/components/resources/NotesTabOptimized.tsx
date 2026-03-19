@@ -403,10 +403,10 @@ const NotesTabOptimized = () => {
                     size="sm"
                     onClick={handleClear}
                     disabled={!notes}
-                    className="gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 transition-all uppercase"
+                    className="gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 transition-all"
                   >
                     <Trash2 className="h-4 w-4" />
-                    LIMPAR
+                    Limpar
                   </Button>
                 </div>
               </div>
