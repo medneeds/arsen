@@ -4,6 +4,7 @@ import { ptBR } from "date-fns/locale";
 import {
   Microscope, Search, Clock, CheckCircle2, Upload, RefreshCw,
   AlertTriangle, User, BedDouble, Plus, FileText, Loader2, Eye,
+  Pill, History, FlaskConical, CalendarDays, Info, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,7 +55,27 @@ interface PatientBasic {
   sector: string;
   age: string | null;
   diagnoses: string | null;
+  admission_date: string | null;
   uti_cultures_antibiotics: string | null;
+}
+
+interface CultureExamRequest {
+  id: string;
+  items: any[];
+  status: string;
+  priority: string;
+  created_at: string;
+  requested_by_name: string | null;
+  results: string | null;
+}
+
+interface AntibioticPrescription {
+  id: string;
+  patient_name: string;
+  items: any[];
+  status: string;
+  created_at: string;
+  version: number;
 }
 
 interface CultureResult {
@@ -100,6 +121,13 @@ const CcihDashboardPage = () => {
   const [resultFiles, setResultFiles] = useState<ResultFile[]>([]);
   const [saving, setSaving] = useState(false);
 
+  // Patient detail dialog (CCIH view)
+  const [showPatientDetail, setShowPatientDetail] = useState(false);
+  const [detailPatient, setDetailPatient] = useState<PatientBasic | null>(null);
+  const [detailCultureRequests, setDetailCultureRequests] = useState<CultureExamRequest[]>([]);
+  const [detailPrescriptions, setDetailPrescriptions] = useState<AntibioticPrescription[]>([]);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
   // View culture dialog
   const [showViewCulture, setShowViewCulture] = useState(false);
   const [viewCulture, setViewCulture] = useState<CultureResult | null>(null);
@@ -111,7 +139,7 @@ const CcihDashboardPage = () => {
       const [patientsRes, culturesRes] = await Promise.all([
         supabase
           .from("patients")
-          .select("id, name, bed_number, sector, age, diagnoses, uti_cultures_antibiotics")
+          .select("id, name, bed_number, sector, age, diagnoses, admission_date, uti_cultures_antibiotics")
           .eq("hospital_unit_id", hospitalId)
           .eq("state_id", stateId)
           .eq("is_vacant", false)
@@ -188,6 +216,71 @@ const CcihDashboardPage = () => {
     completed: cultureResults.filter(c => c.status === "completed").length,
     unread: cultureResults.filter(c => !c.read_by_doctor && c.status === "completed").length,
   }), [cultureResults]);
+
+  const openPatientDetail = async (patient: PatientBasic) => {
+    setDetailPatient(patient);
+    setShowPatientDetail(true);
+    setLoadingDetail(true);
+    setDetailCultureRequests([]);
+    setDetailPrescriptions([]);
+
+    try {
+      // Fetch culture-related exam requests and prescriptions in parallel
+      const [examRes, prescRes] = await Promise.all([
+        supabase
+          .from("exam_requests")
+          .select("id, items, status, priority, created_at, requested_by_name, results")
+          .eq("hospital_unit_id", hospitalId!)
+          .eq("state_id", stateId!)
+          .eq("patient_id", patient.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("prescriptions")
+          .select("id, patient_name, items, status, created_at, version")
+          .eq("hospital_unit_id", hospitalId!)
+          .eq("state_id", stateId!)
+          .eq("patient_name", patient.name)
+          .order("created_at", { ascending: false })
+          .limit(20),
+      ]);
+
+      // Filter exam requests that contain culture-related items
+      const cultureKeywords = ["cultura", "hemocultura", "urocultura", "antibiograma", "gram", "microbiologia"];
+      const cultureExams = (examRes.data || []).filter((req: any) => {
+        const items = Array.isArray(req.items) ? req.items : [];
+        return items.some((item: any) => {
+          const name = (item.name || item || "").toString().toLowerCase();
+          return cultureKeywords.some(kw => name.includes(kw));
+        });
+      });
+      setDetailCultureRequests(cultureExams as CultureExamRequest[]);
+
+      // Filter prescriptions that contain antibiotic items
+      const antibioticKeywords = [
+        "antibiótico", "antimicrobiano", "amoxicilina", "ampicilina", "azitromicina",
+        "ceftriaxona", "cefazolina", "cefepima", "ceftazidima", "ciprofloxacino",
+        "clindamicina", "gentamicina", "amicacina", "levofloxacino", "meropenem",
+        "imipenem", "ertapenem", "metronidazol", "oxacilina", "penicilina",
+        "piperacilina", "tazobactam", "polimixina", "vancomicina", "teicoplanina",
+        "linezolida", "daptomicina", "sulfametoxazol", "trimetoprima",
+        "cefuroxima", "cefalexina", "doxiciclina", "claritromicina",
+        "fluconazol", "anfotericina", "micafungina", "anidulafungina", "caspofungina",
+        "aciclovir", "oseltamivir", "colistina", "tigeciclina", "rifampicina",
+      ];
+      const abxPrescriptions = (prescRes.data || []).filter((rx: any) => {
+        const items = Array.isArray(rx.items) ? rx.items : [];
+        return items.some((item: any) => {
+          const name = (item.name || item.medication || "").toString().toLowerCase();
+          return antibioticKeywords.some(kw => name.includes(kw));
+        });
+      });
+      setDetailPrescriptions(abxPrescriptions as AntibioticPrescription[]);
+    } catch (err) {
+      console.error("Erro ao carregar detalhes:", err);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
 
   const openNewCulture = (patient: PatientBasic) => {
     setSelectedPatient(patient);
@@ -455,14 +548,24 @@ const CcihDashboardPage = () => {
                                 </div>
                               )}
 
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-full text-[10px] h-7 gap-1 border-violet-200 text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-500/10"
-                                onClick={() => openNewCulture(patient)}
-                              >
-                                <Plus className="h-3 w-3" /> Registrar cultura
-                              </Button>
+                              <div className="flex gap-1.5">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1 text-[10px] h-7 gap-1 border-blue-200 text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+                                  onClick={() => openPatientDetail(patient)}
+                                >
+                                  <Info className="h-3 w-3" /> Detalhes
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1 text-[10px] h-7 gap-1 border-violet-200 text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-500/10"
+                                  onClick={() => openNewCulture(patient)}
+                                >
+                                  <Plus className="h-3 w-3" /> Cultura
+                                </Button>
+                              </div>
                             </CardContent>
                           </Card>
                         );
@@ -709,6 +812,274 @@ const CcihDashboardPage = () => {
                     <Clock className="h-3 w-3" /> Aguardando leitura do médico
                   </span>
                 )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+      {/* ── Patient Detail Dialog (CCIH) ── */}
+      <Dialog open={showPatientDetail} onOpenChange={setShowPatientDetail}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-violet-600" />
+              Perfil infeccioso — CCIH
+            </DialogTitle>
+            <DialogDescription>
+              {detailPatient && (
+                <span>
+                  {detailPatient.name} · {getSectorDisplayLabel(detailPatient.sector)} · Leito {detailPatient.bed_number}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {detailPatient && (
+            <div className="space-y-4">
+              {/* Patient header */}
+              <div className="p-3 rounded-lg bg-muted/50 border space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-sm text-foreground">{detailPatient.name}</span>
+                  <Badge variant="outline" className="text-[10px]">
+                    {getSectorDisplayLabel(detailPatient.sector)} · {detailPatient.bed_number}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] text-muted-foreground">
+                  {detailPatient.age && <span><strong>Idade:</strong> {detailPatient.age}</span>}
+                  {detailPatient.admission_date && (
+                    <span><strong>Admissão:</strong> {format(new Date(detailPatient.admission_date), "dd/MM/yyyy", { locale: ptBR })}</span>
+                  )}
+                  {detailPatient.diagnoses && (
+                    <span className="col-span-2 sm:col-span-3"><strong>Diagnósticos:</strong> {detailPatient.diagnoses}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Cultures / ATB field from patient card */}
+              {detailPatient.uti_cultures_antibiotics && (
+                <div className="p-3 rounded-lg bg-violet-50/50 border border-violet-200 dark:bg-violet-500/5 dark:border-violet-500/20">
+                  <p className="text-xs font-semibold text-violet-700 dark:text-violet-400 mb-1 flex items-center gap-1.5">
+                    <FlaskConical className="h-3.5 w-3.5" /> Culturas e antibióticos (prontuário)
+                  </p>
+                  <p className="text-xs text-foreground whitespace-pre-wrap">{detailPatient.uti_cultures_antibiotics}</p>
+                </div>
+              )}
+
+              {loadingDetail ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+                </div>
+              ) : (
+                <>
+                  {/* Culture exam requests (solicitations) */}
+                  <div>
+                    <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                      <Microscope className="h-3.5 w-3.5 text-violet-500" />
+                      Solicitações de culturas
+                    </p>
+                    {detailCultureRequests.length === 0 ? (
+                      <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 text-center">
+                        Nenhuma solicitação de cultura encontrada
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {detailCultureRequests.map(req => {
+                          const items = Array.isArray(req.items) ? req.items : [];
+                          const cultureItems = items.filter((item: any) => {
+                            const name = (item.name || item || "").toString().toLowerCase();
+                            return ["cultura", "hemocultura", "urocultura", "antibiograma", "gram", "microbiologia"]
+                              .some(kw => name.includes(kw));
+                          });
+                          return (
+                            <div key={req.id} className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-[10px] font-medium text-foreground">
+                                    {format(new Date(req.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                                  </span>
+                                  {req.requested_by_name && (
+                                    <span className="text-[10px] text-muted-foreground">por {req.requested_by_name}</span>
+                                  )}
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className={cn("text-[9px]",
+                                    req.status === "completed" ? "text-emerald-600 border-emerald-300" :
+                                    req.status === "pending" ? "text-amber-600 border-amber-300" :
+                                    "text-blue-600 border-blue-300"
+                                  )}
+                                >
+                                  {req.status === "completed" ? "Concluído" :
+                                   req.status === "pending" ? "Pendente" :
+                                   req.status === "in_progress" ? "Em execução" :
+                                   req.status === "acknowledged" ? "Ciência" : req.status}
+                                </Badge>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {cultureItems.map((item: any, idx: number) => (
+                                  <Badge key={idx} variant="secondary" className="text-[9px] gap-1">
+                                    <Microscope className="h-2.5 w-2.5" />
+                                    {item.name || item}
+                                  </Badge>
+                                ))}
+                              </div>
+                              {req.results && (
+                                <p className="text-[10px] text-foreground bg-emerald-50/50 dark:bg-emerald-500/5 p-1.5 rounded border border-emerald-200 dark:border-emerald-500/20 mt-1">
+                                  <strong className="text-emerald-700 dark:text-emerald-400">Resultado:</strong> {req.results}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* CCIH culture results */}
+                  <div>
+                    <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                      <FlaskConical className="h-3.5 w-3.5 text-red-500" />
+                      Resultados de culturas (CCIH)
+                    </p>
+                    {culturesForPatient(detailPatient.id).length === 0 ? (
+                      <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 text-center">
+                        Nenhum resultado de cultura registrado pela CCIH
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {culturesForPatient(detailPatient.id).map(c => (
+                          <div
+                            key={c.id}
+                            className="p-2.5 rounded-lg border bg-muted/20 space-y-1 cursor-pointer hover:bg-muted/40 transition-colors"
+                            onClick={() => { setShowPatientDetail(false); setTimeout(() => openViewCulture(c), 200); }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Microscope className="h-3 w-3 text-violet-500" />
+                                <span className="text-[10px] font-medium text-foreground">
+                                  {CULTURE_TYPES.find(ct => ct.value === c.culture_type)?.label || c.culture_type}
+                                </span>
+                                {c.collection_date && (
+                                  <span className="text-[9px] text-muted-foreground">
+                                    Coleta: {format(new Date(c.collection_date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                {c.status === "completed" ? (
+                                  <Badge className="text-[9px] bg-emerald-500/15 text-emerald-700 border-emerald-300">Concluída</Badge>
+                                ) : (
+                                  <Badge className="text-[9px] bg-amber-500/15 text-amber-700 border-amber-300">Pendente</Badge>
+                                )}
+                                <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                              </div>
+                            </div>
+                            {c.microorganism && (
+                              <p className="text-[10px] text-red-600 dark:text-red-400 font-semibold">
+                                🦠 {c.microorganism}
+                              </p>
+                            )}
+                            {c.antibiogram && (
+                              <p className="text-[10px] text-muted-foreground line-clamp-1">
+                                Antibiograma: {c.antibiogram}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Antibiotic prescriptions history */}
+                  <div>
+                    <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                      <Pill className="h-3.5 w-3.5 text-amber-500" />
+                      Histórico de antibióticos
+                    </p>
+                    {detailPrescriptions.length === 0 ? (
+                      <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 text-center">
+                        Nenhuma prescrição com antimicrobianos encontrada
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {detailPrescriptions.map(rx => {
+                          const items = Array.isArray(rx.items) ? rx.items : [];
+                          const abxItems = items.filter((item: any) => {
+                            const name = (item.name || item.medication || "").toString().toLowerCase();
+                            return [
+                              "antibiótico", "antimicrobiano", "amoxicilina", "ampicilina", "azitromicina",
+                              "ceftriaxona", "cefazolina", "cefepima", "ceftazidima", "ciprofloxacino",
+                              "clindamicina", "gentamicina", "amicacina", "levofloxacino", "meropenem",
+                              "imipenem", "ertapenem", "metronidazol", "oxacilina", "penicilina",
+                              "piperacilina", "tazobactam", "polimixina", "vancomicina", "teicoplanina",
+                              "linezolida", "daptomicina", "sulfametoxazol", "trimetoprima",
+                              "cefuroxima", "cefalexina", "doxiciclina", "claritromicina",
+                              "fluconazol", "anfotericina", "micafungina", "anidulafungina", "caspofungina",
+                              "aciclovir", "oseltamivir", "colistina", "tigeciclina", "rifampicina",
+                            ].some(kw => name.includes(kw));
+                          });
+
+                          return (
+                            <div key={rx.id} className="p-2.5 rounded-lg border bg-muted/20 space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-[10px] font-medium text-foreground">
+                                    {format(new Date(rx.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                                  </span>
+                                  <Badge variant="outline" className="text-[9px]">v{rx.version}</Badge>
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className={cn("text-[9px]",
+                                    rx.status === "active" ? "text-emerald-600 border-emerald-300" :
+                                    rx.status === "draft" ? "text-amber-600 border-amber-300" :
+                                    rx.status === "suspended" ? "text-red-600 border-red-300" :
+                                    "text-muted-foreground"
+                                  )}
+                                >
+                                  {rx.status === "active" ? "Ativa" :
+                                   rx.status === "draft" ? "Rascunho" :
+                                   rx.status === "suspended" ? "Suspensa" :
+                                   rx.status === "completed" ? "Finalizada" : rx.status}
+                                </Badge>
+                              </div>
+                              <div className="space-y-1">
+                                {abxItems.map((item: any, idx: number) => (
+                                  <div key={idx} className="flex items-center gap-2 text-[10px] p-1.5 rounded bg-amber-50/50 dark:bg-amber-500/5 border border-amber-200/50 dark:border-amber-500/10">
+                                    <Pill className="h-3 w-3 text-amber-600 shrink-0" />
+                                    <span className="font-medium text-foreground flex-1">
+                                      {item.name || item.medication}
+                                    </span>
+                                    {item.dose && <span className="text-muted-foreground">{item.dose}</span>}
+                                    {item.route && <span className="text-muted-foreground">{item.route}</span>}
+                                    {item.frequency && <span className="text-muted-foreground">{item.frequency}</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-2 pt-2 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-1.5 text-xs border-violet-200 text-violet-700 hover:bg-violet-50 dark:hover:bg-violet-500/10"
+                  onClick={() => {
+                    setShowPatientDetail(false);
+                    setTimeout(() => openNewCulture(detailPatient), 200);
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5" /> Registrar nova cultura
+                </Button>
               </div>
             </div>
           )}
