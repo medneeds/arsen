@@ -392,10 +392,10 @@ const NotesTabOptimized = () => {
                     size="sm"
                     onClick={handlePrint}
                     disabled={!notes}
-                    className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all uppercase"
+                    className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all"
                   >
                     <Printer className="h-4 w-4" />
-                    IMPRIMIR
+                    Imprimir
                   </Button>
 
                   <Button
