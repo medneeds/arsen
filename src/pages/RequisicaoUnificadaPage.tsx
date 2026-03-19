@@ -870,6 +870,8 @@ const RequisicaoUnificadaPage = () => {
           </TabsContent>
         )}
       </Tabs>
+      </>
+      )}
 
       {/* ── Result Dialog (read-only for physicians) ── */}
       <Dialog open={!!viewingRequest} onOpenChange={() => { setViewingRequest(null); setResultText(""); setResultFiles([]); }}>
