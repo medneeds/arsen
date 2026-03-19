@@ -2088,13 +2088,13 @@ const PrescricaoPage = () => {
       {/* ===== PRINT STYLES ===== */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          @page { size: A4 portrait; margin: 6mm 7mm 10mm 7mm; }
+          @page { size: A4 portrait; margin: 5mm 6mm 8mm 6mm; }
           body, html { background: #fff !important; }
           * { background-color: transparent !important; }
           .prescription-print-section table { border-collapse: collapse; width: 100%; }
           .prescription-print-section td, .prescription-print-section th { background-color: #fff !important; }
           .print-header-bar { background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-cat-header { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-cat-header { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       ` }} />
 
