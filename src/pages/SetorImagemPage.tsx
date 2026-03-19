@@ -349,10 +349,11 @@ const SetorImagemPage = () => {
                 <ScanLine className="h-12 w-12 mx-auto mb-3 opacity-30" />
                 <p className="font-medium">Nenhuma requisição encontrada</p>
                 <p className="text-sm mt-1">
-                  {tab === "pending" ? "Sem exames pendentes no momento" :
-                   tab === "in_progress" ? "Nenhum exame em execução" :
-                   tab === "completed" ? "Nenhum exame concluído" :
-                   "Nenhuma requisição de imagem"}
+                   {tab === "pending" ? "Sem exames pendentes no momento" :
+                    tab === "acknowledged" ? "Nenhum exame com ciência declarada" :
+                    tab === "in_progress" ? "Nenhum exame em execução" :
+                    tab === "completed" ? "Nenhum exame concluído" :
+                    "Nenhuma requisição de imagem"}
                 </p>
               </div>
             ) : (
