@@ -182,7 +182,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
         </ScrollArea>
 
         {/* Footer Actions */}
-        <div className="absolute bottom-0 left-0 right-0 border-t border-border/50 bg-background p-3 flex gap-2">
+        <div className="absolute bottom-0 left-0 right-0 border-t border-border/50 bg-background p-3 flex gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
@@ -212,12 +212,12 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             size="sm"
             className="flex-1 text-xs"
             onClick={() => {
-              navigate(`/requisicoes?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}&patientBed=${encodeURIComponent(patient.bedNumber)}&patientSector=${encodeURIComponent(patient.sector)}`);
+              navigate(`/monitoramento?patientId=${patient.id}`);
               onOpenChange(false);
             }}
           >
-            <TestTubes className="h-3.5 w-3.5 mr-1.5" />
-            Requisições
+            <Activity className="h-3.5 w-3.5 mr-1.5" />
+            Monitoramento
           </Button>
         </div>
       </SheetContent>
