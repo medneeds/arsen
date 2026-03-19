@@ -229,9 +229,9 @@ export default function VersionsPage() {
         <CardHeader className="bg-gradient-to-r from-muted/50 to-transparent">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-primary" />
-            <CardTitle className="uppercase text-lg">Filtros de Busca</CardTitle>
+            <CardTitle className="text-lg">Filtros de Busca</CardTitle>
           </div>
-          <CardDescription className="uppercase text-xs">
+          <CardDescription className="text-xs">
             Busque versões por descrição ou período
           </CardDescription>
         </CardHeader>
