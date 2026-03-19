@@ -455,7 +455,7 @@ const ClinicalDashboardPage = () => {
                       {occupancy.map((s) => {
                         const rate = s.total > 0 ? Math.round((s.occupied / s.total) * 100) : 0;
                         return (
-                          <div key={s.sector} className="flex flex-col gap-2 p-3 rounded-lg bg-muted/30 border border-border/40">
+                          <div key={s.sector} className={cn("flex flex-col gap-2 p-3 rounded-lg border cursor-pointer transition-all", s.sector === activeSector ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30" : "bg-muted/30 border-border/40 opacity-60")} onClick={() => handleSectorChange(s.sector)}>
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-semibold text-foreground">{s.label}</span>
                               <span className={cn(
