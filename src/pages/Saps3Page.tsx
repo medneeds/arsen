@@ -221,6 +221,8 @@ interface Saps3Record {
   total_score: number | null;
   predicted_mortality: number | null;
   created_at: string;
+  status: string;
+  pending_since: string | null;
 }
 
 const COMORBIDITY_OPTIONS = [
