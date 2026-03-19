@@ -618,9 +618,9 @@ export default function PainelClinicoPage() {
                       onClick={() => openPatient(patient)}
                     >
                       <TableCell>
-                        <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
                           <span className="font-mono font-bold text-foreground">{patient.bedNumber}</span>
-                          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", getSectorColor(patient.sector))}>
+                          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 whitespace-nowrap", getSectorColor(patient.sector))}>
                             {getSectorLabel(patient.sector)}
                           </Badge>
                         </div>
