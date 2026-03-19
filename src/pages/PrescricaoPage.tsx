@@ -1225,7 +1225,9 @@ function ExtraPrescriptionDialog({
       </DialogContent>
     </Dialog>
   );
+}
 
+// --- Renewal Dialog ---
 function RenewalDialog({
   open,
   onClose,
