@@ -177,7 +177,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
           // Item selection view
           <>
             <div className="flex gap-2 pb-2">
-              <Button variant="outline" size="sm" onClick={handleBack} className="uppercase text-xs">
+              <Button variant="outline" size="sm" onClick={handleBack} className="text-xs">
                 ← Voltar
               </Button>
               <Button
