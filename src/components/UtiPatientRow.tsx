@@ -274,7 +274,7 @@ function FieldCell({ field, patient, onUpdateField }: FieldCellProps) {
       style={{ minWidth: field.minWidth, maxWidth: "350px" }}
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">
+        <span className="text-[10px] font-medium text-muted-foreground/70 tracking-wider">
           {field.label}
         </span>
         {field.isArray && (

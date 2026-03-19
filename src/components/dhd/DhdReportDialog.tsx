@@ -35,7 +35,7 @@ export function DhdReportDialog({ open, onOpenChange, patient }: DhdReportDialog
       <DialogContent className="max-w-3xl max-h-[85vh]">
         <DialogHeader>
           <DialogTitle className="text-2xl">Relatório DHD</DialogTitle>
-          <DialogDescription className="uppercase">
+          <DialogDescription>
             {namesHidden ? <span className="tracking-widest opacity-70">{displayName}</span> : patient.patient_name}
             {patient.patient_age && ` • ${patient.patient_age}`}
           </DialogDescription>

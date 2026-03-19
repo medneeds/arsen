@@ -369,7 +369,7 @@ export function PasswordResetRequestsPanel() {
                   }
                   placeholder="REPITA A SENHA"
                   maxLength={6}
-                  className="uppercase"
+                  className=""
                 />
               </div>
             </div>

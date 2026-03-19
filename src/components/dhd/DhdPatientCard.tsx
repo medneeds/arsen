@@ -91,7 +91,7 @@ export function DhdPatientCard({ patient, onMedicationToggle, onRefresh }: DhdPa
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <CardTitle className="text-lg mb-1 uppercase">
+              <CardTitle className="text-lg mb-1">
                 {namesHidden ? <span className="tracking-widest opacity-70">{displayName}</span> : patient.patient_name}
               </CardTitle>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
