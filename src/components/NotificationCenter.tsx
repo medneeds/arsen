@@ -446,7 +446,7 @@ export const NotificationCenter = () => {
                       <CardContent className="p-3 space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium uppercase leading-tight whitespace-pre-wrap break-words">
+                            <p className="text-sm font-medium leading-tight whitespace-pre-wrap break-words">
                               {item.content}
                             </p>
                           </div>
