@@ -457,48 +457,44 @@ export default function Saps3Page() {
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
   };
 
-  // ─── Save: SAPS3 + finalize allocation/admission ───
-  const handleSave = async () => {
-    if (!patientName.trim()) { toast.error("Nome do paciente é obrigatório"); return; }
-    if (!selectedSector) { toast.error("Selecione o setor da UTI"); return; }
-    if (!selectedBed) { toast.error("Selecione o leito"); return; }
-    if (!hospitalId || !stateId) { toast.error("Hospital/Estado não selecionado"); return; }
+  // ─── Build SAPS payload ───
+  const buildSapsPayload = (statusVal: 'completed' | 'pending') => ({
+    patient_name: patientName,
+    hospital_unit_id: hospitalId,
+    state_id: stateId,
+    created_by: user?.id,
+    age: age ? parseInt(age) : null,
+    comorbidities,
+    hospital_los_before_icu: losBeforeIcu ? parseInt(losBeforeIcu) : null,
+    icu_admission_source: admissionSource || null,
+    planned_admission: plannedAdmission,
+    admission_reason: admissionReason || null,
+    admission_reason_detail: admissionReasonDetail || null,
+    surgical_status: surgicalStatus || null,
+    surgery_type: surgeryType || null,
+    infection_at_admission: infectionAtAdmission || null,
+    gcs_score: gcs ? parseInt(gcs) : null,
+    heart_rate_highest: hrHighest ? parseInt(hrHighest) : null,
+    systolic_bp_lowest: sbpLowest ? parseInt(sbpLowest) : null,
+    bilirubin_highest: bilirubinHighest ? parseFloat(bilirubinHighest) : null,
+    temperature_lowest: tempLowest ? parseFloat(tempLowest) : null,
+    creatinine_highest: creatinineHighest ? parseFloat(creatinineHighest) : null,
+    leukocytes: leukocytes ? parseFloat(leukocytes) : null,
+    ph_lowest: phLowest ? parseFloat(phLowest) : null,
+    platelets_lowest: plateletsLowest ? parseInt(plateletsLowest) : null,
+    oxygenation_pao2_fio2: pao2Fio2 ? parseFloat(pao2Fio2) : null,
+    is_mechanically_ventilated: isVentilated,
+    box1_score: scores.box1,
+    box2_score: scores.box2,
+    box3_score: scores.box3,
+    total_score: scores.total,
+    predicted_mortality: scores.mortality,
+    status: statusVal,
+    pending_since: statusVal === 'pending' ? new Date().toISOString() : null,
+  });
 
-    setSaving(true);
-    try {
-      const sapsPayload = {
-        patient_name: patientName,
-        hospital_unit_id: hospitalId,
-        state_id: stateId,
-        created_by: user?.id,
-        age: age ? parseInt(age) : null,
-        comorbidities,
-        hospital_los_before_icu: losBeforeIcu ? parseInt(losBeforeIcu) : null,
-        icu_admission_source: admissionSource || null,
-        planned_admission: plannedAdmission,
-        admission_reason: admissionReason || null,
-        admission_reason_detail: admissionReasonDetail || null,
-        surgical_status: surgicalStatus || null,
-        surgery_type: surgeryType || null,
-        infection_at_admission: infectionAtAdmission || null,
-        gcs_score: gcs ? parseInt(gcs) : null,
-        heart_rate_highest: hrHighest ? parseInt(hrHighest) : null,
-        systolic_bp_lowest: sbpLowest ? parseInt(sbpLowest) : null,
-        bilirubin_highest: bilirubinHighest ? parseFloat(bilirubinHighest) : null,
-        temperature_lowest: tempLowest ? parseFloat(tempLowest) : null,
-        creatinine_highest: creatinineHighest ? parseFloat(creatinineHighest) : null,
-        leukocytes: leukocytes ? parseFloat(leukocytes) : null,
-        ph_lowest: phLowest ? parseFloat(phLowest) : null,
-        platelets_lowest: plateletsLowest ? parseInt(plateletsLowest) : null,
-        oxygenation_pao2_fio2: pao2Fio2 ? parseFloat(pao2Fio2) : null,
-        is_mechanically_ventilated: isVentilated,
-        box1_score: scores.box1,
-        box2_score: scores.box2,
-        box3_score: scores.box3,
-        total_score: scores.total,
-        predicted_mortality: scores.mortality,
-      };
-
+  // ─── Admit patient (shared logic for both complete and pending) ───
+  const admitPatient = async (sapsPayload: any) => {
       const { error: sapsError } = await supabase.from("saps3_assessments" as any).insert(sapsPayload as any);
       if (sapsError) throw sapsError;
 
