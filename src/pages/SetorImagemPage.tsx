@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { format } from "date-fns";
+import { format, startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   ScanLine, Search, Clock, CheckCircle2, XCircle, Eye, Loader2,
   Filter, RefreshCw, ImageIcon, Zap, MonitorSpeaker, Heart,
-  Bone, Baby, AlertTriangle, FileText,
+  Bone, Baby, AlertTriangle, FileText, CalendarIcon,
 } from "lucide-react";
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,10 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -94,6 +98,8 @@ const SetorImagemPage = () => {
   const [resultText, setResultText] = useState("");
   const [resultFiles, setResultFiles] = useState<ResultFile[]>([]);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [dateStart, setDateStart] = useState<Date>(startOfDay(new Date()));
+  const [dateEnd, setDateEnd] = useState<Date>(endOfDay(new Date()));
 
   // Fetch imaging requests
   const fetchRequests = async () => {
@@ -145,6 +151,12 @@ const SetorImagemPage = () => {
   // Filter logic
   const filteredRequests = useMemo(() => {
     return requests.filter((r) => {
+      // Date range filter
+      try {
+        const createdDate = parseISO(r.created_at);
+        if (!isWithinInterval(createdDate, { start: dateStart, end: dateEnd })) return false;
+      } catch { return false; }
+
       // Status tab filter
       if (activeTab === "pending" && r.status !== "pending") return false;
       if (activeTab === "acknowledged" && r.status !== "acknowledged") return false;
@@ -172,16 +184,26 @@ const SetorImagemPage = () => {
 
       return true;
     });
-  }, [requests, activeTab, selectedModality, search]);
+  }, [requests, activeTab, selectedModality, search, dateStart, dateEnd]);
 
   // Stats
+  // Date-filtered requests for stats
+  const dateFilteredRequests = useMemo(() => {
+    return requests.filter((r) => {
+      try {
+        const createdDate = parseISO(r.created_at);
+        return isWithinInterval(createdDate, { start: dateStart, end: dateEnd });
+      } catch { return false; }
+    });
+  }, [requests, dateStart, dateEnd]);
+
   const stats = useMemo(() => ({
-    pending: requests.filter(r => r.status === "pending").length,
-    acknowledged: requests.filter(r => r.status === "acknowledged").length,
-    inProgress: requests.filter(r => r.status === "in_progress").length,
-    completed: requests.filter(r => r.status === "completed").length,
-    urgent: requests.filter(r => r.priority === "urgente" && (r.status === "pending" || r.status === "acknowledged")).length,
-  }), [requests]);
+    pending: dateFilteredRequests.filter(r => r.status === "pending").length,
+    acknowledged: dateFilteredRequests.filter(r => r.status === "acknowledged").length,
+    inProgress: dateFilteredRequests.filter(r => r.status === "in_progress").length,
+    completed: dateFilteredRequests.filter(r => r.status === "completed").length,
+    urgent: dateFilteredRequests.filter(r => r.priority === "urgente" && (r.status === "pending" || r.status === "acknowledged")).length,
+  }), [dateFilteredRequests]);
 
   // Update request status
   const handleUpdateStatus = async (requestId: string, newStatus: string) => {
@@ -300,6 +322,60 @@ const SetorImagemPage = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Date Range Filter */}
+      <div className="flex flex-wrap items-center gap-3 p-3 rounded-xl border border-border/60 bg-muted/30">
+        <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+        <span className="text-xs font-medium text-muted-foreground shrink-0">Período:</span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2 text-xs h-8">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              {format(dateStart, "dd/MM/yyyy", { locale: ptBR })}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={dateStart}
+              onSelect={(d) => d && setDateStart(startOfDay(d))}
+              locale={ptBR}
+              initialFocus
+              className="p-3 pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+        <span className="text-xs text-muted-foreground">até</span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2 text-xs h-8">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              {format(dateEnd, "dd/MM/yyyy", { locale: ptBR })}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={dateEnd}
+              onSelect={(d) => d && setDateEnd(endOfDay(d))}
+              locale={ptBR}
+              initialFocus
+              className="p-3 pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-xs h-8 text-muted-foreground hover:text-foreground"
+          onClick={() => {
+            setDateStart(startOfDay(new Date()));
+            setDateEnd(endOfDay(new Date()));
+          }}
+        >
+          Hoje
+        </Button>
       </div>
 
       {/* Modality Filter */}
