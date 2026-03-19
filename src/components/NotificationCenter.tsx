@@ -240,7 +240,7 @@ export const NotificationCenter = () => {
                 <Bell className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <SheetTitle className="text-lg font-bold uppercase tracking-tight">
+                <SheetTitle className="text-lg font-bold tracking-tight">
                   Central de Notificações
                 </SheetTitle>
                 <p className="text-xs text-muted-foreground uppercase mt-0.5">
