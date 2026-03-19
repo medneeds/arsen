@@ -192,7 +192,9 @@ const RequisicaoUnificadaPage = () => {
   const [formPatientName, setFormPatientName] = useState("");
   const [formPatientBed, setFormPatientBed] = useState("");
   const [formPatientSector, setFormPatientSector] = useState("");
-  const [formPriority, setFormPriority] = useState("rotina");
+  const [formPriority, setFormPriority] = useState("programado");
+  const [formScheduledDate, setFormScheduledDate] = useState("");
+  const [formScheduledTime, setFormScheduledTime] = useState("");
   const [formIndication, setFormIndication] = useState("");
   const [formNotes, setFormNotes] = useState("");
   const [formSelectedItems, setFormSelectedItems] = useState<string[]>([]);
