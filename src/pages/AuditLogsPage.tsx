@@ -380,7 +380,7 @@ export default function AuditLogsPage() {
                                         <p className="text-xs font-mono">{selectedLog.record_id || "-"}</p>
                                       </div>
                                       <div className="bg-gray-50 rounded-lg p-3 col-span-2">
-                                        <p className="text-[10px] text-gray-500 uppercase font-medium">Usuário</p>
+                                        <p className="text-[10px] text-gray-500 font-medium">Usuário</p>
                                         <p className="text-sm font-medium">{selectedLog.user_email || "Sistema"}</p>
                                         {selectedLog.user_role && (
                                           <Badge variant="outline" className="text-[10px] mt-1">

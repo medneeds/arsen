@@ -409,7 +409,7 @@ const InternmentHistoryPage = () => {
               <TableBody>
                 {filteredRequests.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground uppercase py-12">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
                       <div className="flex flex-col items-center gap-2">
                         <History className="h-12 w-12 text-muted-foreground/50" />
                         <p className="font-semibold">Nenhuma Solicitação Encontrada</p>

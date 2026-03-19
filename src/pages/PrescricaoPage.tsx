@@ -2388,7 +2388,7 @@ const PrescricaoPage = () => {
 
                       {/* Free recommendation input */}
                       <div>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Recomendação Avulsa</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-1.5">Recomendação Avulsa</p>
                         <div className="flex items-start gap-1.5">
                           <Textarea
                             value={freeRecommendation}
