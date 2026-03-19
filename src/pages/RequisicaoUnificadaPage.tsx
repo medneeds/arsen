@@ -1301,69 +1301,190 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         <style>{`
           @media print {
             @page { size: A4 portrait; margin: 12mm; }
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
             .print\\:block { display: block !important; }
             .print\\:hidden { display: none !important; }
           }
-          .apac-print-root {
-            width: 186mm; /* A4 210mm - 2×12mm margins */
-            max-height: 273mm; /* A4 297mm - 2×12mm margins */
-            overflow: hidden;
-            font-family: 'Arial', sans-serif;
+          .apac-root {
+            width: 186mm;
+            height: 273mm;
+            font-family: Arial, Helvetica, sans-serif;
             color: #000;
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
           }
-          .apac-table { width: 100%; border-collapse: collapse; font-size: 7pt; margin-top: 1.5px; }
-          .apac-table th, .apac-table td { border: 0.5px solid #000; padding: 1px 3px; text-align: left; vertical-align: top; line-height: 1.1; }
-          .apac-table th { background: #e5e7eb; font-weight: bold; font-size: 6pt; text-transform: uppercase; }
-          .apac-section-title { background: #1e293b; color: white; font-weight: bold; font-size: 6.5pt; padding: 1.5px 4px; text-transform: uppercase; letter-spacing: 0.3px; }
-          .apac-field-label { font-size: 5.5pt; color: #555; display: block; line-height: 1; margin-bottom: 0.5px; }
-          .apac-field-value { font-size: 7.5pt; font-weight: 500; min-height: 10px; line-height: 1.1; }
-          .apac-header { border-bottom: 1.5px solid #000; padding-bottom: 2px; margin-bottom: 3px; text-align: center; }
-          .apac-header p { font-size: 6pt; margin: 0; }
-          .apac-header h1 { font-size: 9pt; font-weight: bold; margin: 1px 0 0 0; }
+          .apac-root * { box-sizing: border-box; }
+          /* Header */
+          .apac-doc-header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 3px;
+            margin-bottom: 0;
+          }
+          .apac-doc-header .apac-sus { font-size: 6.5pt; margin: 0; color: #333; }
+          .apac-doc-header .apac-title { font-size: 9pt; font-weight: 700; margin: 2px 0 0 0; letter-spacing: 0.3px; }
+          /* Unified table */
+          .apac-form {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            flex: 1;
+          }
+          .apac-form col.c1 { width: 20%; }
+          .apac-form col.c2 { width: 20%; }
+          .apac-form col.c3 { width: 20%; }
+          .apac-form col.c4 { width: 20%; }
+          .apac-form col.c5 { width: 20%; }
+          .apac-form td, .apac-form th {
+            border: 0.5pt solid #000;
+            padding: 1.5px 3px;
+            vertical-align: top;
+            font-size: 7pt;
+            line-height: 1.15;
+          }
+          .apac-form .sec {
+            background: #1e293b;
+            color: #fff;
+            font-weight: 700;
+            font-size: 6.5pt;
+            padding: 2px 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            text-align: left;
+          }
+          .apac-form .lbl {
+            font-size: 5.5pt;
+            color: #555;
+            display: block;
+            line-height: 1;
+            margin-bottom: 1px;
+            white-space: nowrap;
+          }
+          .apac-form .val {
+            font-size: 7.5pt;
+            font-weight: 500;
+            min-height: 11px;
+            line-height: 1.15;
+          }
+          .apac-form .val-mono {
+            font-family: 'Courier New', monospace;
+            font-size: 7.5pt;
+            font-weight: 600;
+            min-height: 11px;
+            line-height: 1.15;
+          }
+          .apac-form .obs-cell {
+            height: auto;
+          }
+          .apac-form .obs-space {
+            min-height: 90px;
+            white-space: pre-wrap;
+            font-size: 7pt;
+            font-weight: 400;
+            line-height: 1.2;
+          }
+          .apac-form .sig-space { height: 14px; }
+          .apac-form .sig-space-sm { height: 10px; }
         `}</style>
-        <div className="apac-print-root">
-          <div className="apac-header">
-            <p>Sistema Único de Saúde — Ministério da Saúde</p>
-            <h1>LAUDO PARA SOLICITAÇÃO / AUTORIZAÇÃO DE PROCEDIMENTO AMBULATORIAL</h1>
+        <div className="apac-root">
+          <div className="apac-doc-header">
+            <p className="apac-sus">SISTEMA ÚNICO DE SAÚDE — SUS &nbsp;·&nbsp; MINISTÉRIO DA SAÚDE</p>
+            <p className="apac-title">LAUDO PARA SOLICITAÇÃO / AUTORIZAÇÃO DE PROCEDIMENTO AMBULATORIAL</p>
           </div>
-          <table className="apac-table"><tbody>
-            <tr><td colSpan={2} className="apac-section-title">IDENTIFICAÇÃO DO ESTABELECIMENTO DE SAÚDE (SOLICITANTE)</td></tr>
-            <tr><td style={{ width: "75%" }}><span className="apac-field-label">1 — NOME DO ESTABELECIMENTO</span><div className="apac-field-value">{APAC_INSTITUTION.name}</div></td><td><span className="apac-field-label">2 — CNES</span><div className="apac-field-value" style={{ fontFamily: "monospace", fontWeight: "bold", fontSize: "8.5pt" }}>{APAC_INSTITUTION.cnes}</div></td></tr>
-          </tbody></table>
-          <table className="apac-table"><tbody>
-            <tr><td colSpan={5} className="apac-section-title">IDENTIFICAÇÃO DO PACIENTE</td></tr>
-            <tr><td colSpan={3}><span className="apac-field-label">3 — NOME DO PACIENTE</span><div className="apac-field-value">{apacPatientName.toUpperCase()}</div></td><td colSpan={2}><span className="apac-field-label">4 — Nº DO PRONTUÁRIO</span><div className="apac-field-value">{patientRecord}</div></td></tr>
-            <tr><td colSpan={2}><span className="apac-field-label">5 — CARTÃO NACIONAL DE SAÚDE</span><div className="apac-field-value">{patientCNS}</div></td><td><span className="apac-field-label">6 — DATA NASC.</span><div className="apac-field-value">{patientDOB ? format(new Date(patientDOB + "T12:00:00"), "dd/MM/yyyy") : ""}</div></td><td colSpan={2}><span className="apac-field-label">7 — SEXO</span><div className="apac-field-value">{patientSex === "M" ? "MASCULINO" : patientSex === "F" ? "FEMININO" : ""}</div></td></tr>
-            <tr><td colSpan={3}><span className="apac-field-label">8 — NOME DA MÃE OU RESPONSÁVEL</span><div className="apac-field-value">{patientMotherName.toUpperCase()}</div></td><td colSpan={2}><span className="apac-field-label">9 — TELEFONE</span><div className="apac-field-value">{patientPhone}</div></td></tr>
-            <tr><td colSpan={2}><span className="apac-field-label">10 — ENDEREÇO</span><div className="apac-field-value">{patientAddress.toUpperCase()}</div></td><td><span className="apac-field-label">11 — MUNICÍPIO</span><div className="apac-field-value">{patientCity.toUpperCase()}</div></td><td><span className="apac-field-label">13 — UF</span><div className="apac-field-value">{patientUF}</div></td><td><span className="apac-field-label">14 — CEP</span><div className="apac-field-value"></div></td></tr>
-          </tbody></table>
-          <table className="apac-table"><tbody>
-            <tr><td colSpan={3} className="apac-section-title">PROCEDIMENTO SOLICITADO</td></tr>
-            <tr><td style={{ width: "25%" }}><span className="apac-field-label">15 — CÓDIGO</span><div className="apac-field-value" style={{ fontFamily: "monospace" }}>{selectedProcedures[0]?.code || ""}</div></td><td style={{ width: "60%" }}><span className="apac-field-label">16 — PROCEDIMENTO PRINCIPAL</span><div className="apac-field-value">{selectedProcedures[0]?.name || ""}</div></td><td><span className="apac-field-label">17 — QTD</span><div className="apac-field-value" style={{ textAlign: "center" }}>{selectedProcedures[0]?.qty || ""}</div></td></tr>
-          </tbody></table>
-          <table className="apac-table"><tbody>
-            <tr><td colSpan={3} className="apac-section-title">PROCEDIMENTO(S) SECUNDÁRIO(S)</td></tr>
-            {[1, 2, 3, 4, 5].map((idx) => { const proc = selectedProcedures[idx]; const fn = 18 + (idx - 1) * 3; return (
-              <tr key={idx}><td style={{ width: "25%" }}><span className="apac-field-label">{fn} — CÓDIGO</span><div className="apac-field-value" style={{ fontFamily: "monospace" }}>{proc?.code || ""}</div></td><td style={{ width: "60%" }}><span className="apac-field-label">{fn + 1} — NOME</span><div className="apac-field-value">{proc?.name || ""}</div></td><td><span className="apac-field-label">{fn + 2} — QTD</span><div className="apac-field-value" style={{ textAlign: "center" }}>{proc?.qty || ""}</div></td></tr>
-            ); })}
-          </tbody></table>
-          <table className="apac-table"><tbody>
-            <tr><td colSpan={4} className="apac-section-title">JUSTIFICATIVA DO(S) PROCEDIMENTO(S) SOLICITADO(S)</td></tr>
-            <tr><td><span className="apac-field-label">33 — DIAGNÓSTICO INICIAL</span><div className="apac-field-value">{diagnosis.toUpperCase()}</div></td><td><span className="apac-field-label">34 — CID-10 PRINCIPAL</span><div className="apac-field-value" style={{ fontFamily: "monospace" }}>{cidPrimary.toUpperCase()}</div></td><td><span className="apac-field-label">35 — CID-10 SECUNDÁRIO</span><div className="apac-field-value" style={{ fontFamily: "monospace" }}>{cidSecondary.toUpperCase()}</div></td><td><span className="apac-field-label">36 — CID-10 CAUSAS ASSOC.</span><div className="apac-field-value" style={{ fontFamily: "monospace" }}>{cidAssociated.toUpperCase()}</div></td></tr>
-            <tr><td colSpan={4}><span className="apac-field-label">37 — OBSERVAÇÕES</span><div className="apac-field-value" style={{ minHeight: "100px", whiteSpace: "pre-wrap" }}>{observations}</div></td></tr>
-          </tbody></table>
-          <table className="apac-table"><tbody>
-            <tr><td colSpan={4} className="apac-section-title">SOLICITAÇÃO</td></tr>
-            <tr><td colSpan={2}><span className="apac-field-label">38 — PROFISSIONAL SOLICITANTE</span><div className="apac-field-value">{doctorName.toUpperCase()}</div></td><td><span className="apac-field-label">39 — DATA</span><div className="apac-field-value">{todayFormatted}</div></td><td><span className="apac-field-label">42 — ASSINATURA/CARIMBO</span><div style={{ height: "14px" }}></div></td></tr>
-            <tr><td><span className="apac-field-label">40 — DOC.</span><div className="apac-field-value">(X) CPF ( ) CNS</div></td><td colSpan={3}><span className="apac-field-label">41 — Nº DOCUMENTO</span><div className="apac-field-value" style={{ fontFamily: "monospace" }}>{doctorCPF} {doctorCRM ? `| CRM: ${doctorCRM}` : ""}</div></td></tr>
-          </tbody></table>
-          <table className="apac-table"><tbody>
-            <tr><td colSpan={4} className="apac-section-title">AUTORIZAÇÃO (PREENCHIMENTO PELO AUTORIZADOR)</td></tr>
-            <tr><td colSpan={2}><span className="apac-field-label">43 — PROFISSIONAL AUTORIZADOR</span><div style={{ height: "10px" }}></div></td><td><span className="apac-field-label">44 — CÓD. ÓRGÃO EMISSOR</span><div style={{ height: "10px" }}></div></td><td><span className="apac-field-label">49 — Nº APAC</span><div style={{ height: "10px" }}></div></td></tr>
-            <tr><td><span className="apac-field-label">45 — DOC.</span><div className="apac-field-value">( ) CPF ( ) CNS</div></td><td><span className="apac-field-label">46 — Nº DOC.</span><div style={{ height: "10px" }}></div></td><td><span className="apac-field-label">47 — DATA</span><div style={{ height: "10px" }}></div></td><td><span className="apac-field-label">48 — ASSINATURA/CARIMBO</span><div style={{ height: "14px" }}></div></td></tr>
-          </tbody></table>
+          <table className="apac-form">
+            <colgroup><col className="c1"/><col className="c2"/><col className="c3"/><col className="c4"/><col className="c5"/></colgroup>
+            <tbody>
+              {/* ── ESTABELECIMENTO ── */}
+              <tr><td colSpan={5} className="sec">Identificação do Estabelecimento de Saúde (Solicitante)</td></tr>
+              <tr>
+                <td colSpan={4}><span className="lbl">1 — Nome do Estabelecimento</span><div className="val">{APAC_INSTITUTION.name}</div></td>
+                <td><span className="lbl">2 — CNES</span><div className="val-mono" style={{ fontSize: "9pt" }}>{APAC_INSTITUTION.cnes}</div></td>
+              </tr>
+
+              {/* ── PACIENTE ── */}
+              <tr><td colSpan={5} className="sec">Identificação do Paciente</td></tr>
+              <tr>
+                <td colSpan={3}><span className="lbl">3 — Nome do Paciente</span><div className="val">{apacPatientName.toUpperCase()}</div></td>
+                <td colSpan={2}><span className="lbl">4 — Nº do Prontuário</span><div className="val">{patientRecord}</div></td>
+              </tr>
+              <tr>
+                <td colSpan={2}><span className="lbl">5 — Cartão Nacional de Saúde (CNS)</span><div className="val">{patientCNS}</div></td>
+                <td><span className="lbl">6 — Data de Nascimento</span><div className="val">{patientDOB ? format(new Date(patientDOB + "T12:00:00"), "dd/MM/yyyy") : ""}</div></td>
+                <td colSpan={2}><span className="lbl">7 — Sexo</span><div className="val">{patientSex === "M" ? "Masculino" : patientSex === "F" ? "Feminino" : ""}</div></td>
+              </tr>
+              <tr>
+                <td colSpan={3}><span className="lbl">8 — Nome da Mãe ou Responsável</span><div className="val">{patientMotherName.toUpperCase()}</div></td>
+                <td colSpan={2}><span className="lbl">9 — Telefone de Contato</span><div className="val">{patientPhone}</div></td>
+              </tr>
+              <tr>
+                <td colSpan={2}><span className="lbl">10 — Endereço (Rua, Nº)</span><div className="val">{patientAddress.toUpperCase()}</div></td>
+                <td><span className="lbl">11 — Município</span><div className="val">{patientCity.toUpperCase()}</div></td>
+                <td><span className="lbl">13 — UF</span><div className="val">{patientUF}</div></td>
+                <td><span className="lbl">14 — CEP</span><div className="val"></div></td>
+              </tr>
+
+              {/* ── PROCEDIMENTO PRINCIPAL ── */}
+              <tr><td colSpan={5} className="sec">Procedimento(s) Solicitado(s)</td></tr>
+              <tr>
+                <td><span className="lbl">15 — Código do Procedimento Principal</span><div className="val-mono">{selectedProcedures[0]?.code || ""}</div></td>
+                <td colSpan={3}><span className="lbl">16 — Nome do Procedimento Principal</span><div className="val">{selectedProcedures[0]?.name || ""}</div></td>
+                <td><span className="lbl">17 — Qtde.</span><div className="val" style={{ textAlign: "center" }}>{selectedProcedures[0]?.qty || ""}</div></td>
+              </tr>
+
+              {/* ── PROCEDIMENTOS SECUNDÁRIOS ── */}
+              <tr><td colSpan={5} className="sec">Procedimento(s) Secundário(s)</td></tr>
+              {[1, 2, 3, 4, 5].map((idx) => {
+                const proc = selectedProcedures[idx];
+                const fn = 18 + (idx - 1) * 3;
+                return (
+                  <tr key={idx}>
+                    <td><span className="lbl">{fn} — Código</span><div className="val-mono">{proc?.code || ""}</div></td>
+                    <td colSpan={3}><span className="lbl">{fn + 1} — Nome do Procedimento</span><div className="val">{proc?.name || ""}</div></td>
+                    <td><span className="lbl">{fn + 2} — Qtde.</span><div className="val" style={{ textAlign: "center" }}>{proc?.qty || ""}</div></td>
+                  </tr>
+                );
+              })}
+
+              {/* ── JUSTIFICATIVA ── */}
+              <tr><td colSpan={5} className="sec">Justificativa do(s) Procedimento(s) Solicitado(s)</td></tr>
+              <tr>
+                <td colSpan={2}><span className="lbl">33 — Diagnóstico Inicial</span><div className="val">{diagnosis.toUpperCase()}</div></td>
+                <td><span className="lbl">34 — CID-10 Principal</span><div className="val-mono">{cidPrimary.toUpperCase()}</div></td>
+                <td><span className="lbl">35 — CID-10 Secundário</span><div className="val-mono">{cidSecondary.toUpperCase()}</div></td>
+                <td><span className="lbl">36 — CID-10 Causas Assoc.</span><div className="val-mono">{cidAssociated.toUpperCase()}</div></td>
+              </tr>
+              <tr>
+                <td colSpan={5} className="obs-cell"><span className="lbl">37 — Observações</span><div className="obs-space">{observations}</div></td>
+              </tr>
+
+              {/* ── SOLICITAÇÃO ── */}
+              <tr><td colSpan={5} className="sec">Solicitação</td></tr>
+              <tr>
+                <td colSpan={2}><span className="lbl">38 — Nome do Profissional Solicitante</span><div className="val">{doctorName.toUpperCase()}</div></td>
+                <td><span className="lbl">39 — Data da Solicitação</span><div className="val">{todayFormatted}</div></td>
+                <td><span className="lbl">40 — Doc. (X) CPF ( ) CNS</span><div className="val-mono">{doctorCPF}</div></td>
+                <td><span className="lbl">42 — Assinatura / Carimbo</span><div className="sig-space"></div></td>
+              </tr>
+              <tr>
+                <td colSpan={5}><span className="lbl">41 — Nº do Documento / CRM</span><div className="val-mono">{doctorCPF} {doctorCRM ? `· CRM: ${doctorCRM}` : ""}</div></td>
+              </tr>
+
+              {/* ── AUTORIZAÇÃO ── */}
+              <tr><td colSpan={5} className="sec">Autorização (Preenchimento pelo Autorizador)</td></tr>
+              <tr>
+                <td colSpan={2}><span className="lbl">43 — Nome do Profissional Autorizador</span><div className="sig-space-sm"></div></td>
+                <td><span className="lbl">44 — Cód. Órgão Emissor</span><div className="sig-space-sm"></div></td>
+                <td><span className="lbl">45 — Doc. ( ) CPF ( ) CNS</span><div className="sig-space-sm"></div></td>
+                <td><span className="lbl">49 — Nº da Autorização (APAC)</span><div className="sig-space-sm"></div></td>
+              </tr>
+              <tr>
+                <td><span className="lbl">46 — Nº do Documento</span><div className="sig-space-sm"></div></td>
+                <td colSpan={2}><span className="lbl">47 — Data da Autorização</span><div className="sig-space-sm"></div></td>
+                <td colSpan={2}><span className="lbl">48 — Assinatura e Carimbo (Autorizador)</span><div className="sig-space"></div></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </>
