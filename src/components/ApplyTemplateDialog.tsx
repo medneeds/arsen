@@ -115,10 +115,10 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
               </p>
             </div>
           </div>
-          <DialogDescription className="text-xs uppercase tracking-wider text-muted-foreground">
+          <DialogDescription className="text-xs tracking-wider text-muted-foreground">
             {selectedTemplate
-              ? "SELECIONE E EDITE OS ITENS ANTES DE APLICAR (DUPLO CLIQUE PARA EDITAR)"
-              : "SELECIONE UM PROTOCOLO PARA APLICAR"}
+              ? "Selecione e edite os itens antes de aplicar (duplo clique para editar)"
+              : "Selecione um protocolo para aplicar"}
           </DialogDescription>
         </DialogHeader>
 
