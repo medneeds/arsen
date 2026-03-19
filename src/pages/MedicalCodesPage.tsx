@@ -198,11 +198,11 @@ export default function MedicalCodesPage() {
             <FileCode className="h-6 w-6 text-cyan-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight uppercase">
+            <h1 className="text-3xl font-bold tracking-tight">
               {categoryLabels[category as keyof typeof categoryLabels]}
             </h1>
-            <p className="text-muted-foreground uppercase text-sm">
-              Códigos e Descritivos do Sistema
+            <p className="text-muted-foreground text-sm">
+              Códigos e descritivos do sistema
             </p>
           </div>
         </div>
