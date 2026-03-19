@@ -206,7 +206,7 @@ export default function LandingPage() {
 
           <motion.button
             onClick={() => navigate("/auth")}
-            className="group inline-flex items-center gap-2 px-8 py-3 bg-white text-gray-900 rounded-full text-xs font-semibold uppercase tracking-[0.15em] hover:bg-gray-100 transition-colors duration-300"
+            className="group inline-flex items-center gap-2 px-8 py-3 bg-white text-gray-900 rounded-full text-xs font-semibold tracking-[0.15em] hover:bg-gray-100 transition-colors duration-300"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
