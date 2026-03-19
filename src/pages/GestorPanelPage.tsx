@@ -97,10 +97,10 @@ export default function GestorPanelPage() {
         const alerts: CriticalAlert[] = [];
         occupied.forEach(p => {
           if (p.clinical_status === "gravíssimo" || p.clinical_status === "crítico") {
-            alerts.push({ id: p.id, patientName: p.name, bed: p.bed_number, sector: p.sector, type: "Estado Clínico", detail: `Paciente em estado ${p.clinical_status}`, severity: "critical" });
+            alerts.push({ id: p.id, patientName: p.name, bed: p.bed_number, sector: getSectorDisplayLabel(p.sector), type: "Estado Clínico", detail: `Paciente em estado ${p.clinical_status}`, severity: "critical" });
           }
           if (p.relevant_exams && /crítico|urgente|alerta/i.test(p.relevant_exams)) {
-            alerts.push({ id: p.id + "-exam", patientName: p.name, bed: p.bed_number, sector: p.sector, type: "Exame Crítico", detail: "Resultado com valor crítico identificado", severity: "warning" });
+            alerts.push({ id: p.id + "-exam", patientName: p.name, bed: p.bed_number, sector: getSectorDisplayLabel(p.sector), type: "Exame Crítico", detail: "Resultado com valor crítico identificado", severity: "warning" });
           }
         });
         setCriticalAlerts(alerts);
