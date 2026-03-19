@@ -430,7 +430,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
                   {form.birth_date && <p className="text-muted-foreground">Nascimento: {new Date(form.birth_date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>}
                   {form.sex && <p className="text-muted-foreground">Sexo: {form.sex === 'M' ? 'Masculino' : form.sex === 'F' ? 'Feminino' : 'Outro'}</p>}
                   {form.cpf && <p className="text-muted-foreground">CPF: {form.cpf}</p>}
-                  {form.destination_sector && <p className="text-muted-foreground">Destino: {form.destination_sector}</p>}
+                  {form.destination_sector && <p className="text-muted-foreground">Pedido: {form.destination_sector}</p>}
                 </CardContent>
               </Card>
             )}

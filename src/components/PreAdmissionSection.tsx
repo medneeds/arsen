@@ -175,7 +175,7 @@ export function PreAdmissionSection() {
 
                       {pa.destination_sector && (
                         <p className="text-[10px] text-muted-foreground">
-                          Destino: {pa.destination_sector}
+                          Pedido: {pa.destination_sector}
                         </p>
                       )}
 
