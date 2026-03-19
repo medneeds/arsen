@@ -427,7 +427,7 @@ const RequisicaoUnificadaPage = () => {
       </div>
       <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto print:p-0 print:m-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 print:hidden">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-primary/10">
             <ClipboardList className="h-6 w-6 text-primary" />
