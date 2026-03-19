@@ -269,7 +269,7 @@ const ClinicalDashboardPage = () => {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [currentDepartment, activeSector]);
+  }, [currentDepartment, activeSector, currentHospital, currentState]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
