@@ -1576,6 +1576,170 @@ export type Database = {
         }
         Relationships: []
       }
+      round_responses: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: number
+          observation: string | null
+          professional_id: string | null
+          professional_name: string | null
+          section_code: string
+          session_id: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: number
+          observation?: string | null
+          professional_id?: string | null
+          professional_name?: string | null
+          section_code: string
+          session_id: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: number
+          observation?: string | null
+          professional_id?: string | null
+          professional_name?: string | null
+          section_code?: string
+          session_id?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_responses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "round_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      round_section_goals: {
+        Row: {
+          created_at: string
+          goal: string | null
+          id: string
+          section_code: string
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          goal?: string | null
+          id?: string
+          section_code: string
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          goal?: string | null
+          id?: string
+          section_code?: string
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_section_goals_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "round_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      round_sessions: {
+        Row: {
+          admission_reason: string | null
+          created_at: string
+          created_by: string | null
+          department: string
+          hospital_unit_id: string
+          id: string
+          observations: string | null
+          patient_age: string | null
+          patient_bed: string | null
+          patient_birth_date: string | null
+          patient_id: string | null
+          patient_name: string
+          patient_sector: string | null
+          patient_social_name: string | null
+          round_date: string
+          state_id: string
+          updated_at: string
+        }
+        Insert: {
+          admission_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          hospital_unit_id: string
+          id?: string
+          observations?: string | null
+          patient_age?: string | null
+          patient_bed?: string | null
+          patient_birth_date?: string | null
+          patient_id?: string | null
+          patient_name: string
+          patient_sector?: string | null
+          patient_social_name?: string | null
+          round_date?: string
+          state_id: string
+          updated_at?: string
+        }
+        Update: {
+          admission_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          hospital_unit_id?: string
+          id?: string
+          observations?: string | null
+          patient_age?: string | null
+          patient_bed?: string | null
+          patient_birth_date?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          patient_sector?: string | null
+          patient_social_name?: string | null
+          round_date?: string
+          state_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_sessions_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_sessions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_sessions_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saps3_assessments: {
         Row: {
           admission_reason: string | null
