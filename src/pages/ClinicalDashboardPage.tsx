@@ -60,6 +60,10 @@ const SECTOR_LABELS: Record<string, string> = {
   yellow: "UTI 2",
   blue: "UCI 1",
   outside: "UCI 2",
+  sala_vermelha: "Sala Vermelha",
+  sala_laranja: "Obs. Laranja",
+  ue_vertical: "UE Vertical",
+  ue_horizontal: "UE Horizontal",
 };
 
 function DashboardHeader({ children }: { children: React.ReactNode }) {
