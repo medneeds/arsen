@@ -1312,7 +1312,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           .apac-field-label { font-size: 6.5pt; color: #666; display: block; }
           .apac-field-value { font-size: 9pt; font-weight: 500; min-height: 14px; }
         `}</style>
-        <div style={{ fontFamily: "'Arial', sans-serif", color: "#000" }}>
+        <div style={{ fontFamily: "'Arial', sans-serif", color: "#000", padding: "8mm" }}>
           <div style={{ borderBottom: "2px solid #000", paddingBottom: "4px", marginBottom: "8px", textAlign: "center" }}>
             <p style={{ fontSize: "7pt", margin: 0 }}>Sistema Único de Saúde — Ministério da Saúde</p>
             <h1 style={{ fontSize: "11pt", fontWeight: "bold", margin: "2px 0" }}>LAUDO PARA SOLICITAÇÃO / AUTORIZAÇÃO DE PROCEDIMENTO AMBULATORIAL</h1>
