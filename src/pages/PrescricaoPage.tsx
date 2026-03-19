@@ -2668,6 +2668,17 @@ const PrescricaoPage = () => {
             variant="outline"
             size="sm"
             onClick={() => {
+              if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de prescrever"); return; }
+              setExtraPrescriptionOpen(true);
+            }}
+            className="gap-1.5 text-orange-600 border-orange-200 hover:border-orange-300 hover:text-orange-700"
+          >
+            <Syringe className="h-3.5 w-3.5" /> Prescrição Extra
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
               const activeMeds = items.filter(i => i.status === 'active' && !['nutrition', 'care'].includes(i.category));
               if (activeMeds.length < 2) {
                 toast.error("Mínimo de 2 medicamentos ativos para verificar interações");
