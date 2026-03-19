@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
-import { ClipboardCheck, Search, Save, Download, ChevronDown, ChevronRight, User, Calendar, BedDouble, Stethoscope, Target, MessageSquare, CheckCircle2, Clock } from "lucide-react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { ClipboardCheck, Search, Save, Printer, ChevronDown, ChevronRight, User, Calendar, BedDouble, Stethoscope, Target, MessageSquare, CheckCircle2, Clock } from "lucide-react";
+import PrintableRound from "@/components/PrintableRound";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -280,43 +281,15 @@ export default function RoundPage() {
     }
   };
 
-  const handleExportJSON = () => {
-    if (!selectedPatient) return;
-    const data = {
-      formulario: "round_diario",
-      versao: "1.0",
-      hospital: "Hospital Municipal Djalma Marques – Socorrão I",
-      data_round: roundDate,
-      paciente: {
-        nome: selectedPatient.name,
-        setor: selectedPatient.sector,
-        leito: selectedPatient.bed_number,
-        idade: selectedPatient.age,
-      },
-      secoes: ROUND_SECTIONS.map((s) => ({
-        codigo: s.code,
-        titulo: s.title,
-        meta_do_dia: goals[s.code] || "",
-        itens: s.items.map((item) => {
-          const key = `${s.code}_${item.id}`;
-          return {
-            id: item.id,
-            texto: item.text,
-            status: responses[key]?.status || null,
-            observacao: responses[key]?.observation || "",
-          };
-        }),
-      })),
-      observacoes_importantes: observations,
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `round_${selectedPatient.name.replace(/\s/g, "_")}_${roundDate}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("JSON exportado!");
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrintPDF = () => {
+    if (!selectedPatient || !printRef.current) return;
+    printRef.current.style.display = "block";
+    window.print();
+    setTimeout(() => {
+      if (printRef.current) printRef.current.style.display = "none";
+    }, 500);
   };
 
   return (
@@ -341,9 +314,9 @@ export default function RoundPage() {
           />
           {selectedPatient && (
             <>
-              <Button size="sm" variant="outline" onClick={handleExportJSON} className="text-xs gap-1.5">
-                <Download className="h-3.5 w-3.5" />
-                JSON
+              <Button size="sm" variant="outline" onClick={handlePrintPDF} className="text-xs gap-1.5">
+                <Printer className="h-3.5 w-3.5" />
+                PDF
               </Button>
               <Button size="sm" onClick={handleSave} disabled={saving} className="text-xs gap-1.5">
                 <Save className="h-3.5 w-3.5" />
@@ -546,9 +519,9 @@ export default function RoundPage() {
 
             {/* Footer actions */}
             <div className="flex justify-end gap-2 pb-4">
-              <Button variant="outline" onClick={handleExportJSON} className="text-xs gap-1.5">
-                <Download className="h-3.5 w-3.5" />
-                Exportar JSON
+              <Button variant="outline" onClick={handlePrintPDF} className="text-xs gap-1.5">
+                <Printer className="h-3.5 w-3.5" />
+                Imprimir PDF
               </Button>
               <Button onClick={handleSave} disabled={saving} className="text-xs gap-1.5">
                 <Save className="h-3.5 w-3.5" />
@@ -564,6 +537,21 @@ export default function RoundPage() {
           <Clock className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
           <span className="text-sm text-muted-foreground">Carregando round...</span>
         </div>
+      )}
+
+      {/* Printable layout */}
+      {selectedPatient && (
+        <PrintableRound
+          ref={printRef}
+          patientName={selectedPatient.name}
+          patientSector={selectedPatient.sector}
+          patientBed={selectedPatient.bed_number}
+          patientAge={selectedPatient.age}
+          roundDate={roundDate}
+          responses={responses}
+          goals={goals}
+          observations={observations}
+        />
       )}
     </div>
   );
