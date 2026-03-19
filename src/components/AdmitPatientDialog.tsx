@@ -205,6 +205,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         setSelectedBed("");
         setAdmissionNotes("");
         setFullData(null);
+        setExtraBedRequested(false);
+        setSectorFullAlert(false);
         navigate(`/saps3?${params.toString()}`);
         return;
       }
