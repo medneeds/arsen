@@ -238,13 +238,13 @@ export default function VersionsPage() {
         <CardContent className="pt-6 space-y-6">
           {/* Quick Period Buttons */}
           <div className="space-y-3">
-            <Label className="uppercase text-sm font-semibold">Período Rápido</Label>
+            <Label className="text-sm font-semibold">Período Rápido</Label>
             <div className="flex flex-wrap gap-2">
               <Button
                 variant={selectedPeriod === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("all")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Todos
               </Button>
@@ -252,7 +252,7 @@ export default function VersionsPage() {
                 variant={selectedPeriod === "today" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("today")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Hoje
               </Button>
@@ -260,7 +260,7 @@ export default function VersionsPage() {
                 variant={selectedPeriod === "week" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("week")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Última Semana
               </Button>
@@ -268,7 +268,7 @@ export default function VersionsPage() {
                 variant={selectedPeriod === "month" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("month")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Último Mês
               </Button>
@@ -276,7 +276,7 @@ export default function VersionsPage() {
                 variant={selectedPeriod === "quarter" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("quarter")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Último Trimestre
               </Button>
