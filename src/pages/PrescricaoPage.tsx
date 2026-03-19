@@ -1478,6 +1478,7 @@ const PrescricaoPage = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [freeRecommendation, setFreeRecommendation] = useState("");
   const [appliedCareProfiles, setAppliedCareProfiles] = useState<Set<string>>(new Set());
+  const [historyDate, setHistoryDate] = useState<Date | undefined>(undefined);
 
   // Phase 3 state
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
@@ -1498,6 +1499,40 @@ const PrescricaoPage = () => {
   const [loadingList, setLoadingList] = useState(false);
   const [versionHistory, setVersionHistory] = useState<Array<{ id: string; version: number; status: string; created_at: string; digital_signature: DigitalSignature | null }>>([]);
   const [showHistory, setShowHistory] = useState(false);
+
+  // Validation: check if past 05:00 renewal time
+  const isPastRenewalTime = useMemo(() => {
+    const now = new Date();
+    const renewalTime = setSeconds(setMinutes(setHours(startOfDay(now), 5), 0), 0);
+    return isAfter(now, renewalTime);
+  }, []);
+
+  // All items validated check
+  const allItemsValidated = useMemo(() => {
+    const activeItems = items.filter(i => i.status === 'active');
+    return activeItems.length > 0 && activeItems.every(i => i.validated && !isPastRenewalTime || (i.validated && i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)));
+  }, [items, isPastRenewalTime]);
+
+  // Toggle validation
+  const toggleValidation = useCallback((id: string) => {
+    setItems(prev => prev.map(item => {
+      if (item.id !== id) return item;
+      return {
+        ...item,
+        validated: !item.validated,
+        validatedAt: !item.validated ? new Date().toISOString() : undefined,
+      };
+    }));
+  }, []);
+
+  // Validate all items at once
+  const validateAllItems = useCallback(() => {
+    const now = new Date().toISOString();
+    setItems(prev => prev.map(item =>
+      item.status === 'active' ? { ...item, validated: true, validatedAt: now } : item
+    ));
+    toast.success("Todos os itens validados");
+  }, []);
 
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 
