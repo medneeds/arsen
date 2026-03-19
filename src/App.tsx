@@ -486,6 +486,16 @@ const App = () => {
           }
         />
         <Route
+          path="/setor-laboratorio"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <SetorLaboratorioPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/saps3"
           element={
             <ProtectedRoute>

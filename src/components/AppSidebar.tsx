@@ -187,6 +187,12 @@ export function AppSidebar({
         { title: "Painel de Imagem", icon: LayoutDashboard, link: "/setor-imagem", profiles: ["imagem"] },
       ];
     }
+    // Laboratorio: lab sector environment
+    if (accessProfile === "laboratorio") {
+      return [
+        { title: "Painel Laboratorial", icon: LayoutDashboard, link: "/setor-laboratorio", profiles: ["laboratorio"] },
+      ];
+    }
     // Filter sections by profile, then filter sub-items within each section
     return allMenuItems
       .filter(section => !section.profiles || section.profiles.includes(accessProfile))

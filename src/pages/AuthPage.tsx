@@ -218,7 +218,7 @@ export default function AuthPage() {
     <>
       {showLoadingScreen && (
         <LoadingScreen
-          onComplete={() => navigate(selectedProfile === "imagem" ? "/setor-imagem" : "/")}
+          onComplete={() => navigate(selectedProfile === "imagem" ? "/setor-imagem" : selectedProfile === "laboratorio" ? "/setor-laboratorio" : "/")}
           duration={2000}
         />
       )}
