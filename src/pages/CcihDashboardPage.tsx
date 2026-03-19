@@ -139,7 +139,7 @@ const CcihDashboardPage = () => {
       const [patientsRes, culturesRes] = await Promise.all([
         supabase
           .from("patients")
-          .select("id, name, bed_number, sector, age, diagnoses, uti_cultures_antibiotics")
+          .select("id, name, bed_number, sector, age, diagnoses, admission_date, uti_cultures_antibiotics")
           .eq("hospital_unit_id", hospitalId)
           .eq("state_id", stateId)
           .eq("is_vacant", false)
