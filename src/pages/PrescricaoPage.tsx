@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { ClinicalHeader } from "@/components/ClinicalHeader";
 import ReactMarkdown from "react-markdown";
 import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay } from "date-fns";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
