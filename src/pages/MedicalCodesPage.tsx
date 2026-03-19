@@ -366,8 +366,8 @@ export default function MedicalCodesPage() {
               />
             </div>
             <div className="grid gap-3">
-              <Label htmlFor="description" className="uppercase text-sm font-semibold">
-                Descritivo no Sistema
+              <Label htmlFor="description" className="text-sm font-semibold">
+                Descritivo no sistema
               </Label>
               <Textarea
                 id="description"
@@ -375,11 +375,11 @@ export default function MedicalCodesPage() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    system_description: e.target.value.toUpperCase(),
+                    system_description: e.target.value,
                   })
                 }
                 placeholder="Como é escrito no sistema"
-                className="uppercase min-h-24 resize-none"
+                className="min-h-24 resize-none"
               />
             </div>
           </div>
