@@ -2903,7 +2903,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   {/* Diagnósticos (resumo) */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Diagnósticos</span>
+                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 tracking-wider mb-0.5">Diagnósticos</span>
                     {patient.diagnoses.length > 0 ? (
                       <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
                         {patient.diagnoses.map((d, i) => (
