@@ -262,7 +262,7 @@ const InternmentHistoryPage = () => {
                 variant={selectedPeriod === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePeriodChange("all")}
-                className="uppercase text-xs"
+                className="text-xs"
               >
                 Todos
               </Button>
