@@ -468,6 +468,11 @@ const RequisicaoUnificadaPage = () => {
         })}
       </div>
 
+      {/* ── APAC mode: show embedded APAC form ── */}
+      {activeCategory === "apac" ? (
+        <ApacEmbeddedForm patientName={formPatientName} patientBed={formPatientBed} patientSector={formPatientSector} />
+      ) : (
+      <>
       {/* ── Sub Tabs: Solicitar | Solicitados | Resultados ── */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
