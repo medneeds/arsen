@@ -555,6 +555,16 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/alta-desfecho"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <AltaDesfechoPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
