@@ -281,43 +281,15 @@ export default function RoundPage() {
     }
   };
 
-  const handleExportJSON = () => {
-    if (!selectedPatient) return;
-    const data = {
-      formulario: "round_diario",
-      versao: "1.0",
-      hospital: "Hospital Municipal Djalma Marques – Socorrão I",
-      data_round: roundDate,
-      paciente: {
-        nome: selectedPatient.name,
-        setor: selectedPatient.sector,
-        leito: selectedPatient.bed_number,
-        idade: selectedPatient.age,
-      },
-      secoes: ROUND_SECTIONS.map((s) => ({
-        codigo: s.code,
-        titulo: s.title,
-        meta_do_dia: goals[s.code] || "",
-        itens: s.items.map((item) => {
-          const key = `${s.code}_${item.id}`;
-          return {
-            id: item.id,
-            texto: item.text,
-            status: responses[key]?.status || null,
-            observacao: responses[key]?.observation || "",
-          };
-        }),
-      })),
-      observacoes_importantes: observations,
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `round_${selectedPatient.name.replace(/\s/g, "_")}_${roundDate}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("JSON exportado!");
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrintPDF = () => {
+    if (!selectedPatient || !printRef.current) return;
+    printRef.current.style.display = "block";
+    window.print();
+    setTimeout(() => {
+      if (printRef.current) printRef.current.style.display = "none";
+    }, 500);
   };
 
   return (
