@@ -201,10 +201,10 @@ export default function VersionsPage() {
             <History className="h-6 w-6 text-purple-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight uppercase">
+            <h1 className="text-3xl font-bold tracking-tight">
               Versões Salvas
             </h1>
-            <p className="text-muted-foreground uppercase text-sm">
+            <p className="text-muted-foreground text-sm">
               {currentDepartment} • Histórico de versões do mapa de pacientes
             </p>
           </div>
