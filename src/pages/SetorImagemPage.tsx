@@ -139,9 +139,9 @@ const SetorImagemPage = () => {
     return requests.filter((r) => {
       // Status tab filter
       if (activeTab === "pending" && r.status !== "pending") return false;
+      if (activeTab === "acknowledged" && r.status !== "acknowledged") return false;
       if (activeTab === "in_progress" && r.status !== "in_progress") return false;
       if (activeTab === "completed" && r.status !== "completed") return false;
-      if (activeTab === "all" && false) return false; // show all
 
       // Modality filter
       if (selectedModality !== "all") {
