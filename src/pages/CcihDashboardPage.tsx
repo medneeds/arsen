@@ -57,6 +57,7 @@ interface PatientBasic {
   diagnoses: string | null;
   admission_date: string | null;
   uti_cultures_antibiotics: string | null;
+  uti_devices: string | null;
 }
 
 interface CultureExamRequest {
