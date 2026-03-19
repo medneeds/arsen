@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { Camera, Upload, User, MapPin, Loader2, Sparkles, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface PatientRegistrationDialogProps {
   open: boolean;
@@ -157,8 +159,9 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
     try {
       const { data: userData } = await supabase.auth.getUser();
       
-      // If destination is UTI, set special status for the admission workflow
-      const isUtiDestination = form.destination_sector === "UTI 1" || form.destination_sector === "UTI 2";
+      // If destination includes any UTI, set special status for the admission workflow
+      const selectedSectors = form.destination_sector.split(", ").filter(Boolean);
+      const isUtiDestination = selectedSectors.some(s => s.startsWith("UTI"));
       const status = isUtiDestination ? "aguardando_leito_uti" : "pre_admissao";
       const successMessage = isUtiDestination 
         ? "Solicitação de leito UTI enviada para avaliação médica"
@@ -231,7 +234,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
             </TabsTrigger>
             <TabsTrigger value="destino" className="text-xs gap-1">
               <MapPin className="h-3.5 w-3.5" />
-              Setor Destino
+              Pedido de Leito
             </TabsTrigger>
           </TabsList>
 
@@ -368,19 +371,35 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
           {/* Tab 3: Destination */}
           <TabsContent value="destino" className="space-y-4 mt-4">
             <div>
-              <Label className="text-xs font-semibold">Setor de Destino</Label>
-              <Select value={form.destination_sector} onValueChange={v => updateField("destination_sector", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione o setor" /></SelectTrigger>
-                <SelectContent>
-                  {SECTORS.map(s => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs font-semibold">Pedido de Leito (selecione um ou mais setores)</Label>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {SECTORS.map(s => {
+                  const selected = form.destination_sector.split(", ").filter(Boolean);
+                  const isChecked = selected.includes(s);
+                  return (
+                    <label key={s} className={cn(
+                      "flex items-center gap-2 p-2 rounded-md border cursor-pointer text-sm transition-colors",
+                      isChecked ? "border-primary bg-primary/10 text-primary font-medium" : "border-border hover:bg-muted/50"
+                    )}>
+                      <Checkbox
+                        checked={isChecked}
+                        onCheckedChange={(checked) => {
+                          const current = form.destination_sector.split(", ").filter(Boolean);
+                          const updated = checked
+                            ? [...current, s]
+                            : current.filter(x => x !== s);
+                          updateField("destination_sector", updated.join(", "));
+                        }}
+                      />
+                      {s}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
             {/* UTI destination notice */}
-            {(form.destination_sector === "UTI 1" || form.destination_sector === "UTI 2") && (
+            {form.destination_sector.split(", ").some(s => s.startsWith("UTI")) && (
               <Card className="border-amber-500/30 bg-amber-500/5">
                 <CardContent className="p-4 flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
@@ -413,7 +432,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
                   {form.birth_date && <p className="text-muted-foreground">Nascimento: {new Date(form.birth_date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>}
                   {form.sex && <p className="text-muted-foreground">Sexo: {form.sex === 'M' ? 'Masculino' : form.sex === 'F' ? 'Feminino' : 'Outro'}</p>}
                   {form.cpf && <p className="text-muted-foreground">CPF: {form.cpf}</p>}
-                  {form.destination_sector && <p className="text-muted-foreground">Destino: {form.destination_sector}</p>}
+                  {form.destination_sector && <p className="text-muted-foreground">Pedido: {form.destination_sector}</p>}
                 </CardContent>
               </Card>
             )}

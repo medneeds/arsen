@@ -720,7 +720,7 @@ export default function Saps3Page() {
                   <p className="text-lg font-bold text-foreground">{patientName}</p>
                   {selectedRequest?.destination_sector && (
                     <p className="text-xs text-muted-foreground">
-                      Solicitação para: {selectedRequest.destination_sector}
+                      Pedido: {selectedRequest.destination_sector}
                     </p>
                   )}
                 </div>
