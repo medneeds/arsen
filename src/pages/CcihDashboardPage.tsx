@@ -260,6 +260,13 @@ const CcihDashboardPage = () => {
       });
       setDetailCultureRequests(cultureExams as CultureExamRequest[]);
 
+      // Separate lab and imaging exams (non-culture)
+      const allExams = examRes.data || [];
+      const labExams = allExams.filter((req: any) => (req.category === "laboratorio") && !cultureExams.some((c: any) => c.id === req.id));
+      const imagingExams = allExams.filter((req: any) => req.category === "imagem");
+      setDetailLabExams(labExams as CultureExamRequest[]);
+      setDetailImagingExams(imagingExams as CultureExamRequest[]);
+
       // Filter prescriptions that contain antibiotic items
       const antibioticKeywords = [
         "antibiótico", "antimicrobiano", "amoxicilina", "ampicilina", "azitromicina",
