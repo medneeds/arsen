@@ -97,6 +97,26 @@ export function formatBedDisplay(bedNumber: string): string {
 }
 
 /**
+ * Central mapping from internal sector codes to display labels.
+ * Use this everywhere instead of local mappings.
+ */
+export const SECTOR_DISPLAY_LABELS: Record<string, string> = {
+  red: 'UTI 1',
+  yellow: 'UTI 2',
+  blue: 'UCI 1',
+  outside: 'UCI 2',
+};
+
+/**
+ * Returns the display label for a sector code.
+ * Falls back to the raw code if unknown.
+ */
+export function getSectorDisplayLabel(sector: string | null | undefined): string {
+  if (!sector) return '';
+  return SECTOR_DISPLAY_LABELS[sector] || SECTOR_BED_CONFIG[sector]?.label || sector;
+}
+
+/**
  * Derives the UTI/UCI sector name from a bed number (L-prefixed).
  * UTI 1: L01–L08, UTI 2: L09–L18, UCI 1: L19–L26, UCI 2: L27–L34
  */
