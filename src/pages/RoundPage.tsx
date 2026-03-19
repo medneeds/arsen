@@ -390,7 +390,7 @@ export default function RoundPage() {
                 <div className="min-w-0">
                   <div className="font-semibold text-foreground truncate">{selectedPatient.name}</div>
                   <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-                    <span className="flex items-center gap-1"><BedDouble className="h-3 w-3" />{selectedPatient.sector} – Leito {selectedPatient.bed_number}</span>
+                    <span className="flex items-center gap-1"><BedDouble className="h-3 w-3" />{getSectorLabel(selectedPatient.sector)} – Leito {selectedPatient.bed_number}</span>
                     {selectedPatient.age && <span>• {selectedPatient.age}</span>}
                     <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{format(new Date(roundDate), "dd/MM/yyyy")}</span>
                   </div>
