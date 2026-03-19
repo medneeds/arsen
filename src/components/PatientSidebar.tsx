@@ -171,7 +171,7 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1.5">
                   <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">História Admissional</h4>
+                  <h4 className="text-xs font-semibold text-muted-foreground tracking-wide">História admissional</h4>
                 </div>
                 <p className="text-xs text-foreground pl-5 leading-relaxed whitespace-pre-line">
                   {patient.admissionHistory}
