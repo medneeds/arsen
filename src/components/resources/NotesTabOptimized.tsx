@@ -360,8 +360,8 @@ const NotesTabOptimized = () => {
               />
 
               <div className="flex items-center justify-between print:hidden">
-                <div className="text-xs text-muted-foreground uppercase">
-                  {notes.length} CARACTERES
+                <div className="text-xs text-muted-foreground">
+                  {notes.length} caracteres
                 </div>
 
                 <div className="flex gap-2">
