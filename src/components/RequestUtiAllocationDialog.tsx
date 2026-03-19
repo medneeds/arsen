@@ -368,12 +368,12 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase">Setor de Origem</Label>
+              <Label className="text-xs font-semibold">Setor de Origem</Label>
               <Input
                 value={originSector}
-                onChange={(e) => setOriginSector(e.target.value.toUpperCase())}
-                placeholder="EX: EMERGÊNCIA, ENFERMARIA..."
-                className="h-9 text-xs uppercase"
+                onChange={(e) => setOriginSector(e.target.value)}
+                placeholder="Ex: Emergência, Enfermaria..."
+                className="h-9 text-xs"
               />
             </div>
           </div>
