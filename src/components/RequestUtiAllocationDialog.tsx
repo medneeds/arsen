@@ -358,13 +358,13 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
           {/* Requesting Doctor Info */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-xs font-semibold uppercase">Médico Solicitante</Label>
+              <Label className="text-xs font-semibold">Médico Solicitante</Label>
               <Input
                 ref={doctorNameRef}
                 value={requestingDoctorName}
-                onChange={(e) => setRequestingDoctorName(e.target.value.toUpperCase())}
-                placeholder="NOME DO MÉDICO"
-                className="h-9 text-xs uppercase"
+                onChange={(e) => setRequestingDoctorName(e.target.value)}
+                placeholder="Nome do médico"
+                className="h-9 text-xs"
               />
             </div>
             <div className="space-y-2">
