@@ -96,7 +96,7 @@ export default function MedicalCodesPage() {
 
   const handleSave = async () => {
     if (!formData.code || !formData.name || !formData.system_description) {
-      toast.error("PREENCHA TODOS OS CAMPOS");
+      toast.error("Preencha todos os campos");
       return;
     }
 
