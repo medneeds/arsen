@@ -94,7 +94,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
 
       if (insertError) {
         console.error("Erro ao criar solicitação:", insertError);
-        toast.error("ERRO AO REGISTRAR SOLICITAÇÃO");
+        toast.error("Erro ao registrar solicitação");
         setLoading(false);
         return;
       }
