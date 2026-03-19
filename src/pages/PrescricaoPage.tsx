@@ -103,6 +103,7 @@ interface PrescriptionItem {
   validatedAt?: string;
   // Detailed prescription fields
   quantity?: string;          // Quantidade
+  quantityUnit?: string;      // Unidade da quantidade (mL, ampola, frasco-ampola, comp, gota, mg, etc.)
   action?: string;            // Fazer/Retirar
   diluent?: string;           // Diluente (SF0,9%, SG5%, AD, etc.)
   diluentVolume?: string;     // Volume do diluente (mL)
