@@ -404,7 +404,7 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] uppercase text-muted-foreground">Sexo</Label>
+                <Label className="text-[10px] text-muted-foreground">Sexo</Label>
                 <Select value={patientSex} onValueChange={setPatientSex}>
                   <SelectTrigger className="h-8 text-xs">
                     <SelectValue placeholder="—" />
