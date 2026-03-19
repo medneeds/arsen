@@ -344,12 +344,12 @@ function MedicationAutocomplete({
 
   const filtered = useMemo(() => {
     if (!query.trim()) return source.slice(0, 8);
-    const q = query.toLowerCase();
+    const q = normalizeSearch(query);
     return source.filter(
       (m) =>
-        m.name.toLowerCase().includes(q) ||
-        m.presentation.toLowerCase().includes(q) ||
-        (m.aliases && m.aliases.some(a => a.toLowerCase().includes(q)))
+        normalizeSearch(m.name).includes(q) ||
+        normalizeSearch(m.presentation).includes(q) ||
+        (m.aliases && m.aliases.some(a => normalizeSearch(a).includes(q)))
     ).slice(0, 10);
   }, [query, source]);
 
