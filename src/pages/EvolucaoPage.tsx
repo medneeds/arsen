@@ -204,7 +204,7 @@ const EvolucaoPage = () => {
             </div>
             <div className="flex gap-3">
               <div>
-                <Label className="text-[10px] text-muted-foreground uppercase">Leito</Label>
+                <Label className="text-[10px] text-muted-foreground">Leito</Label>
                 <div className="flex items-center gap-1">
                   <BedDouble className="h-3 w-3 text-muted-foreground" />
                   <p className="text-sm font-semibold">{patient.bed}</p>
