@@ -73,8 +73,8 @@ export default function CuidadosPaliativosPage() {
           </CardHeader>
           <CardContent className="p-8 space-y-6">
             <div className="prose prose-sm max-w-none dark:prose-invert">
-              <h3 className="text-lg font-semibold uppercase text-foreground mb-4">Objetivo do Termo</h3>
-              <p className="text-muted-foreground uppercase leading-relaxed">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Objetivo do Termo</h3>
+              <p className="text-muted-foreground leading-relaxed">
                 O presente termo de aceite de tratamento em cuidados paliativos tem o objetivo de cumprir 
                 o dever ético de informar ao paciente e seu responsável legal quanto aos principais aspectos 
                 relacionados à implementação dos cuidados paliativos.
