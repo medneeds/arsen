@@ -376,7 +376,7 @@ export default function AuditLogsPage() {
                                         </p>
                                       </div>
                                       <div className="bg-gray-50 rounded-lg p-3">
-                                        <p className="text-[10px] text-gray-500 uppercase font-medium">ID do Registro</p>
+                                        <p className="text-[10px] text-gray-500 font-medium">ID do Registro</p>
                                         <p className="text-xs font-mono">{selectedLog.record_id || "-"}</p>
                                       </div>
                                       <div className="bg-gray-50 rounded-lg p-3 col-span-2">
