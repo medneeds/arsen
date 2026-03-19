@@ -171,7 +171,7 @@ export default function MedicalCodesPage() {
 
   const openDialog = (code?: MedicalCode) => {
     if (role !== 'admin') {
-      toast.error("APENAS ADMINISTRADORES PODEM CRIAR OU EDITAR CÓDIGOS MÉDICOS");
+      toast.error("Apenas administradores podem criar ou editar códigos médicos");
       return;
     }
 
