@@ -598,16 +598,16 @@ export default function AuthPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="password" className="text-[10px] font-medium text-white/40 uppercase mb-1.5 block tracking-[0.15em]">Senha</Label>
+                    <Label htmlFor="password" className="text-[10px] font-medium text-white/40 mb-1.5 block tracking-[0.15em]">Senha</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
                         value={loginData.password}
-                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value.toUpperCase() })}
-                        placeholder="DIGITE SUA SENHA"
-                        className="pl-10 pr-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm uppercase font-medium text-white placeholder:text-white/20 focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 focus:bg-white/[0.08] transition-all"
+                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                        placeholder="Digite sua senha"
+                        className="pl-10 pr-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm font-medium text-white placeholder:text-white/20 focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 focus:bg-white/[0.08] transition-all"
                         disabled={loading}
                         autoComplete="current-password"
                       />
