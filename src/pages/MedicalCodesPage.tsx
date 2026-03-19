@@ -102,9 +102,9 @@ export default function MedicalCodesPage() {
 
     const dataToSave = {
       ...formData,
-      code: formData.code.toUpperCase(),
-      name: formData.name.toUpperCase(),
-      system_description: formData.system_description.toUpperCase(),
+      code: formData.code,
+      name: formData.name,
+      system_description: formData.system_description,
       category,
     };
 
