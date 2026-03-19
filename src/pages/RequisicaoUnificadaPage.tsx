@@ -857,13 +857,13 @@ const RequisicaoUnificadaPage = () => {
         )}
       </Tabs>
 
-      {/* ── Result Dialog ── */}
+      {/* ── Result Dialog (read-only for physicians) ── */}
       <Dialog open={!!viewingRequest} onOpenChange={() => { setViewingRequest(null); setResultText(""); setResultFiles([]); }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
-              {viewingRequest?.status === "completed" ? "Visualizar Resultado" : "Registrar Resultado"}
+              {viewingRequest?.status === "completed" ? "Visualizar Resultado" : "Requisição Solicitada"}
             </DialogTitle>
             <DialogDescription>
               {viewingRequest?.patient_name} — {CATEGORIES[activeCategory].shortLabel}
@@ -915,15 +915,23 @@ const RequisicaoUnificadaPage = () => {
                 </div>
               </div>
 
-              {/* Result input with text + image + PDF */}
-              <ExamResultInput
-                resultText={resultText}
-                onResultTextChange={setResultText}
-                resultFiles={resultFiles}
-                onResultFilesChange={setResultFiles}
-                readOnly={viewingRequest.status === "completed"}
-                requestId={viewingRequest.id}
-              />
+              {/* Result display (read-only — physicians only view results) */}
+              {viewingRequest.status === "completed" ? (
+                <ExamResultInput
+                  resultText={resultText}
+                  onResultTextChange={() => {}}
+                  resultFiles={resultFiles}
+                  onResultFilesChange={() => {}}
+                  readOnly={true}
+                  requestId={viewingRequest.id}
+                />
+              ) : (
+                <div className="p-4 rounded-lg border border-border/50 bg-muted/20 text-center">
+                  <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                  <p className="text-sm text-muted-foreground">Aguardando resultado do setor responsável</p>
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">O resultado será importado pelo setor de {activeCategory === "laboratorio" ? "laboratório" : activeCategory === "imagem" ? "imagem" : "parecer"}</p>
+                </div>
+              )}
 
               {viewingRequest.completed_at && (
                 <p className="text-[10px] text-muted-foreground">
@@ -932,15 +940,19 @@ const RequisicaoUnificadaPage = () => {
               )}
             </div>
           )}
-          {viewingRequest?.status !== "completed" && (
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setViewingRequest(null)}>Cancelar</Button>
-              <Button onClick={handleSaveResult} disabled={savingResult || (!resultText.trim() && resultFiles.length === 0)} className="gap-2">
-                {savingResult ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                Salvar Resultado
+          <DialogFooter>
+            {viewingRequest?.status === "completed" && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 text-xs mr-auto"
+                onClick={() => printRequisitionGuide(viewingRequest, (s) => getSectorLabel(s))}
+              >
+                <Printer className="h-3.5 w-3.5" /> Imprimir Guia
               </Button>
-            </DialogFooter>
-          )}
+            )}
+            <Button variant="outline" onClick={() => setViewingRequest(null)}>Fechar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       </div>
