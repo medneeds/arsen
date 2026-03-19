@@ -151,7 +151,7 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6 }}
           >
-            <p className="text-[10px] uppercase tracking-[0.3em] text-gray-400 mb-3 font-medium">
+            <p className="text-[10px] tracking-[0.3em] text-gray-400 mb-3 font-medium">
               Plataforma
             </p>
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
