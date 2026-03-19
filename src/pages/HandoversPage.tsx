@@ -220,7 +220,7 @@ export default function HandoversPage() {
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 space-y-2">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <CardTitle className="text-base font-bold uppercase">
+                              <CardTitle className="text-base font-bold">
                                 {formatHandoverDatetime(handover.handover_datetime)}
                               </CardTitle>
                             </div>
