@@ -193,6 +193,12 @@ export function AppSidebar({
         { title: "Painel Laboratorial", icon: LayoutDashboard, link: "/setor-laboratorio", profiles: ["laboratorio"] },
       ];
     }
+    // CCIH: infection control environment
+    if (accessProfile === "ccih") {
+      return [
+        { title: "Painel CCIH", icon: LayoutDashboard, link: "/ccih", profiles: ["ccih"] },
+      ];
+    }
     // Filter sections by profile, then filter sub-items within each section
     return allMenuItems
       .filter(section => !section.profiles || section.profiles.includes(accessProfile))

@@ -55,6 +55,7 @@ import SetorLaboratorioPage from "./pages/SetorLaboratorioPage";
 import Saps3Page from "./pages/Saps3Page";
 import ClinicalDashboardPage from "./pages/ClinicalDashboardPage";
 import ProtocolosUtiPage from "./pages/ProtocolosUtiPage";
+import CcihDashboardPage from "./pages/CcihDashboardPage";
 
 const queryClient = new QueryClient();
 
@@ -501,6 +502,16 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
                 <Saps3Page />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ccih"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <CcihDashboardPage />
               </MainLayout>
             </ProtectedRoute>
           }

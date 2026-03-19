@@ -302,6 +302,106 @@ export type Database = {
           },
         ]
       }
+      culture_results: {
+        Row: {
+          antibiogram: string | null
+          collection_date: string | null
+          created_at: string
+          culture_type: string
+          department: string
+          hospital_unit_id: string
+          id: string
+          microorganism: string | null
+          notified_at: string | null
+          patient_bed: string | null
+          patient_id: string | null
+          patient_name: string
+          patient_sector: string
+          read_at: string | null
+          read_by_doctor: boolean | null
+          result_files: Json | null
+          result_text: string | null
+          sensitivity_profile: string | null
+          state_id: string
+          status: string
+          updated_at: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+        }
+        Insert: {
+          antibiogram?: string | null
+          collection_date?: string | null
+          created_at?: string
+          culture_type?: string
+          department?: string
+          hospital_unit_id: string
+          id?: string
+          microorganism?: string | null
+          notified_at?: string | null
+          patient_bed?: string | null
+          patient_id?: string | null
+          patient_name: string
+          patient_sector: string
+          read_at?: string | null
+          read_by_doctor?: boolean | null
+          result_files?: Json | null
+          result_text?: string | null
+          sensitivity_profile?: string | null
+          state_id: string
+          status?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+        }
+        Update: {
+          antibiogram?: string | null
+          collection_date?: string | null
+          created_at?: string
+          culture_type?: string
+          department?: string
+          hospital_unit_id?: string
+          id?: string
+          microorganism?: string | null
+          notified_at?: string | null
+          patient_bed?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          patient_sector?: string
+          read_at?: string | null
+          read_by_doctor?: boolean | null
+          result_files?: Json | null
+          result_text?: string | null
+          sensitivity_profile?: string | null
+          state_id?: string
+          status?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "culture_results_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "culture_results_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "culture_results_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_requests: {
         Row: {
           created_at: string
