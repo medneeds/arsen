@@ -7,6 +7,7 @@ import {
   TestTubes, ScanLine, UserCheck, Plus, Search, Clock, CheckCircle2,
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
   ChevronDown, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
+  CalendarIcon,
 } from "lucide-react";
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
@@ -159,9 +160,8 @@ const CATEGORIES = {
 type CategoryKey = keyof typeof CATEGORIES;
 
 const PRIORITY_OPTIONS = [
-  { value: "rotina", label: "Rotina", color: "text-muted-foreground" },
-  { value: "urgente", label: "Urgente", color: "text-amber-600" },
-  { value: "emergencia", label: "Emergência", color: "text-destructive" },
+  { value: "programado", label: "Programado", color: "text-blue-600" },
+  { value: "urgente", label: "Urgente", color: "text-red-600" },
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock; dotColor: string; pulsing: boolean }> = {
@@ -192,7 +192,9 @@ const RequisicaoUnificadaPage = () => {
   const [formPatientName, setFormPatientName] = useState("");
   const [formPatientBed, setFormPatientBed] = useState("");
   const [formPatientSector, setFormPatientSector] = useState("");
-  const [formPriority, setFormPriority] = useState("rotina");
+  const [formPriority, setFormPriority] = useState("programado");
+  const [formScheduledDate, setFormScheduledDate] = useState("");
+  const [formScheduledTime, setFormScheduledTime] = useState("");
   const [formIndication, setFormIndication] = useState("");
   const [formNotes, setFormNotes] = useState("");
   const [formSelectedItems, setFormSelectedItems] = useState<string[]>([]);
@@ -308,7 +310,9 @@ const RequisicaoUnificadaPage = () => {
     setFormPatientName("");
     setFormPatientBed("");
     setFormPatientSector("");
-    setFormPriority("rotina");
+    setFormPriority("programado");
+    setFormScheduledDate("");
+    setFormScheduledTime("");
     setFormIndication("");
     setFormNotes("");
     setFormSelectedItems([]);
@@ -319,10 +323,19 @@ const RequisicaoUnificadaPage = () => {
   const handleSubmitRequest = async () => {
     if (!formPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
     if (formSelectedItems.length === 0) { toast.error("Selecione ao menos um item"); return; }
+    if (!formIndication.trim()) { toast.error("Informe a justificativa clínica"); return; }
+    if (formPriority === "programado" && !formScheduledDate) { toast.error("Informe a data programada"); return; }
     if (!unitId || !stateId || !user) return;
 
     setSubmitting(true);
     try {
+      // Build notes with scheduled info if programado
+      let notesContent = formNotes.trim() || "";
+      if (formPriority === "programado" && formScheduledDate) {
+        const scheduledInfo = `[PROGRAMADO: ${formScheduledDate}${formScheduledTime ? " às " + formScheduledTime : ""}]`;
+        notesContent = scheduledInfo + (notesContent ? "\n" + notesContent : "");
+      }
+
       const { error } = await supabase.from("exam_requests").insert({
         category: activeCategory,
         patient_id: formPatientId || null,
@@ -332,7 +345,7 @@ const RequisicaoUnificadaPage = () => {
         items: formSelectedItems.map(name => ({ name })),
         clinical_indication: formIndication.trim() || null,
         priority: formPriority,
-        notes: formNotes.trim() || null,
+        notes: notesContent || null,
         requested_by: user.id,
         requested_by_name: user.user_metadata?.username || user.email?.split("@")[0] || "Médico",
         hospital_unit_id: unitId,
@@ -512,25 +525,78 @@ const RequisicaoUnificadaPage = () => {
             </CardContent>
           </Card>
 
-          {/* Priority + Indication */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Prioridade</Label>
-              <Select value={formPriority} onValueChange={setFormPriority}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {PRIORITY_OPTIONS.map(p => (
-                    <SelectItem key={p.value} value={p.value}>
-                      <span className={p.color}>{p.label}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Priority Selection */}
+          <div className="space-y-3">
+            <Label className="text-xs font-semibold">Classificação da Requisição</Label>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant={formPriority === "urgente" ? "default" : "outline"}
+                className={cn(
+                  "flex-1 gap-2 h-12 text-sm font-semibold transition-all",
+                  formPriority === "urgente"
+                    ? "bg-red-600 hover:bg-red-700 text-white border-red-600 shadow-lg shadow-red-500/20"
+                    : "border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+                )}
+                onClick={() => setFormPriority("urgente")}
+              >
+                <AlertTriangle className="h-4.5 w-4.5" />
+                Urgente
+              </Button>
+              <Button
+                type="button"
+                variant={formPriority === "programado" ? "default" : "outline"}
+                className={cn(
+                  "flex-1 gap-2 h-12 text-sm font-semibold transition-all",
+                  formPriority === "programado"
+                    ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 shadow-lg shadow-blue-500/20"
+                    : "border-blue-300 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+                )}
+                onClick={() => setFormPriority("programado")}
+              >
+                <CalendarIcon className="h-4.5 w-4.5" />
+                Programado
+              </Button>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Indicação Clínica</Label>
-              <Input placeholder="Motivo da solicitação" value={formIndication} onChange={e => setFormIndication(e.target.value)} />
-            </div>
+
+            {/* Scheduled date/time for programado */}
+            {formPriority === "programado" && (
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-lg border border-blue-200 bg-blue-50/50 dark:bg-blue-500/5 dark:border-blue-500/20">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-blue-700 dark:text-blue-400">Data Programada *</Label>
+                  <Input
+                    type="date"
+                    value={formScheduledDate}
+                    onChange={e => setFormScheduledDate(e.target.value)}
+                    className="text-sm"
+                    min={format(new Date(), "yyyy-MM-dd")}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-blue-700 dark:text-blue-400">Horário (opcional)</Label>
+                  <Input
+                    type="time"
+                    value={formScheduledTime}
+                    onChange={e => setFormScheduledTime(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Clinical Justification */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">
+              Justificativa Clínica <span className="text-red-500">*</span>
+            </Label>
+            <Textarea
+              placeholder="Descreva a justificativa clínica para esta requisição..."
+              value={formIndication}
+              onChange={e => setFormIndication(e.target.value)}
+              rows={3}
+              className="resize-none text-sm"
+            />
           </div>
 
           {/* ── Combos UTI ── */}
@@ -813,9 +879,17 @@ const RequisicaoUnificadaPage = () => {
                   <span className="text-foreground">{format(new Date(viewingRequest.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</span>
                 </div>
                 {viewingRequest.clinical_indication && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Indicação</span>
-                    <span className="text-foreground">{viewingRequest.clinical_indication}</span>
+                  <div className="p-2 rounded-md bg-amber-50/50 border border-amber-200 dark:bg-amber-500/5 dark:border-amber-500/20">
+                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Justificativa Clínica:</span>
+                    <p className="text-xs text-foreground mt-0.5">{viewingRequest.clinical_indication}</p>
+                  </div>
+                )}
+                {viewingRequest.notes && viewingRequest.notes.includes("[PROGRAMADO:") && (
+                  <div className="p-2 rounded-md bg-blue-50/50 border border-blue-200 dark:bg-blue-500/5 dark:border-blue-500/20">
+                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">📅 Agendamento:</span>
+                    <p className="text-xs text-foreground mt-0.5">
+                      {viewingRequest.notes.match(/\[PROGRAMADO: ([^\]]+)\]/)?.[1] || ""}
+                    </p>
                   </div>
                 )}
                 <div className="pt-1.5 border-t border-border/50">
@@ -900,11 +974,12 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
                   <StatusIcon className="h-3 w-3 mr-1" />{statusCfg.label}
                 </Badge>
               </div>
-              {request.priority !== "rotina" && (
-                <Badge variant={request.priority === "emergencia" ? "destructive" : "secondary"} className="text-[10px]">
-                  {priorityCfg?.label}
-                </Badge>
-              )}
+              <Badge 
+                variant={request.priority === "urgente" ? "destructive" : "secondary"} 
+                className={cn("text-[10px]", request.priority === "urgente" && "animate-pulse")}
+              >
+                {request.priority === "urgente" ? "⚡ Urgente" : "📅 Programado"}
+              </Badge>
             </div>
             <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-2">
               {request.patient_bed && <span>{getSectorLabel(request.patient_sector)} · L{request.patient_bed}</span>}
