@@ -101,6 +101,7 @@ interface PrescriptionItem {
   suspendedAt?: string;
   validated?: boolean;
   validatedAt?: string;
+  isExtra?: boolean;          // Prescrição extra avulsa
   // Detailed prescription fields
   quantity?: string;          // Quantidade
   quantityUnit?: string;      // Unidade da quantidade (mL, ampola, frasco-ampola, comp, gota, mg, etc.)
