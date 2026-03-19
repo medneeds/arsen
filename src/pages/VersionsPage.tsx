@@ -410,7 +410,7 @@ export default function VersionsPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handlePreview(version)}
-                      className="gap-2 uppercase hover:bg-primary/10 hover:text-primary"
+                      className="gap-2 hover:bg-primary/10 hover:text-primary"
                     >
                       <Eye className="h-4 w-4" />
                       Prévia
