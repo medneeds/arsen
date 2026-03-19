@@ -7,6 +7,7 @@ import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
+import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -80,6 +81,7 @@ function DashboardHeader({ children }: { children: React.ReactNode }) {
 const ClinicalDashboardPage = () => {
   const { user } = useAuth();
   const { currentDepartment } = useDepartment();
+  const { currentHospital, currentState } = useHospital();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
@@ -100,9 +102,9 @@ const ClinicalDashboardPage = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const hospitalUnitId = localStorage.getItem("selected_hospital_unit");
-      const stateId = localStorage.getItem("selected_state");
-      if (!hospitalUnitId || !stateId) return;
+      if (!currentHospital || !currentState) return;
+      const hospitalUnitId = currentHospital.id;
+      const stateId = currentState.id;
 
       // Parallel fetches
       const [patientsRes, bedRequestsRes, movementsRes] = await Promise.all([
@@ -267,7 +269,7 @@ const ClinicalDashboardPage = () => {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [currentDepartment, activeSector]);
+  }, [currentDepartment, activeSector, currentHospital, currentState]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
