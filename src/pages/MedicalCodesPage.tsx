@@ -256,7 +256,7 @@ export default function MedicalCodesPage() {
             <TableBody>
               {filteredCodes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-12 text-muted-foreground uppercase">
+                  <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <FileCode className="h-12 w-12 text-muted-foreground/50" />
                       <p className="font-semibold">Nenhum Código Cadastrado</p>
