@@ -506,6 +506,16 @@ const App = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/ccih"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <CcihDashboardPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
