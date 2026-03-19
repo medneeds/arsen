@@ -501,7 +501,7 @@ export default function AuthPage() {
               >
                 <button
                   onClick={() => setScreen("splash")}
-                  className="inline-flex items-center gap-2 text-[10px] text-[#2dd4bf]/50 hover:text-[#2dd4bf] uppercase tracking-[0.2em] transition-colors duration-300"
+                  className="inline-flex items-center gap-2 text-[10px] text-[#2dd4bf]/50 hover:text-[#2dd4bf] tracking-[0.2em] transition-colors duration-300"
                 >
                   <ArrowLeft className="h-3 w-3" />
                   Voltar
