@@ -2512,6 +2512,8 @@ const PrescricaoPage = () => {
                           onDuplicate={duplicateItem}
                           onRequestSuspend={requestSuspendItem}
                           onReactivate={reactivateItem}
+                          onToggleValidation={toggleValidation}
+                          isPastRenewalTime={isPastRenewalTime}
                         />
                       ))}
                     </div>
