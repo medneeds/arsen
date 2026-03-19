@@ -106,9 +106,6 @@ export function LoadingScreen({ onComplete, duration = 2500 }: LoadingScreenProp
           <p className="text-base sm:text-lg font-light tracking-wide text-slate-400/80 leading-relaxed">
             Mapeando cuidados, salvando <span className="text-[#2dd4bf] font-medium">vidas</span>.
           </p>
-          <p className="text-base sm:text-lg font-light tracking-wide text-slate-400/80 leading-relaxed mt-1">
-            Porque a vida é <span className="text-[#2dd4bf] font-medium">bela</span>.
-          </p>
         </div>
 
         {/* Progress */}
