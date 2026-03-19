@@ -19,6 +19,14 @@ import {
   Brain,
   Moon,
   Sun,
+  HeartPulse,
+  Activity,
+  Utensils,
+  Dumbbell,
+  HandHeart,
+  BrainCircuit,
+  Ear,
+  BedDouble,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { whitelabel } from "@/config/whitelabel";
