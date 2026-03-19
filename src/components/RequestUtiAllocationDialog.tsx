@@ -395,7 +395,7 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-[10px] uppercase text-muted-foreground">Idade</Label>
+                <Label className="text-[10px] text-muted-foreground">Idade</Label>
                 <Input
                   value={patientAge}
                   onChange={(e) => setPatientAge(e.target.value)}
