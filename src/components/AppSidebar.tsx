@@ -137,6 +137,12 @@ export function AppSidebar({
       profiles: ["medico", "gestor"],
     },
     {
+      title: "Monitoramento",
+      icon: HeartPulse,
+      link: "/monitoramento",
+      profiles: ["medico", "gestor"],
+    },
+    {
       title: "Documentos",
       icon: FolderOpen,
       profiles: ["medico", "gestor"],
