@@ -314,6 +314,60 @@ const SetorImagemPage = () => {
         </Card>
       </div>
 
+      {/* Date Range Filter */}
+      <div className="flex flex-wrap items-center gap-3 p-3 rounded-xl border border-border/60 bg-muted/30">
+        <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+        <span className="text-xs font-medium text-muted-foreground shrink-0">Período:</span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2 text-xs h-8">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              {format(dateStart, "dd/MM/yyyy", { locale: ptBR })}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={dateStart}
+              onSelect={(d) => d && setDateStart(startOfDay(d))}
+              locale={ptBR}
+              initialFocus
+              className="p-3 pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+        <span className="text-xs text-muted-foreground">até</span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2 text-xs h-8">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              {format(dateEnd, "dd/MM/yyyy", { locale: ptBR })}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={dateEnd}
+              onSelect={(d) => d && setDateEnd(endOfDay(d))}
+              locale={ptBR}
+              initialFocus
+              className="p-3 pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-xs h-8 text-muted-foreground hover:text-foreground"
+          onClick={() => {
+            setDateStart(startOfDay(new Date()));
+            setDateEnd(endOfDay(new Date()));
+          }}
+        >
+          Hoje
+        </Button>
+      </div>
+
       {/* Modality Filter */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         {MODALITIES.map((mod) => (
