@@ -223,7 +223,7 @@ export default function GestorPanelPage() {
 
   // ── Bar data for sectors ──
   const sectorBarData = Object.entries(bedStats.bySector).map(([sector, s]) => ({
-    sector: sector.length > 12 ? sector.slice(0, 12) + "…" : sector,
+    sector: getSectorDisplayLabel(sector),
     Ocupados: s.occupied,
     Vagos: s.total - s.occupied,
   }));
