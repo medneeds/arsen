@@ -1097,11 +1097,14 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
           {item.presentation && item.presentation !== '-' && (
             <span style={{ fontWeight: 400, color: '#475569' }}> ({item.presentation})</span>
           )}
+          {item.quantity && item.quantityUnit && (
+            <span style={{ fontWeight: 600, color: '#334155' }}> — {item.quantity} {item.quantityUnit}</span>
+          )}
           {item.dose && item.dose !== '-' && <span> — {item.dose}</span>}
           {item.route && item.route !== '-' && <span> — {item.route}</span>}
           {item.posology && item.posology !== '-' && <span> — {item.posology}</span>}
           {item.flags.length > 0 && (
-            <span style={{ fontSize: '7.5pt', fontWeight: 700, marginLeft: '3px', color: '#0f172a' }}>[{item.flags.join(', ')}]</span>
+            <span style={{ fontSize: '7.5pt', fontWeight: 700, marginLeft: '3px', color: '#0f172a' }}>[{item.flags.join(', ').toUpperCase()}]</span>
           )}
           {item.status === 'suspended' && (
             <span style={{ fontSize: '7.5pt', fontWeight: 700, color: '#dc2626', marginLeft: '3px' }}>[SUSPENSO]</span>
