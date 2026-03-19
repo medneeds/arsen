@@ -213,8 +213,8 @@ export default function MedicalCodesPage() {
       {/* Search and Add */}
       <Card className="border-primary/20 shadow-lg">
         <CardHeader>
-          <CardTitle className="uppercase text-lg">Pesquisar Códigos</CardTitle>
-          <CardDescription className="uppercase text-xs">
+          <CardTitle className="text-lg">Pesquisar códigos</CardTitle>
+          <CardDescription className="text-xs">
             {filteredCodes.length} {filteredCodes.length === 1 ? 'código encontrado' : 'códigos encontrados'}
           </CardDescription>
         </CardHeader>
