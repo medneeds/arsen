@@ -525,25 +525,78 @@ const RequisicaoUnificadaPage = () => {
             </CardContent>
           </Card>
 
-          {/* Priority + Indication */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Prioridade</Label>
-              <Select value={formPriority} onValueChange={setFormPriority}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {PRIORITY_OPTIONS.map(p => (
-                    <SelectItem key={p.value} value={p.value}>
-                      <span className={p.color}>{p.label}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Priority Selection */}
+          <div className="space-y-3">
+            <Label className="text-xs font-semibold">Classificação da Requisição</Label>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant={formPriority === "urgente" ? "default" : "outline"}
+                className={cn(
+                  "flex-1 gap-2 h-12 text-sm font-semibold transition-all",
+                  formPriority === "urgente"
+                    ? "bg-red-600 hover:bg-red-700 text-white border-red-600 shadow-lg shadow-red-500/20"
+                    : "border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+                )}
+                onClick={() => setFormPriority("urgente")}
+              >
+                <AlertTriangle className="h-4.5 w-4.5" />
+                Urgente
+              </Button>
+              <Button
+                type="button"
+                variant={formPriority === "programado" ? "default" : "outline"}
+                className={cn(
+                  "flex-1 gap-2 h-12 text-sm font-semibold transition-all",
+                  formPriority === "programado"
+                    ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600 shadow-lg shadow-blue-500/20"
+                    : "border-blue-300 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10"
+                )}
+                onClick={() => setFormPriority("programado")}
+              >
+                <CalendarIcon className="h-4.5 w-4.5" />
+                Programado
+              </Button>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Indicação Clínica</Label>
-              <Input placeholder="Motivo da solicitação" value={formIndication} onChange={e => setFormIndication(e.target.value)} />
-            </div>
+
+            {/* Scheduled date/time for programado */}
+            {formPriority === "programado" && (
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-lg border border-blue-200 bg-blue-50/50 dark:bg-blue-500/5 dark:border-blue-500/20">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-blue-700 dark:text-blue-400">Data Programada *</Label>
+                  <Input
+                    type="date"
+                    value={formScheduledDate}
+                    onChange={e => setFormScheduledDate(e.target.value)}
+                    className="text-sm"
+                    min={format(new Date(), "yyyy-MM-dd")}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-blue-700 dark:text-blue-400">Horário (opcional)</Label>
+                  <Input
+                    type="time"
+                    value={formScheduledTime}
+                    onChange={e => setFormScheduledTime(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Clinical Justification */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">
+              Justificativa Clínica <span className="text-red-500">*</span>
+            </Label>
+            <Textarea
+              placeholder="Descreva a justificativa clínica para esta requisição..."
+              value={formIndication}
+              onChange={e => setFormIndication(e.target.value)}
+              rows={3}
+              className="resize-none text-sm"
+            />
           </div>
 
           {/* ── Combos UTI ── */}
