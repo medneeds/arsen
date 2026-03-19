@@ -469,10 +469,10 @@ export default function AuthPage() {
                           <profile.icon className={cn("h-5 w-5", profile.color)} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-white font-bold text-sm uppercase tracking-wide leading-tight">
+                          <h3 className="text-white font-bold text-sm tracking-wide leading-tight">
                             {profile.label}
                           </h3>
-                          <p className="text-[11px] font-medium tracking-wider uppercase text-white/60 leading-tight mt-0.5">
+                          <p className="text-[11px] font-medium tracking-wider text-white/60 leading-tight mt-0.5">
                             {profile.subtitle}
                           </p>
                         </div>
