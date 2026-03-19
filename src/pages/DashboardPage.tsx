@@ -56,35 +56,47 @@ const SECTOR_COLORS: Record<string, string> = {
 const DashboardPage = () => {
   const { currentDepartment } = useDepartment();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Active sector from localStorage (synced with login/header selector)
+  const [activeSector, setActiveSector] = useState<string>(() => {
+    return localStorage.getItem("selected_sector") || "red";
+  });
+
+  // Listen for sector changes from other pages
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "selected_sector" && e.newValue) {
+        setActiveSector(e.newValue);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    // Also poll localStorage (same-tab changes don't fire StorageEvent)
+    const interval = setInterval(() => {
+      const stored = localStorage.getItem("selected_sector") || "red";
+      setActiveSector(prev => prev !== stored ? stored : prev);
+    }, 1000);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const activeSectorLabel = SECTOR_DISPLAY_LABELS[activeSector] || activeSector;
   
-  // Temporary filter states (before applying)
+  // Date range filters
   const [tempDateRange, setTempDateRange] = useState<{ from: Date; to: Date }>({
     from: subDays(new Date(), 30),
     to: new Date()
   });
-  const [tempSelectedDepartment, setTempSelectedDepartment] = useState<string>(currentDepartment);
   
-  // Applied filter states
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
     from: subDays(new Date(), 30),
     to: new Date()
   });
-  const [selectedDepartment, setSelectedDepartment] = useState<string>(currentDepartment);
   const [comparisonPeriod, setComparisonPeriod] = useState<string>("previous");
-  
-  // Update department filter when current department changes
-  useEffect(() => {
-    setTempSelectedDepartment(currentDepartment);
-    setSelectedDepartment(currentDepartment);
-    
-    // Show toast instructing user to apply filters
-    toast({
-      title: "SETOR ALTERADO",
-      description: "Clique em 'APLICAR FILTRO' para visualizar os dados do novo setor",
-      duration: 4000,
-    });
-  }, [currentDepartment]);
-  
+
   const { currentHospital, currentState } = useHospital();
 
   // KPIs State
@@ -97,6 +109,9 @@ const DashboardPage = () => {
     newAdmissions24h: 0,
     pendingPrescriptions: 0,
     plannedDischarges: 0,
+    occupancyRate: 0,
+    totalBeds: 0,
+    occupiedBeds: 0,
     comparison: {
       internmentRequests: 0,
       activePatients: 0,
@@ -120,18 +135,9 @@ const DashboardPage = () => {
   const [bedOccupancy, setBedOccupancy] = useState<any[]>([]);
   const [requestsByDestination, setRequestsByDestination] = useState<any[]>([]);
 
-  const departments = [
-    { value: "all", label: "Todos os Setores" },
-    { value: "URGÊNCIA E EMERGÊNCIA ADULTO", label: "Urgência e Emergência Adulto" },
-    { value: "URGÊNCIA E EMERGÊNCIA PEDIÁTRICA", label: "Urgência e Emergência Pediátrica" },
-    { value: "UTI", label: "UTI" },
-    { value: "POSTO INTERNAÇÃO", label: "Posto Internação" }
-  ];
-
   useEffect(() => {
     fetchDashboardData();
     
-    // Real-time subscriptions
     const movementsChannel = supabase
       .channel('dashboard-movements')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'patient_movements' }, () => {
@@ -158,7 +164,7 @@ const DashboardPage = () => {
       supabase.removeChannel(requestsChannel);
       supabase.removeChannel(patientsChannel);
     };
-  }, [dateRange, selectedDepartment, comparisonPeriod]);
+  }, [dateRange, activeSector, comparisonPeriod]);
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
