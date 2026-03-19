@@ -99,6 +99,8 @@ interface PrescriptionItem {
   status: 'active' | 'suspended';
   suspensionReason?: string;
   suspendedAt?: string;
+  validated?: boolean;
+  validatedAt?: string;
   // Detailed prescription fields
   quantity?: string;          // Quantidade
   action?: string;            // Fazer/Retirar
