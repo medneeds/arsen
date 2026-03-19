@@ -155,7 +155,9 @@ interface PatientOption {
 
 export default function MonitoramentoClinicoPage() {
   const { user } = useAuth();
-  const { selectedUnit, selectedState } = useHospital();
+  const { currentHospital, currentState } = useHospital();
+  const selectedUnit = currentHospital?.id;
+  const selectedState = currentState?.id;
   const [patients, setPatients] = useState<PatientOption[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>("");
   const [records, setRecords] = useState<VitalRecord[]>([]);
