@@ -197,7 +197,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
             <Button
               onClick={handleApply}
               disabled={selectedItems.length === 0}
-              className="w-full uppercase tracking-wider font-bold shadow-lg"
+              className="w-full tracking-wider font-bold shadow-lg"
             >
               ⚡ APLICAR {selectedItems.length > 0 && `(${selectedItems.length} ITENS)`}
             </Button>

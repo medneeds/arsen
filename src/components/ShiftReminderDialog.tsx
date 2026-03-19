@@ -66,7 +66,7 @@ export function ShiftReminderDialog() {
           </Button>
           <Button
             onClick={handleSaveVersion}
-            className="uppercase gap-2"
+            className="gap-2"
           >
             <Save className="h-4 w-4" />
             Salvar Versão Agora
