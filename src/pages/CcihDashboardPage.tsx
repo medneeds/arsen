@@ -55,7 +55,27 @@ interface PatientBasic {
   sector: string;
   age: string | null;
   diagnoses: string | null;
+  admission_date: string | null;
   uti_cultures_antibiotics: string | null;
+}
+
+interface CultureExamRequest {
+  id: string;
+  items: any[];
+  status: string;
+  priority: string;
+  created_at: string;
+  requested_by_name: string | null;
+  results: string | null;
+}
+
+interface AntibioticPrescription {
+  id: string;
+  patient_name: string;
+  items: any[];
+  status: string;
+  created_at: string;
+  version: number;
 }
 
 interface CultureResult {
