@@ -185,11 +185,15 @@ const DashboardPage = () => {
   };
 
   const fetchKPIs = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     const now = new Date();
     const twentyFourHoursAgo = subHours(now, 24);
     
-    // Current period queries
+    // Sector-specific bed config
+    const sectorConfig = SECTOR_BED_CONFIG[activeSector];
+    const totalSectorBeds = sectorConfig?.maxRegularBeds || 0;
+    
+    // Current period queries — filtered by sector
     const [
       { data: requests },
       { data: patients },
@@ -202,23 +206,24 @@ const DashboardPage = () => {
     ] = await Promise.all([
       supabase.from('internment_requests').select('*').match(departmentFilter)
         .gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
-      supabase.from('patients').select('*').match(departmentFilter),
-      supabase.from('patient_movements').select('*').match(departmentFilter)
+      supabase.from('patients').select('*').match(departmentFilter).eq('sector', activeSector),
+      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
         .eq('movement_type', 'ALTA').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter)
+      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
         .eq('movement_type', 'ÓBITO').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter)
+      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
         .eq('movement_type', 'TRANSFERÊNCIA').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
-      // New admissions in last 24h
-      supabase.from('patients').select('*').match(departmentFilter)
+      supabase.from('patients').select('*').match(departmentFilter).eq('sector', activeSector)
         .gte('created_at', twentyFourHoursAgo.toISOString()),
-      // Pending prescriptions (draft status)
       supabase.from('prescriptions').select('*').match(departmentFilter)
         .eq('status', 'draft'),
-      // Planned discharges (patients with internment_status indicating discharge)
-      supabase.from('patients').select('*').match(departmentFilter)
+      supabase.from('patients').select('*').match(departmentFilter).eq('sector', activeSector)
         .or('internment_status.eq.IR_PARA_ENFERMARIA,internment_status.eq.PSM_FAVORAVEL'),
     ]);
+
+    // Occupancy for this sector
+    const occupiedCount = (patients || []).filter(p => !p.is_vacant && p.name?.trim()).length;
+    const occRate = totalSectorBeds > 0 ? Math.round((occupiedCount / totalSectorBeds) * 100) : 0;
 
     // Comparison period
     const daysDiff = Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
@@ -235,25 +240,28 @@ const DashboardPage = () => {
     ] = await Promise.all([
       supabase.from('internment_requests').select('*').match(departmentFilter)
         .gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter)
+      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
         .eq('movement_type', 'ALTA').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter)
+      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
         .eq('movement_type', 'ÓBITO').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter)
+      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
         .eq('movement_type', 'TRANSFERÊNCIA').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
-      supabase.from('patients').select('*').match(departmentFilter)
+      supabase.from('patients').select('*').match(departmentFilter).eq('sector', activeSector)
         .gte('created_at', compTwentyFourHBefore.toISOString()).lte('created_at', comparisonTo.toISOString()),
     ]);
 
     setKpis({
       internmentRequests: requests?.length || 0,
-      activePatients: patients?.length || 0,
+      activePatients: (patients || []).filter(p => !p.is_vacant && p.name?.trim()).length,
       discharges: discharges?.length || 0,
       deaths: deaths?.length || 0,
       transfers: transfers?.length || 0,
       newAdmissions24h: newAdmissions?.length || 0,
       pendingPrescriptions: pendingPrescriptions?.length || 0,
       plannedDischarges: plannedDischargesData?.length || 0,
+      occupancyRate: occRate,
+      totalBeds: totalSectorBeds,
+      occupiedBeds: occupiedCount,
       comparison: {
         internmentRequests: compRequests?.length || 0,
         activePatients: 0,
