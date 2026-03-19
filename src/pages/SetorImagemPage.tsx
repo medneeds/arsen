@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
+import { printRequisitionGuide } from "@/components/PrintableRequisitionGuide";
 
 const getSectorLabel = (sector: string | null) => {
   if (!sector) return "";
