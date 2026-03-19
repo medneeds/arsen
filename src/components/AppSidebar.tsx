@@ -110,6 +110,12 @@ export function AppSidebar({
   // "porta" and "visitante" roles get special handling below
   const allMenuItems = [
     {
+      title: "Início",
+      icon: LayoutDashboard,
+      link: "/",
+      profiles: ["medico", "gestor", "multi", "administrativo"],
+    },
+    {
       title: "Painel do Gestor",
       icon: BarChart3,
       link: "/painel-gestor",
