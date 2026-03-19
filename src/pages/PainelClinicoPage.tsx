@@ -534,7 +534,7 @@ export default function PainelClinicoPage() {
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Socorrão I</span>
             <span className="text-white/30 text-xs">/</span>
-            <Select value={sectorFilter} onValueChange={setSectorFilter}>
+            <Select value={sectorFilter} onValueChange={(val) => { setSectorFilter(val); if (val !== "all") localStorage.setItem("selected_sector", val); }}>
               <SelectTrigger className="h-7 w-auto gap-1 bg-white/10 border-white/20 text-xs text-white font-medium px-2.5 focus:ring-0 focus:ring-offset-0 hover:bg-white/20 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/60 rounded-md">
                 <SelectValue placeholder="Setor" />
               </SelectTrigger>
