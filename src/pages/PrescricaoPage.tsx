@@ -1914,7 +1914,7 @@ const PrescricaoPage = () => {
 
   // New prescription
   const handleNewPrescription = () => {
-    setPatient({ name: "", birthDate: "", age: "", sex: "", bed: "", unit: "", record: "", admissionDate: "", weight: "", allergies: "" });
+    setPatient({ name: "", birthDate: "", age: "", sex: "", bed: "", unit: "", record: "", admissionDate: "", utiAdmissionDate: "", weight: "", allergies: "", motherName: "", address: "", city: "" });
     setItems([]);
     setDigitalSignature(null);
     setCurrentPrescriptionId(null);
