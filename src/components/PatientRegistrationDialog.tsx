@@ -157,8 +157,9 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
     try {
       const { data: userData } = await supabase.auth.getUser();
       
-      // If destination is UTI, set special status for the admission workflow
-      const isUtiDestination = form.destination_sector === "UTI 1" || form.destination_sector === "UTI 2";
+      // If destination includes any UTI, set special status for the admission workflow
+      const selectedSectors = form.destination_sector.split(", ").filter(Boolean);
+      const isUtiDestination = selectedSectors.some(s => s.startsWith("UTI"));
       const status = isUtiDestination ? "aguardando_leito_uti" : "pre_admissao";
       const successMessage = isUtiDestination 
         ? "Solicitação de leito UTI enviada para avaliação médica"
