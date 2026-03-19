@@ -569,9 +569,9 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
               <Textarea
                 ref={historyRef}
                 value={admissionHistory}
-                onChange={(e) => setAdmissionHistory(e.target.value.toUpperCase())}
-                placeholder="HISTÓRIA CLÍNICA COMPLETA, EVOLUÇÃO, CONDUTAS..."
-                className="min-h-[120px] text-xs uppercase"
+                onChange={(e) => setAdmissionHistory(e.target.value)}
+                placeholder="História clínica completa, evolução, condutas..."
+                className="min-h-[120px] text-xs"
               />
             </CollapsibleContent>
           </Collapsible>

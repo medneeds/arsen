@@ -512,7 +512,7 @@ export function RequestNewAllocationDialog({
                   <button className="w-full p-4 flex items-center justify-between bg-accent/30 hover:bg-accent/50 transition-colors">
                     <div className="flex items-center gap-2">
                       <Stethoscope className="h-4 w-4 text-accent-foreground" />
-                      <span className="text-sm font-semibold text-accent-foreground uppercase tracking-wide">
+                      <span className="text-sm font-semibold text-accent-foreground tracking-wide">
                         Dados Clínicos
                       </span>
                       <Badge variant="secondary" className="h-4 text-[10px] px-1.5 opacity-60">Opcional</Badge>
