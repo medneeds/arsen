@@ -103,7 +103,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Auto-select sector from header on open
+  // Fetch everything in parallel on open
   useEffect(() => {
     if (!open) return;
     const storedSector = localStorage.getItem("selected_sector") || "red";
@@ -112,44 +112,73 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     setExtraBedRequested(false);
     setSectorFullAlert(false);
     setBedsLoaded(false);
-  }, [open]);
 
-  // Fetch full pre-admission data with triage info
-  useEffect(() => {
-    if (!open || !preAdmission?.id) return;
-    const fetchFull = async () => {
-      const { data } = await supabase
-        .from("pre_admissions")
-        .select("*")
-        .eq("id", preAdmission.id)
-        .single();
-      if (data) setFullData(data as unknown as PreAdmissionFull);
-    };
-    fetchFull();
-  }, [open, preAdmission?.id]);
+    if (!currentHospital?.id || !currentState?.id || !preAdmission?.id) return;
 
-  // Fetch occupied beds when sector changes
-  useEffect(() => {
-    if (!selectedSector || !currentHospital?.id || !currentState?.id) {
-      setAvailableBeds([]);
-      setSectorFullAlert(false);
-      return;
-    }
-    const fetchBeds = async () => {
-      const { data } = await supabase
-        .from("patients")
-        .select("bed_number")
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
-        .eq("department", currentDepartment)
-        .eq("sector", selectedSector);
+    const fetchAll = async () => {
+      // Parallel: fetch pre-admission data + occupied beds
+      const [preAdmRes, bedsRes] = await Promise.all([
+        supabase
+          .from("pre_admissions")
+          .select("*")
+          .eq("id", preAdmission.id)
+          .single(),
+        supabase
+          .from("patients")
+          .select("bed_number")
+          .eq("hospital_unit_id", currentHospital.id)
+          .eq("state_id", currentState.id)
+          .eq("department", currentDepartment)
+          .eq("sector", storedSector),
+      ]);
 
-      const occupied = (data || []).map(p => p.bed_number);
+      if (preAdmRes.data) setFullData(preAdmRes.data as unknown as PreAdmissionFull);
+
+      const occupied = (bedsRes.data || []).map(p => p.bed_number);
       setOccupiedBeds(occupied);
 
-      const config = SECTOR_BED_CONFIG[selectedSector];
-      if (!config) return;
+      const config = SECTOR_BED_CONFIG[storedSector];
+      if (config) {
+        const start = config.startNumber ?? 1;
+        const end = start + config.maxRegularBeds - 1;
+        const beds: string[] = [];
+        let freeCount = 0;
+        for (let i = start; i <= end; i++) {
+          const bedNum = `${config.prefix}${String(i).padStart(2, '0')}`;
+          beds.push(bedNum);
+          if (!occupied.includes(bedNum)) freeCount++;
+        }
+        beds.push("EXTRA");
+        setAvailableBeds(beds);
+        setSectorFullAlert(freeCount === 0);
+      }
+      setBedsLoaded(true);
+    };
+    fetchAll();
+  }, [open, preAdmission?.id, currentHospital?.id, currentState?.id, currentDepartment]);
 
+  // Re-fetch beds when sector changes manually (from the full-alert dropdown)
+  const handleSectorChange = async (newSector: string) => {
+    setSelectedSector(newSector);
+    setSelectedBed("");
+    setExtraBedRequested(false);
+    setBedsLoaded(false);
+
+    if (!currentHospital?.id || !currentState?.id) return;
+
+    const { data } = await supabase
+      .from("patients")
+      .select("bed_number")
+      .eq("hospital_unit_id", currentHospital.id)
+      .eq("state_id", currentState.id)
+      .eq("department", currentDepartment)
+      .eq("sector", newSector);
+
+    const occupied = (data || []).map(p => p.bed_number);
+    setOccupiedBeds(occupied);
+
+    const config = SECTOR_BED_CONFIG[newSector];
+    if (config) {
       const start = config.startNumber ?? 1;
       const end = start + config.maxRegularBeds - 1;
       const beds: string[] = [];
@@ -161,13 +190,10 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       }
       beds.push("EXTRA");
       setAvailableBeds(beds);
-
-      // Check if all regular beds are occupied
       setSectorFullAlert(freeCount === 0);
-      setBedsLoaded(true);
-    };
-    fetchBeds();
-  }, [selectedSector, currentHospital?.id, currentState?.id, currentDepartment]);
+    }
+    setBedsLoaded(true);
+  };
 
   const calcAge = (birthDate: string | null) => {
     if (!birthDate) return null;
@@ -416,18 +442,24 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             <p className="text-sm font-semibold flex items-center gap-2">
               <BedDouble className="h-4 w-4" /> Alocação
             </p>
-            <Badge variant="outline" className="text-xs font-medium">
-              {SECTORS.find(s => s.value === selectedSector)?.label || "—"}
-            </Badge>
-          </div>
-
-          {/* Loading state */}
-          {!bedsLoaded && selectedSector && (
-            <div className="flex items-center justify-center py-3">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              <span className="text-xs text-muted-foreground ml-2">Verificando leitos...</span>
+            <div className="flex items-center gap-2">
+              {bedsLoaded && (() => {
+                const freeCount = availableBeds.filter(b => b !== "EXTRA" && !occupiedBeds.includes(b)).length;
+                return freeCount > 0 ? (
+                  <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/30">
+                    {freeCount} {freeCount === 1 ? "leito livre" : "leitos livres"}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-xs text-destructive border-destructive/30 bg-destructive/10">
+                    Lotado
+                  </Badge>
+                );
+              })()}
+              <Badge variant="outline" className="text-xs font-medium">
+                {SECTORS.find(s => s.value === selectedSector)?.label || "—"}
+              </Badge>
             </div>
-          )}
+          </div>
 
           {/* Sector full alert */}
           {bedsLoaded && sectorFullAlert && !extraBedRequested && (
@@ -453,7 +485,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                       <BedDouble className="h-3.5 w-3.5" />
                       Solicitar Maca Extra
                     </Button>
-                    <Select value={selectedSector} onValueChange={(v) => { setSelectedSector(v); setSelectedBed(""); setExtraBedRequested(false); setBedsLoaded(false); }}>
+                    <Select value={selectedSector} onValueChange={handleSectorChange}>
                       <SelectTrigger className="h-7 w-auto text-xs px-2">
                         <SelectValue placeholder="Alterar setor" />
                       </SelectTrigger>
