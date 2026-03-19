@@ -966,11 +966,12 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
                   <StatusIcon className="h-3 w-3 mr-1" />{statusCfg.label}
                 </Badge>
               </div>
-              {request.priority !== "rotina" && (
-                <Badge variant={request.priority === "emergencia" ? "destructive" : "secondary"} className="text-[10px]">
-                  {priorityCfg?.label}
-                </Badge>
-              )}
+              <Badge 
+                variant={request.priority === "urgente" ? "destructive" : "secondary"} 
+                className={cn("text-[10px]", request.priority === "urgente" && "animate-pulse")}
+              >
+                {request.priority === "urgente" ? "⚡ Urgente" : "📅 Programado"}
+              </Badge>
             </div>
             <div className="flex items-center gap-3 text-[10px] text-muted-foreground mb-2">
               {request.patient_bed && <span>{getSectorLabel(request.patient_sector)} · L{request.patient_bed}</span>}
