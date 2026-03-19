@@ -214,7 +214,7 @@ export function EditTherapeuticTemplateDialog({
           <Button
             onClick={handleSave}
             disabled={!name.trim() || items.filter((i) => i.trim()).length === 0}
-            className="uppercase text-xs font-bold"
+            className="text-xs font-bold"
           >
             {isEditing ? "Salvar Alterações" : "Criar Template"}
           </Button>

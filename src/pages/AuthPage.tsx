@@ -575,7 +575,7 @@ export default function AuthPage() {
                   <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-[#2dd4bf]/10 border border-[#2dd4bf]/20 mb-3">
                     <LogIn className="h-4 w-4 text-[#2dd4bf]" />
                   </div>
-                  <h2 className="text-xs font-semibold text-white/80 uppercase tracking-[0.2em]">Acesse sua conta</h2>
+                  <h2 className="text-xs font-semibold text-white/80 tracking-[0.2em]">Acesse sua conta</h2>
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-4">

@@ -134,8 +134,8 @@ export default function CuidadosPaliativosPage() {
                 </div>
               </div>
               
-              <h3 className="text-lg font-semibold uppercase text-foreground mt-6 mb-4">Informações no Documento</h3>
-              <ul className="space-y-2 text-muted-foreground uppercase">
+              <h3 className="text-lg font-semibold text-foreground mt-6 mb-4">Informações no Documento</h3>
+              <ul className="space-y-2 text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-pink-500 font-bold">•</span>
                   <span>Identificação completa do paciente e responsável legal</span>
