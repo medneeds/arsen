@@ -307,11 +307,11 @@ const NotesTabOptimized = () => {
     <div className="space-y-4">
       <Tabs defaultValue="notes" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="notes" className="uppercase">
-            ANOTAÇÕES
+          <TabsTrigger value="notes">
+            Anotações
           </TabsTrigger>
-          <TabsTrigger value="checklist" className="uppercase">
-            CHECK-LIST
+          <TabsTrigger value="checklist">
+            Check-list
           </TabsTrigger>
         </TabsList>
 
