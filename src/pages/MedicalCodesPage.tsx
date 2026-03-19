@@ -314,7 +314,7 @@ export default function MedicalCodesPage() {
                           onClick={() => handleDelete(code.id)}
                           className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                           disabled={role !== 'admin'}
-                          title={role !== 'admin' ? 'APENAS ADMINISTRADORES' : 'Deletar'}
+                          title={role !== 'admin' ? 'Apenas administradores' : 'Deletar'}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
