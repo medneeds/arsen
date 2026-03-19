@@ -472,7 +472,7 @@ const RequisicaoUnificadaPage = () => {
 
       {/* ── APAC mode: show embedded APAC form ── */}
       {activeCategory === "apac" ? (
-        <ApacEmbeddedForm patientName={formPatientName} patientBed={formPatientBed} patientSector={formPatientSector} />
+        <ApacEmbeddedForm patientName={formPatientName} patientBed={formPatientBed} patientSector={formPatientSector} patientId={formPatientId} />
       ) : (
       <>
       {/* ── Sub Tabs: Solicitar | Solicitados | Resultados ── */}
@@ -1040,14 +1040,17 @@ interface ApacSelectedProcedure {
   qty: number;
 }
 
-function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patientSector }: {
+function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patientSector, patientId }: {
   patientName: string;
   patientBed: string;
   patientSector: string;
+  patientId: string | null;
 }) {
   const { user } = useAuth();
+  const { currentHospital, currentState } = useHospital();
   const printRef = useRef<HTMLDivElement>(null);
-
+  const [importingAdmission, setImportingAdmission] = useState(false);
+  const [importingEvolution, setImportingEvolution] = useState(false);
   const [doctorName, setDoctorName] = useState("");
   const [doctorCRM, setDoctorCRM] = useState("");
   const [doctorCPF, setDoctorCPF] = useState("");
@@ -1105,6 +1108,49 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     if (selectedProcedures.length === 0) { toast.error("Adicione ao menos um procedimento"); return; }
     if (!apacPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
     window.print();
+  };
+
+  const importAdmission = async () => {
+    if (!patientId) { toast.error("Paciente não vinculado ao mapa"); return; }
+    setImportingAdmission(true);
+    try {
+      const { data } = await supabase
+        .from("admission_histories")
+        .select("chief_complaint, clinical_history, diagnostic_hypothesis, initial_conduct")
+        .eq("patient_id", patientId)
+        .maybeSingle();
+      if (!data) { toast.error("Nenhuma admissão encontrada para este paciente"); return; }
+      const parts: string[] = [];
+      if (data.chief_complaint) parts.push(`QP: ${data.chief_complaint}`);
+      if (data.clinical_history) parts.push(`HDA: ${data.clinical_history}`);
+      if (data.diagnostic_hypothesis) parts.push(`HD: ${data.diagnostic_hypothesis}`);
+      if (data.initial_conduct) parts.push(`Conduta: ${data.initial_conduct}`);
+      if (parts.length === 0) { toast.info("Admissão sem dados preenchidos"); return; }
+      setObservations(prev => prev ? prev + "\n\n" + parts.join("\n") : parts.join("\n"));
+      toast.success("Dados da admissão importados");
+    } catch { toast.error("Erro ao importar admissão"); }
+    finally { setImportingAdmission(false); }
+  };
+
+  const importEvolution = async () => {
+    if (!patientId) { toast.error("Paciente não vinculado ao mapa"); return; }
+    setImportingEvolution(true);
+    try {
+      const { data: patient } = await supabase
+        .from("patients")
+        .select("diagnoses, medical_history, pendencies")
+        .eq("id", patientId)
+        .maybeSingle();
+      if (!patient) { toast.error("Dados do paciente não encontrados"); return; }
+      const parts: string[] = [];
+      if (patient.diagnoses) parts.push(`Diagnósticos: ${patient.diagnoses}`);
+      if (patient.medical_history) parts.push(`Antecedentes: ${patient.medical_history}`);
+      if (patient.pendencies) parts.push(`Pendências: ${patient.pendencies}`);
+      if (parts.length === 0) { toast.info("Sem dados de evolução preenchidos"); return; }
+      setObservations(prev => prev ? prev + "\n\n" + parts.join("\n") : parts.join("\n"));
+      toast.success("Dados da evolução importados");
+    } catch { toast.error("Erro ao importar evolução"); }
+    finally { setImportingEvolution(false); }
   };
 
   const filteredProcedures = APAC_PROCEDURES.filter((p) => {
@@ -1211,7 +1257,20 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                   <div><Label className="text-xs text-muted-foreground">CID-10 Secundário</Label><Input value={cidSecondary} onChange={(e) => setCidSecondary(e.target.value)} className="font-mono" /></div>
                   <div><Label className="text-xs text-muted-foreground">CID-10 Associado</Label><Input value={cidAssociated} onChange={(e) => setCidAssociated(e.target.value)} className="font-mono" /></div>
                 </div>
-                <div><Label className="text-xs text-muted-foreground">Observações</Label><Textarea value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Informações clínicas relevantes..." rows={3} /></div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label className="text-xs text-muted-foreground">Observações</Label>
+                    <div className="flex gap-1.5">
+                      <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={importAdmission} disabled={!patientId || importingAdmission}>
+                        <FileText className="h-3 w-3" /> {importingAdmission ? "Importando..." : "Importar Admissão"}
+                      </Button>
+                      <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={importEvolution} disabled={!patientId || importingEvolution}>
+                        <ClipboardList className="h-3 w-3" /> {importingEvolution ? "Importando..." : "Importar Evolução"}
+                      </Button>
+                    </div>
+                  </div>
+                  <Textarea value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Informações clínicas relevantes..." rows={3} />
+                </div>
               </CardContent>
             </Card>
           </div>
