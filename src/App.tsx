@@ -52,6 +52,7 @@ import ValidacaoFarmaceuticaPage from "./pages/ValidacaoFarmaceuticaPage";
 import PainelClinicoPage from "./pages/PainelClinicoPage";
 import SetorImagemPage from "./pages/SetorImagemPage";
 import Saps3Page from "./pages/Saps3Page";
+import ClinicalDashboardPage from "./pages/ClinicalDashboardPage";
 
 const queryClient = new QueryClient();
 
