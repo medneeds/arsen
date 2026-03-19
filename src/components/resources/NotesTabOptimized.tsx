@@ -440,8 +440,8 @@ const NotesTabOptimized = () => {
           <Card className="p-6">
             <div className="space-y-3">
               {checklistItems.length === 0 ? (
-                <p className="text-center text-muted-foreground text-sm uppercase py-8">
-                  NENHUM ITEM NO CHECKLIST
+                <p className="text-center text-muted-foreground text-sm py-8">
+                  Nenhum item no checklist
                 </p>
               ) : (
                 checklistItems.map((item) => (
