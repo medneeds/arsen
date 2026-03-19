@@ -208,7 +208,7 @@ export function EditTherapeuticTemplateDialog({
         </div>
 
         <DialogFooter className="gap-2 pt-3 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="uppercase text-xs">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="text-xs">
             Cancelar
           </Button>
           <Button
