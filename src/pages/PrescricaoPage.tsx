@@ -2099,61 +2099,94 @@ const PrescricaoPage = () => {
       ` }} />
 
       {/* ===== PRINT-ONLY LETTERHEAD ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginBottom: '4px' }}>
-        {/* Institutional header — clean & elegant */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0 6px 0' }}>
-          <img src={socorraoLogo} alt="Socorrão I" style={{ height: '32px', objectFit: 'contain' }} />
-          <div style={{ textAlign: 'center', flex: 1, padding: '0 12px' }}>
-            <div style={{ fontSize: '10pt', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.2px', color: '#0f172a', lineHeight: 1.1 }}>
+      <div className="hidden print:block prescription-print-section" style={{ marginBottom: '2px' }}>
+        {/* Institutional header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '3px 0 4px 0' }}>
+          <img src={socorraoLogo} alt="Socorrão I" style={{ height: '28px', objectFit: 'contain' }} />
+          <div style={{ textAlign: 'center', flex: 1, padding: '0 10px' }}>
+            <div style={{ fontSize: '9pt', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#0f172a', lineHeight: 1.1 }}>
               Hospital Municipal Djalma Marques — Socorrão I
             </div>
-            <div style={{ fontSize: '7.5pt', fontWeight: 600, color: '#475569', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '2px' }}>
+            <div style={{ fontSize: '7pt', fontWeight: 600, color: '#475569', marginTop: '1px', textTransform: 'uppercase', letterSpacing: '2px' }}>
               Prescrição Médica Diária
             </div>
           </div>
-          <img src={bighelpLogo} alt="BigHelp Map" style={{ height: '20px', objectFit: 'contain', opacity: 0.2 }} />
+          <img src={bighelpLogo} alt="BigHelp Map" style={{ height: '16px', objectFit: 'contain', opacity: 0.15 }} />
         </div>
-        <div style={{ height: '2px', background: 'linear-gradient(to right, #0f172a, #475569, #0f172a)', borderRadius: '1px' }} />
+        <div style={{ height: '2px', background: 'linear-gradient(to right, #0f172a, #334155, #0f172a)', borderRadius: '1px' }} />
 
-        {/* Patient identification — elegant grid */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt', color: '#0f172a', marginTop: '4px' }}>
+        {/* Patient identification — professional 3-row grid */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '7.5pt', color: '#0f172a', marginTop: '3px' }}>
           <tbody>
+            {/* Row 1: Name, Bed, Record, Date */}
             <tr>
-              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '48%' }}>
-                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Paciente</span>
-                <div style={{ fontWeight: 700, fontSize: '9pt', marginTop: '1px' }}>{patient.name || '___________________________________'}</div>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '44%' }} colSpan={3}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', lineHeight: 1 }}>Paciente</span>
+                <div style={{ fontWeight: 800, fontSize: '9pt', marginTop: '1px', textTransform: 'uppercase' }}>{patient.name || '___________________________________'}</div>
               </td>
-              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '10%', textAlign: 'center' }}>
-                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Leito</span>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '7%', textAlign: 'center' }}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', lineHeight: 1 }}>Leito</span>
                 <div style={{ fontWeight: 800, fontSize: '10pt', marginTop: '1px' }}>{patient.bed || '—'}</div>
               </td>
-              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '14%' }}>
-                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Prontuário</span>
-                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>{patient.record || '________'}</div>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '13%' }}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', lineHeight: 1 }}>Prontuário</span>
+                <div style={{ fontWeight: 600, fontSize: '8pt', marginTop: '1px' }}>{patient.record || '________'}</div>
               </td>
-              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '14%' }}>
-                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Data</span>
-                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>{prescriptionDate}</div>
-              </td>
-              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px', width: '14%', textAlign: 'center' }}>
-                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Idade / Sexo</span>
-                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>
-                  {patient.age || '—'} / {patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'M' : patient.sex.toLowerCase().startsWith('f') ? 'F' : patient.sex.charAt(0).toUpperCase()) : '—'}
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '8%', textAlign: 'center' }}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', lineHeight: 1 }}>Sexo</span>
+                <div style={{ fontWeight: 600, fontSize: '8pt', marginTop: '1px' }}>
+                  {patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'M' : patient.sex.toLowerCase().startsWith('f') ? 'F' : patient.sex.charAt(0).toUpperCase()) : '—'}
                 </div>
               </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '14%' }}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', lineHeight: 1 }}>Data Prescrição</span>
+                <div style={{ fontWeight: 600, fontSize: '8pt', marginTop: '1px' }}>{prescriptionDate}</div>
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '14%', textAlign: 'center' }}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', lineHeight: 1 }}>Unidade</span>
+                <div style={{ fontWeight: 600, fontSize: '8pt', marginTop: '1px' }}>{patient.unit || '—'}</div>
+              </td>
             </tr>
+            {/* Row 2: Birth, Age, Mother, Address, City */}
             <tr>
-              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px' }} colSpan={2}>
-                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Alergias</span>
-                <div style={{ fontWeight: 700, fontSize: '8.5pt', color: '#dc2626', marginTop: '1px' }}>{patient.allergies || 'NDAM'}</div>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '14%' }}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', lineHeight: 1 }}>Data Nasc.</span>
+                <div style={{ fontWeight: 600, fontSize: '8pt', marginTop: '1px' }}>{patient.birthDate ? format(new Date(patient.birthDate + 'T12:00:00'), 'dd/MM/yyyy') : '___/___/______'}</div>
               </td>
-              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px' }}>
-                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Peso</span>
-                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>{patient.weight ? `${patient.weight} kg` : '— kg'}</div>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '10%' }}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', lineHeight: 1 }}>Idade</span>
+                <div style={{ fontWeight: 600, fontSize: '8pt', marginTop: '1px' }}>{patient.age || '—'}</div>
               </td>
-              <td style={{ border: '0.5px solid #cbd5e1', padding: '3px 6px' }} colSpan={2}>
-                <span style={{ fontWeight: 700, fontSize: '7pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Unidade</span>
-                <div style={{ fontWeight: 600, fontSize: '8.5pt', marginTop: '1px' }}>{patient.unit || '—'}</div>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', width: '20%' }} colSpan={2}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', lineHeight: 1 }}>Nome da Mãe</span>
+                <div style={{ fontWeight: 600, fontSize: '8pt', marginTop: '1px' }}>{patient.motherName || '________________________________'}</div>
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }} colSpan={2}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', lineHeight: 1 }}>Endereço</span>
+                <div style={{ fontWeight: 600, fontSize: '7.5pt', marginTop: '1px' }}>{patient.address || '___________________________________'}</div>
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }} colSpan={2}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', lineHeight: 1 }}>Cidade</span>
+                <div style={{ fontWeight: 600, fontSize: '8pt', marginTop: '1px' }}>{patient.city || '______________'}</div>
+              </td>
+            </tr>
+            {/* Row 3: Allergies, Weight, Hospital Admission, ICU Admission */}
+            <tr>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }} colSpan={3}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', lineHeight: 1 }}>⚠ Alergias</span>
+                <div style={{ fontWeight: 800, fontSize: '8.5pt', color: '#b91c1c', marginTop: '1px' }}>{patient.allergies || 'NDAM'}</div>
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px', textAlign: 'center' }} colSpan={1}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', lineHeight: 1 }}>Peso</span>
+                <div style={{ fontWeight: 700, fontSize: '8.5pt', marginTop: '1px' }}>{patient.weight ? `${patient.weight} kg` : '— kg'}</div>
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }} colSpan={2}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', lineHeight: 1 }}>Admissão Hospital</span>
+                <div style={{ fontWeight: 600, fontSize: '8pt', marginTop: '1px' }}>{patient.admissionDate ? format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '___/___/______'}</div>
+              </td>
+              <td style={{ border: '0.5px solid #94a3b8', padding: '2px 5px' }} colSpan={2}>
+                <span style={{ fontWeight: 700, fontSize: '6pt', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', lineHeight: 1 }}>Admissão UTI</span>
+                <div style={{ fontWeight: 600, fontSize: '8pt', marginTop: '1px' }}>{patient.utiAdmissionDate ? format(new Date(patient.utiAdmissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '___/___/______'}</div>
               </td>
             </tr>
           </tbody>
