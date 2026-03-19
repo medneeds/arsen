@@ -483,6 +483,23 @@ export default function PainelClinicoPage() {
                           )}
                         </div>
                       </TableCell>
+                      <TableCell className="text-center">
+                        {sapsScores[patient.name] ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="font-mono font-bold text-sm text-foreground">{sapsScores[patient.name].score}</span>
+                            <Badge variant="outline" className={cn("text-[10px] px-1.5",
+                              sapsScores[patient.name].mortality < 10 ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400" :
+                              sapsScores[patient.name].mortality < 25 ? "text-yellow-600 border-yellow-200 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400" :
+                              sapsScores[patient.name].mortality < 50 ? "text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400" :
+                              "text-red-600 border-red-200 bg-red-50 dark:bg-red-900/20 dark:text-red-400"
+                            )}>
+                              {sapsScores[patient.name].mortality}%
+                            </Badge>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {pendencies.length > 0 ? (
                           <div className="flex flex-col gap-0.5">
