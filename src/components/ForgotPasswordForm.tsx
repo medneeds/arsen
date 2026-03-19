@@ -56,7 +56,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
         .single();
 
       if (error || !profile) {
-        toast.error("USUÁRIO NÃO ENCONTRADO");
+        toast.error("Usuário não encontrado");
         setLoading(false);
         return;
       }
