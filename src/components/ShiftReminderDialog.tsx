@@ -50,7 +50,7 @@ export function ShiftReminderDialog() {
             <Clock className="h-5 w-5 text-amber-600 animate-pulse" />
             Lembrete de Passagem de Plantão
           </DialogTitle>
-          <DialogDescription className="uppercase text-base pt-4">
+          <DialogDescription className="text-base pt-4">
             Faltam 15 minutos para a passagem do plantão <span className="font-bold text-primary">{shiftTime}</span>.
             <br /><br />
             Não esqueça de salvar uma versão do mapa de pacientes antes da passagem!
