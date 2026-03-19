@@ -431,20 +431,6 @@ function GlobalPrescriptionSearch({
     inputRef.current?.blur();
   };
 
-  const CATEGORY_ICONS_MAP: Record<string, any> = {
-    nutrition: UtensilsCrossed,
-    hydration: Droplets,
-    medication: Pill,
-    antimicrobial: Shield,
-    high_alert: AlertTriangle,
-    inhalation: Wind,
-    hemotherapy: Heart,
-    care: ClipboardList,
-    nonstandard: FileText,
-  };
-
-  return (
-    <div className="space-y-2">
       {/* Category filter chips */}
       <div className="flex items-center gap-1.5 flex-wrap">
         <button
@@ -461,7 +447,7 @@ function GlobalPrescriptionSearch({
         </button>
         {TAB_ORDER.map(cat => {
           const config = CATEGORY_CONFIG[cat];
-          const Icon = CATEGORY_ICONS_MAP[config.icon] || CATEGORY_ICONS_MAP[cat] || Pill;
+          const Icon = CATEGORY_ICONS[config.icon] || Pill;
           return (
             <button
               key={cat}
