@@ -131,6 +131,12 @@ export function AppSidebar({
       profiles: ["gestor"],
     },
     {
+      title: "Emergência",
+      icon: Activity,
+      link: "/emergencia",
+      profiles: ["medico", "gestor"],
+    },
+    {
       title: "Documentos",
       icon: FolderOpen,
       profiles: ["medico", "gestor"],
