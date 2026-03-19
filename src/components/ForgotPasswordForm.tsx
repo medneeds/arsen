@@ -77,7 +77,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
         .single();
 
       if (existingRequest) {
-        toast.error("JÁ EXISTE UMA SOLICITAÇÃO PENDENTE PARA ESTE USUÁRIO");
+        toast.error("Já existe uma solicitação pendente para este usuário");
         setLoading(false);
         return;
       }
