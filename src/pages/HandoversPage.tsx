@@ -258,7 +258,7 @@ export default function HandoversPage() {
                           <div className="flex items-center gap-2">
                             <CollapsibleTrigger asChild>
                               <Button variant="ghost" size="sm" className="gap-1">
-                                <span className="text-xs uppercase">Detalhes</span>
+                                <span className="text-xs">Detalhes</span>
                                 <ChevronDown className="h-4 w-4 transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
                               </Button>
                             </CollapsibleTrigger>
