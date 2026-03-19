@@ -131,7 +131,7 @@ export function PrintLayout({
           />
           <PrintableSectorSection
             patients={yellowPatients}
-            sectorName="Ala Amarela"
+            sectorName="UTI 2"
             bgColor="#fefce8"
             borderColor="#ca8a04"
             textColor="#854d0e"
