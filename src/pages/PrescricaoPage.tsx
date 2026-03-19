@@ -369,6 +369,8 @@ function SortablePrescriptionItemRow({
   onDuplicate,
   onRequestSuspend,
   onReactivate,
+  onToggleValidation,
+  isPastRenewalTime,
 }: {
   item: PrescriptionItem;
   index: number;
@@ -381,6 +383,8 @@ function SortablePrescriptionItemRow({
   onDuplicate: (id: string) => void;
   onRequestSuspend: (id: string) => void;
   onReactivate: (id: string) => void;
+  onToggleValidation: (id: string) => void;
+  isPastRenewalTime: boolean;
 }) {
   const {
     attributes,
