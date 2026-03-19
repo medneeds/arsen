@@ -95,6 +95,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fullData, setFullData] = useState<PreAdmissionFull | null>(null);
   const [sectorFullAlert, setSectorFullAlert] = useState(false);
+  const [extraBedRequested, setExtraBedRequested] = useState(false);
 
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
@@ -177,7 +178,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           .update({
             status: "aguardando_leito_uti",
             destination_sector: destinationSectorLabel,
-            destination_bed: null,
+            destination_bed: extraBedRequested ? "EXTRA" : null,
             notes: admissionNotes || fullData.notes || null,
           })
           .eq("id", fullData.id);
@@ -191,6 +192,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           patientAge: age ? String(age) : "",
           destinationSector: destinationSectorLabel,
         });
+        if (extraBedRequested) params.set("extraBed", "true");
 
         toast({
           title: "Encaminhado para admissão UTI",
@@ -203,6 +205,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         setSelectedBed("");
         setAdmissionNotes("");
         setFullData(null);
+        setExtraBedRequested(false);
+        setSectorFullAlert(false);
         navigate(`/saps3?${params.toString()}`);
         return;
       }
@@ -251,6 +255,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       setSelectedBed("");
       setAdmissionNotes("");
       setFullData(null);
+      setExtraBedRequested(false);
+      setSectorFullAlert(false);
     } catch (err: any) {
       toast({ title: "Erro na admissão", description: err.message, variant: "destructive" });
     } finally {
@@ -400,7 +406,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           <div className={cn("gap-3", isUtiAdmission ? "grid grid-cols-1" : "grid grid-cols-2")}>
             <div className="space-y-1.5">
               <Label className="text-xs">Setor</Label>
-              <Select value={selectedSector} onValueChange={(v) => { setSelectedSector(v); setSelectedBed(""); }}>
+              <Select value={selectedSector} onValueChange={(v) => { setSelectedSector(v); setSelectedBed(""); setExtraBedRequested(false); }}>
                 <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar setor" /></SelectTrigger>
                 <SelectContent>
                   {SECTORS.map(s => (
@@ -439,17 +445,54 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             )}
           </div>
 
-          {sectorFullAlert && (
+          {sectorFullAlert && !extraBedRequested && (
             <Card className="border-destructive/40 bg-destructive/10">
               <CardContent className="p-3 flex items-start gap-2.5">
                 <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
-                <div className="text-sm">
-                  <p className="font-semibold text-destructive">Setor lotado — Admissão bloqueada</p>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-destructive">Setor lotado — Admissão bloqueada</p>
                   <p className="text-muted-foreground mt-1 text-xs">
                     Todos os leitos regulares de <span className="font-medium">{SECTORS.find(s => s.value === selectedSector)?.label}</span> estão ocupados. 
-                    Não é possível admitir neste setor até que um leito seja liberado. 
-                    Selecione outro setor ou aguarde uma alta/transferência.
+                    Selecione outro setor ou solicite uma maca extra para alocação provisória.
                   </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 h-7 text-xs gap-1.5 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                    onClick={() => {
+                      setExtraBedRequested(true);
+                      setSelectedBed("EXTRA");
+                    }}
+                  >
+                    <BedDouble className="h-3.5 w-3.5" />
+                    Solicitar Maca Extra
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {sectorFullAlert && extraBedRequested && (
+            <Card className="border-amber-500/40 bg-amber-500/10">
+              <CardContent className="p-3 flex items-start gap-2.5">
+                <BedDouble className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Maca extra solicitada</p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    O paciente será alocado provisoriamente em maca extra no setor <span className="font-medium">{SECTORS.find(s => s.value === selectedSector)?.label}</span>. 
+                    Transfira para leito regular assim que houver disponibilidade.
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1 h-6 text-[10px] text-muted-foreground px-1"
+                    onClick={() => {
+                      setExtraBedRequested(false);
+                      setSelectedBed("");
+                    }}
+                  >
+                    Cancelar maca extra
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -480,7 +523,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           </Button>
           <Button
             onClick={handleAdmit}
-            disabled={!selectedSector || (!isUtiAdmission && !selectedBed) || isSubmitting || sectorFullAlert}
+            disabled={!selectedSector || (!isUtiAdmission && !selectedBed) || isSubmitting || (sectorFullAlert && !extraBedRequested)}
             className="gap-1"
           >
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <BedDouble className="h-4 w-4" />}
