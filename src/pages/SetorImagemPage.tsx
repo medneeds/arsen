@@ -6,6 +6,7 @@ import {
   Filter, RefreshCw, ImageIcon, Zap, MonitorSpeaker, Heart,
   Bone, Baby, AlertTriangle, FileText,
 } from "lucide-react";
+import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -85,6 +86,7 @@ const SetorImagemPage = () => {
   const [selectedRequest, setSelectedRequest] = useState<ExamRequest | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [resultText, setResultText] = useState("");
+  const [resultFiles, setResultFiles] = useState<ResultFile[]>([]);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   // Fetch imaging requests
@@ -186,6 +188,9 @@ const SetorImagemPage = () => {
         if (resultText.trim()) {
           updateData.results = resultText.trim();
         }
+        if (resultFiles.length > 0) {
+          updateData.result_data = { files: resultFiles };
+        }
       }
 
       const { error } = await supabase
@@ -203,6 +208,7 @@ const SetorImagemPage = () => {
       );
       setShowDetailDialog(false);
       setResultText("");
+      setResultFiles([]);
       fetchRequests();
     } catch (err) {
       toast.error("Erro ao atualizar status");
@@ -214,6 +220,10 @@ const SetorImagemPage = () => {
   const openDetail = (request: ExamRequest) => {
     setSelectedRequest(request);
     setResultText(request.results || "");
+    // Load existing files from result_data
+    const rd = request as any;
+    const existingFiles: ResultFile[] = rd.result_data?.files || [];
+    setResultFiles(existingFiles);
     setShowDetailDialog(true);
   };
 
@@ -506,29 +516,23 @@ const SetorImagemPage = () => {
                 </div>
               )}
 
-              {/* Results area (for completing) */}
-              {selectedRequest.status !== "completed" && selectedRequest.status !== "pending" && (
-                <div>
-                  <p className="text-xs font-semibold text-foreground mb-1.5">Resultado / Laudo</p>
-                  <Textarea
-                    value={resultText}
-                    onChange={(e) => setResultText(e.target.value)}
-                    placeholder="Descreva o resultado ou laudo do exame..."
-                    rows={3}
-                    className="text-sm"
-                  />
-                </div>
+              {/* Results area (for completing or viewing) */}
+              {(selectedRequest.status !== "pending") && (
+                <ExamResultInput
+                  resultText={resultText}
+                  onResultTextChange={setResultText}
+                  resultFiles={resultFiles}
+                  onResultFilesChange={setResultFiles}
+                  readOnly={selectedRequest.status === "completed"}
+                  requestId={selectedRequest.id}
+                />
               )}
 
-              {/* Existing results */}
-              {selectedRequest.results && (
-                <div className="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200 text-xs">
-                  <strong>Resultado registrado:</strong>
-                  <p className="mt-1 whitespace-pre-wrap">{selectedRequest.results}</p>
-                  {selectedRequest.completed_by && (
-                    <p className="mt-1 text-muted-foreground">Concluído por: {selectedRequest.completed_by}</p>
-                  )}
-                </div>
+              {/* Completed meta */}
+              {selectedRequest.completed_by && selectedRequest.status === "completed" && (
+                <p className="text-[10px] text-muted-foreground">
+                  Concluído por: {selectedRequest.completed_by}
+                </p>
               )}
             </div>
           )}

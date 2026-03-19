@@ -8,6 +8,7 @@ import {
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
   ChevronDown, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
 } from "lucide-react";
+import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -196,6 +197,7 @@ const RequisicaoUnificadaPage = () => {
   // ── Result dialog ──
   const [viewingRequest, setViewingRequest] = useState<any | null>(null);
   const [resultText, setResultText] = useState("");
+  const [resultFiles, setResultFiles] = useState<ResultFile[]>([]);
   const [savingResult, setSavingResult] = useState(false);
 
   // ── Pre-fill from navigation state or URL params ──
@@ -348,19 +350,24 @@ const RequisicaoUnificadaPage = () => {
     if (!viewingRequest) return;
     setSavingResult(true);
     try {
+      const updateData: any = {
+        status: "completed",
+        results: resultText.trim() || null,
+        completed_at: new Date().toISOString(),
+        completed_by: user?.email?.split("@")[0] || "Sistema",
+      };
+      if (resultFiles.length > 0) {
+        updateData.result_data = { files: resultFiles };
+      }
       const { error } = await supabase
         .from("exam_requests")
-        .update({
-          status: "completed",
-          results: resultText.trim() || null,
-          completed_at: new Date().toISOString(),
-          completed_by: user?.email?.split("@")[0] || "Sistema",
-        })
+        .update(updateData)
         .eq("id", viewingRequest.id);
       if (error) throw error;
       toast.success("Resultado registrado");
       setViewingRequest(null);
       setResultText("");
+      setResultFiles([]);
       fetchRequests();
     } catch {
       toast.error("Erro ao salvar resultado");
@@ -722,7 +729,7 @@ const RequisicaoUnificadaPage = () => {
                 key={req.id}
                 request={req}
                 category={activeCategory}
-                onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); }}
+                onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
                 onCancel={() => handleCancelRequest(req.id)}
               />
             ))
@@ -743,7 +750,7 @@ const RequisicaoUnificadaPage = () => {
                 key={req.id}
                 request={req}
                 category={activeCategory}
-                onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); }}
+                onViewResult={() => { setViewingRequest(req); setResultText(req.results || ""); setResultFiles(req.result_data?.files || []); }}
                 showResult
               />
             ))
@@ -766,7 +773,7 @@ const RequisicaoUnificadaPage = () => {
       </Tabs>
 
       {/* ── Result Dialog ── */}
-      <Dialog open={!!viewingRequest} onOpenChange={() => { setViewingRequest(null); setResultText(""); }}>
+      <Dialog open={!!viewingRequest} onOpenChange={() => { setViewingRequest(null); setResultText(""); setResultFiles([]); }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -815,18 +822,15 @@ const RequisicaoUnificadaPage = () => {
                 </div>
               </div>
 
-              {/* Result input */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Resultado</Label>
-                <Textarea
-                  placeholder="Digite os resultados do exame/parecer..."
-                  value={resultText}
-                  onChange={e => setResultText(e.target.value)}
-                  rows={8}
-                  readOnly={viewingRequest.status === "completed"}
-                  className={viewingRequest.status === "completed" ? "bg-muted/30" : ""}
-                />
-              </div>
+              {/* Result input with text + image + PDF */}
+              <ExamResultInput
+                resultText={resultText}
+                onResultTextChange={setResultText}
+                resultFiles={resultFiles}
+                onResultFilesChange={setResultFiles}
+                readOnly={viewingRequest.status === "completed"}
+                requestId={viewingRequest.id}
+              />
 
               {viewingRequest.completed_at && (
                 <p className="text-[10px] text-muted-foreground">
@@ -838,7 +842,7 @@ const RequisicaoUnificadaPage = () => {
           {viewingRequest?.status !== "completed" && (
             <DialogFooter>
               <Button variant="outline" onClick={() => setViewingRequest(null)}>Cancelar</Button>
-              <Button onClick={handleSaveResult} disabled={savingResult || !resultText.trim()} className="gap-2">
+              <Button onClick={handleSaveResult} disabled={savingResult || (!resultText.trim() && resultFiles.length === 0)} className="gap-2">
                 {savingResult ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 Salvar Resultado
               </Button>
