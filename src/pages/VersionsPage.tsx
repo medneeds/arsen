@@ -374,12 +374,12 @@ export default function VersionsPage() {
         <Card className="shadow-lg">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Clock className="h-16 w-16 text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground font-semibold uppercase text-lg">
+            <p className="text-muted-foreground font-semibold text-lg">
               {searchDescription || appliedStartDate || appliedEndDate 
-                ? "Nenhuma Versão Encontrada" 
-                : "Nenhuma Versão Salva Ainda"}
+                ? "Nenhuma versão encontrada" 
+                : "Nenhuma versão salva ainda"}
             </p>
-            <p className="text-muted-foreground text-sm uppercase mt-2">
+            <p className="text-muted-foreground text-sm mt-2">
               {searchDescription || appliedStartDate || appliedEndDate 
                 ? "Tente ajustar os filtros de busca" 
                 : "Salve uma versão do mapa para criar um histórico"}
