@@ -322,7 +322,7 @@ const EvolucaoPage = () => {
                         </div>
                         <Separator />
                         <div>
-                          <Label className="text-[10px] text-muted-foreground uppercase">Dados objetivos adicionais (exames, imagem, etc.)</Label>
+                          <Label className="text-[10px] text-muted-foreground">Dados objetivos adicionais (exames, imagem, etc.)</Label>
                           <Textarea
                             value={soap.objective}
                             onChange={e => updateSOAP('objective', e.target.value)}
