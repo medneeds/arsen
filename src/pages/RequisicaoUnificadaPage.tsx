@@ -8,6 +8,7 @@ import {
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
   ChevronDown, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
 } from "lucide-react";
+import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
