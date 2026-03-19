@@ -588,7 +588,14 @@ export default function Saps3Page() {
         }
       }
 
-      toast.success(`Paciente admitido no leito ${selectedBed} com SAPS 3 = ${scores.total} (mortalidade ${scores.mortality}%)`);
+      const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector;
+      setConfirmationData({
+        patientName,
+        bedNumber: selectedBed,
+        sectorLabel,
+        totalScore: scores.total,
+        predictedMortality: scores.mortality,
+      });
       setSelectedRequest(null);
       loadPendingRequests();
       loadRecords();
