@@ -169,9 +169,10 @@ const SetorImagemPage = () => {
   // Stats
   const stats = useMemo(() => ({
     pending: requests.filter(r => r.status === "pending").length,
+    acknowledged: requests.filter(r => r.status === "acknowledged").length,
     inProgress: requests.filter(r => r.status === "in_progress").length,
     completed: requests.filter(r => r.status === "completed").length,
-    urgent: requests.filter(r => r.priority === "urgente" && r.status === "pending").length,
+    urgent: requests.filter(r => r.priority === "urgente" && (r.status === "pending" || r.status === "acknowledged")).length,
   }), [requests]);
 
   // Update request status
