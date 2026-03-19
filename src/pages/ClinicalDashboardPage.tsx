@@ -154,7 +154,7 @@ const ClinicalDashboardPage = () => {
       }];
 
       // Also build global occupancy for the overview cards
-      const sectors = ["red", "yellow", "blue", "outside"];
+      const sectors = Object.keys(SECTOR_LABELS);
       const allOccData: OccupancyData[] = sectors.map((s) => {
         const sp = allPatients.filter((p) => p.sector === s);
         const occ = sp.filter((p) => p.name && p.name.trim() !== "").length;
