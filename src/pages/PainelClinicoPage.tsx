@@ -417,7 +417,8 @@ export default function PainelClinicoPage() {
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-24">Leito</TableHead>
-                  <TableHead>Paciente</TableHead>
+                   <TableHead>Paciente</TableHead>
+                  <TableHead className="w-24 text-center">SAPS 3</TableHead>
                   <TableHead className="w-48">Pendências</TableHead>
                   <TableHead className="w-28 text-center">Prescrição</TableHead>
                   <TableHead className="w-24 text-center">Dias Int.</TableHead>
