@@ -71,12 +71,12 @@ export function parseDate(input: string): Date | null {
 export function formatPediatricAge(input: string | number): string {
   if (typeof input === 'number') {
     // Apenas anos
-    if (input === 1) return "1 ANO";
-    return `${input} ANOS`;
+    if (input === 1) return "1 ano";
+    return `${input} anos`;
   }
 
   // Se já está formatado, retorna como está
-  return input.toUpperCase();
+  return input;
 }
 
 /**
