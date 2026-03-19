@@ -1286,6 +1286,7 @@ function RenewalDialog({
           )}
           <p className="text-xs text-muted-foreground">
             Os itens serão duplicados para a nova prescrição. Itens suspensos{!includeSuspended && ' NÃO'} serão incluídos.
+            Itens extras marcados como "Agora" serão excluídos automaticamente da renovação.
           </p>
         </div>
         <DialogFooter>
