@@ -204,8 +204,8 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
               type="text"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, '') })}
-              placeholder="SEU.USUARIO"
-              className="h-9 pl-10 bg-gray-50 border border-gray-200 rounded-lg text-sm uppercase"
+              placeholder="seu.usuario"
+              className="h-9 pl-10 bg-gray-50 border border-gray-200 rounded-lg text-sm"
               disabled={loading}
               maxLength={30}
             />
