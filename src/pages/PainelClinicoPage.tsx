@@ -502,7 +502,7 @@ export default function PainelClinicoPage() {
 
   // Use DB patients if available (occupied ones), otherwise fallback to mock for demo
   const occupiedDbPatients = dbPatients.filter(p => !p.isVacant && p.name && p.name.trim() !== "");
-  const patients = occupiedDbPatients.length > 0 ? dbPatients : MOCK_UTI2_PATIENTS;
+  const patients = occupiedDbPatients.length > 0 ? dbPatients : ALL_MOCK_PATIENTS;
 
   // Filter out vacant beds and apply search/sector filter
   const filteredPatients = useMemo(() => {
