@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
@@ -171,6 +172,7 @@ const EvolucaoPage = () => {
 
   return (
     <div className="print:p-2">
+      <ClinicalHeader moduleLabel="Evolução Clínica" />
       {/* Screen layout */}
       <div className="p-4 space-y-4 max-w-5xl mx-auto print:hidden">
         {/* Header */}

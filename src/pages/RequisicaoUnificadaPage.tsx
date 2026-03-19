@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
+import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -385,7 +386,9 @@ const RequisicaoUnificadaPage = () => {
   const CatIcon = catConfig.icon;
 
   return (
-    <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
+    <div>
+      <ClinicalHeader moduleLabel="Requisições" />
+      <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -842,6 +845,7 @@ const RequisicaoUnificadaPage = () => {
           )}
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };

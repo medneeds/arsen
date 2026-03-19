@@ -1,5 +1,6 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { ClinicalHeader } from "@/components/ClinicalHeader";
 import ReactMarkdown from "react-markdown";
 import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay } from "date-fns";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
@@ -2543,7 +2544,9 @@ const PrescricaoPage = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-0 print:m-0 print:space-y-0 print:max-w-none print:text-black animate-fade-in" style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' } as React.CSSProperties}>
+    <div className="animate-fade-in print:p-0 print:m-0 print:space-y-0 print:max-w-none print:text-black" style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' } as React.CSSProperties}>
+      <ClinicalHeader moduleLabel="Prescrição Médica" />
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-0 print:m-0 print:space-y-0 print:max-w-none">
       {/* ===== PRINT STYLES ===== */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
@@ -3418,6 +3421,7 @@ const PrescricaoPage = () => {
         }}
         allMedications={Object.values(ALL_ITEMS_BY_CATEGORY).flat()}
       />
+      </div>
     </div>
   );
 };
