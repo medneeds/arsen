@@ -391,11 +391,11 @@ export default function MedicalCodesPage() {
                 setEditingCode(null);
                 setFormData({ code: "", name: "", system_description: "" });
               }}
-              className="uppercase"
+              className=""
             >
               Cancelar
             </Button>
-            <Button onClick={handleSave} className="uppercase">Salvar</Button>
+            <Button onClick={handleSave}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
