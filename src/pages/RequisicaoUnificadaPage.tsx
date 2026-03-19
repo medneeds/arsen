@@ -1339,51 +1339,51 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           .apac-form col.c5 { width: 20%; }
           .apac-form td, .apac-form th {
             border: 0.5pt solid #000;
-            padding: 1px 3px;
+            padding: 1.5px 3px;
             vertical-align: top;
-            font-size: 6.3pt;
-            line-height: 1.05;
+            font-size: 7.5pt;
+            line-height: 1.15;
           }
           .apac-form .sec {
             background: #1e293b;
             color: #fff;
             font-weight: 700;
-            font-size: 5.8pt;
-            padding: 1.5px 4px;
+            font-size: 7pt;
+            padding: 2px 4px;
             text-transform: uppercase;
             letter-spacing: 0.3px;
             text-align: left;
           }
           .apac-form .lbl {
-            font-size: 5pt;
+            font-size: 6pt;
             color: #555;
             display: block;
-            line-height: 1;
+            line-height: 1.05;
             margin-bottom: 0.5px;
             white-space: nowrap;
           }
           .apac-form .val {
-            font-size: 6.8pt;
+            font-size: 8pt;
             font-weight: 500;
-            min-height: 9px;
-            line-height: 1.05;
+            min-height: 10px;
+            line-height: 1.15;
           }
           .apac-form .val-mono {
             font-family: 'Courier New', monospace;
-            font-size: 6.8pt;
+            font-size: 8pt;
             font-weight: 600;
-            min-height: 9px;
-            line-height: 1.05;
+            min-height: 10px;
+            line-height: 1.15;
           }
           .apac-form .obs-cell {
             height: auto;
           }
           .apac-form .obs-space {
-            min-height: 130px;
+            min-height: 110px;
             white-space: pre-wrap;
-            font-size: 6.3pt;
+            font-size: 7.5pt;
             font-weight: 400;
-            line-height: 1.15;
+            line-height: 1.2;
           }
           .apac-form .sig-space { height: 12px; }
           .apac-form .sig-space-sm { height: 9px; }
