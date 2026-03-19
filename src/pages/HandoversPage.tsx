@@ -192,10 +192,10 @@ export default function HandoversPage() {
             <ClipboardList className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground uppercase tracking-tight">
-              PASSAGENS DE PLANTÃO
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
+              Passagens de Plantão
             </h1>
-            <p className="text-sm text-muted-foreground uppercase tracking-wide">
+            <p className="text-sm text-muted-foreground tracking-wide">
               Histórico de Registros
             </p>
           </div>
