@@ -217,7 +217,7 @@ const EvolucaoPage = () => {
             </div>
             <div className="flex gap-3">
               <div>
-                <Label className="text-[10px] text-muted-foreground uppercase">Idade</Label>
+                <Label className="text-[10px] text-muted-foreground">Idade</Label>
                 <p className="text-sm font-medium">{patient.age}</p>
               </div>
               <div>
