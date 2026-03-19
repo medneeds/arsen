@@ -397,10 +397,10 @@ export default function VersionsPage() {
                       <Clock className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="uppercase text-lg">
+                      <CardTitle className="text-lg">
                         {version.description}
                       </CardTitle>
-                      <CardDescription className="uppercase text-xs">
+                      <CardDescription className="text-xs">
                         {version.snapshot_data.length} {version.snapshot_data.length === 1 ? 'paciente salvo' : 'pacientes salvos'}
                       </CardDescription>
                     </div>
