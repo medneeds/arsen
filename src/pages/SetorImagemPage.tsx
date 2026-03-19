@@ -319,12 +319,15 @@ const SetorImagemPage = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger value="pending" className="gap-1.5 text-xs">
             <Clock className="h-3.5 w-3.5" /> Pendentes ({stats.pending})
           </TabsTrigger>
+          <TabsTrigger value="acknowledged" className="gap-1.5 text-xs">
+            <Eye className="h-3.5 w-3.5" /> Ciência ({stats.acknowledged})
+          </TabsTrigger>
           <TabsTrigger value="in_progress" className="gap-1.5 text-xs">
-            <Loader2 className="h-3.5 w-3.5" /> Em Execução ({stats.inProgress})
+            <Loader2 className="h-3.5 w-3.5" /> Execução ({stats.inProgress})
           </TabsTrigger>
           <TabsTrigger value="completed" className="gap-1.5 text-xs">
             <CheckCircle2 className="h-3.5 w-3.5" /> Concluídos ({stats.completed})
