@@ -152,7 +152,7 @@ export function ResetUserPasswordDialog({
             {/* Password Fields */}
             <div className="space-y-3">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Nova Senha *</Label>
+                <Label className="text-xs font-semibold text-gray-600">Nova Senha *</Label>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
