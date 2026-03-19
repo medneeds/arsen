@@ -220,6 +220,10 @@ const SetorImagemPage = () => {
   const openDetail = (request: ExamRequest) => {
     setSelectedRequest(request);
     setResultText(request.results || "");
+    // Load existing files from result_data
+    const rd = request as any;
+    const existingFiles: ResultFile[] = rd.result_data?.files || [];
+    setResultFiles(existingFiles);
     setShowDetailDialog(true);
   };
 
