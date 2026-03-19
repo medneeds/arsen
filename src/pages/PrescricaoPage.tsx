@@ -1778,18 +1778,27 @@ const PrescricaoPage = () => {
   const activeItemsCount = items.filter(i => i.status === 'active').length;
   const suspendedItemsCount = items.filter(i => i.status === 'suspended').length;
 
-  // Fetch saved prescriptions
+  // Fetch saved prescriptions — filtered by current patient
   const fetchPrescriptions = useCallback(async () => {
-    if (!currentHospital || !currentState) return;
+    if (!currentHospital || !currentState || !patient.name.trim()) return;
     setLoadingList(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('prescriptions')
         .select('id, patient_name, status, version, created_at, digital_signature')
         .eq('hospital_unit_id', currentHospital.id)
         .eq('state_id', currentState.id)
+        .eq('patient_name', patient.name.trim())
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(30);
+
+      if (historyDate) {
+        const dayStart = startOfDay(historyDate).toISOString();
+        const dayEnd = startOfDay(addDays(historyDate, 1)).toISOString();
+        query = query.gte('created_at', dayStart).lt('created_at', dayEnd);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       setSavedPrescriptions((data || []).map(d => ({
         ...d,
@@ -1800,7 +1809,7 @@ const PrescricaoPage = () => {
     } finally {
       setLoadingList(false);
     }
-  }, [currentHospital, currentState]);
+  }, [currentHospital, currentState, patient.name, historyDate]);
 
   useEffect(() => { fetchPrescriptions(); }, [fetchPrescriptions]);
 
