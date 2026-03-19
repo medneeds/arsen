@@ -199,6 +199,12 @@ export function AppSidebar({
         { title: "Painel CCIH", icon: LayoutDashboard, link: "/ccih", profiles: ["ccih"] },
       ];
     }
+    // Administrativo: reception/registration environment
+    if (accessProfile === "administrativo") {
+      return [
+        { title: "Recepção", icon: LayoutDashboard, link: "/recepcao", profiles: ["administrativo"] },
+      ];
+    }
     // Filter sections by profile, then filter sub-items within each section
     return allMenuItems
       .filter(section => !section.profiles || section.profiles.includes(accessProfile))
