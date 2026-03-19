@@ -256,7 +256,7 @@ export default function AdminUnitsPage() {
                     placeholder="Ex: Hospital Central"
                     value={formData.name}
                     onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value.toUpperCase() })
+                      setFormData({ ...formData, name: e.target.value })
                     }
                   />
                 </div>
