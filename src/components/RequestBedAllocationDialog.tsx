@@ -36,9 +36,10 @@ export function RequestBedAllocationDialog({
   const { createRequest } = useBedAllocationRequests();
 
   const sectors = [
-    { value: "Cuidados Especiais", label: "Sala de Cuidados Especiais (Vermelha)", color: "text-red-500" },
-    { value: "Observação Amarela", label: "Observação Amarela", color: "text-yellow-500" },
-    { value: "Observação Azul", label: "Observação Azul", color: "text-blue-500" },
+    { value: "UTI 1", label: "UTI 1", color: "text-red-500" },
+    { value: "UTI 2", label: "UTI 2", color: "text-yellow-500" },
+    { value: "UCI 1", label: "UCI 1", color: "text-blue-500" },
+    { value: "UCI 2", label: "UCI 2", color: "text-muted-foreground" },
   ];
 
   const handleSubmit = async () => {

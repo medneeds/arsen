@@ -80,7 +80,7 @@ const EvolucaoPage = () => {
   const initialPatientBed = searchParams.get('patientBed') || '';
   const initialPatientSector = searchParams.get('patientSector') || '';
   const initialPatientId = searchParams.get('patientId') || '';
-  const sectorMap: Record<string, string> = { red: "Cuidados Especiais", yellow: "Obs. Amarela", blue: "Obs. Azul", outside: "Externo" };
+  const sectorMap: Record<string, string> = { red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2" };
 
   const [patient] = useState<PatientHeader>(() => {
     const demoPatients: Record<string, Omit<PatientHeader, 'bed' | 'unit'>> = {

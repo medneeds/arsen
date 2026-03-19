@@ -155,9 +155,9 @@ export function EditPatientDialog({
     setAdmissionHistoryLocal("");
   };
 
-  const sectorLabel = patient.sector === 'outside' ? 'Fora das Alas' : 
-                        patient.sector === 'red' ? 'Sala Vermelha' :
-                        patient.sector === 'yellow' ? 'Observação Amarela' : 'Observação Azul';
+  const sectorLabel = patient.sector === 'outside' ? 'UCI 2' : 
+                        patient.sector === 'red' ? 'UTI 1' :
+                        patient.sector === 'yellow' ? 'UTI 2' : 'UCI 1';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

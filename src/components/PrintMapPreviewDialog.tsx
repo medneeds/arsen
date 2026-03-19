@@ -285,7 +285,7 @@ export function PrintMapPreviewDialog({
             <div>
               <PrintableSectorSection
                 patients={redPatients}
-                sectorName="Ala Vermelha"
+                sectorName="UTI 1"
                 bgColor="#fef2f2"
                 borderColor="#ef4444"
                 textColor="#b91c1c"
@@ -293,7 +293,7 @@ export function PrintMapPreviewDialog({
               />
               <PrintableSectorSection
                 patients={yellowPatients}
-                sectorName="Ala Amarela"
+                sectorName="UTI 2"
                 bgColor="#fefce8"
                 borderColor="#eab308"
                 textColor="#a16207"
@@ -301,7 +301,7 @@ export function PrintMapPreviewDialog({
               />
               <PrintableSectorSection
                 patients={bluePatients}
-                sectorName="Ala Azul"
+                sectorName="UCI 1"
                 bgColor="#eff6ff"
                 borderColor="#3b82f6"
                 textColor="#1d4ed8"
@@ -309,7 +309,7 @@ export function PrintMapPreviewDialog({
               />
               <PrintableSectorSection
                 patients={outsidePatients}
-                sectorName="Fora das Alas"
+                sectorName="UCI 2"
                 bgColor="#f9fafb"
                 borderColor="#6b7280"
                 textColor="#4b5563"

@@ -35,10 +35,10 @@ const parseTextArray = (value: string | string[] | null | undefined): string[] =
 };
 
 const sectorLabels: Record<string, { label: string; className: string }> = {
-  red: { label: "Cuidados Especiais", className: "bg-destructive/10 text-destructive border-destructive/30" },
-  yellow: { label: "Obs. Amarela", className: "bg-warning/10 text-warning border-warning/30" },
-  blue: { label: "Obs. Azul", className: "bg-primary/10 text-primary border-primary/30" },
-  outside: { label: "Fora das Alas", className: "bg-muted text-muted-foreground border-border" },
+  red: { label: "UTI 1", className: "bg-destructive/10 text-destructive border-destructive/30" },
+  yellow: { label: "UTI 2", className: "bg-warning/10 text-warning border-warning/30" },
+  blue: { label: "UCI 1", className: "bg-primary/10 text-primary border-primary/30" },
+  outside: { label: "UCI 2", className: "bg-muted text-muted-foreground border-border" },
 };
 
 const clinicalStatusLabels: Record<string, { label: string; color: string }> = {

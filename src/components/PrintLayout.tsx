@@ -123,7 +123,7 @@ export function PrintLayout({
         <div>
           <PrintableSectorSection
             patients={redPatients}
-            sectorName="Ala Vermelha"
+            sectorName="UTI 1"
             bgColor="#fef2f2"
             borderColor="#dc2626"
             textColor="#991b1b"
@@ -131,7 +131,7 @@ export function PrintLayout({
           />
           <PrintableSectorSection
             patients={yellowPatients}
-            sectorName="Ala Amarela"
+            sectorName="UTI 2"
             bgColor="#fefce8"
             borderColor="#ca8a04"
             textColor="#854d0e"
@@ -139,7 +139,7 @@ export function PrintLayout({
           />
           <PrintableSectorSection
             patients={bluePatients}
-            sectorName="Ala Azul"
+            sectorName="UCI 1"
             bgColor="#eff6ff"
             borderColor="#2563eb"
             textColor="#1e40af"
@@ -147,7 +147,7 @@ export function PrintLayout({
           />
           <PrintableSectorSection
             patients={outsidePatients}
-            sectorName="Fora das Alas"
+            sectorName="UCI 2"
             bgColor="#f8fafc"
             borderColor="#64748b"
             textColor="#475569"
