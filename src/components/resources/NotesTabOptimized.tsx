@@ -455,7 +455,7 @@ const NotesTabOptimized = () => {
                       className="h-5 w-5"
                     />
                     <span
-                      className={`flex-1 uppercase text-sm ${
+                      className={`flex-1 text-sm ${
                         item.completed ? "line-through text-muted-foreground" : ""
                       }`}
                     >
