@@ -144,6 +144,12 @@ const SetorLaboratorioPage = () => {
 
   const filteredRequests = useMemo(() => {
     return requests.filter((r) => {
+      // Date range filter
+      try {
+        const createdDate = parseISO(r.created_at);
+        if (!isWithinInterval(createdDate, { start: dateStart, end: dateEnd })) return false;
+      } catch { return false; }
+
       if (activeTab === "pending" && r.status !== "pending") return false;
       if (activeTab === "acknowledged" && r.status !== "acknowledged") return false;
       if (activeTab === "in_progress" && r.status !== "in_progress") return false;
@@ -168,7 +174,7 @@ const SetorLaboratorioPage = () => {
 
       return true;
     });
-  }, [requests, activeTab, selectedCategory, search]);
+  }, [requests, activeTab, selectedCategory, search, dateStart, dateEnd]);
 
   const stats = useMemo(() => ({
     pending: requests.filter(r => r.status === "pending").length,

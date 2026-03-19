@@ -151,6 +151,12 @@ const SetorImagemPage = () => {
   // Filter logic
   const filteredRequests = useMemo(() => {
     return requests.filter((r) => {
+      // Date range filter
+      try {
+        const createdDate = parseISO(r.created_at);
+        if (!isWithinInterval(createdDate, { start: dateStart, end: dateEnd })) return false;
+      } catch { return false; }
+
       // Status tab filter
       if (activeTab === "pending" && r.status !== "pending") return false;
       if (activeTab === "acknowledged" && r.status !== "acknowledged") return false;
@@ -178,7 +184,7 @@ const SetorImagemPage = () => {
 
       return true;
     });
-  }, [requests, activeTab, selectedModality, search]);
+  }, [requests, activeTab, selectedModality, search, dateStart, dateEnd]);
 
   // Stats
   const stats = useMemo(() => ({
