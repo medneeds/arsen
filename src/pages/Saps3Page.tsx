@@ -634,6 +634,16 @@ export default function Saps3Page() {
 
   return (
     <div className="space-y-6">
+      {confirmationData && (
+        <SapsConfirmationScreen
+          patientName={confirmationData.patientName}
+          bedNumber={confirmationData.bedNumber}
+          sectorLabel={confirmationData.sectorLabel}
+          totalScore={confirmationData.totalScore}
+          predictedMortality={confirmationData.predictedMortality}
+          onComplete={() => setConfirmationData(null)}
+        />
+      )}
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
