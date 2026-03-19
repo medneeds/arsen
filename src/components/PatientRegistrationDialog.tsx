@@ -397,7 +397,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
             </div>
 
             {/* UTI destination notice */}
-            {(form.destination_sector === "UTI 1" || form.destination_sector === "UTI 2") && (
+            {form.destination_sector.split(", ").some(s => s.startsWith("UTI")) && (
               <Card className="border-amber-500/30 bg-amber-500/5">
                 <CardContent className="p-4 flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
