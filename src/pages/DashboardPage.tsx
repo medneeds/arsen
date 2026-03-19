@@ -25,6 +25,7 @@ import { useDepartment } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { PrintableDashboard } from "@/components/PrintableDashboard";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SECTOR_DISPLAY_LABELS, SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 
 interface PriorityAlert {
   id: string;
