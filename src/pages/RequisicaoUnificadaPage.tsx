@@ -1341,7 +1341,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           <table className="apac-table" style={{ marginTop: "4px" }}><tbody>
             <tr><td colSpan={4} className="apac-section-title">JUSTIFICATIVA DO(S) PROCEDIMENTO(S) SOLICITADO(S)</td></tr>
             <tr><td><span className="apac-field-label">33 — DIAGNÓSTICO INICIAL</span><div className="apac-field-value">{diagnosis.toUpperCase()}</div></td><td><span className="apac-field-label">34 — CID-10 PRINCIPAL</span><div className="apac-field-value" style={{ fontFamily: "monospace" }}>{cidPrimary.toUpperCase()}</div></td><td><span className="apac-field-label">35 — CID-10 SECUNDÁRIO</span><div className="apac-field-value" style={{ fontFamily: "monospace" }}>{cidSecondary.toUpperCase()}</div></td><td><span className="apac-field-label">36 — CID-10 CAUSAS ASSOC.</span><div className="apac-field-value" style={{ fontFamily: "monospace" }}>{cidAssociated.toUpperCase()}</div></td></tr>
-            <tr><td colSpan={4}><span className="apac-field-label">37 — OBSERVAÇÕES</span><div className="apac-field-value" style={{ minHeight: "80px", whiteSpace: "pre-wrap" }}>{observations}</div></td></tr>
+            <tr><td colSpan={4}><span className="apac-field-label">37 — OBSERVAÇÕES</span><div className="apac-field-value" style={{ minHeight: "140px", whiteSpace: "pre-wrap" }}>{observations}</div></td></tr>
           </tbody></table>
           <table className="apac-table" style={{ marginTop: "4px" }}><tbody>
             <tr><td colSpan={4} className="apac-section-title">SOLICITAÇÃO</td></tr>
