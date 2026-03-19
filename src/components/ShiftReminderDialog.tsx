@@ -46,7 +46,7 @@ export function ShiftReminderDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="uppercase flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-amber-600 animate-pulse" />
             Lembrete de Passagem de Plantão
           </DialogTitle>
