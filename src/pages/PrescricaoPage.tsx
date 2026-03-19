@@ -950,7 +950,7 @@ function SortablePrescriptionItemRow({
                 </div>
               </div>
 
-              {/* Row 2: Detailed fields - Quantidade, Fazer/Retirar, Diluente, Vol Diluente, Acesso */}
+              {/* Row 2: Quantidade, Diluente, Vol Diluente, Acesso */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Qtd:</span>
@@ -965,20 +965,14 @@ function SortablePrescriptionItemRow({
                   </Select>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Ação:</span>
-                  <Select value={item.action || 'fazer'} onValueChange={(v) => onUpdate(item.id, "action", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-24"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fazer" className="text-xs">Fazer</SelectItem>
-                      <SelectItem value="retirar" className="text-xs">Retirar</SelectItem>
-                      <SelectItem value="manter" className="text-xs">Manter</SelectItem>
-                      <SelectItem value="suspender" className="text-xs">Suspender</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Diluente:</span>
-                  <Select value={item.diluent || ''} onValueChange={(v) => onUpdate(item.id, "diluent", v)}>
+                  <Select value={item.diluent || ''} onValueChange={(v) => {
+                    onUpdate(item.id, "diluent", v);
+                    // Auto-recalculate volume total when diluent changes
+                    const tempItem = { ...item, diluent: v };
+                    const autoVol = calcVolumeTotal(tempItem);
+                    if (autoVol) onUpdate(item.id, "volumeTotal", autoVol);
+                  }}>
                     <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-24"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="SF0,9%" className="text-xs">SF 0,9%</SelectItem>
@@ -992,8 +986,18 @@ function SortablePrescriptionItemRow({
                   </Select>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Vol:</span>
-                  <Input value={item.diluentVolume || ''} onChange={(e) => onUpdate(item.id, "diluentVolume", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-16 text-center" placeholder="mL" />
+                  <span className="text-[10px] text-muted-foreground">Vol dil:</span>
+                  <Input value={item.diluentVolume || ''} onChange={(e) => {
+                    onUpdate(item.id, "diluentVolume", e.target.value);
+                    // Auto-recalculate volume total
+                    const tempItem = { ...item, diluentVolume: e.target.value };
+                    const autoVol = calcVolumeTotal(tempItem);
+                    if (autoVol) onUpdate(item.id, "volumeTotal", autoVol);
+                    // Auto-recalculate concentration
+                    const tempItem2 = { ...tempItem, volumeTotal: autoVol || item.volumeTotal || '' };
+                    const autoConc = calcConcentration(tempItem2);
+                    if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                  }} className="h-6 text-[11px] bg-muted/10 border-border/30 w-16 text-center" placeholder="mL" />
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Acesso:</span>
@@ -1011,26 +1015,43 @@ function SortablePrescriptionItemRow({
                 </div>
               </div>
 
-              {/* Row 3: Infusion details - Correr em, Gotejamento, Concentração */}
+              {/* Row 3: Infusion — Vol total → Correr em (com unidade) → Gotejamento + Rate | Concentração */}
               <div className="flex items-center gap-2 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
                 <Droplets className="h-3 w-3 text-primary shrink-0" />
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-muted-foreground font-medium">Vol total:</span>
+                  <Input
+                    value={item.volumeTotal || ''}
+                    onChange={(e) => {
+                      onUpdate(item.id, "volumeTotal", e.target.value);
+                      // Auto-recalculate concentration
+                      const tempItem = { ...item, volumeTotal: e.target.value };
+                      const autoConc = calcConcentration(tempItem);
+                      if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                    }}
+                    className="h-6 text-[11px] bg-background border-border/40 w-16 text-center font-medium"
+                    placeholder="mL"
+                  />
+                  <span className="text-[10px] text-muted-foreground">mL</span>
+                </div>
+                <span className="text-muted-foreground/40">│</span>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground font-medium">Correr em:</span>
                   <Input
                     value={item.infusionTime || ''}
                     onChange={(e) => onUpdate(item.id, "infusionTime", e.target.value)}
-                    className="h-6 text-[11px] bg-background border-border/40 w-16 text-center"
-                    placeholder="min"
+                    className="h-6 text-[11px] bg-background border-border/40 w-14 text-center"
+                    placeholder="—"
                   />
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">Vol total:</span>
-                  <Input
-                    value={item.volumeTotal || ''}
-                    onChange={(e) => onUpdate(item.id, "volumeTotal", e.target.value)}
-                    className="h-6 text-[11px] bg-background border-border/40 w-16 text-center"
-                    placeholder="mL"
-                  />
+                  <Select value={item.infusionTimeUnit || 'min'} onValueChange={(v) => onUpdate(item.id, "infusionTimeUnit", v)}>
+                    <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-16">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="min" className="text-xs">min</SelectItem>
+                      <SelectItem value="h" className="text-xs">horas</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground font-medium">Gotej:</span>
@@ -1046,17 +1067,18 @@ function SortablePrescriptionItemRow({
                 </div>
                 {/* Auto-calculated rate */}
                 {item.volumeTotal && item.infusionTime && (
-                  <Badge variant="outline" className="text-[10px] font-mono bg-primary/10 border-primary/30 text-primary">
-                    = {calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC')}
+                  <Badge variant="outline" className="text-[10px] font-mono bg-primary/10 border-primary/30 text-primary font-bold">
+                    = {calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', item.infusionTimeUnit || 'min')}
                   </Badge>
                 )}
+                <span className="text-muted-foreground/40">│</span>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground font-medium">Conc:</span>
                   <Input
                     value={item.concentration || ''}
                     onChange={(e) => onUpdate(item.id, "concentration", e.target.value)}
                     className="h-6 text-[11px] bg-background border-border/40 w-24 text-center"
-                    placeholder="mg/mL"
+                    placeholder="auto"
                   />
                 </div>
                 {item.volumeTotal && item.posology && item.posology !== 'Contínuo' && item.posology !== 'Dose única' && (
