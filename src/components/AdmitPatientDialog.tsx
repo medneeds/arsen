@@ -90,6 +90,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [selectedSector, setSelectedSector] = useState("");
   const [selectedBed, setSelectedBed] = useState("");
   const [admissionNotes, setAdmissionNotes] = useState("");
+  const [dischargePrediction, setDischargePrediction] = useState("");
   const [availableBeds, setAvailableBeds] = useState<string[]>([]);
   const [occupiedBeds, setOccupiedBeds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
