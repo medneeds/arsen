@@ -2475,6 +2475,15 @@ const PrescricaoPage = () => {
           >
             <Check className="h-3.5 w-3.5" /> Validar todos
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDispense}
+            disabled={!currentPrescriptionId}
+            className="gap-1.5 text-xs text-violet-600 border-violet-200 hover:border-violet-300 hover:text-violet-700"
+          >
+            <Package className="h-3.5 w-3.5" /> Dispensar
+          </Button>
           <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
             {saving ? <span className="animate-spin h-3.5 w-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> : <Save className="h-3.5 w-3.5" />}
             {saving ? 'Salvando...' : 'Salvar'}
