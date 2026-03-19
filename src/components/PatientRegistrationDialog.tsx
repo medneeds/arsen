@@ -369,15 +369,31 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
           {/* Tab 3: Destination */}
           <TabsContent value="destino" className="space-y-4 mt-4">
             <div>
-              <Label className="text-xs font-semibold">Setor de Destino</Label>
-              <Select value={form.destination_sector} onValueChange={v => updateField("destination_sector", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione o setor" /></SelectTrigger>
-                <SelectContent>
-                  {SECTORS.map(s => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-xs font-semibold">Pedido de Leito (selecione um ou mais setores)</Label>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {SECTORS.map(s => {
+                  const selected = form.destination_sector.split(", ").filter(Boolean);
+                  const isChecked = selected.includes(s);
+                  return (
+                    <label key={s} className={cn(
+                      "flex items-center gap-2 p-2 rounded-md border cursor-pointer text-sm transition-colors",
+                      isChecked ? "border-primary bg-primary/10 text-primary font-medium" : "border-border hover:bg-muted/50"
+                    )}>
+                      <Checkbox
+                        checked={isChecked}
+                        onCheckedChange={(checked) => {
+                          const current = form.destination_sector.split(", ").filter(Boolean);
+                          const updated = checked
+                            ? [...current, s]
+                            : current.filter(x => x !== s);
+                          updateField("destination_sector", updated.join(", "));
+                        }}
+                      />
+                      {s}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
             {/* UTI destination notice */}
