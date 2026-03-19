@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { format } from "date-fns";
+import { format, startOfDay, endOfDay, isWithinInterval, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   ScanLine, Search, Clock, CheckCircle2, XCircle, Eye, Loader2,
   Filter, RefreshCw, ImageIcon, Zap, MonitorSpeaker, Heart,
-  Bone, Baby, AlertTriangle, FileText,
+  Bone, Baby, AlertTriangle, FileText, CalendarIcon,
 } from "lucide-react";
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
