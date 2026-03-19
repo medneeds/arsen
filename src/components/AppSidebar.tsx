@@ -91,16 +91,10 @@ export function AppSidebar({
   // "porta" and "visitante" roles get special handling below
   const allMenuItems = [
     {
-      title: "Mapa",
-      icon: LayoutDashboard,
-      link: "/",
-      profiles: ["medico", "gestor", "multi", "administrativo"],
-    },
-    {
-      title: "Painel Clínico",
-      icon: ClipboardCheck,
-      link: "/painel-clinico",
-      profiles: ["medico", "gestor"],
+      title: "Painel do Gestor",
+      icon: BarChart3,
+      link: "/painel-gestor",
+      profiles: ["gestor"],
     },
     {
       title: "Painel do Gestor",
