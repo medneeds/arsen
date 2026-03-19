@@ -227,7 +227,7 @@ const EvolucaoPage = () => {
             </div>
             <div className="flex gap-3">
               <div>
-                <Label className="text-[10px] text-muted-foreground uppercase">Peso</Label>
+                <Label className="text-[10px] text-muted-foreground">Peso</Label>
                 <p className="text-sm font-medium">{patient.weight} kg</p>
               </div>
               <div>
