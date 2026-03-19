@@ -80,14 +80,14 @@ export default function CuidadosPaliativosPage() {
                 relacionados à implementação dos cuidados paliativos.
               </p>
               
-              <h3 className="text-lg font-semibold uppercase text-foreground mt-6 mb-4">Medidas Contempladas</h3>
+              <h3 className="text-lg font-semibold text-foreground mt-6 mb-4">Medidas Contempladas</h3>
               <div className="bg-muted/30 border border-border rounded-lg p-6 space-y-4">
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-pink-600 dark:text-pink-400 uppercase flex items-center gap-2">
+                  <h4 className="font-semibold text-pink-600 dark:text-pink-400 flex items-center gap-2">
                     <Heart className="h-4 w-4" />
                     Medidas de Conforto Autorizadas:
                   </h4>
-                  <ul className="space-y-2 text-muted-foreground uppercase ml-6">
+                  <ul className="space-y-2 text-muted-foreground ml-6">
                     <li className="flex items-start gap-2">
                       <span className="text-pink-500 font-bold">✓</span>
                       <span>Medidas de conforto</span>
