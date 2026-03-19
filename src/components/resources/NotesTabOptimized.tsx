@@ -481,25 +481,25 @@ const NotesTabOptimized = () => {
       <Dialog open={isScheduleDialogOpen} onOpenChange={setIsScheduleDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="uppercase flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              PROGRAMAR LEMBRETE
+              Programar lembrete
             </DialogTitle>
-            <DialogDescription className="uppercase">
-              DEFINA DATA, HORA E MENSAGEM DO LEMBRETE
+            <DialogDescription>
+              Defina data, hora e mensagem do lembrete
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="scheduled-content" className="uppercase">
-                MENSAGEM DO LEMBRETE
+              <Label htmlFor="scheduled-content">
+                Mensagem do lembrete
               </Label>
               <Textarea
                 id="scheduled-content"
                 value={scheduledContent}
-                onChange={(e) => setScheduledContent(e.target.value.toUpperCase())}
-                placeholder="DIGITE A MENSAGEM..."
-                className="uppercase"
+                onChange={(e) => setScheduledContent(e.target.value)}
+                placeholder="Digite a mensagem..."
+                className=""
                 rows={3}
               />
             </div>
