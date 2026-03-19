@@ -288,13 +288,13 @@ export default function VersionsPage() {
           {/* Date Pickers */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium uppercase">Data Inicial</Label>
+              <Label className="text-sm font-medium">Data Inicial</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal uppercase",
+                      "w-full justify-start text-left font-normal",
                       !tempStartDate && "text-muted-foreground"
                     )}
                   >
@@ -318,13 +318,13 @@ export default function VersionsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium uppercase">Data Final</Label>
+              <Label className="text-sm font-medium">Data Final</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal uppercase",
+                      "w-full justify-start text-left font-normal",
                       !tempEndDate && "text-muted-foreground"
                     )}
                   >
