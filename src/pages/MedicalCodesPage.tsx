@@ -127,7 +127,7 @@ export default function MedicalCodesPage() {
       const { error } = await supabase.from("medical_codes").insert(dataToSave);
 
       if (error) {
-        toast.error("ERRO AO CRIAR CÓDIGO");
+        toast.error("Erro ao criar código");
         if (import.meta.env.DEV) {
           console.error(error);
         }
