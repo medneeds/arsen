@@ -86,6 +86,7 @@ const SetorImagemPage = () => {
   const [selectedRequest, setSelectedRequest] = useState<ExamRequest | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [resultText, setResultText] = useState("");
+  const [resultFiles, setResultFiles] = useState<ResultFile[]>([]);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   // Fetch imaging requests
