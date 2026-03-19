@@ -258,7 +258,7 @@ const EvolucaoPage = () => {
               { key: 'dor' as const, label: 'Dor', placeholder: '0', unit: 'EVA' },
             ]).map(v => (
               <div key={v.key}>
-                <Label className="text-[9px] text-muted-foreground uppercase">{v.label}</Label>
+                <Label className="text-[9px] text-muted-foreground">{v.label}</Label>
                 <div className="relative">
                   <Input
                     value={vitals[v.key]}
