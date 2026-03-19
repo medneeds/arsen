@@ -149,7 +149,7 @@ export function PreAdmissionSection() {
                 return (
                   <Card key={pa.id} className={cn(
                     "transition-all hover:shadow-md",
-                    pa.risk_classification && "border-l-4",
+                    pa.risk_classification && "border-l-4 border-shimmer",
                     pa.risk_classification === "vermelho" && "border-l-red-600",
                     pa.risk_classification === "laranja" && "border-l-orange-500",
                     pa.risk_classification === "amarelo" && "border-l-yellow-500",

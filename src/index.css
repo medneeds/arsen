@@ -490,3 +490,46 @@
     font-weight: bold;
   }
 }
+
+@layer utilities {
+  @keyframes border-shimmer {
+    0% {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    30% {
+      opacity: 0.6;
+    }
+    70% {
+      opacity: 0.6;
+    }
+    100% {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+  }
+
+  .border-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .border-shimmer::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 4px;
+    height: 40%;
+    background: linear-gradient(
+      to top,
+      transparent,
+      rgba(255, 255, 255, 0.5),
+      transparent
+    );
+    animation: border-shimmer 3s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+    border-radius: inherit;
+  }
+}
