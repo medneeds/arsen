@@ -370,7 +370,7 @@ export default function RoundPage() {
                   >
                     <div className="font-medium text-foreground group-hover:text-primary transition-colors truncate">{p.name}</div>
                     <div className="text-xs text-muted-foreground mt-0.5">
-                      {p.sector} • Leito {p.bed_number} {p.age ? `• ${p.age}` : ""}
+                      {getSectorLabel(p.sector)} • Leito {p.bed_number} {p.age ? `• ${p.age}` : ""}
                     </div>
                   </button>
                 ))}
