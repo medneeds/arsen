@@ -114,6 +114,58 @@ interface PrescriptionItem {
   concentration?: string;     // Concentração calculada ou manual
 }
 
+// Quantity units for prescription items
+const QUANTITY_UNITS = [
+  'mL', 'ampola', 'frasco-ampola', 'comprimido', 'gota', 'mg', 'g', 'mcg',
+  'UI', 'bolsa', 'unidade', 'cápsula', 'sachê', 'envelope', 'adesivo',
+  'supositório', 'óvulo', 'bisnaga', 'frasco',
+];
+
+// Auto-detect quantity unit from medication presentation
+function detectQuantityUnit(presentation: string, dose: string): string {
+  const p = presentation.toLowerCase();
+  const d = dose.toLowerCase();
+  if (p.includes('ampola') && !p.includes('frasco')) return 'ampola';
+  if (p.includes('frasco-ampola') || p.includes('frasco ampola')) return 'frasco-ampola';
+  if (p.includes('frasco') && !p.includes('ampola')) return 'frasco';
+  if (p.includes('comprimido') || p.includes('comp')) return 'comprimido';
+  if (p.includes('cápsula')) return 'cápsula';
+  if (p.includes('bolsa')) return 'bolsa';
+  if (d.includes('gota') || d.includes('gts')) return 'gota';
+  if (d.includes('ml') || p.includes('ml')) return 'mL';
+  if (d.includes('ui') || p.includes('ui')) return 'UI';
+  return '';
+}
+
+// Auto-detect default diluent and volume from instructions
+function detectDiluentDefaults(instructions: string): { diluent: string; diluentVolume: string; infusionTime: string } {
+  const result = { diluent: '', diluentVolume: '', infusionTime: '' };
+  if (!instructions) return result;
+  const inst = instructions.toLowerCase();
+  // Detect diluent
+  if (inst.includes('sf0,9%') || inst.includes('sf 0,9%') || inst.includes('soro fisiológico')) result.diluent = 'SF0,9%';
+  else if (inst.includes('sg5%') || inst.includes('sg 5%') || inst.includes('soro glicosado')) result.diluent = 'SG5%';
+  else if (inst.includes('água destilada') || inst.includes(' ad ')) result.diluent = 'AD';
+  else if (inst.includes('ringer')) result.diluent = 'RL';
+  // Detect volume
+  const volMatch = inst.match(/(?:diluir em|em)\s+(\d+)\s*ml/i);
+  if (volMatch) result.diluentVolume = volMatch[1];
+  // Detect infusion time
+  const timeMatch = inst.match(/(?:infundir em|correr em|infusão em)\s+(\d+)\s*(?:min|minutos)/i);
+  if (timeMatch) result.infusionTime = timeMatch[1];
+  const timeHMatch = inst.match(/(?:infundir em|correr em)\s+(\d+)\s*h/i);
+  if (timeHMatch) result.infusionTime = String(parseInt(timeHMatch[1]) * 60);
+  return result;
+}
+
+// Rotate schedule: shift the first time to the end
+function rotateSchedule(schedule: string): string {
+  const parts = schedule.split(/,\s*/).map(s => s.trim()).filter(Boolean);
+  if (parts.length <= 1) return schedule;
+  const rotated = [...parts.slice(1), parts[0]];
+  return rotated.join(', ');
+}
+
 // Calculate infusion rate
 function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts'): string {
   const volume = parseFloat(volumeStr);
