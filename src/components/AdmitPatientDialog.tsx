@@ -96,11 +96,23 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [fullData, setFullData] = useState<PreAdmissionFull | null>(null);
   const [sectorFullAlert, setSectorFullAlert] = useState(false);
   const [extraBedRequested, setExtraBedRequested] = useState(false);
+  const [bedsLoaded, setBedsLoaded] = useState(false);
 
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Auto-select sector from header on open
+  useEffect(() => {
+    if (!open) return;
+    const storedSector = localStorage.getItem("selected_sector") || "red";
+    setSelectedSector(storedSector);
+    setSelectedBed("");
+    setExtraBedRequested(false);
+    setSectorFullAlert(false);
+    setBedsLoaded(false);
+  }, [open]);
 
   // Fetch full pre-admission data with triage info
   useEffect(() => {
