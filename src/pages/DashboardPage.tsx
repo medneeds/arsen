@@ -25,6 +25,7 @@ import { useDepartment } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { PrintableDashboard } from "@/components/PrintableDashboard";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SECTOR_DISPLAY_LABELS, SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 
 interface PriorityAlert {
   id: string;
@@ -55,35 +56,47 @@ const SECTOR_COLORS: Record<string, string> = {
 const DashboardPage = () => {
   const { currentDepartment } = useDepartment();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Active sector from localStorage (synced with login/header selector)
+  const [activeSector, setActiveSector] = useState<string>(() => {
+    return localStorage.getItem("selected_sector") || "red";
+  });
+
+  // Listen for sector changes from other pages
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "selected_sector" && e.newValue) {
+        setActiveSector(e.newValue);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+
+    // Also poll localStorage (same-tab changes don't fire StorageEvent)
+    const interval = setInterval(() => {
+      const stored = localStorage.getItem("selected_sector") || "red";
+      setActiveSector(prev => prev !== stored ? stored : prev);
+    }, 1000);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const activeSectorLabel = SECTOR_DISPLAY_LABELS[activeSector] || activeSector;
   
-  // Temporary filter states (before applying)
+  // Date range filters
   const [tempDateRange, setTempDateRange] = useState<{ from: Date; to: Date }>({
     from: subDays(new Date(), 30),
     to: new Date()
   });
-  const [tempSelectedDepartment, setTempSelectedDepartment] = useState<string>(currentDepartment);
   
-  // Applied filter states
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
     from: subDays(new Date(), 30),
     to: new Date()
   });
-  const [selectedDepartment, setSelectedDepartment] = useState<string>(currentDepartment);
   const [comparisonPeriod, setComparisonPeriod] = useState<string>("previous");
-  
-  // Update department filter when current department changes
-  useEffect(() => {
-    setTempSelectedDepartment(currentDepartment);
-    setSelectedDepartment(currentDepartment);
-    
-    // Show toast instructing user to apply filters
-    toast({
-      title: "SETOR ALTERADO",
-      description: "Clique em 'APLICAR FILTRO' para visualizar os dados do novo setor",
-      duration: 4000,
-    });
-  }, [currentDepartment]);
-  
+
   const { currentHospital, currentState } = useHospital();
 
   // KPIs State
@@ -96,6 +109,9 @@ const DashboardPage = () => {
     newAdmissions24h: 0,
     pendingPrescriptions: 0,
     plannedDischarges: 0,
+    occupancyRate: 0,
+    totalBeds: 0,
+    occupiedBeds: 0,
     comparison: {
       internmentRequests: 0,
       activePatients: 0,
@@ -119,18 +135,9 @@ const DashboardPage = () => {
   const [bedOccupancy, setBedOccupancy] = useState<any[]>([]);
   const [requestsByDestination, setRequestsByDestination] = useState<any[]>([]);
 
-  const departments = [
-    { value: "all", label: "Todos os Setores" },
-    { value: "URGÊNCIA E EMERGÊNCIA ADULTO", label: "Urgência e Emergência Adulto" },
-    { value: "URGÊNCIA E EMERGÊNCIA PEDIÁTRICA", label: "Urgência e Emergência Pediátrica" },
-    { value: "UTI", label: "UTI" },
-    { value: "POSTO INTERNAÇÃO", label: "Posto Internação" }
-  ];
-
   useEffect(() => {
     fetchDashboardData();
     
-    // Real-time subscriptions
     const movementsChannel = supabase
       .channel('dashboard-movements')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'patient_movements' }, () => {
@@ -157,7 +164,7 @@ const DashboardPage = () => {
       supabase.removeChannel(requestsChannel);
       supabase.removeChannel(patientsChannel);
     };
-  }, [dateRange, selectedDepartment, comparisonPeriod]);
+  }, [dateRange, activeSector, comparisonPeriod]);
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
@@ -178,11 +185,15 @@ const DashboardPage = () => {
   };
 
   const fetchKPIs = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     const now = new Date();
     const twentyFourHoursAgo = subHours(now, 24);
     
-    // Current period queries
+    // Sector-specific bed config
+    const sectorConfig = SECTOR_BED_CONFIG[activeSector];
+    const totalSectorBeds = sectorConfig?.maxRegularBeds || 0;
+    
+    // Current period queries — filtered by sector
     const [
       { data: requests },
       { data: patients },
@@ -195,23 +206,24 @@ const DashboardPage = () => {
     ] = await Promise.all([
       supabase.from('internment_requests').select('*').match(departmentFilter)
         .gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
-      supabase.from('patients').select('*').match(departmentFilter),
-      supabase.from('patient_movements').select('*').match(departmentFilter)
+      supabase.from('patients').select('*').match(departmentFilter).eq('sector', activeSector),
+      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
         .eq('movement_type', 'ALTA').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter)
+      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
         .eq('movement_type', 'ÓBITO').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter)
+      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
         .eq('movement_type', 'TRANSFERÊNCIA').gte('created_at', dateRange.from.toISOString()).lte('created_at', dateRange.to.toISOString()),
-      // New admissions in last 24h
-      supabase.from('patients').select('*').match(departmentFilter)
+      supabase.from('patients').select('*').match(departmentFilter).eq('sector', activeSector)
         .gte('created_at', twentyFourHoursAgo.toISOString()),
-      // Pending prescriptions (draft status)
       supabase.from('prescriptions').select('*').match(departmentFilter)
         .eq('status', 'draft'),
-      // Planned discharges (patients with internment_status indicating discharge)
-      supabase.from('patients').select('*').match(departmentFilter)
+      supabase.from('patients').select('*').match(departmentFilter).eq('sector', activeSector)
         .or('internment_status.eq.IR_PARA_ENFERMARIA,internment_status.eq.PSM_FAVORAVEL'),
     ]);
+
+    // Occupancy for this sector
+    const occupiedCount = (patients || []).filter(p => !p.is_vacant && p.name?.trim()).length;
+    const occRate = totalSectorBeds > 0 ? Math.round((occupiedCount / totalSectorBeds) * 100) : 0;
 
     // Comparison period
     const daysDiff = Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
@@ -228,25 +240,28 @@ const DashboardPage = () => {
     ] = await Promise.all([
       supabase.from('internment_requests').select('*').match(departmentFilter)
         .gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter)
+      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
         .eq('movement_type', 'ALTA').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter)
+      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
         .eq('movement_type', 'ÓBITO').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
-      supabase.from('patient_movements').select('*').match(departmentFilter)
+      supabase.from('patient_movements').select('*').match(departmentFilter).eq('patient_sector', activeSector)
         .eq('movement_type', 'TRANSFERÊNCIA').gte('created_at', comparisonFrom.toISOString()).lte('created_at', comparisonTo.toISOString()),
-      supabase.from('patients').select('*').match(departmentFilter)
+      supabase.from('patients').select('*').match(departmentFilter).eq('sector', activeSector)
         .gte('created_at', compTwentyFourHBefore.toISOString()).lte('created_at', comparisonTo.toISOString()),
     ]);
 
     setKpis({
       internmentRequests: requests?.length || 0,
-      activePatients: patients?.length || 0,
+      activePatients: (patients || []).filter(p => !p.is_vacant && p.name?.trim()).length,
       discharges: discharges?.length || 0,
       deaths: deaths?.length || 0,
       transfers: transfers?.length || 0,
       newAdmissions24h: newAdmissions?.length || 0,
       pendingPrescriptions: pendingPrescriptions?.length || 0,
       plannedDischarges: plannedDischargesData?.length || 0,
+      occupancyRate: occRate,
+      totalBeds: totalSectorBeds,
+      occupiedBeds: occupiedCount,
       comparison: {
         internmentRequests: compRequests?.length || 0,
         activePatients: 0,
@@ -261,14 +276,15 @@ const DashboardPage = () => {
   };
 
   const fetchPriorityAlerts = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     const alerts: PriorityAlert[] = [];
 
-    // Critical: Patients with clinical_status 'gravissimo'
+    // Critical: Patients with clinical_status 'gravissimo' in this sector
     const { data: criticalPatients } = await supabase
       .from('patients')
       .select('id, name, bed_number, clinical_status, created_at')
       .match(departmentFilter)
+      .eq('sector', activeSector)
       .eq('clinical_status', 'gravissimo');
 
     criticalPatients?.forEach(p => {
@@ -301,11 +317,12 @@ const DashboardPage = () => {
       });
     });
 
-    // Info: Pending bed allocation requests
+    // Info: Pending bed allocation requests for THIS sector
     const { data: pendingAllocations } = await supabase
       .from('bed_allocation_requests')
       .select('id, patient_id, requested_sector, created_at')
       .match(departmentFilter)
+      .eq('requested_sector', activeSector)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
       .limit(5);
@@ -314,27 +331,26 @@ const DashboardPage = () => {
       alerts.push({
         id: `info-alloc-${a.id}`,
         level: 'info',
-        message: `Solicitação de leito pendente para ${a.requested_sector}`,
+        message: `Solicitação de leito pendente para ${activeSectorLabel}`,
         timestamp: a.created_at,
       });
     });
 
-    // Sort: critical first, then warning, then info
     const levelOrder = { critical: 0, warning: 1, info: 2 };
     alerts.sort((a, b) => levelOrder[a.level] - levelOrder[b.level]);
     setPriorityAlerts(alerts);
   };
 
   const fetchRecentActivities = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     const activities: RecentActivity[] = [];
 
-    // Recent movements (last 48h)
     const fortyEightHoursAgo = subHours(new Date(), 48);
     const { data: movements } = await supabase
       .from('patient_movements')
       .select('id, patient_name, movement_type, created_at')
       .match(departmentFilter)
+      .eq('patient_sector', activeSector)
       .gte('created_at', fortyEightHoursAgo.toISOString())
       .order('created_at', { ascending: false })
       .limit(5);
@@ -348,7 +364,6 @@ const DashboardPage = () => {
       });
     });
 
-    // Recent prescriptions
     const { data: rxs } = await supabase
       .from('prescriptions')
       .select('id, patient_name, status, created_at')
@@ -366,11 +381,11 @@ const DashboardPage = () => {
       });
     });
 
-    // Recent patients created
     const { data: newPatients } = await supabase
       .from('patients')
       .select('id, name, created_at')
       .match(departmentFilter)
+      .eq('sector', activeSector)
       .gte('created_at', fortyEightHoursAgo.toISOString())
       .order('created_at', { ascending: false })
       .limit(5);
@@ -384,18 +399,18 @@ const DashboardPage = () => {
       });
     });
 
-    // Sort by timestamp desc
     activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     setRecentActivities(activities.slice(0, 10));
   };
 
   const fetchMovementsOverTime = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     
     const { data } = await supabase
       .from('patient_movements')
       .select('*')
       .match(departmentFilter)
+      .eq('patient_sector', activeSector)
       .gte('created_at', dateRange.from.toISOString())
       .lte('created_at', dateRange.to.toISOString())
       .order('created_at');
@@ -415,35 +430,36 @@ const DashboardPage = () => {
   };
 
   const fetchSectorDistribution = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     
+    // Only fetch data for the active sector
     const { data } = await supabase
       .from('patients')
-      .select('sector')
-      .match(departmentFilter);
+      .select('sector, is_vacant, name')
+      .match(departmentFilter)
+      .eq('sector', activeSector);
 
     if (data) {
-      const sectorCounts = data.reduce((acc: any, patient: any) => {
-        const sector = patient.sector === 'red' ? 'UTI 1' :
-                      patient.sector === 'yellow' ? 'UTI 2' :
-                      patient.sector === 'blue' ? 'UCI 1' : 'UCI 2';
-        acc[sector] = (acc[sector] || 0) + 1;
-        return acc;
-      }, {});
+      const occupied = data.filter(p => !p.is_vacant && p.name?.trim()).length;
+      const sectorConfig = SECTOR_BED_CONFIG[activeSector];
+      const total = sectorConfig?.maxRegularBeds || data.length;
+      const vacant = total - occupied;
 
-      setSectorDistribution(
-        Object.entries(sectorCounts).map(([name, value]) => ({ name, value }))
-      );
+      setSectorDistribution([
+        { name: 'Ocupados', value: occupied },
+        { name: 'Vagos', value: Math.max(0, vacant) },
+      ]);
     }
   };
 
   const fetchMovementsByType = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     
     const { data } = await supabase
       .from('patient_movements')
       .select('movement_type')
       .match(departmentFilter)
+      .eq('patient_sector', activeSector)
       .gte('created_at', dateRange.from.toISOString())
       .lte('created_at', dateRange.to.toISOString());
 
@@ -460,12 +476,13 @@ const DashboardPage = () => {
   };
 
   const fetchBedOccupancy = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     
     const { data } = await supabase
       .from('patients')
       .select('sector, created_at')
       .match(departmentFilter)
+      .eq('sector', activeSector)
       .gte('created_at', dateRange.from.toISOString())
       .lte('created_at', dateRange.to.toISOString())
       .order('created_at');
@@ -485,35 +502,19 @@ const DashboardPage = () => {
   };
 
   const fetchRequestsByDestination = async () => {
-    const departmentFilter = selectedDepartment === "all" ? {} : { department: selectedDepartment };
+    const departmentFilter = { department: currentDepartment };
     
     const { data } = await supabase
       .from('patient_movements')
       .select('destination')
       .match(departmentFilter)
+      .eq('patient_sector', activeSector)
       .eq('movement_type', 'TRANSFERÊNCIA')
       .gte('created_at', dateRange.from.toISOString())
       .lte('created_at', dateRange.to.toISOString());
 
     if (data) {
-      // Filter out pediatric destinations when in adult department and vice versa
-      const filteredData = data.filter((movement: any) => {
-        const dest = movement.destination || '';
-        
-        // If in adult department, exclude pediatric destinations
-        if (selectedDepartment === 'URGÊNCIA E EMERGÊNCIA ADULTO') {
-          return !dest.toLowerCase().includes('pediátr');
-        }
-        
-        // If in pediatric department, exclude adult destinations
-        if (selectedDepartment === 'URGÊNCIA E EMERGÊNCIA PEDIÁTRICA') {
-          return !dest.toLowerCase().includes('adulto');
-        }
-        
-        return true;
-      });
-      
-      const destCounts = filteredData.reduce((acc: any, movement: any) => {
+      const destCounts = data.reduce((acc: any, movement: any) => {
         const dest = movement.destination || 'Não especificado';
         acc[dest] = (acc[dest] || 0) + 1;
         return acc;
@@ -550,10 +551,9 @@ const DashboardPage = () => {
 
   const handleApplyFilters = () => {
     setDateRange(tempDateRange);
-    setSelectedDepartment(tempSelectedDepartment);
     toast({
       title: "FILTROS APLICADOS COM SUCESSO",
-      description: "Dashboard atualizado com os novos filtros",
+      description: `Dashboard atualizado — ${activeSectorLabel}`,
     });
   };
 
@@ -564,8 +564,6 @@ const DashboardPage = () => {
     };
     setTempDateRange(defaultDateRange);
     setDateRange(defaultDateRange);
-    setTempSelectedDepartment(currentDepartment);
-    setSelectedDepartment(currentDepartment);
     toast({
       title: "FILTROS LIMPOS",
       description: "Filtros restaurados aos valores padrão",
@@ -625,13 +623,13 @@ const DashboardPage = () => {
             <Loader2 className="h-12 w-12 text-primary animate-spin" />
             <div className="text-center space-y-2">
               <p className="text-lg font-semibold text-foreground">ATUALIZANDO DASHBOARD</p>
-              <p className="text-sm text-muted-foreground">Carregando dados do setor...</p>
+              <p className="text-sm text-muted-foreground">Carregando dados — {activeSectorLabel}</p>
             </div>
           </div>
         </div>
       )}
       
-      <div className="container mx-auto p-6 space-y-8 dashboard-screen-content">{/* Changed: Added dashboard-screen-content class */}
+      <div className="container mx-auto p-6 space-y-8 dashboard-screen-content">
         {/* Header com gradiente */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-primary p-8 shadow-glow animate-scale-in">
           <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,white)]" />
@@ -643,15 +641,11 @@ const DashboardPage = () => {
                   <BarChart3 className="h-6 w-6 text-white" />
                 </div>
                 <h1 className="text-3xl font-bold tracking-tight uppercase text-white">
-                  Dashboard de Gestão
+                  Visão Geral — {activeSectorLabel}
                 </h1>
               </div>
               <p className="text-white/80 text-sm ml-[100px]">
-                {selectedDepartment === "URGÊNCIA E EMERGÊNCIA ADULTO" && "Visão geral da Urgência e Emergência Adulto"}
-                {selectedDepartment === "URGÊNCIA E EMERGÊNCIA PEDIÁTRICA" && "Visão geral da Urgência e Emergência Pediátrica"}
-                {selectedDepartment === "UTI" && "Visão geral da Unidade de Terapia Intensiva"}
-                {selectedDepartment === "POSTO INTERNAÇÃO" && "Visão geral do Posto de Internação"}
-                {selectedDepartment === "all" && "Visão geral de todos os setores"}
+                Dashboard segmentado por setor · Ocupação {kpis.occupiedBeds}/{kpis.totalBeds} leitos ({kpis.occupancyRate}%)
               </p>
             </div>
             <div className="flex gap-2">
@@ -663,15 +657,6 @@ const DashboardPage = () => {
               >
                 <Download className="h-4 w-4 mr-2" />
                 Exportar PDF
-              </Button>
-              <Button 
-                onClick={handleExportExcel} 
-                variant="secondary" 
-                size="sm"
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm transition-all duration-300 hover:scale-105"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Exportar Excel
               </Button>
               <ThemeToggle />
             </div>
@@ -686,20 +671,12 @@ const DashboardPage = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-semibold uppercase tracking-wide text-foreground/80 flex items-center gap-2">
                     <Activity className="h-3.5 w-3.5 text-primary" />
-                    Setor
+                    Setor Ativo
                   </label>
-                  <Select value={tempSelectedDepartment} onValueChange={setTempSelectedDepartment}>
-                    <SelectTrigger className="border-border/50 focus:ring-primary/30 transition-all duration-300 hover:border-primary/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map(dept => (
-                        <SelectItem key={dept.value} value={dept.value}>
-                          {dept.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="h-10 flex items-center px-3 rounded-md border border-border/50 bg-muted/30 text-sm font-medium text-foreground">
+                    {activeSectorLabel}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Altere o setor no seletor do cabeçalho</p>
                 </div>
                 
                 <div className="space-y-2">
@@ -1011,9 +988,9 @@ const DashboardPage = () => {
                 <div className="rounded-lg bg-primary/10 p-2">
                   <Users className="h-5 w-5 text-primary" />
                 </div>
-                <CardTitle className="uppercase text-lg font-bold">Distribuição por Setor</CardTitle>
+                <CardTitle className="uppercase text-lg font-bold">Ocupação — {activeSectorLabel}</CardTitle>
               </div>
-              <CardDescription className="text-sm">Pacientes ativos distribuídos por ala</CardDescription>
+              <CardDescription className="text-sm">Leitos ocupados vs vagos neste setor</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -1036,7 +1013,7 @@ const DashboardPage = () => {
                     {sectorDistribution.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={SECTOR_COLORS[entry.name] || COLORS[index % COLORS.length]}
+                        fill={entry.name === 'Ocupados' ? 'hsl(var(--primary))' : 'hsl(var(--muted))'}
                         className="hover:opacity-80 transition-opacity cursor-pointer"
                       />
                     ))}
@@ -1205,7 +1182,7 @@ const DashboardPage = () => {
 
       {/* Printable Dashboard - Hidden on screen, visible in print */}
       <PrintableDashboard
-        department={selectedDepartment}
+        department={activeSectorLabel}
         dateRange={dateRange}
         kpis={{
           requests: {
