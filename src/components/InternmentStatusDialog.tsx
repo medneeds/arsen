@@ -169,7 +169,7 @@ export function InternmentStatusDialog({
       if (error) throw error;
 
       toast({
-        title: "STATUS REMOVIDO",
+        title: "Status removido",
         description: "Status de internação foi removido",
       });
 
