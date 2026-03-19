@@ -55,6 +55,7 @@ import SetorLaboratorioPage from "./pages/SetorLaboratorioPage";
 import Saps3Page from "./pages/Saps3Page";
 import ClinicalDashboardPage from "./pages/ClinicalDashboardPage";
 import ProtocolosUtiPage from "./pages/ProtocolosUtiPage";
+import CcihDashboardPage from "./pages/CcihDashboardPage";
 
 const queryClient = new QueryClient();
 
