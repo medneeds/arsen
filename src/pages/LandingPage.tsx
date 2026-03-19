@@ -133,7 +133,7 @@ export default function LandingPage() {
           transition={{ delay: 2 }}
         >
           <div className="flex flex-col items-center gap-2">
-            <span className="text-[9px] text-slate-500 uppercase tracking-[0.3em]">
+            <span className="text-[9px] text-slate-500 tracking-[0.3em]">
               Conheça
             </span>
             <div className="w-px h-6 bg-gradient-to-b from-slate-500/40 to-transparent animate-pulse" />
