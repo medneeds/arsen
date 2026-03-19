@@ -133,7 +133,7 @@ export function ResetUserPasswordDialog({
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* User Info */}
             <div className="bg-gray-50 rounded-lg p-3 border">
-              <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Usuário</p>
+              <p className="text-xs text-gray-500 font-semibold mb-1">Usuário</p>
               <p className="font-medium">{userName || "—"}</p>
               <p className="text-xs text-gray-500">{userEmail?.replace("@sistema.local", "") || "—"}</p>
             </div>
