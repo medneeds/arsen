@@ -970,9 +970,25 @@ export default function PainelClinicoPage() {
                       Documentos institucionais disponíveis para <strong>{selectedPatient.name}</strong> — Leito {selectedPatient.bedNumber}.
                     </p>
                     <div className="space-y-4">
+                      {/* Round do Paciente */}
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground tracking-wider mb-2">Round Multiprofissional</p>
+                        <div className="space-y-1">
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start gap-2 px-3 py-2 h-auto text-sm text-foreground hover:bg-accent/50"
+                            onClick={() => navigate(`/round?patientId=${selectedPatient.id}&patientName=${encodeURIComponent(selectedPatient.name)}&patientBed=${encodeURIComponent(selectedPatient.bedNumber)}&patientSector=${encodeURIComponent(selectedPatient.sector)}&patientAge=${encodeURIComponent(selectedPatient.age?.toString() || '')}`)}
+                          >
+                            <ClipboardCheck className="h-3.5 w-3.5 text-primary shrink-0" />
+                            Abrir Round — {selectedPatient.name}
+                          </Button>
+                        </div>
+                        <Separator className="mt-3" />
+                      </div>
+
                       {DOCUMENTS.map((group) => (
                         <div key={group.group}>
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.group}</p>
+                          <p className="text-xs font-semibold text-muted-foreground tracking-wider mb-2">{group.group}</p>
                           <div className="space-y-1">
                             {group.items.map((doc) => (
                               <a
