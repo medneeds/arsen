@@ -136,7 +136,7 @@ export function ApplyTemplateDialog({ open, onOpenChange, onApply, patientName }
             </div>
             <ScrollArea className="h-[350px]">
               {isLoading ? (
-                <div className="text-center py-8 text-sm text-muted-foreground uppercase">Carregando...</div>
+                <div className="text-center py-8 text-sm text-muted-foreground">Carregando...</div>
               ) : filtered.length === 0 ? (
                 <div className="text-center py-8 text-sm text-muted-foreground uppercase">
                   Nenhum template disponível
