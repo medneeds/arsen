@@ -307,6 +307,7 @@ interface PatientHeader {
   motherName: string;
   address: string;
   city: string;
+  encounterCode?: string;
 }
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
