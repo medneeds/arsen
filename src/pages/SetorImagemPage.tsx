@@ -395,7 +395,7 @@ const SetorImagemPage = () => {
                             <span className="font-bold text-sm text-foreground truncate">{req.patient_name}</span>
                             {req.patient_bed && (
                               <Badge variant="outline" className="text-[10px] shrink-0">
-                                {req.patient_sector && `${req.patient_sector} · `}Leito {req.patient_bed}
+                                {req.patient_sector && `${getSectorLabel(req.patient_sector)} · `}Leito {req.patient_bed}
                               </Badge>
                             )}
                             {getPriorityBadge(req.priority)}
