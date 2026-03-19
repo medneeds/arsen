@@ -671,20 +671,12 @@ const DashboardPage = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-semibold uppercase tracking-wide text-foreground/80 flex items-center gap-2">
                     <Activity className="h-3.5 w-3.5 text-primary" />
-                    Setor
+                    Setor Ativo
                   </label>
-                  <Select value={tempSelectedDepartment} onValueChange={setTempSelectedDepartment}>
-                    <SelectTrigger className="border-border/50 focus:ring-primary/30 transition-all duration-300 hover:border-primary/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map(dept => (
-                        <SelectItem key={dept.value} value={dept.value}>
-                          {dept.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="h-10 flex items-center px-3 rounded-md border border-border/50 bg-muted/30 text-sm font-medium text-foreground">
+                    {activeSectorLabel}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Altere o setor no seletor do cabeçalho</p>
                 </div>
                 
                 <div className="space-y-2">
