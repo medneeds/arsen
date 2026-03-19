@@ -2718,6 +2718,26 @@ const PrescricaoPage = () => {
         )}
       </div>
 
+      {/* ===== DISPENSATION HISTORY ===== */}
+      {dispensations.length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-3 print:hidden">
+          <h2 className="text-xs font-semibold text-muted-foreground tracking-wider mb-2 flex items-center gap-2">
+            <Package className="h-3.5 w-3.5" /> Dispensações ({dispensations.length})
+          </h2>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {dispensations.map(d => (
+              <div key={d.id} className="shrink-0 p-2 rounded-lg border border-border text-xs">
+                <div className="font-mono font-bold text-primary">{d.dispensation_code}</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">
+                  {format(new Date(d.dispensed_at), "dd/MM HH:mm", { locale: ptBR })}
+                  {d.dispensed_by_name && ` — ${d.dispensed_by_name}`}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ===== FULL PRESCRIPTION VIEW (all categories) ===== */}
       <div className={cn("space-y-3 print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
         {/* Batch action bar */}
