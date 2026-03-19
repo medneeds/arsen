@@ -365,12 +365,8 @@ export default function PainelClinicoPage() {
       {/* Header */}
       <div className="border-b bg-card px-4 py-3">
         <div className="flex items-center justify-between mb-3">
-          <div>
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-primary" />
-              Painel Clínico
-            </h1>
-            <p className="text-sm text-muted-foreground">Prontuário e gestão integrada de pacientes</p>
+          <div className="flex items-center gap-4">
+            <ClinicalNavTabs />
           </div>
           <Badge variant="outline" className="text-sm">
             {filteredPatients.length} paciente{filteredPatients.length !== 1 ? "s" : ""}
