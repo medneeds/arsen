@@ -364,7 +364,7 @@ export default function Saps3Page() {
     if (!hospitalId || !stateId) return;
     const { data } = await supabase
       .from("saps3_assessments" as any)
-      .select("id, patient_name, total_score, predicted_mortality, created_at")
+      .select("id, patient_name, total_score, predicted_mortality, created_at, status, pending_since")
       .eq("hospital_unit_id", hospitalId)
       .eq("state_id", stateId)
       .order("created_at", { ascending: false })
