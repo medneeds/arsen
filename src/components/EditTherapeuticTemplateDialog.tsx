@@ -105,10 +105,10 @@ export function EditTherapeuticTemplateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="uppercase text-lg font-bold tracking-wide">
-            {isEditing ? "Editar Template" : "Novo Template Terapêutico"}
+          <DialogTitle className="text-lg font-bold tracking-wide">
+            {isEditing ? "Editar template" : "Novo template terapêutico"}
           </DialogTitle>
-          <DialogDescription className="text-xs uppercase tracking-wider">
+          <DialogDescription className="text-xs tracking-wider">
             {isEditing ? "Modifique os itens do protocolo" : "Defina um protocolo institucional padronizado"}
           </DialogDescription>
         </DialogHeader>
