@@ -2221,15 +2221,43 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== SAVED PRESCRIPTIONS ===== */}
-      {savedPrescriptions.length > 0 && (
+      {/* ===== SAVED PRESCRIPTIONS FOR THIS PATIENT ===== */}
         <div className="rounded-xl border border-border bg-card p-3 print:hidden">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-semibold text-muted-foreground tracking-wider">Prescrições salvas</h2>
-            <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-6 text-[10px] gap-1">
-              <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
-            </Button>
+            <h2 className="text-xs font-semibold text-muted-foreground tracking-wider">
+              Prescrições de {patient.name || 'paciente'}
+            </h2>
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1">
+                    <CalendarDays className="h-3 w-3" />
+                    {historyDate ? format(historyDate, "dd/MM/yyyy") : "Calendário"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="single"
+                    selected={historyDate}
+                    onSelect={(d) => { setHistoryDate(d); }}
+                    locale={ptBR}
+                    initialFocus
+                  />
+                  {historyDate && (
+                    <div className="p-2 border-t">
+                      <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setHistoryDate(undefined)}>
+                        Limpar filtro
+                      </Button>
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
+              <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-6 text-[10px] gap-1">
+                <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
+              </Button>
+            </div>
           </div>
+          {savedPrescriptions.length > 0 ? (
           <div className="flex gap-2 overflow-x-auto pb-1">
             {savedPrescriptions.map(p => (
               <button
@@ -2240,13 +2268,13 @@ const PrescricaoPage = () => {
                   currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border"
                 )}
               >
-                <p className="font-medium truncate max-w-[160px]">{p.patient_name}</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
                     {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
                   </Badge>
                   <span className="text-[9px] text-muted-foreground">v{p.version}</span>
                   <span className="text-[9px] text-muted-foreground">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                </div>
                 </div>
               </button>
             ))}
