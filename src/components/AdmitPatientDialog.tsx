@@ -480,7 +480,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           </Button>
           <Button
             onClick={handleAdmit}
-            disabled={!selectedSector || (!isUtiAdmission && !selectedBed) || isSubmitting}
+            disabled={!selectedSector || (!isUtiAdmission && !selectedBed) || isSubmitting || sectorFullAlert}
             className="gap-1"
           >
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <BedDouble className="h-4 w-4" />}
