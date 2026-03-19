@@ -121,6 +121,13 @@ const CcihDashboardPage = () => {
   const [resultFiles, setResultFiles] = useState<ResultFile[]>([]);
   const [saving, setSaving] = useState(false);
 
+  // Patient detail dialog (CCIH view)
+  const [showPatientDetail, setShowPatientDetail] = useState(false);
+  const [detailPatient, setDetailPatient] = useState<PatientBasic | null>(null);
+  const [detailCultureRequests, setDetailCultureRequests] = useState<CultureExamRequest[]>([]);
+  const [detailPrescriptions, setDetailPrescriptions] = useState<AntibioticPrescription[]>([]);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
   // View culture dialog
   const [showViewCulture, setShowViewCulture] = useState(false);
   const [viewCulture, setViewCulture] = useState<CultureResult | null>(null);
