@@ -193,7 +193,7 @@ export default function RoundPage() {
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.bed_number.toLowerCase().includes(q) ||
-        p.sector.toLowerCase().includes(q)
+        getSectorLabel(p.sector).toLowerCase().includes(q)
     );
   }, [patients, patientSearch]);
 
