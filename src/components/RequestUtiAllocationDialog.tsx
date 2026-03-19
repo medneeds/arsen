@@ -92,10 +92,10 @@ function EditableListItem({
       <Input
         ref={inputRef}
         value={value}
-        onChange={(e) => onChange(e.target.value.toUpperCase())}
+        onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="h-8 text-xs uppercase flex-1"
+        className="h-8 text-xs flex-1"
       />
       <Button
         type="button"
