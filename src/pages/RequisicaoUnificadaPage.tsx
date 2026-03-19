@@ -1035,7 +1035,7 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
             </Button>
             <Button size="sm" variant="outline" className="h-8 px-2.5 text-xs gap-1" onClick={onViewResult}>
               <Eye className="h-3.5 w-3.5" />
-              {showResult ? "Ver" : "Resultado"}
+              {showResult ? "Ver Resultado" : "Ver Detalhes"}
             </Button>
             {onCancel && request.status === "pending" && (
               <Button size="sm" variant="ghost" className="h-8 px-2 text-xs text-destructive hover:bg-destructive/10" onClick={onCancel}>
