@@ -225,6 +225,8 @@ const CcihDashboardPage = () => {
     setShowPatientDetail(true);
     setLoadingDetail(true);
     setDetailCultureRequests([]);
+    setDetailLabExams([]);
+    setDetailImagingExams([]);
     setDetailPrescriptions([]);
 
     try {
