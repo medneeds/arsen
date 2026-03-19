@@ -358,7 +358,7 @@ export default function AuthPage() {
               {/* CTA Button → goes to profiles */}
               <motion.button
                 onClick={() => setScreen("profiles")}
-                className="group relative inline-flex items-center gap-3 px-10 py-4 rounded-full text-white font-semibold text-sm uppercase tracking-[0.2em] transition-all duration-500 overflow-hidden border border-[#2dd4bf]/30 hover:border-[#2dd4bf]/60"
+                className="group relative inline-flex items-center gap-3 px-10 py-4 rounded-full text-white font-semibold text-sm tracking-[0.2em] transition-all duration-500 overflow-hidden border border-[#2dd4bf]/30 hover:border-[#2dd4bf]/60"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 1.3 }}
@@ -383,9 +383,9 @@ export default function AuthPage() {
                 transition={{ duration: 1, delay: 1.8 }}
               >
                 <div className="h-px w-12 bg-gradient-to-r from-transparent via-slate-500/30 to-transparent mb-3" />
-                <p className="text-[9px] text-slate-600 uppercase tracking-[0.4em]">by</p>
-                <p className="text-sm sm:text-base text-slate-300 font-bold tracking-[0.25em] uppercase mt-0.5">Medora</p>
-                <p className="text-[8px] text-[#2dd4bf]/40 uppercase tracking-[0.35em] font-light mt-1">Clinical Intelligent Platform</p>
+                <p className="text-[9px] text-slate-600 tracking-[0.4em]">by</p>
+                <p className="text-sm sm:text-base text-slate-300 font-bold tracking-[0.25em] mt-0.5">Medora</p>
+                <p className="text-[8px] text-[#2dd4bf]/40 tracking-[0.35em] font-light mt-1">Clinical Intelligent Platform</p>
               </motion.div>
             </div>
 
@@ -422,7 +422,7 @@ export default function AuthPage() {
                     <h2 className="text-lg sm:text-xl text-white font-bold tracking-tight leading-tight">
                       Selecione o Tipo de Acesso
                     </h2>
-                    <p className="text-slate-400 text-[10px] tracking-wide uppercase">
+                    <p className="text-slate-400 text-[10px] tracking-wide">
                       Hospital Mun. Djalma Marques — Socorrão I
                     </p>
                   </div>
@@ -469,10 +469,10 @@ export default function AuthPage() {
                           <profile.icon className={cn("h-5 w-5", profile.color)} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-white font-bold text-sm uppercase tracking-wide leading-tight">
+                          <h3 className="text-white font-bold text-sm tracking-wide leading-tight">
                             {profile.label}
                           </h3>
-                          <p className="text-[11px] font-medium tracking-wider uppercase text-white/60 leading-tight mt-0.5">
+                          <p className="text-[11px] font-medium tracking-wider text-white/60 leading-tight mt-0.5">
                             {profile.subtitle}
                           </p>
                         </div>
@@ -501,7 +501,7 @@ export default function AuthPage() {
               >
                 <button
                   onClick={() => setScreen("splash")}
-                  className="inline-flex items-center gap-2 text-[10px] text-[#2dd4bf]/50 hover:text-[#2dd4bf] uppercase tracking-[0.2em] transition-colors duration-300"
+                  className="inline-flex items-center gap-2 text-[10px] text-[#2dd4bf]/50 hover:text-[#2dd4bf] tracking-[0.2em] transition-colors duration-300"
                 >
                   <ArrowLeft className="h-3 w-3" />
                   Voltar
@@ -552,7 +552,7 @@ export default function AuthPage() {
 
                   {/* Profile badge */}
                   <div className={cn(
-                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-semibold uppercase tracking-[0.15em]",
+                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-semibold tracking-[0.15em]",
                     currentProfileConfig.key === "medico" && "border-[#2dd4bf]/30 text-[#2dd4bf] bg-[#2dd4bf]/5",
                     currentProfileConfig.key === "gestor" && "border-amber-400/30 text-amber-400 bg-amber-400/5",
                     currentProfileConfig.key === "multi" && "border-violet-400/30 text-violet-400 bg-violet-400/5",
@@ -575,12 +575,12 @@ export default function AuthPage() {
                   <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-[#2dd4bf]/10 border border-[#2dd4bf]/20 mb-3">
                     <LogIn className="h-4 w-4 text-[#2dd4bf]" />
                   </div>
-                  <h2 className="text-xs font-semibold text-white/80 uppercase tracking-[0.2em]">Acesse sua conta</h2>
+                  <h2 className="text-xs font-semibold text-white/80 tracking-[0.2em]">Acesse sua conta</h2>
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div>
-                    <Label htmlFor="username" className="text-[10px] font-medium text-white/40 uppercase mb-1.5 block tracking-[0.15em]">Usuário</Label>
+                    <Label htmlFor="username" className="text-[10px] font-medium text-white/40 mb-1.5 block tracking-[0.15em]">Usuário</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
                       <Input
@@ -588,8 +588,8 @@ export default function AuthPage() {
                         type="text"
                         value={loginData.username}
                         onChange={(e) => setLoginData({ ...loginData, username: e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, '') })}
-                        placeholder="DIGITE SEU USUÁRIO"
-                        className="pl-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm uppercase font-medium text-white placeholder:text-white/20 focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 focus:bg-white/[0.08] transition-all"
+                        placeholder="Digite seu usuário"
+                        className="pl-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm font-medium text-white placeholder:text-white/20 focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 focus:bg-white/[0.08] transition-all"
                         disabled={loading}
                         autoComplete="username"
                         autoFocus
@@ -598,16 +598,16 @@ export default function AuthPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="password" className="text-[10px] font-medium text-white/40 uppercase mb-1.5 block tracking-[0.15em]">Senha</Label>
+                    <Label htmlFor="password" className="text-[10px] font-medium text-white/40 mb-1.5 block tracking-[0.15em]">Senha</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
                         value={loginData.password}
-                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value.toUpperCase() })}
-                        placeholder="DIGITE SUA SENHA"
-                        className="pl-10 pr-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm uppercase font-medium text-white placeholder:text-white/20 focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 focus:bg-white/[0.08] transition-all"
+                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                        placeholder="Digite sua senha"
+                        className="pl-10 pr-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm font-medium text-white placeholder:text-white/20 focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 focus:bg-white/[0.08] transition-all"
                         disabled={loading}
                         autoComplete="current-password"
                       />
@@ -625,7 +625,7 @@ export default function AuthPage() {
                   {/* Sector select - only for medico & gestor */}
                   {(selectedProfile === "medico" || selectedProfile === "gestor") && (
                     <div>
-                      <Label htmlFor="sector" className="text-[10px] font-medium text-white/40 uppercase mb-1.5 block tracking-[0.15em]">Setor</Label>
+                      <Label htmlFor="sector" className="text-[10px] font-medium text-white/40 mb-1.5 block tracking-[0.15em]">Setor</Label>
                       <div className="relative">
                         <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10 pointer-events-none" />
                         <Select
@@ -633,12 +633,12 @@ export default function AuthPage() {
                           onValueChange={(val) => setSelectedSector(val)}
                           disabled={loading}
                         >
-                          <SelectTrigger className="pl-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm uppercase font-medium text-white focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all">
-                            <SelectValue placeholder="SELECIONE O SETOR" />
+                          <SelectTrigger className="pl-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm font-medium text-white focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all">
+                            <SelectValue placeholder="Selecione o setor" />
                           </SelectTrigger>
                           <SelectContent>
                             {SECTORS.map((sector) => (
-                              <SelectItem key={sector.key} value={sector.key} className="uppercase text-xs font-medium">
+                              <SelectItem key={sector.key} value={sector.key} className="text-xs font-medium">
                                 {sector.label}
                               </SelectItem>
                             ))}
@@ -651,9 +651,9 @@ export default function AuthPage() {
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-full h-11 bg-gradient-to-r from-[#2dd4bf]/20 to-[#2dd4bf]/10 hover:from-[#2dd4bf]/30 hover:to-[#2dd4bf]/15 text-white font-semibold uppercase text-xs rounded-xl border border-[#2dd4bf]/20 hover:border-[#2dd4bf]/40 tracking-[0.2em] transition-all duration-300"
+                    className="w-full h-11 bg-gradient-to-r from-[#2dd4bf]/20 to-[#2dd4bf]/10 hover:from-[#2dd4bf]/30 hover:to-[#2dd4bf]/15 text-white font-semibold text-xs rounded-xl border border-[#2dd4bf]/20 hover:border-[#2dd4bf]/40 tracking-[0.2em] transition-all duration-300"
                   >
-                    {loading ? "ENTRANDO..." : "ENTRAR"}
+                    {loading ? "Entrando..." : "Entrar"}
                   </Button>
                 </form>
               </motion.div>
@@ -670,12 +670,12 @@ export default function AuthPage() {
                     setScreen("profiles");
                     setLoginData({ username: "", password: "" });
                   }}
-                  className="inline-flex items-center gap-2 text-[10px] text-[#2dd4bf]/50 hover:text-[#2dd4bf] uppercase tracking-[0.2em] transition-colors duration-300"
+                  className="inline-flex items-center gap-2 text-[10px] text-[#2dd4bf]/50 hover:text-[#2dd4bf] tracking-[0.2em] transition-colors duration-300"
                 >
                   <ArrowLeft className="h-3 w-3" />
                   Alterar tipo de acesso
                 </button>
-                <p className="text-[9px] text-slate-600 tracking-[0.3em] uppercase font-light">
+                <p className="text-[9px] text-slate-600 tracking-[0.3em] font-light">
                   {whitelabel.credits.authorSignature}
                 </p>
               </motion.div>

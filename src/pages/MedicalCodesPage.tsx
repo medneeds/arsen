@@ -65,9 +65,9 @@ export default function MedicalCodesPage() {
     if (searchTerm) {
       const filtered = codes.filter(
         (code) =>
-          code.code.toUpperCase().includes(searchTerm.toUpperCase()) ||
-          code.name.toUpperCase().includes(searchTerm.toUpperCase()) ||
-          code.system_description.toUpperCase().includes(searchTerm.toUpperCase())
+          code.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          code.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          code.system_description.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredCodes(filtered);
     } else {
@@ -96,15 +96,15 @@ export default function MedicalCodesPage() {
 
   const handleSave = async () => {
     if (!formData.code || !formData.name || !formData.system_description) {
-      toast.error("PREENCHA TODOS OS CAMPOS");
+      toast.error("Preencha todos os campos");
       return;
     }
 
     const dataToSave = {
       ...formData,
-      code: formData.code.toUpperCase(),
-      name: formData.name.toUpperCase(),
-      system_description: formData.system_description.toUpperCase(),
+      code: formData.code,
+      name: formData.name,
+      system_description: formData.system_description,
       category,
     };
 
@@ -115,26 +115,26 @@ export default function MedicalCodesPage() {
         .eq("id", editingCode.id);
 
       if (error) {
-        toast.error("ERRO AO ATUALIZAR CÓDIGO");
+        toast.error("Erro ao atualizar código");
         if (import.meta.env.DEV) {
           console.error(error);
         }
         return;
       }
 
-      toast.success("CÓDIGO ATUALIZADO COM SUCESSO");
+      toast.success("Código atualizado com sucesso");
     } else {
       const { error } = await supabase.from("medical_codes").insert(dataToSave);
 
       if (error) {
-        toast.error("ERRO AO CRIAR CÓDIGO");
+        toast.error("Erro ao criar código");
         if (import.meta.env.DEV) {
           console.error(error);
         }
         return;
       }
 
-      toast.success("CÓDIGO CRIADO COM SUCESSO");
+      toast.success("Código criado com sucesso");
     }
 
     setIsDialogOpen(false);
@@ -144,34 +144,34 @@ export default function MedicalCodesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("TEM CERTEZA QUE DESEJA DELETAR ESTE CÓDIGO?")) return;
+    if (!confirm("Tem certeza que deseja deletar este código?")) return;
 
     const { error } = await supabase.from("medical_codes").delete().eq("id", id);
 
     if (error) {
-      toast.error("ERRO AO DELETAR CÓDIGO");
+      toast.error("Erro ao deletar código");
       if (import.meta.env.DEV) {
         console.error(error);
       }
       return;
     }
 
-    toast.success("CÓDIGO DELETADO COM SUCESSO");
+    toast.success("Código deletado com sucesso");
     fetchCodes();
   };
 
   const handleCopy = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      toast.success(`${label.toUpperCase()} COPIADO`);
+      toast.success(`${label} copiado`);
     } catch (error) {
-      toast.error("ERRO AO COPIAR");
+      toast.error("Erro ao copiar");
     }
   };
 
   const openDialog = (code?: MedicalCode) => {
     if (role !== 'admin') {
-      toast.error("APENAS ADMINISTRADORES PODEM CRIAR OU EDITAR CÓDIGOS MÉDICOS");
+      toast.error("Apenas administradores podem criar ou editar códigos médicos");
       return;
     }
 
@@ -198,11 +198,11 @@ export default function MedicalCodesPage() {
             <FileCode className="h-6 w-6 text-cyan-600" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight uppercase">
+            <h1 className="text-3xl font-bold tracking-tight">
               {categoryLabels[category as keyof typeof categoryLabels]}
             </h1>
-            <p className="text-muted-foreground uppercase text-sm">
-              Códigos e Descritivos do Sistema
+            <p className="text-muted-foreground text-sm">
+              Códigos e descritivos do sistema
             </p>
           </div>
         </div>
@@ -213,8 +213,8 @@ export default function MedicalCodesPage() {
       {/* Search and Add */}
       <Card className="border-primary/20 shadow-lg">
         <CardHeader>
-          <CardTitle className="uppercase text-lg">Pesquisar Códigos</CardTitle>
-          <CardDescription className="uppercase text-xs">
+          <CardTitle className="text-lg">Pesquisar códigos</CardTitle>
+          <CardDescription className="text-xs">
             {filteredCodes.length} {filteredCodes.length === 1 ? 'código encontrado' : 'códigos encontrados'}
           </CardDescription>
         </CardHeader>
@@ -225,8 +225,8 @@ export default function MedicalCodesPage() {
               <Input
                 placeholder="Buscar por código, nome ou descritivo..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
-                className="pl-10 uppercase h-12"
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-12"
               />
             </div>
             <Button 
@@ -247,16 +247,16 @@ export default function MedicalCodesPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
-                <TableHead className="font-bold uppercase w-32">Código</TableHead>
-                <TableHead className="font-bold uppercase w-64">Nome</TableHead>
-                <TableHead className="font-bold uppercase">Descritivo no Sistema</TableHead>
-                <TableHead className="font-bold uppercase w-24 text-right">Ações</TableHead>
+                <TableHead className="font-bold w-32">Código</TableHead>
+                <TableHead className="font-bold w-64">Nome</TableHead>
+                <TableHead className="font-bold">Descritivo no sistema</TableHead>
+                <TableHead className="font-bold w-24 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCodes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-12 text-muted-foreground uppercase">
+                  <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
                     <div className="flex flex-col items-center gap-2">
                       <FileCode className="h-12 w-12 text-muted-foreground/50" />
                       <p className="font-semibold">Nenhum Código Cadastrado</p>
@@ -267,7 +267,7 @@ export default function MedicalCodesPage() {
               ) : (
                 filteredCodes.map((code) => (
                   <TableRow key={code.id} className="hover:bg-muted/20 transition-colors">
-                    <TableCell className="font-mono font-semibold text-primary uppercase">
+                    <TableCell className="font-mono font-semibold text-primary">
                       <div className="group relative flex items-center gap-2">
                         <span>{code.code}</span>
                         <Button
@@ -281,8 +281,8 @@ export default function MedicalCodesPage() {
                         </Button>
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium uppercase">{code.name}</TableCell>
-                    <TableCell className="text-muted-foreground uppercase">
+                    <TableCell className="font-medium">{code.name}</TableCell>
+                    <TableCell className="text-muted-foreground">
                       <div className="group relative flex items-center gap-2">
                         <span className="flex-1">{code.system_description}</span>
                         <Button
@@ -304,7 +304,7 @@ export default function MedicalCodesPage() {
                           onClick={() => openDialog(code)}
                           className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
                           disabled={role !== 'admin'}
-                          title={role !== 'admin' ? 'APENAS ADMINISTRADORES' : 'Editar'}
+                          title={role !== 'admin' ? 'Apenas administradores' : 'Editar'}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -314,7 +314,7 @@ export default function MedicalCodesPage() {
                           onClick={() => handleDelete(code.id)}
                           className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                           disabled={role !== 'admin'}
-                          title={role !== 'admin' ? 'APENAS ADMINISTRADORES' : 'Deletar'}
+                          title={role !== 'admin' ? 'Apenas administradores' : 'Deletar'}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -331,43 +331,43 @@ export default function MedicalCodesPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="uppercase flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2">
               {editingCode ? <><Pencil className="h-5 w-5 text-primary" /> Editar Código</> : <><Plus className="h-5 w-5 text-primary" /> Adicionar Código</>}
             </DialogTitle>
           </DialogHeader>
           <Separator className="my-4" />
           <div className="grid gap-6 py-4">
             <div className="grid gap-3">
-              <Label htmlFor="code" className="uppercase text-sm font-semibold">
+              <Label htmlFor="code" className="text-sm font-semibold">
                 Código
               </Label>
               <Input
                 id="code"
                 value={formData.code}
                 onChange={(e) =>
-                  setFormData({ ...formData, code: e.target.value.toUpperCase() })
+                  setFormData({ ...formData, code: e.target.value })
                 }
                 placeholder="Código"
-                className="uppercase h-12"
+                className="h-12"
               />
             </div>
             <div className="grid gap-3">
-              <Label htmlFor="name" className="uppercase text-sm font-semibold">
+              <Label htmlFor="name" className="text-sm font-semibold">
                 Nome
               </Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value.toUpperCase() })
+                  setFormData({ ...formData, name: e.target.value })
                 }
                 placeholder="Nome do exame/procedimento/material/medicação"
-                className="uppercase h-12"
+                className="h-12"
               />
             </div>
             <div className="grid gap-3">
-              <Label htmlFor="description" className="uppercase text-sm font-semibold">
-                Descritivo no Sistema
+              <Label htmlFor="description" className="text-sm font-semibold">
+                Descritivo no sistema
               </Label>
               <Textarea
                 id="description"
@@ -375,11 +375,11 @@ export default function MedicalCodesPage() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    system_description: e.target.value.toUpperCase(),
+                    system_description: e.target.value,
                   })
                 }
                 placeholder="Como é escrito no sistema"
-                className="uppercase min-h-24 resize-none"
+                className="min-h-24 resize-none"
               />
             </div>
           </div>
@@ -391,11 +391,11 @@ export default function MedicalCodesPage() {
                 setEditingCode(null);
                 setFormData({ code: "", name: "", system_description: "" });
               }}
-              className="uppercase"
+              className=""
             >
               Cancelar
             </Button>
-            <Button onClick={handleSave} className="uppercase">Salvar</Button>
+            <Button onClick={handleSave}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -105,10 +105,10 @@ export function EditTherapeuticTemplateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="uppercase text-lg font-bold tracking-wide">
-            {isEditing ? "Editar Template" : "Novo Template Terapêutico"}
+          <DialogTitle className="text-lg font-bold tracking-wide">
+            {isEditing ? "Editar template" : "Novo template terapêutico"}
           </DialogTitle>
-          <DialogDescription className="text-xs uppercase tracking-wider">
+          <DialogDescription className="text-xs tracking-wider">
             {isEditing ? "Modifique os itens do protocolo" : "Defina um protocolo institucional padronizado"}
           </DialogDescription>
         </DialogHeader>
@@ -117,14 +117,14 @@ export function EditTherapeuticTemplateDialog({
           {/* Protocol Type */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold uppercase">Tipo de Protocolo</Label>
+              <Label className="text-xs font-semibold">Tipo de protocolo</Label>
               <Select value={protocolType} onValueChange={setProtocolType}>
-                <SelectTrigger className="uppercase text-sm">
+                <SelectTrigger className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {PROTOCOL_TYPES.map((t) => (
-                    <SelectItem key={t} value={t} className="uppercase text-sm">
+                    <SelectItem key={t} value={t} className="text-sm">
                       {t}
                     </SelectItem>
                   ))}
@@ -133,12 +133,12 @@ export function EditTherapeuticTemplateDialog({
             </div>
             {protocolType === "OUTRO" && (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold uppercase">Especificar</Label>
+                <Label className="text-xs font-semibold">Especificar</Label>
                 <Input
                   value={customProtocol}
                   onChange={(e) => setCustomProtocol(e.target.value)}
-                  placeholder="NOME DO PROTOCOLO"
-                  className="uppercase text-sm"
+                  placeholder="Nome do protocolo"
+                  className="text-sm"
                 />
               </div>
             )}
@@ -146,19 +146,19 @@ export function EditTherapeuticTemplateDialog({
 
           {/* Name */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold uppercase">Nome do Template</Label>
+            <Label className="text-xs font-semibold">Nome do template</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onBlur={(e) => setName(e.target.value.toUpperCase())}
-              placeholder="EX: PROTOCOLO SEPSE - PACOTE 1H"
-              className="uppercase text-sm"
+              onBlur={(e) => setName(e.target.value)}
+              placeholder="Ex: Protocolo Sepse - Pacote 1h"
+              className="text-sm"
             />
           </div>
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold uppercase">Descrição (opcional)</Label>
+            <Label className="text-xs font-semibold">Descrição (opcional)</Label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -170,7 +170,7 @@ export function EditTherapeuticTemplateDialog({
           {/* Items */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-xs font-semibold uppercase">
+              <Label className="text-xs font-semibold">
                 Itens do Protocolo ({items.filter((i) => i.trim()).length})
               </Label>
               <Button type="button" size="sm" variant="outline" onClick={addItem} className="h-7 px-2 text-xs gap-1">
@@ -187,9 +187,9 @@ export function EditTherapeuticTemplateDialog({
                   <Input
                     value={item}
                     onChange={(e) => updateItem(idx, e.target.value)}
-                    onBlur={(e) => updateItem(idx, e.target.value.toUpperCase())}
+                    onBlur={(e) => updateItem(idx, e.target.value)}
                     placeholder={`Item ${idx + 1} do protocolo`}
-                    className="h-9 text-sm uppercase flex-1"
+                    className="h-9 text-sm flex-1"
                   />
                   <Button
                     type="button"
@@ -208,13 +208,13 @@ export function EditTherapeuticTemplateDialog({
         </div>
 
         <DialogFooter className="gap-2 pt-3 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="uppercase text-xs">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="text-xs">
             Cancelar
           </Button>
           <Button
             onClick={handleSave}
             disabled={!name.trim() || items.filter((i) => i.trim()).length === 0}
-            className="uppercase text-xs font-bold"
+            className="text-xs font-bold"
           >
             {isEditing ? "Salvar Alterações" : "Criar Template"}
           </Button>

@@ -56,14 +56,14 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
         .single();
 
       if (error || !profile) {
-        toast.error("USUÁRIO NÃO ENCONTRADO");
+        toast.error("Usuário não encontrado");
         setLoading(false);
         return;
       }
 
       // Verificar se o CRM confere
       if (profile.crm?.toUpperCase() !== validated.crm.toUpperCase()) {
-        toast.error("CRM NÃO CONFERE COM O CADASTRO");
+        toast.error("CRM não confere com o cadastro");
         setLoading(false);
         return;
       }
@@ -77,7 +77,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
         .single();
 
       if (existingRequest) {
-        toast.error("JÁ EXISTE UMA SOLICITAÇÃO PENDENTE PARA ESTE USUÁRIO");
+        toast.error("Já existe uma solicitação pendente para este usuário");
         setLoading(false);
         return;
       }
@@ -94,7 +94,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
 
       if (insertError) {
         console.error("Erro ao criar solicitação:", insertError);
-        toast.error("ERRO AO REGISTRAR SOLICITAÇÃO");
+        toast.error("Erro ao registrar solicitação");
         setLoading(false);
         return;
       }
@@ -197,15 +197,15 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
       {/* Form Fields */}
       <div className="space-y-3">
         <div className="space-y-1">
-          <Label className="text-[10px] font-semibold text-gray-600 uppercase">Seu Usuário *</Label>
+          <Label className="text-[10px] font-semibold text-gray-600">Seu usuário *</Label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               type="text"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, '') })}
-              placeholder="SEU.USUARIO"
-              className="h-9 pl-10 bg-gray-50 border border-gray-200 rounded-lg text-sm uppercase"
+              placeholder="seu.usuario"
+              className="h-9 pl-10 bg-gray-50 border border-gray-200 rounded-lg text-sm"
               disabled={loading}
               maxLength={30}
             />
@@ -213,7 +213,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
         </div>
 
         <div className="space-y-1">
-          <Label className="text-[10px] font-semibold text-gray-600 uppercase">Seu CRM (para verificação) *</Label>
+          <Label className="text-[10px] font-semibold text-gray-600">Seu CRM (para verificação) *</Label>
           <div className="relative">
             <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -221,7 +221,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
               value={formData.crm}
               onChange={(e) => setFormData({ ...formData, crm: e.target.value.toUpperCase() })}
               placeholder="CRM/MA 12345"
-              className="h-9 pl-10 bg-gray-50 border border-gray-200 rounded-lg text-sm uppercase"
+              className="h-9 pl-10 bg-gray-50 border border-gray-200 rounded-lg text-sm"
               disabled={loading}
             />
           </div>
@@ -233,7 +233,7 @@ export function ForgotPasswordForm({ onBack }: ForgotPasswordFormProps) {
       <Button
         type="submit"
         disabled={loading}
-        className="w-full h-11 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold uppercase rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl"
+        className="w-full h-11 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl"
       >
         {loading ? (
           <div className="flex items-center gap-2">

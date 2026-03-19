@@ -2903,7 +2903,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   {/* Diagnósticos (resumo) */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Diagnósticos</span>
+                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 tracking-wider mb-0.5">Diagnósticos</span>
                     {patient.diagnoses.length > 0 ? (
                       <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
                         {patient.diagnoses.map((d, i) => (
@@ -2919,7 +2919,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
 
                   {/* Alergias / Antecedentes */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Alergias / Antecedentes</span>
+                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 tracking-wider mb-0.5">Alergias / Antecedentes</span>
                     {patient.medicalHistory.length > 0 ? (
                       <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
                         {patient.medicalHistory.map((h, i) => (
@@ -2938,7 +2938,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
 
                   {/* Exames Relevantes */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Exames</span>
+                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 tracking-wider mb-0.5">Exames</span>
                     {patient.relevantExams.length > 0 ? (
                       <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
                         {patient.relevantExams.map((e, i) => (
@@ -2954,7 +2954,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
 
                   {/* Pendências / Condutas */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-0.5">Pendências</span>
+                    <span className="text-[9px] font-semibold text-emerald-700 dark:text-emerald-400 tracking-wider mb-0.5">Pendências</span>
                     {patient.pendencies.length > 0 ? (
                       <ol className="text-[10px] text-foreground space-y-0 list-none pl-0">
                         {patient.pendencies.map((p, i) => (

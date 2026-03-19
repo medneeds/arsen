@@ -129,7 +129,7 @@ export function LoadingScreen({ onComplete, duration = 2500 }: LoadingScreenProp
               }}
             />
           </div>
-          <p className="text-[9px] text-slate-600 tracking-[0.3em] uppercase text-center mt-3 font-light">
+          <p className="text-[9px] text-slate-600 tracking-[0.3em] text-center mt-3 font-light">
             {whitelabel.platform.loadingText}
           </p>
         </div>

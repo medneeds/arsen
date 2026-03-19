@@ -354,7 +354,7 @@ const ClinicalDashboardPage = () => {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Ocupação</p>
+                          <p className="text-[11px] font-medium text-muted-foreground tracking-wider">Ocupação</p>
                           <p className="text-2xl font-bold text-foreground mt-1">{occupancyRate}%</p>
                           <p className="text-[10px] text-muted-foreground">{totalOccupied}/{totalBeds} leitos</p>
                         </div>
@@ -377,7 +377,7 @@ const ClinicalDashboardPage = () => {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Alertas</p>
+                          <p className="text-[11px] font-medium text-muted-foreground tracking-wider">Alertas</p>
                           <p className="text-2xl font-bold text-foreground mt-1">{criticalAlerts.length + warningAlerts.length}</p>
                           <p className="text-[10px] text-muted-foreground">{criticalAlerts.length} crítico(s)</p>
                         </div>
@@ -400,7 +400,7 @@ const ClinicalDashboardPage = () => {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Solicitações</p>
+                          <p className="text-[11px] font-medium text-muted-foreground tracking-wider">Solicitações</p>
                           <p className="text-2xl font-bold text-foreground mt-1">{pendingBedRequests}</p>
                           <p className="text-[10px] text-muted-foreground">pedido(s) de leito</p>
                         </div>
@@ -417,7 +417,7 @@ const ClinicalDashboardPage = () => {
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Movimentações</p>
+                          <p className="text-[11px] font-medium text-muted-foreground tracking-wider">Movimentações</p>
                           <p className="text-2xl font-bold text-foreground mt-1">{recentMovements.length}</p>
                           <p className="text-[10px] text-muted-foreground">últimas registradas</p>
                         </div>

@@ -136,7 +136,7 @@ export function InternmentStatusDialog({
       if (error) throw error;
 
       toast({
-        title: "STATUS ATUALIZADO",
+        title: "Status atualizado",
         description: "Status de internação atualizado com sucesso",
       });
 
@@ -145,7 +145,7 @@ export function InternmentStatusDialog({
     } catch (error) {
       console.error("Error updating internment status:", error);
       toast({
-        title: "ERRO",
+        title: "Erro",
         description: "Não foi possível atualizar o status",
         variant: "destructive",
       });
@@ -169,7 +169,7 @@ export function InternmentStatusDialog({
       if (error) throw error;
 
       toast({
-        title: "STATUS REMOVIDO",
+        title: "Status removido",
         description: "Status de internação foi removido",
       });
 
@@ -178,7 +178,7 @@ export function InternmentStatusDialog({
     } catch (error) {
       console.error("Error clearing internment status:", error);
       toast({
-        title: "ERRO",
+        title: "Erro",
         description: "Não foi possível remover o status",
         variant: "destructive",
       });
@@ -197,10 +197,10 @@ export function InternmentStatusDialog({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="text-xl uppercase">
+          <DialogTitle className="text-xl">
             Status de Internação
           </DialogTitle>
-          <DialogDescription className="uppercase">
+          <DialogDescription>
             Gerenciar status de solicitação de internação para{" "}
             <span className="font-semibold">{patientName}</span>
           </DialogDescription>
@@ -208,18 +208,18 @@ export function InternmentStatusDialog({
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="status" className="uppercase text-xs font-semibold">
+            <Label htmlFor="status" className="text-xs font-semibold">
               Status da Solicitação
             </Label>
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger id="status" className="uppercase">
-                <SelectValue placeholder="SELECIONE O STATUS" />
+              <SelectTrigger id="status">
+                <SelectValue placeholder="Selecione o status" />
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(statusConfig).map(([key, config]) => {
                   const Icon = config.icon;
                   return (
-                    <SelectItem key={key} value={key} className="uppercase">
+                    <SelectItem key={key} value={key}>
                       <div className="flex items-center gap-2">
                         <Icon className={`h-4 w-4 ${config.color}`} />
                         {config.label}
@@ -232,15 +232,15 @@ export function InternmentStatusDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes" className="uppercase text-xs font-semibold">
+            <Label htmlFor="notes" className="text-xs font-semibold">
               Observações (opcional)
             </Label>
             <Textarea
               id="notes"
               value={notes}
-              onChange={(e) => setNotes(e.target.value.toUpperCase())}
-              placeholder="ADICIONE OBSERVAÇÕES SOBRE A SOLICITAÇÃO..."
-              className="min-h-[100px] uppercase resize-none"
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Adicione observações sobre a solicitação..."
+              className="min-h-[100px] resize-none"
             />
           </div>
         </div>
@@ -252,7 +252,7 @@ export function InternmentStatusDialog({
               variant="outline"
               onClick={handleClear}
               disabled={isSubmitting}
-              className="gap-2 uppercase"
+              className="gap-2"
             >
               <X className="h-4 w-4" />
               Remover Status
@@ -263,7 +263,7 @@ export function InternmentStatusDialog({
             variant="outline"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="uppercase"
+            className=""
           >
             Cancelar
           </Button>
@@ -271,7 +271,7 @@ export function InternmentStatusDialog({
             type="button"
             onClick={handleSave}
             disabled={isSubmitting || !status}
-            className="uppercase"
+            className=""
           >
             {isSubmitting ? "Salvando..." : "Salvar"}
           </Button>

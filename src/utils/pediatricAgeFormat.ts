@@ -71,12 +71,12 @@ export function parseDate(input: string): Date | null {
 export function formatPediatricAge(input: string | number): string {
   if (typeof input === 'number') {
     // Apenas anos
-    if (input === 1) return "1 ANO";
-    return `${input} ANOS`;
+    if (input === 1) return "1 ano";
+    return `${input} anos`;
   }
 
   // Se já está formatado, retorna como está
-  return input.toUpperCase();
+  return input;
 }
 
 /**
@@ -162,33 +162,33 @@ export function suggestPediatricFormat(parsed: PediatricAgeInput): string {
     const weeks = Math.floor(totalDays / 7);
     const remainingDays = totalDays % 7;
     if (remainingDays > 0) {
-      return `${weeks} SEMANA${weeks !== 1 ? 'S' : ''} + ${remainingDays} DIA${remainingDays !== 1 ? 'S' : ''}`;
+      return `${weeks} semana${weeks !== 1 ? 's' : ''} + ${remainingDays} dia${remainingDays !== 1 ? 's' : ''}`;
     }
-    return `${weeks} SEMANA${weeks !== 1 ? 'S' : ''}`;
+    return `${weeks} semana${weeks !== 1 ? 's' : ''}`;
   }
   
   // 3-12 meses: meses e dias
   if (months < 12 && years === 0) {
     if (days > 0) {
-      return `${months} MES${months !== 1 ? 'ES' : ''} E ${days} DIA${days !== 1 ? 'S' : ''}`;
+      return `${months} ${months !== 1 ? 'meses' : 'mês'} e ${days} dia${days !== 1 ? 's' : ''}`;
     }
-    return `${months} MES${months !== 1 ? 'ES' : ''}`;
+    return `${months} ${months !== 1 ? 'meses' : 'mês'}`;
   }
   
   // 12-24 meses: apenas meses
   if (years < 2 || (years === 2 && months === 0 && days === 0)) {
     const totalMonths = (years * 12) + months;
-    return `${totalMonths} MESES`;
+    return `${totalMonths} meses`;
   }
   
   // 2-12 anos: anos e meses
   if (years < 12) {
     if (months > 0) {
-      return `${years} ANO${years !== 1 ? 'S' : ''} E ${months} MES${months !== 1 ? 'ES' : ''}`;
+      return `${years} ano${years !== 1 ? 's' : ''} e ${months} ${months !== 1 ? 'meses' : 'mês'}`;
     }
-    return `${years} ANO${years !== 1 ? 'S' : ''}`;
+    return `${years} ano${years !== 1 ? 's' : ''}`;
   }
   
   // >= 12 anos: apenas anos
-  return `${years} ANOS`;
+  return `${years} anos`;
 }

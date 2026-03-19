@@ -18,7 +18,7 @@ export function useAgeCalculator(isPediatric: boolean = false) {
         // Se for um número, retornar como anos
         if (/^\d+$/.test(trimmed)) {
           const age = parseInt(trimmed);
-          return age === 1 ? "1 ANO" : `${age} ANOS`;
+          return age === 1 ? "1 ano" : `${age} anos`;
         }
         
         // Tentar parsear como data de nascimento
@@ -26,11 +26,11 @@ export function useAgeCalculator(isPediatric: boolean = false) {
         if (birthDate) {
           const ageData = calculateDetailedAge(birthDate);
           const years = ageData.years || 0;
-          return years === 1 ? "1 ANO" : `${years} ANOS`;
+          return years === 1 ? "1 ano" : `${years} anos`;
         }
         
         // Se não conseguir parsear, retornar como está em uppercase
-        return trimmed.toUpperCase();
+        return trimmed;
       }
 
       // Para setor pediátrico, usar a edge function

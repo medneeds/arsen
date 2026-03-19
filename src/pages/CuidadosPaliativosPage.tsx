@@ -48,11 +48,11 @@ export default function CuidadosPaliativosPage() {
             </div>
             
             <div className="flex gap-2 flex-wrap">
-              <Badge variant="secondary" className="uppercase bg-pink-500/10 text-pink-700 dark:text-pink-400">
+              <Badge variant="secondary" className="bg-pink-500/10 text-pink-700 dark:text-pink-400">
                 Cuidados Paliativos
               </Badge>
-              <Badge variant="secondary" className="uppercase">
-                QUALITOTAL 18.14.9
+              <Badge variant="secondary" className="">
+                Qualitotal 18.14.9
               </Badge>
             </div>
           </div>
@@ -63,31 +63,31 @@ export default function CuidadosPaliativosPage() {
         {/* Content Card */}
         <Card className="border-pink-500/20 shadow-lg">
           <CardHeader className="bg-pink-500/5">
-            <CardTitle className="text-2xl uppercase flex items-center gap-2">
+            <CardTitle className="text-2xl flex items-center gap-2">
               <Heart className="h-6 w-6 text-pink-500" />
               Termo de Aceite de Tratamento – Cuidados Paliativos
             </CardTitle>
-            <CardDescription className="text-base uppercase">
+            <CardDescription className="text-base">
               Medidas de conforto e proporcionalidade do cuidado
             </CardDescription>
           </CardHeader>
           <CardContent className="p-8 space-y-6">
             <div className="prose prose-sm max-w-none dark:prose-invert">
-              <h3 className="text-lg font-semibold uppercase text-foreground mb-4">Objetivo do Termo</h3>
-              <p className="text-muted-foreground uppercase leading-relaxed">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Objetivo do Termo</h3>
+              <p className="text-muted-foreground leading-relaxed">
                 O presente termo de aceite de tratamento em cuidados paliativos tem o objetivo de cumprir 
                 o dever ético de informar ao paciente e seu responsável legal quanto aos principais aspectos 
                 relacionados à implementação dos cuidados paliativos.
               </p>
               
-              <h3 className="text-lg font-semibold uppercase text-foreground mt-6 mb-4">Medidas Contempladas</h3>
+              <h3 className="text-lg font-semibold text-foreground mt-6 mb-4">Medidas Contempladas</h3>
               <div className="bg-muted/30 border border-border rounded-lg p-6 space-y-4">
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-pink-600 dark:text-pink-400 uppercase flex items-center gap-2">
+                  <h4 className="font-semibold text-pink-600 dark:text-pink-400 flex items-center gap-2">
                     <Heart className="h-4 w-4" />
                     Medidas de Conforto Autorizadas:
                   </h4>
-                  <ul className="space-y-2 text-muted-foreground uppercase ml-6">
+                  <ul className="space-y-2 text-muted-foreground ml-6">
                     <li className="flex items-start gap-2">
                       <span className="text-pink-500 font-bold">✓</span>
                       <span>Medidas de conforto</span>
@@ -110,10 +110,10 @@ export default function CuidadosPaliativosPage() {
                 <Separator className="my-4" />
 
                 <div className="space-y-3">
-                  <h4 className="font-semibold text-red-600 dark:text-red-400 uppercase flex items-center gap-2">
+                  <h4 className="font-semibold text-red-600 dark:text-red-400 flex items-center gap-2">
                     Medidas Não Autorizadas:
                   </h4>
-                  <ul className="space-y-2 text-muted-foreground uppercase ml-6">
+                  <ul className="space-y-2 text-muted-foreground ml-6">
                     <li className="flex items-start gap-2">
                       <span className="text-red-500 font-bold">✗</span>
                       <span>Intubação orotraqueal</span>
@@ -134,8 +134,8 @@ export default function CuidadosPaliativosPage() {
                 </div>
               </div>
               
-              <h3 className="text-lg font-semibold uppercase text-foreground mt-6 mb-4">Informações no Documento</h3>
-              <ul className="space-y-2 text-muted-foreground uppercase">
+              <h3 className="text-lg font-semibold text-foreground mt-6 mb-4">Informações no Documento</h3>
+              <ul className="space-y-2 text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-pink-500 font-bold">•</span>
                   <span>Identificação completa do paciente e responsável legal</span>

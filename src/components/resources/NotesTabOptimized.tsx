@@ -86,8 +86,8 @@ const NotesTabOptimized = () => {
 
     if (!currentHospital || !currentState) {
       toast({
-        title: "ERRO",
-        description: "UNIDADE HOSPITALAR NÃO SELECIONADA",
+        title: "Erro",
+        description: "Unidade hospitalar não selecionada",
         variant: "destructive",
       });
       return;
@@ -104,16 +104,16 @@ const NotesTabOptimized = () => {
 
     if (error) {
       toast({
-        title: "ERRO",
-        description: "NÃO FOI POSSÍVEL SALVAR A ANOTAÇÃO",
+        title: "Erro",
+        description: "Não foi possível salvar a anotação",
         variant: "destructive",
       });
       return;
     }
 
     toast({
-      title: "SALVO",
-      description: "ANOTAÇÃO SALVA NA CENTRAL DE NOTIFICAÇÕES",
+      title: "Salvo",
+      description: "Anotação salva na central de notificações",
     });
     
     setNotes("");
@@ -124,8 +124,8 @@ const NotesTabOptimized = () => {
 
     if (!currentHospital || !currentState) {
       toast({
-        title: "ERRO",
-        description: "UNIDADE HOSPITALAR NÃO SELECIONADA",
+        title: "Erro",
+        description: "Unidade hospitalar não selecionada",
         variant: "destructive",
       });
       return;
@@ -133,7 +133,7 @@ const NotesTabOptimized = () => {
 
     const { error } = await supabase.from("notes_reminders").insert({
       department: currentDepartment,
-      content: newChecklistItem.toUpperCase(),
+      content: newChecklistItem,
       type: "checklist_item",
       completed: false,
       is_active: true,
@@ -143,8 +143,8 @@ const NotesTabOptimized = () => {
 
     if (error) {
       toast({
-        title: "ERRO",
-        description: "NÃO FOI POSSÍVEL ADICIONAR O ITEM",
+        title: "Erro",
+        description: "Não foi possível adicionar o item",
         variant: "destructive",
       });
       return;
@@ -154,8 +154,8 @@ const NotesTabOptimized = () => {
     loadChecklistFromDB();
     
     toast({
-      title: "ADICIONADO",
-      description: "ITEM ADICIONADO AO CHECKLIST",
+      title: "Adicionado",
+      description: "Item adicionado ao checklist",
     });
   };
 
@@ -167,8 +167,8 @@ const NotesTabOptimized = () => {
 
     if (error) {
       toast({
-        title: "ERRO",
-        description: "NÃO FOI POSSÍVEL ATUALIZAR O ITEM",
+        title: "Erro",
+        description: "Não foi possível atualizar o item",
         variant: "destructive",
       });
       return;
@@ -212,7 +212,7 @@ const NotesTabOptimized = () => {
     if (!currentHospital || !currentState) {
       toast({
         title: "ERRO",
-        description: "UNIDADE HOSPITALAR NÃO SELECIONADA",
+        description: "Unidade hospitalar não selecionada",
         variant: "destructive",
       });
       return;
@@ -222,7 +222,7 @@ const NotesTabOptimized = () => {
 
     const { error } = await supabase.from("notes_reminders").insert({
       department: currentDepartment,
-      content: scheduledContent.toUpperCase(),
+      content: scheduledContent,
       type: "free_text",
       scheduled_popup_time: scheduledDateTime,
       is_active: true,
@@ -232,16 +232,16 @@ const NotesTabOptimized = () => {
 
     if (error) {
       toast({
-        title: "ERRO",
-        description: "NÃO FOI POSSÍVEL AGENDAR O LEMBRETE",
+        title: "Erro",
+        description: "Não foi possível agendar o lembrete",
         variant: "destructive",
       });
       return;
     }
 
     toast({
-      title: "AGENDADO",
-      description: `LEMBRETE PROGRAMADO PARA ${new Date(scheduledDateTime).toLocaleString("pt-BR")}`,
+      title: "Agendado",
+      description: `Lembrete programado para ${new Date(scheduledDateTime).toLocaleString("pt-BR")}`,
     });
 
     setScheduledContent("");
@@ -254,8 +254,8 @@ const NotesTabOptimized = () => {
     try {
       await navigator.clipboard.writeText(notes);
       toast({
-        title: "COPIADO",
-        description: "TEXTO COPIADO PARA A ÁREA DE TRANSFERÊNCIA",
+        title: "Copiado",
+        description: "Texto copiado para a área de transferência",
       });
     } catch (err) {
       toast({
@@ -271,47 +271,47 @@ const NotesTabOptimized = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `ANAMNESE_${new Date().toISOString().split("T")[0]}.txt`;
+    a.download = `anamnese_${new Date().toISOString().split("T")[0]}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
     toast({
-      title: "DOWNLOAD REALIZADO",
-      description: "ARQUIVO SALVO COM SUCESSO",
+      title: "Download realizado",
+      description: "Arquivo salvo com sucesso",
     });
   };
 
   const handlePrint = () => {
     window.print();
     toast({
-      title: "IMPRESSÃO INICIADA",
-      description: "PREPARANDO DOCUMENTO PARA IMPRESSÃO",
+      title: "Impressão iniciada",
+      description: "Preparando documento para impressão",
     });
   };
 
   const handleClear = () => {
     setNotes("");
     toast({
-      title: "LIMPO",
-      description: "TODO O TEXTO FOI REMOVIDO",
+      title: "Limpo",
+      description: "Todo o texto foi removido",
     });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNotes(e.target.value.toUpperCase());
+    setNotes(e.target.value);
   };
 
   return (
     <div className="space-y-4">
       <Tabs defaultValue="notes" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="notes" className="uppercase">
-            ANOTAÇÕES
+          <TabsTrigger value="notes">
+            Anotações
           </TabsTrigger>
-          <TabsTrigger value="checklist" className="uppercase">
-            CHECK-LIST
+          <TabsTrigger value="checklist">
+            Check-list
           </TabsTrigger>
         </TabsList>
 
@@ -323,20 +323,20 @@ const NotesTabOptimized = () => {
                 size="sm"
                 onClick={handleSaveFreeText}
                 disabled={!notes}
-                className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all uppercase"
+                className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all"
               >
                 <Save className="h-4 w-4" />
-                SALVAR NA CENTRAL
+                Salvar na central
               </Button>
 
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsScheduleDialogOpen(true)}
-                className="gap-2 hover:bg-amber-500/10 hover:text-amber-600 hover:border-amber-500/50 transition-all uppercase"
+                className="gap-2 hover:bg-amber-500/10 hover:text-amber-600 hover:border-amber-500/50 transition-all"
               >
                 <Clock className="h-4 w-4" />
-                PROGRAMAR LEMBRETE
+                Programar lembrete
               </Button>
             </div>
           </div>
@@ -355,13 +355,13 @@ const NotesTabOptimized = () => {
               <Textarea
                 value={notes}
                 onChange={handleChange}
-                placeholder="DIGITE SUA ANOTAÇÃO AQUI..."
-                className="min-h-[600px] font-mono text-sm resize-none focus:ring-2 focus:ring-emerald-500 transition-all uppercase print:min-h-0 print:border-0 print:focus:ring-0 print:p-0"
+                placeholder="Digite sua anotação aqui..."
+                className="min-h-[600px] font-mono text-sm resize-none focus:ring-2 focus:ring-emerald-500 transition-all print:min-h-0 print:border-0 print:focus:ring-0 print:p-0"
               />
 
               <div className="flex items-center justify-between print:hidden">
-                <div className="text-xs text-muted-foreground uppercase">
-                  {notes.length} CARACTERES
+                <div className="text-xs text-muted-foreground">
+                  {notes.length} caracteres
                 </div>
 
                 <div className="flex gap-2">
@@ -370,10 +370,10 @@ const NotesTabOptimized = () => {
                     size="sm"
                     onClick={handleCopy}
                     disabled={!notes}
-                    className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all uppercase"
+                    className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all"
                   >
                     <Copy className="h-4 w-4" />
-                    COPIAR
+                    Copiar
                   </Button>
 
                   <Button
@@ -381,10 +381,10 @@ const NotesTabOptimized = () => {
                     size="sm"
                     onClick={handleDownload}
                     disabled={!notes}
-                    className="gap-2 hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/50 transition-all uppercase"
+                    className="gap-2 hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/50 transition-all"
                   >
                     <Download className="h-4 w-4" />
-                    BAIXAR
+                    Baixar
                   </Button>
 
                   <Button
@@ -392,10 +392,10 @@ const NotesTabOptimized = () => {
                     size="sm"
                     onClick={handlePrint}
                     disabled={!notes}
-                    className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all uppercase"
+                    className="gap-2 hover:bg-blue-500/10 hover:text-blue-600 hover:border-blue-500/50 transition-all"
                   >
                     <Printer className="h-4 w-4" />
-                    IMPRIMIR
+                    Imprimir
                   </Button>
 
                   <Button
@@ -403,10 +403,10 @@ const NotesTabOptimized = () => {
                     size="sm"
                     onClick={handleClear}
                     disabled={!notes}
-                    className="gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 transition-all uppercase"
+                    className="gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 transition-all"
                   >
                     <Trash2 className="h-4 w-4" />
-                    LIMPAR
+                    Limpar
                   </Button>
                 </div>
               </div>
@@ -418,9 +418,9 @@ const NotesTabOptimized = () => {
           <div className="flex gap-2">
             <Input
               value={newChecklistItem}
-              onChange={(e) => setNewChecklistItem(e.target.value.toUpperCase())}
-              placeholder="ADICIONAR NOVO ITEM..."
-              className="uppercase"
+              onChange={(e) => setNewChecklistItem(e.target.value)}
+              placeholder="Adicionar novo item..."
+              className=""
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   handleAddChecklistItem();
@@ -440,8 +440,8 @@ const NotesTabOptimized = () => {
           <Card className="p-6">
             <div className="space-y-3">
               {checklistItems.length === 0 ? (
-                <p className="text-center text-muted-foreground text-sm uppercase py-8">
-                  NENHUM ITEM NO CHECKLIST
+                <p className="text-center text-muted-foreground text-sm py-8">
+                  Nenhum item no checklist
                 </p>
               ) : (
                 checklistItems.map((item) => (
@@ -455,7 +455,7 @@ const NotesTabOptimized = () => {
                       className="h-5 w-5"
                     />
                     <span
-                      className={`flex-1 uppercase text-sm ${
+                      className={`flex-1 text-sm ${
                         item.completed ? "line-through text-muted-foreground" : ""
                       }`}
                     >
@@ -481,32 +481,32 @@ const NotesTabOptimized = () => {
       <Dialog open={isScheduleDialogOpen} onOpenChange={setIsScheduleDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="uppercase flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              PROGRAMAR LEMBRETE
+              Programar lembrete
             </DialogTitle>
-            <DialogDescription className="uppercase">
-              DEFINA DATA, HORA E MENSAGEM DO LEMBRETE
+            <DialogDescription>
+              Defina data, hora e mensagem do lembrete
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="scheduled-content" className="uppercase">
-                MENSAGEM DO LEMBRETE
+              <Label htmlFor="scheduled-content">
+                Mensagem do lembrete
               </Label>
               <Textarea
                 id="scheduled-content"
                 value={scheduledContent}
-                onChange={(e) => setScheduledContent(e.target.value.toUpperCase())}
-                placeholder="DIGITE A MENSAGEM..."
-                className="uppercase"
+                onChange={(e) => setScheduledContent(e.target.value)}
+                placeholder="Digite a mensagem..."
+                className=""
                 rows={3}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="scheduled-date" className="uppercase">
-                  DATA
+                <Label htmlFor="scheduled-date">
+                  Data
                 </Label>
                 <Input
                   id="scheduled-date"
@@ -516,8 +516,8 @@ const NotesTabOptimized = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="scheduled-time" className="uppercase">
-                  HORA
+                <Label htmlFor="scheduled-time">
+                  Hora
                 </Label>
                 <Input
                   id="scheduled-time"
@@ -538,13 +538,13 @@ const NotesTabOptimized = () => {
                 setScheduledDate("");
                 setScheduledTime("");
               }}
-              className="uppercase"
+              className=""
             >
-              CANCELAR
+              Cancelar
             </Button>
-            <Button type="button" onClick={handleSchedulePopup} className="uppercase">
+            <Button type="button" onClick={handleSchedulePopup}>
               <Clock className="h-4 w-4 mr-2" />
-              AGENDAR
+              Agendar
             </Button>
           </DialogFooter>
         </DialogContent>
