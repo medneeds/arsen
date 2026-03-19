@@ -389,8 +389,8 @@ const InternmentHistoryPage = () => {
       {/* Results Table */}
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="uppercase text-lg">Solicitações Encontradas</CardTitle>
-          <CardDescription className="uppercase text-xs">
+          <CardTitle className="text-lg">Solicitações Encontradas</CardTitle>
+          <CardDescription className="text-xs">
             {filteredRequests.length} {filteredRequests.length === 1 ? 'registro' : 'registros'} no histórico
           </CardDescription>
         </CardHeader>
