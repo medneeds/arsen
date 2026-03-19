@@ -174,18 +174,43 @@ function rotateSchedule(schedule: string): string {
   return rotated.join(', ');
 }
 
-// Calculate infusion rate
-function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts'): string {
+// Calculate infusion rate — timeStr is raw value, timeUnit is 'min' or 'h'
+function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts', timeUnit: 'min' | 'h' = 'min'): string {
   const volume = parseFloat(volumeStr);
-  const time = parseFloat(timeStr);
-  if (!volume || !time || time <= 0) return '';
+  const rawTime = parseFloat(timeStr);
+  if (!volume || !rawTime || rawTime <= 0) return '';
+  const timeInMin = timeUnit === 'h' ? rawTime * 60 : rawTime;
   if (mode === 'BIC') {
-    const mlPerHour = (volume / time) * 60;
+    const mlPerHour = (volume / timeInMin) * 60;
     return `${mlPerHour.toFixed(1)} mL/h`;
   } else {
-    const gtsPerMin = (volume * 20) / (time); // 1mL = 20 gts (equipo padrão)
+    const gtsPerMin = (volume * 20) / timeInMin; // 1mL = 20 gts (equipo padrão)
     return `${gtsPerMin.toFixed(1)} gts/min`;
   }
+}
+
+// Auto-calculate volume total from dose + diluent volume
+function calcVolumeTotal(item: PrescriptionItem): string {
+  const doseVol = parseFloat(item.dose?.replace(/[^\d.,]/g, '').replace(',', '.') || '');
+  const dilVol = parseFloat(item.diluentVolume || '');
+  if (dilVol > 0 && doseVol > 0) return String(Math.round(dilVol + doseVol));
+  if (dilVol > 0) return String(Math.round(dilVol));
+  return '';
+}
+
+// Auto-calculate concentration from dose and volume total
+function calcConcentration(item: PrescriptionItem): string {
+  const doseMatch = item.dose?.match(/([\d.,]+)\s*(mg|g|mcg|UI)/i);
+  if (!doseMatch) return '';
+  let doseVal = parseFloat(doseMatch[1].replace(',', '.'));
+  const doseUnit = doseMatch[2].toLowerCase();
+  if (doseUnit === 'g') doseVal *= 1000; // convert to mg
+  const volTotal = parseFloat(item.volumeTotal || '');
+  if (!doseVal || !volTotal || volTotal <= 0) return '';
+  const conc = doseVal / volTotal;
+  if (doseUnit === 'ui') return `${conc.toFixed(1)} UI/mL`;
+  if (doseUnit === 'mcg') return `${conc.toFixed(1)} mcg/mL`;
+  return `${conc.toFixed(2)} mg/mL`;
 }
 
 function isIVRoute(route: string): boolean {
