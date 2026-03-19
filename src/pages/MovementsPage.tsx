@@ -13,6 +13,7 @@ import { ViewPatientSnapshotDialog } from "@/components/ViewPatientSnapshotDialo
 import { ScrollToTopButton } from "@/components/ScrollToTopButton";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -550,7 +551,7 @@ export default function MovementsPage() {
                                 {movement.patient_sector && (
                                   <>
                                     {movement.patient_bed && <span>•</span>}
-                                    <span>Setor: {movement.patient_sector}</span>
+                                    <span>Setor: {getSectorDisplayLabel(movement.patient_sector)}</span>
                                   </>
                                 )}
                               </div>

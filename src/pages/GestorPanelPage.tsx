@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { format, subDays, startOfDay, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MainLayout } from "@/components/MainLayout";
@@ -97,10 +98,10 @@ export default function GestorPanelPage() {
         const alerts: CriticalAlert[] = [];
         occupied.forEach(p => {
           if (p.clinical_status === "gravíssimo" || p.clinical_status === "crítico") {
-            alerts.push({ id: p.id, patientName: p.name, bed: p.bed_number, sector: p.sector, type: "Estado Clínico", detail: `Paciente em estado ${p.clinical_status}`, severity: "critical" });
+            alerts.push({ id: p.id, patientName: p.name, bed: p.bed_number, sector: getSectorDisplayLabel(p.sector), type: "Estado Clínico", detail: `Paciente em estado ${p.clinical_status}`, severity: "critical" });
           }
           if (p.relevant_exams && /crítico|urgente|alerta/i.test(p.relevant_exams)) {
-            alerts.push({ id: p.id + "-exam", patientName: p.name, bed: p.bed_number, sector: p.sector, type: "Exame Crítico", detail: "Resultado com valor crítico identificado", severity: "warning" });
+            alerts.push({ id: p.id + "-exam", patientName: p.name, bed: p.bed_number, sector: getSectorDisplayLabel(p.sector), type: "Exame Crítico", detail: "Resultado com valor crítico identificado", severity: "warning" });
           }
         });
         setCriticalAlerts(alerts);
@@ -194,7 +195,7 @@ export default function GestorPanelPage() {
         ["Movimentações Recentes (últimas 48h)"],
         ["Paciente", "Tipo", "Destino", "Setor", "Leito", "Data"],
         ...recentMovements.slice(0, 20).map(m => [
-          m.patient_name, m.movement_type, m.destination || "", m.patient_sector || "", m.patient_bed || "",
+          m.patient_name, m.movement_type, m.destination || "", getSectorDisplayLabel(m.patient_sector) || "", m.patient_bed || "",
           format(new Date(m.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }),
         ]),
       ];
@@ -222,7 +223,7 @@ export default function GestorPanelPage() {
 
   // ── Bar data for sectors ──
   const sectorBarData = Object.entries(bedStats.bySector).map(([sector, s]) => ({
-    sector: sector.length > 12 ? sector.slice(0, 12) + "…" : sector,
+    sector: getSectorDisplayLabel(sector),
     Ocupados: s.occupied,
     Vagos: s.total - s.occupied,
   }));
@@ -461,7 +462,7 @@ export default function GestorPanelPage() {
                           {mov.movement_type}{mov.destination ? ` → ${mov.destination}` : ""}
                         </p>
                       </div>
-                      <Badge variant="outline" className="text-[9px] shrink-0">{mov.patient_sector} · {mov.patient_bed}</Badge>
+                      <Badge variant="outline" className="text-[9px] shrink-0">{getSectorDisplayLabel(mov.patient_sector)} · {mov.patient_bed}</Badge>
                       <span className="text-[9px] text-muted-foreground shrink-0">
                         {format(new Date(mov.created_at), "dd/MM HH:mm", { locale: ptBR })}
                       </span>

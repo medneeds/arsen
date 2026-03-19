@@ -28,12 +28,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { printRequisitionGuide } from "@/components/PrintableRequisitionGuide";
 import { useHospital } from "@/contexts/HospitalContext";
-import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
+import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
 
-const getSectorLabel = (sector: string | null) => {
-  if (!sector) return "";
-  return SECTOR_BED_CONFIG[sector]?.label || sector;
-};
+const getSectorLabel = getSectorDisplayLabel;
 
 // ── UTI Exam Combos ──
 type ComboCategory = "laboratorio" | "imagem";
