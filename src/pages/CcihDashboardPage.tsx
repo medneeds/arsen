@@ -1105,8 +1105,119 @@ const CcihDashboardPage = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Lab exams */}
+                  <div>
+                    <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                      <TestTubes className="h-3.5 w-3.5 text-blue-500" />
+                      Exames laboratoriais
+                    </p>
+                    {detailLabExams.length === 0 ? (
+                      <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 text-center">
+                        Nenhuma requisição laboratorial encontrada
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {detailLabExams.map(req => {
+                          const items = Array.isArray(req.items) ? req.items : [];
+                          return (
+                            <div key={req.id} className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-[10px] font-medium text-foreground">
+                                    {format(new Date(req.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                                  </span>
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className={cn("text-[9px]",
+                                    req.status === "completed" ? "text-emerald-600 border-emerald-300" :
+                                    req.status === "pending" ? "text-amber-600 border-amber-300" :
+                                    "text-blue-600 border-blue-300"
+                                  )}
+                                >
+                                  {req.status === "completed" ? "Concluído" :
+                                   req.status === "pending" ? "Pendente" :
+                                   req.status === "in_progress" ? "Em execução" :
+                                   req.status === "acknowledged" ? "Ciência" : req.status}
+                                </Badge>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {items.map((item: any, idx: number) => (
+                                  <Badge key={idx} variant="secondary" className="text-[9px]">
+                                    {item.name || item}
+                                  </Badge>
+                                ))}
+                              </div>
+                              {req.results && (
+                                <p className="text-[10px] text-foreground bg-emerald-50/50 dark:bg-emerald-500/5 p-1.5 rounded border border-emerald-200 dark:border-emerald-500/20">
+                                  <strong className="text-emerald-700 dark:text-emerald-400">Resultado:</strong> {req.results}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Imaging exams */}
+                  <div>
+                    <p className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                      <ImageIcon className="h-3.5 w-3.5 text-indigo-500" />
+                      Exames de imagem
+                    </p>
+                    {detailImagingExams.length === 0 ? (
+                      <p className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 text-center">
+                        Nenhuma requisição de imagem encontrada
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {detailImagingExams.map(req => {
+                          const items = Array.isArray(req.items) ? req.items : [];
+                          return (
+                            <div key={req.id} className="p-2.5 rounded-lg border bg-muted/20 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <CalendarDays className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-[10px] font-medium text-foreground">
+                                    {format(new Date(req.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                                  </span>
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className={cn("text-[9px]",
+                                    req.status === "completed" ? "text-emerald-600 border-emerald-300" :
+                                    req.status === "pending" ? "text-amber-600 border-amber-300" :
+                                    "text-blue-600 border-blue-300"
+                                  )}
+                                >
+                                  {req.status === "completed" ? "Concluído" :
+                                   req.status === "pending" ? "Pendente" :
+                                   req.status === "in_progress" ? "Em execução" :
+                                   req.status === "acknowledged" ? "Ciência" : req.status}
+                                </Badge>
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {items.map((item: any, idx: number) => (
+                                  <Badge key={idx} variant="secondary" className="text-[9px]">
+                                    {item.name || item}
+                                  </Badge>
+                                ))}
+                              </div>
+                              {req.results && (
+                                <p className="text-[10px] text-foreground bg-emerald-50/50 dark:bg-emerald-500/5 p-1.5 rounded border border-emerald-200 dark:border-emerald-500/20">
+                                  <strong className="text-emerald-700 dark:text-emerald-400">Resultado:</strong> {req.results}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </>
-              )}
 
               {/* Action buttons */}
               <div className="flex gap-2 pt-2 border-t">
