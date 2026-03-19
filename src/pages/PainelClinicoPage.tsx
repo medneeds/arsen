@@ -386,40 +386,45 @@ export default function PainelClinicoPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="border-b border-border/50 bg-gradient-to-r from-[#0a1628] via-[#0f2847] to-[#1a3a5c] px-4 py-3">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-4">
+      {/* Header - matches Index.tsx height */}
+      <div className="border-b border-border/50 bg-gradient-to-r from-[#0a1628] via-[#0f2847] to-[#1a3a5c] px-2 sm:px-4 py-2 sm:py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Socorrão I</span>
+            <span className="text-white/30 text-xs">/</span>
+            <Select value={sectorFilter} onValueChange={setSectorFilter}>
+              <SelectTrigger className="h-7 w-auto gap-1 bg-white/10 border-white/20 text-xs text-white font-medium px-2.5 focus:ring-0 focus:ring-offset-0 hover:bg-white/20 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/60 rounded-md">
+                <SelectValue placeholder="Setor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os setores</SelectItem>
+                <SelectItem value="red">UTI 1</SelectItem>
+                <SelectItem value="yellow">UTI 2</SelectItem>
+                <SelectItem value="blue">UCI 1</SelectItem>
+                <SelectItem value="outside">UCI 2</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-white/30 text-xs">/</span>
             <ClinicalNavTabs variant="dark" />
           </div>
           <Badge variant="outline" className="text-sm border-white/20 text-white/80">
             {filteredPatients.length} paciente{filteredPatients.length !== 1 ? "s" : ""}
           </Badge>
         </div>
+      </div>
 
+      {/* Search bar below header */}
+      <div className="border-b border-border/30 bg-muted/30 px-4 py-2">
         <div className="flex gap-2">
           <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
             <Input
               placeholder="Buscar por nome, leito ou diagnóstico..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus-visible:ring-white/30"
+              className="pl-9 h-8 text-sm"
             />
           </div>
-          <Select value={sectorFilter} onValueChange={setSectorFilter}>
-            <SelectTrigger className="w-40 bg-white/10 border-white/20 text-white [&>svg]:text-white/60">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Setor" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os setores</SelectItem>
-              <SelectItem value="red">Vermelho</SelectItem>
-              <SelectItem value="yellow">Amarelo</SelectItem>
-              <SelectItem value="blue">Azul</SelectItem>
-              <SelectItem value="outside">Externo</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
 

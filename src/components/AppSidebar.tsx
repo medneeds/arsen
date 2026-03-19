@@ -467,7 +467,19 @@ export function AppSidebar({
         ))}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border/50 p-3 bg-muted/30">
+      <SidebarFooter className="border-t border-border/50 p-3 bg-muted/30 space-y-2">
+        {/* Theme toggle */}
+        <div className={cn(
+          "flex items-center rounded-lg p-1.5 transition-all duration-200",
+          isCollapsed ? "justify-center" : "justify-between bg-card/30 px-3"
+        )}>
+          {!isCollapsed && (
+            <span className="text-[10px] text-muted-foreground font-medium">Tema</span>
+          )}
+          <ThemeToggleInline />
+        </div>
+
+        {/* User info + logout */}
         <div className={cn(
           "flex items-center gap-3 rounded-xl p-2 transition-all duration-200",
           isCollapsed ? "justify-center" : "bg-card/50"
