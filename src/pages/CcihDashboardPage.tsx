@@ -4,6 +4,7 @@ import { ptBR } from "date-fns/locale";
 import {
   Microscope, Search, Clock, CheckCircle2, Upload, RefreshCw,
   AlertTriangle, User, BedDouble, Plus, FileText, Loader2, Eye,
+  Pill, History, FlaskConical, CalendarDays, Info, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
