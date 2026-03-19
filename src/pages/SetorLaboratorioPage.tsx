@@ -534,9 +534,18 @@ const SetorLaboratorioPage = () => {
                   {selectedRequest.patient_bed && <span>Leito: {selectedRequest.patient_bed}</span>}
                 </div>
                 {selectedRequest.clinical_indication && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    <strong>Indicação clínica:</strong> {selectedRequest.clinical_indication}
-                  </p>
+                  <div className="text-xs mt-1 p-2 rounded-md bg-amber-50/50 border border-amber-200 dark:bg-amber-500/5 dark:border-amber-500/20">
+                    <strong className="text-amber-700 dark:text-amber-400">Justificativa Clínica:</strong>{" "}
+                    <span className="text-foreground">{selectedRequest.clinical_indication}</span>
+                  </div>
+                )}
+                {selectedRequest.notes && selectedRequest.notes.includes("[PROGRAMADO:") && (
+                  <div className="text-xs p-2 rounded-md bg-blue-50/50 border border-blue-200 dark:bg-blue-500/5 dark:border-blue-500/20">
+                    <strong className="text-blue-700 dark:text-blue-400">📅 Agendamento:</strong>{" "}
+                    <span className="text-foreground">
+                      {selectedRequest.notes.match(/\[PROGRAMADO: ([^\]]+)\]/)?.[1] || ""}
+                    </span>
+                  </div>
                 )}
                 {selectedRequest.requested_by_name && (
                   <p className="text-xs text-muted-foreground">
