@@ -113,7 +113,7 @@ export default function LandingPage() {
           {/* CTA Button */}
           <motion.button
             onClick={() => navigate("/auth")}
-            className="group relative inline-flex items-center gap-3 px-10 py-4 bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] hover:border-white/[0.25] rounded-full text-white font-medium text-sm uppercase tracking-[0.2em] transition-all duration-500 backdrop-blur-sm"
+            className="group relative inline-flex items-center gap-3 px-10 py-4 bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] hover:border-white/[0.25] rounded-full text-white font-medium text-sm tracking-[0.2em] transition-all duration-500 backdrop-blur-sm"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 1.1 }}
