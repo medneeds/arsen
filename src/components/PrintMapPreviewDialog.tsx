@@ -293,7 +293,7 @@ export function PrintMapPreviewDialog({
               />
               <PrintableSectorSection
                 patients={yellowPatients}
-                sectorName="Ala Amarela"
+                sectorName="UTI 2"
                 bgColor="#fefce8"
                 borderColor="#eab308"
                 textColor="#a16207"
