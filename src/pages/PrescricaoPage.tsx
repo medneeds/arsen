@@ -2275,12 +2275,13 @@ const PrescricaoPage = () => {
                   <span className="text-[9px] text-muted-foreground">v{p.version}</span>
                   <span className="text-[9px] text-muted-foreground">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
                 </div>
-                </div>
               </button>
             ))}
           </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic py-2">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
+          )}
         </div>
-      )}
 
       {/* ===== VERSION HISTORY ===== */}
       {versionHistory.length > 1 && currentPrescriptionId && (
