@@ -2427,6 +2427,7 @@ const PrescricaoPage = () => {
             <p className="text-xs text-muted-foreground">
               Prescrição médica diária digital — {totalItems} itens
               {currentPrescriptionId && <span className="ml-1 text-primary">(salva)</span>}
+              {patient.encounterCode && <span className="ml-2 font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded"><Hash className="inline h-3 w-3 mr-0.5" />{patient.encounterCode}</span>}
             </p>
           </div>
         </div>
