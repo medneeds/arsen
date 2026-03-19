@@ -48,11 +48,11 @@ export default function CuidadosPaliativosPage() {
             </div>
             
             <div className="flex gap-2 flex-wrap">
-              <Badge variant="secondary" className="uppercase bg-pink-500/10 text-pink-700 dark:text-pink-400">
+              <Badge variant="secondary" className="bg-pink-500/10 text-pink-700 dark:text-pink-400">
                 Cuidados Paliativos
               </Badge>
-              <Badge variant="secondary" className="uppercase">
-                QUALITOTAL 18.14.9
+              <Badge variant="secondary" className="">
+                Qualitotal 18.14.9
               </Badge>
             </div>
           </div>
