@@ -375,16 +375,16 @@ export default function AuthPage() {
                 <ArrowRight className="h-4 w-4 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
               </motion.button>
 
-              {/* By Medora badge */}
+              {/* By Medneeds badge */}
               <motion.div
                 className="mt-14 flex flex-col items-center gap-0.5"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 1, delay: 1.8 }}
+                transition={{ delay: 1.2, duration: 1 }}
               >
                 <div className="h-px w-12 bg-gradient-to-r from-transparent via-slate-500/30 to-transparent mb-3" />
                 <p className="text-[9px] text-slate-600 tracking-[0.4em]">by</p>
-                <p className="text-sm sm:text-base text-slate-300 font-bold tracking-[0.25em] mt-0.5">Medora</p>
+                <p className="text-sm sm:text-base text-slate-300 font-bold tracking-[0.25em] mt-0.5">Medneeds</p>
                 <p className="text-[8px] text-[#2dd4bf]/40 tracking-[0.35em] font-light mt-1">Clinical Intelligent Platform</p>
               </motion.div>
             </div>
