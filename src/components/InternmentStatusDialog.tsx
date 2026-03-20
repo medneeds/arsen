@@ -82,6 +82,7 @@ export function InternmentStatusDialog({
   const [status, setStatus] = useState<string>(currentStatus || "");
   const [notes, setNotes] = useState(currentNotes || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [aihDialogOpen, setAihDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const handleSave = async () => {
