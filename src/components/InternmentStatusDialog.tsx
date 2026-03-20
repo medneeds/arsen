@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, CheckCircle2, BedDouble, AlertTriangle, X } from "lucide-react";
+import { Clock, CheckCircle2, BedDouble, AlertTriangle, X, FileText } from "lucide-react";
 
 interface InternmentStatusDialogProps {
   isOpen: boolean;
