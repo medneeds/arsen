@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { AihFormDialog } from "./AihFormDialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, CheckCircle2, BedDouble, AlertTriangle, X } from "lucide-react";
+import { Clock, CheckCircle2, BedDouble, AlertTriangle, X, FileText } from "lucide-react";
 
 interface InternmentStatusDialogProps {
   isOpen: boolean;
@@ -81,6 +82,7 @@ export function InternmentStatusDialog({
   const [status, setStatus] = useState<string>(currentStatus || "");
   const [notes, setNotes] = useState(currentNotes || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [aihDialogOpen, setAihDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const handleSave = async () => {
@@ -245,6 +247,28 @@ export function InternmentStatusDialog({
           </div>
         </div>
 
+        {/* AIH Button — visible when status indicates internment request */}
+        {(status === "PSM_FAVORAVEL" || status === "AGUARDANDO_VAGA" || status === "IR_PARA_ENFERMARIA" || status === "IR_PARA_UTI") && (
+          <div className="border border-dashed border-primary/30 rounded-lg p-3 bg-primary/5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Laudo AIH</p>
+                <p className="text-xs text-muted-foreground">Gerar Autorização de Internação Hospitalar</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
+                onClick={() => setAihDialogOpen(true)}
+              >
+                <FileText className="h-4 w-4" />
+                Gerar Laudo AIH
+              </Button>
+            </div>
+          </div>
+        )}
+
         <DialogFooter className="gap-2">
           {currentStatus && (
             <Button
@@ -277,6 +301,14 @@ export function InternmentStatusDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* AIH Form Dialog */}
+      <AihFormDialog
+        open={aihDialogOpen}
+        onOpenChange={setAihDialogOpen}
+        patientId={patientId}
+        patientName={patientName}
+      />
     </Dialog>
   );
 }
