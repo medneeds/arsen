@@ -209,8 +209,51 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
       setLoadingImport(prev => ({ ...prev, [entryId]: null }));
     }
   };
+  const importCultureResults = async (entryId: string) => {
+    if (!patientId || availableCultures.length === 0) return;
+    setLoadingImport(prev => ({ ...prev, [entryId]: 'cultures' }));
+    try {
+      const cultureLines = availableCultures.map(c => {
+        const parts = [
+          `• Tipo: ${c.culture_type || 'N/I'}`,
+          c.collection_date ? `  Data coleta: ${format(new Date(c.collection_date + 'T12:00:00'), 'dd/MM/yyyy')}` : `  Solicitado em: ${format(new Date(c.created_at), 'dd/MM/yyyy')}`,
+          `  Status: ${c.status === 'completed' ? 'Concluída' : c.status === 'pending' ? 'Pendente' : c.status}`,
+          c.microorganism ? `  Microrganismo: ${c.microorganism}` : null,
+          c.antibiogram ? `  Antibiograma: ${c.antibiogram}` : null,
+          c.sensitivity_profile ? `  Perfil sensibilidade: ${c.sensitivity_profile}` : null,
+          c.result_text ? `  Resultado: ${c.result_text}` : null,
+        ].filter(Boolean).join('\n');
+        return parts;
+      }).join('\n\n');
 
-  const handlePrint = () => {
+      const currentEntry = entries.find(e => e.id === entryId);
+      if (currentEntry) {
+        // Update culture collected status
+        const hasCompleted = availableCultures.some(c => c.status === 'completed');
+        const hasPending = availableCultures.some(c => c.status === 'pending');
+        updateEntry(entryId, 'cultureCollected', hasCompleted ? 'sim' : hasPending ? 'pendente' : 'sim');
+
+        // Build culture result summary
+        const completedCultures = availableCultures.filter(c => c.microorganism || c.result_text);
+        const resultSummary = completedCultures.map(c => 
+          [c.microorganism, c.sensitivity_profile || c.antibiogram].filter(Boolean).join(' — ')
+        ).filter(Boolean).join('; ');
+        if (resultSummary) {
+          updateEntry(entryId, 'cultureResult', resultSummary);
+        }
+
+        // Append detailed info to justification
+        const currentJust = currentEntry.justification || '';
+        updateEntry(entryId, 'justification', currentJust + (currentJust ? '\n\n' : '') + `[RESULTADOS DE CULTURAS]\n${cultureLines}`);
+      }
+    } catch (err) {
+      console.error('Error importing culture results:', err);
+    } finally {
+      setLoadingImport(prev => ({ ...prev, [entryId]: null }));
+    }
+  };
+
+
     setIsPrinting(true);
     setTimeout(() => {
       window.print();
