@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Shield, Printer, X, Plus, Trash2, AlertTriangle, FileText, ClipboardList, Loader2 } from "lucide-react";
+import { Shield, Printer, X, Plus, Trash2, AlertTriangle, FileText, ClipboardList, Loader2, FlaskConical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -102,7 +102,8 @@ function createEmptyEntry(item?: PrescriptionItem): AntimicrobialEntry {
 export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicrobialItems = [], doctorName = "", doctorCrm = "", hospitalName = "", onConfirm, mode = 'review', patientId }: Props) {
   const [entries, setEntries] = useState<AntimicrobialEntry[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
-  const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | null>>({});
+  const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | 'cultures' | null>>({});
+  const [availableCultures, setAvailableCultures] = useState<Array<{ id: string; culture_type: string; collection_date: string | null; status: string; microorganism: string | null; antibiogram: string | null; sensitivity_profile: string | null; result_text: string | null; created_at: string }>>([]);
 
   useEffect(() => {
     if (open) {
@@ -113,6 +114,20 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
       }
     }
   }, [open, antimicrobialItems]);
+
+  // Fetch available cultures for this patient when dialog opens
+  useEffect(() => {
+    if (open && patientId) {
+      supabase
+        .from('culture_results')
+        .select('id, culture_type, collection_date, status, microorganism, antibiogram, sensitivity_profile, result_text, created_at')
+        .eq('patient_id', patientId)
+        .order('created_at', { ascending: false })
+        .then(({ data }) => {
+          if (data) setAvailableCultures(data);
+        });
+    }
+  }, [open, patientId]);
 
   const updateEntry = (id: string, field: keyof AntimicrobialEntry, value: string) => {
     setEntries(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e));
@@ -194,6 +209,50 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
       setLoadingImport(prev => ({ ...prev, [entryId]: null }));
     }
   };
+  const importCultureResults = async (entryId: string) => {
+    if (!patientId || availableCultures.length === 0) return;
+    setLoadingImport(prev => ({ ...prev, [entryId]: 'cultures' }));
+    try {
+      const cultureLines = availableCultures.map(c => {
+        const parts = [
+          `• Tipo: ${c.culture_type || 'N/I'}`,
+          c.collection_date ? `  Data coleta: ${format(new Date(c.collection_date + 'T12:00:00'), 'dd/MM/yyyy')}` : `  Solicitado em: ${format(new Date(c.created_at), 'dd/MM/yyyy')}`,
+          `  Status: ${c.status === 'completed' ? 'Concluída' : c.status === 'pending' ? 'Pendente' : c.status}`,
+          c.microorganism ? `  Microrganismo: ${c.microorganism}` : null,
+          c.antibiogram ? `  Antibiograma: ${c.antibiogram}` : null,
+          c.sensitivity_profile ? `  Perfil sensibilidade: ${c.sensitivity_profile}` : null,
+          c.result_text ? `  Resultado: ${c.result_text}` : null,
+        ].filter(Boolean).join('\n');
+        return parts;
+      }).join('\n\n');
+
+      const currentEntry = entries.find(e => e.id === entryId);
+      if (currentEntry) {
+        // Update culture collected status
+        const hasCompleted = availableCultures.some(c => c.status === 'completed');
+        const hasPending = availableCultures.some(c => c.status === 'pending');
+        updateEntry(entryId, 'cultureCollected', hasCompleted ? 'sim' : hasPending ? 'pendente' : 'sim');
+
+        // Build culture result summary
+        const completedCultures = availableCultures.filter(c => c.microorganism || c.result_text);
+        const resultSummary = completedCultures.map(c => 
+          [c.microorganism, c.sensitivity_profile || c.antibiogram].filter(Boolean).join(' — ')
+        ).filter(Boolean).join('; ');
+        if (resultSummary) {
+          updateEntry(entryId, 'cultureResult', resultSummary);
+        }
+
+        // Append detailed info to justification
+        const currentJust = currentEntry.justification || '';
+        updateEntry(entryId, 'justification', currentJust + (currentJust ? '\n\n' : '') + `[RESULTADOS DE CULTURAS]\n${cultureLines}`);
+      }
+    } catch (err) {
+      console.error('Error importing culture results:', err);
+    } finally {
+      setLoadingImport(prev => ({ ...prev, [entryId]: null }));
+    }
+  };
+
 
   const handlePrint = () => {
     setIsPrinting(true);
@@ -360,7 +419,22 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
                   </Select>
                 </div>
                 <div className="col-span-2">
-                  <Label className="text-[10px]">Resultado da Cultura / Antibiograma</Label>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <Label className="text-[10px]">Resultado da Cultura / Antibiograma</Label>
+                    {patientId && availableCultures.length > 0 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => importCultureResults(entry.id)}
+                        disabled={!!loadingImport[entry.id]}
+                        className="h-6 text-[10px] gap-1 px-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                      >
+                        {loadingImport[entry.id] === 'cultures' ? <Loader2 className="h-3 w-3 animate-spin" /> : <FlaskConical className="h-3 w-3" />}
+                        Importar Culturas ({availableCultures.length})
+                      </Button>
+                    )}
+                  </div>
                   <Input value={entry.cultureResult} onChange={e => updateEntry(entry.id, "cultureResult", e.target.value)} placeholder="Microrganismo / Sensibilidade" className="h-8 text-xs" />
                 </div>
               </div>
