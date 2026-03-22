@@ -2060,6 +2060,10 @@ const PrescricaoPage = () => {
   // Phase 7 state — Extra Prescription
   const [extraPrescriptionOpen, setExtraPrescriptionOpen] = useState(false);
 
+  // Antimicrobial Guide & Psychotropic Form
+  const [antimicrobialGuideOpen, setAntimicrobialGuideOpen] = useState(false);
+  const [psychotropicFormOpen, setPsychotropicFormOpen] = useState(false);
+
   const [dispensationDialogOpen, setDispensationDialogOpen] = useState(false);
   const [dispensations, setDispensations] = useState<Array<{ id: string; dispensation_code: string; dispensed_at: string; dispensed_by_name: string | null }>>([]);
   const [dispensationSlip, setDispensationSlip] = useState<{ code: string; items: PrescriptionItem[]; patientName: string; bed: string; date: string } | null>(null);
