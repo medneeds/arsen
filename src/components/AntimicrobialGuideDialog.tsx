@@ -96,7 +96,7 @@ function createEmptyEntry(item?: PrescriptionItem): AntimicrobialEntry {
   };
 }
 
-export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicrobialItems = [], doctorName = "", doctorCrm = "", hospitalName = "" }: Props) {
+export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicrobialItems = [], doctorName = "", doctorCrm = "", hospitalName = "", onConfirm, mode = 'review' }: Props) {
   const [entries, setEntries] = useState<AntimicrobialEntry[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
 
