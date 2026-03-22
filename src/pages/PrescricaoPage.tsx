@@ -78,6 +78,7 @@ import {
 } from "@/data/medicationsDatabase";
 import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
 import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/PsychotropicFormDialog";
+import { TevProtocolDialog } from "@/components/TevProtocolDialog";
 
 // --- Types ---
 interface DigitalSignature {
