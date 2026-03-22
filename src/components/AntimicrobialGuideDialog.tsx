@@ -98,8 +98,10 @@ function createEmptyEntry(item?: PrescriptionItem): AntimicrobialEntry {
   };
 }
 
-export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicrobialItems = [], doctorName = "", doctorCrm = "", hospitalName = "", onConfirm, mode = 'review' }: Props) {
+export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicrobialItems = [], doctorName = "", doctorCrm = "", hospitalName = "", onConfirm, mode = 'review', patientId }: Props) {
   const [entries, setEntries] = useState<AntimicrobialEntry[]>([]);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | null>>({});
   const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
