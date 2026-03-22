@@ -206,31 +206,19 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
   const today = format(new Date(), "dd/MM/yyyy", { locale: ptBR });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("max-w-4xl max-h-[90vh] overflow-y-auto", isPrinting && "print:block")}>
-        <DialogHeader className="print:hidden">
-          <DialogTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-orange-500" />
-            Guia de Uso de Antimicrobianos — CCIH
-          </DialogTitle>
-          <DialogDescription>
-            Formulário de justificativa e autorização de antimicrobianos conforme normativa ANVISA / CCIH.
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* === PRINT LAYOUT === */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          @media print {
-            body > * { display: none !important; }
-            body { overflow: visible !important; }
-            [data-radix-portal] { display: none !important; }
-            #antimicrobial-print-container { display: block !important; position: fixed; top: 0; left: 0; width: 100%; height: auto; z-index: 99999; background: white; overflow: visible !important; }
-            @page { size: A4 portrait; margin: 8mm 12mm; }
-          }
-        `}} />
-
-        {isPrinting && (
-          <div id="antimicrobial-print-container" style={{ display: 'none' }}>
+    <>
+      {/* Print portal - rendered directly on body, outside dialog */}
+      {isPrinting && createPortal(
+        <>
+          <style dangerouslySetInnerHTML={{ __html: `
+            @media print {
+              body > *:not(#antimicrobial-print-root) { display: none !important; }
+              body { overflow: visible !important; }
+              #antimicrobial-print-root { display: block !important; position: fixed; top: 0; left: 0; width: 100%; height: auto; z-index: 99999; background: white; overflow: visible !important; }
+              @page { size: A4 portrait; margin: 8mm 12mm; }
+            }
+          `}} />
+          <div id="antimicrobial-print-root" style={{ display: 'none' }}>
             <PrintableAntimicrobialGuide
               patient={patient}
               entries={entries}
@@ -240,7 +228,21 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
               date={today}
             />
           </div>
-        )}
+        </>,
+        document.body
+      )}
+
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="print:hidden">
+          <DialogTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-orange-500" />
+            Guia de Uso de Antimicrobianos — CCIH
+          </DialogTitle>
+          <DialogDescription>
+            Formulário de justificativa e autorização de antimicrobianos conforme normativa ANVISA / CCIH.
+          </DialogDescription>
+        </DialogHeader>
 
         {/* === FORM CONTENT === */}
         <div className="space-y-4 print:hidden">
