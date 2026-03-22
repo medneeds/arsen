@@ -61,6 +61,7 @@ interface Props {
   hospitalName?: string;
   onConfirm?: (entries: Array<{ medication: string; dose: string; route: string; posology: string }>) => void;
   mode?: 'review' | 'prescribe';
+  patientId?: string;
 }
 
 const INFECTION_SITES = [
