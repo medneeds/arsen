@@ -120,6 +120,80 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
   const addEntry = () => setEntries(prev => [...prev, createEmptyEntry()]);
   const removeEntry = (id: string) => setEntries(prev => prev.filter(e => e.id !== id));
 
+  const importAdmissionHistory = async (entryId: string) => {
+    if (!patientId) return;
+    setLoadingImport(prev => ({ ...prev, [entryId]: 'history' }));
+    try {
+      // First try admission_histories table
+      const { data: admHistory } = await supabase
+        .from('admission_histories')
+        .select('chief_complaint, clinical_history, diagnostic_hypothesis, initial_conduct')
+        .eq('patient_id', patientId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (admHistory) {
+        const parts = [
+          admHistory.chief_complaint && `QUEIXA PRINCIPAL: ${admHistory.chief_complaint}`,
+          admHistory.clinical_history && `HISTÓRIA CLÍNICA: ${admHistory.clinical_history}`,
+          admHistory.diagnostic_hypothesis && `HIPÓTESE DIAGNÓSTICA: ${admHistory.diagnostic_hypothesis}`,
+          admHistory.initial_conduct && `CONDUTA INICIAL: ${admHistory.initial_conduct}`,
+        ].filter(Boolean).join('\n');
+        if (parts) {
+          updateEntry(entryId, 'justification', (entries.find(e => e.id === entryId)?.justification || '') + (entries.find(e => e.id === entryId)?.justification ? '\n\n' : '') + `[HISTÓRIA ADMISSIONAL]\n${parts}`);
+          return;
+        }
+      }
+
+      // Fallback: try patient admission_history field
+      const { data: patientData } = await supabase
+        .from('patients')
+        .select('admission_history')
+        .eq('id', patientId)
+        .maybeSingle();
+
+      if (patientData?.admission_history) {
+        updateEntry(entryId, 'justification', (entries.find(e => e.id === entryId)?.justification || '') + (entries.find(e => e.id === entryId)?.justification ? '\n\n' : '') + `[HISTÓRIA ADMISSIONAL]\n${patientData.admission_history}`);
+      }
+    } catch (err) {
+      console.error('Error importing admission history:', err);
+    } finally {
+      setLoadingImport(prev => ({ ...prev, [entryId]: null }));
+    }
+  };
+
+  const importEvolution = async (entryId: string) => {
+    if (!patientId) return;
+    setLoadingImport(prev => ({ ...prev, [entryId]: 'evolution' }));
+    try {
+      // Get latest patient data for clinical context (diagnoses, conducts, exams)
+      const { data: patientData } = await supabase
+        .from('patients')
+        .select('diagnoses, medical_history, relevant_exams, pendencies, uti_cultures_antibiotics, uti_current_status')
+        .eq('id', patientId)
+        .maybeSingle();
+
+      if (patientData) {
+        const parts = [
+          patientData.diagnoses && `DIAGNÓSTICOS: ${patientData.diagnoses}`,
+          patientData.medical_history && `ANTECEDENTES: ${patientData.medical_history}`,
+          patientData.relevant_exams && `EXAMES RELEVANTES: ${patientData.relevant_exams}`,
+          patientData.uti_cultures_antibiotics && `CULTURAS/ATB: ${patientData.uti_cultures_antibiotics}`,
+          patientData.uti_current_status && `STATUS ATUAL: ${patientData.uti_current_status}`,
+          patientData.pendencies && `PENDÊNCIAS/PROGRAMAÇÕES: ${patientData.pendencies}`,
+        ].filter(Boolean).join('\n');
+        if (parts) {
+          updateEntry(entryId, 'justification', (entries.find(e => e.id === entryId)?.justification || '') + (entries.find(e => e.id === entryId)?.justification ? '\n\n' : '') + `[EVOLUÇÃO CLÍNICA]\n${parts}`);
+        }
+      }
+    } catch (err) {
+      console.error('Error importing evolution:', err);
+    } finally {
+      setLoadingImport(prev => ({ ...prev, [entryId]: null }));
+    }
+  };
+
   const handlePrint = () => {
     setIsPrinting(true);
     setTimeout(() => {
