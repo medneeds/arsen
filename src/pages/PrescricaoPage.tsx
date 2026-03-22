@@ -3716,7 +3716,7 @@ const PrescricaoPage = () => {
       <TevProtocolDialog
         open={tevProtocolOpen}
         onOpenChange={setTevProtocolOpen}
-        patient={patient ? { name: patient.name, age: patient.age, bed: patient.bed, sector: patient.sector, weight: patient.weight } : null}
+        patient={patient ? { name: patient.name, age: patient.age, bed: patient.bed, weight: patient.weight } : null}
       />
       </div>
     </div>
