@@ -115,6 +115,20 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
     }
   }, [open, antimicrobialItems]);
 
+  // Fetch available cultures for this patient when dialog opens
+  useEffect(() => {
+    if (open && patientId) {
+      supabase
+        .from('culture_results')
+        .select('id, culture_type, collection_date, status, microorganism, antibiogram, sensitivity_profile, result_text, created_at')
+        .eq('patient_id', patientId)
+        .order('created_at', { ascending: false })
+        .then(({ data }) => {
+          if (data) setAvailableCultures(data);
+        });
+    }
+  }, [open, patientId]);
+
   const updateEntry = (id: string, field: keyof AntimicrobialEntry, value: string) => {
     setEntries(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e));
   };
