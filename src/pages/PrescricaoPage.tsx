@@ -3378,108 +3378,20 @@ const PrescricaoPage = () => {
         )}
       </div>
 
-      {/* ===== PRINT-ONLY PRESCRIPTION BODY ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginTop: '0' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '0 0 4px 4px', overflow: 'hidden' }}>
-          <colgroup>
-            <col style={{ width: '26px' }} />
-            <col />
-            <col style={{ width: '170px' }} />
-            <col style={{ width: '28px' }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th className="print-header-bar" style={{ backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 2px', fontSize: '6.5pt', fontWeight: 700, textAlign: 'center', borderBottom: '2px solid #0369a1', letterSpacing: '0.5px' }}>
-                Nº
-              </th>
-              <th className="print-header-bar" style={{ backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 8px', fontSize: '7.5pt', fontWeight: 700, textAlign: 'left', letterSpacing: '0.8px', borderBottom: '2px solid #0369a1' }}>
-                Prescrição Médica
-              </th>
-              <th className="print-header-bar" style={{ backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 4px', fontSize: '7pt', fontWeight: 700, textAlign: 'center', letterSpacing: '0.6px', borderBottom: '2px solid #0369a1' }}>
-                Aprazamento
-              </th>
-              <th className="print-header-bar" style={{ backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 1px', fontSize: '6pt', fontWeight: 700, textAlign: 'center', borderBottom: '2px solid #0369a1' }}>
-                ✓
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {TAB_ORDER.map(cat => {
-              const catItems = itemsByCategory[cat].filter(i => i.status === 'active');
-              if (catItems.length === 0) return null;
-              const config = CATEGORY_CONFIG[cat];
-              const simple = isSimpleCategory(cat);
-              return (
-                <React.Fragment key={cat}>
-                  <tr>
-                    <td colSpan={4} className="print-cat-header" style={{ 
-                      padding: '0',
-                      border: 'none',
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
-                        <div className="print-cat-accent" style={{ width: '4px', height: '20px', backgroundColor: '#0c4a6e', borderRadius: '0 2px 2px 0' }} />
-                        <div style={{
-                          flex: 1, padding: '3px 10px', fontSize: '7pt', fontWeight: 800,
-                          letterSpacing: '0.8px', color: '#0c4a6e',
-                          backgroundColor: '#f0f9ff', borderBottom: '0.5px solid #bae6fd', borderTop: '0.5px solid #bae6fd',
-                        }}>
-                          {config.label} <span style={{ fontWeight: 500, color: '#64748b', fontSize: '6pt', marginLeft: '4px' }}>({catItems.length})</span>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                  {catItems.map((item, i) => (
-                    simple
-                      ? <PrintSimpleRow key={item.id} item={item} index={i} />
-                      : <PrintItemRow key={item.id} item={item} index={i} />
-                  ))}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-
-        {/* Print footer — elegant signature block */}
-        <div style={{ pageBreakInside: 'avoid', marginTop: '10px' }}>
-          {/* Signature area */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '12px', padding: '10px 0' }}>
-            {/* Left: Doctor signature */}
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              {digitalSignature ? (
-                <div className="print-sig-box" style={{ border: '1.5px solid #0c4a6e', borderRadius: '6px', padding: '8px 16px', display: 'inline-block', backgroundColor: '#f0f9ff' }}>
-                  <div style={{ fontSize: '7pt', fontWeight: 800, color: '#0c4a6e', letterSpacing: '1px' }}>✓ ASSINADO DIGITALMENTE</div>
-                  <div style={{ fontSize: '8pt', fontWeight: 700, color: '#0f172a', marginTop: '3px' }}>{digitalSignature.doctorName}</div>
-                  <div style={{ fontSize: '6.5pt', color: '#475569', marginTop: '1px' }}>CRM: {digitalSignature.crm} · {digitalSignature.signedAt}</div>
-                  <div style={{ fontSize: '5pt', color: '#94a3b8', fontFamily: 'monospace', marginTop: '3px', borderTop: '0.5px solid #e2e8f0', paddingTop: '2px' }}>Hash: {digitalSignature.hash}</div>
-                </div>
-              ) : (
-                <div style={{ paddingTop: '14px' }}>
-                  <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
-                  <div style={{ fontSize: '7.5pt', fontWeight: 700, color: '#0f172a' }}>Assinatura / Carimbo do Médico</div>
-                  <div style={{ fontSize: '6.5pt', color: '#64748b', marginTop: '1px' }}>CRM: _______________</div>
-                </div>
-              )}
-            </div>
-            {/* Right: Nursing signature */}
-            <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
-              <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
-              <div style={{ fontSize: '7.5pt', fontWeight: 700, color: '#0f172a' }}>Enfermeiro(a) Responsável</div>
-              <div style={{ fontSize: '6.5pt', color: '#64748b', marginTop: '1px' }}>COREN: _______________</div>
-            </div>
-          </div>
-
-          {/* Bottom bar */}
-          <div className="print-footer-bar" style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '4px 10px', borderTop: '1px solid #e2e8f0', borderRadius: '0 0 4px 4px',
-            backgroundColor: '#f8fafc', fontSize: '5.5pt', color: '#94a3b8',
-          }}>
-            <span>{prescriptionDate} · BigHelp Map · Prescrição Digital</span>
-            <span>Hospital Municipal Djalma Marques — Socorrão I</span>
-            <span>Pág. 1</span>
-          </div>
-        </div>
-      </div>
+      {/* ===== PRINT PORTAL ===== */}
+      {showPrintPortal && createPortal(
+        <div id="prescription-print-root" style={{ display: 'none' }}>
+          <PrintablePrescription
+            patient={patient}
+            items={items}
+            itemsByCategory={itemsByCategory}
+            digitalSignature={digitalSignature}
+            prescriptionDate={prescriptionDate}
+            hospitalName={currentHospital?.name || 'HOSPITAL MUNICIPAL'}
+          />
+        </div>,
+        document.body
+      )}
 
       {/* ===== FOOTER SUMMARY ===== */}
       <div className="rounded-xl border border-border bg-muted/30 p-4 flex items-center justify-between print:hidden">
