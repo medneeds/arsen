@@ -2939,6 +2939,14 @@ const PrescricaoPage = () => {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setTevProtocolOpen(true)}
+            className="gap-1.5 text-blue-600 border-blue-200 hover:border-blue-300 hover:text-blue-700"
+          >
+            <Droplets className="h-3.5 w-3.5" /> Protocolo TEV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               if (!allItemsValidated) {
                 toast.error("Valide todos os itens antes de imprimir", { description: "Clique nos círculos à esquerda de cada item ou use 'Validar todos'." });
