@@ -254,6 +254,7 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
   };
 
 
+  const handlePrint = () => {
     setIsPrinting(true);
     setTimeout(() => {
       window.print();
