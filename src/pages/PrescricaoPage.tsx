@@ -3679,6 +3679,28 @@ const PrescricaoPage = () => {
         }}
         allMedications={Object.values(ALL_ITEMS_BY_CATEGORY).flat()}
       />
+
+      {/* Antimicrobial Guide Dialog */}
+      <AntimicrobialGuideDialog
+        open={antimicrobialGuideOpen}
+        onOpenChange={setAntimicrobialGuideOpen}
+        patient={patient}
+        antimicrobialItems={items.filter(i => i.category === 'antimicrobial').map(i => ({ id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology, category: i.category, status: i.status }))}
+        doctorName={digitalSignature?.doctorName}
+        doctorCrm={digitalSignature?.crm}
+        hospitalName={currentHospital?.name}
+      />
+
+      {/* Psychotropic Form Dialog */}
+      <PsychotropicFormDialog
+        open={psychotropicFormOpen}
+        onOpenChange={setPsychotropicFormOpen}
+        patient={patient}
+        controlledItems={items.filter(i => i.status === 'active' && (i.category === 'high_alert' || isPsychotropicMedication(i.name))).map(i => ({ id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology, category: i.category, status: i.status, highAlert: i.highAlert }))}
+        doctorName={digitalSignature?.doctorName}
+        doctorCrm={digitalSignature?.crm}
+        hospitalName={currentHospital?.name}
+      />
       </div>
     </div>
   );
