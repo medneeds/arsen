@@ -358,10 +358,38 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
                 </div>
               </div>
 
-              {/* Row 5: Justification */}
+              {/* Row 5: Justification with import buttons */}
               <div>
-                <Label className="text-[10px]">Justificativa Clínica</Label>
-                <Textarea value={entry.justification} onChange={e => updateEntry(entry.id, "justification", e.target.value)} placeholder="Descreva a indicação clínica para uso deste antimicrobiano..." className="text-xs min-h-[60px] resize-none" />
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-[10px]">Justificativa Clínica</Label>
+                  {patientId && (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => importAdmissionHistory(entry.id)}
+                        disabled={!!loadingImport[entry.id]}
+                        className="h-6 text-[10px] gap-1 px-2"
+                      >
+                        {loadingImport[entry.id] === 'history' ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
+                        Importar Hx Admissional
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => importEvolution(entry.id)}
+                        disabled={!!loadingImport[entry.id]}
+                        className="h-6 text-[10px] gap-1 px-2"
+                      >
+                        {loadingImport[entry.id] === 'evolution' ? <Loader2 className="h-3 w-3 animate-spin" /> : <ClipboardList className="h-3 w-3" />}
+                        Importar Evolução
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <Textarea value={entry.justification} onChange={e => updateEntry(entry.id, "justification", e.target.value)} placeholder="Descreva a indicação clínica para uso deste antimicrobiano..." className="text-xs min-h-[80px] resize-y" />
               </div>
 
               {/* Row 6: CCIH notes */}
