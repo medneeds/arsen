@@ -3711,6 +3711,13 @@ const PrescricaoPage = () => {
         doctorCrm={digitalSignature?.crm}
         hospitalName={currentHospital?.name}
       />
+
+      {/* TEV Protocol Dialog */}
+      <TevProtocolDialog
+        open={tevProtocolOpen}
+        onOpenChange={setTevProtocolOpen}
+        patient={patient ? { name: patient.name, age: patient.age, bed: patient.bed, sector: patient.sector, weight: patient.weight } : null}
+      />
       </div>
     </div>
   );
