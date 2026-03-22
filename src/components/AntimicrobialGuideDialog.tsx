@@ -221,7 +221,9 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
         <style dangerouslySetInnerHTML={{ __html: `
           @media print {
             body > * { display: none !important; }
-            [data-antimicrobial-print] { display: block !important; position: fixed; top: 0; left: 0; width: 100%; z-index: 99999; }
+            body { overflow: visible !important; }
+            [data-radix-portal] { display: none !important; }
+            #antimicrobial-print-container { display: block !important; position: fixed; top: 0; left: 0; width: 100%; height: auto; z-index: 99999; background: white; overflow: visible !important; }
             @page { size: A4 portrait; margin: 8mm 12mm; }
           }
         `}} />
