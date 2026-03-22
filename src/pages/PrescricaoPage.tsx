@@ -2065,6 +2065,7 @@ const PrescricaoPage = () => {
   const [antimicrobialGuideOpen, setAntimicrobialGuideOpen] = useState(false);
   const [psychotropicFormOpen, setPsychotropicFormOpen] = useState(false);
   const [tevProtocolOpen, setTevProtocolOpen] = useState(false);
+  const [pendingAntimicrobialMed, setPendingAntimicrobialMed] = useState<MedicationEntry | null>(null);
 
   const [dispensationDialogOpen, setDispensationDialogOpen] = useState(false);
   const [dispensations, setDispensations] = useState<Array<{ id: string; dispensation_code: string; dispensed_at: string; dispensed_by_name: string | null }>>([]);
@@ -2266,8 +2267,49 @@ const PrescricaoPage = () => {
   };
 
   const addItem = (med: MedicationEntry) => {
+    // Antimicrobials must go through the Antimicrobial Guide first
+    if (med.category === 'antimicrobial') {
+      setPendingAntimicrobialMed(med);
+      setAntimicrobialGuideOpen(true);
+      return;
+    }
     setItems((prev) => [...prev, createItem(med)]);
   };
+
+  // Callback when antimicrobial guide is confirmed — add both guide entry data and the prescription item
+  const handleAntimicrobialConfirm = useCallback((confirmedEntries: Array<{ medication: string; dose: string; route: string; posology: string }>) => {
+    // Find matching MedicationEntry from the database for each confirmed entry
+    const antimicrobialOptions = ALL_ITEMS_BY_CATEGORY['antimicrobial'] || [];
+    const newItems: PrescriptionItem[] = confirmedEntries.map(entry => {
+      const matchedMed = antimicrobialOptions.find(m => m.name === entry.medication);
+      if (matchedMed) {
+        const item = createItem(matchedMed);
+        // Override with values from the guide form
+        item.dose = entry.dose || item.dose;
+        item.route = entry.route || item.route;
+        item.posology = entry.posology || item.posology;
+        return item;
+      }
+      // Fallback: create item from entry data
+      return {
+        id: crypto.randomUUID(),
+        name: entry.medication,
+        presentation: '',
+        dose: entry.dose,
+        route: entry.route,
+        posology: entry.posology,
+        schedule: '',
+        instructions: '',
+        category: 'antimicrobial' as PrescriptionCategory,
+        flags: [] as PrescriptionFlag[],
+        highAlert: false,
+        status: 'active' as const,
+      };
+    });
+    setItems(prev => [...prev, ...newItems]);
+    setPendingAntimicrobialMed(null);
+    toast.success(`${newItems.length} antimicrobiano(s) adicionado(s) à prescrição via Guia ATM`);
+  }, []);
 
   const applyCareProfile = (profile: CareProfile) => {
     const existingNames = new Set(items.filter(i => i.category === 'care').map(i => i.name));
@@ -3693,12 +3735,21 @@ const PrescricaoPage = () => {
       {/* Antimicrobial Guide Dialog */}
       <AntimicrobialGuideDialog
         open={antimicrobialGuideOpen}
-        onOpenChange={setAntimicrobialGuideOpen}
+        onOpenChange={(open) => {
+          setAntimicrobialGuideOpen(open);
+          if (!open) setPendingAntimicrobialMed(null);
+        }}
         patient={patient}
-        antimicrobialItems={items.filter(i => i.category === 'antimicrobial').map(i => ({ id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology, category: i.category, status: i.status }))}
+        antimicrobialItems={
+          pendingAntimicrobialMed
+            ? [{ id: 'pending', name: pendingAntimicrobialMed.name, dose: pendingAntimicrobialMed.defaultDose, route: pendingAntimicrobialMed.defaultRoute, posology: pendingAntimicrobialMed.defaultPosology, category: 'antimicrobial', status: 'active' }]
+            : items.filter(i => i.category === 'antimicrobial').map(i => ({ id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology, category: i.category, status: i.status }))
+        }
         doctorName={digitalSignature?.doctorName}
         doctorCrm={digitalSignature?.crm}
         hospitalName={currentHospital?.name}
+        onConfirm={handleAntimicrobialConfirm}
+        mode={pendingAntimicrobialMed ? 'prescribe' : 'review'}
       />
 
       {/* Psychotropic Form Dialog */}

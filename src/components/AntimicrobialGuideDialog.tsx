@@ -58,6 +58,8 @@ interface Props {
   doctorName?: string;
   doctorCrm?: string;
   hospitalName?: string;
+  onConfirm?: (entries: Array<{ medication: string; dose: string; route: string; posology: string }>) => void;
+  mode?: 'review' | 'prescribe';
 }
 
 const INFECTION_SITES = [
@@ -94,7 +96,7 @@ function createEmptyEntry(item?: PrescriptionItem): AntimicrobialEntry {
   };
 }
 
-export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicrobialItems = [], doctorName = "", doctorCrm = "", hospitalName = "" }: Props) {
+export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicrobialItems = [], doctorName = "", doctorCrm = "", hospitalName = "", onConfirm, mode = 'review' }: Props) {
   const [entries, setEntries] = useState<AntimicrobialEntry[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
 
@@ -300,10 +302,33 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-2 pt-2 border-t">
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Fechar</Button>
+            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+              {mode === 'prescribe' ? 'Cancelar' : 'Fechar'}
+            </Button>
             <Button variant="outline" size="sm" onClick={handlePrint} className="gap-1.5">
               <Printer className="h-3.5 w-3.5" /> Imprimir Guia
             </Button>
+            {mode === 'prescribe' && onConfirm && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  const validEntries = entries.filter(e => e.medication.trim());
+                  if (validEntries.length === 0) {
+                    return;
+                  }
+                  onConfirm(validEntries.map(e => ({
+                    medication: e.medication,
+                    dose: e.dose,
+                    route: e.route,
+                    posology: e.posology,
+                  })));
+                  onOpenChange(false);
+                }}
+                className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                <Shield className="h-3.5 w-3.5" /> Confirmar e Anexar à Prescrição
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>
