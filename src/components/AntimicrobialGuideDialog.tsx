@@ -58,6 +58,8 @@ interface Props {
   doctorName?: string;
   doctorCrm?: string;
   hospitalName?: string;
+  onConfirm?: (entries: Array<{ medication: string; dose: string; route: string; posology: string }>) => void;
+  mode?: 'review' | 'prescribe';
 }
 
 const INFECTION_SITES = [
