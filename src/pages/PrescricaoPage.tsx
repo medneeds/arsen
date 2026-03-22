@@ -3735,12 +3735,21 @@ const PrescricaoPage = () => {
       {/* Antimicrobial Guide Dialog */}
       <AntimicrobialGuideDialog
         open={antimicrobialGuideOpen}
-        onOpenChange={setAntimicrobialGuideOpen}
+        onOpenChange={(open) => {
+          setAntimicrobialGuideOpen(open);
+          if (!open) setPendingAntimicrobialMed(null);
+        }}
         patient={patient}
-        antimicrobialItems={items.filter(i => i.category === 'antimicrobial').map(i => ({ id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology, category: i.category, status: i.status }))}
+        antimicrobialItems={
+          pendingAntimicrobialMed
+            ? [{ id: 'pending', name: pendingAntimicrobialMed.name, dose: pendingAntimicrobialMed.defaultDose, route: pendingAntimicrobialMed.defaultRoute, posology: pendingAntimicrobialMed.defaultPosology, category: 'antimicrobial', status: 'active' }]
+            : items.filter(i => i.category === 'antimicrobial').map(i => ({ id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology, category: i.category, status: i.status }))
+        }
         doctorName={digitalSignature?.doctorName}
         doctorCrm={digitalSignature?.crm}
         hospitalName={currentHospital?.name}
+        onConfirm={handleAntimicrobialConfirm}
+        mode={pendingAntimicrobialMed ? 'prescribe' : 'review'}
       />
 
       {/* Psychotropic Form Dialog */}
