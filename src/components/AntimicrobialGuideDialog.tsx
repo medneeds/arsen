@@ -421,17 +421,18 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
                 <div className="col-span-2">
                   <div className="flex items-center justify-between mb-0.5">
                     <Label className="text-[10px]">Resultado da Cultura / Antibiograma</Label>
-                    {patientId && availableCultures.length > 0 && (
+                    {patientId && (
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => importCultureResults(entry.id)}
-                        disabled={!!loadingImport[entry.id]}
+                        disabled={!!loadingImport[entry.id] || availableCultures.length === 0}
                         className="h-6 text-[10px] gap-1 px-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                        title={availableCultures.length === 0 ? 'Nenhuma cultura encontrada para este paciente' : ''}
                       >
                         {loadingImport[entry.id] === 'cultures' ? <Loader2 className="h-3 w-3 animate-spin" /> : <FlaskConical className="h-3 w-3" />}
-                        Importar Culturas ({availableCultures.length})
+                        Importar Culturas {availableCultures.length > 0 ? `(${availableCultures.length})` : '(0)'}
                       </Button>
                     )}
                   </div>
