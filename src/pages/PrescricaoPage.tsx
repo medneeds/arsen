@@ -3618,7 +3618,7 @@ const PrescricaoPage = () => {
 
 // === PRINTABLE PRESCRIPTION (portal-based, ATM guide aesthetic) ===
 function PrintablePrescription({ patient, items, itemsByCategory, digitalSignature, prescriptionDate, hospitalName }: {
-  patient: { name: string; birthDate: string; age: string; sex: string; bed: string; unit: string; record: string; admissionDate: string; utiAdmissionDate: string; weight: string; allergies: string; motherName: string; address: string; city: string; encounterCode: string };
+  patient: PatientHeader;
   items: PrescriptionItem[];
   itemsByCategory: Record<PrescriptionCategory, PrescriptionItem[]>;
   digitalSignature: DigitalSignature | null;
