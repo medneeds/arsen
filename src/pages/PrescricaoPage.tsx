@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import ReactMarkdown from "react-markdown";
@@ -2656,7 +2657,14 @@ const PrescricaoPage = () => {
     toast.info("Nova prescrição iniciada");
   };
 
-  const handlePrint = () => window.print();
+  const [showPrintPortal, setShowPrintPortal] = useState(false);
+  const handlePrint = () => {
+    setShowPrintPortal(true);
+    setTimeout(() => {
+      window.print();
+      setShowPrintPortal(false);
+    }, 300);
+  };
 
   // Sign prescription
   const handleRequestSign = () => {
@@ -2822,97 +2830,18 @@ const PrescricaoPage = () => {
   }
 
   return (
-    <div className="animate-fade-in print:p-0 print:m-0 print:space-y-0 print:max-w-none print:text-black" style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' } as React.CSSProperties}>
+    <div className="animate-fade-in">
       <ClinicalHeader moduleLabel="Prescrição Médica" />
-      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-0 print:m-0 print:space-y-0 print:max-w-none">
-      {/* ===== PRINT STYLES ===== */}
+      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5">
+      {/* Print styles — hide everything except portal */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           @page { size: A4 portrait; margin: 5mm 12mm 8mm 12mm; }
-          body, html { background: #fff !important; }
-          * { background-color: transparent !important; }
-          .prescription-print-section table { border-collapse: collapse; width: 100%; }
-          .prescription-print-section td, .prescription-print-section th { background-color: #fff !important; }
-          .print-header-bar { background-color: #0c4a6e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-header-subtle { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-cat-header { background-color: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-allergy-bar { background-color: #fef2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-row-alt td { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-num-pill { background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-flag-chip { background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-suspended-chip { background-color: #dc2626 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-cat-accent { background-color: #0c4a6e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-sig-box { background-color: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-footer-bar { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body > *:not(#prescription-print-root) { display: none !important; }
+          #prescription-print-root { display: block !important; }
+          #prescription-print-root * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       ` }} />
-
-      {/* ===== PRINT-ONLY LETTERHEAD ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginBottom: '6px' }}>
-        
-        {/* ── ROW 1: Institutional bar — light gray bg, logo + title ── */}
-        <div className="print-header-subtle" style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '3px 8px', backgroundColor: '#f1f5f9', borderBottom: '0.5px solid #e2e8f0',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <img src={socorraoLogo} alt="Socorrão I" style={{ height: '16px', objectFit: 'contain', opacity: 0.8 }} />
-            <span style={{ fontSize: '7pt', fontWeight: 700, color: '#475569', letterSpacing: '0.3px' }}>Socorrão I</span>
-            <span style={{ fontSize: '6pt', color: '#94a3b8', fontWeight: 500 }}>·</span>
-            <span style={{ fontSize: '6.5pt', fontWeight: 600, color: '#64748b' }}>Prescrição Médica Diária</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '6pt', color: '#94a3b8', fontWeight: 500 }}>{prescriptionDate}</span>
-            <img src={bighelpLogo} alt="BigHelp Map" style={{ height: '10px', objectFit: 'contain', opacity: 0.1 }} />
-          </div>
-        </div>
-
-        {/* ── ROW 2: Patient main line — Name, Age, Bed, Weight, Sex, Record, Date ── */}
-        <div style={{
-          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-          padding: '3px 8px', borderBottom: '0.5px solid #e2e8f0',
-        }}>
-          <div style={{ fontSize: '9pt', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
-            {patient.name || '___________________________________'}
-            <span style={{ fontWeight: 600, color: '#475569', fontSize: '8pt' }}>, {patient.age || '—'}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '7pt', color: '#334155', flexShrink: 0 }}>
-            <span><strong>L:</strong> {patient.bed || '—'}</span>
-            <span style={{ color: '#cbd5e1' }}>·</span>
-            <span><strong>P:</strong> {patient.weight ? `${patient.weight}kg` : '—'}</span>
-            <span style={{ color: '#cbd5e1' }}>·</span>
-            <span>{patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'M' : 'F') : '—'}</span>
-            <span style={{ color: '#cbd5e1' }}>·</span>
-            <span style={{ fontFamily: 'monospace', fontSize: '6.5pt' }}>{patient.record || '————'}</span>
-            <span style={{ color: '#cbd5e1' }}>·</span>
-            <span style={{ fontSize: '6.5pt', color: '#64748b' }}>{prescriptionDate}</span>
-          </div>
-        </div>
-
-        {/* ── ROW 3: Allergy strip ── */}
-        <div className="print-allergy-bar" style={{
-          padding: '2px 8px', borderLeft: '3px solid #dc2626',
-          borderBottom: '0.5px solid #fecaca',
-        }}>
-          <span style={{ fontSize: '5.5pt', fontWeight: 800, color: '#dc2626', letterSpacing: '0.5px' }}>⚠ Alergias: </span>
-          <span style={{ fontSize: '7.5pt', fontWeight: 800, color: '#991b1b' }}>{patient.allergies || 'NDAM'}</span>
-        </div>
-
-        {/* ── ROW 4: Secondary fields inline ── */}
-        <div style={{
-          padding: '2px 8px', fontSize: '6.5pt', color: '#475569', lineHeight: 1.3, borderBottom: '0.5px solid #e2e8f0',
-        }}>
-          {[
-            patient.birthDate ? `Nasc: ${format(new Date(patient.birthDate + 'T12:00:00'), 'dd/MM/yyyy')}` : null,
-            patient.motherName ? `Mãe: ${patient.motherName}` : null,
-            patient.admissionDate ? `Adm. Hosp: ${format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yy')}` : null,
-            patient.utiAdmissionDate ? `Adm. UTI: ${format(new Date(patient.utiAdmissionDate + 'T12:00:00'), 'dd/MM/yy')}` : null,
-            patient.unit ? `Unid: ${patient.unit}` : null,
-            patient.address ? `End: ${patient.address}${patient.city ? ` — ${patient.city}` : ''}` : null,
-            patient.encounterCode ? `Atend: #${patient.encounterCode}` : null,
-          ].filter(Boolean).join(' · ')}
-        </div>
-      </div>
 
       {/* Page Title */}
       <div className="flex items-center justify-between gap-4 print:hidden">
@@ -3449,108 +3378,20 @@ const PrescricaoPage = () => {
         )}
       </div>
 
-      {/* ===== PRINT-ONLY PRESCRIPTION BODY ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginTop: '0' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '0 0 4px 4px', overflow: 'hidden' }}>
-          <colgroup>
-            <col style={{ width: '26px' }} />
-            <col />
-            <col style={{ width: '170px' }} />
-            <col style={{ width: '28px' }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th className="print-header-bar" style={{ backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 2px', fontSize: '6.5pt', fontWeight: 700, textAlign: 'center', borderBottom: '2px solid #0369a1', letterSpacing: '0.5px' }}>
-                Nº
-              </th>
-              <th className="print-header-bar" style={{ backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 8px', fontSize: '7.5pt', fontWeight: 700, textAlign: 'left', letterSpacing: '0.8px', borderBottom: '2px solid #0369a1' }}>
-                Prescrição Médica
-              </th>
-              <th className="print-header-bar" style={{ backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 4px', fontSize: '7pt', fontWeight: 700, textAlign: 'center', letterSpacing: '0.6px', borderBottom: '2px solid #0369a1' }}>
-                Aprazamento
-              </th>
-              <th className="print-header-bar" style={{ backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 1px', fontSize: '6pt', fontWeight: 700, textAlign: 'center', borderBottom: '2px solid #0369a1' }}>
-                ✓
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {TAB_ORDER.map(cat => {
-              const catItems = itemsByCategory[cat].filter(i => i.status === 'active');
-              if (catItems.length === 0) return null;
-              const config = CATEGORY_CONFIG[cat];
-              const simple = isSimpleCategory(cat);
-              return (
-                <React.Fragment key={cat}>
-                  <tr>
-                    <td colSpan={4} className="print-cat-header" style={{ 
-                      padding: '0',
-                      border: 'none',
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
-                        <div className="print-cat-accent" style={{ width: '4px', height: '20px', backgroundColor: '#0c4a6e', borderRadius: '0 2px 2px 0' }} />
-                        <div style={{
-                          flex: 1, padding: '3px 10px', fontSize: '7pt', fontWeight: 800,
-                          letterSpacing: '0.8px', color: '#0c4a6e',
-                          backgroundColor: '#f0f9ff', borderBottom: '0.5px solid #bae6fd', borderTop: '0.5px solid #bae6fd',
-                        }}>
-                          {config.label} <span style={{ fontWeight: 500, color: '#64748b', fontSize: '6pt', marginLeft: '4px' }}>({catItems.length})</span>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                  {catItems.map((item, i) => (
-                    simple
-                      ? <PrintSimpleRow key={item.id} item={item} index={i} />
-                      : <PrintItemRow key={item.id} item={item} index={i} />
-                  ))}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-
-        {/* Print footer — elegant signature block */}
-        <div style={{ pageBreakInside: 'avoid', marginTop: '10px' }}>
-          {/* Signature area */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '12px', padding: '10px 0' }}>
-            {/* Left: Doctor signature */}
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              {digitalSignature ? (
-                <div className="print-sig-box" style={{ border: '1.5px solid #0c4a6e', borderRadius: '6px', padding: '8px 16px', display: 'inline-block', backgroundColor: '#f0f9ff' }}>
-                  <div style={{ fontSize: '7pt', fontWeight: 800, color: '#0c4a6e', letterSpacing: '1px' }}>✓ ASSINADO DIGITALMENTE</div>
-                  <div style={{ fontSize: '8pt', fontWeight: 700, color: '#0f172a', marginTop: '3px' }}>{digitalSignature.doctorName}</div>
-                  <div style={{ fontSize: '6.5pt', color: '#475569', marginTop: '1px' }}>CRM: {digitalSignature.crm} · {digitalSignature.signedAt}</div>
-                  <div style={{ fontSize: '5pt', color: '#94a3b8', fontFamily: 'monospace', marginTop: '3px', borderTop: '0.5px solid #e2e8f0', paddingTop: '2px' }}>Hash: {digitalSignature.hash}</div>
-                </div>
-              ) : (
-                <div style={{ paddingTop: '14px' }}>
-                  <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
-                  <div style={{ fontSize: '7.5pt', fontWeight: 700, color: '#0f172a' }}>Assinatura / Carimbo do Médico</div>
-                  <div style={{ fontSize: '6.5pt', color: '#64748b', marginTop: '1px' }}>CRM: _______________</div>
-                </div>
-              )}
-            </div>
-            {/* Right: Nursing signature */}
-            <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
-              <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
-              <div style={{ fontSize: '7.5pt', fontWeight: 700, color: '#0f172a' }}>Enfermeiro(a) Responsável</div>
-              <div style={{ fontSize: '6.5pt', color: '#64748b', marginTop: '1px' }}>COREN: _______________</div>
-            </div>
-          </div>
-
-          {/* Bottom bar */}
-          <div className="print-footer-bar" style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '4px 10px', borderTop: '1px solid #e2e8f0', borderRadius: '0 0 4px 4px',
-            backgroundColor: '#f8fafc', fontSize: '5.5pt', color: '#94a3b8',
-          }}>
-            <span>{prescriptionDate} · BigHelp Map · Prescrição Digital</span>
-            <span>Hospital Municipal Djalma Marques — Socorrão I</span>
-            <span>Pág. 1</span>
-          </div>
-        </div>
-      </div>
+      {/* ===== PRINT PORTAL ===== */}
+      {showPrintPortal && createPortal(
+        <div id="prescription-print-root" style={{ display: 'none' }}>
+          <PrintablePrescription
+            patient={patient}
+            items={items}
+            itemsByCategory={itemsByCategory}
+            digitalSignature={digitalSignature}
+            prescriptionDate={prescriptionDate}
+            hospitalName={currentHospital?.name || 'HOSPITAL MUNICIPAL'}
+          />
+        </div>,
+        document.body
+      )}
 
       {/* ===== FOOTER SUMMARY ===== */}
       <div className="rounded-xl border border-border bg-muted/30 p-4 flex items-center justify-between print:hidden">
@@ -3774,5 +3615,236 @@ const PrescricaoPage = () => {
     </div>
   );
 };
+
+// === PRINTABLE PRESCRIPTION (portal-based, ATM guide aesthetic) ===
+function PrintablePrescription({ patient, items, itemsByCategory, digitalSignature, prescriptionDate, hospitalName }: {
+  patient: PatientHeader;
+  items: PrescriptionItem[];
+  itemsByCategory: Record<PrescriptionCategory, PrescriptionItem[]>;
+  digitalSignature: DigitalSignature | null;
+  prescriptionDate: string;
+  hospitalName: string;
+}) {
+  const cellStyle: React.CSSProperties = { border: '0.5px solid #94a3b8', padding: '3px 6px', fontSize: '7.5pt', lineHeight: 1.3, verticalAlign: 'top' };
+  const headerCellStyle: React.CSSProperties = { ...cellStyle, fontWeight: 700, fontSize: '6.5pt', backgroundColor: '#f1f5f9', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.3px' };
+  const sectionStyle: React.CSSProperties = { fontWeight: 800, fontSize: '7pt', backgroundColor: '#0c4a6e', color: '#fff', textAlign: 'center', letterSpacing: '0.5px', padding: '4px 6px', border: '0.5px solid #0c4a6e' };
+  const thStyle: React.CSSProperties = { backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 6px', fontSize: '7pt', fontWeight: 700, textAlign: 'left', letterSpacing: '0.5px', border: '0.5px solid #0c4a6e' };
+
+  const isSimple = (cat: PrescriptionCategory) => ['nutrition', 'care'].includes(cat);
+
+  return (
+    <div style={{ fontFamily: 'Arial, Helvetica, sans-serif', color: '#0f172a', width: '186mm', margin: '0 auto', lineHeight: 1.3 }}>
+      {/* Header */}
+      <div style={{ borderBottom: '2px solid #0c4a6e', paddingBottom: '4px', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: '11pt', fontWeight: 800, color: '#0c4a6e' }}>{hospitalName}</div>
+          <div style={{ fontSize: '7pt', color: '#64748b', fontWeight: 600 }}>PRESCRIÇÃO MÉDICA DIÁRIA</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '9pt', fontWeight: 800, color: '#0c4a6e' }}>PRESCRIÇÃO MÉDICA</div>
+          <div style={{ fontSize: '6.5pt', color: '#64748b' }}>{prescriptionDate}</div>
+        </div>
+      </div>
+
+      {/* Patient Data */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '4px' }}>
+        <tbody>
+          <tr>
+            <td style={headerCellStyle}>Paciente</td>
+            <td style={{ ...cellStyle, fontWeight: 800, width: '35%', fontSize: '8.5pt' }}>{patient.name || '—'}</td>
+            <td style={headerCellStyle}>Leito</td>
+            <td style={{ ...cellStyle, fontWeight: 700 }}>{patient.bed || '—'}</td>
+            <td style={headerCellStyle}>Prontuário</td>
+            <td style={{ ...cellStyle, fontWeight: 700 }}>{patient.record || '—'}</td>
+          </tr>
+          <tr>
+            <td style={headerCellStyle}>Idade</td>
+            <td style={cellStyle}>{patient.age || '—'}</td>
+            <td style={headerCellStyle}>Peso</td>
+            <td style={cellStyle}>{patient.weight ? `${patient.weight}kg` : '—'}</td>
+            <td style={headerCellStyle}>Sexo</td>
+            <td style={cellStyle}>{patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'Masculino' : 'Feminino') : '—'}</td>
+          </tr>
+          <tr>
+            <td style={headerCellStyle}>Nascimento</td>
+            <td style={cellStyle}>{patient.birthDate ? format(new Date(patient.birthDate + 'T12:00:00'), 'dd/MM/yyyy') : '—'}</td>
+            <td style={headerCellStyle}>Admissão</td>
+            <td style={cellStyle}>{patient.admissionDate ? format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '—'}</td>
+            <td style={headerCellStyle}>Unidade</td>
+            <td style={cellStyle}>{patient.unit || '—'}</td>
+          </tr>
+          {(patient.motherName || patient.encounterCode || patient.address) && (
+            <tr>
+              <td style={headerCellStyle}>Mãe</td>
+              <td style={cellStyle}>{patient.motherName || '—'}</td>
+              <td style={headerCellStyle}>Atendimento</td>
+              <td style={cellStyle}>{patient.encounterCode ? `#${patient.encounterCode}` : '—'}</td>
+              <td style={headerCellStyle}>Endereço</td>
+              <td style={cellStyle}>{patient.address ? `${patient.address}${patient.city ? ` — ${patient.city}` : ''}` : '—'}</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      {/* Allergy Bar */}
+      <div style={{ padding: '3px 8px', backgroundColor: '#fef2f2', borderLeft: '3px solid #dc2626', marginBottom: '6px', border: '0.5px solid #fecaca', borderLeftWidth: '3px' }}>
+        <span style={{ fontSize: '6pt', fontWeight: 800, color: '#dc2626', letterSpacing: '0.5px' }}>⚠ ALERGIAS: </span>
+        <span style={{ fontSize: '8pt', fontWeight: 800, color: '#991b1b' }}>{patient.allergies || 'NDAM'}</span>
+      </div>
+
+      {/* Prescription Items by Category */}
+      {TAB_ORDER.map(cat => {
+        const catItems = itemsByCategory[cat].filter(i => i.status === 'active');
+        if (catItems.length === 0) return null;
+        const config = CATEGORY_CONFIG[cat];
+        const simple = isSimple(cat);
+
+        return (
+          <div key={cat} style={{ marginBottom: '4px', pageBreakInside: 'avoid' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <td style={sectionStyle} colSpan={4}>
+                    {config.label} ({catItems.length})
+                  </td>
+                </tr>
+                {!simple && (
+                  <tr>
+                    <td style={{ ...thStyle, width: '24px', textAlign: 'center', fontSize: '6pt' }}>Nº</td>
+                    <td style={thStyle}>Descrição</td>
+                    <td style={{ ...thStyle, width: '150px', textAlign: 'center', fontSize: '6.5pt' }}>Aprazamento</td>
+                    <td style={{ ...thStyle, width: '24px', textAlign: 'center', fontSize: '6pt' }}>✓</td>
+                  </tr>
+                )}
+              </thead>
+              <tbody>
+                {catItems.map((item, i) => {
+                  const rowBg = i % 2 === 0 ? '#ffffff' : '#f8fafc';
+                  const hasPreparo = item.diluent || item.diluentVolume || item.accessType || item.infusionTime;
+                  const slots = parseScheduleSlots(item.schedule);
+
+                  if (simple) {
+                    return (
+                      <tr key={item.id} style={{ pageBreakInside: 'avoid' }}>
+                        <td style={{ ...cellStyle, width: '24px', textAlign: 'center', backgroundColor: rowBg }}>
+                          <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#0f172a', color: '#fff', fontSize: '6.5pt', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', lineHeight: 1 }}>
+                            {i + 1}
+                          </div>
+                        </td>
+                        <td colSpan={2} style={{ ...cellStyle, backgroundColor: rowBg }}>
+                          <span style={{ fontWeight: 800, fontSize: '7.5pt' }}>{item.name}</span>
+                          {item.dose && item.dose !== '-' && <span style={{ color: '#334155', fontWeight: 500, fontSize: '7pt' }}> — {item.dose}</span>}
+                          {item.posology && item.posology !== '-' && <span style={{ color: '#64748b', fontWeight: 500, fontSize: '7pt' }}> — {item.posology}</span>}
+                        </td>
+                        <td style={{ ...cellStyle, width: '24px', textAlign: 'center', backgroundColor: rowBg }}>
+                          <div style={{ width: '11px', height: '11px', border: '1.5px solid #94a3b8', borderRadius: '2px', margin: '0 auto' }} />
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return (
+                    <tr key={item.id} style={{ pageBreakInside: 'avoid' }}>
+                      <td style={{ ...cellStyle, width: '24px', textAlign: 'center', backgroundColor: rowBg, verticalAlign: 'top' }}>
+                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#0f172a', color: '#fff', fontSize: '6.5pt', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', lineHeight: 1 }}>
+                          {i + 1}
+                        </div>
+                      </td>
+                      <td style={{ ...cellStyle, backgroundColor: rowBg }}>
+                        <div style={{ fontSize: '7.5pt', lineHeight: 1.4, color: '#0f172a' }}>
+                          <span style={{ fontWeight: 800 }}>{item.name}</span>
+                          {item.presentation && item.presentation !== '-' && (
+                            <span style={{ fontWeight: 400, color: '#64748b', fontSize: '7pt' }}> ({item.presentation})</span>
+                          )}
+                          {item.quantity && item.quantityUnit && (
+                            <span style={{ fontWeight: 600, color: '#334155', fontSize: '7pt' }}> — {item.quantity} {item.quantityUnit}</span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '7pt', color: '#334155', lineHeight: 1.3, marginTop: '1px' }}>
+                          {[
+                            item.dose && item.dose !== '-' ? item.dose : null,
+                            item.route && item.route !== '-' ? item.route : null,
+                            item.posology && item.posology !== '-' ? item.posology : null,
+                          ].filter(Boolean).join(' · ')}
+                          {item.flags.length > 0 && (
+                            <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
+                          )}
+                          {item.isExtra && (
+                            <span style={{ fontSize: '5.5pt', fontWeight: 700, marginLeft: '3px', color: '#ea580c', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fed7aa' }}>EXTRA</span>
+                          )}
+                          {item.status === 'suspended' && (
+                            <span style={{ fontSize: '6pt', fontWeight: 700, color: '#fff', backgroundColor: '#dc2626', padding: '0.5px 4px', borderRadius: '2px', marginLeft: '3px' }}>SUSPENSO</span>
+                          )}
+                        </div>
+                        {hasPreparo && (
+                          <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: 1.2, marginTop: '2px', paddingLeft: '8px', borderLeft: '1.5px solid #cbd5e1' }}>
+                            {[
+                              item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'Sem diluição' : null,
+                              item.accessType && item.accessType !== '-' ? item.accessType : null,
+                              item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
+                              item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
+                              item.volumeTotal && item.infusionTime ? calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', item.infusionTimeUnit || 'min') : null,
+                              item.concentration ? `Conc: ${item.concentration}` : null,
+                            ].filter(Boolean).join(' · ')}
+                          </div>
+                        )}
+                        {item.instructions && !hasPreparo && (
+                          <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: 1.2, marginTop: '2px', paddingLeft: '8px', borderLeft: '1.5px solid #cbd5e1' }}>
+                            {item.instructions}
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ ...cellStyle, width: '150px', textAlign: 'center', verticalAlign: 'middle', fontFamily: 'monospace', fontSize: '7pt', fontWeight: 700, color: '#0c4a6e', backgroundColor: rowBg, whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>
+                        {slots.length > 0 ? slots.join('  ') : '—'}
+                      </td>
+                      <td style={{ ...cellStyle, width: '24px', textAlign: 'center', verticalAlign: 'middle', backgroundColor: rowBg }}>
+                        <div style={{ width: '11px', height: '11px', border: '1.5px solid #94a3b8', borderRadius: '2px', margin: '0 auto' }} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+
+      {/* Signature */}
+      <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', gap: '20px', pageBreakInside: 'avoid' }}>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          {digitalSignature ? (
+            <div style={{ border: '1.5px solid #0c4a6e', borderRadius: '6px', padding: '8px 16px', display: 'inline-block', backgroundColor: '#f0f9ff' }}>
+              <div style={{ fontSize: '7pt', fontWeight: 800, color: '#0c4a6e', letterSpacing: '1px' }}>✓ ASSINADO DIGITALMENTE</div>
+              <div style={{ fontSize: '8pt', fontWeight: 700, color: '#0f172a', marginTop: '3px' }}>{digitalSignature.doctorName}</div>
+              <div style={{ fontSize: '6.5pt', color: '#475569', marginTop: '1px' }}>CRM: {digitalSignature.crm} · {digitalSignature.signedAt}</div>
+              <div style={{ fontSize: '5pt', color: '#94a3b8', fontFamily: 'monospace', marginTop: '3px', borderTop: '0.5px solid #e2e8f0', paddingTop: '2px' }}>Hash: {digitalSignature.hash}</div>
+            </div>
+          ) : (
+            <div style={{ paddingTop: '14px' }}>
+              <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+              <div style={{ fontSize: '7pt', fontWeight: 700 }}>Assinatura / Carimbo do Médico</div>
+              <div style={{ fontSize: '6.5pt', color: '#64748b' }}>CRM: _______________</div>
+            </div>
+          )}
+        </div>
+        <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
+          <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+          <div style={{ fontSize: '7pt', fontWeight: 700 }}>Enfermeiro(a) Responsável</div>
+          <div style={{ fontSize: '6.5pt', color: '#64748b' }}>COREN: _______________</div>
+        </div>
+        <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
+          <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+          <div style={{ fontSize: '7pt', fontWeight: 700 }}>Farmacêutico</div>
+          <div style={{ fontSize: '6.5pt', color: '#64748b' }}>CRF: _______________</div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ marginTop: '10px', fontSize: '5.5pt', color: '#94a3b8', textAlign: 'center', borderTop: '0.5px solid #e2e8f0', paddingTop: '3px' }}>
+        Documento gerado pelo sistema BigHelp Map — {prescriptionDate} — Válido quando assinado
+      </div>
+    </div>
+  );
+}
 
 export default PrescricaoPage;
