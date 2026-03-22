@@ -102,7 +102,6 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
   const [entries, setEntries] = useState<AntimicrobialEntry[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
   const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | null>>({});
-  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     if (open) {
