@@ -76,6 +76,8 @@ import {
   type PrescriptionCategory,
   type PrescriptionFlag,
 } from "@/data/medicationsDatabase";
+import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
+import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/PsychotropicFormDialog";
 
 // --- Types ---
 interface DigitalSignature {
