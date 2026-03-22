@@ -3616,4 +3616,235 @@ const PrescricaoPage = () => {
   );
 };
 
+// === PRINTABLE PRESCRIPTION (portal-based, ATM guide aesthetic) ===
+function PrintablePrescription({ patient, items, itemsByCategory, digitalSignature, prescriptionDate, hospitalName }: {
+  patient: { name: string; birthDate: string; age: string; sex: string; bed: string; unit: string; record: string; admissionDate: string; utiAdmissionDate: string; weight: string; allergies: string; motherName: string; address: string; city: string; encounterCode: string };
+  items: PrescriptionItem[];
+  itemsByCategory: Record<PrescriptionCategory, PrescriptionItem[]>;
+  digitalSignature: DigitalSignature | null;
+  prescriptionDate: string;
+  hospitalName: string;
+}) {
+  const cellStyle: React.CSSProperties = { border: '0.5px solid #94a3b8', padding: '3px 6px', fontSize: '7.5pt', lineHeight: 1.3, verticalAlign: 'top' };
+  const headerCellStyle: React.CSSProperties = { ...cellStyle, fontWeight: 700, fontSize: '6.5pt', backgroundColor: '#f1f5f9', color: '#334155', textTransform: 'uppercase', letterSpacing: '0.3px' };
+  const sectionStyle: React.CSSProperties = { fontWeight: 800, fontSize: '7pt', backgroundColor: '#0c4a6e', color: '#fff', textAlign: 'center', letterSpacing: '0.5px', padding: '4px 6px', border: '0.5px solid #0c4a6e' };
+  const thStyle: React.CSSProperties = { backgroundColor: '#0c4a6e', color: '#fff', padding: '5px 6px', fontSize: '7pt', fontWeight: 700, textAlign: 'left', letterSpacing: '0.5px', border: '0.5px solid #0c4a6e' };
+
+  const isSimple = (cat: PrescriptionCategory) => ['nutrition', 'care'].includes(cat);
+
+  return (
+    <div style={{ fontFamily: 'Arial, Helvetica, sans-serif', color: '#0f172a', width: '186mm', margin: '0 auto', lineHeight: 1.3 }}>
+      {/* Header */}
+      <div style={{ borderBottom: '2px solid #0c4a6e', paddingBottom: '4px', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: '11pt', fontWeight: 800, color: '#0c4a6e' }}>{hospitalName}</div>
+          <div style={{ fontSize: '7pt', color: '#64748b', fontWeight: 600 }}>PRESCRIÇÃO MÉDICA DIÁRIA</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '9pt', fontWeight: 800, color: '#0c4a6e' }}>PRESCRIÇÃO MÉDICA</div>
+          <div style={{ fontSize: '6.5pt', color: '#64748b' }}>{prescriptionDate}</div>
+        </div>
+      </div>
+
+      {/* Patient Data */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '4px' }}>
+        <tbody>
+          <tr>
+            <td style={headerCellStyle}>Paciente</td>
+            <td style={{ ...cellStyle, fontWeight: 800, width: '35%', fontSize: '8.5pt' }}>{patient.name || '—'}</td>
+            <td style={headerCellStyle}>Leito</td>
+            <td style={{ ...cellStyle, fontWeight: 700 }}>{patient.bed || '—'}</td>
+            <td style={headerCellStyle}>Prontuário</td>
+            <td style={{ ...cellStyle, fontWeight: 700 }}>{patient.record || '—'}</td>
+          </tr>
+          <tr>
+            <td style={headerCellStyle}>Idade</td>
+            <td style={cellStyle}>{patient.age || '—'}</td>
+            <td style={headerCellStyle}>Peso</td>
+            <td style={cellStyle}>{patient.weight ? `${patient.weight}kg` : '—'}</td>
+            <td style={headerCellStyle}>Sexo</td>
+            <td style={cellStyle}>{patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'Masculino' : 'Feminino') : '—'}</td>
+          </tr>
+          <tr>
+            <td style={headerCellStyle}>Nascimento</td>
+            <td style={cellStyle}>{patient.birthDate ? format(new Date(patient.birthDate + 'T12:00:00'), 'dd/MM/yyyy') : '—'}</td>
+            <td style={headerCellStyle}>Admissão</td>
+            <td style={cellStyle}>{patient.admissionDate ? format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '—'}</td>
+            <td style={headerCellStyle}>Unidade</td>
+            <td style={cellStyle}>{patient.unit || '—'}</td>
+          </tr>
+          {(patient.motherName || patient.encounterCode || patient.address) && (
+            <tr>
+              <td style={headerCellStyle}>Mãe</td>
+              <td style={cellStyle}>{patient.motherName || '—'}</td>
+              <td style={headerCellStyle}>Atendimento</td>
+              <td style={cellStyle}>{patient.encounterCode ? `#${patient.encounterCode}` : '—'}</td>
+              <td style={headerCellStyle}>Endereço</td>
+              <td style={cellStyle}>{patient.address ? `${patient.address}${patient.city ? ` — ${patient.city}` : ''}` : '—'}</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      {/* Allergy Bar */}
+      <div style={{ padding: '3px 8px', backgroundColor: '#fef2f2', borderLeft: '3px solid #dc2626', marginBottom: '6px', border: '0.5px solid #fecaca', borderLeftWidth: '3px' }}>
+        <span style={{ fontSize: '6pt', fontWeight: 800, color: '#dc2626', letterSpacing: '0.5px' }}>⚠ ALERGIAS: </span>
+        <span style={{ fontSize: '8pt', fontWeight: 800, color: '#991b1b' }}>{patient.allergies || 'NDAM'}</span>
+      </div>
+
+      {/* Prescription Items by Category */}
+      {TAB_ORDER.map(cat => {
+        const catItems = itemsByCategory[cat].filter(i => i.status === 'active');
+        if (catItems.length === 0) return null;
+        const config = CATEGORY_CONFIG[cat];
+        const simple = isSimple(cat);
+
+        return (
+          <div key={cat} style={{ marginBottom: '4px', pageBreakInside: 'avoid' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <td style={sectionStyle} colSpan={4}>
+                    {config.label} ({catItems.length})
+                  </td>
+                </tr>
+                {!simple && (
+                  <tr>
+                    <td style={{ ...thStyle, width: '24px', textAlign: 'center', fontSize: '6pt' }}>Nº</td>
+                    <td style={thStyle}>Descrição</td>
+                    <td style={{ ...thStyle, width: '150px', textAlign: 'center', fontSize: '6.5pt' }}>Aprazamento</td>
+                    <td style={{ ...thStyle, width: '24px', textAlign: 'center', fontSize: '6pt' }}>✓</td>
+                  </tr>
+                )}
+              </thead>
+              <tbody>
+                {catItems.map((item, i) => {
+                  const rowBg = i % 2 === 0 ? '#ffffff' : '#f8fafc';
+                  const hasPreparo = item.diluent || item.diluentVolume || item.accessType || item.infusionTime;
+                  const slots = parseScheduleSlots(item.schedule);
+
+                  if (simple) {
+                    return (
+                      <tr key={item.id} style={{ pageBreakInside: 'avoid' }}>
+                        <td style={{ ...cellStyle, width: '24px', textAlign: 'center', backgroundColor: rowBg }}>
+                          <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#0f172a', color: '#fff', fontSize: '6.5pt', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', lineHeight: 1 }}>
+                            {i + 1}
+                          </div>
+                        </td>
+                        <td colSpan={2} style={{ ...cellStyle, backgroundColor: rowBg }}>
+                          <span style={{ fontWeight: 800, fontSize: '7.5pt' }}>{item.name}</span>
+                          {item.dose && item.dose !== '-' && <span style={{ color: '#334155', fontWeight: 500, fontSize: '7pt' }}> — {item.dose}</span>}
+                          {item.posology && item.posology !== '-' && <span style={{ color: '#64748b', fontWeight: 500, fontSize: '7pt' }}> — {item.posology}</span>}
+                        </td>
+                        <td style={{ ...cellStyle, width: '24px', textAlign: 'center', backgroundColor: rowBg }}>
+                          <div style={{ width: '11px', height: '11px', border: '1.5px solid #94a3b8', borderRadius: '2px', margin: '0 auto' }} />
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return (
+                    <tr key={item.id} style={{ pageBreakInside: 'avoid' }}>
+                      <td style={{ ...cellStyle, width: '24px', textAlign: 'center', backgroundColor: rowBg, verticalAlign: 'top' }}>
+                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#0f172a', color: '#fff', fontSize: '6.5pt', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', lineHeight: 1 }}>
+                          {i + 1}
+                        </div>
+                      </td>
+                      <td style={{ ...cellStyle, backgroundColor: rowBg }}>
+                        <div style={{ fontSize: '7.5pt', lineHeight: 1.4, color: '#0f172a' }}>
+                          <span style={{ fontWeight: 800 }}>{item.name}</span>
+                          {item.presentation && item.presentation !== '-' && (
+                            <span style={{ fontWeight: 400, color: '#64748b', fontSize: '7pt' }}> ({item.presentation})</span>
+                          )}
+                          {item.quantity && item.quantityUnit && (
+                            <span style={{ fontWeight: 600, color: '#334155', fontSize: '7pt' }}> — {item.quantity} {item.quantityUnit}</span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '7pt', color: '#334155', lineHeight: 1.3, marginTop: '1px' }}>
+                          {[
+                            item.dose && item.dose !== '-' ? item.dose : null,
+                            item.route && item.route !== '-' ? item.route : null,
+                            item.posology && item.posology !== '-' ? item.posology : null,
+                          ].filter(Boolean).join(' · ')}
+                          {item.flags.length > 0 && (
+                            <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
+                          )}
+                          {item.isExtra && (
+                            <span style={{ fontSize: '5.5pt', fontWeight: 700, marginLeft: '3px', color: '#ea580c', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fed7aa' }}>EXTRA</span>
+                          )}
+                          {item.status === 'suspended' && (
+                            <span style={{ fontSize: '6pt', fontWeight: 700, color: '#fff', backgroundColor: '#dc2626', padding: '0.5px 4px', borderRadius: '2px', marginLeft: '3px' }}>SUSPENSO</span>
+                          )}
+                        </div>
+                        {hasPreparo && (
+                          <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: 1.2, marginTop: '2px', paddingLeft: '8px', borderLeft: '1.5px solid #cbd5e1' }}>
+                            {[
+                              item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'Sem diluição' : null,
+                              item.accessType && item.accessType !== '-' ? item.accessType : null,
+                              item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
+                              item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
+                              item.volumeTotal && item.infusionTime ? calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', item.infusionTimeUnit || 'min') : null,
+                              item.concentration ? `Conc: ${item.concentration}` : null,
+                            ].filter(Boolean).join(' · ')}
+                          </div>
+                        )}
+                        {item.instructions && !hasPreparo && (
+                          <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: 1.2, marginTop: '2px', paddingLeft: '8px', borderLeft: '1.5px solid #cbd5e1' }}>
+                            {item.instructions}
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ ...cellStyle, width: '150px', textAlign: 'center', verticalAlign: 'middle', fontFamily: 'monospace', fontSize: '7pt', fontWeight: 700, color: '#0c4a6e', backgroundColor: rowBg, whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>
+                        {slots.length > 0 ? slots.join('  ') : '—'}
+                      </td>
+                      <td style={{ ...cellStyle, width: '24px', textAlign: 'center', verticalAlign: 'middle', backgroundColor: rowBg }}>
+                        <div style={{ width: '11px', height: '11px', border: '1.5px solid #94a3b8', borderRadius: '2px', margin: '0 auto' }} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+
+      {/* Signature */}
+      <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', gap: '20px', pageBreakInside: 'avoid' }}>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          {digitalSignature ? (
+            <div style={{ border: '1.5px solid #0c4a6e', borderRadius: '6px', padding: '8px 16px', display: 'inline-block', backgroundColor: '#f0f9ff' }}>
+              <div style={{ fontSize: '7pt', fontWeight: 800, color: '#0c4a6e', letterSpacing: '1px' }}>✓ ASSINADO DIGITALMENTE</div>
+              <div style={{ fontSize: '8pt', fontWeight: 700, color: '#0f172a', marginTop: '3px' }}>{digitalSignature.doctorName}</div>
+              <div style={{ fontSize: '6.5pt', color: '#475569', marginTop: '1px' }}>CRM: {digitalSignature.crm} · {digitalSignature.signedAt}</div>
+              <div style={{ fontSize: '5pt', color: '#94a3b8', fontFamily: 'monospace', marginTop: '3px', borderTop: '0.5px solid #e2e8f0', paddingTop: '2px' }}>Hash: {digitalSignature.hash}</div>
+            </div>
+          ) : (
+            <div style={{ paddingTop: '14px' }}>
+              <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+              <div style={{ fontSize: '7pt', fontWeight: 700 }}>Assinatura / Carimbo do Médico</div>
+              <div style={{ fontSize: '6.5pt', color: '#64748b' }}>CRM: _______________</div>
+            </div>
+          )}
+        </div>
+        <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
+          <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+          <div style={{ fontSize: '7pt', fontWeight: 700 }}>Enfermeiro(a) Responsável</div>
+          <div style={{ fontSize: '6.5pt', color: '#64748b' }}>COREN: _______________</div>
+        </div>
+        <div style={{ flex: 1, textAlign: 'center', paddingTop: '14px' }}>
+          <div style={{ width: '200px', borderBottom: '1.5px solid #0f172a', margin: '0 auto 4px auto' }} />
+          <div style={{ fontSize: '7pt', fontWeight: 700 }}>Farmacêutico</div>
+          <div style={{ fontSize: '6.5pt', color: '#64748b' }}>CRF: _______________</div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ marginTop: '10px', fontSize: '5.5pt', color: '#94a3b8', textAlign: 'center', borderTop: '0.5px solid #e2e8f0', paddingTop: '3px' }}>
+        Documento gerado pelo sistema BigHelp Map — {prescriptionDate} — Válido quando assinado
+      </div>
+    </div>
+  );
+}
+
 export default PrescricaoPage;
