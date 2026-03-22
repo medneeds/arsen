@@ -2065,6 +2065,7 @@ const PrescricaoPage = () => {
   const [antimicrobialGuideOpen, setAntimicrobialGuideOpen] = useState(false);
   const [psychotropicFormOpen, setPsychotropicFormOpen] = useState(false);
   const [tevProtocolOpen, setTevProtocolOpen] = useState(false);
+  const [pendingAntimicrobialMed, setPendingAntimicrobialMed] = useState<MedicationEntry | null>(null);
 
   const [dispensationDialogOpen, setDispensationDialogOpen] = useState(false);
   const [dispensations, setDispensations] = useState<Array<{ id: string; dispensation_code: string; dispensed_at: string; dispensed_by_name: string | null }>>([]);
