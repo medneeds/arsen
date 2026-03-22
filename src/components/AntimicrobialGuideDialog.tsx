@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Shield, Printer, X, Plus, Trash2, AlertTriangle, FileText, ClipboardList, Loader2 } from "lucide-react";
+import { Shield, Printer, X, Plus, Trash2, AlertTriangle, FileText, ClipboardList, Loader2, FlaskConical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
