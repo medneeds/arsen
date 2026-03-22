@@ -76,6 +76,8 @@ import {
   type PrescriptionCategory,
   type PrescriptionFlag,
 } from "@/data/medicationsDatabase";
+import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
+import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/PsychotropicFormDialog";
 
 // --- Types ---
 interface DigitalSignature {
@@ -2058,6 +2060,10 @@ const PrescricaoPage = () => {
   // Phase 7 state — Extra Prescription
   const [extraPrescriptionOpen, setExtraPrescriptionOpen] = useState(false);
 
+  // Antimicrobial Guide & Psychotropic Form
+  const [antimicrobialGuideOpen, setAntimicrobialGuideOpen] = useState(false);
+  const [psychotropicFormOpen, setPsychotropicFormOpen] = useState(false);
+
   const [dispensationDialogOpen, setDispensationDialogOpen] = useState(false);
   const [dispensations, setDispensations] = useState<Array<{ id: string; dispensation_code: string; dispensed_at: string; dispensed_by_name: string | null }>>([]);
   const [dispensationSlip, setDispensationSlip] = useState<{ code: string; items: PrescriptionItem[]; patientName: string; bed: string; date: string } | null>(null);
@@ -2915,6 +2921,22 @@ const PrescricaoPage = () => {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setAntimicrobialGuideOpen(true)}
+            className="gap-1.5 text-orange-600 border-orange-200 hover:border-orange-300 hover:text-orange-700"
+          >
+            <Shield className="h-3.5 w-3.5" /> Guia ATM
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPsychotropicFormOpen(true)}
+            className="gap-1.5 text-violet-600 border-violet-200 hover:border-violet-300 hover:text-violet-700"
+          >
+            <FileText className="h-3.5 w-3.5" /> Psicotrópicos
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               if (!allItemsValidated) {
                 toast.error("Valide todos os itens antes de imprimir", { description: "Clique nos círculos à esquerda de cada item ou use 'Validar todos'." });
@@ -3656,6 +3678,28 @@ const PrescricaoPage = () => {
           });
         }}
         allMedications={Object.values(ALL_ITEMS_BY_CATEGORY).flat()}
+      />
+
+      {/* Antimicrobial Guide Dialog */}
+      <AntimicrobialGuideDialog
+        open={antimicrobialGuideOpen}
+        onOpenChange={setAntimicrobialGuideOpen}
+        patient={patient}
+        antimicrobialItems={items.filter(i => i.category === 'antimicrobial').map(i => ({ id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology, category: i.category, status: i.status }))}
+        doctorName={digitalSignature?.doctorName}
+        doctorCrm={digitalSignature?.crm}
+        hospitalName={currentHospital?.name}
+      />
+
+      {/* Psychotropic Form Dialog */}
+      <PsychotropicFormDialog
+        open={psychotropicFormOpen}
+        onOpenChange={setPsychotropicFormOpen}
+        patient={patient}
+        controlledItems={items.filter(i => i.status === 'active' && (i.category === 'high_alert' || isPsychotropicMedication(i.name))).map(i => ({ id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology, category: i.category, status: i.status, highAlert: i.highAlert }))}
+        doctorName={digitalSignature?.doctorName}
+        doctorCrm={digitalSignature?.crm}
+        hospitalName={currentHospital?.name}
       />
       </div>
     </div>
