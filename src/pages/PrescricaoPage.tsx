@@ -2921,6 +2921,22 @@ const PrescricaoPage = () => {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setAntimicrobialGuideOpen(true)}
+            className="gap-1.5 text-orange-600 border-orange-200 hover:border-orange-300 hover:text-orange-700"
+          >
+            <Shield className="h-3.5 w-3.5" /> Guia ATM
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPsychotropicFormOpen(true)}
+            className="gap-1.5 text-violet-600 border-violet-200 hover:border-violet-300 hover:text-violet-700"
+          >
+            <FileText className="h-3.5 w-3.5" /> Psicotrópicos
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               if (!allItemsValidated) {
                 toast.error("Valide todos os itens antes de imprimir", { description: "Clique nos círculos à esquerda de cada item ou use 'Validar todos'." });
