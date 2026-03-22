@@ -228,16 +228,18 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
           }
         `}} />
 
-        <div data-antimicrobial-print className={cn(!isPrinting && "hidden print:hidden")}>
-          <PrintableAntimicrobialGuide
-            patient={patient}
-            entries={entries}
-            doctorName={doctorName}
-            doctorCrm={doctorCrm}
-            hospitalName={hospitalName}
-            date={today}
-          />
-        </div>
+        {isPrinting && (
+          <div id="antimicrobial-print-container" style={{ display: 'none' }}>
+            <PrintableAntimicrobialGuide
+              patient={patient}
+              entries={entries}
+              doctorName={doctorName}
+              doctorCrm={doctorCrm}
+              hospitalName={hospitalName}
+              date={today}
+            />
+          </div>
+        )}
 
         {/* === FORM CONTENT === */}
         <div className="space-y-4 print:hidden">
