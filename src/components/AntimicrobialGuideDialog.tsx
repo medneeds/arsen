@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Shield, Printer, X, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { Shield, Printer, X, Plus, Trash2, AlertTriangle, FileText, ClipboardList, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +61,7 @@ interface Props {
   hospitalName?: string;
   onConfirm?: (entries: Array<{ medication: string; dose: string; route: string; posology: string }>) => void;
   mode?: 'review' | 'prescribe';
+  patientId?: string;
 }
 
 const INFECTION_SITES = [
@@ -96,9 +98,10 @@ function createEmptyEntry(item?: PrescriptionItem): AntimicrobialEntry {
   };
 }
 
-export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicrobialItems = [], doctorName = "", doctorCrm = "", hospitalName = "", onConfirm, mode = 'review' }: Props) {
+export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicrobialItems = [], doctorName = "", doctorCrm = "", hospitalName = "", onConfirm, mode = 'review', patientId }: Props) {
   const [entries, setEntries] = useState<AntimicrobialEntry[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | null>>({});
 
   useEffect(() => {
     if (open) {
@@ -116,6 +119,80 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
 
   const addEntry = () => setEntries(prev => [...prev, createEmptyEntry()]);
   const removeEntry = (id: string) => setEntries(prev => prev.filter(e => e.id !== id));
+
+  const importAdmissionHistory = async (entryId: string) => {
+    if (!patientId) return;
+    setLoadingImport(prev => ({ ...prev, [entryId]: 'history' }));
+    try {
+      // First try admission_histories table
+      const { data: admHistory } = await supabase
+        .from('admission_histories')
+        .select('chief_complaint, clinical_history, diagnostic_hypothesis, initial_conduct')
+        .eq('patient_id', patientId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (admHistory) {
+        const parts = [
+          admHistory.chief_complaint && `QUEIXA PRINCIPAL: ${admHistory.chief_complaint}`,
+          admHistory.clinical_history && `HISTÓRIA CLÍNICA: ${admHistory.clinical_history}`,
+          admHistory.diagnostic_hypothesis && `HIPÓTESE DIAGNÓSTICA: ${admHistory.diagnostic_hypothesis}`,
+          admHistory.initial_conduct && `CONDUTA INICIAL: ${admHistory.initial_conduct}`,
+        ].filter(Boolean).join('\n');
+        if (parts) {
+          updateEntry(entryId, 'justification', (entries.find(e => e.id === entryId)?.justification || '') + (entries.find(e => e.id === entryId)?.justification ? '\n\n' : '') + `[HISTÓRIA ADMISSIONAL]\n${parts}`);
+          return;
+        }
+      }
+
+      // Fallback: try patient admission_history field
+      const { data: patientData } = await supabase
+        .from('patients')
+        .select('admission_history')
+        .eq('id', patientId)
+        .maybeSingle();
+
+      if (patientData?.admission_history) {
+        updateEntry(entryId, 'justification', (entries.find(e => e.id === entryId)?.justification || '') + (entries.find(e => e.id === entryId)?.justification ? '\n\n' : '') + `[HISTÓRIA ADMISSIONAL]\n${patientData.admission_history}`);
+      }
+    } catch (err) {
+      console.error('Error importing admission history:', err);
+    } finally {
+      setLoadingImport(prev => ({ ...prev, [entryId]: null }));
+    }
+  };
+
+  const importEvolution = async (entryId: string) => {
+    if (!patientId) return;
+    setLoadingImport(prev => ({ ...prev, [entryId]: 'evolution' }));
+    try {
+      // Get latest patient data for clinical context (diagnoses, conducts, exams)
+      const { data: patientData } = await supabase
+        .from('patients')
+        .select('diagnoses, medical_history, relevant_exams, pendencies, uti_cultures_antibiotics, uti_current_status')
+        .eq('id', patientId)
+        .maybeSingle();
+
+      if (patientData) {
+        const parts = [
+          patientData.diagnoses && `DIAGNÓSTICOS: ${patientData.diagnoses}`,
+          patientData.medical_history && `ANTECEDENTES: ${patientData.medical_history}`,
+          patientData.relevant_exams && `EXAMES RELEVANTES: ${patientData.relevant_exams}`,
+          patientData.uti_cultures_antibiotics && `CULTURAS/ATB: ${patientData.uti_cultures_antibiotics}`,
+          patientData.uti_current_status && `STATUS ATUAL: ${patientData.uti_current_status}`,
+          patientData.pendencies && `PENDÊNCIAS/PROGRAMAÇÕES: ${patientData.pendencies}`,
+        ].filter(Boolean).join('\n');
+        if (parts) {
+          updateEntry(entryId, 'justification', (entries.find(e => e.id === entryId)?.justification || '') + (entries.find(e => e.id === entryId)?.justification ? '\n\n' : '') + `[EVOLUÇÃO CLÍNICA]\n${parts}`);
+        }
+      }
+    } catch (err) {
+      console.error('Error importing evolution:', err);
+    } finally {
+      setLoadingImport(prev => ({ ...prev, [entryId]: null }));
+    }
+  };
 
   const handlePrint = () => {
     setIsPrinting(true);
@@ -281,10 +358,38 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
                 </div>
               </div>
 
-              {/* Row 5: Justification */}
+              {/* Row 5: Justification with import buttons */}
               <div>
-                <Label className="text-[10px]">Justificativa Clínica</Label>
-                <Textarea value={entry.justification} onChange={e => updateEntry(entry.id, "justification", e.target.value)} placeholder="Descreva a indicação clínica para uso deste antimicrobiano..." className="text-xs min-h-[60px] resize-none" />
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-[10px]">Justificativa Clínica</Label>
+                  {patientId && (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => importAdmissionHistory(entry.id)}
+                        disabled={!!loadingImport[entry.id]}
+                        className="h-6 text-[10px] gap-1 px-2"
+                      >
+                        {loadingImport[entry.id] === 'history' ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
+                        Importar Hx Admissional
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => importEvolution(entry.id)}
+                        disabled={!!loadingImport[entry.id]}
+                        className="h-6 text-[10px] gap-1 px-2"
+                      >
+                        {loadingImport[entry.id] === 'evolution' ? <Loader2 className="h-3 w-3 animate-spin" /> : <ClipboardList className="h-3 w-3" />}
+                        Importar Evolução
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <Textarea value={entry.justification} onChange={e => updateEntry(entry.id, "justification", e.target.value)} placeholder="Descreva a indicação clínica para uso deste antimicrobiano..." className="text-xs min-h-[80px] resize-y" />
               </div>
 
               {/* Row 6: CCIH notes */}

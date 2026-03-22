@@ -3750,6 +3750,7 @@ const PrescricaoPage = () => {
         hospitalName={currentHospital?.name}
         onConfirm={handleAntimicrobialConfirm}
         mode={pendingAntimicrobialMed ? 'prescribe' : 'review'}
+        patientId={searchParams.get('patientId') || undefined}
       />
 
       {/* Psychotropic Form Dialog */}
