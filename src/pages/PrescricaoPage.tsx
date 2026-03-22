@@ -2657,7 +2657,14 @@ const PrescricaoPage = () => {
     toast.info("Nova prescrição iniciada");
   };
 
-  const handlePrint = () => window.print();
+  const [showPrintPortal, setShowPrintPortal] = useState(false);
+  const handlePrint = () => {
+    setShowPrintPortal(true);
+    setTimeout(() => {
+      window.print();
+      setShowPrintPortal(false);
+    }, 300);
+  };
 
   // Sign prescription
   const handleRequestSign = () => {
