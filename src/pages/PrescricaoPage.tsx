@@ -78,6 +78,7 @@ import {
 } from "@/data/medicationsDatabase";
 import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
 import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/PsychotropicFormDialog";
+import { TevProtocolDialog } from "@/components/TevProtocolDialog";
 
 // --- Types ---
 interface DigitalSignature {
@@ -2063,6 +2064,7 @@ const PrescricaoPage = () => {
   // Antimicrobial Guide & Psychotropic Form
   const [antimicrobialGuideOpen, setAntimicrobialGuideOpen] = useState(false);
   const [psychotropicFormOpen, setPsychotropicFormOpen] = useState(false);
+  const [tevProtocolOpen, setTevProtocolOpen] = useState(false);
 
   const [dispensationDialogOpen, setDispensationDialogOpen] = useState(false);
   const [dispensations, setDispensations] = useState<Array<{ id: string; dispensation_code: string; dispensed_at: string; dispensed_by_name: string | null }>>([]);
@@ -2937,6 +2939,14 @@ const PrescricaoPage = () => {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setTevProtocolOpen(true)}
+            className="gap-1.5 text-blue-600 border-blue-200 hover:border-blue-300 hover:text-blue-700"
+          >
+            <Droplets className="h-3.5 w-3.5" /> Protocolo TEV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               if (!allItemsValidated) {
                 toast.error("Valide todos os itens antes de imprimir", { description: "Clique nos círculos à esquerda de cada item ou use 'Validar todos'." });
@@ -3700,6 +3710,13 @@ const PrescricaoPage = () => {
         doctorName={digitalSignature?.doctorName}
         doctorCrm={digitalSignature?.crm}
         hospitalName={currentHospital?.name}
+      />
+
+      {/* TEV Protocol Dialog */}
+      <TevProtocolDialog
+        open={tevProtocolOpen}
+        onOpenChange={setTevProtocolOpen}
+        patient={patient ? { name: patient.name, age: patient.age, bed: patient.bed, weight: patient.weight } : null}
       />
       </div>
     </div>
