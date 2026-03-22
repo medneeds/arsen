@@ -2833,94 +2833,15 @@ const PrescricaoPage = () => {
     <div className="animate-fade-in print:p-0 print:m-0 print:space-y-0 print:max-w-none print:text-black" style={{ printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' } as React.CSSProperties}>
       <ClinicalHeader moduleLabel="Prescrição Médica" />
       <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5 print:p-0 print:m-0 print:space-y-0 print:max-w-none">
-      {/* ===== PRINT STYLES ===== */}
+      {/* Print styles — hide everything except portal */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           @page { size: A4 portrait; margin: 5mm 12mm 8mm 12mm; }
-          body, html { background: #fff !important; }
-          * { background-color: transparent !important; }
-          .prescription-print-section table { border-collapse: collapse; width: 100%; }
-          .prescription-print-section td, .prescription-print-section th { background-color: #fff !important; }
-          .print-header-bar { background-color: #0c4a6e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-header-subtle { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-cat-header { background-color: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-allergy-bar { background-color: #fef2f2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-row-alt td { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-num-pill { background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-flag-chip { background-color: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-suspended-chip { background-color: #dc2626 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-cat-accent { background-color: #0c4a6e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-sig-box { background-color: #f0f9ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-footer-bar { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body > *:not(#prescription-print-root) { display: none !important; }
+          #prescription-print-root { display: block !important; }
+          #prescription-print-root * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
       ` }} />
-
-      {/* ===== PRINT-ONLY LETTERHEAD ===== */}
-      <div className="hidden print:block prescription-print-section" style={{ marginBottom: '6px' }}>
-        
-        {/* ── ROW 1: Institutional bar — light gray bg, logo + title ── */}
-        <div className="print-header-subtle" style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '3px 8px', backgroundColor: '#f1f5f9', borderBottom: '0.5px solid #e2e8f0',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <img src={socorraoLogo} alt="Socorrão I" style={{ height: '16px', objectFit: 'contain', opacity: 0.8 }} />
-            <span style={{ fontSize: '7pt', fontWeight: 700, color: '#475569', letterSpacing: '0.3px' }}>Socorrão I</span>
-            <span style={{ fontSize: '6pt', color: '#94a3b8', fontWeight: 500 }}>·</span>
-            <span style={{ fontSize: '6.5pt', fontWeight: 600, color: '#64748b' }}>Prescrição Médica Diária</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '6pt', color: '#94a3b8', fontWeight: 500 }}>{prescriptionDate}</span>
-            <img src={bighelpLogo} alt="BigHelp Map" style={{ height: '10px', objectFit: 'contain', opacity: 0.1 }} />
-          </div>
-        </div>
-
-        {/* ── ROW 2: Patient main line — Name, Age, Bed, Weight, Sex, Record, Date ── */}
-        <div style={{
-          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-          padding: '3px 8px', borderBottom: '0.5px solid #e2e8f0',
-        }}>
-          <div style={{ fontSize: '9pt', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
-            {patient.name || '___________________________________'}
-            <span style={{ fontWeight: 600, color: '#475569', fontSize: '8pt' }}>, {patient.age || '—'}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '7pt', color: '#334155', flexShrink: 0 }}>
-            <span><strong>L:</strong> {patient.bed || '—'}</span>
-            <span style={{ color: '#cbd5e1' }}>·</span>
-            <span><strong>P:</strong> {patient.weight ? `${patient.weight}kg` : '—'}</span>
-            <span style={{ color: '#cbd5e1' }}>·</span>
-            <span>{patient.sex ? (patient.sex.toLowerCase().startsWith('m') ? 'M' : 'F') : '—'}</span>
-            <span style={{ color: '#cbd5e1' }}>·</span>
-            <span style={{ fontFamily: 'monospace', fontSize: '6.5pt' }}>{patient.record || '————'}</span>
-            <span style={{ color: '#cbd5e1' }}>·</span>
-            <span style={{ fontSize: '6.5pt', color: '#64748b' }}>{prescriptionDate}</span>
-          </div>
-        </div>
-
-        {/* ── ROW 3: Allergy strip ── */}
-        <div className="print-allergy-bar" style={{
-          padding: '2px 8px', borderLeft: '3px solid #dc2626',
-          borderBottom: '0.5px solid #fecaca',
-        }}>
-          <span style={{ fontSize: '5.5pt', fontWeight: 800, color: '#dc2626', letterSpacing: '0.5px' }}>⚠ Alergias: </span>
-          <span style={{ fontSize: '7.5pt', fontWeight: 800, color: '#991b1b' }}>{patient.allergies || 'NDAM'}</span>
-        </div>
-
-        {/* ── ROW 4: Secondary fields inline ── */}
-        <div style={{
-          padding: '2px 8px', fontSize: '6.5pt', color: '#475569', lineHeight: 1.3, borderBottom: '0.5px solid #e2e8f0',
-        }}>
-          {[
-            patient.birthDate ? `Nasc: ${format(new Date(patient.birthDate + 'T12:00:00'), 'dd/MM/yyyy')}` : null,
-            patient.motherName ? `Mãe: ${patient.motherName}` : null,
-            patient.admissionDate ? `Adm. Hosp: ${format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yy')}` : null,
-            patient.utiAdmissionDate ? `Adm. UTI: ${format(new Date(patient.utiAdmissionDate + 'T12:00:00'), 'dd/MM/yy')}` : null,
-            patient.unit ? `Unid: ${patient.unit}` : null,
-            patient.address ? `End: ${patient.address}${patient.city ? ` — ${patient.city}` : ''}` : null,
-            patient.encounterCode ? `Atend: #${patient.encounterCode}` : null,
-          ].filter(Boolean).join(' · ')}
-        </div>
-      </div>
 
       {/* Page Title */}
       <div className="flex items-center justify-between gap-4 print:hidden">
