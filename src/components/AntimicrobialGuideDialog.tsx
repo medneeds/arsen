@@ -445,6 +445,7 @@ export function AntimicrobialGuideDialog({ open, onOpenChange, patient, antimicr
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
 
