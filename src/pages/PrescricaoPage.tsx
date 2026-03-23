@@ -360,6 +360,9 @@ interface PatientHeader {
   address: string;
   city: string;
   encounterCode?: string;
+  chiefComplaint?: string;
+  vitalSigns?: string;
+  riskClassification?: string;
 }
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
@@ -2161,6 +2164,45 @@ const PrescricaoPage = () => {
 
   useEffect(() => { ensureEncounterCode(); }, [ensureEncounterCode]);
 
+  // Fetch pre-admission data for risk classification on print
+  useEffect(() => {
+    const fetchPreAdmission = async () => {
+      if (!currentHospital || !currentState || !patient.name.trim()) return;
+      try {
+        const { data } = await supabase
+          .from('pre_admissions')
+          .select('chief_complaint, vital_signs, risk_classification')
+          .eq('hospital_unit_id', currentHospital.id)
+          .eq('state_id', currentState.id)
+          .eq('patient_name', patient.name.trim())
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (data && data.length > 0) {
+          const pa = data[0];
+          const vs = pa.vital_signs as Record<string, string> | null;
+          const vitalsStr = vs ? [
+            vs.pa ? `PA: ${vs.pa} mmHg` : null,
+            vs.fc ? `FC: ${vs.fc} bpm` : null,
+            vs.fr ? `FR: ${vs.fr} irpm` : null,
+            vs.tax ? `Tax: ${vs.tax} °C` : null,
+            vs.sato2 ? `SatO2: ${vs.sato2}%` : null,
+            vs.peso ? `Peso: ${vs.peso} kg` : null,
+            vs.glicemia ? `Glicemia: ${vs.glicemia} mg/dL` : null,
+          ].filter(Boolean).join(' | ') : '';
+          setPatient(prev => ({
+            ...prev,
+            chiefComplaint: pa.chief_complaint || undefined,
+            vitalSigns: vitalsStr || undefined,
+            riskClassification: pa.risk_classification || undefined,
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching pre-admission:', err);
+      }
+    };
+    fetchPreAdmission();
+  }, [currentHospital, currentState, patient.name]);
+
   // Fetch dispensations for current prescription
   const fetchDispensations = useCallback(async () => {
     if (!currentPrescriptionId) { setDispensations([]); return; }
@@ -3691,6 +3733,25 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         <span style={{ fontSize: '6pt', fontWeight: 800, color: '#dc2626', letterSpacing: '0.5px' }}>⚠ ALERGIAS: </span>
         <span style={{ fontSize: '8pt', fontWeight: 800, color: '#991b1b' }}>{patient.allergies || 'NDAM'}</span>
       </div>
+
+      {/* Risk Classification Summary */}
+      {(patient.chiefComplaint || patient.vitalSigns) && (
+        <div style={{ padding: '4px 8px', backgroundColor: '#f8fafc', border: '0.5px solid #cbd5e1', marginBottom: '6px', borderLeft: '3px solid #0c4a6e' }}>
+          <div style={{ fontSize: '6pt', fontWeight: 800, color: '#0c4a6e', letterSpacing: '0.5px', marginBottom: '2px' }}>
+            CLASSIFICAÇÃO DE RISCO{patient.riskClassification ? ` — ${patient.riskClassification.toUpperCase()}` : ''}
+          </div>
+          {patient.chiefComplaint && (
+            <div style={{ fontSize: '7pt', color: '#0f172a', lineHeight: 1.3 }}>
+              <span style={{ fontWeight: 700 }}>QP:</span> {patient.chiefComplaint}
+            </div>
+          )}
+          {patient.vitalSigns && (
+            <div style={{ fontSize: '6.5pt', color: '#334155', lineHeight: 1.3, marginTop: '1px' }}>
+              <span style={{ fontWeight: 700 }}>Sinais Vitais:</span> {patient.vitalSigns}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Prescription Items by Category */}
       {TAB_ORDER.map(cat => {
