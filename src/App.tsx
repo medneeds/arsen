@@ -63,6 +63,7 @@ import AltaDesfechoPage from "./pages/AltaDesfechoPage";
 import EmergenciaSectorPage from "./pages/EmergenciaSectorPage";
 import MonitoramentoClinicoPage from "./pages/MonitoramentoClinicoPage";
 import RequisicaoImagensPage from "./pages/RequisicaoImagensPage";
+import FichaAtendimentoPage from "./pages/FichaAtendimentoPage";
 
 const queryClient = new QueryClient();
 
