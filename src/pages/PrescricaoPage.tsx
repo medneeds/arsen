@@ -360,6 +360,9 @@ interface PatientHeader {
   address: string;
   city: string;
   encounterCode?: string;
+  chiefComplaint?: string;
+  vitalSigns?: string;
+  riskClassification?: string;
 }
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
