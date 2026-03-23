@@ -429,9 +429,7 @@ const FichaAtendimentoPage = () => {
   return (
     <div className="space-y-4">
       <ClinicalHeader
-        title="Ficha de Atendimento"
-        subtitle={patientData?.name || patientName}
-        icon={<FileText className="h-5 w-5" />}
+        moduleLabel="Ficha de Atendimento"
       />
 
       <div className="flex items-center gap-2 print:hidden">
