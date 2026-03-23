@@ -220,6 +220,20 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             Monitoramento
           </Button>
         </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 text-xs"
+            onClick={() => {
+              navigate(`/ficha-atendimento?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}`);
+              onOpenChange(false);
+            }}
+          >
+            <FileText className="h-3.5 w-3.5 mr-1.5" />
+            Ficha de Atendimento
+          </Button>
+        </div>
       </SheetContent>
     </Sheet>
   );
