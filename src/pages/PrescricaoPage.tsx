@@ -3734,6 +3734,25 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         <span style={{ fontSize: '8pt', fontWeight: 800, color: '#991b1b' }}>{patient.allergies || 'NDAM'}</span>
       </div>
 
+      {/* Risk Classification Summary */}
+      {(patient.chiefComplaint || patient.vitalSigns) && (
+        <div style={{ padding: '4px 8px', backgroundColor: '#f8fafc', border: '0.5px solid #cbd5e1', marginBottom: '6px', borderLeft: '3px solid #0c4a6e' }}>
+          <div style={{ fontSize: '6pt', fontWeight: 800, color: '#0c4a6e', letterSpacing: '0.5px', marginBottom: '2px' }}>
+            CLASSIFICAÇÃO DE RISCO{patient.riskClassification ? ` — ${patient.riskClassification.toUpperCase()}` : ''}
+          </div>
+          {patient.chiefComplaint && (
+            <div style={{ fontSize: '7pt', color: '#0f172a', lineHeight: 1.3 }}>
+              <span style={{ fontWeight: 700 }}>QP:</span> {patient.chiefComplaint}
+            </div>
+          )}
+          {patient.vitalSigns && (
+            <div style={{ fontSize: '6.5pt', color: '#334155', lineHeight: 1.3, marginTop: '1px' }}>
+              <span style={{ fontWeight: 700 }}>Sinais Vitais:</span> {patient.vitalSigns}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Prescription Items by Category */}
       {TAB_ORDER.map(cat => {
         const catItems = itemsByCategory[cat].filter(i => i.status === 'active');
