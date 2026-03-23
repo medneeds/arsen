@@ -2164,6 +2164,45 @@ const PrescricaoPage = () => {
 
   useEffect(() => { ensureEncounterCode(); }, [ensureEncounterCode]);
 
+  // Fetch pre-admission data for risk classification on print
+  useEffect(() => {
+    const fetchPreAdmission = async () => {
+      if (!currentHospital || !currentState || !patient.name.trim()) return;
+      try {
+        const { data } = await supabase
+          .from('pre_admissions')
+          .select('chief_complaint, vital_signs, risk_classification')
+          .eq('hospital_unit_id', currentHospital.id)
+          .eq('state_id', currentState.id)
+          .eq('patient_name', patient.name.trim())
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (data && data.length > 0) {
+          const pa = data[0];
+          const vs = pa.vital_signs as Record<string, string> | null;
+          const vitalsStr = vs ? [
+            vs.pa ? `PA: ${vs.pa} mmHg` : null,
+            vs.fc ? `FC: ${vs.fc} bpm` : null,
+            vs.fr ? `FR: ${vs.fr} irpm` : null,
+            vs.tax ? `Tax: ${vs.tax} °C` : null,
+            vs.sato2 ? `SatO2: ${vs.sato2}%` : null,
+            vs.peso ? `Peso: ${vs.peso} kg` : null,
+            vs.glicemia ? `Glicemia: ${vs.glicemia} mg/dL` : null,
+          ].filter(Boolean).join(' | ') : '';
+          setPatient(prev => ({
+            ...prev,
+            chiefComplaint: pa.chief_complaint || undefined,
+            vitalSigns: vitalsStr || undefined,
+            riskClassification: pa.risk_classification || undefined,
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching pre-admission:', err);
+      }
+    };
+    fetchPreAdmission();
+  }, [currentHospital, currentState, patient.name]);
+
   // Fetch dispensations for current prescription
   const fetchDispensations = useCallback(async () => {
     if (!currentPrescriptionId) { setDispensations([]); return; }
