@@ -152,6 +152,9 @@ export default function AuthPage() {
   const [screen, setScreen] = useState<"splash" | "profiles" | "login" | "signup">("splash");
   const [selectedProfile, setSelectedProfile] = useState<AccessProfile>("medico");
   const [selectedSector, setSelectedSector] = useState<string>("red");
+  const [signupState, setSignupState] = useState("");
+  const [signupHospital, setSignupHospital] = useState("");
+  const [signupDepartment, setSignupDepartment] = useState<Department>("URGÊNCIA E EMERGÊNCIA ADULTO");
 
   const SECTORS = Object.entries(SECTOR_BED_CONFIG).map(([key, config]) => ({
     key,
