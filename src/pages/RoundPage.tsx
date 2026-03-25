@@ -618,7 +618,7 @@ export default function RoundPage() {
         <PrintableRound
           ref={printRef}
           patientName={selectedPatient.name}
-          patientSector={getSectorLabel(selectedPatient.sector)}
+          patientSector={selectedPatient.id.startsWith("manual_") ? selectedPatient.sector : getSectorLabel(selectedPatient.sector)}
           patientBed={selectedPatient.bed_number}
           patientAge={selectedPatient.age}
           roundDate={roundDate}
