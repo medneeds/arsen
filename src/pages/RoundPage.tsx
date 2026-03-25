@@ -83,6 +83,8 @@ export default function RoundPage() {
   const [patients, setPatients] = useState<PatientOption[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<PatientOption | null>(null);
   const [patientSearch, setPatientSearch] = useState("");
+  const [manualMode, setManualMode] = useState(false);
+  const [manualPatient, setManualPatient] = useState({ name: "", sector: "", bed_number: "", age: "", diagnoses: "" });
   const [roundDate, setRoundDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [responses, setResponses] = useState<ResponseState>({});
   const [goals, setGoals] = useState<GoalState>({});
