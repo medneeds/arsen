@@ -207,6 +207,49 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
               />
             </div>
 
+            {/* CID e Macrodiagnóstico */}
+            <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
+              <p className="text-sm font-semibold flex items-center gap-2 text-foreground">
+                <Stethoscope className="h-4 w-4 text-primary" />
+                Classificação CID-10
+              </p>
+              
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-foreground">
+                  CID Primário <span className="text-destructive">*</span>
+                </Label>
+                <CidSearchInput
+                  value={cidPrimary}
+                  onChange={setCidPrimary}
+                  placeholder="Buscar CID primário (obrigatório)..."
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-foreground">
+                  CID Secundário
+                </Label>
+                <CidSearchInput
+                  value={cidSecondary}
+                  onChange={setCidSecondary}
+                  placeholder="Buscar CID secundário (opcional)..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-foreground">
+                  Macrodiagnóstico
+                </Label>
+                <Textarea
+                  value={macroDiagnosis}
+                  onChange={(e) => setMacroDiagnosis(e.target.value)}
+                  placeholder="Descrição macro do diagnóstico (ex: Politrauma, Sepse abdominal, ICC descompensada)..."
+                  className="min-h-[50px] text-sm"
+                />
+              </div>
+            </div>
+
             {/* Conduta Inicial */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-foreground">
