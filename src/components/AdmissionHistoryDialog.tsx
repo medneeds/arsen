@@ -11,13 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardList, Save, Loader2, CheckCircle2, Clock } from "lucide-react";
+import { ClipboardList, Save, Loader2, CheckCircle2, Clock, Stethoscope } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { CidSearchInput } from "./CidSearchInput";
 
 interface AdmissionHistoryDialogProps {
   patient: Patient;
@@ -37,6 +38,9 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
   const [clinicalHistory, setClinicalHistory] = useState("");
   const [diagnosticHypothesis, setDiagnosticHypothesis] = useState("");
   const [initialConduct, setInitialConduct] = useState("");
+  const [cidPrimary, setCidPrimary] = useState("");
+  const [cidSecondary, setCidSecondary] = useState("");
+  const [macroDiagnosis, setMacroDiagnosis] = useState("");
 
   useEffect(() => {
     if (open && patient.id) {
@@ -61,6 +65,9 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
         setClinicalHistory(data.clinical_history || "");
         setDiagnosticHypothesis(data.diagnostic_hypothesis || "");
         setInitialConduct(data.initial_conduct || "");
+        setCidPrimary((data as any).cid_primary || "");
+        setCidSecondary((data as any).cid_secondary || "");
+        setMacroDiagnosis((data as any).macro_diagnosis || "");
         setLastUpdated(data.updated_at);
       } else {
         setExistingId(null);
@@ -68,6 +75,9 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
         setClinicalHistory("");
         setDiagnosticHypothesis("");
         setInitialConduct("");
+        setCidPrimary("");
+        setCidSecondary("");
+        setMacroDiagnosis("");
         setLastUpdated(null);
       }
     } catch (err) {
@@ -80,6 +90,12 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
 
   const handleSave = async () => {
     if (!currentHospital || !currentState) return;
+    
+    if (!cidPrimary) {
+      toast.error("CID Primário é obrigatório");
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -91,6 +107,9 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
         clinical_history: clinicalHistory || null,
         diagnostic_hypothesis: diagnosticHypothesis || null,
         initial_conduct: initialConduct || null,
+        cid_primary: cidPrimary || null,
+        cid_secondary: cidSecondary || null,
+        macro_diagnosis: macroDiagnosis || null,
         updated_by: user?.id || null,
       };
 
