@@ -14,9 +14,10 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { BigHelpLogo } from "@/components/BigHelpLogo";
 import { cn } from "@/lib/utils";
 import { whitelabel } from "@/config/whitelabel";
-import { useDepartment } from "@/contexts/DepartmentContext";
+import { useDepartment, Department } from "@/contexts/DepartmentContext";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 import { motion, AnimatePresence } from "framer-motion";
+import { IndividualSignUpForm } from "@/components/IndividualSignUpForm";
 import {
   Select,
   SelectContent,
