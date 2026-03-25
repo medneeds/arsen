@@ -346,13 +346,75 @@ export default function RoundPage() {
       {/* Patient selector */}
       <Card className="border-primary/20">
         <CardHeader className="pb-3 pt-4 px-4">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <User className="h-4 w-4 text-primary" />
-            Paciente
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <User className="h-4 w-4 text-primary" />
+              Paciente
+            </CardTitle>
+            {!selectedPatient && !manualMode && (
+              <div className="flex gap-1.5">
+                <Button size="sm" variant="outline" onClick={() => setManualMode(false)} className={`text-[10px] h-7 ${!manualMode ? "bg-primary/10 border-primary/30" : ""}`}>
+                  Buscar paciente
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setManualMode(true)} className="text-[10px] h-7">
+                  Preenchimento avulso
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="px-4 pb-4">
-          {!selectedPatient ? (
+          {manualMode && !selectedPatient ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Nome do paciente *</Label>
+                  <Input placeholder="Nome completo" value={manualPatient.name} onChange={(e) => setManualPatient((p) => ({ ...p, name: e.target.value }))} className="text-sm mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs">Idade</Label>
+                  <Input placeholder="Ex: 65 anos" value={manualPatient.age} onChange={(e) => setManualPatient((p) => ({ ...p, age: e.target.value }))} className="text-sm mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs">Setor</Label>
+                  <Select value={manualPatient.sector} onValueChange={(v) => setManualPatient((p) => ({ ...p, sector: v }))}>
+                    <SelectTrigger className="text-sm mt-1"><SelectValue placeholder="Selecionar setor" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="UTI 1">UTI 1</SelectItem>
+                      <SelectItem value="UTI 2">UTI 2</SelectItem>
+                      <SelectItem value="UCI 1">UCI 1</SelectItem>
+                      <SelectItem value="UCI 2">UCI 2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Leito</Label>
+                  <Input placeholder="Ex: 01" value={manualPatient.bed_number} onChange={(e) => setManualPatient((p) => ({ ...p, bed_number: e.target.value }))} className="text-sm mt-1" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Diagnósticos</Label>
+                <Textarea placeholder="Diagnósticos principais..." value={manualPatient.diagnoses} onChange={(e) => setManualPatient((p) => ({ ...p, diagnoses: e.target.value }))} className="text-xs mt-1 min-h-[40px]" rows={1} />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button size="sm" variant="ghost" onClick={() => { setManualMode(false); setManualPatient({ name: "", sector: "", bed_number: "", age: "", diagnoses: "" }); }} className="text-xs">
+                  Voltar
+                </Button>
+                <Button size="sm" disabled={!manualPatient.name.trim()} onClick={() => {
+                  setSelectedPatient({
+                    id: `manual_${Date.now()}`,
+                    name: manualPatient.name,
+                    sector: manualPatient.sector || "manual",
+                    bed_number: manualPatient.bed_number || "-",
+                    age: manualPatient.age || null,
+                    diagnoses: manualPatient.diagnoses || null,
+                  });
+                }} className="text-xs">
+                  Iniciar Round
+                </Button>
+              </div>
+            </div>
+          ) : !selectedPatient ? (
             <div className="space-y-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -390,23 +452,27 @@ export default function RoundPage() {
                   <User className="h-5 w-5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-semibold text-foreground truncate">{selectedPatient.name}</div>
+                  <div className="font-semibold text-foreground truncate">
+                    {selectedPatient.name}
+                    {selectedPatient.id.startsWith("manual_") && (
+                      <Badge variant="outline" className="ml-2 text-[9px] px-1.5 py-0 align-middle border-amber-500/30 text-amber-600 dark:text-amber-400">Avulso</Badge>
+                    )}
+                  </div>
                   <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-                    <span className="flex items-center gap-1"><BedDouble className="h-3 w-3" />{getSectorLabel(selectedPatient.sector)} – Leito {selectedPatient.bed_number}</span>
+                    <span className="flex items-center gap-1"><BedDouble className="h-3 w-3" />{selectedPatient.id.startsWith("manual_") ? selectedPatient.sector : getSectorLabel(selectedPatient.sector)} – Leito {selectedPatient.bed_number}</span>
                     {selectedPatient.age && <span>• {selectedPatient.age}</span>}
                     <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{format(new Date(roundDate), "dd/MM/yyyy")}</span>
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
-                {/* Progress */}
                 <div className="hidden sm:flex items-center gap-2">
                   <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
                     <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
                   </div>
                   <span className="text-xs font-medium text-muted-foreground">{progress}%</span>
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => { setSelectedPatient(null); setResponses({}); setGoals({}); setObservations(""); setSessionId(null); }} className="text-xs">
+                <Button size="sm" variant="ghost" onClick={() => { setSelectedPatient(null); setManualMode(false); setManualPatient({ name: "", sector: "", bed_number: "", age: "", diagnoses: "" }); setResponses({}); setGoals({}); setObservations(""); setSessionId(null); }} className="text-xs">
                   Trocar
                 </Button>
               </div>
