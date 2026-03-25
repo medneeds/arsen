@@ -116,7 +116,7 @@ export default function RoundPage() {
 
   // Load existing session when patient/date changes
   useEffect(() => {
-    if (!selectedPatient || !currentHospital) return;
+    if (!selectedPatient || !currentHospital || selectedPatient.id.startsWith("manual_")) return;
     const loadSession = async () => {
       setLoadingSession(true);
       const { data: session } = await supabase
