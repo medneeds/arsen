@@ -214,13 +214,14 @@ export default function RoundPage() {
       let currentSessionId = sessionId;
 
       if (!currentSessionId) {
+        const isManual = selectedPatient.id.startsWith("manual_");
         const { data: newSession, error } = await supabase
           .from("round_sessions")
           .insert({
-            patient_id: selectedPatient.id,
+            patient_id: isManual ? null : selectedPatient.id,
             patient_name: selectedPatient.name,
             patient_age: selectedPatient.age,
-            patient_sector: getSectorLabel(selectedPatient.sector),
+            patient_sector: isManual ? selectedPatient.sector : getSectorLabel(selectedPatient.sector),
             patient_bed: selectedPatient.bed_number,
             round_date: roundDate,
             hospital_unit_id: currentHospital.id,
