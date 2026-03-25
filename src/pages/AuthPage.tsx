@@ -514,7 +514,7 @@ export default function AuthPage() {
             </div>
           </motion.div>
 
-        ) : (
+        ) : screen === "login" ? (
           /* ─── LOGIN SCREEN ─────────────────────────────────────── */
           <motion.div
             key="login"
