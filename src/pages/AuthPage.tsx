@@ -149,7 +149,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
-  const [screen, setScreen] = useState<"splash" | "profiles" | "login">("splash");
+  const [screen, setScreen] = useState<"splash" | "profiles" | "login" | "signup">("splash");
   const [selectedProfile, setSelectedProfile] = useState<AccessProfile>("medico");
   const [selectedSector, setSelectedSector] = useState<string>("red");
 
