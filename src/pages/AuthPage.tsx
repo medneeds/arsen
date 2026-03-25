@@ -722,7 +722,7 @@ export default function AuthPage() {
               </div>
             </div>
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
     </>
   );
