@@ -14,9 +14,10 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { BigHelpLogo } from "@/components/BigHelpLogo";
 import { cn } from "@/lib/utils";
 import { whitelabel } from "@/config/whitelabel";
-import { useDepartment } from "@/contexts/DepartmentContext";
+import { useDepartment, Department } from "@/contexts/DepartmentContext";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 import { motion, AnimatePresence } from "framer-motion";
+import { IndividualSignUpForm } from "@/components/IndividualSignUpForm";
 import {
   Select,
   SelectContent,
@@ -148,9 +149,12 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
-  const [screen, setScreen] = useState<"splash" | "profiles" | "login">("splash");
+  const [screen, setScreen] = useState<"splash" | "profiles" | "login" | "signup">("splash");
   const [selectedProfile, setSelectedProfile] = useState<AccessProfile>("medico");
   const [selectedSector, setSelectedSector] = useState<string>("red");
+  const [signupState, setSignupState] = useState("");
+  const [signupHospital, setSignupHospital] = useState("");
+  const [signupDepartment, setSignupDepartment] = useState<Department>("URGÊNCIA E EMERGÊNCIA ADULTO");
 
   const SECTORS = Object.entries(SECTOR_BED_CONFIG).map(([key, config]) => ({
     key,
@@ -510,7 +514,7 @@ export default function AuthPage() {
             </div>
           </motion.div>
 
-        ) : (
+        ) : screen === "login" ? (
           /* ─── LOGIN SCREEN ─────────────────────────────────────── */
           <motion.div
             key="login"
@@ -658,7 +662,7 @@ export default function AuthPage() {
                 </form>
               </motion.div>
 
-              {/* Back to profiles + Footer */}
+              {/* Back to profiles + Signup + Footer */}
               <motion.div
                 className="text-center mt-5 space-y-3"
                 initial={{ opacity: 0 }}
@@ -675,13 +679,50 @@ export default function AuthPage() {
                   <ArrowLeft className="h-3 w-3" />
                   Alterar tipo de acesso
                 </button>
+
+                <div className="h-px w-16 mx-auto bg-white/10" />
+
+                <button
+                  onClick={() => setScreen("signup")}
+                  className="inline-flex items-center gap-2 text-[10px] text-white/40 hover:text-white/80 tracking-[0.15em] transition-colors duration-300"
+                >
+                  <User className="h-3 w-3" />
+                  Não tem conta? <span className="text-[#2dd4bf] font-semibold">Cadastre-se</span>
+                </button>
+
                 <p className="text-[9px] text-slate-600 tracking-[0.3em] font-light">
                   {whitelabel.credits.authorSignature}
                 </p>
               </motion.div>
             </div>
           </motion.div>
-        )}
+
+        ) : screen === "signup" ? (
+          /* ─── SIGNUP SCREEN ─────────────────────────────────────── */
+          <motion.div
+            key="signup"
+            className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center p-4 relative overflow-hidden"
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -30 }}
+            transition={{ duration: 0.4 }}
+          >
+            <div className="w-full max-w-lg relative z-10">
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 max-h-[90vh] overflow-y-auto">
+                <IndividualSignUpForm
+                  onBack={() => setScreen("login")}
+                  onSuccess={() => setScreen("login")}
+                  selectedState={signupState}
+                  selectedHospitalId={signupHospital}
+                  selectedDepartment={signupDepartment}
+                  onStateChange={setSignupState}
+                  onHospitalChange={setSignupHospital}
+                  onDepartmentChange={setSignupDepartment}
+                />
+              </div>
+            </div>
+          </motion.div>
+        ) : null}
       </AnimatePresence>
     </>
   );
