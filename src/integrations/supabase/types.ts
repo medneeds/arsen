@@ -17,6 +17,8 @@ export type Database = {
       admission_histories: {
         Row: {
           chief_complaint: string | null
+          cid_primary: string | null
+          cid_secondary: string | null
           clinical_history: string | null
           created_at: string
           created_by: string | null
@@ -25,6 +27,7 @@ export type Database = {
           hospital_unit_id: string
           id: string
           initial_conduct: string | null
+          macro_diagnosis: string | null
           patient_id: string
           state_id: string
           updated_at: string
@@ -32,6 +35,8 @@ export type Database = {
         }
         Insert: {
           chief_complaint?: string | null
+          cid_primary?: string | null
+          cid_secondary?: string | null
           clinical_history?: string | null
           created_at?: string
           created_by?: string | null
@@ -40,6 +45,7 @@ export type Database = {
           hospital_unit_id: string
           id?: string
           initial_conduct?: string | null
+          macro_diagnosis?: string | null
           patient_id: string
           state_id: string
           updated_at?: string
@@ -47,6 +53,8 @@ export type Database = {
         }
         Update: {
           chief_complaint?: string | null
+          cid_primary?: string | null
+          cid_secondary?: string | null
           clinical_history?: string | null
           created_at?: string
           created_by?: string | null
@@ -55,6 +63,7 @@ export type Database = {
           hospital_unit_id?: string
           id?: string
           initial_conduct?: string | null
+          macro_diagnosis?: string | null
           patient_id?: string
           state_id?: string
           updated_at?: string
@@ -237,6 +246,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cid10_codes: {
+        Row: {
+          category: string
+          chapter: string | null
+          code: string
+          created_at: string
+          description: string
+          id: string
+        }
+        Insert: {
+          category: string
+          chapter?: string | null
+          code: string
+          created_at?: string
+          description: string
+          id?: string
+        }
+        Update: {
+          category?: string
+          chapter?: string | null
+          code?: string
+          created_at?: string
+          description?: string
+          id?: string
+        }
+        Relationships: []
       }
       conduct_history: {
         Row: {
