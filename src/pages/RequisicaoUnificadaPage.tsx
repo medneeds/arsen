@@ -238,7 +238,7 @@ const RequisicaoUnificadaPage = () => {
     if (!unitId || !stateId) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("exam_requests")
         .select("*")
         .eq("hospital_unit_id", unitId)
@@ -246,6 +246,13 @@ const RequisicaoUnificadaPage = () => {
         .eq("category", activeCategory)
         .order("created_at", { ascending: false })
         .limit(200);
+
+      // When patient context is present, filter by patient
+      if (formPatientId) {
+        query = query.eq("patient_id", formPatientId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       setRequests(data || []);
     } catch {
