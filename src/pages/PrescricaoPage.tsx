@@ -1663,7 +1663,7 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
               item.accessType && item.accessType !== '-' ? item.accessType : null,
               item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
               item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
-              item.volumeTotal && item.infusionTime ? calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', item.infusionTimeUnit || 'min') : null,
+              item.infusionRate ? `${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
               item.concentration ? `Conc: ${item.concentration}` : null,
             ].filter(Boolean).join(' · ')}
           </div>
@@ -3928,7 +3928,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                               item.accessType && item.accessType !== '-' ? item.accessType : null,
                               item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
                               item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
-                              item.volumeTotal && item.infusionTime ? calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', item.infusionTimeUnit || 'min') : null,
+                              item.infusionRate ? `${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
                               item.concentration ? `Conc: ${item.concentration}` : null,
                             ].filter(Boolean).join(' · ')}
                           </div>
