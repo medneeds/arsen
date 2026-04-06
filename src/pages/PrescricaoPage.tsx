@@ -3474,6 +3474,32 @@ const PrescricaoPage = () => {
                 <div key={cat} className="rounded-xl border border-border bg-card">
                   {/* Category header with inline search */}
                   <div className={cn("flex items-center gap-2 px-3 py-2 border-b border-border/50", config.bgColor)}>
+                    {catItems.length > 0 && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const allSelected = catItems.every(i => selectedIds.has(i.id));
+                              if (allSelected) deselectAllInCategory(cat);
+                              else selectAllInCategory(cat);
+                            }}
+                            className="shrink-0 flex items-center justify-center"
+                          >
+                            {catItems.every(i => selectedIds.has(i.id)) ? (
+                              <CheckSquare className="h-3.5 w-3.5 text-primary" />
+                            ) : catItems.some(i => selectedIds.has(i.id)) ? (
+                              <Square className="h-3.5 w-3.5 text-primary/60" />
+                            ) : (
+                              <Square className="h-3.5 w-3.5 text-muted-foreground/50" />
+                            )}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="text-xs">
+                          {catItems.every(i => selectedIds.has(i.id)) ? 'Desmarcar todos' : `Selecionar todos (${catItems.length})`}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                     <IconComp className={cn("h-3.5 w-3.5 shrink-0", config.color)} />
                     <span className="text-xs font-semibold text-foreground whitespace-nowrap">{config.label}</span>
                     <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">{catItems.length}</Badge>
