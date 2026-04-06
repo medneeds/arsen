@@ -3563,6 +3563,7 @@ const PrescricaoPage = () => {
                           onRemove={removeItem}
                           onToggleFlag={toggleFlag}
                           isSimple={simple}
+                          isCompact={compactView}
                           selected={selectedIds.has(item.id)}
                           onToggleSelect={toggleSelect}
                           onDuplicate={duplicateItem}
