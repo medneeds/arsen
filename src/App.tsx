@@ -459,7 +459,16 @@ const App = () => {
         <Route path="/requisicao/imagens" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
         <Route path="/requisicao/parecer" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
         <Route path="/monitoramento" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MonitoramentoClinicoPage /></MainLayout></ProtectedRoute>} />
-        <Route path="/documentos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DocumentosPacientePage /></MainLayout></ProtectedRoute>} />
+        <Route
+          path="/documentos"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <DocumentosPacientePage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/prescricao"
           element={
