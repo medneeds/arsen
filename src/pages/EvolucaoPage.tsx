@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { PatientInfoHeader } from "@/components/PatientInfoHeader";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
 import {
-  NotebookPen, Plus, Loader2, Copy, BedDouble,
+  NotebookPen, Plus, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
