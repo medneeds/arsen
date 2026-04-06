@@ -3616,6 +3616,17 @@ const PrescricaoPage = () => {
           </SortableContext>
         </DndContext>
 
+        {/* Batch action bar — sticky within content flow */}
+        <BatchActionBar
+          selectedCount={selectedIds.size}
+          allSelected={items.length > 0 && selectedIds.size === items.length}
+          onSelectAll={() => setSelectedIds(new Set(items.map(i => i.id)))}
+          onDeselectAll={() => setSelectedIds(new Set())}
+          onSuspendSelected={suspendSelected}
+          onDeleteSelected={deleteSelected}
+          onDuplicateSelected={duplicateSelected}
+        />
+
         {items.length === 0 && (
           <div className="rounded-xl border border-dashed border-border bg-muted/20 p-8 text-center">
             <Pill className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
