@@ -294,43 +294,29 @@ const ClinicalDashboardPage = () => {
 
   return (
     <MainLayout>
-      <DashboardHeader>
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-              <SidebarTrigger className="flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
-              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Socorrão I</span>
-                <span className="text-white/30 text-xs">/</span>
-                <Select value={activeSector} onValueChange={handleSectorChange}>
-                  <SelectTrigger className="h-7 w-auto gap-1 bg-white/10 border-white/20 text-xs text-white font-medium px-2.5 focus:ring-0 focus:ring-offset-0 hover:bg-white/20 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/60 rounded-md">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(SECTOR_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key} className="text-xs font-medium">{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span className="text-white/30 text-xs">/</span>
-                <ClinicalNavTabs variant="dark" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200"
-              >
-                <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-              </Button>
+      <div className="border-b border-border/50 bg-gradient-to-r from-[#0a1628] via-[#0f2847] to-[#1a3a5c] px-2 sm:px-4 py-2 sm:py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <SidebarTrigger className="flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-wrap">
+              <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Socorrão I</span>
+              <span className="text-white/30 text-xs">/</span>
+              <ClinicalNavTabs variant="dark" />
             </div>
           </div>
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200"
+            >
+              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+            </Button>
+          </div>
         </div>
-      </DashboardHeader>
+      </div>
 
       <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6 pt-[70px] sm:pt-[70px]">
         <AnimatePresence mode="wait">
