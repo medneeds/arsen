@@ -3,13 +3,13 @@ import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
