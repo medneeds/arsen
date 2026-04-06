@@ -2718,7 +2718,10 @@ const PrescricaoPage = () => {
       nutrition: [], hydration: [], medication: [], antimicrobial: [],
       high_alert: [], inhalation: [], hemotherapy: [], care: [], nonstandard: [],
     };
-    items.forEach(item => { map[item.category].push(item); });
+    items.forEach(item => {
+      const cat = item.category in map ? item.category : 'nonstandard' as PrescriptionCategory;
+      map[cat].push(item);
+    });
     return map;
   }, [items]);
 
