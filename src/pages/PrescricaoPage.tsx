@@ -3520,6 +3520,30 @@ const PrescricaoPage = () => {
                     <IconComp className={cn("h-3.5 w-3.5 shrink-0", config.color)} />
                     <span className="text-xs font-semibold text-foreground whitespace-nowrap">{config.label}</span>
                     <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">{catItems.length}</Badge>
+                    {compactView && catItems.length > 0 && !isSimpleCategory(cat) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedCategories(prev => {
+                              const n = new Set(prev);
+                              if (n.has(cat)) n.delete(cat); else n.add(cat);
+                              return n;
+                            })}
+                            className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            {expandedCategories.has(cat) ? (
+                              <List className="h-3.5 w-3.5" />
+                            ) : (
+                              <AlignJustify className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs">
+                          {expandedCategories.has(cat) ? 'Compactar categoria' : 'Expandir categoria'}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                     <div className="flex-1 ml-2">
                       {cat === 'nonstandard' ? (
                         <div className="flex items-center gap-1.5">
