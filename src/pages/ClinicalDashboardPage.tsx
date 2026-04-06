@@ -10,7 +10,6 @@ import { useDepartment } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
   BedDouble,
@@ -59,7 +58,7 @@ const ClinicalDashboardPage = () => {
   const { user } = useAuth();
   const { currentDepartment } = useDepartment();
   const { currentHospital, currentState } = useHospital();
-  const isMobile = useIsMobile();
+  
   const navigate = useNavigate();
 
   const [activeSector, setActiveSector] = useState<string>(() => {
