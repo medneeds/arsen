@@ -232,7 +232,7 @@ const RequisicaoUnificadaPage = () => {
 
   useEffect(() => {
     if (unitId && stateId) fetchRequests();
-  }, [unitId, stateId, activeCategory]);
+  }, [unitId, stateId, activeCategory, formPatientId]);
 
   const fetchRequests = async () => {
     if (!unitId || !stateId) return;
