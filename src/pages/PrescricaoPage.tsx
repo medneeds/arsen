@@ -950,6 +950,7 @@ function SortablePrescriptionItemRow({
     );
   }
 
+  return (
     <div
       ref={setNodeRef}
       style={style}
