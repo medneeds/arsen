@@ -1,12 +1,13 @@
 import React from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Pill, NotebookPen, FileText } from "lucide-react";
+import { Pill, NotebookPen, FileText, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const MODULE_TABS = [
   { label: "Prescrição", path: "/prescricao", icon: Pill },
   { label: "Evolução", path: "/evolucao", icon: NotebookPen },
   { label: "Requisições", path: "/requisicao-unificada", icon: FileText },
+  { label: "Docs", path: "/documentos", icon: FolderOpen },
 ];
 
 interface ClinicalModuleTabsProps {
@@ -14,7 +15,7 @@ interface ClinicalModuleTabsProps {
 }
 
 /**
- * Tabs for switching between clinical modules (Prescrição, Evolução, Requisições)
+ * Tabs for switching between clinical modules (Prescrição, Evolução, Requisições, Docs)
  * while preserving patient context via URL search params.
  */
 export function ClinicalModuleTabs({ variant = "dark" }: ClinicalModuleTabsProps) {
