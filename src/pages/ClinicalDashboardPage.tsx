@@ -318,7 +318,7 @@ const ClinicalDashboardPage = () => {
         </div>
       </div>
 
-      <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6 pt-[70px] sm:pt-[70px]">
+      <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
         <AnimatePresence mode="wait">
           {isLoading ? (
             <motion.div
