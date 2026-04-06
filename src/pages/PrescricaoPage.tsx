@@ -874,9 +874,8 @@ function SortablePrescriptionItemRow({
     );
   }
 
-  // === COMPACT VIEW ===
-  if (isCompact && !isSimple) {
-    // Build a one-line summary: "Ceftriaxona (1g) · Diluir em SF 0,9% 100mL · Correr em 30min (200 mL/h) · 12/12h 06h, 18h"
+  // === COMPACT VIEW (with individual expand) ===
+  if (isCompact && !isSimple && !individualExpanded) {
     const compactParts: string[] = [];
     if (item.dose && item.dose !== '-') compactParts.push(item.dose);
     if (item.diluent && item.diluent !== 'sem_diluente') {
@@ -897,20 +896,28 @@ function SortablePrescriptionItemRow({
       const rLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
       compactParts.push(`${item.infusionRate} ${rLabel}`);
     }
-    if (item.route && item.route !== '-') compactParts.push(item.route);
+    // Route + posology inline
+    const routePosology: string[] = [];
+    if (item.route && item.route !== '-') routePosology.push(item.route);
+    if (item.posology && item.posology !== '-') routePosology.push(item.posology);
 
     return (
       <div
         ref={setNodeRef}
         style={style}
         className={cn(
-          "flex items-center gap-2 px-2.5 py-1.5 rounded-lg border group transition-all",
+          "flex items-center gap-2 px-2.5 py-1.5 rounded-lg border group transition-all cursor-pointer",
           item.status === 'suspended'
             ? "border-destructive/30 bg-destructive/5 opacity-60"
             : "border-border/40 bg-card/50 hover:border-primary/20",
           item.highAlert && item.status !== 'suspended' && "border-red-300/40",
           selected && "ring-2 ring-primary/40 border-primary/30",
         )}
+        onClick={(e) => {
+          // Don't expand when clicking checkboxes, buttons, or inputs
+          if ((e.target as HTMLElement).closest('button, input, [role="checkbox"], [data-radix-collection-item]')) return;
+          setIndividualExpanded(true);
+        }}
       >
         <ValidationDot />
         <Checkbox
@@ -932,6 +939,11 @@ function SortablePrescriptionItemRow({
               · {compactParts.join(' · ')}
             </span>
           )}
+          {routePosology.length > 0 && (
+            <span className="text-[10px] font-medium text-foreground/70 shrink-0">
+              · {routePosology.join(' · ')}
+            </span>
+          )}
           {item.isExtra && (
             <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-muted/50 text-muted-foreground border-border/50">EXTRA</Badge>
           )}
@@ -940,9 +952,8 @@ function SortablePrescriptionItemRow({
             return f ? <Badge key={fk} variant="outline" className="text-[8px] px-1 shrink-0 text-muted-foreground border-border/50">{f.label}</Badge> : null;
           })}
         </div>
-        {/* Schedule compact */}
+        {/* Schedule compact — far right */}
         <div className="shrink-0 flex items-center gap-1 pl-2 border-l border-border/30">
-          <span className="text-[10px] text-muted-foreground font-medium">{item.posology !== '-' ? item.posology : ''}</span>
           {item.schedule && (
             <span className="text-[10px] font-mono text-primary/80">{item.schedule}</span>
           )}
@@ -951,6 +962,9 @@ function SortablePrescriptionItemRow({
       </div>
     );
   }
+
+  // If individually expanded from compact mode, show a collapse button
+  const showCollapseButton = isCompact && individualExpanded;
 
   return (
     <div
