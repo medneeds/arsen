@@ -134,13 +134,13 @@ export function AppSidebar({
       title: "Emergência",
       icon: Activity,
       link: "/emergencia",
-      profiles: ["medico", "gestor"],
+      profiles: ["gestor"],
     },
     {
       title: "Monitoramento",
       icon: HeartPulse,
       link: "/monitoramento",
-      profiles: ["medico", "gestor"],
+      profiles: ["gestor"],
     },
     {
       title: "Documentos",
