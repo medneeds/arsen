@@ -103,6 +103,7 @@ export function useEvolutions(patientId: string | null) {
       return null;
     }
     try {
+      const doctorName = user.user_metadata?.full_name || "Dr. Carlos Eduardo Mendes";
       const { data, error } = await supabase
         .from("clinical_evolutions")
         .insert({
@@ -116,6 +117,7 @@ export function useEvolutions(patientId: string | null) {
           hospital_unit_id: currentHospital.id,
           state_id: currentState.id,
           created_by: user.id,
+          created_by_name: doctorName,
           status: "draft",
         } as any)
         .select()
@@ -162,12 +164,14 @@ export function useEvolutions(patientId: string | null) {
   const validateEvolution = async (id: string) => {
     if (!user) return false;
     try {
+      const doctorName = user.user_metadata?.full_name || "Dr. Carlos Eduardo Mendes";
       const { error } = await supabase
         .from("clinical_evolutions")
         .update({
           status: "validated",
           validated_at: new Date().toISOString(),
           validated_by: user.id,
+          validated_by_name: doctorName,
         } as any)
         .eq("id", id);
       if (error) throw error;
