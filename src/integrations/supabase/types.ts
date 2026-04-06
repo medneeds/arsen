@@ -278,6 +278,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          created_by_name: string | null
           department: string
           hospital_unit_id: string
           id: string
@@ -295,11 +296,13 @@ export type Database = {
           updated_at: string
           validated_at: string | null
           validated_by: string | null
+          validated_by_name: string | null
           vital_signs: Json
         }
         Insert: {
           created_at?: string
           created_by: string
+          created_by_name?: string | null
           department?: string
           hospital_unit_id: string
           id?: string
@@ -317,11 +320,13 @@ export type Database = {
           updated_at?: string
           validated_at?: string | null
           validated_by?: string | null
+          validated_by_name?: string | null
           vital_signs?: Json
         }
         Update: {
           created_at?: string
           created_by?: string
+          created_by_name?: string | null
           department?: string
           hospital_unit_id?: string
           id?: string
@@ -339,6 +344,7 @@ export type Database = {
           updated_at?: string
           validated_at?: string | null
           validated_by?: string | null
+          validated_by_name?: string | null
           vital_signs?: Json
         }
         Relationships: [
