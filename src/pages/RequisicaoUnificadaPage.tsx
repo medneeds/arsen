@@ -216,19 +216,19 @@ const RequisicaoUnificadaPage = () => {
   const [resultFiles, setResultFiles] = useState<ResultFile[]>([]);
   const [savingResult, setSavingResult] = useState(false);
 
-  // ── Pre-fill from navigation state or URL params ──
+  // ── Sync patient from URL params (reactive to header patient switcher) ──
   useEffect(() => {
     const state = location.state as any;
     const patientId = state?.patientId || searchParams.get("patientId");
     const patientName = state?.patientName || searchParams.get("patientName");
     const patientBed = state?.patientBed || searchParams.get("patientBed");
     const patientSector = state?.patientSector || searchParams.get("patientSector");
-    if (patientId) setFormPatientId(patientId);
-    if (patientName) setFormPatientName(patientName);
-    if (patientBed) setFormPatientBed(patientBed);
-    if (patientSector) setFormPatientSector(patientSector);
+    setFormPatientId(patientId || null);
+    setFormPatientName(patientName || "");
+    setFormPatientBed(patientBed || "");
+    setFormPatientSector(patientSector || "");
     if (patientId || patientName) setActiveSubTab("solicitar");
-  }, []);
+  }, [searchParams.get("patientId"), searchParams.get("patientName")]);
 
   useEffect(() => {
     if (unitId && stateId) fetchRequests();
@@ -434,24 +434,47 @@ const RequisicaoUnificadaPage = () => {
       </div>
       <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto print:p-0 print:m-0">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 print:hidden">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-primary/10">
-            <ClipboardList className="h-6 w-6 text-primary" />
+      <div className="print:hidden">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10">
+            <ClipboardList className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">Requisições</h1>
-            <p className="text-sm text-muted-foreground">Solicitação e acompanhamento de exames e pareceres</p>
+            <h1 className="text-lg font-semibold text-foreground leading-tight">Requisições</h1>
+            <p className="text-xs text-muted-foreground">Solicitação e acompanhamento de exames e pareceres</p>
           </div>
         </div>
       </div>
+
+      {/* ── Patient Info Card (synced with header) ── */}
+      {formPatientName && (
+        <div className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/5 to-transparent p-3 print:hidden">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold text-primary">{formPatientName.charAt(0).toUpperCase()}</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-semibold text-foreground leading-tight truncate">{formPatientName}</h2>
+              <div className="flex items-center gap-2 mt-0.5">
+                {formPatientBed && <span className="text-[11px] text-muted-foreground">Leito {formPatientBed}</span>}
+                {formPatientBed && formPatientSector && <span className="text-muted-foreground/40">·</span>}
+                {formPatientSector && <span className="text-[11px] text-muted-foreground">{getSectorLabel(formPatientSector)}</span>}
+              </div>
+            </div>
+            {formPatientId && (
+              <Badge variant="outline" className="text-[10px] border-primary/30 text-primary bg-primary/10 shrink-0">
+                Vinculado ao mapa
+              </Badge>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Category Selector ── */}
       <div className="flex gap-2 overflow-x-auto pb-1 print:hidden">
         {(Object.keys(CATEGORIES) as CategoryKey[]).map(key => {
           const cat = CATEGORIES[key];
           const Icon = cat.icon;
-          const count = requests.length;
           const isActive = activeCategory === key;
           return (
             <button
@@ -519,33 +542,6 @@ const RequisicaoUnificadaPage = () => {
         {/* TAB: SOLICITAR                              */}
         {/* ════════════════════════════════════════════ */}
         <TabsContent value="solicitar" className="mt-4 space-y-4">
-          {/* Patient info */}
-          <Card className={cn("border-border/50", formPatientId && "border-primary/30 bg-primary/5")}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                Dados do Paciente
-                {formPatientId && (
-                  <Badge variant="outline" className="text-[10px] border-primary/30 text-primary bg-primary/10">
-                    Vinculado ao mapa
-                  </Badge>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Nome do Paciente *</Label>
-                <Input placeholder="Nome completo" value={formPatientName} onChange={e => setFormPatientName(e.target.value)} readOnly={!!formPatientId} className={formPatientId ? "bg-muted/50" : ""} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Leito</Label>
-                <Input placeholder="Ex: 01" value={formPatientBed} onChange={e => setFormPatientBed(e.target.value)} readOnly={!!formPatientId} className={formPatientId ? "bg-muted/50" : ""} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Setor</Label>
-                <Input placeholder="Ex: UTI 1" value={formPatientSector} onChange={e => setFormPatientSector(e.target.value)} readOnly={!!formPatientId} className={formPatientId ? "bg-muted/50" : ""} />
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Priority Selection */}
           <div className="space-y-3">
