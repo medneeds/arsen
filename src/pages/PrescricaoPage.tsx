@@ -969,9 +969,6 @@ function SortablePrescriptionItemRow({
     );
   }
 
-  // If individually expanded from compact mode, show a collapse button
-  const showCollapseButton = isCompact && individualExpanded;
-
   return (
     <div
       ref={setNodeRef}
@@ -983,19 +980,16 @@ function SortablePrescriptionItemRow({
           : "border-border/50 bg-card/50 hover:border-primary/20",
         item.highAlert && item.status !== 'suspended' && "border-red-300/50 bg-red-50/30 dark:bg-red-950/10",
         selected && "ring-2 ring-primary/40 border-primary/30",
-        isDragging && "shadow-lg"
+        isDragging && "shadow-lg",
+        isCompact && individualExpanded && "cursor-pointer"
       )}
+      onClick={(e) => {
+        // Only handle collapse click when individually expanded in compact mode
+        if (!isCompact || !individualExpanded) return;
+        if ((e.target as HTMLElement).closest('button, input, select, textarea, [role="checkbox"], [role="combobox"], [data-radix-collection-item], [data-radix-select-trigger]')) return;
+        setIndividualExpanded(false);
+      }}
     >
-      {showCollapseButton && (
-        <button
-          type="button"
-          onClick={() => setIndividualExpanded(false)}
-          className="absolute top-1.5 right-10 z-10 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
-        >
-          <List className="h-3 w-3" />
-          <span>Compactar</span>
-        </button>
-      )}
       <div className="flex items-start gap-2 p-2.5">
         {/* Left: validation dot + drag + checkbox */}
         <div className="flex flex-col items-center gap-1.5 shrink-0 pt-1">
