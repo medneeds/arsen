@@ -39,9 +39,11 @@ export interface EvolutionRecord {
   status: "draft" | "validated" | "suspended";
   validated_at: string | null;
   validated_by: string | null;
+  validated_by_name: string | null;
   suspended_at: string | null;
   suspension_reason: string | null;
   created_by: string;
+  created_by_name: string | null;
   created_at: string;
   updated_at: string;
 }
