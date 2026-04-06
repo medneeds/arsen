@@ -377,15 +377,17 @@ function buildPrepDescription(item: PrescriptionItem): string {
   }
   if (item.accessType) parts.push(`Acesso ${item.accessType.toLowerCase()}.`);
   if (item.volumeTotal) parts.push(`Volume total: ${item.volumeTotal}mL.`);
-  if (item.infusionTime) {
+  if (item.infusionTime || item.infusionRate) {
     const unit = item.infusionTimeUnit || 'min';
-    const timeLabel = `${item.infusionTime}${unit === 'h' ? 'h' : 'min'}`;
-    if (item.volumeTotal) {
-      const rate = calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', unit);
-      const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'BIC';
-      parts.push(`Correr em ${timeLabel} — ${modeLabel}: ${rate}.`);
-    } else {
+    const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+    if (item.infusionTime && item.infusionRate) {
+      const timeLabel = `${item.infusionTime}${unit === 'h' ? 'h' : 'min'}`;
+      parts.push(`Correr em ${timeLabel} — ${item.infusionRate} ${modeLabel}.`);
+    } else if (item.infusionTime) {
+      const timeLabel = `${item.infusionTime}${unit === 'h' ? 'h' : 'min'}`;
       parts.push(`Correr em ${timeLabel}.`);
+    } else if (item.infusionRate) {
+      parts.push(`Vazão: ${item.infusionRate} ${modeLabel}.`);
     }
   }
   if (item.concentration) parts.push(`Concentração: ${item.concentration}.`);
