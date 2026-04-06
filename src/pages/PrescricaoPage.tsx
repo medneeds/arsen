@@ -1822,38 +1822,38 @@ function BatchActionBar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="sticky top-0 z-30 flex items-center gap-2 px-3 py-2 rounded-lg bg-background/95 backdrop-blur-sm border border-primary/20 shadow-md animate-in fade-in slide-in-from-top-1 duration-200">
+    <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-background/95 backdrop-blur-sm border border-border shadow-lg animate-in fade-in slide-in-from-bottom-3 duration-300">
       <Checkbox
         checked={allSelected}
         onCheckedChange={() => allSelected ? onDeselectAll() : onSelectAll()}
       />
       <span className="text-xs font-medium text-primary">
-        {selectedCount} selecionado{selectedCount > 1 ? 's' : ''}
+        {selectedCount} item{selectedCount > 1 ? 'ns' : ''}
       </span>
-      <div className="flex-1" />
+      <div className="w-px h-5 bg-border mx-1" />
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={onDuplicateSelected}>
-            <Copy className="h-3 w-3" /> Duplicar
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onDuplicateSelected}>
+            <Copy className="h-3.5 w-3.5" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Duplicar itens selecionados</TooltipContent>
+        <TooltipContent>Duplicar</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs text-yellow-600 hover:text-yellow-700 border-yellow-200 hover:border-yellow-300" onClick={onSuspendSelected}>
-            <Pause className="h-3 w-3" /> Suspender
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-yellow-600 hover:text-yellow-700" onClick={onSuspendSelected}>
+            <Pause className="h-3.5 w-3.5" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Suspender itens selecionados</TooltipContent>
+        <TooltipContent>Suspender</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/50" onClick={onDeleteSelected}>
-            <Trash2 className="h-3 w-3" /> Excluir
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={onDeleteSelected}>
+            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Excluir itens selecionados</TooltipContent>
+        <TooltipContent>Excluir</TooltipContent>
       </Tooltip>
       <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={onDeselectAll}>
         <X className="h-3.5 w-3.5" />
