@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useEvolutions, EvolutionRecord } from "@/hooks/useEvolutions";
