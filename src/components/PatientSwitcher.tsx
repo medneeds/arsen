@@ -64,6 +64,9 @@ export function PatientSwitcher({ variant = "dark" }: PatientSwitcherProps) {
     fetchSectorPatients();
   }, [patientSector, currentHospital, currentState]);
 
+  // Only render when there's a patient context
+  if (!patientName) return null;
+
   const handleSwitch = (p: SectorPatient) => {
     const params = new URLSearchParams(searchParams);
     params.set("patientId", p.id);
