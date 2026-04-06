@@ -980,6 +980,16 @@ function SortablePrescriptionItemRow({
         isDragging && "shadow-lg"
       )}
     >
+      {showCollapseButton && (
+        <button
+          type="button"
+          onClick={() => setIndividualExpanded(false)}
+          className="absolute top-1.5 right-10 z-10 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+        >
+          <List className="h-3 w-3" />
+          <span>Compactar</span>
+        </button>
+      )}
       <div className="flex items-start gap-2 p-2.5">
         {/* Left: validation dot + drag + checkbox */}
         <div className="flex flex-col items-center gap-1.5 shrink-0 pt-1">
