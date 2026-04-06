@@ -216,19 +216,19 @@ const RequisicaoUnificadaPage = () => {
   const [resultFiles, setResultFiles] = useState<ResultFile[]>([]);
   const [savingResult, setSavingResult] = useState(false);
 
-  // ── Pre-fill from navigation state or URL params ──
+  // ── Sync patient from URL params (reactive to header patient switcher) ──
   useEffect(() => {
     const state = location.state as any;
     const patientId = state?.patientId || searchParams.get("patientId");
     const patientName = state?.patientName || searchParams.get("patientName");
     const patientBed = state?.patientBed || searchParams.get("patientBed");
     const patientSector = state?.patientSector || searchParams.get("patientSector");
-    if (patientId) setFormPatientId(patientId);
-    if (patientName) setFormPatientName(patientName);
-    if (patientBed) setFormPatientBed(patientBed);
-    if (patientSector) setFormPatientSector(patientSector);
+    setFormPatientId(patientId || null);
+    setFormPatientName(patientName || "");
+    setFormPatientBed(patientBed || "");
+    setFormPatientSector(patientSector || "");
     if (patientId || patientName) setActiveSubTab("solicitar");
-  }, []);
+  }, [searchParams.get("patientId"), searchParams.get("patientName")]);
 
   useEffect(() => {
     if (unitId && stateId) fetchRequests();
