@@ -1,15 +1,14 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { PatientInfoHeader } from "@/components/PatientInfoHeader";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
 import {
-  NotebookPen, Plus, Loader2, Copy, BedDouble,
+  NotebookPen, Plus, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -142,50 +141,18 @@ const EvolucaoPage = () => {
           </Button>
         </div>
 
-        {/* Patient Identification */}
-        <div className="rounded-xl border border-border bg-card p-3">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div>
-              <Label className="text-[10px] text-muted-foreground">Paciente</Label>
-              <p className="text-sm font-semibold text-foreground truncate">{patient.name}</p>
-            </div>
-            <div className="flex gap-3">
-              <div>
-                <Label className="text-[10px] text-muted-foreground">Leito</Label>
-                <div className="flex items-center gap-1">
-                  <BedDouble className="h-3 w-3 text-muted-foreground" />
-                  <p className="text-sm font-semibold">{patient.bed}</p>
-                </div>
-              </div>
-              <div>
-                <Label className="text-[10px] text-muted-foreground">Setor</Label>
-                <p className="text-sm font-medium">{patient.unit}</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <div>
-                <Label className="text-[10px] text-muted-foreground">Idade</Label>
-                <p className="text-sm font-medium">{patient.age}</p>
-              </div>
-              <div>
-                <Label className="text-[10px] text-muted-foreground">Sexo</Label>
-                <p className="text-sm font-medium">{patient.sex}</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <div>
-                <Label className="text-[10px] text-muted-foreground">Peso</Label>
-                <p className="text-sm font-medium">{patient.weight} kg</p>
-              </div>
-              <div>
-                <Label className="text-[10px] text-muted-foreground">Alergias</Label>
-                <Badge variant={patient.allergies === "NDAM" ? "secondary" : "destructive"} className="text-[10px]">
-                  {patient.allergies}
-                </Badge>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Patient Identification — shared component */}
+        <PatientInfoHeader
+          name={patient.name}
+          bed={patient.bed}
+          unit={patient.unit}
+          age={patient.age}
+          sex={patient.sex}
+          weight={patient.weight}
+          allergies={patient.allergies}
+          record={patient.record}
+          admissionDate={patient.admissionDate}
+        />
 
         {/* New Evolution Form */}
         {showNewForm && (
