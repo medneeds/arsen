@@ -148,15 +148,7 @@ const ClinicalDashboardPage = () => {
         total: sectorPatients.length,
         occupied,
       }];
-
-      // Also build global occupancy for the overview cards
-      const sectors = Object.keys(SECTOR_LABELS);
-      const allOccData: OccupancyData[] = sectors.map((s) => {
-        const sp = allPatients.filter((p) => p.sector === s);
-        const occ = sp.filter((p) => p.name && p.name.trim() !== "").length;
-        return { sector: s, label: SECTOR_LABELS[s] || s, total: sp.length, occupied: occ };
-      });
-      setOccupancy(allOccData);
+      setOccupancy(occData);
       setPendingBedRequests(bedRequests.length);
       setRecentMovements(movements);
 
