@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
+import { PatientInfoHeader } from "@/components/PatientInfoHeader";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -446,28 +447,18 @@ const RequisicaoUnificadaPage = () => {
         </div>
       </div>
 
-      {/* ── Patient Info Card (synced with header) ── */}
+      {/* ── Patient Identification — shared component ── */}
       {formPatientName && (
-        <div className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/5 to-transparent p-3 print:hidden">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-              <span className="text-sm font-bold text-primary">{formPatientName.charAt(0).toUpperCase()}</span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-sm font-semibold text-foreground leading-tight truncate">{formPatientName}</h2>
-              <div className="flex items-center gap-2 mt-0.5">
-                {formPatientBed && <span className="text-[11px] text-muted-foreground">Leito {formPatientBed}</span>}
-                {formPatientBed && formPatientSector && <span className="text-muted-foreground/40">·</span>}
-                {formPatientSector && <span className="text-[11px] text-muted-foreground">{getSectorLabel(formPatientSector)}</span>}
-              </div>
-            </div>
-            {formPatientId && (
-              <Badge variant="outline" className="text-[10px] border-primary/30 text-primary bg-primary/10 shrink-0">
-                Vinculado ao mapa
-              </Badge>
-            )}
-          </div>
-        </div>
+        <PatientInfoHeader
+          name={formPatientName}
+          bed={formPatientBed}
+          unit={getSectorLabel(formPatientSector)}
+          age=""
+          sex=""
+          weight=""
+          allergies=""
+          record=""
+        />
       )}
 
       {/* ── Category Selector ── */}
