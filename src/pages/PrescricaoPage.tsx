@@ -2986,26 +2986,27 @@ const PrescricaoPage = () => {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={handleNewPrescription} className="gap-1.5 text-xs">
-            <Plus className="h-3.5 w-3.5" /> Nova
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Button variant="ghost" size="sm" onClick={handleNewPrescription} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
+            <Plus className="h-3 w-3" /> Nova
           </Button>
-          <Button variant="outline" size="sm" onClick={handleRenew} className="gap-1.5">
-            <RefreshCw className="h-3.5 w-3.5" /> Renovar
+          <Button variant="ghost" size="sm" onClick={handleRenew} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
+            <RefreshCw className="h-3 w-3" /> Renovar
           </Button>
+          <span className="w-px h-4 bg-border/60" />
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => {
               if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de prescrever"); return; }
               setExtraPrescriptionOpen(true);
             }}
-            className="gap-1.5 text-orange-600 border-orange-200 hover:border-orange-300 hover:text-orange-700"
+            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
           >
-            <Syringe className="h-3.5 w-3.5" /> Prescrição Extra
+            <Syringe className="h-3 w-3" /> Extra
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => {
               const activeMeds = items.filter(i => i.status === 'active' && !['nutrition', 'care'].includes(i.category));
@@ -3015,36 +3016,37 @@ const PrescricaoPage = () => {
               }
               setInteractionDialogOpen(true);
             }}
-            className="gap-1.5 text-amber-600 border-amber-200 hover:border-amber-300 hover:text-amber-700"
+            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
           >
-            <Zap className="h-3.5 w-3.5" /> Interações
+            <Zap className="h-3 w-3" /> Interações
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => setAntimicrobialGuideOpen(true)}
-            className="gap-1.5 text-orange-600 border-orange-200 hover:border-orange-300 hover:text-orange-700"
+            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
           >
-            <Shield className="h-3.5 w-3.5" /> Guia ATM
+            <Shield className="h-3 w-3" /> Guia ATM
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => setPsychotropicFormOpen(true)}
-            className="gap-1.5 text-violet-600 border-violet-200 hover:border-violet-300 hover:text-violet-700"
+            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
           >
-            <FileText className="h-3.5 w-3.5" /> Psicotrópicos
+            <FileText className="h-3 w-3" /> Psicotrópicos
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => setTevProtocolOpen(true)}
-            className="gap-1.5 text-blue-600 border-blue-200 hover:border-blue-300 hover:text-blue-700"
+            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
           >
-            <Droplets className="h-3.5 w-3.5" /> Protocolo TEV
+            <Droplets className="h-3 w-3" /> TEV
           </Button>
+          <span className="w-px h-4 bg-border/60" />
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => {
               if (!allItemsValidated) {
@@ -3053,29 +3055,29 @@ const PrescricaoPage = () => {
               }
               handlePrint();
             }}
-            className="gap-1.5"
+            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
           >
-            <Printer className="h-3.5 w-3.5" /> Imprimir
+            <Printer className="h-3 w-3" /> Imprimir
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={validateAllItems}
-            className="gap-1.5 text-xs text-emerald-600 hover:text-emerald-700"
+            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
           >
-            <Check className="h-3.5 w-3.5" /> Validar todos
+            <Check className="h-3 w-3" /> Validar todos
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={handleDispense}
             disabled={!currentPrescriptionId}
-            className="gap-1.5 text-xs text-violet-600 border-violet-200 hover:border-violet-300 hover:text-violet-700"
+            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
           >
-            <Package className="h-3.5 w-3.5" /> Dispensar
+            <Package className="h-3 w-3" /> Dispensar
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
-            {saving ? <span className="animate-spin h-3.5 w-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> : <Save className="h-3.5 w-3.5" />}
+          <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1 h-7 px-3 text-xs ml-auto">
+            {saving ? <span className="animate-spin h-3 w-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> : <Save className="h-3 w-3" />}
             {saving ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>
