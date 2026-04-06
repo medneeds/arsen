@@ -1105,11 +1105,17 @@ function SortablePrescriptionItemRow({
                   <Input
                     value={item.volumeTotal || ''}
                     onChange={(e) => {
-                      onUpdate(item.id, "volumeTotal", e.target.value);
+                      const newVol = e.target.value;
+                      onUpdate(item.id, "volumeTotal", newVol);
                       // Auto-recalculate concentration
-                      const tempItem = { ...item, volumeTotal: e.target.value };
+                      const tempItem = { ...item, volumeTotal: newVol };
                       const autoConc = calcConcentration(tempItem);
                       if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                      // Auto-recalculate rate from time when volume changes
+                      if (newVol && item.infusionTime) {
+                        const autoRate = calcRateFromTime(newVol, item.infusionTime, item.infusionMode || 'BIC', item.infusionTimeUnit || 'min');
+                        if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
+                      }
                     }}
                     className="h-6 text-[11px] bg-background border-border/40 w-16 text-center font-medium"
                     placeholder="mL"
