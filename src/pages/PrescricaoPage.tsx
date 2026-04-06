@@ -914,12 +914,18 @@ function SortablePrescriptionItemRow({
           selected && "ring-2 ring-primary/40 border-primary/30",
         )}
         onClick={(e) => {
-          // Don't expand when clicking checkboxes, buttons, or inputs
           if ((e.target as HTMLElement).closest('button, input, [role="checkbox"], [data-radix-collection-item]')) return;
           setIndividualExpanded(true);
         }}
       >
         <ValidationDot />
+        <button
+          className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0 touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
         <Checkbox
           checked={selected}
           onCheckedChange={() => onToggleSelect(item.id)}
