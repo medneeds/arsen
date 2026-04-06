@@ -14,7 +14,7 @@ import {
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal,
   Play, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
-  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, Heart, List, AlignJustify,
+  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, Heart, List, AlignJustify, ChevronUp,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -1014,6 +1014,16 @@ function SortablePrescriptionItemRow({
         <div className="flex-1 min-w-0 space-y-1.5">
           {/* Name row with flags */}
           <div className="flex items-center gap-2 flex-wrap">
+            {isCompact && individualExpanded && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setIndividualExpanded(false); }}
+                className="shrink-0 p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                title="Compactar"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </button>
+            )}
             <p className={cn("text-sm font-semibold text-foreground", item.status === 'suspended' && "line-through")}>
               {item.highAlert && <AlertTriangle className="inline h-3 w-3 mr-1 text-red-500" />}
               {item.name}
