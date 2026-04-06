@@ -696,6 +696,7 @@ function SortablePrescriptionItemRow({
   onToggleValidation: (id: string) => void;
   isPastRenewalTime: boolean;
 }) {
+  const [individualExpanded, setIndividualExpanded] = useState(false);
   const {
     attributes,
     listeners,
