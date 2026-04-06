@@ -14,7 +14,7 @@ import {
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal,
   Play, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
-  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, Heart,
+  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, Heart, List, AlignJustify,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -3147,6 +3147,23 @@ const PrescricaoPage = () => {
             className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
           >
             <Check className="h-3 w-3" /> Validar todos
+          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCompactView(!compactView)}
+                className={cn("gap-1 text-xs h-7 px-2", compactView ? "text-primary" : "text-muted-foreground hover:text-foreground")}
+              >
+                {compactView ? <AlignJustify className="h-3 w-3" /> : <List className="h-3 w-3" />}
+                {compactView ? 'Expandido' : 'Compacto'}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">
+              {compactView ? 'Alternar para visualização expandida' : 'Alternar para visualização compacta'}
+            </TooltipContent>
+          </Tooltip>
           </Button>
           <Button
             variant="ghost"
