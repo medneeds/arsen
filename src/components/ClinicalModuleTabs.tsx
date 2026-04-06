@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 const MODULE_TABS = [
   { label: "Prescrição", path: "/prescricao", icon: Pill },
   { label: "Evolução", path: "/evolucao", icon: NotebookPen },
-  { label: "Requisições", path: "/requisicao-unificada", icon: FileText },
+  { label: "Requisições", path: "/requisicoes", icon: FileText },
   { label: "Docs", path: "/documentos", icon: FolderOpen },
 ];
 

@@ -14,6 +14,7 @@ import MedicalCodesPage from "./pages/MedicalCodesPage";
 import HandoversPage from "./pages/HandoversPage";
 import VersionsPage from "./pages/VersionsPage";
 import DocumentsPage from "./pages/DocumentsPage";
+import DocumentosPacientePage from "./pages/DocumentosPacientePage";
 import SepsisProtocolPage from "./pages/SepsisProtocolPage";
 import TomografiasPage from "./pages/TomografiasPage";
 import HemoderivadosPage from "./pages/HemoderivadosPage";
@@ -458,6 +459,7 @@ const App = () => {
         <Route path="/requisicao/imagens" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
         <Route path="/requisicao/parecer" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
         <Route path="/monitoramento" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MonitoramentoClinicoPage /></MainLayout></ProtectedRoute>} />
+        <Route path="/documentos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DocumentosPacientePage /></MainLayout></ProtectedRoute>} />
         <Route
           path="/prescricao"
           element={
