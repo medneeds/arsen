@@ -686,6 +686,7 @@ function SortablePrescriptionItemRow({
   onRemove: (id: string) => void;
   onToggleFlag: (id: string, flag: PrescriptionFlag) => void;
   isSimple?: boolean;
+  isCompact?: boolean;
   selected: boolean;
   onToggleSelect: (id: string) => void;
   onDuplicate: (id: string) => void;
