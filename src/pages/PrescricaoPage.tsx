@@ -1822,7 +1822,7 @@ function BatchActionBar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-background/95 backdrop-blur-sm border border-border shadow-lg animate-in fade-in slide-in-from-bottom-3 duration-300">
+    <div className="sticky bottom-4 z-40 ml-auto w-fit flex items-center gap-2 px-3 py-2.5 rounded-xl bg-background/95 backdrop-blur-sm border border-border shadow-lg animate-in fade-in slide-in-from-bottom-3 duration-300">
       <Checkbox
         checked={allSelected}
         onCheckedChange={() => allSelected ? onDeselectAll() : onSelectAll()}
@@ -3444,16 +3444,6 @@ const PrescricaoPage = () => {
           />
         </div>
 
-        {/* Batch action bar */}
-        <BatchActionBar
-          selectedCount={selectedIds.size}
-          allSelected={items.length > 0 && selectedIds.size === items.length}
-          onSelectAll={() => setSelectedIds(new Set(items.map(i => i.id)))}
-          onDeselectAll={() => setSelectedIds(new Set())}
-          onSuspendSelected={suspendSelected}
-          onDeleteSelected={deleteSelected}
-          onDuplicateSelected={duplicateSelected}
-        />
 
         <DndContext
           sensors={sensors}
@@ -3625,6 +3615,17 @@ const PrescricaoPage = () => {
             })}
           </SortableContext>
         </DndContext>
+
+        {/* Batch action bar — sticky within content flow */}
+        <BatchActionBar
+          selectedCount={selectedIds.size}
+          allSelected={items.length > 0 && selectedIds.size === items.length}
+          onSelectAll={() => setSelectedIds(new Set(items.map(i => i.id)))}
+          onDeselectAll={() => setSelectedIds(new Set())}
+          onSuspendSelected={suspendSelected}
+          onDeleteSelected={deleteSelected}
+          onDuplicateSelected={duplicateSelected}
+        />
 
         {items.length === 0 && (
           <div className="rounded-xl border border-dashed border-border bg-muted/20 p-8 text-center">
