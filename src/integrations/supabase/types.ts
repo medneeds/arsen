@@ -274,6 +274,97 @@ export type Database = {
         }
         Relationships: []
       }
+      clinical_evolutions: {
+        Row: {
+          created_at: string
+          created_by: string
+          department: string
+          hospital_unit_id: string
+          id: string
+          patient_bed: string | null
+          patient_id: string | null
+          patient_name: string
+          patient_sector: string | null
+          physical_exam: Json
+          soap_data: Json
+          state_id: string
+          status: string
+          suspended_at: string | null
+          suspended_by: string | null
+          suspension_reason: string | null
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+          vital_signs: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          department?: string
+          hospital_unit_id: string
+          id?: string
+          patient_bed?: string | null
+          patient_id?: string | null
+          patient_name: string
+          patient_sector?: string | null
+          physical_exam?: Json
+          soap_data?: Json
+          state_id: string
+          status?: string
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          vital_signs?: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          department?: string
+          hospital_unit_id?: string
+          id?: string
+          patient_bed?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          patient_sector?: string | null
+          physical_exam?: Json
+          soap_data?: Json
+          state_id?: string
+          status?: string
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspension_reason?: string | null
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          vital_signs?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinical_evolutions_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinical_evolutions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinical_evolutions_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conduct_history: {
         Row: {
           changed_by: string | null
