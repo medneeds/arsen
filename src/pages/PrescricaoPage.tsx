@@ -2263,6 +2263,7 @@ const PrescricaoPage = () => {
   const [tevProtocolOpen, setTevProtocolOpen] = useState(false);
   const [pendingAntimicrobialMed, setPendingAntimicrobialMed] = useState<MedicationEntry | null>(null);
   const [compactView, setCompactView] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<PrescriptionCategory>>(new Set());
 
   const [dispensationDialogOpen, setDispensationDialogOpen] = useState(false);
   const [dispensations, setDispensations] = useState<Array<{ id: string; dispensation_code: string; dispensed_at: string; dispensed_by_name: string | null }>>([]);
