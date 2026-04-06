@@ -872,7 +872,84 @@ function SortablePrescriptionItemRow({
     );
   }
 
-  return (
+  // === COMPACT VIEW ===
+  if (isCompact && !isSimple) {
+    // Build a one-line summary: "Ceftriaxona (1g) · Diluir em SF 0,9% 100mL · Correr em 30min (200 mL/h) · 12/12h 06h, 18h"
+    const compactParts: string[] = [];
+    if (item.dose && item.dose !== '-') compactParts.push(item.dose);
+    if (item.diluent && item.diluent !== 'sem_diluente') {
+      let dil = `diluir em ${item.diluent}`;
+      if (item.diluentVolume) dil += ` ${item.diluentVolume}mL`;
+      compactParts.push(dil);
+    }
+    if (item.volumeTotal) compactParts.push(`vol ${item.volumeTotal}mL`);
+    if (item.infusionTime) {
+      const tUnit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
+      let inf = `correr em ${item.infusionTime}${tUnit}`;
+      if (item.infusionRate) {
+        const rLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+        inf += ` (${item.infusionRate} ${rLabel})`;
+      }
+      compactParts.push(inf);
+    } else if (item.infusionRate) {
+      const rLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+      compactParts.push(`${item.infusionRate} ${rLabel}`);
+    }
+    if (item.route && item.route !== '-') compactParts.push(item.route);
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={cn(
+          "flex items-center gap-2 px-2.5 py-1.5 rounded-lg border group transition-all",
+          item.status === 'suspended'
+            ? "border-destructive/30 bg-destructive/5 opacity-60"
+            : "border-border/40 bg-card/50 hover:border-primary/20",
+          item.highAlert && item.status !== 'suspended' && "border-red-300/40",
+          selected && "ring-2 ring-primary/40 border-primary/30",
+        )}
+      >
+        <ValidationDot />
+        <Checkbox
+          checked={selected}
+          onCheckedChange={() => onToggleSelect(item.id)}
+          className="shrink-0"
+        />
+        <span className="text-[10px] font-mono text-muted-foreground w-5 text-right shrink-0">{index + 1}.</span>
+        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+          <span className={cn("text-xs font-semibold text-foreground shrink-0", item.status === 'suspended' && "line-through")}>
+            {item.highAlert && <AlertTriangle className="inline h-2.5 w-2.5 mr-0.5 text-red-500" />}
+            {item.name}
+            {item.presentation && item.presentation !== '-' && (
+              <span className="font-normal text-muted-foreground"> ({item.presentation})</span>
+            )}
+          </span>
+          {compactParts.length > 0 && (
+            <span className="text-[10px] text-muted-foreground truncate">
+              · {compactParts.join(' · ')}
+            </span>
+          )}
+          {item.isExtra && (
+            <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-muted/50 text-muted-foreground border-border/50">EXTRA</Badge>
+          )}
+          {item.flags.length > 0 && item.flags.map(fk => {
+            const f = PRESCRIPTION_FLAGS.find(pf => pf.key === fk);
+            return f ? <Badge key={fk} variant="outline" className="text-[8px] px-1 shrink-0 text-muted-foreground border-border/50">{f.label}</Badge> : null;
+          })}
+        </div>
+        {/* Schedule compact */}
+        <div className="shrink-0 flex items-center gap-1 pl-2 border-l border-border/30">
+          <span className="text-[10px] text-muted-foreground font-medium">{item.posology !== '-' ? item.posology : ''}</span>
+          {item.schedule && (
+            <span className="text-[10px] font-mono text-primary/80">{item.schedule}</span>
+          )}
+        </div>
+        <ItemActions />
+      </div>
+    );
+  }
+
     <div
       ref={setNodeRef}
       style={style}
