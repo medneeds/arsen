@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { ClinicalModuleTabs } from "@/components/ClinicalModuleTabs";
+import { PatientSwitcher } from "@/components/PatientSwitcher";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -36,12 +37,14 @@ export function ClinicalHeader({ moduleLabel, showBack = true, actions }: Clinic
             </Button>
           )}
 
-          {/* Breadcrumb: Institution / Nav Tabs / Module Tabs */}
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          {/* Breadcrumb: Institution / Sector + Nav / Patient / Module Tabs */}
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-wrap">
             <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Socorrão I</span>
             <span className="text-white/30 text-xs">/</span>
             <ClinicalNavTabs variant="dark" />
-            {/* Module-level tabs (Prescrição / Evolução / Requisições) */}
+            {/* Patient switcher dropdown */}
+            <PatientSwitcher variant="dark" />
+            {/* Module-level tabs (Prescrição / Evolução / Requisições / Docs) */}
             <ClinicalModuleTabs variant="dark" />
           </div>
         </div>
