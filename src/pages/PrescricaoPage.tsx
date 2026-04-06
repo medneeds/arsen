@@ -1819,10 +1819,10 @@ function BatchActionBar({
   onDeleteSelected: () => void;
   onDuplicateSelected: () => void;
 }) {
-  if (selectedCount === 0) return null;
+  if (selectedCount === 0 || typeof document === "undefined") return null;
 
-  return (
-    <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-background/95 backdrop-blur-sm border border-border shadow-lg animate-in fade-in slide-in-from-bottom-3 duration-300">
+  return createPortal(
+    <div className="fixed bottom-5 right-5 z-[999] flex items-center gap-2 px-3 py-2.5 rounded-xl bg-background/95 backdrop-blur-sm border border-border shadow-lg animate-in fade-in slide-in-from-bottom-3 duration-300">
       <Checkbox
         checked={allSelected}
         onCheckedChange={() => allSelected ? onDeselectAll() : onSelectAll()}
@@ -1841,7 +1841,7 @@ function BatchActionBar({
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-yellow-600 hover:text-yellow-700" onClick={onSuspendSelected}>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-warning hover:text-warning" onClick={onSuspendSelected}>
             <Pause className="h-3.5 w-3.5" />
           </Button>
         </TooltipTrigger>
@@ -1858,7 +1858,8 @@ function BatchActionBar({
       <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={onDeselectAll}>
         <X className="h-3.5 w-3.5" />
       </Button>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -3616,7 +3617,6 @@ const PrescricaoPage = () => {
           </SortableContext>
         </DndContext>
 
-        {/* Batch action bar — sticky within content flow */}
         <BatchActionBar
           selectedCount={selectedIds.size}
           allSelected={items.length > 0 && selectedIds.size === items.length}
@@ -3626,6 +3626,7 @@ const PrescricaoPage = () => {
           onDeleteSelected={deleteSelected}
           onDuplicateSelected={duplicateSelected}
         />
+
 
         {items.length === 0 && (
           <div className="rounded-xl border border-dashed border-border bg-muted/20 p-8 text-center">
