@@ -44,9 +44,6 @@ export function PatientSwitcher({ variant = "dark" }: PatientSwitcherProps) {
 
   const [patients, setPatients] = useState<SectorPatient[]>([]);
 
-  // Only render when there's a patient context
-  if (!patientName) return null;
-
   // Fetch patients from same sector
   useEffect(() => {
     if (!patientSector || !currentHospital || !currentState) return;
