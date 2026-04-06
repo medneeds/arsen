@@ -183,9 +183,6 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
       {/* Actions */}
       {!readOnly && (
         <div className="flex items-center gap-2 justify-end">
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => window.print()}>
-            <Printer className="h-3.5 w-3.5" /> Imprimir
-          </Button>
           <Button size="sm" className="gap-1.5 text-xs" onClick={onSave} disabled={saving}>
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
             Salvar Rascunho
@@ -195,6 +192,13 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               <ShieldCheck className="h-3.5 w-3.5" /> Validar e Assinar
             </Button>
           )}
+        </div>
+      )}
+      {readOnly && isValidated && (
+        <div className="flex items-center gap-2 justify-end">
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => window.print()}>
+            <Printer className="h-3.5 w-3.5" /> Imprimir Evolução
+          </Button>
         </div>
       )}
 
