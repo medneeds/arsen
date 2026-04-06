@@ -3,21 +3,13 @@ import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   AlertTriangle,
   BedDouble,
@@ -60,33 +52,13 @@ const SECTOR_LABELS: Record<string, string> = {
   yellow: "UTI 2",
   blue: "UCI 1",
   outside: "UCI 2",
-  sala_vermelha: "Sala Vermelha",
-  sala_laranja: "Obs. Laranja",
-  ue_vertical: "UE Vertical",
-  ue_horizontal: "UE Horizontal",
 };
-
-function DashboardHeader({ children }: { children: React.ReactNode }) {
-  const { state } = useSidebar();
-  const isMobile = useIsMobile();
-
-  return (
-    <header
-      className="border-b border-white/10 bg-gradient-to-r from-[#0a1628] via-[#0f2847] to-[#1a3a5c] backdrop-blur-xl fixed top-0 right-0 z-50 shadow-lg transition-[left] duration-200 ease-linear"
-      style={{
-        left: isMobile ? 0 : (state === "collapsed" ? "var(--sidebar-width-icon)" : "var(--sidebar-width)"),
-      }}
-    >
-      {children}
-    </header>
-  );
-}
 
 const ClinicalDashboardPage = () => {
   const { user } = useAuth();
   const { currentDepartment } = useDepartment();
   const { currentHospital, currentState } = useHospital();
-  const isMobile = useIsMobile();
+  
   const navigate = useNavigate();
 
   const [activeSector, setActiveSector] = useState<string>(() => {
@@ -152,15 +124,7 @@ const ClinicalDashboardPage = () => {
         total: sectorPatients.length,
         occupied,
       }];
-
-      // Also build global occupancy for the overview cards
-      const sectors = Object.keys(SECTOR_LABELS);
-      const allOccData: OccupancyData[] = sectors.map((s) => {
-        const sp = allPatients.filter((p) => p.sector === s);
-        const occ = sp.filter((p) => p.name && p.name.trim() !== "").length;
-        return { sector: s, label: SECTOR_LABELS[s] || s, total: sp.length, occupied: occ };
-      });
-      setOccupancy(allOccData);
+      setOccupancy(occData);
       setPendingBedRequests(bedRequests.length);
       setRecentMovements(movements);
 
@@ -306,45 +270,31 @@ const ClinicalDashboardPage = () => {
 
   return (
     <MainLayout>
-      <DashboardHeader>
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-              <SidebarTrigger className="flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
-              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Socorrão I</span>
-                <span className="text-white/30 text-xs">/</span>
-                <Select value={activeSector} onValueChange={handleSectorChange}>
-                  <SelectTrigger className="h-7 w-auto gap-1 bg-white/10 border-white/20 text-xs text-white font-medium px-2.5 focus:ring-0 focus:ring-offset-0 hover:bg-white/20 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/60 rounded-md">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(SECTOR_LABELS).map(([key, label]) => (
-                      <SelectItem key={key} value={key} className="text-xs font-medium">{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span className="text-white/30 text-xs">/</span>
-                <ClinicalNavTabs variant="dark" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200"
-              >
-                <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-              </Button>
+      <div className="border-b border-border/50 bg-gradient-to-r from-[#0a1628] via-[#0f2847] to-[#1a3a5c] px-2 sm:px-4 py-2 sm:py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <SidebarTrigger className="flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-wrap">
+              <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Socorrão I</span>
+              <span className="text-white/30 text-xs">/</span>
+              <ClinicalNavTabs variant="dark" />
             </div>
           </div>
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200"
+            >
+              <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+            </Button>
+          </div>
         </div>
-      </DashboardHeader>
+      </div>
 
-      <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6 pt-[70px] sm:pt-[70px]">
+      <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6">
         <AnimatePresence mode="wait">
           {isLoading ? (
             <motion.div
@@ -447,47 +397,41 @@ const ClinicalDashboardPage = () => {
                 </motion.div>
               </div>
 
-              {/* Occupancy by Sector */}
+              {/* Ocupação do setor */}
+              {activeSectorOcc && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                 <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
                   <CardHeader className="pb-3 pt-4 px-4">
                     <CardTitle className="text-sm font-semibold flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-primary" />
-                      Ocupação por setor
+                      Ocupação — {SECTOR_LABELS[activeSector]}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 pb-4">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                      {occupancy.map((s) => {
-                        const rate = s.total > 0 ? Math.round((s.occupied / s.total) * 100) : 0;
-                        return (
-                          <div key={s.sector} className={cn("flex flex-col gap-2 p-3 rounded-lg border cursor-pointer transition-all", s.sector === activeSector ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30" : "bg-muted/30 border-border/40 opacity-60")} onClick={() => handleSectorChange(s.sector)}>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-semibold text-foreground">{s.label}</span>
-                              <span className={cn(
-                                "text-xs font-bold",
-                                rate > 85 ? "text-red-500" : rate > 60 ? "text-amber-500" : "text-emerald-500"
-                              )}>{rate}%</span>
-                            </div>
-                            <div className="h-2 bg-muted rounded-full overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${rate}%` }}
-                                transition={{ duration: 0.8, delay: 0.4 }}
-                                className={cn(
-                                  "h-full rounded-full transition-colors",
-                                  rate > 85 ? "bg-red-500" : rate > 60 ? "bg-amber-500" : "bg-emerald-500"
-                                )}
-                              />
-                            </div>
-                            <p className="text-[10px] text-muted-foreground">{s.occupied} de {s.total} leitos</p>
-                          </div>
-                        );
-                      })}
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-foreground">{activeSectorOcc.occupied} de {activeSectorOcc.total} leitos ocupados</span>
+                        <span className={cn(
+                          "text-sm font-bold",
+                          occupancyRate > 85 ? "text-red-500" : occupancyRate > 60 ? "text-amber-500" : "text-emerald-500"
+                        )}>{occupancyRate}%</span>
+                      </div>
+                      <div className="h-3 bg-muted rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${occupancyRate}%` }}
+                          transition={{ duration: 0.8, delay: 0.4 }}
+                          className={cn(
+                            "h-full rounded-full transition-colors",
+                            occupancyRate > 85 ? "bg-red-500" : occupancyRate > 60 ? "bg-amber-500" : "bg-emerald-500"
+                          )}
+                        />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               </motion.div>
+              )}
 
               {/* Two-column layout: Alerts + Movements */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
