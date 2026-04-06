@@ -3099,9 +3099,8 @@ const PrescricaoPage = () => {
             <Pill className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-foreground leading-tight">Prescrição médica diária digital</h1>
+            <h1 className="text-lg font-semibold text-foreground leading-tight">Prescrição médica diária</h1>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-xs text-muted-foreground">{totalItems} itens</span>
               {currentPrescriptionId && <Badge variant="outline" className="text-[9px] h-4 px-1.5 text-primary border-primary/30">Salva</Badge>}
               {patient.encounterCode && <span className="font-mono text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded"><Hash className="inline h-3 w-3 mr-0.5" />{patient.encounterCode}</span>}
             </div>
