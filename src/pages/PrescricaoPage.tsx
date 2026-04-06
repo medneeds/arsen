@@ -3093,130 +3093,19 @@ const PrescricaoPage = () => {
       ` }} />
 
       {/* Page Title */}
-      <div className="flex items-center justify-between gap-4 print:hidden">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10">
-            <Pill className="h-5 w-5 text-primary" />
+      <div className="print:hidden">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10">
+            <Pill className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">Prescrição Médica</h1>
-            <p className="text-xs text-muted-foreground">
-              Prescrição médica diária digital — {totalItems} itens
-              {currentPrescriptionId && <span className="ml-1 text-primary">(salva)</span>}
-              {patient.encounterCode && <span className="ml-2 font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded"><Hash className="inline h-3 w-3 mr-0.5" />{patient.encounterCode}</span>}
-            </p>
+            <h1 className="text-lg font-semibold text-foreground leading-tight">Prescrição médica diária digital</h1>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xs text-muted-foreground">{totalItems} itens</span>
+              {currentPrescriptionId && <Badge variant="outline" className="text-[9px] h-4 px-1.5 text-primary border-primary/30">Salva</Badge>}
+              {patient.encounterCode && <span className="font-mono text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded"><Hash className="inline h-3 w-3 mr-0.5" />{patient.encounterCode}</span>}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <Button variant="ghost" size="sm" onClick={handleNewPrescription} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
-            <Plus className="h-3 w-3" /> Nova
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleRenew} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
-            <RefreshCw className="h-3 w-3" /> Renovar
-          </Button>
-          <span className="w-px h-4 bg-border/60" />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de prescrever"); return; }
-              setExtraPrescriptionOpen(true);
-            }}
-            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-          >
-            <Syringe className="h-3 w-3" /> Extra
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              const activeMeds = items.filter(i => i.status === 'active' && !['nutrition', 'care'].includes(i.category));
-              if (activeMeds.length < 2) {
-                toast.error("Mínimo de 2 medicamentos ativos para verificar interações");
-                return;
-              }
-              setInteractionDialogOpen(true);
-            }}
-            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-          >
-            <Zap className="h-3 w-3" /> Interações
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setAntimicrobialGuideOpen(true)}
-            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-          >
-            <Shield className="h-3 w-3" /> Guia ATM
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPsychotropicFormOpen(true)}
-            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-          >
-            <FileText className="h-3 w-3" /> Psicotrópicos
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setTevProtocolOpen(true)}
-            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-          >
-            <Droplets className="h-3 w-3" /> TEV
-          </Button>
-          <span className="w-px h-4 bg-border/60" />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              if (!allItemsValidated) {
-                toast.error("Valide todos os itens antes de imprimir", { description: "Clique nos círculos à esquerda de cada item ou use 'Validar todos'." });
-                return;
-              }
-              handlePrint();
-            }}
-            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-          >
-            <Printer className="h-3 w-3" /> Imprimir
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={validateAllItems}
-            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-          >
-            <Check className="h-3 w-3" /> Validar todos
-          </Button>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setCompactView(!compactView)}
-                className={cn("gap-1 text-xs h-7 px-2", compactView ? "text-primary" : "text-muted-foreground hover:text-foreground")}
-              >
-                {compactView ? <AlignJustify className="h-3 w-3" /> : <List className="h-3 w-3" />}
-                {compactView ? 'Expandido' : 'Compacto'}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">
-              {compactView ? 'Alternar para visualização expandida' : 'Alternar para visualização compacta'}
-            </TooltipContent>
-          </Tooltip>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDispense}
-            disabled={!currentPrescriptionId}
-            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-          >
-            <Package className="h-3 w-3" /> Dispensar
-          </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1 h-7 px-3 text-xs ml-auto">
-            {saving ? <span className="animate-spin h-3 w-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> : <Save className="h-3 w-3" />}
-            {saving ? 'Salvando...' : 'Salvar'}
-          </Button>
         </div>
       </div>
 
@@ -3335,6 +3224,95 @@ const PrescricaoPage = () => {
           )}
         </div>
       )}
+
+      {/* ===== ACTION TOOLBAR ===== */}
+      <div className="flex items-center gap-1 flex-wrap rounded-lg border border-border bg-card/80 px-2 py-1.5 print:hidden">
+        <Button variant="ghost" size="sm" onClick={handleNewPrescription} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
+          <Plus className="h-3 w-3" /> Nova
+        </Button>
+        <Button variant="ghost" size="sm" onClick={handleRenew} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
+          <RefreshCw className="h-3 w-3" /> Renovar
+        </Button>
+        <span className="w-px h-4 bg-border/60" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de prescrever"); return; }
+            setExtraPrescriptionOpen(true);
+          }}
+          className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
+        >
+          <Syringe className="h-3 w-3" /> Extra
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            const activeMeds = items.filter(i => i.status === 'active' && !['nutrition', 'care'].includes(i.category));
+            if (activeMeds.length < 2) {
+              toast.error("Mínimo de 2 medicamentos ativos para verificar interações");
+              return;
+            }
+            setInteractionDialogOpen(true);
+          }}
+          className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
+        >
+          <Zap className="h-3 w-3" /> Interações
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setAntimicrobialGuideOpen(true)} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
+          <Shield className="h-3 w-3" /> Guia ATM
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setPsychotropicFormOpen(true)} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
+          <FileText className="h-3 w-3" /> Psicotrópicos
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setTevProtocolOpen(true)} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
+          <Droplets className="h-3 w-3" /> TEV
+        </Button>
+        <span className="w-px h-4 bg-border/60" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            if (!allItemsValidated) {
+              toast.error("Valide todos os itens antes de imprimir", { description: "Clique nos círculos à esquerda de cada item ou use 'Validar todos'." });
+              return;
+            }
+            handlePrint();
+          }}
+          className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
+        >
+          <Printer className="h-3 w-3" /> Imprimir
+        </Button>
+        <Button variant="ghost" size="sm" onClick={validateAllItems} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
+          <Check className="h-3 w-3" /> Validar todos
+        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCompactView(!compactView)}
+              className={cn("gap-1 text-xs h-7 px-2", compactView ? "text-primary" : "text-muted-foreground hover:text-foreground")}
+            >
+              {compactView ? <AlignJustify className="h-3 w-3" /> : <List className="h-3 w-3" />}
+              {compactView ? 'Expandido' : 'Compacto'}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="text-xs">
+            {compactView ? 'Alternar para visualização expandida' : 'Alternar para visualização compacta'}
+          </TooltipContent>
+        </Tooltip>
+        <Button variant="ghost" size="sm" onClick={handleDispense} disabled={!currentPrescriptionId} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
+          <Package className="h-3 w-3" /> Dispensar
+        </Button>
+        <div className="ml-auto">
+          <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1 h-7 px-3 text-xs">
+            {saving ? <span className="animate-spin h-3 w-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> : <Save className="h-3 w-3" />}
+            {saving ? 'Salvando...' : 'Salvar'}
+          </Button>
+        </div>
+      </div>
 
       {/* ===== PATIENT HEADER ===== */}
       <div className="rounded-xl border border-border bg-card overflow-hidden print:hidden">
