@@ -421,47 +421,41 @@ const ClinicalDashboardPage = () => {
                 </motion.div>
               </div>
 
-              {/* Occupancy by Sector */}
+              {/* Ocupação do setor */}
+              {activeSectorOcc && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                 <Card className="border-border/60 bg-card/80 backdrop-blur-sm">
                   <CardHeader className="pb-3 pt-4 px-4">
                     <CardTitle className="text-sm font-semibold flex items-center gap-2">
                       <TrendingUp className="h-4 w-4 text-primary" />
-                      Ocupação por setor
+                      Ocupação — {SECTOR_LABELS[activeSector]}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 pb-4">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                      {occupancy.map((s) => {
-                        const rate = s.total > 0 ? Math.round((s.occupied / s.total) * 100) : 0;
-                        return (
-                          <div key={s.sector} className={cn("flex flex-col gap-2 p-3 rounded-lg border cursor-pointer transition-all", s.sector === activeSector ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30" : "bg-muted/30 border-border/40 opacity-60")} onClick={() => handleSectorChange(s.sector)}>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-semibold text-foreground">{s.label}</span>
-                              <span className={cn(
-                                "text-xs font-bold",
-                                rate > 85 ? "text-red-500" : rate > 60 ? "text-amber-500" : "text-emerald-500"
-                              )}>{rate}%</span>
-                            </div>
-                            <div className="h-2 bg-muted rounded-full overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${rate}%` }}
-                                transition={{ duration: 0.8, delay: 0.4 }}
-                                className={cn(
-                                  "h-full rounded-full transition-colors",
-                                  rate > 85 ? "bg-red-500" : rate > 60 ? "bg-amber-500" : "bg-emerald-500"
-                                )}
-                              />
-                            </div>
-                            <p className="text-[10px] text-muted-foreground">{s.occupied} de {s.total} leitos</p>
-                          </div>
-                        );
-                      })}
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-foreground">{activeSectorOcc.occupied} de {activeSectorOcc.total} leitos ocupados</span>
+                        <span className={cn(
+                          "text-sm font-bold",
+                          occupancyRate > 85 ? "text-red-500" : occupancyRate > 60 ? "text-amber-500" : "text-emerald-500"
+                        )}>{occupancyRate}%</span>
+                      </div>
+                      <div className="h-3 bg-muted rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${occupancyRate}%` }}
+                          transition={{ duration: 0.8, delay: 0.4 }}
+                          className={cn(
+                            "h-full rounded-full transition-colors",
+                            occupancyRate > 85 ? "bg-red-500" : occupancyRate > 60 ? "bg-amber-500" : "bg-emerald-500"
+                          )}
+                        />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               </motion.div>
+              )}
 
               {/* Two-column layout: Alerts + Movements */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
