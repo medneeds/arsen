@@ -1822,7 +1822,7 @@ function BatchActionBar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-1 duration-200">
+    <div className="sticky top-0 z-30 flex items-center gap-2 px-3 py-2 rounded-lg bg-background/95 backdrop-blur-sm border border-primary/20 shadow-md animate-in fade-in slide-in-from-top-1 duration-200">
       <Checkbox
         checked={allSelected}
         onCheckedChange={() => allSelected ? onDeselectAll() : onSelectAll()}
