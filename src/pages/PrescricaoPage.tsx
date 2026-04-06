@@ -117,6 +117,7 @@ interface PrescriptionItem {
   infusionTime?: string;      // Correr em (valor numérico)
   infusionTimeUnit?: 'min' | 'h'; // Unidade do tempo de infusão
   infusionMode?: 'BIC' | 'gts'; // mL/h vs gts/min
+  infusionRate?: string;      // Vazão editável (mL/h ou gts/min)
   volumeTotal?: string;       // Volume total (mL)
   concentration?: string;     // Concentração calculada ou manual
 }
@@ -203,17 +204,64 @@ function calcInfusionRate(volumeStr: string, timeStr: string, mode: 'BIC' | 'gts
   }
 }
 
-// Auto-calculate volume total from dose + diluent volume (or dose alone if no diluent)
+// Auto-calculate volume total from quantity (mL) + diluent volume
 function calcVolumeTotal(item: PrescriptionItem): string {
-  const doseVol = parseFloat(item.dose?.replace(/[^\d.,]/g, '').replace(',', '.') || '');
-  const dilVol = parseFloat(item.diluentVolume || '');
-  // With diluent: dose volume + diluent volume
-  if (item.diluent && item.diluent !== 'sem_diluente' && dilVol > 0 && doseVol > 0) return String(Math.round(dilVol + doseVol));
-  if (item.diluent && item.diluent !== 'sem_diluente' && dilVol > 0) return String(Math.round(dilVol));
-  // Without diluent: use dose volume directly (if dose is in mL)
-  if (item.diluent === 'sem_diluente' && doseVol > 0 && item.dose?.toLowerCase().includes('ml')) return String(Math.round(doseVol));
-  if (!item.diluent && doseVol > 0 && item.dose?.toLowerCase().includes('ml')) return String(Math.round(doseVol));
+  const dilVol = parseFloat(item.diluentVolume?.replace(',', '.') || '');
+  // Get the medication volume: use quantity if unit is mL, otherwise try to extract from dose
+  let medVol = 0;
+  const qtyVal = parseFloat(item.quantity?.replace(',', '.') || '');
+  const qtyUnit = (item.quantityUnit || '').toLowerCase();
+  if (qtyVal > 0 && qtyUnit === 'ml') {
+    medVol = qtyVal;
+  } else {
+    // Fallback: extract mL from dose string
+    const doseVol = parseFloat(item.dose?.replace(/[^\d.,]/g, '').replace(',', '.') || '');
+    if (doseVol > 0 && item.dose?.toLowerCase().includes('ml')) {
+      medVol = doseVol;
+    }
+  }
+  // With diluent: medication volume + diluent volume
+  if (item.diluent && item.diluent !== 'sem_diluente' && dilVol > 0) {
+    return String(Math.round(dilVol + medVol));
+  }
+  // Without diluent: use medication volume directly
+  if (medVol > 0) return String(Math.round(medVol));
   return '';
+}
+
+// Calc infusion time from rate: time = volume / rate
+function calcTimeFromRate(volumeTotal: string, rate: string, mode: 'BIC' | 'gts', timeUnit: 'min' | 'h'): string {
+  const vol = parseFloat(volumeTotal);
+  const r = parseFloat(rate);
+  if (!vol || !r || r <= 0) return '';
+  let timeInMin: number;
+  if (mode === 'BIC') {
+    // rate is mL/h → time in min = (vol / rate) * 60
+    timeInMin = (vol / r) * 60;
+  } else {
+    // rate is gts/min → vol in drops = vol * 20, time = drops / rate
+    timeInMin = (vol * 20) / r;
+  }
+  if (timeUnit === 'h') {
+    const hours = timeInMin / 60;
+    return hours % 1 === 0 ? String(hours) : hours.toFixed(1);
+  }
+  return String(Math.round(timeInMin));
+}
+
+// Calc rate value (numeric) from volume and time
+function calcRateFromTime(volumeTotal: string, infusionTime: string, mode: 'BIC' | 'gts', timeUnit: 'min' | 'h'): string {
+  const vol = parseFloat(volumeTotal);
+  const rawTime = parseFloat(infusionTime);
+  if (!vol || !rawTime || rawTime <= 0) return '';
+  const timeInMin = timeUnit === 'h' ? rawTime * 60 : rawTime;
+  if (mode === 'BIC') {
+    const mlPerHour = (vol / timeInMin) * 60;
+    return mlPerHour % 1 === 0 ? String(mlPerHour) : mlPerHour.toFixed(1);
+  } else {
+    const rawGts = (vol * 20) / timeInMin;
+    return String(roundGtsToHospital(rawGts));
+  }
 }
 
 // Auto-calculate concentration from dose and volume total
@@ -329,15 +377,17 @@ function buildPrepDescription(item: PrescriptionItem): string {
   }
   if (item.accessType) parts.push(`Acesso ${item.accessType.toLowerCase()}.`);
   if (item.volumeTotal) parts.push(`Volume total: ${item.volumeTotal}mL.`);
-  if (item.infusionTime) {
+  if (item.infusionTime || item.infusionRate) {
     const unit = item.infusionTimeUnit || 'min';
-    const timeLabel = `${item.infusionTime}${unit === 'h' ? 'h' : 'min'}`;
-    if (item.volumeTotal) {
-      const rate = calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', unit);
-      const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'BIC';
-      parts.push(`Correr em ${timeLabel} — ${modeLabel}: ${rate}.`);
-    } else {
+    const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+    if (item.infusionTime && item.infusionRate) {
+      const timeLabel = `${item.infusionTime}${unit === 'h' ? 'h' : 'min'}`;
+      parts.push(`Correr em ${timeLabel} — ${item.infusionRate} ${modeLabel}.`);
+    } else if (item.infusionTime) {
+      const timeLabel = `${item.infusionTime}${unit === 'h' ? 'h' : 'min'}`;
       parts.push(`Correr em ${timeLabel}.`);
+    } else if (item.infusionRate) {
+      parts.push(`Vazão: ${item.infusionRate} ${modeLabel}.`);
     }
   }
   if (item.concentration) parts.push(`Concentração: ${item.concentration}.`);
@@ -1055,11 +1105,17 @@ function SortablePrescriptionItemRow({
                   <Input
                     value={item.volumeTotal || ''}
                     onChange={(e) => {
-                      onUpdate(item.id, "volumeTotal", e.target.value);
+                      const newVol = e.target.value;
+                      onUpdate(item.id, "volumeTotal", newVol);
                       // Auto-recalculate concentration
-                      const tempItem = { ...item, volumeTotal: e.target.value };
+                      const tempItem = { ...item, volumeTotal: newVol };
                       const autoConc = calcConcentration(tempItem);
                       if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                      // Auto-recalculate rate from time when volume changes
+                      if (newVol && item.infusionTime) {
+                        const autoRate = calcRateFromTime(newVol, item.infusionTime, item.infusionMode || 'BIC', item.infusionTimeUnit || 'min');
+                        if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
+                      }
                     }}
                     className="h-6 text-[11px] bg-background border-border/40 w-16 text-center font-medium"
                     placeholder="mL"
@@ -1071,11 +1127,25 @@ function SortablePrescriptionItemRow({
                   <span className="text-[10px] text-muted-foreground font-medium">Correr em:</span>
                   <Input
                     value={item.infusionTime || ''}
-                    onChange={(e) => onUpdate(item.id, "infusionTime", e.target.value)}
+                    onChange={(e) => {
+                      const newTime = e.target.value;
+                      onUpdate(item.id, "infusionTime", newTime);
+                      // Auto-calc rate from time
+                      if (item.volumeTotal && newTime) {
+                        const autoRate = calcRateFromTime(item.volumeTotal, newTime, item.infusionMode || 'BIC', item.infusionTimeUnit || 'min');
+                        if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
+                      }
+                    }}
                     className="h-6 text-[11px] bg-background border-border/40 w-14 text-center"
                     placeholder="—"
                   />
-                  <Select value={item.infusionTimeUnit || 'min'} onValueChange={(v) => onUpdate(item.id, "infusionTimeUnit", v)}>
+                  <Select value={item.infusionTimeUnit || 'min'} onValueChange={(v) => {
+                    onUpdate(item.id, "infusionTimeUnit", v);
+                    if (item.volumeTotal && item.infusionTime) {
+                      const autoRate = calcRateFromTime(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', v as 'min' | 'h');
+                      if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
+                    }
+                  }}>
                     <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-16">
                       <SelectValue />
                     </SelectTrigger>
@@ -1085,9 +1155,31 @@ function SortablePrescriptionItemRow({
                     </SelectContent>
                   </Select>
                 </div>
+                <span className="text-muted-foreground/40">⇄</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">Gotej:</span>
-                  <Select value={item.infusionMode || 'BIC'} onValueChange={(v) => onUpdate(item.id, "infusionMode", v)}>
+                  <span className="text-[10px] text-muted-foreground font-medium">Vazão:</span>
+                  <Input
+                    value={item.infusionRate || ''}
+                    onChange={(e) => {
+                      const newRate = e.target.value;
+                      onUpdate(item.id, "infusionRate", newRate);
+                      // Auto-calc time from rate (bidirectional)
+                      if (item.volumeTotal && newRate) {
+                        const autoTime = calcTimeFromRate(item.volumeTotal, newRate, item.infusionMode || 'BIC', item.infusionTimeUnit || 'min');
+                        if (autoTime) onUpdate(item.id, "infusionTime", autoTime);
+                      }
+                    }}
+                    className="h-6 text-[11px] bg-background border-border/40 w-16 text-center font-medium"
+                    placeholder="—"
+                  />
+                  <Select value={item.infusionMode || 'BIC'} onValueChange={(v) => {
+                    onUpdate(item.id, "infusionMode", v);
+                    // Recalc rate with new mode
+                    if (item.volumeTotal && item.infusionTime) {
+                      const autoRate = calcRateFromTime(item.volumeTotal, item.infusionTime, v as 'BIC' | 'gts', item.infusionTimeUnit || 'min');
+                      if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
+                    }
+                  }}>
                     <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-24">
                       <SelectValue />
                     </SelectTrigger>
@@ -1097,12 +1189,6 @@ function SortablePrescriptionItemRow({
                     </SelectContent>
                   </Select>
                 </div>
-                {/* Auto-calculated rate */}
-                {item.volumeTotal && item.infusionTime && (
-                  <Badge variant="outline" className="text-[10px] font-mono bg-primary/10 border-primary/30 text-primary font-bold">
-                    = {calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', item.infusionTimeUnit || 'min')}
-                  </Badge>
-                )}
                 <span className="text-muted-foreground/40">│</span>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground font-medium">Conc:</span>
@@ -1583,7 +1669,7 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
               item.accessType && item.accessType !== '-' ? item.accessType : null,
               item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
               item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
-              item.volumeTotal && item.infusionTime ? calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', item.infusionTimeUnit || 'min') : null,
+              item.infusionRate ? `${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
               item.concentration ? `Conc: ${item.concentration}` : null,
             ].filter(Boolean).join(' · ')}
           </div>
@@ -3848,7 +3934,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                               item.accessType && item.accessType !== '-' ? item.accessType : null,
                               item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
                               item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
-                              item.volumeTotal && item.infusionTime ? calcInfusionRate(item.volumeTotal, item.infusionTime, item.infusionMode || 'BIC', item.infusionTimeUnit || 'min') : null,
+                              item.infusionRate ? `${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
                               item.concentration ? `Conc: ${item.concentration}` : null,
                             ].filter(Boolean).join(' · ')}
                           </div>
