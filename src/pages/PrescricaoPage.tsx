@@ -672,6 +672,7 @@ function SortablePrescriptionItemRow({
   onRemove,
   onToggleFlag,
   isSimple,
+  isCompact,
   selected,
   onToggleSelect,
   onDuplicate,
