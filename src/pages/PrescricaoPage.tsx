@@ -3649,7 +3649,7 @@ const PrescricaoPage = () => {
                           onRemove={removeItem}
                           onToggleFlag={toggleFlag}
                           isSimple={simple}
-                          isCompact={compactView}
+                          isCompact={compactView && !expandedCategories.has(cat)}
                           selected={selectedIds.has(item.id)}
                           onToggleSelect={toggleSelect}
                           onDuplicate={duplicateItem}
