@@ -12,13 +12,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   AlertTriangle,
   BedDouble,
   CalendarClock,
@@ -61,22 +54,6 @@ const SECTOR_LABELS: Record<string, string> = {
   blue: "UCI 1",
   outside: "UCI 2",
 };
-
-function DashboardHeader({ children }: { children: React.ReactNode }) {
-  const { state } = useSidebar();
-  const isMobile = useIsMobile();
-
-  return (
-    <header
-      className="border-b border-white/10 bg-gradient-to-r from-[#0a1628] via-[#0f2847] to-[#1a3a5c] backdrop-blur-xl fixed top-0 right-0 z-50 shadow-lg transition-[left] duration-200 ease-linear"
-      style={{
-        left: isMobile ? 0 : (state === "collapsed" ? "var(--sidebar-width-icon)" : "var(--sidebar-width)"),
-      }}
-    >
-      {children}
-    </header>
-  );
-}
 
 const ClinicalDashboardPage = () => {
   const { user } = useAuth();
