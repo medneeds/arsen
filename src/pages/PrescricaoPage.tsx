@@ -914,12 +914,18 @@ function SortablePrescriptionItemRow({
           selected && "ring-2 ring-primary/40 border-primary/30",
         )}
         onClick={(e) => {
-          // Don't expand when clicking checkboxes, buttons, or inputs
           if ((e.target as HTMLElement).closest('button, input, [role="checkbox"], [data-radix-collection-item]')) return;
           setIndividualExpanded(true);
         }}
       >
         <ValidationDot />
+        <button
+          className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors shrink-0 touch-none"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
         <Checkbox
           checked={selected}
           onCheckedChange={() => onToggleSelect(item.id)}
@@ -963,9 +969,6 @@ function SortablePrescriptionItemRow({
     );
   }
 
-  // If individually expanded from compact mode, show a collapse button
-  const showCollapseButton = isCompact && individualExpanded;
-
   return (
     <div
       ref={setNodeRef}
@@ -977,19 +980,16 @@ function SortablePrescriptionItemRow({
           : "border-border/50 bg-card/50 hover:border-primary/20",
         item.highAlert && item.status !== 'suspended' && "border-red-300/50 bg-red-50/30 dark:bg-red-950/10",
         selected && "ring-2 ring-primary/40 border-primary/30",
-        isDragging && "shadow-lg"
+        isDragging && "shadow-lg",
+        isCompact && individualExpanded && "cursor-pointer"
       )}
+      onClick={(e) => {
+        // Only handle collapse click when individually expanded in compact mode
+        if (!isCompact || !individualExpanded) return;
+        if ((e.target as HTMLElement).closest('button, input, select, textarea, [role="checkbox"], [role="combobox"], [data-radix-collection-item], [data-radix-select-trigger]')) return;
+        setIndividualExpanded(false);
+      }}
     >
-      {showCollapseButton && (
-        <button
-          type="button"
-          onClick={() => setIndividualExpanded(false)}
-          className="absolute top-1.5 right-10 z-10 flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
-        >
-          <List className="h-3 w-3" />
-          <span>Compactar</span>
-        </button>
-      )}
       <div className="flex items-start gap-2 p-2.5">
         {/* Left: validation dot + drag + checkbox */}
         <div className="flex flex-col items-center gap-1.5 shrink-0 pt-1">
@@ -2263,6 +2263,7 @@ const PrescricaoPage = () => {
   const [tevProtocolOpen, setTevProtocolOpen] = useState(false);
   const [pendingAntimicrobialMed, setPendingAntimicrobialMed] = useState<MedicationEntry | null>(null);
   const [compactView, setCompactView] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<PrescriptionCategory>>(new Set());
 
   const [dispensationDialogOpen, setDispensationDialogOpen] = useState(false);
   const [dispensations, setDispensations] = useState<Array<{ id: string; dispensation_code: string; dispensed_at: string; dispensed_by_name: string | null }>>([]);
@@ -3519,6 +3520,30 @@ const PrescricaoPage = () => {
                     <IconComp className={cn("h-3.5 w-3.5 shrink-0", config.color)} />
                     <span className="text-xs font-semibold text-foreground whitespace-nowrap">{config.label}</span>
                     <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">{catItems.length}</Badge>
+                    {compactView && catItems.length > 0 && !isSimpleCategory(cat) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedCategories(prev => {
+                              const n = new Set(prev);
+                              if (n.has(cat)) n.delete(cat); else n.add(cat);
+                              return n;
+                            })}
+                            className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            {expandedCategories.has(cat) ? (
+                              <List className="h-3.5 w-3.5" />
+                            ) : (
+                              <AlignJustify className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs">
+                          {expandedCategories.has(cat) ? 'Compactar categoria' : 'Expandir categoria'}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                     <div className="flex-1 ml-2">
                       {cat === 'nonstandard' ? (
                         <div className="flex items-center gap-1.5">
@@ -3624,7 +3649,7 @@ const PrescricaoPage = () => {
                           onRemove={removeItem}
                           onToggleFlag={toggleFlag}
                           isSimple={simple}
-                          isCompact={compactView}
+                          isCompact={compactView && !expandedCategories.has(cat)}
                           selected={selectedIds.has(item.id)}
                           onToggleSelect={toggleSelect}
                           onDuplicate={duplicateItem}
