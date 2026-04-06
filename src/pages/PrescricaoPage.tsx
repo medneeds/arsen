@@ -3164,7 +3164,6 @@ const PrescricaoPage = () => {
               {compactView ? 'Alternar para visualização expandida' : 'Alternar para visualização compacta'}
             </TooltipContent>
           </Tooltip>
-          </Button>
           <Button
             variant="ghost"
             size="sm"
