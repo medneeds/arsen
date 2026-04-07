@@ -65,6 +65,7 @@ import EmergenciaSectorPage from "./pages/EmergenciaSectorPage";
 import MonitoramentoClinicoPage from "./pages/MonitoramentoClinicoPage";
 import RequisicaoImagensPage from "./pages/RequisicaoImagensPage";
 import FichaAtendimentoPage from "./pages/FichaAtendimentoPage";
+import NirDashboardPage from "./pages/NirDashboardPage";
 
 const queryClient = new QueryClient();
 
