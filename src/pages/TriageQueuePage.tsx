@@ -180,13 +180,28 @@ const TriageQueuePage = () => {
 
   const handleDirectHorizontal = async (patient: TriagePatient) => {
     try {
-      const { error } = await supabase.from("patient_encounters")
-        .update({ triage_status: "triado", destination_sector: "ue_horizontal" } as any)
+      // Create patient in UE Horizontal
+      const { data: existing } = await supabase.from("patients").select("bed_number")
+        .eq("hospital_unit_id", currentHospital!.id).eq("sector", "ue_horizontal")
+        .like("bed_number", "M-%");
+      const nextNum = (existing?.length || 0) + 1;
+      const bedNumber = `M-${String(nextNum).padStart(2, "0")}`;
+
+      const { data: newPatient, error: insertErr } = await supabase.from("patients").insert({
+        name: patient.patient_name, bed_number: bedNumber, sector: "ue_horizontal",
+        hospital_unit_id: currentHospital!.id, state_id: currentState!.id,
+        department: "URGÊNCIA E EMERGÊNCIA ADULTO", admission_date: new Date().toISOString(),
+        display_order: nextNum,
+      } as any).select("id").single();
+      if (insertErr) throw insertErr;
+
+      // Update encounter as completed with link to patient
+      await supabase.from("patient_encounters")
+        .update({ triage_status: "triado", destination_sector: "ue_horizontal", status: "completed", patient_id: newPatient?.id } as any)
         .eq("id", patient.id);
-      if (error) throw error;
-      toast.success(`${patient.patient_name} encaminhado direto para UE Horizontal`);
+
+      toast.success(`${patient.patient_name} → Maca ${bedNumber} (UE Horizontal)`);
       setDirectTarget(null);
-      navigate("/ue-horizontal");
     } catch { toast.error("Erro ao encaminhar paciente"); setDirectTarget(null); }
   };
 
@@ -199,16 +214,17 @@ const TriageQueuePage = () => {
       const nextNum = (existing?.length || 0) + 1;
       const bedNumber = `${prefix}${String(nextNum).padStart(2, "0")}`;
 
-      const { error } = await supabase.from("patients").insert({
+      const { data: newPatient, error: insertErr } = await supabase.from("patients").insert({
         name: patient.patient_name, bed_number: bedNumber, sector: "ue_vertical",
         hospital_unit_id: currentHospital!.id, state_id: currentState!.id,
         department: "URGÊNCIA E EMERGÊNCIA ADULTO", admission_date: new Date().toISOString(),
         display_order: nextNum,
-      } as any);
-      if (error) throw error;
+      } as any).select("id").single();
+      if (insertErr) throw insertErr;
 
+      // Update encounter as completed with link
       await supabase.from("patient_encounters")
-        .update({ triage_status: "triado", destination_sector: "ue_vertical" } as any)
+        .update({ triage_status: "triado", destination_sector: "ue_vertical", status: "completed", patient_id: newPatient?.id } as any)
         .eq("id", patient.id);
 
       toast.success(`${patient.patient_name} → Consultório ${consultorio} (${bedNumber})`);
