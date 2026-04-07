@@ -333,7 +333,7 @@ export default function UeVerticalPage() {
   };
 
   useEffect(() => { fetchPatients(); fetchWaitingPatients(); },
-    [currentHospital?.id, currentState?.id, currentDepartment]);
+    [currentHospital?.id, currentState?.id]);
 
   useEffect(() => {
     if (!currentHospital?.id) return;
