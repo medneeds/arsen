@@ -76,6 +76,7 @@ function ProfileHomeRedirect() {
   if (profile === "laboratorio") return <Navigate to="/setor-laboratorio" replace />;
   if (profile === "administrativo") return <Navigate to="/recepcao" replace />;
   if (profile === "multi") return <Navigate to="/triagem-fila" replace />;
+  if (profile === "nir") return <Navigate to="/nir" replace />;
   return <ClinicalDashboardPage />;
 }
 

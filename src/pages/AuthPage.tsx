@@ -38,7 +38,7 @@ const floatingIcons = [
   { Icon: Brain, x: "60%", y: "30%", delay: 3, duration: 5 },
 ];
 
-type AccessProfile = "medico" | "gestor" | "multi" | "administrativo" | "farmacia" | "imagem" | "laboratorio" | "centro_cirurgico" | "ccih";
+type AccessProfile = "medico" | "gestor" | "multi" | "administrativo" | "farmacia" | "imagem" | "laboratorio" | "centro_cirurgico" | "ccih" | "nir";
 
 const ACCESS_PROFILES: {
   key: AccessProfile;
@@ -140,6 +140,16 @@ const ACCESS_PROFILES: {
     bgGlow: "from-red-400/15 to-red-400/5",
     features: ["Vigilância de Infecções", "Culturas e Antibiogramas", "Protocolos de Isolamento", "Indicadores CCIH"],
   },
+  {
+    key: "nir" as AccessProfile,
+    label: "NIR",
+    subtitle: "Núcleo Interno de Regulação",
+    icon: Bed,
+    color: "text-cyan-400",
+    borderColor: "border-cyan-400/30 hover:border-cyan-400/60",
+    bgGlow: "from-cyan-400/15 to-cyan-400/5",
+    features: ["Censo de Leitos", "Regulação Interna/Externa", "Solicitação de Vaga", "Relatórios NIR"],
+  },
 ];
 
 export default function AuthPage() {
@@ -222,7 +232,7 @@ export default function AuthPage() {
     <>
       {showLoadingScreen && (
         <LoadingScreen
-          onComplete={() => navigate(selectedProfile === "imagem" ? "/setor-imagem" : selectedProfile === "laboratorio" ? "/setor-laboratorio" : "/")}
+          onComplete={() => navigate(selectedProfile === "imagem" ? "/setor-imagem" : selectedProfile === "laboratorio" ? "/setor-laboratorio" : selectedProfile === "nir" ? "/nir" : "/")}
           duration={2000}
         />
       )}
