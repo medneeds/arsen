@@ -560,6 +560,16 @@ const App = () => {
           }
         />
         <Route
+          path="/nir"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <NirDashboardPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/recepcao"
           element={
             <ProtectedRoute>
