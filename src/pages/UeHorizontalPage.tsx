@@ -363,8 +363,8 @@ export default function UeHorizontalPage() {
       const { data: existing } = await supabase.from("patients").select("bed_number")
         .eq("hospital_unit_id", currentHospital!.id).eq("sector", "ue_horizontal")
         .like("bed_number", "M-%");
-      const nextNum = (existing?.length || 0) + 1;
-      const bedNumber = `M-${String(nextNum).padStart(2, "0")}`;
+      const bedNumber = getNextBedNumber(existing || [], "M-");
+      const nextNum = parseInt(bedNumber.replace("M-", ""), 10);
 
       const clinicalStatus = wp.risk_classification === "vermelho" ? "gravissimo"
         : wp.risk_classification === "laranja" ? "grave" : "potencialmente_grave";
@@ -372,7 +372,7 @@ export default function UeHorizontalPage() {
       const { error } = await supabase.from("patients").insert({
         name: wp.patient_name, bed_number: bedNumber, sector: "ue_horizontal",
         hospital_unit_id: currentHospital!.id, state_id: currentState!.id,
-        department: "URGÊNCIA E EMERGÊNCIA ADULTO", admission_date: new Date().toISOString(),
+        department: UE_DEPARTMENT, admission_date: new Date().toISOString(),
         diagnoses: wp.chief_complaint || null, display_order: nextNum,
         clinical_status: clinicalStatus,
       } as any);
