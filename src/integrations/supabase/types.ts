@@ -247,6 +247,152 @@ export type Database = {
           },
         ]
       }
+      bed_census: {
+        Row: {
+          bed_number: string
+          block_reason: string | null
+          block_started_at: string | null
+          created_at: string
+          hospital_unit_id: string
+          id: string
+          patient_id: string | null
+          patient_name: string | null
+          reserved_for: string | null
+          reserved_until: string | null
+          sector: string
+          state_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          updated_by_name: string | null
+        }
+        Insert: {
+          bed_number: string
+          block_reason?: string | null
+          block_started_at?: string | null
+          created_at?: string
+          hospital_unit_id: string
+          id?: string
+          patient_id?: string | null
+          patient_name?: string | null
+          reserved_for?: string | null
+          reserved_until?: string | null
+          sector: string
+          state_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+        }
+        Update: {
+          bed_number?: string
+          block_reason?: string | null
+          block_started_at?: string | null
+          created_at?: string
+          hospital_unit_id?: string
+          id?: string
+          patient_id?: string | null
+          patient_name?: string | null
+          reserved_for?: string | null
+          reserved_until?: string | null
+          sector?: string
+          state_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bed_census_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bed_census_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bed_census_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bed_status_history: {
+        Row: {
+          bed_census_id: string | null
+          bed_number: string
+          changed_by: string | null
+          changed_by_name: string | null
+          created_at: string
+          hospital_unit_id: string
+          id: string
+          new_status: string
+          old_status: string | null
+          reason: string | null
+          sector: string
+          state_id: string
+        }
+        Insert: {
+          bed_census_id?: string | null
+          bed_number: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          hospital_unit_id: string
+          id?: string
+          new_status: string
+          old_status?: string | null
+          reason?: string | null
+          sector: string
+          state_id: string
+        }
+        Update: {
+          bed_census_id?: string | null
+          bed_number?: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          hospital_unit_id?: string
+          id?: string
+          new_status?: string
+          old_status?: string | null
+          reason?: string | null
+          sector?: string
+          state_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bed_status_history_bed_census_id_fkey"
+            columns: ["bed_census_id"]
+            isOneToOne: false
+            referencedRelation: "bed_census"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bed_status_history_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bed_status_history_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cid10_codes: {
         Row: {
           category: string
@@ -2082,6 +2228,139 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      regulation_requests: {
+        Row: {
+          approved_at: string | null
+          canceled_at: string | null
+          cancellation_reason: string | null
+          cid_primary: string | null
+          cid_secondary: string | null
+          clinical_summary: string | null
+          completed_at: string | null
+          created_at: string
+          department: string
+          destination_bed: string | null
+          destination_sector: string | null
+          destination_unit: string | null
+          hospital_unit_id: string
+          id: string
+          notes: string | null
+          origin_bed: string | null
+          origin_sector: string | null
+          patient_age: string | null
+          patient_id: string | null
+          patient_name: string
+          patient_record: string | null
+          patient_sex: string | null
+          priority: string
+          reason: string | null
+          regulator_id: string | null
+          regulator_name: string | null
+          request_type: string
+          requested_by: string | null
+          requested_by_name: string | null
+          sisreg_code: string | null
+          sisreg_status: string | null
+          state_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          canceled_at?: string | null
+          cancellation_reason?: string | null
+          cid_primary?: string | null
+          cid_secondary?: string | null
+          clinical_summary?: string | null
+          completed_at?: string | null
+          created_at?: string
+          department?: string
+          destination_bed?: string | null
+          destination_sector?: string | null
+          destination_unit?: string | null
+          hospital_unit_id: string
+          id?: string
+          notes?: string | null
+          origin_bed?: string | null
+          origin_sector?: string | null
+          patient_age?: string | null
+          patient_id?: string | null
+          patient_name: string
+          patient_record?: string | null
+          patient_sex?: string | null
+          priority?: string
+          reason?: string | null
+          regulator_id?: string | null
+          regulator_name?: string | null
+          request_type: string
+          requested_by?: string | null
+          requested_by_name?: string | null
+          sisreg_code?: string | null
+          sisreg_status?: string | null
+          state_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          canceled_at?: string | null
+          cancellation_reason?: string | null
+          cid_primary?: string | null
+          cid_secondary?: string | null
+          clinical_summary?: string | null
+          completed_at?: string | null
+          created_at?: string
+          department?: string
+          destination_bed?: string | null
+          destination_sector?: string | null
+          destination_unit?: string | null
+          hospital_unit_id?: string
+          id?: string
+          notes?: string | null
+          origin_bed?: string | null
+          origin_sector?: string | null
+          patient_age?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          patient_record?: string | null
+          patient_sex?: string | null
+          priority?: string
+          reason?: string | null
+          regulator_id?: string | null
+          regulator_name?: string | null
+          request_type?: string
+          requested_by?: string | null
+          requested_by_name?: string | null
+          sisreg_code?: string | null
+          sisreg_status?: string | null
+          state_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulation_requests_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulation_requests_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulation_requests_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       round_responses: {
         Row: {
