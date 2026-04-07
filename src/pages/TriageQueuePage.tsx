@@ -32,6 +32,7 @@ import {
   Users,
   Volume2,
   ArrowRight,
+  DoorOpen,
 } from "lucide-react";
 
 interface TriagePatient {
