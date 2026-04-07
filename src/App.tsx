@@ -65,6 +65,7 @@ import EmergenciaSectorPage from "./pages/EmergenciaSectorPage";
 import MonitoramentoClinicoPage from "./pages/MonitoramentoClinicoPage";
 import RequisicaoImagensPage from "./pages/RequisicaoImagensPage";
 import FichaAtendimentoPage from "./pages/FichaAtendimentoPage";
+import NirDashboardPage from "./pages/NirDashboardPage";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ function ProfileHomeRedirect() {
   if (profile === "laboratorio") return <Navigate to="/setor-laboratorio" replace />;
   if (profile === "administrativo") return <Navigate to="/recepcao" replace />;
   if (profile === "multi") return <Navigate to="/triagem-fila" replace />;
+  if (profile === "nir") return <Navigate to="/nir" replace />;
   return <ClinicalDashboardPage />;
 }
 
@@ -553,6 +555,16 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
                 <CcihDashboardPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/nir"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <NirDashboardPage />
               </MainLayout>
             </ProtectedRoute>
           }

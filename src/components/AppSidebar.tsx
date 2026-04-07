@@ -221,6 +221,12 @@ export function AppSidebar({
         { title: "Painel CCIH", icon: LayoutDashboard, link: "/ccih", profiles: ["ccih"] },
       ];
     }
+    // NIR
+    if (accessProfile === "nir") {
+      return [
+        { title: "Painel NIR", icon: LayoutDashboard, link: "/nir", profiles: ["nir"] },
+      ];
+    }
     // Administrativo
     if (accessProfile === "administrativo") {
       return [
