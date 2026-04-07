@@ -171,6 +171,44 @@ const TriageQueuePage = () => {
     }
   };
 
+  const handleDirectConsultorio = async (patient: TriagePatient, consultorio: number) => {
+    try {
+      const prefix = `C${consultorio}-`;
+      const { data: existing } = await supabase
+        .from("patients")
+        .select("bed_number")
+        .eq("hospital_unit_id", currentHospital!.id)
+        .eq("sector", "ue_vertical")
+        .like("bed_number", `${prefix}%`);
+
+      const nextNum = (existing?.length || 0) + 1;
+      const bedNumber = `${prefix}${String(nextNum).padStart(2, "0")}`;
+
+      const { error: patientError } = await supabase.from("patients").insert({
+        name: patient.patient_name,
+        bed_number: bedNumber,
+        sector: "ue_vertical",
+        hospital_unit_id: currentHospital!.id,
+        state_id: currentState!.id,
+        department: "URGÊNCIA E EMERGÊNCIA ADULTO",
+        admission_date: new Date().toISOString(),
+        display_order: nextNum,
+      } as any);
+
+      if (patientError) throw patientError;
+
+      await supabase
+        .from("patient_encounters")
+        .update({ triage_status: "triado", destination_sector: "ue_vertical" } as any)
+        .eq("id", patient.id);
+
+      toast.success(`${patient.patient_name} → Consultório ${consultorio} (${bedNumber})`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao alocar paciente no consultório");
+    }
+  };
+
   const openTVScreen = () => {
     window.open("/triagem-tv", "_blank", "noopener,noreferrer");
   };
