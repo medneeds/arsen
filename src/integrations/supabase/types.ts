@@ -3037,7 +3037,7 @@ export type Database = {
       setup_visitante_user: { Args: never; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "medico" | "porta" | "visitante" | "farmacia"
+      app_role: "admin" | "medico" | "porta" | "visitante" | "farmacia" | "nir"
       audit_action:
         | "INSERT"
         | "UPDATE"
@@ -3172,7 +3172,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "medico", "porta", "visitante", "farmacia"],
+      app_role: ["admin", "medico", "porta", "visitante", "farmacia", "nir"],
       audit_action: ["INSERT", "UPDATE", "DELETE", "SELECT", "LOGIN", "LOGOUT"],
     },
   },
