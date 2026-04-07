@@ -32,6 +32,7 @@ import {
   Users,
   Volume2,
   ArrowRight,
+  DoorOpen,
 } from "lucide-react";
 
 interface TriagePatient {
@@ -47,7 +48,7 @@ interface TriagePatient {
 
 const TriageQueuePage = () => {
   const { user } = useAuth();
-  const { currentHospital } = useHospital();
+  const { currentHospital, currentState } = useHospital();
   const navigate = useNavigate();
   const [patients, setPatients] = useState<TriagePatient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -167,6 +168,44 @@ const TriageQueuePage = () => {
       console.error(err);
       toast.error("Erro ao encaminhar paciente");
       setDirectTarget(null);
+    }
+  };
+
+  const handleDirectConsultorio = async (patient: TriagePatient, consultorio: number) => {
+    try {
+      const prefix = `C${consultorio}-`;
+      const { data: existing } = await supabase
+        .from("patients")
+        .select("bed_number")
+        .eq("hospital_unit_id", currentHospital!.id)
+        .eq("sector", "ue_vertical")
+        .like("bed_number", `${prefix}%`);
+
+      const nextNum = (existing?.length || 0) + 1;
+      const bedNumber = `${prefix}${String(nextNum).padStart(2, "0")}`;
+
+      const { error: patientError } = await supabase.from("patients").insert({
+        name: patient.patient_name,
+        bed_number: bedNumber,
+        sector: "ue_vertical",
+        hospital_unit_id: currentHospital!.id,
+        state_id: currentState!.id,
+        department: "URGÊNCIA E EMERGÊNCIA ADULTO",
+        admission_date: new Date().toISOString(),
+        display_order: nextNum,
+      } as any);
+
+      if (patientError) throw patientError;
+
+      await supabase
+        .from("patient_encounters")
+        .update({ triage_status: "triado", destination_sector: "ue_vertical" } as any)
+        .eq("id", patient.id);
+
+      toast.success(`${patient.patient_name} → Consultório ${consultorio} (${bedNumber})`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao alocar paciente no consultório");
     }
   };
 
@@ -315,7 +354,7 @@ const TriageQueuePage = () => {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-1.5">
+                            <div className="flex gap-1.5 flex-wrap">
                               <Button
                                 size="sm"
                                 onClick={() => handleCall(patient)}
@@ -332,11 +371,29 @@ const TriageQueuePage = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
+                                className="gap-1 border-emerald-300 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                                onClick={() => handleDirectConsultorio(patient, 1)}
+                              >
+                                <DoorOpen className="h-3 w-3" />
+                                C1
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                onClick={() => handleDirectConsultorio(patient, 2)}
+                              >
+                                <DoorOpen className="h-3 w-3" />
+                                C2
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
                                 className="gap-1 border-indigo-300 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-950/30"
                                 onClick={() => setDirectTarget(patient)}
                               >
                                 <BedDouble className="h-3 w-3" />
-                                Direto → Horizontal
+                                Horizontal
                               </Button>
                             </div>
                           </motion.div>
