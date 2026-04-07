@@ -48,7 +48,7 @@ interface TriagePatient {
 
 const TriageQueuePage = () => {
   const { user } = useAuth();
-  const { currentHospital } = useHospital();
+  const { currentHospital, currentState } = useHospital();
   const navigate = useNavigate();
   const [patients, setPatients] = useState<TriagePatient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
