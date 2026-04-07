@@ -66,6 +66,8 @@ import MonitoramentoClinicoPage from "./pages/MonitoramentoClinicoPage";
 import RequisicaoImagensPage from "./pages/RequisicaoImagensPage";
 import FichaAtendimentoPage from "./pages/FichaAtendimentoPage";
 import NirDashboardPage from "./pages/NirDashboardPage";
+import UeVerticalPage from "./pages/UeVerticalPage";
+import UeHorizontalPage from "./pages/UeHorizontalPage";
 
 const queryClient = new QueryClient();
 
@@ -608,6 +610,22 @@ const App = () => {
           element={
             <ProtectedRoute>
               <EmergenciaSectorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ue-vertical"
+          element={
+            <ProtectedRoute>
+              <UeVerticalPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ue-horizontal"
+          element={
+            <ProtectedRoute>
+              <UeHorizontalPage />
             </ProtectedRoute>
           }
         />

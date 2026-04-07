@@ -137,6 +137,18 @@ export function AppSidebar({
       profiles: ["gestor"],
     },
     {
+      title: "UE Vertical",
+      icon: Activity,
+      link: "/ue-vertical",
+      profiles: ["medico", "gestor", "porta"],
+    },
+    {
+      title: "UE Horizontal",
+      icon: Activity,
+      link: "/ue-horizontal",
+      profiles: ["medico", "gestor", "porta"],
+    },
+    {
       title: "Monitoramento",
       icon: HeartPulse,
       link: "/monitoramento",
