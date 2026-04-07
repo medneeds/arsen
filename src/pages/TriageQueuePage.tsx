@@ -237,18 +237,23 @@ const TriageQueuePage = () => {
     if (!routeTarget || !routeDestination) return;
     try {
       if (routeDestination === "horizontal") {
-        // Create patient in UE Horizontal
+        const { data: existing } = await supabase.from("patients").select("bed_number")
+          .eq("hospital_unit_id", currentHospital!.id).eq("sector", "ue_horizontal")
+          .like("bed_number", "M-%");
+        const nextNum = (existing?.length || 0) + 1;
+        const bedNumber = `M-${String(nextNum).padStart(2, "0")}`;
+
         const { error } = await supabase.from("patients").insert({
-          name: routeTarget.patient_name, bed_number: `H${String(Math.floor(Math.random() * 90) + 10)}`,
+          name: routeTarget.patient_name, bed_number: bedNumber,
           sector: "ue_horizontal", hospital_unit_id: currentHospital!.id,
           state_id: currentState!.id, department: "URGÊNCIA E EMERGÊNCIA ADULTO",
-          admission_date: new Date().toISOString(),
+          admission_date: new Date().toISOString(), display_order: nextNum,
           clinical_status: routeTarget.risk_classification === "vermelho" ? "gravissimo"
             : routeTarget.risk_classification === "laranja" ? "grave" : "potencialmente_grave",
           diagnoses: routeTarget.chief_complaint || null,
         } as any);
         if (error) throw error;
-        toast.success(`${routeTarget.patient_name} → UE Horizontal (maca)`);
+        toast.success(`${routeTarget.patient_name} → Maca ${bedNumber} (UE Horizontal)`);
       } else {
         const consultorio = routeDestination === "c1" ? 1 : 2;
         const prefix = `C${consultorio}-`;
