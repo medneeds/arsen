@@ -285,13 +285,23 @@ export default function UeVerticalPage() {
   const { role } = useAuth();
   const navigate = useNavigate();
 
+  const UE_DEPARTMENT = "URGÊNCIA E EMERGÊNCIA ADULTO";
+
+  const getNextBedNumber = (existingBeds: { bed_number: string }[], prefix: string) => {
+    const nums = (existingBeds || [])
+      .map(b => parseInt(b.bed_number.replace(prefix, ""), 10))
+      .filter(n => !isNaN(n));
+    const maxNum = nums.length > 0 ? Math.max(...nums) : 0;
+    return `${prefix}${String(maxNum + 1).padStart(2, "0")}`;
+  };
+
   const fetchPatients = async () => {
     if (!currentHospital?.id || !currentState?.id) return;
     setIsLoading(true);
     try {
       const { data, error } = await supabase.from("patients").select("*")
         .eq("hospital_unit_id", currentHospital.id).eq("state_id", currentState.id)
-        .eq("department", currentDepartment).eq("sector", "ue_vertical")
+        .eq("department", UE_DEPARTMENT).eq("sector", "ue_vertical")
         .order("display_order", { ascending: true });
       if (error) throw error;
       setPatients((data || []).map(p => ({
