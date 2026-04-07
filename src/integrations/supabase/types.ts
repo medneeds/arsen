@@ -1402,6 +1402,7 @@ export type Database = {
       patient_encounters: {
         Row: {
           admission_date: string | null
+          attending_doctor_name: string | null
           called_at: string | null
           called_by: string | null
           created_at: string
@@ -1410,11 +1411,17 @@ export type Database = {
           destination_sector: string | null
           discharge_date: string | null
           encounter_code: string
+          entry_type: string | null
+          first_medical_attendance_at: string | null
           hospital_unit_id: string
           id: string
+          last_medical_attendance_at: string | null
+          outcome: string | null
+          outcome_date: string | null
           patient_id: string | null
           patient_name: string
           registry_id: string | null
+          specialty: string | null
           state_id: string
           status: string
           triage_status: string | null
@@ -1422,6 +1429,7 @@ export type Database = {
         }
         Insert: {
           admission_date?: string | null
+          attending_doctor_name?: string | null
           called_at?: string | null
           called_by?: string | null
           created_at?: string
@@ -1430,11 +1438,17 @@ export type Database = {
           destination_sector?: string | null
           discharge_date?: string | null
           encounter_code: string
+          entry_type?: string | null
+          first_medical_attendance_at?: string | null
           hospital_unit_id: string
           id?: string
+          last_medical_attendance_at?: string | null
+          outcome?: string | null
+          outcome_date?: string | null
           patient_id?: string | null
           patient_name: string
           registry_id?: string | null
+          specialty?: string | null
           state_id: string
           status?: string
           triage_status?: string | null
@@ -1442,6 +1456,7 @@ export type Database = {
         }
         Update: {
           admission_date?: string | null
+          attending_doctor_name?: string | null
           called_at?: string | null
           called_by?: string | null
           created_at?: string
@@ -1450,11 +1465,17 @@ export type Database = {
           destination_sector?: string | null
           discharge_date?: string | null
           encounter_code?: string
+          entry_type?: string | null
+          first_medical_attendance_at?: string | null
           hospital_unit_id?: string
           id?: string
+          last_medical_attendance_at?: string | null
+          outcome?: string | null
+          outcome_date?: string | null
           patient_id?: string | null
           patient_name?: string
           registry_id?: string | null
+          specialty?: string | null
           state_id?: string
           status?: string
           triage_status?: string | null
