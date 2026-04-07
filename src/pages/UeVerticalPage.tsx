@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/MainLayout";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import {
   Search, RefreshCw, User, Clock, Activity, Stethoscope,
-  FileText, FlaskConical, ImageIcon, MessageSquare, Zap,
+  FileText, FlaskConical, ImageIcon, MessageSquare, Zap, DoorOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,22 +22,6 @@ import { motion } from "framer-motion";
 import { QuickAttendanceDialog } from "@/components/QuickAttendanceDialog";
 import { type AttendancePreset, type PresetItem } from "@/data/quickAttendancePresets";
 
-const RISK_COLORS: Record<string, string> = {
-  vermelho: "border-l-red-600 bg-red-50 dark:bg-red-950/20",
-  laranja: "border-l-orange-500 bg-orange-50 dark:bg-orange-950/20",
-  amarelo: "border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950/20",
-  verde: "border-l-green-600 bg-green-50 dark:bg-green-950/20",
-  azul: "border-l-blue-600 bg-blue-50 dark:bg-blue-950/20",
-};
-
-const RISK_LABELS: Record<string, string> = {
-  vermelho: "EMERGÊNCIA",
-  laranja: "MUITO URGENTE",
-  amarelo: "URGENTE",
-  verde: "POUCO URGENTE",
-  azul: "NÃO URGENTE",
-};
-
 interface UePatient {
   id: string;
   name: string;
@@ -50,11 +33,17 @@ interface UePatient {
   clinical_status?: string;
   medical_record?: string;
   is_vacant?: boolean;
-  risk_classification?: string;
 }
 
-function UeVerticalHeader({ onRefresh, isRefreshing, search, onSearch }: {
+function getConsultorio(bedNumber: string): number {
+  if (bedNumber.startsWith("C1")) return 1;
+  if (bedNumber.startsWith("C2")) return 2;
+  return 0;
+}
+
+function UeVerticalHeader({ onRefresh, isRefreshing, search, onSearch, c1Count, c2Count }: {
   onRefresh: () => void; isRefreshing: boolean; search: string; onSearch: (s: string) => void;
+  c1Count: number; c2Count: number;
 }) {
   const { state } = useSidebar();
   const isMobile = useIsMobile();
@@ -72,8 +61,13 @@ function UeVerticalHeader({ onRefresh, isRefreshing, search, onSearch }: {
             <div className="flex items-center gap-1.5">
               <Activity className="h-4 w-4 text-purple-300" />
               <span className="text-sm font-bold text-white">UE Vertical</span>
-              <Badge className="bg-purple-500/30 text-purple-200 text-[10px] border-purple-400/30">Atendimento rápido</Badge>
             </div>
+            <Badge className="bg-emerald-500/30 text-emerald-200 text-[10px] border-emerald-400/30">
+              <DoorOpen className="h-3 w-3 mr-0.5" /> C1: {c1Count}
+            </Badge>
+            <Badge className="bg-blue-500/30 text-blue-200 text-[10px] border-blue-400/30">
+              <DoorOpen className="h-3 w-3 mr-0.5" /> C2: {c2Count}
+            </Badge>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -118,10 +112,7 @@ function PatientRow({ patient, onQuickAttendance, onNavigate }: {
 
   return (
     <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-      className={cn(
-        "border-l-4 rounded-lg border bg-card p-3 hover:shadow-md transition-all",
-        patient.risk_classification ? RISK_COLORS[patient.risk_classification] : "border-l-muted"
-      )}>
+      className="border-l-4 rounded-lg border bg-card p-3 hover:shadow-md transition-all border-l-muted">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="flex items-center gap-2 flex-wrap">
@@ -130,17 +121,6 @@ function PatientRow({ patient, onQuickAttendance, onNavigate }: {
             </Badge>
             <span className="text-xs font-bold truncate">{patient.name}</span>
             {patient.age && <span className="text-[10px] text-muted-foreground">{patient.age}a</span>}
-            {patient.risk_classification && (
-              <Badge className={cn("text-[9px] text-white",
-                patient.risk_classification === "vermelho" && "bg-red-600",
-                patient.risk_classification === "laranja" && "bg-orange-500",
-                patient.risk_classification === "amarelo" && "bg-yellow-500 text-black",
-                patient.risk_classification === "verde" && "bg-green-600",
-                patient.risk_classification === "azul" && "bg-blue-600",
-              )}>
-                {RISK_LABELS[patient.risk_classification]}
-              </Badge>
-            )}
             {waitTime && (
               <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                 <Clock className="h-3 w-3" /> {waitTime}
@@ -163,7 +143,6 @@ function PatientRow({ patient, onQuickAttendance, onNavigate }: {
           )}
         </div>
 
-        {/* Action buttons */}
         <div className="flex items-center gap-1 shrink-0">
           <Button size="sm" variant="default" className="h-7 text-[10px] gap-1" onClick={onQuickAttendance}>
             <Zap className="h-3 w-3" /> Rápido
@@ -191,6 +170,61 @@ function PatientRow({ patient, onQuickAttendance, onNavigate }: {
         </div>
       </div>
     </motion.div>
+  );
+}
+
+function ConsultorioCard({ number, patients, color, onQuickAttendance, onNavigate }: {
+  number: number;
+  patients: UePatient[];
+  color: string;
+  onQuickAttendance: (p: UePatient) => void;
+  onNavigate: (path: string) => void;
+}) {
+  const colorMap: Record<string, { border: string; bg: string; text: string; icon: string }> = {
+    emerald: {
+      border: "border-emerald-300 dark:border-emerald-800",
+      bg: "bg-emerald-50 dark:bg-emerald-950/20",
+      text: "text-emerald-700 dark:text-emerald-300",
+      icon: "text-emerald-600",
+    },
+    blue: {
+      border: "border-blue-300 dark:border-blue-800",
+      bg: "bg-blue-50 dark:bg-blue-950/20",
+      text: "text-blue-700 dark:text-blue-300",
+      icon: "text-blue-600",
+    },
+  };
+  const c = colorMap[color];
+
+  return (
+    <Card className={cn("flex-1", c.border)}>
+      <CardHeader className={cn("pb-2 rounded-t-lg", c.bg)}>
+        <CardTitle className={cn("text-sm flex items-center gap-2", c.text)}>
+          <DoorOpen className={cn("h-4 w-4", c.icon)} />
+          Consultório {number}
+          <Badge variant="secondary" className="ml-auto text-[10px]">
+            {patients.length} paciente{patients.length !== 1 ? "s" : ""}
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-3 space-y-2">
+        {patients.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">
+            <User className="h-6 w-6 mx-auto mb-2 opacity-30" />
+            <p className="text-xs">Nenhum paciente alocado</p>
+          </div>
+        ) : (
+          patients.map(patient => (
+            <PatientRow
+              key={patient.id}
+              patient={patient}
+              onQuickAttendance={() => onQuickAttendance(patient)}
+              onNavigate={onNavigate}
+            />
+          ))
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -238,63 +272,107 @@ export default function UeVerticalPage() {
 
   useEffect(() => { fetchPatients(); }, [currentHospital?.id, currentState?.id, currentDepartment]);
 
-  const filtered = patients.filter(p =>
-    !p.is_vacant && (!search || p.name.toLowerCase().includes(search.toLowerCase()) || p.bed_number.toLowerCase().includes(search.toLowerCase()))
+  const activePatients = patients.filter(p => !p.is_vacant);
+  const filtered = activePatients.filter(p =>
+    !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.bed_number.toLowerCase().includes(search.toLowerCase())
   );
 
-  const activeCount = patients.filter(p => !p.is_vacant).length;
+  const c1Patients = filtered.filter(p => getConsultorio(p.bed_number) === 1);
+  const c2Patients = filtered.filter(p => getConsultorio(p.bed_number) === 2);
+  const unassigned = filtered.filter(p => getConsultorio(p.bed_number) === 0);
 
   const handleApplyPreset = (preset: AttendancePreset, items: PresetItem[], destination: string) => {
     toast.success(`Preset "${preset.label}" aplicado com ${items.length} itens → Destino: ${destination}`);
-    // In a full implementation, this would create prescription, exam requests, etc.
   };
 
   return (
     <MainLayout>
       <div className="min-h-screen bg-background">
-        <UeVerticalHeader onRefresh={fetchPatients} isRefreshing={isLoading} search={search} onSearch={setSearch} />
-        <div className="pt-16 pb-8 px-2 sm:px-4 max-w-5xl mx-auto">
+        <UeVerticalHeader
+          onRefresh={fetchPatients}
+          isRefreshing={isLoading}
+          search={search}
+          onSearch={setSearch}
+          c1Count={c1Patients.length}
+          c2Count={c2Patients.length}
+        />
+        <div className="pt-16 pb-8 px-2 sm:px-4 max-w-7xl mx-auto">
           {/* KPIs */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="grid grid-cols-4 gap-2 mb-4">
             <Card className="border-purple-200 dark:border-purple-800">
               <CardContent className="p-3 text-center">
-                <p className="text-lg font-bold text-purple-600">{activeCount}</p>
-                <p className="text-[10px] text-muted-foreground">Em atendimento</p>
+                <p className="text-lg font-bold text-purple-600">{activePatients.length}</p>
+                <p className="text-[10px] text-muted-foreground">Total atendimento</p>
+              </CardContent>
+            </Card>
+            <Card className="border-emerald-200 dark:border-emerald-800">
+              <CardContent className="p-3 text-center">
+                <p className="text-lg font-bold text-emerald-600">{c1Patients.length}</p>
+                <p className="text-[10px] text-muted-foreground">Consultório 1</p>
+              </CardContent>
+            </Card>
+            <Card className="border-blue-200 dark:border-blue-800">
+              <CardContent className="p-3 text-center">
+                <p className="text-lg font-bold text-blue-600">{c2Patients.length}</p>
+                <p className="text-[10px] text-muted-foreground">Consultório 2</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-3 text-center">
                 <p className="text-lg font-bold text-amber-600">
-                  {patients.filter(p => !p.is_vacant && p.pendencies).length}
+                  {activePatients.filter(p => p.pendencies).length}
                 </p>
                 <p className="text-[10px] text-muted-foreground">Com pendências</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="p-3 text-center">
-                <p className="text-lg font-bold text-foreground">{patients.filter(p => p.is_vacant).length}</p>
-                <p className="text-[10px] text-muted-foreground">Vagos</p>
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Patient list */}
-          <div className="space-y-2">
-            {isLoading ? (
-              <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">Carregando...</CardContent></Card>
-            ) : filtered.length === 0 ? (
-              <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">Nenhum paciente na UE Vertical</CardContent></Card>
-            ) : (
-              filtered.map(patient => (
-                <PatientRow
-                  key={patient.id}
-                  patient={patient}
-                  onQuickAttendance={() => setQuickTarget(patient)}
+          {isLoading ? (
+            <Card><CardContent className="p-8 text-center text-sm text-muted-foreground">Carregando...</CardContent></Card>
+          ) : (
+            <>
+              {/* Two consultórios side by side */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                <ConsultorioCard
+                  number={1}
+                  patients={c1Patients}
+                  color="emerald"
+                  onQuickAttendance={setQuickTarget}
                   onNavigate={navigate}
                 />
-              ))
-            )}
-          </div>
+                <ConsultorioCard
+                  number={2}
+                  patients={c2Patients}
+                  color="blue"
+                  onQuickAttendance={setQuickTarget}
+                  onNavigate={navigate}
+                />
+              </div>
+
+              {/* Unassigned patients */}
+              {unassigned.length > 0 && (
+                <Card className="border-amber-200 dark:border-amber-800">
+                  <CardHeader className="pb-2 bg-amber-50 dark:bg-amber-950/20 rounded-t-lg">
+                    <CardTitle className="text-sm flex items-center gap-2 text-amber-700 dark:text-amber-300">
+                      <Clock className="h-4 w-4" />
+                      Aguardando alocação em consultório
+                      <Badge variant="secondary" className="ml-auto text-[10px]">{unassigned.length}</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-3 space-y-2">
+                    {unassigned.map(patient => (
+                      <PatientRow
+                        key={patient.id}
+                        patient={patient}
+                        onQuickAttendance={() => setQuickTarget(patient)}
+                        onNavigate={navigate}
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
         </div>
 
         {quickTarget && (

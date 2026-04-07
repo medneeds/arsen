@@ -315,7 +315,7 @@ const TriageQueuePage = () => {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-1.5">
+                            <div className="flex gap-1.5 flex-wrap">
                               <Button
                                 size="sm"
                                 onClick={() => handleCall(patient)}
@@ -332,11 +332,29 @@ const TriageQueuePage = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
+                                className="gap-1 border-emerald-300 text-emerald-600 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                                onClick={() => handleDirectConsultorio(patient, 1)}
+                              >
+                                <DoorOpen className="h-3 w-3" />
+                                C1
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 border-blue-300 text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                                onClick={() => handleDirectConsultorio(patient, 2)}
+                              >
+                                <DoorOpen className="h-3 w-3" />
+                                C2
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
                                 className="gap-1 border-indigo-300 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-950/30"
                                 onClick={() => setDirectTarget(patient)}
                               >
                                 <BedDouble className="h-3 w-3" />
-                                Direto → Horizontal
+                                Horizontal
                               </Button>
                             </div>
                           </motion.div>
