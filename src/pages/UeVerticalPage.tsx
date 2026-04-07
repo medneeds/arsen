@@ -285,13 +285,23 @@ export default function UeVerticalPage() {
   const { role } = useAuth();
   const navigate = useNavigate();
 
+  const UE_DEPARTMENT = "URGÊNCIA E EMERGÊNCIA ADULTO";
+
+  const getNextBedNumber = (existingBeds: { bed_number: string }[], prefix: string) => {
+    const nums = (existingBeds || [])
+      .map(b => parseInt(b.bed_number.replace(prefix, ""), 10))
+      .filter(n => !isNaN(n));
+    const maxNum = nums.length > 0 ? Math.max(...nums) : 0;
+    return `${prefix}${String(maxNum + 1).padStart(2, "0")}`;
+  };
+
   const fetchPatients = async () => {
     if (!currentHospital?.id || !currentState?.id) return;
     setIsLoading(true);
     try {
       const { data, error } = await supabase.from("patients").select("*")
         .eq("hospital_unit_id", currentHospital.id).eq("state_id", currentState.id)
-        .eq("department", currentDepartment).eq("sector", "ue_vertical")
+        .eq("department", UE_DEPARTMENT).eq("sector", "ue_vertical")
         .order("display_order", { ascending: true });
       if (error) throw error;
       setPatients((data || []).map(p => ({
@@ -323,7 +333,7 @@ export default function UeVerticalPage() {
   };
 
   useEffect(() => { fetchPatients(); fetchWaitingPatients(); },
-    [currentHospital?.id, currentState?.id, currentDepartment]);
+    [currentHospital?.id, currentState?.id]);
 
   useEffect(() => {
     if (!currentHospital?.id) return;
@@ -342,13 +352,13 @@ export default function UeVerticalPage() {
       const { data: existing } = await supabase.from("patients").select("bed_number")
         .eq("hospital_unit_id", currentHospital!.id).eq("sector", "ue_vertical")
         .like("bed_number", `${prefix}%`);
-      const nextNum = (existing?.length || 0) + 1;
-      const bedNumber = `${prefix}${String(nextNum).padStart(2, "0")}`;
+      const bedNumber = getNextBedNumber(existing || [], prefix);
+      const nextNum = parseInt(bedNumber.replace(prefix, ""), 10);
 
       const { error } = await supabase.from("patients").insert({
         name: wp.patient_name, bed_number: bedNumber, sector: "ue_vertical",
         hospital_unit_id: currentHospital!.id, state_id: currentState!.id,
-        department: "URGÊNCIA E EMERGÊNCIA ADULTO", admission_date: new Date().toISOString(),
+        department: UE_DEPARTMENT, admission_date: new Date().toISOString(),
         diagnoses: wp.chief_complaint || null, display_order: nextNum,
       } as any);
       if (error) throw error;

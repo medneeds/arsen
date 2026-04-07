@@ -178,14 +178,21 @@ const TriageQueuePage = () => {
     } catch { toast.error("Erro ao concluir triagem"); }
   };
 
+  const getNextBedNumber = (existingBeds: { bed_number: string }[], prefix: string) => {
+    const nums = (existingBeds || [])
+      .map(b => parseInt(b.bed_number.replace(prefix, ""), 10))
+      .filter(n => !isNaN(n));
+    const maxNum = nums.length > 0 ? Math.max(...nums) : 0;
+    return `${prefix}${String(maxNum + 1).padStart(2, "0")}`;
+  };
+
   const handleDirectHorizontal = async (patient: TriagePatient) => {
     try {
-      // Create patient in UE Horizontal
       const { data: existing } = await supabase.from("patients").select("bed_number")
         .eq("hospital_unit_id", currentHospital!.id).eq("sector", "ue_horizontal")
         .like("bed_number", "M-%");
-      const nextNum = (existing?.length || 0) + 1;
-      const bedNumber = `M-${String(nextNum).padStart(2, "0")}`;
+      const bedNumber = getNextBedNumber(existing || [], "M-");
+      const nextNum = parseInt(bedNumber.replace("M-", ""), 10);
 
       const { data: newPatient, error: insertErr } = await supabase.from("patients").insert({
         name: patient.patient_name, bed_number: bedNumber, sector: "ue_horizontal",
@@ -195,7 +202,6 @@ const TriageQueuePage = () => {
       } as any).select("id").single();
       if (insertErr) throw insertErr;
 
-      // Update encounter as completed with link to patient
       await supabase.from("patient_encounters")
         .update({ triage_status: "triado", destination_sector: "ue_horizontal", status: "completed", patient_id: newPatient?.id } as any)
         .eq("id", patient.id);
@@ -211,8 +217,8 @@ const TriageQueuePage = () => {
       const { data: existing } = await supabase.from("patients").select("bed_number")
         .eq("hospital_unit_id", currentHospital!.id).eq("sector", "ue_vertical")
         .like("bed_number", `${prefix}%`);
-      const nextNum = (existing?.length || 0) + 1;
-      const bedNumber = `${prefix}${String(nextNum).padStart(2, "0")}`;
+      const bedNumber = getNextBedNumber(existing || [], prefix);
+      const nextNum = parseInt(bedNumber.replace(prefix, ""), 10);
 
       const { data: newPatient, error: insertErr } = await supabase.from("patients").insert({
         name: patient.patient_name, bed_number: bedNumber, sector: "ue_vertical",
@@ -222,7 +228,6 @@ const TriageQueuePage = () => {
       } as any).select("id").single();
       if (insertErr) throw insertErr;
 
-      // Update encounter as completed with link
       await supabase.from("patient_encounters")
         .update({ triage_status: "triado", destination_sector: "ue_vertical", status: "completed", patient_id: newPatient?.id } as any)
         .eq("id", patient.id);
@@ -240,8 +245,8 @@ const TriageQueuePage = () => {
         const { data: existing } = await supabase.from("patients").select("bed_number")
           .eq("hospital_unit_id", currentHospital!.id).eq("sector", "ue_horizontal")
           .like("bed_number", "M-%");
-        const nextNum = (existing?.length || 0) + 1;
-        const bedNumber = `M-${String(nextNum).padStart(2, "0")}`;
+        const bedNumber = getNextBedNumber(existing || [], "M-");
+        const nextNum = parseInt(bedNumber.replace("M-", ""), 10);
 
         const { error } = await supabase.from("patients").insert({
           name: routeTarget.patient_name, bed_number: bedNumber,
@@ -260,8 +265,8 @@ const TriageQueuePage = () => {
         const { data: existing } = await supabase.from("patients").select("bed_number")
           .eq("hospital_unit_id", currentHospital!.id).eq("sector", "ue_vertical")
           .like("bed_number", `${prefix}%`);
-        const nextNum = (existing?.length || 0) + 1;
-        const bedNumber = `${prefix}${String(nextNum).padStart(2, "0")}`;
+        const bedNumber = getNextBedNumber(existing || [], prefix);
+        const nextNum = parseInt(bedNumber.replace(prefix, ""), 10);
 
         const { error } = await supabase.from("patients").insert({
           name: routeTarget.patient_name, bed_number: bedNumber, sector: "ue_vertical",
