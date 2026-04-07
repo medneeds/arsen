@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,12 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Bell,
+  BedDouble,
   CheckCircle2,
   Clock,
   ExternalLink,
@@ -25,6 +31,7 @@ import {
   User,
   Users,
   Volume2,
+  ArrowRight,
 } from "lucide-react";
 
 interface TriagePatient {
@@ -41,9 +48,11 @@ interface TriagePatient {
 const TriageQueuePage = () => {
   const { user } = useAuth();
   const { currentHospital } = useHospital();
+  const navigate = useNavigate();
   const [patients, setPatients] = useState<TriagePatient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [callingId, setCallingId] = useState<string | null>(null);
+  const [directTarget, setDirectTarget] = useState<TriagePatient | null>(null);
 
   useEffect(() => {
     if (!currentHospital?.id) return;
@@ -139,6 +148,28 @@ const TriageQueuePage = () => {
     }
   };
 
+  const handleDirectHorizontal = async (patient: TriagePatient) => {
+    try {
+      // Mark as triaged and redirect to horizontal
+      const { error } = await supabase
+        .from("patient_encounters")
+        .update({
+          triage_status: "triado",
+          destination_sector: "ue_horizontal",
+        } as any)
+        .eq("id", patient.id);
+
+      if (error) throw error;
+      toast.success(`${patient.patient_name} encaminhado direto para UE Horizontal (maca)`);
+      setDirectTarget(null);
+      navigate("/ue-horizontal");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao encaminhar paciente");
+      setDirectTarget(null);
+    }
+  };
+
   const openTVScreen = () => {
     window.open("/triagem-tv", "_blank", "noopener,noreferrer");
   };
@@ -147,13 +178,8 @@ const TriageQueuePage = () => {
   const called = patients.filter(p => p.triage_status === "chamado");
   const inTriage = patients.filter(p => p.triage_status === "em_triagem");
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "aguardando_chamada": return "bg-amber-500";
-      case "chamado": return "bg-blue-500 animate-pulse";
-      case "em_triagem": return "bg-purple-500";
-      default: return "bg-muted";
-    }
+  const getWaitMinutes = (createdAt: string) => {
+    return Math.round((Date.now() - new Date(createdAt).getTime()) / 60000);
   };
 
   return (
@@ -263,41 +289,59 @@ const TriageQueuePage = () => {
                 ) : (
                   <ScrollArea className="max-h-[500px]">
                     <div className="space-y-2">
-                      {waiting.map((patient, index) => (
-                        <motion.div
-                          key={patient.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center text-sm font-bold text-amber-600">
-                              {index + 1}
-                            </div>
-                            <div>
-                              <p className="font-medium text-sm">{patient.patient_name}</p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span className="font-mono">{patient.encounter_code}</span>
-                                <span>·</span>
-                                <span>{format(new Date(patient.created_at), "HH:mm", { locale: ptBR })}</span>
+                      {waiting.map((patient, index) => {
+                        const waitMin = getWaitMinutes(patient.created_at);
+                        return (
+                          <motion.div
+                            key={patient.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/30 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center text-sm font-bold text-amber-600">
+                                {index + 1}
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">{patient.patient_name}</p>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <span className="font-mono">{patient.encounter_code}</span>
+                                  <span>·</span>
+                                  <span>{format(new Date(patient.created_at), "HH:mm", { locale: ptBR })}</span>
+                                  <Badge variant={waitMin > 30 ? "destructive" : "secondary"} className="text-[9px] px-1.5">
+                                    {waitMin}min
+                                  </Badge>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={() => handleCall(patient)}
-                            disabled={callingId === patient.id}
-                          >
-                            {callingId === patient.id ? (
-                              <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                            ) : (
-                              <Bell className="h-3 w-3 mr-1" />
-                            )}
-                            Chamar
-                          </Button>
-                        </motion.div>
-                      ))}
+                            <div className="flex gap-1.5">
+                              <Button
+                                size="sm"
+                                onClick={() => handleCall(patient)}
+                                disabled={callingId === patient.id}
+                                className="gap-1"
+                              >
+                                {callingId === patient.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Bell className="h-3 w-3" />
+                                )}
+                                Chamar no Painel
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1 border-indigo-300 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-400 dark:hover:bg-indigo-950/30"
+                                onClick={() => setDirectTarget(patient)}
+                              >
+                                <BedDouble className="h-3 w-3" />
+                                Direto → Horizontal
+                              </Button>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   </ScrollArea>
                 )}
@@ -306,6 +350,38 @@ const TriageQueuePage = () => {
           </div>
         </div>
       </div>
+
+      {/* Direct Horizontal confirmation dialog */}
+      <AlertDialog open={!!directTarget} onOpenChange={open => !open && setDirectTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <BedDouble className="h-5 w-5 text-indigo-600" />
+              Encaminhar direto para UE Horizontal?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                O paciente <strong>{directTarget?.patient_name}</strong> será encaminhado diretamente para
+                uma maca na <strong>UE Horizontal</strong>, sem passar pela chamada no painel de TV.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Use esta opção para pacientes que chegam em condição clínica que exige atendimento imediato em maca
+                (rebaixamento de consciência, trauma, instabilidade hemodinâmica, etc).
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => directTarget && handleDirectHorizontal(directTarget)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
+            >
+              <ArrowRight className="h-4 w-4" />
+              Confirmar → Horizontal
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 };
