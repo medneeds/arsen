@@ -2198,8 +2198,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          access_profile: string | null
           approved_at: string | null
           approved_by: string | null
+          cargo: string | null
           created_at: string
           crm: string | null
           data_deletion_requested_at: string | null
@@ -2207,7 +2209,9 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          matricula: string | null
           phone: string | null
+          professional_type: string | null
           specialty: string | null
           status: string
           terms_accepted_at: string | null
@@ -2215,8 +2219,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_profile?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          cargo?: string | null
           created_at?: string
           crm?: string | null
           data_deletion_requested_at?: string | null
@@ -2224,7 +2230,9 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          matricula?: string | null
           phone?: string | null
+          professional_type?: string | null
           specialty?: string | null
           status?: string
           terms_accepted_at?: string | null
@@ -2232,8 +2240,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_profile?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          cargo?: string | null
           created_at?: string
           crm?: string | null
           data_deletion_requested_at?: string | null
@@ -2241,7 +2251,9 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          matricula?: string | null
           phone?: string | null
+          professional_type?: string | null
           specialty?: string | null
           status?: string
           terms_accepted_at?: string | null

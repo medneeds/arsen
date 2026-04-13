@@ -6,25 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  LogIn, User, Lock, Eye, EyeOff, Building2, ArrowRight, ArrowLeft,
+  LogIn, User, Lock, Eye, EyeOff, ArrowRight, ArrowLeft,
   Activity, Brain, MapPin, Stethoscope, HeartPulse, Shield,
-  BarChart3, Users, ClipboardList, Bed, Pill, ScanLine, Scissors, ShieldAlert
 } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { BigHelpLogo } from "@/components/BigHelpLogo";
 import { cn } from "@/lib/utils";
 import { whitelabel } from "@/config/whitelabel";
-import { useDepartment, Department } from "@/contexts/DepartmentContext";
-import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 import { motion, AnimatePresence } from "framer-motion";
 import { IndividualSignUpForm } from "@/components/IndividualSignUpForm";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ForgotPasswordForm } from "@/components/ForgotPasswordForm";
+import { supabase } from "@/integrations/supabase/client";
+import { useDepartment, Department } from "@/contexts/DepartmentContext";
 
 // Floating icon data for background animation
 const floatingIcons = [
@@ -38,138 +31,34 @@ const floatingIcons = [
   { Icon: Brain, x: "60%", y: "30%", delay: 3, duration: 5 },
 ];
 
-type AccessProfile = "medico" | "gestor" | "multi" | "administrativo" | "farmacia" | "imagem" | "laboratorio" | "centro_cirurgico" | "ccih" | "nir";
-
-const ACCESS_PROFILES: {
-  key: AccessProfile;
-  label: string;
-  subtitle: string;
-  icon: typeof Stethoscope;
-  color: string;
-  borderColor: string;
-  bgGlow: string;
-  features: string[];
-}[] = [
-  {
-    key: "medico",
-    label: "Acesso Médico",
-    subtitle: "Plantonistas e Diaristas",
-    icon: Stethoscope,
-    color: "text-[#2dd4bf]",
-    borderColor: "border-[#2dd4bf]/30 hover:border-[#2dd4bf]/60",
-    bgGlow: "from-[#2dd4bf]/15 to-[#2dd4bf]/5",
-    features: ["Mapa de Leitos", "Prescrição Digital", "Evolução Clínica", "Protocolos"],
-  },
-  {
-    key: "gestor",
-    label: "Painel do Gestor",
-    subtitle: "Coordenação de UTI",
-    icon: BarChart3,
-    color: "text-amber-400",
-    borderColor: "border-amber-400/30 hover:border-amber-400/60",
-    bgGlow: "from-amber-400/15 to-amber-400/5",
-    features: ["Gestão de Leitos", "Exames Críticos", "Catálogo de Medicações", "Indicadores"],
-  },
-  {
-    key: "multi",
-    label: "Equipe Multi",
-    subtitle: "Fisio · Enfermagem · Técnicos",
-    icon: Users,
-    color: "text-violet-400",
-    borderColor: "border-violet-400/30 hover:border-violet-400/60",
-    bgGlow: "from-violet-400/15 to-violet-400/5",
-    features: ["Visão do Paciente", "Condutas Diárias", "Registros Assistenciais", "Comunicação"],
-  },
-  {
-    key: "administrativo",
-    label: "Administrativo",
-    subtitle: "Recepção e Cadastro",
-    icon: ClipboardList,
-    color: "text-sky-400",
-    borderColor: "border-sky-400/30 hover:border-sky-400/60",
-    bgGlow: "from-sky-400/15 to-sky-400/5",
-    features: ["Cadastro de Pacientes", "Pré-Admissão", "Movimentações", "Relatórios"],
-  },
-  {
-    key: "farmacia",
-    label: "Farmácia Clínica",
-    subtitle: "Validação e Dispensação",
-    icon: Pill,
-    color: "text-emerald-400",
-    borderColor: "border-emerald-400/30 hover:border-emerald-400/60",
-    bgGlow: "from-emerald-400/15 to-emerald-400/5",
-    features: ["Validação de Prescrições", "Catálogo de Medicamentos", "Interações Medicamentosas", "Dispensação"],
-  },
-  {
-    key: "imagem",
-    label: "Setor de Imagem",
-    subtitle: "RX · TC · USG · ECO",
-    icon: ScanLine,
-    color: "text-rose-400",
-    borderColor: "border-rose-400/30 hover:border-rose-400/60",
-    bgGlow: "from-rose-400/15 to-rose-400/5",
-    features: ["Recepção de Requisições", "Execução de Exames", "Laudos e Resultados", "Fila de Prioridade"],
-  },
-  {
-    key: "laboratorio",
-    label: "Setor Laboratorial",
-    subtitle: "Análises · Coletas · Resultados",
-    icon: ScanLine,
-    color: "text-amber-400",
-    borderColor: "border-amber-400/30 hover:border-amber-400/60",
-    bgGlow: "from-amber-400/15 to-amber-400/5",
-    features: ["Recepção de Amostras", "Processamento", "Liberação de Resultados", "Controle de Qualidade"],
-  },
-  {
-    key: "centro_cirurgico",
-    label: "Centro Cirúrgico",
-    subtitle: "Agendamento · Segurança · Mapa",
-    icon: Scissors,
-    color: "text-orange-400",
-    borderColor: "border-orange-400/30 hover:border-orange-400/60",
-    bgGlow: "from-orange-400/15 to-orange-400/5",
-    features: ["Agendamento Cirúrgico", "Checklist de Segurança", "Mapa Cirúrgico", "Pós-Operatório"],
-  },
-  {
-    key: "ccih",
-    label: "CCIH",
-    subtitle: "Controle de Infecção Hospitalar",
-    icon: ShieldAlert,
-    color: "text-red-400",
-    borderColor: "border-red-400/30 hover:border-red-400/60",
-    bgGlow: "from-red-400/15 to-red-400/5",
-    features: ["Vigilância de Infecções", "Culturas e Antibiogramas", "Protocolos de Isolamento", "Indicadores CCIH"],
-  },
-  {
-    key: "nir" as AccessProfile,
-    label: "NIR",
-    subtitle: "Núcleo Interno de Regulação",
-    icon: Bed,
-    color: "text-cyan-400",
-    borderColor: "border-cyan-400/30 hover:border-cyan-400/60",
-    bgGlow: "from-cyan-400/15 to-cyan-400/5",
-    features: ["Censo de Leitos", "Regulação Interna/Externa", "Solicitação de Vaga", "Relatórios NIR"],
-  },
-];
+// Map access_profile to redirect routes
+function getRedirectRoute(accessProfile: string | null, role: string | null): string {
+  const profile = accessProfile || role || "medico";
+  switch (profile) {
+    case "imagem": return "/setor-imagem";
+    case "laboratorio": return "/setor-laboratorio";
+    case "nir": return "/nir";
+    case "ccih": return "/ccih";
+    case "administrativo": return "/recepcao";
+    case "multi": return "/triagem-fila";
+    case "farmacia": return "/validacao-farmaceutica";
+    default: return "/";
+  }
+}
 
 export default function AuthPage() {
-  const { user, signIn } = useAuth();
+  const { user, signIn, role } = useAuth();
   const { setCurrentDepartment } = useDepartment();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
-  const [screen, setScreen] = useState<"splash" | "profiles" | "login" | "signup">("splash");
-  const [selectedProfile, setSelectedProfile] = useState<AccessProfile>("medico");
-  const [selectedSector, setSelectedSector] = useState<string>("red");
+  const [redirectRoute, setRedirectRoute] = useState("/");
+  const [screen, setScreen] = useState<"splash" | "login" | "signup" | "forgot">("splash");
   const [signupState, setSignupState] = useState("");
   const [signupHospital, setSignupHospital] = useState("");
   const [signupDepartment, setSignupDepartment] = useState<Department>("URGÊNCIA E EMERGÊNCIA ADULTO");
 
-  const SECTORS = Object.entries(SECTOR_BED_CONFIG).map(([key, config]) => ({
-    key,
-    label: config.label,
-  }));
   const [loginData, setLoginData] = useState({
     username: "",
     password: "",
@@ -185,11 +74,11 @@ export default function AuthPage() {
     e.preventDefault();
 
     if (!loginData.username.trim()) {
-      toast.error("DIGITE SEU USUÁRIO");
+      toast.error("Digite seu usuário");
       return;
     }
     if (!loginData.password.trim()) {
-      toast.error("DIGITE SUA SENHA");
+      toast.error("Digite sua senha");
       return;
     }
 
@@ -200,30 +89,32 @@ export default function AuthPage() {
 
       if (error) {
         if (error.message.includes("Invalid login credentials")) {
-          toast.error("LOGIN OU SENHA INCORRETOS");
+          toast.error("Login ou senha incorretos");
         } else {
-          toast.error("ERRO AO FAZER LOGIN: " + error.message.toUpperCase());
+          toast.error("Erro ao fazer login: " + error.message);
         }
         setLoading(false);
       } else {
+        // Fetch user's access_profile to determine redirect
+        const internalEmail = `${loginData.username.toLowerCase()}@sistema.local`;
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("access_profile")
+          .eq("email", internalEmail)
+          .maybeSingle();
+        
+        const route = getRedirectRoute(profileData?.access_profile || null, null);
+        setRedirectRoute(route);
+        
         setCurrentDepartment("UTI");
-        localStorage.setItem("selected_sector", selectedSector);
-        localStorage.setItem("access_profile", selectedProfile);
-        toast.success("LOGIN REALIZADO COM SUCESSO");
+        toast.success("Login realizado com sucesso");
         setShowLoadingScreen(true);
       }
     } catch (err) {
-      toast.error("ERRO AO VALIDAR DADOS");
+      toast.error("Erro ao validar dados");
       setLoading(false);
     }
   };
-
-  const handleSelectProfile = (profile: AccessProfile) => {
-    setSelectedProfile(profile);
-    setScreen("login");
-  };
-
-  const currentProfileConfig = ACCESS_PROFILES.find(p => p.key === selectedProfile)!;
 
   // Shared dark background
   const bgClasses = "min-h-screen bg-gradient-to-br from-[#040a18] via-[#0a1628] to-[#0f2847] flex flex-col items-center justify-center relative overflow-hidden";
@@ -232,7 +123,7 @@ export default function AuthPage() {
     <>
       {showLoadingScreen && (
         <LoadingScreen
-          onComplete={() => navigate(selectedProfile === "imagem" ? "/setor-imagem" : selectedProfile === "laboratorio" ? "/setor-laboratorio" : selectedProfile === "nir" ? "/nir" : "/")}
+          onComplete={() => navigate(redirectRoute)}
           duration={2000}
         />
       )}
@@ -369,9 +260,9 @@ export default function AuthPage() {
                 <span className="text-[#2dd4bf] font-medium">em Tempo Real</span>
               </motion.p>
 
-              {/* CTA Button → goes to profiles */}
+              {/* CTA Button → goes directly to login */}
               <motion.button
-                onClick={() => setScreen("profiles")}
+                onClick={() => setScreen("login")}
                 className="group relative inline-flex items-center gap-3 px-10 py-4 rounded-full text-white font-semibold text-sm tracking-[0.2em] transition-all duration-500 overflow-hidden border border-[#2dd4bf]/30 hover:border-[#2dd4bf]/60"
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -407,125 +298,8 @@ export default function AuthPage() {
             <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#2dd4bf]/20 to-transparent" />
           </motion.div>
 
-        ) : screen === "profiles" ? (
-          /* ─── ACCESS PROFILES SCREEN ─────────────────────────── */
-          <motion.div
-            key="profiles"
-            className={cn(bgClasses, "!py-0")}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 0.96 }}
-            transition={{ duration: 0.4 }}
-          >
-            {/* Subtle background */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full blur-[150px] bg-[#2dd4bf]/[0.04]" />
-            </div>
-
-            <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 flex flex-col min-h-screen justify-center">
-              {/* Compact Header */}
-              <motion.div
-                className="text-center mb-5"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <div className="flex items-center justify-center gap-3">
-                  <BigHelpLogo size="sm" glow />
-                  <div className="text-left">
-                    <h2 className="text-lg sm:text-xl text-white font-bold tracking-tight leading-tight">
-                      Selecione o Tipo de Acesso
-                    </h2>
-                    <p className="text-slate-400 text-[10px] tracking-wide">
-                      Hospital Mun. Djalma Marques — Socorrão I
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Access Cards Grid — 3 columns on md+ */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-5">
-                {ACCESS_PROFILES.map((profile, i) => (
-                  <motion.button
-                    key={profile.key}
-                    onClick={() => handleSelectProfile(profile.key)}
-                    className={cn(
-                      "group relative text-left p-5 rounded-2xl border backdrop-blur-xl transition-all duration-300 min-h-[130px]",
-                      "bg-white/[0.04] hover:bg-white/[0.08]",
-                      profile.borderColor
-                    )}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35, delay: 0.08 * i }}
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {/* Glow background */}
-                    <div className={cn(
-                      "absolute inset-0 rounded-2xl bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500",
-                      profile.bgGlow
-                    )} />
-
-                    <div className="relative z-10">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className={cn(
-                          "flex items-center justify-center h-11 w-11 rounded-xl border transition-colors duration-300 shrink-0",
-                          profile.key === "medico" && "bg-[#2dd4bf]/10 border-[#2dd4bf]/20",
-                          profile.key === "gestor" && "bg-amber-400/10 border-amber-400/20",
-                          profile.key === "multi" && "bg-violet-400/10 border-violet-400/20",
-                          profile.key === "administrativo" && "bg-sky-400/10 border-sky-400/20",
-                          profile.key === "farmacia" && "bg-emerald-400/10 border-emerald-400/20",
-                          profile.key === "imagem" && "bg-rose-400/10 border-rose-400/20",
-                          profile.key === "laboratorio" && "bg-amber-400/10 border-amber-400/20",
-                          profile.key === "centro_cirurgico" && "bg-orange-400/10 border-orange-400/20",
-                          profile.key === "ccih" && "bg-red-400/10 border-red-400/20",
-                        )}>
-                          <profile.icon className={cn("h-5 w-5", profile.color)} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="text-white font-bold text-sm tracking-wide leading-tight">
-                            {profile.label}
-                          </h3>
-                          <p className="text-[11px] font-medium tracking-wider text-white/60 leading-tight mt-0.5">
-                            {profile.subtitle}
-                          </p>
-                        </div>
-                        <ArrowRight className="h-4 w-4 text-white/20 group-hover:text-white/50 transition-all duration-300 group-hover:translate-x-0.5 shrink-0" />
-                      </div>
-
-                      <div className="space-y-1 mt-2">
-                        {profile.features.map((feat, fi) => (
-                          <div key={fi} className="flex items-center gap-1.5">
-                            <div className={cn("h-1 w-1 rounded-full shrink-0", profile.color.replace("text-", "bg-") + "/50")} />
-                            <span className="text-[11px] text-slate-400 tracking-wide">{feat}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.button>
-                ))}
-              </div>
-
-              {/* Back button */}
-              <motion.div
-                className="text-center mt-4"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                <button
-                  onClick={() => setScreen("splash")}
-                  className="inline-flex items-center gap-2 text-[10px] text-[#2dd4bf]/50 hover:text-[#2dd4bf] tracking-[0.2em] transition-colors duration-300"
-                >
-                  <ArrowLeft className="h-3 w-3" />
-                  Voltar
-                </button>
-              </motion.div>
-            </div>
-          </motion.div>
-
         ) : screen === "login" ? (
-          /* ─── LOGIN SCREEN ─────────────────────────────────────── */
+          /* ─── LOGIN SCREEN (Direct — no profile selection) ──────── */
           <motion.div
             key="login"
             className={cn(
@@ -543,7 +317,7 @@ export default function AuthPage() {
             </div>
 
             <div className="w-full max-w-[400px] relative z-10">
-              {/* Header with logo + selected profile badge */}
+              {/* Header with logo */}
               <div className="text-center mb-6">
                 <motion.div
                   className="inline-block mb-4"
@@ -563,18 +337,9 @@ export default function AuthPage() {
                     <span className="font-extralight text-white/60 ml-0.5">Map</span>
                   </h1>
                   <div className="h-px w-24 mx-auto bg-gradient-to-r from-transparent via-[#2dd4bf]/40 to-transparent my-3" />
-
-                  {/* Profile badge */}
-                  <div className={cn(
-                    "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[10px] font-semibold tracking-[0.15em]",
-                    currentProfileConfig.key === "medico" && "border-[#2dd4bf]/30 text-[#2dd4bf] bg-[#2dd4bf]/5",
-                    currentProfileConfig.key === "gestor" && "border-amber-400/30 text-amber-400 bg-amber-400/5",
-                    currentProfileConfig.key === "multi" && "border-violet-400/30 text-violet-400 bg-violet-400/5",
-                    currentProfileConfig.key === "administrativo" && "border-sky-400/30 text-sky-400 bg-sky-400/5",
-                  )}>
-                    <currentProfileConfig.icon className="h-3 w-3" />
-                    {currentProfileConfig.label}
-                  </div>
+                  <p className="text-[10px] text-slate-400 tracking-[0.15em]">
+                    {whitelabel.institution.hospitalName}
+                  </p>
                 </motion.div>
               </div>
 
@@ -636,32 +401,6 @@ export default function AuthPage() {
                     </div>
                   </div>
 
-                  {/* Sector select - only for medico & gestor */}
-                  {(selectedProfile === "medico" || selectedProfile === "gestor") && (
-                    <div>
-                      <Label htmlFor="sector" className="text-[10px] font-medium text-white/40 mb-1.5 block tracking-[0.15em]">Setor</Label>
-                      <div className="relative">
-                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20 z-10 pointer-events-none" />
-                        <Select
-                          value={selectedSector}
-                          onValueChange={(val) => setSelectedSector(val)}
-                          disabled={loading}
-                        >
-                          <SelectTrigger className="pl-10 h-11 bg-white/[0.06] border border-white/[0.08] rounded-xl text-sm font-medium text-white focus:border-[#2dd4bf]/40 focus:ring-2 focus:ring-[#2dd4bf]/10 transition-all">
-                            <SelectValue placeholder="Selecione o setor" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {SECTORS.map((sector) => (
-                              <SelectItem key={sector.key} value={sector.key} className="text-xs font-medium">
-                                {sector.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
-
                   <Button
                     type="submit"
                     disabled={loading}
@@ -672,7 +411,7 @@ export default function AuthPage() {
                 </form>
               </motion.div>
 
-              {/* Back to profiles + Signup + Footer */}
+              {/* Footer links */}
               <motion.div
                 className="text-center mt-5 space-y-3"
                 initial={{ opacity: 0 }}
@@ -680,14 +419,11 @@ export default function AuthPage() {
                 transition={{ delay: 0.6 }}
               >
                 <button
-                  onClick={() => {
-                    setScreen("profiles");
-                    setLoginData({ username: "", password: "" });
-                  }}
+                  onClick={() => setScreen("splash")}
                   className="inline-flex items-center gap-2 text-[10px] text-[#2dd4bf]/50 hover:text-[#2dd4bf] tracking-[0.2em] transition-colors duration-300"
                 >
                   <ArrowLeft className="h-3 w-3" />
-                  Alterar tipo de acesso
+                  Voltar
                 </button>
 
                 <div className="h-px w-16 mx-auto bg-white/10" />
