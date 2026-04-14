@@ -177,16 +177,23 @@ const Index = () => {
   }, [accessProfile, navigate]);
 
   // Use department context
-  const { currentDepartment, setCurrentDepartment } = useDepartment();
+  const { currentDepartment, setCurrentDepartment, currentSectorCode } = useDepartment();
   
-  // Selected sector from login
-  const [activeSector, setActiveSector] = useState<SectorType>(() => {
-    return (localStorage.getItem("selected_sector") as SectorType) || "red";
+  // Active sector derived from department context
+  const [activeSector, setActiveSector] = useState<string>(() => {
+    return localStorage.getItem("selected_sector") || currentSectorCode || "red";
   });
+  
+  // Sync activeSector when department changes via sidebar
+  useEffect(() => {
+    if (currentSectorCode) {
+      setActiveSector(currentSectorCode);
+    }
+  }, [currentSectorCode]);
   
   // Persist active sector changes
   const handleSectorChange = (sector: string) => {
-    setActiveSector(sector as SectorType);
+    setActiveSector(sector);
     localStorage.setItem("selected_sector", sector);
   };
 
