@@ -671,8 +671,9 @@ export function AppSidebar({
                           );
                         }
 
-                        // Direct sector (e.g. UCC, UE Vertical)
-                        const directEntry = entry as { name: string; department: Department; link?: string };
+                        // Direct sector (e.g. standalone items)
+                        if (!('name' in entry) || !('department' in entry)) return null;
+                        const directEntry = entry as unknown as { name: string; department: Department; link?: string };
                         return (
                           <SidebarMenuItem key={directEntry.name}>
                             <SidebarMenuButton
