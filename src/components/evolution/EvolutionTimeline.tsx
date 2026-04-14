@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { format } from "date-fns";
+import React, { useState, useMemo } from "react";
+import { format, differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   ChevronDown, ChevronUp, Copy, Trash2, ShieldCheck, ShieldOff,
-  Clock, FileText, AlertTriangle, Loader2,
+  Clock, FileText, AlertTriangle, Loader2, Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +17,16 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface DayGroup {
+  dayLabel: string;
+  dayNumber: number;
+  date: string;
+  evolutions: EvolutionRecord[];
+}
+
 interface EvolutionTimelineProps {
   evolutions: EvolutionRecord[];
+  admissionDate?: string;
   onUpdate: (id: string, updates: any) => Promise<boolean>;
   onValidate: (id: string) => Promise<boolean>;
   onSuspend: (id: string, reason: string) => Promise<boolean>;
