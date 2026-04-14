@@ -207,7 +207,7 @@ export const CATEGORY_LABELS: Record<string, { label: string; icon: string }> = 
 
 export const DESTINATION_OPTIONS = [
   { value: 'sala_vermelha', label: 'Sala Vermelha' },
-  { value: 'sala_laranja', label: 'Obs. Laranja' },
+  { value: 'sala_laranja', label: 'Sala Laranja' },
   { value: 'enfermaria', label: 'Enfermaria' },
   { value: 'uti', label: 'UTI (solicitar vaga)' },
   { value: 'centro_cirurgico', label: 'Centro Cirúrgico' },

@@ -24,6 +24,16 @@ const SECTOR_LABELS: Record<string, string> = {
   blue: "UCI 1",
   outside: "UCI 2",
   ucc: "UCC",
+  neurocirurgia: "Neurocirurgia",
+  clinica_cirurgica: "Clínica Cirúrgica",
+  enfermaria_transicao: "Enf. Transição",
+  enfermaria_vascular: "Enf. Vascular",
+  sala_vermelha: "Sala Vermelha",
+  sala_laranja: "Sala Laranja",
+  observacao_clinica: "Obs. Clínica",
+  ue_vertical: "UE Vertical",
+  ue_horizontal: "UE Horizontal",
+  riv: "RIV",
 };
 
 interface PatientSwitcherProps {

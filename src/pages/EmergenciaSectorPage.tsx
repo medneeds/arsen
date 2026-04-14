@@ -53,8 +53,8 @@ import {
 
 // Emergency sectors config
 const EMERGENCY_SECTORS = [
-  { key: "sala_vermelha", label: "Sala Vermelha", color: "bg-red-600", description: "Choque / Estabilização" },
-  { key: "sala_laranja", label: "Obs. Laranja", color: "bg-orange-500", description: "Observação clínica completa" },
+  { key: "sala_vermelha", label: "Sala Vermelha", color: "bg-red-600", description: "Estabilização" },
+  { key: "sala_laranja", label: "Sala Laranja", color: "bg-orange-500", description: "Observação clínica completa" },
   { key: "ue_vertical", label: "UE Vertical", color: "bg-purple-600", description: "Atendimento rápido" },
   { key: "ue_horizontal", label: "UE Horizontal", color: "bg-indigo-600", description: "Observação estendida" },
 ];

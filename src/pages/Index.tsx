@@ -197,7 +197,7 @@ const Index = () => {
     blue: { title: "UCI 1", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
     outside: { title: "UCI 2", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
     sala_vermelha: { title: "Sala Vermelha", color: "from-red-500/20 to-red-600/10", dotClass: "bg-red-500/80 border-red-400/40", colorVariant: "red" },
-    sala_laranja: { title: "Obs. Laranja", color: "from-orange-500/20 to-orange-600/10", dotClass: "bg-orange-500/80 border-orange-400/40", colorVariant: "orange" },
+    sala_laranja: { title: "Sala Laranja", color: "from-orange-500/20 to-orange-600/10", dotClass: "bg-orange-500/80 border-orange-400/40", colorVariant: "orange" },
     ue_vertical: { title: "UE Vertical", color: "from-purple-500/20 to-purple-600/10", dotClass: "bg-purple-500/80 border-purple-400/40", colorVariant: "purple" },
     ue_horizontal: { title: "UE Horizontal", color: "from-indigo-500/20 to-indigo-600/10", dotClass: "bg-indigo-500/80 border-indigo-400/40", colorVariant: "indigo" },
   };

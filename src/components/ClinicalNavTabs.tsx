@@ -7,6 +7,14 @@ const SECTOR_LABELS: Record<string, string> = {
   yellow: "UTI 2",
   blue: "UCI 1",
   outside: "UCI 2",
+  ucc: "UCC",
+  neurocirurgia: "Neurocirurgia",
+  clinica_cirurgica: "Clínica Cirúrgica",
+  enfermaria_transicao: "Enf. Transição",
+  enfermaria_vascular: "Enf. Vascular",
+  sala_vermelha: "Sala Vermelha",
+  sala_laranja: "Sala Laranja",
+  riv: "RIV",
 };
 
 const tabs = [
