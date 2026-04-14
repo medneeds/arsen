@@ -1,4 +1,4 @@
-export type SectorType = 'red' | 'yellow' | 'blue' | 'outside' | 'sala_vermelha' | 'sala_laranja' | 'ue_vertical' | 'ue_horizontal';
+export type SectorType = 'red' | 'yellow' | 'blue' | 'outside' | 'ucc' | 'neuro_01' | 'neuro_02' | 'clinica_cirurgica' | 'enfermaria_transicao' | 'enfermaria_vascular' | 'sala_vermelha' | 'sala_laranja' | 'observacao_clinica' | 'internacao_ue' | 'ue_vertical' | 'ue_horizontal' | 'riv' | 'cc_preparo' | 'cc_bloco' | 'cc_rpa' | string;
 
 export type MedicalResponsibilityType = 'porta' | 'lider' | 'conjunto' | 'obstetra' | 'cirurgiao_geral' | 'traumatologista' | null;
 

@@ -177,29 +177,55 @@ const Index = () => {
   }, [accessProfile, navigate]);
 
   // Use department context
-  const { currentDepartment, setCurrentDepartment } = useDepartment();
+  const { currentDepartment, setCurrentDepartment, currentSectorCode } = useDepartment();
   
-  // Selected sector from login
-  const [activeSector, setActiveSector] = useState<SectorType>(() => {
-    return (localStorage.getItem("selected_sector") as SectorType) || "red";
+  // Active sector derived from department context
+  const [activeSector, setActiveSector] = useState<string>(() => {
+    return localStorage.getItem("selected_sector") || currentSectorCode || "red";
   });
+  
+  // Sync activeSector when department changes via sidebar
+  useEffect(() => {
+    if (currentSectorCode) {
+      setActiveSector(currentSectorCode);
+    }
+  }, [currentSectorCode]);
   
   // Persist active sector changes
   const handleSectorChange = (sector: string) => {
-    setActiveSector(sector as SectorType);
+    setActiveSector(sector);
     localStorage.setItem("selected_sector", sector);
   };
 
   // Sector visual config
-  const SECTOR_VISUAL: Record<string, { title: string; color: string; dotClass: string; colorVariant: string }> = {
-    red: { title: "UTI 1", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
-    yellow: { title: "UTI 2", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
-    blue: { title: "UCI 1", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
-    outside: { title: "UCI 2", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
+  const SECTOR_VISUAL: Record<string, { title: string; color: string; dotClass: string; colorVariant: string; isUti?: boolean }> = {
+    // UTIs
+    red: { title: "UTI 1", color: "from-red-500/20 to-red-600/10", dotClass: "bg-red-500/80 border-red-400/40", colorVariant: "red", isUti: true },
+    yellow: { title: "UTI 2", color: "from-yellow-500/20 to-yellow-600/10", dotClass: "bg-yellow-500/80 border-yellow-400/40", colorVariant: "yellow", isUti: true },
+    // UCIs
+    blue: { title: "UCI 1", color: "from-blue-500/20 to-blue-600/10", dotClass: "bg-blue-500/80 border-blue-400/40", colorVariant: "blue", isUti: true },
+    outside: { title: "UCI 2", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green", isUti: true },
+    // UCC
+    ucc: { title: "UCC", color: "from-violet-500/20 to-violet-600/10", dotClass: "bg-violet-500/80 border-violet-400/40", colorVariant: "purple" },
+    // Enfermarias
+    neuro_01: { title: "Neuro 01", color: "from-cyan-500/20 to-cyan-600/10", dotClass: "bg-cyan-500/80 border-cyan-400/40", colorVariant: "blue" },
+    neuro_02: { title: "Neuro 02", color: "from-cyan-500/20 to-cyan-600/10", dotClass: "bg-cyan-500/80 border-cyan-400/40", colorVariant: "blue" },
+    clinica_cirurgica: { title: "Clínica Cirúrgica", color: "from-teal-500/20 to-teal-600/10", dotClass: "bg-teal-500/80 border-teal-400/40", colorVariant: "green" },
+    enfermaria_transicao: { title: "Enf. Transição", color: "from-amber-500/20 to-amber-600/10", dotClass: "bg-amber-500/80 border-amber-400/40", colorVariant: "yellow" },
+    enfermaria_vascular: { title: "Enf. Vascular", color: "from-pink-500/20 to-pink-600/10", dotClass: "bg-pink-500/80 border-pink-400/40", colorVariant: "red" },
+    // Urgência e Emergência
     sala_vermelha: { title: "Sala Vermelha", color: "from-red-500/20 to-red-600/10", dotClass: "bg-red-500/80 border-red-400/40", colorVariant: "red" },
     sala_laranja: { title: "Sala Laranja", color: "from-orange-500/20 to-orange-600/10", dotClass: "bg-orange-500/80 border-orange-400/40", colorVariant: "orange" },
+    observacao_clinica: { title: "Obs. Clínica", color: "from-sky-500/20 to-sky-600/10", dotClass: "bg-sky-500/80 border-sky-400/40", colorVariant: "blue" },
+    internacao_ue: { title: "Internação UE", color: "from-indigo-500/20 to-indigo-600/10", dotClass: "bg-indigo-500/80 border-indigo-400/40", colorVariant: "indigo" },
     ue_vertical: { title: "UE Vertical", color: "from-purple-500/20 to-purple-600/10", dotClass: "bg-purple-500/80 border-purple-400/40", colorVariant: "purple" },
     ue_horizontal: { title: "UE Horizontal", color: "from-indigo-500/20 to-indigo-600/10", dotClass: "bg-indigo-500/80 border-indigo-400/40", colorVariant: "indigo" },
+    // RIV
+    riv: { title: "RIV", color: "from-rose-500/20 to-rose-600/10", dotClass: "bg-rose-500/80 border-rose-400/40", colorVariant: "red" },
+    // Centro Cirúrgico
+    cc_preparo: { title: "CC Preparo", color: "from-slate-500/20 to-slate-600/10", dotClass: "bg-slate-500/80 border-slate-400/40", colorVariant: "blue" },
+    cc_bloco: { title: "CC Bloco Cirúrgico", color: "from-slate-500/20 to-slate-600/10", dotClass: "bg-slate-500/80 border-slate-400/40", colorVariant: "blue" },
+    cc_rpa: { title: "CC RPA", color: "from-slate-500/20 to-slate-600/10", dotClass: "bg-slate-500/80 border-slate-400/40", colorVariant: "blue" },
   };
   
   // Use real database patients filtered by department
@@ -896,18 +922,9 @@ const Index = () => {
                   <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                     <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Socorrão I</span>
                     <span className="text-white/30 text-xs">/</span>
-                    <Select value={activeSector} onValueChange={handleSectorChange}>
-                      <SelectTrigger className="h-7 w-auto gap-1 bg-white/10 border-white/20 text-xs text-white font-medium px-2.5 focus:ring-0 focus:ring-offset-0 hover:bg-white/20 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/60 rounded-md">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(SECTOR_VISUAL).map(([key, cfg]) => (
-                          <SelectItem key={key} value={key} className="text-xs font-medium">
-                            {cfg.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <span className="text-[11px] font-semibold px-2 py-1 rounded-md whitespace-nowrap bg-white/15 text-white/90">
+                      {SECTOR_VISUAL[activeSector]?.title || activeSector}
+                    </span>
                     <span className="text-white/30 text-xs">/</span>
                     <ClinicalNavTabs variant="dark" />
                   </div>
@@ -1067,9 +1084,8 @@ const Index = () => {
               <div className="print:hidden">
                 <PreAdmissionSection />
               </div>
-              {currentDepartment === "UTI" ? (
+              {SECTOR_VISUAL[activeSector]?.isUti ? (
                 <div className="space-y-4">
-                  {/* Only render the active sector */}
                   <UtiSectorSection 
                     sector={activeSector as any}
                     patients={patients.filter(p => p.sector === activeSector)}
@@ -1093,137 +1109,25 @@ const Index = () => {
                   />
                 </div>
               ) : (
-                <>
-                  {/* Emergency sectors: Red, Yellow, Blue, Outside */}
+                <div className="space-y-4">
                   <SectorSection 
-                    sector="red" 
-                    patients={redPatients} 
+                    sector={activeSector as any}
+                    patients={filterPatients(patients.filter(p => p.sector === activeSector))}
                     onUpdatePatient={handleUpdatePatient}
                     onDeletePatient={handleDeletePatient}
                     onUndeletePatient={handleUndeletePatient}
-                    onPrintSector={() => handlePrintSector("red")}
-                    onAddExtraBed={() => handleAddExtraBed("red")}
+                    onPrintSector={() => handlePrintSector(activeSector)}
+                    onAddExtraBed={() => handleAddExtraBed(activeSector as Patient['sector'])}
                     selectionMode={selectionMode}
                     selectedPatients={selectedPatients}
                     onToggleSelection={handleToggleSelection}
-                    onReorderPatients={(reordered) => handleReorderPatients("red", reordered)}
+                    onReorderPatients={(reordered) => handleReorderPatients(activeSector, reordered)}
                     onTransfer={handleTransferPatient}
                     onPrintPatient={handlePrintPatient}
                     onRefetch={refetch}
                     onQuickView={handleQuickView}
                   />
-                  <SectorSection 
-                    sector="yellow" 
-                    patients={yellowPatients} 
-                    onUpdatePatient={handleUpdatePatient}
-                    onDeletePatient={handleDeletePatient}
-                    onUndeletePatient={handleUndeletePatient}
-                    onPrintSector={() => handlePrintSector("yellow")}
-                    onAddExtraBed={() => handleAddExtraBed("yellow")}
-                    selectionMode={selectionMode}
-                    selectedPatients={selectedPatients}
-                    onToggleSelection={handleToggleSelection}
-                    onReorderPatients={(reordered) => handleReorderPatients("yellow", reordered)}
-                    onTransfer={handleTransferPatient}
-                    onPrintPatient={handlePrintPatient}
-                    onRefetch={refetch}
-                    onQuickView={handleQuickView}
-                  />
-                  <SectorSection 
-                    sector="blue" 
-                    patients={bluePatients} 
-                    onUpdatePatient={handleUpdatePatient}
-                    onDeletePatient={handleDeletePatient}
-                    onUndeletePatient={handleUndeletePatient}
-                    onPrintSector={() => handlePrintSector("blue")}
-                    onAddExtraBed={() => handleAddExtraBed("blue")}
-                    selectionMode={selectionMode}
-                    selectedPatients={selectedPatients}
-                    onToggleSelection={handleToggleSelection}
-                    onReorderPatients={(reordered) => handleReorderPatients("blue", reordered)}
-                    onTransfer={handleTransferPatient}
-                    onPrintPatient={handlePrintPatient}
-                    onRefetch={refetch}
-                    onQuickView={handleQuickView}
-                  />
-
-                  {/* Pacientes Fora das Alas Section */}
-                  <Collapsible open={isOutsideSectionOpen} onOpenChange={setIsOutsideSectionOpen} className="space-y-3 mb-4 print:hidden">
-                      <div className="bg-gradient-card rounded-xl p-2 border border-border/50 shadow-md transition-all duration-200 min-h-[48px] flex items-center">
-                        <div className="flex items-center justify-between w-full">
-                          <CollapsibleTrigger asChild>
-                            <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                              <ChevronDown className={`h-5 w-5 transition-transform ${isOutsideSectionOpen ? '' : '-rotate-90'}`} />
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">📍</span>
-                                <h2 className="text-lg font-bold text-foreground">Fora das Alas</h2>
-                              </div>
-                            </button>
-                          </CollapsibleTrigger>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handleAddExtraBed("outside")}
-                              className="h-8 w-8"
-                              title="Adicionar paciente"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handlePrintSector("outside")}
-                              className="h-8 w-8"
-                              title="Imprimir seção"
-                            >
-                              <Printer className="h-3.5 w-3.5" />
-                            </Button>
-                            <div className="flex items-center justify-center h-8 w-8 bg-card/80 backdrop-blur-sm rounded-lg border border-border/50">
-                              <p className="text-base font-bold text-foreground">{outsidePatients.length}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <CollapsibleContent>
-                        <div className="space-y-2 mt-3">
-                          {outsidePatients.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-4">
-                              Nenhum paciente fora das alas
-                            </p>
-                          ) : (
-                            <DndContext
-                              sensors={sensors}
-                              collisionDetection={closestCenter}
-                              onDragEnd={handleDragEndOutside}
-                            >
-                              <SortableContext
-                                items={outsidePatients.map(p => p.id)}
-                                strategy={verticalListSortingStrategy}
-                              >
-                                {outsidePatients.map((patient) => (
-                                <SortableOutsidePatientCard
-                                    key={patient.id}
-                                    patient={patient}
-                                    onUpdate={handleUpdatePatient}
-                                    onDelete={handleDeletePatient}
-                                    onUndelete={handleUndeletePatient}
-                                    selectionMode={selectionMode}
-                                    isSelected={selectedPatients.has(patient.id)}
-                                    onToggleSelection={handleToggleSelection}
-                                    onTransfer={handleTransferPatient}
-                                    onPrintPatient={handlePrintPatient}
-                                    onRefetch={refetch}
-                                    onQuickView={handleQuickView}
-                                  />
-                                ))}
-                              </SortableContext>
-                            </DndContext>
-                          )}
-                        </div>
-                      </CollapsibleContent>
-                  </Collapsible>
-                </>
+                </div>
               )}
 
               {/* Anotações e Lembretes Section */}
