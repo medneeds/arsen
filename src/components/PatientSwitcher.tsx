@@ -12,6 +12,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+interface SectorPatient {
+  id: string;
+  name: string;
+  bed_number: string;
+  sector: string;
+}
+
 interface PatientSwitcherProps {
   variant?: "default" | "dark";
 }
