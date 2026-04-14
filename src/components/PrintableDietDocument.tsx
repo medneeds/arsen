@@ -22,7 +22,8 @@ const sectorLabels: Record<string, string> = {
   red: "UTI 1",
   yellow: "UTI 2",
   blue: "UCI 1",
-  outside: "UCI 2"
+  outside: "UCI 2",
+  ucc: "UCC"
 };
 
 export function PrintableDietDocument({

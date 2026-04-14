@@ -552,6 +552,7 @@ export default function PainelClinicoPage() {
                 <SelectItem value="yellow">UTI 2</SelectItem>
                 <SelectItem value="blue">UCI 1</SelectItem>
                 <SelectItem value="outside">UCI 2</SelectItem>
+                <SelectItem value="ucc">UCC</SelectItem>
               </SelectContent>
             </Select>
             <span className="text-white/30 text-xs">/</span>
