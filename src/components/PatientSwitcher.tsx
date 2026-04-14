@@ -4,37 +4,13 @@ import { ChevronDown, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
+import { SECTOR_DISPLAY as SECTOR_LABELS } from "@/contexts/DepartmentContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-interface SectorPatient {
-  id: string;
-  name: string;
-  bed_number: string;
-  sector: string;
-}
-
-const SECTOR_LABELS: Record<string, string> = {
-  red: "UTI 1",
-  yellow: "UTI 2",
-  blue: "UCI 1",
-  outside: "UCI 2",
-  ucc: "UCC",
-  neurocirurgia: "Neurocirurgia",
-  clinica_cirurgica: "Clínica Cirúrgica",
-  enfermaria_transicao: "Enf. Transição",
-  enfermaria_vascular: "Enf. Vascular",
-  sala_vermelha: "Sala Vermelha",
-  sala_laranja: "Sala Laranja",
-  observacao_clinica: "Obs. Clínica",
-  ue_vertical: "UE Vertical",
-  ue_horizontal: "UE Horizontal",
-  riv: "RIV",
-};
 
 interface PatientSwitcherProps {
   variant?: "default" | "dark";

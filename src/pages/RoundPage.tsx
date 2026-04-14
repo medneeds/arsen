@@ -72,8 +72,8 @@ const STATUS_BADGE_COLORS: Record<string, string> = {
 };
 
 const getSectorLabel = (sector: string): string => {
-  const map: Record<string, string> = { red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2" };
-  return map[sector] || sector;
+  const { SECTOR_DISPLAY } = require("@/contexts/DepartmentContext");
+  return SECTOR_DISPLAY[sector] || sector;
 };
 
 export default function RoundPage() {
