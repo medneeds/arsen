@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { format } from "date-fns";
+import React, { useState, useMemo } from "react";
+import { format, differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   ChevronDown, ChevronUp, Copy, Trash2, ShieldCheck, ShieldOff,
-  Clock, FileText, AlertTriangle, Loader2,
+  Clock, FileText, AlertTriangle, Loader2, Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +17,16 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface DayGroup {
+  dayLabel: string;
+  dayNumber: number;
+  date: string;
+  evolutions: EvolutionRecord[];
+}
+
 interface EvolutionTimelineProps {
   evolutions: EvolutionRecord[];
+  admissionDate?: string;
   onUpdate: (id: string, updates: any) => Promise<boolean>;
   onValidate: (id: string) => Promise<boolean>;
   onSuspend: (id: string, reason: string) => Promise<boolean>;
@@ -33,10 +41,11 @@ const STATUS_CONFIG = {
 };
 
 export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
-  evolutions, onUpdate, onValidate, onSuspend, onDelete, onDuplicate,
+  evolutions, admissionDate, onUpdate, onValidate, onSuspend, onDelete, onDuplicate,
 }) => {
   const { user } = useAuth();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [collapsedDays, setCollapsedDays] = useState<Set<number>>(new Set());
   const [savingId, setSavingId] = useState<string | null>(null);
   const [localEdits, setLocalEdits] = useState<Record<string, { soap: any; vitals: any; exam: any }>>({});
   const [suspendDialogId, setSuspendDialogId] = useState<string | null>(null);
@@ -121,17 +130,72 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     return parts.length > 0 ? parts.join(" | ") : "Evolução sem conteúdo";
   };
 
+  const toggleDayCollapse = (dayNumber: number) => {
+    setCollapsedDays(prev => {
+      const n = new Set(prev);
+      n.has(dayNumber) ? n.delete(dayNumber) : n.add(dayNumber);
+      return n;
+    });
+  };
+
+  // Group evolutions by internment day
+  const dayGroups = useMemo((): DayGroup[] => {
+    const admDate = admissionDate ? startOfDay(parseISO(admissionDate)) : null;
+    const groups = new Map<number, DayGroup>();
+
+    evolutions.forEach(evo => {
+      const evoDate = startOfDay(new Date(evo.created_at));
+      const dayNumber = admDate ? differenceInCalendarDays(evoDate, admDate) : 0;
+      const dayNum = Math.max(0, dayNumber);
+
+      if (!groups.has(dayNum)) {
+        groups.set(dayNum, {
+          dayLabel: `D${dayNum}`,
+          dayNumber: dayNum,
+          date: format(evoDate, "dd/MM/yyyy", { locale: ptBR }),
+          evolutions: [],
+        });
+      }
+      groups.get(dayNum)!.evolutions.push(evo);
+    });
+
+    return Array.from(groups.values()).sort((a, b) => b.dayNumber - a.dayNumber);
+  }, [evolutions, admissionDate]);
+
   if (evolutions.length === 0) return null;
 
   return (
     <>
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center gap-2 mb-1">
           <FileText className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-semibold text-foreground">Timeline de Evoluções ({evolutions.length})</span>
         </div>
 
-        {evolutions.map(evo => {
+        {dayGroups.map(group => {
+          const isDayCollapsed = collapsedDays.has(group.dayNumber);
+          return (
+            <div key={group.dayNumber} className="space-y-1.5">
+              {/* Day header */}
+              <button
+                type="button"
+                onClick={() => toggleDayCollapse(group.dayNumber)}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors",
+                  "bg-primary/5 hover:bg-primary/10 border border-primary/15"
+                )}
+              >
+                <Calendar className="h-4 w-4 text-primary" />
+                <span className="text-xs font-bold text-primary">{group.dayLabel}</span>
+                <span className="text-[10px] text-muted-foreground">— {group.date}</span>
+                <span className="text-[10px] text-muted-foreground ml-auto">
+                  {group.evolutions.length} {group.evolutions.length === 1 ? "evolução" : "evoluções"}
+                </span>
+                {isDayCollapsed ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />}
+              </button>
+
+              {/* Evolutions in this day */}
+              {!isDayCollapsed && group.evolutions.map(evo => {
           const isExpanded = expandedIds.has(evo.id);
           const config = STATUS_CONFIG[evo.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
           const StatusIcon = config.icon;
@@ -241,6 +305,9 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+          );
+        })}
             </div>
           );
         })}
