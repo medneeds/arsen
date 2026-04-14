@@ -173,37 +173,8 @@ export function AppSidebar({
     },
   ];
 
-  // Map department names to internal sector codes used by localStorage("selected_sector")
-  const DEPARTMENT_TO_SECTOR: Record<string, string> = {
-    "UTI 1": "red",
-    "UTI 2": "yellow",
-    "UCI 1": "blue",
-    "UCI 2": "outside",
-    "UCC": "ucc",
-    "NEURO 01": "neuro_01",
-    "NEURO 02": "neuro_02",
-    "CLÍNICA CIRÚRGICA": "clinica_cirurgica",
-    "ENFERMARIA DE TRANSIÇÃO": "enfermaria_transicao",
-    "ENFERMARIA VASCULAR": "enfermaria_vascular",
-    "UE VERTICAL": "ue_vertical",
-    "UE HORIZONTAL": "ue_horizontal",
-    "SALA VERMELHA": "sala_vermelha",
-    "SALA LARANJA": "sala_laranja",
-    "INTERNAÇÃO UE": "internacao_ue",
-    "OBSERVAÇÃO CLÍNICA": "observacao_clinica",
-    "RIV": "riv",
-    "CC PREPARO": "cc_preparo",
-    "CC BLOCO CIRÚRGICO": "cc_bloco",
-    "CC RPA": "cc_rpa",
-  };
-
   const handleSectorClick = (department: Department, customLink?: string) => {
-    setCurrentDepartment(department);
-    // Sync with localStorage sector code for header/map pages
-    const sectorCode = DEPARTMENT_TO_SECTOR[department];
-    if (sectorCode) {
-      localStorage.setItem("selected_sector", sectorCode);
-    }
+    setCurrentDepartment(department); // context auto-syncs localStorage
     navigate(customLink || "/mapa");
     if (isMobile) setOpenMobile(false);
   };
