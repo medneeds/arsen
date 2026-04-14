@@ -136,5 +136,6 @@ export function getSectorFromBedNumber(bedNumber: string): string | null {
   if (num >= 9 && num <= 18) return 'UTI 2';
   if (num >= 19 && num <= 26) return 'UCI 1';
   if (num >= 27 && num <= 34) return 'UCI 2';
+  // UCC uses L01-L37 but in its own department context
   return null;
 }

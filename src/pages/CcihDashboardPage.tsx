@@ -28,13 +28,14 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 
-const SECTORS = ["red", "yellow", "blue", "outside"] as const;
+const SECTORS = ["red", "yellow", "blue", "outside", "ucc"] as const;
 
 const SECTOR_COLORS: Record<string, { border: string; bg: string; text: string; dot: string }> = {
   red: { border: "border-red-300", bg: "bg-red-50/50 dark:bg-red-500/5", text: "text-red-700 dark:text-red-400", dot: "bg-red-500" },
   yellow: { border: "border-amber-300", bg: "bg-amber-50/50 dark:bg-amber-500/5", text: "text-amber-700 dark:text-amber-400", dot: "bg-amber-500" },
   blue: { border: "border-blue-300", bg: "bg-blue-50/50 dark:bg-blue-500/5", text: "text-blue-700 dark:text-blue-400", dot: "bg-blue-500" },
   outside: { border: "border-emerald-300", bg: "bg-emerald-50/50 dark:bg-emerald-500/5", text: "text-emerald-700 dark:text-emerald-400", dot: "bg-emerald-500" },
+  ucc: { border: "border-violet-300", bg: "bg-violet-50/50 dark:bg-violet-500/5", text: "text-violet-700 dark:text-violet-400", dot: "bg-violet-500" },
 };
 
 const CULTURE_TYPES = [

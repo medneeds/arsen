@@ -23,6 +23,7 @@ const SECTOR_LABELS: Record<string, string> = {
   yellow: "UTI 2",
   blue: "UCI 1",
   outside: "UCI 2",
+  ucc: "UCC",
 };
 
 interface PatientSwitcherProps {

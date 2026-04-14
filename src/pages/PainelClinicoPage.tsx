@@ -60,7 +60,7 @@ const calcDaysInternment = (admissionDate: string): number | null => {
 };
 
 const getSectorLabel = (sector: string) => {
-  const map: Record<string, string> = { red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2" };
+  const map: Record<string, string> = { red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2", ucc: "UCC" };
   return map[sector] || sector;
 };
 
@@ -70,6 +70,7 @@ const getSectorColor = (sector: string) => {
     yellow: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200",
     blue: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200",
     outside: "bg-muted text-muted-foreground border-border",
+    ucc: "bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-200",
   };
   return map[sector] || "";
 };
