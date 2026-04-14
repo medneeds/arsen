@@ -6,7 +6,21 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border uppercase;
+  }
+  
+  /* Preserve case for actual text inputs and textareas */
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="number"],
+  textarea,
+  [contenteditable="true"],
+  pre, code, .preserve-case {
+    text-transform: none !important;
   }
   
   html,
