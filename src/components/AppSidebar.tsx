@@ -119,6 +119,37 @@ export function AppSidebar({
   // ── Menu structure with per-item profile visibility ──
   // Profiles: medico, gestor, multi, administrativo
   // "porta" and "visitante" roles get special handling below
+  // Sector hierarchy definition
+  const sectorHierarchy = [
+    {
+      group: "UTI",
+      sectors: [
+        { name: "UTI 1", department: "UTI 1" as Department },
+        { name: "UTI 2", department: "UTI 2" as Department },
+      ],
+    },
+    {
+      group: "UCI",
+      sectors: [
+        { name: "UCI 1", department: "UCI 1" as Department },
+        { name: "UCI 2", department: "UCI 2" as Department },
+      ],
+    },
+    { name: "UCC", department: "UCC" as Department },
+    { name: "UE Vertical", department: "UE VERTICAL" as Department, link: "/ue-vertical" },
+    { name: "UE Horizontal", department: "UE HORIZONTAL" as Department, link: "/ue-horizontal" },
+    { name: "Sala Vermelha / Choque", department: "SALA VERMELHA / CHOQUE" as Department },
+    { name: "Observação Laranja", department: "OBSERVAÇÃO LARANJA" as Department },
+    { name: "Posto Internação", department: "POSTO INTERNAÇÃO" as Department },
+    { name: "Centro Cirúrgico", department: "CENTRO CIRÚRGICO" as Department },
+  ];
+
+  const handleSectorClick = (department: Department, customLink?: string) => {
+    setCurrentDepartment(department);
+    navigate(customLink || "/mapa");
+    if (isMobile) setOpenMobile(false);
+  };
+
   const allMenuItems = [
     {
       title: "Início",
@@ -137,18 +168,6 @@ export function AppSidebar({
       icon: Activity,
       link: "/emergencia",
       profiles: ["gestor"],
-    },
-    {
-      title: "UE Vertical",
-      icon: Activity,
-      link: "/ue-vertical",
-      profiles: ["medico", "gestor", "porta"],
-    },
-    {
-      title: "UE Horizontal",
-      icon: Activity,
-      link: "/ue-horizontal",
-      profiles: ["medico", "gestor", "porta"],
     },
     {
       title: "Monitoramento",
