@@ -71,10 +71,8 @@ const STATUS_BADGE_COLORS: Record<string, string> = {
   D: "bg-violet-500/20 text-violet-700 dark:text-violet-400 border-violet-500/30",
 };
 
-const getSectorLabel = (sector: string): string => {
-  const map: Record<string, string> = { red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2" };
-  return map[sector] || sector;
-};
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
+const getSectorLabel = (sector: string): string => getSectorDisplayLabel(sector) || sector;
 
 export default function RoundPage() {
   const { currentHospital, currentState } = useHospital();

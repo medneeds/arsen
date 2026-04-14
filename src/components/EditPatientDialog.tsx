@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { X, FileText, AlertTriangle, Activity, Pill, Stethoscope, Plus, Trash2 } from "lucide-react";
 import { useDepartment } from "@/contexts/DepartmentContext";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { cn } from "@/lib/utils";
 
 interface EditPatientDialogProps {
@@ -155,9 +156,7 @@ export function EditPatientDialog({
     setAdmissionHistoryLocal("");
   };
 
-  const sectorLabel = patient.sector === 'outside' ? 'UCI 2' : 
-                        patient.sector === 'red' ? 'UTI 1' :
-                        patient.sector === 'yellow' ? 'UTI 2' : 'UCI 1';
+  const sectorLabel = getSectorDisplayLabel(patient.sector) || patient.sector;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

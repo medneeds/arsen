@@ -106,25 +106,11 @@ export function formatBedDisplay(bedNumber: string): string {
 
 /**
  * Central mapping from internal sector codes to display labels.
+ * Re-exports from DepartmentContext to maintain a single source of truth.
  */
-export const SECTOR_DISPLAY_LABELS: Record<string, string> = {
-  red: 'UTI 1',
-  yellow: 'UTI 2',
-  blue: 'UCI 1',
-  outside: 'UCI 2',
-  ucc: 'UCC',
-  neuro_01: 'Neuro 01',
-  neuro_02: 'Neuro 02',
-  clinica_cirurgica: 'Clínica Cirúrgica',
-  enfermaria_transicao: 'Enf. Transição',
-  enfermaria_vascular: 'Enf. Vascular',
-  sala_vermelha: 'Sala Vermelha',
-  sala_laranja: 'Sala Laranja',
-  observacao_clinica: 'Obs. Clínica',
-  ue_vertical: 'UE Vertical',
-  ue_horizontal: 'UE Horizontal',
-  riv: 'RIV',
-};
+import { SECTOR_DISPLAY as SECTOR_DISPLAY_LABELS_SOURCE } from "@/contexts/DepartmentContext";
+
+export const SECTOR_DISPLAY_LABELS = SECTOR_DISPLAY_LABELS_SOURCE;
 
 /**
  * Returns the display label for a sector code.
