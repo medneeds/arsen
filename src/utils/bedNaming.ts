@@ -1,7 +1,7 @@
 /**
  * Sector bed configuration: defines prefix, max regular beds, and naming conventions.
  * 
- * Regular beds follow the pattern: PREFIX + NUMBER (e.g., V01, A03, Z06)
+ * Regular beds follow the pattern: PREFIX + NUMBER (e.g., L01, L03)
  * Extra beds (beyond capacity) follow: EXTRA + NUMBER (e.g., EXTRA1, EXTRA2)
  */
 
@@ -13,24 +13,31 @@ export interface SectorBedConfig {
 }
 
 export const SECTOR_BED_CONFIG: Record<string, SectorBedConfig> = {
+  // UTIs
   red: { prefix: 'L', maxRegularBeds: 8, label: 'UTI 1', startNumber: 1 },
   yellow: { prefix: 'L', maxRegularBeds: 10, label: 'UTI 2', startNumber: 9 },
-  blue: { prefix: 'L', maxRegularBeds: 8, label: 'UCI 1', startNumber: 19 },
-  outside: { prefix: 'L', maxRegularBeds: 8, label: 'UCI 2', startNumber: 27 },
+  // UCIs
+  blue: { prefix: 'L', maxRegularBeds: 6, label: 'UCI 1', startNumber: 1 },
+  outside: { prefix: 'L', maxRegularBeds: 8, label: 'UCI 2', startNumber: 7 },
+  // UCC
   ucc: { prefix: 'L', maxRegularBeds: 37, label: 'UCC', startNumber: 1 },
+  // Enfermarias
+  neurocirurgia: { prefix: 'L', maxRegularBeds: 20, label: 'Neurocirurgia', startNumber: 1 },
+  clinica_cirurgica: { prefix: 'L', maxRegularBeds: 40, label: 'Clínica Cirúrgica', startNumber: 1 },
+  enfermaria_transicao: { prefix: 'L', maxRegularBeds: 10, label: 'Enf. Transição', startNumber: 37 },
+  enfermaria_vascular: { prefix: 'L', maxRegularBeds: 95, label: 'Enf. Vascular', startNumber: 1 },
+  // Urgência e Emergência
   sala_vermelha: { prefix: 'SV', maxRegularBeds: 6, label: 'Sala Vermelha' },
-  sala_laranja: { prefix: 'OL', maxRegularBeds: 12, label: 'Obs. Laranja' },
+  sala_laranja: { prefix: 'OL', maxRegularBeds: 12, label: 'Sala Laranja' },
+  observacao_clinica: { prefix: 'OC', maxRegularBeds: 20, label: 'Obs. Clínica' },
   ue_vertical: { prefix: 'EV', maxRegularBeds: 20, label: 'UE Vertical' },
   ue_horizontal: { prefix: 'EH', maxRegularBeds: 20, label: 'UE Horizontal' },
+  // RIV
+  riv: { prefix: 'RV', maxRegularBeds: 10, label: 'RIV' },
 };
 
 /**
  * Determines the next bed number for a given sector based on existing beds.
- * 
- * Logic:
- * 1. If there are available regular slots (V01-V02, A01-A06, Z01-Z06),
- *    assigns the next sequential regular bed.
- * 2. If all regular slots are filled, assigns an EXTRA bed (EXTRA1, EXTRA2, ...).
  */
 export function getNextBedNumber(
   sector: string,
@@ -48,21 +55,18 @@ export function getNextBedNumber(
 
   const config = SECTOR_BED_CONFIG[sector];
   if (!config) {
-    // Fallback for unknown sectors
     return `X${String(existingBedNumbers.length + 1).padStart(2, '0')}`;
   }
 
   const start = config.startNumber ?? 1;
   const end = start + config.maxRegularBeds - 1;
 
-  // Count how many regular beds (with the sector prefix in this range) exist
   const regularBedNumbers = existingBedNumbers
     .filter(b => b.startsWith(config.prefix))
     .map(b => parseInt(b.substring(config.prefix.length), 10))
     .filter(n => !isNaN(n) && n >= start && n <= end);
 
   if (regularBedNumbers.length < config.maxRegularBeds) {
-    // Find the first available slot in range
     for (let i = start; i <= end; i++) {
       if (!regularBedNumbers.includes(i)) {
         return `${config.prefix}${String(i).padStart(2, '0')}`;
@@ -90,8 +94,6 @@ export function isExtraBed(bedNumber: string): boolean {
 
 /**
  * Returns the display label for a bed number.
- * Regular beds: "V01", "A03", etc.
- * Extra beds: "EXTRA 1", "EXTRA 2", etc.
  */
 export function formatBedDisplay(bedNumber: string): string {
   if (isExtraBed(bedNumber)) {
@@ -103,7 +105,6 @@ export function formatBedDisplay(bedNumber: string): string {
 
 /**
  * Central mapping from internal sector codes to display labels.
- * Use this everywhere instead of local mappings.
  */
 export const SECTOR_DISPLAY_LABELS: Record<string, string> = {
   red: 'UTI 1',
@@ -111,15 +112,20 @@ export const SECTOR_DISPLAY_LABELS: Record<string, string> = {
   blue: 'UCI 1',
   outside: 'UCI 2',
   ucc: 'UCC',
+  neurocirurgia: 'Neurocirurgia',
+  clinica_cirurgica: 'Clínica Cirúrgica',
+  enfermaria_transicao: 'Enf. Transição',
+  enfermaria_vascular: 'Enf. Vascular',
   sala_vermelha: 'Sala Vermelha',
-  sala_laranja: 'Obs. Laranja',
+  sala_laranja: 'Sala Laranja',
+  observacao_clinica: 'Obs. Clínica',
   ue_vertical: 'UE Vertical',
   ue_horizontal: 'UE Horizontal',
+  riv: 'RIV',
 };
 
 /**
  * Returns the display label for a sector code.
- * Falls back to the raw code if unknown.
  */
 export function getSectorDisplayLabel(sector: string | null | undefined): string {
   if (!sector) return '';
@@ -128,7 +134,7 @@ export function getSectorDisplayLabel(sector: string | null | undefined): string
 
 /**
  * Derives the UTI/UCI sector name from a bed number (L-prefixed).
- * UTI 1: L01–L08, UTI 2: L09–L18, UCI 1: L19–L26, UCI 2: L27–L34
+ * UTI 1: L01–L08, UTI 2: L09–L18, UCI 1: L01–L06 (context), UCI 2: L07–L14 (context)
  */
 export function getSectorFromBedNumber(bedNumber: string): string | null {
   const match = bedNumber.match(/^L(\d+)$/i);
@@ -136,8 +142,5 @@ export function getSectorFromBedNumber(bedNumber: string): string | null {
   const num = parseInt(match[1], 10);
   if (num >= 1 && num <= 8) return 'UTI 1';
   if (num >= 9 && num <= 18) return 'UTI 2';
-  if (num >= 19 && num <= 26) return 'UCI 1';
-  if (num >= 27 && num <= 34) return 'UCI 2';
-  // UCC uses L01-L37 but in its own department context
   return null;
 }

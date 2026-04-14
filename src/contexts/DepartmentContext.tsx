@@ -11,12 +11,18 @@ export type Department =
   | "UCC"
   | "UE VERTICAL"
   | "UE HORIZONTAL"
-  | "SALA VERMELHA / CHOQUE"
-  | "OBSERVAÇÃO LARANJA"
+  | "SALA VERMELHA"
+  | "SALA LARANJA"
+  | "OBSERVAÇÃO CLÍNICA"
   | "POSTO INTERNAÇÃO"
   | "CENTRO CIRÚRGICO"
   | "CCIH"
-  | "NIR";
+  | "NIR"
+  | "NEUROCIRURGIA"
+  | "CLÍNICA CIRÚRGICA"
+  | "ENFERMARIA DE TRANSIÇÃO"
+  | "ENFERMARIA VASCULAR"
+  | "RIV";
 
 interface DepartmentContextType {
   currentDepartment: Department;
@@ -64,10 +70,16 @@ export const DEPARTMENTS: Department[] = [
   "UCC",
   "UE VERTICAL",
   "UE HORIZONTAL",
-  "SALA VERMELHA / CHOQUE",
-  "OBSERVAÇÃO LARANJA",
+  "SALA VERMELHA",
+  "SALA LARANJA",
+  "OBSERVAÇÃO CLÍNICA",
   "POSTO INTERNAÇÃO",
   "CENTRO CIRÚRGICO",
+  "NEUROCIRURGIA",
+  "CLÍNICA CIRÚRGICA",
+  "ENFERMARIA DE TRANSIÇÃO",
+  "ENFERMARIA VASCULAR",
+  "RIV",
   "CCIH",
   "NIR",
 ];
