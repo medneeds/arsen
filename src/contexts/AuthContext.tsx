@@ -70,12 +70,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserRoleAndDepartments = async (userId: string) => {
     try {
-      // Fetch role
-      const { data: roleData, error: roleError } = await supabase
+      // Fetch role - get highest privilege role (admin > medico > others)
+      const { data: rolesData, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", userId)
-        .maybeSingle();
+        .eq("user_id", userId);
+
+      const roleData = rolesData && rolesData.length > 0
+        ? (rolesData.find(r => r.role === 'admin') || rolesData[0])
+        : null;
 
       if (roleError) {
         if (import.meta.env.DEV) {
