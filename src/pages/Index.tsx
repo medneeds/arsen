@@ -191,15 +191,34 @@ const Index = () => {
   };
 
   // Sector visual config
-  const SECTOR_VISUAL: Record<string, { title: string; color: string; dotClass: string; colorVariant: string }> = {
-    red: { title: "UTI 1", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
-    yellow: { title: "UTI 2", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
-    blue: { title: "UCI 1", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
-    outside: { title: "UCI 2", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green" },
+  const SECTOR_VISUAL: Record<string, { title: string; color: string; dotClass: string; colorVariant: string; isUti?: boolean }> = {
+    // UTIs
+    red: { title: "UTI 1", color: "from-red-500/20 to-red-600/10", dotClass: "bg-red-500/80 border-red-400/40", colorVariant: "red", isUti: true },
+    yellow: { title: "UTI 2", color: "from-yellow-500/20 to-yellow-600/10", dotClass: "bg-yellow-500/80 border-yellow-400/40", colorVariant: "yellow", isUti: true },
+    // UCIs
+    blue: { title: "UCI 1", color: "from-blue-500/20 to-blue-600/10", dotClass: "bg-blue-500/80 border-blue-400/40", colorVariant: "blue", isUti: true },
+    outside: { title: "UCI 2", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green", isUti: true },
+    // UCC
+    ucc: { title: "UCC", color: "from-violet-500/20 to-violet-600/10", dotClass: "bg-violet-500/80 border-violet-400/40", colorVariant: "purple" },
+    // Enfermarias
+    neuro_01: { title: "Neuro 01", color: "from-cyan-500/20 to-cyan-600/10", dotClass: "bg-cyan-500/80 border-cyan-400/40", colorVariant: "blue" },
+    neuro_02: { title: "Neuro 02", color: "from-cyan-500/20 to-cyan-600/10", dotClass: "bg-cyan-500/80 border-cyan-400/40", colorVariant: "blue" },
+    clinica_cirurgica: { title: "Clínica Cirúrgica", color: "from-teal-500/20 to-teal-600/10", dotClass: "bg-teal-500/80 border-teal-400/40", colorVariant: "green" },
+    enfermaria_transicao: { title: "Enf. Transição", color: "from-amber-500/20 to-amber-600/10", dotClass: "bg-amber-500/80 border-amber-400/40", colorVariant: "yellow" },
+    enfermaria_vascular: { title: "Enf. Vascular", color: "from-pink-500/20 to-pink-600/10", dotClass: "bg-pink-500/80 border-pink-400/40", colorVariant: "red" },
+    // Urgência e Emergência
     sala_vermelha: { title: "Sala Vermelha", color: "from-red-500/20 to-red-600/10", dotClass: "bg-red-500/80 border-red-400/40", colorVariant: "red" },
     sala_laranja: { title: "Sala Laranja", color: "from-orange-500/20 to-orange-600/10", dotClass: "bg-orange-500/80 border-orange-400/40", colorVariant: "orange" },
+    observacao_clinica: { title: "Obs. Clínica", color: "from-sky-500/20 to-sky-600/10", dotClass: "bg-sky-500/80 border-sky-400/40", colorVariant: "blue" },
+    internacao_ue: { title: "Internação UE", color: "from-indigo-500/20 to-indigo-600/10", dotClass: "bg-indigo-500/80 border-indigo-400/40", colorVariant: "indigo" },
     ue_vertical: { title: "UE Vertical", color: "from-purple-500/20 to-purple-600/10", dotClass: "bg-purple-500/80 border-purple-400/40", colorVariant: "purple" },
     ue_horizontal: { title: "UE Horizontal", color: "from-indigo-500/20 to-indigo-600/10", dotClass: "bg-indigo-500/80 border-indigo-400/40", colorVariant: "indigo" },
+    // RIV
+    riv: { title: "RIV", color: "from-rose-500/20 to-rose-600/10", dotClass: "bg-rose-500/80 border-rose-400/40", colorVariant: "red" },
+    // Centro Cirúrgico
+    cc_preparo: { title: "CC Preparo", color: "from-slate-500/20 to-slate-600/10", dotClass: "bg-slate-500/80 border-slate-400/40", colorVariant: "blue" },
+    cc_bloco: { title: "CC Bloco Cirúrgico", color: "from-slate-500/20 to-slate-600/10", dotClass: "bg-slate-500/80 border-slate-400/40", colorVariant: "blue" },
+    cc_rpa: { title: "CC RPA", color: "from-slate-500/20 to-slate-600/10", dotClass: "bg-slate-500/80 border-slate-400/40", colorVariant: "blue" },
   };
   
   // Use real database patients filtered by department
