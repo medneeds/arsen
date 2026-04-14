@@ -46,7 +46,6 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
   const { user } = useAuth();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [collapsedDays, setCollapsedDays] = useState<Set<number>>(new Set());
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [savingId, setSavingId] = useState<string | null>(null);
   const [localEdits, setLocalEdits] = useState<Record<string, { soap: any; vitals: any; exam: any }>>({});
   const [suspendDialogId, setSuspendDialogId] = useState<string | null>(null);
