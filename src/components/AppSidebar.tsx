@@ -122,6 +122,15 @@ export function AppSidebar({
   // Sector hierarchy definition
   const sectorHierarchy = [
     {
+      group: "Enfermarias",
+      sectors: [
+        { name: "Neurocirurgia", department: "NEUROCIRURGIA" as Department },
+        { name: "Clínica Cirúrgica", department: "CLÍNICA CIRÚRGICA" as Department },
+        { name: "Enf. Transição", department: "ENFERMARIA DE TRANSIÇÃO" as Department },
+        { name: "UCC", department: "UCC" as Department },
+      ],
+    },
+    {
       group: "UTI",
       sectors: [
         { name: "UTI 1", department: "UTI 1" as Department },
@@ -135,11 +144,23 @@ export function AppSidebar({
         { name: "UCI 2", department: "UCI 2" as Department },
       ],
     },
-    { name: "UCC", department: "UCC" as Department },
-    { name: "UE Vertical", department: "UE VERTICAL" as Department, link: "/ue-vertical" },
-    { name: "UE Horizontal", department: "UE HORIZONTAL" as Department, link: "/ue-horizontal" },
-    { name: "Sala Vermelha / Choque", department: "SALA VERMELHA / CHOQUE" as Department },
-    { name: "Observação Laranja", department: "OBSERVAÇÃO LARANJA" as Department },
+    {
+      group: "Urgência e Emergência",
+      sectors: [
+        { name: "UE Vertical", department: "UE VERTICAL" as Department, link: "/ue-vertical" },
+        { name: "UE Horizontal", department: "UE HORIZONTAL" as Department, link: "/ue-horizontal" },
+        { name: "Sala Vermelha", department: "SALA VERMELHA" as Department },
+        { name: "Sala Laranja", department: "SALA LARANJA" as Department },
+        { name: "Observação Clínica", department: "OBSERVAÇÃO CLÍNICA" as Department },
+      ],
+    },
+    {
+      group: "Enf. Vascular (Anexo)",
+      sectors: [
+        { name: "Enfermaria Vascular", department: "ENFERMARIA VASCULAR" as Department },
+        { name: "RIV", department: "RIV" as Department },
+      ],
+    },
     { name: "Posto Internação", department: "POSTO INTERNAÇÃO" as Department },
     { name: "Centro Cirúrgico", department: "CENTRO CIRÚRGICO" as Department },
   ];
