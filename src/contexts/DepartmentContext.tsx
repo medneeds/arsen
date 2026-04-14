@@ -13,6 +13,7 @@ export type Department =
   | "UE HORIZONTAL"
   | "SALA VERMELHA"
   | "SALA LARANJA"
+  | "INTERNAÇÃO UE"
   | "OBSERVAÇÃO CLÍNICA"
   | "POSTO INTERNAÇÃO"
   | "CENTRO CIRÚRGICO"
