@@ -51,27 +51,21 @@ export default function LandingPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#fafafa] text-gray-900 overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 text-slate-800 overflow-x-hidden">
       {/* ─── HERO ─────────────────────────────────────────────────────── */}
-      <section
-        className="relative min-h-screen flex flex-col items-center justify-center px-6"
-        style={{
-          background:
-            "linear-gradient(160deg, #0a0f1a 0%, #0f172a 35%, #1e293b 65%, #334155 100%)",
-        }}
-      >
+      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 bg-gradient-to-br from-white via-slate-50 to-blue-50/40">
         {/* Subtle grid */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.04]"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.15) 1px, transparent 1px)",
+              "linear-gradient(hsl(215 20% 65% / 0.3) 1px, transparent 1px), linear-gradient(90deg, hsl(215 20% 65% / 0.3) 1px, transparent 1px)",
             backgroundSize: "80px 80px",
           }}
         />
 
         {/* Ambient glow */}
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-white/[0.02] rounded-full blur-3xl" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-100/30 rounded-full blur-3xl" />
 
         <div className="relative z-10 text-center max-w-2xl mx-auto">
           {/* Logo */}
@@ -95,14 +89,14 @@ export default function LandingPage() {
             animate={{ opacity: 1, scaleX: 1 }}
             transition={{ duration: 0.6, delay: 0.6 }}
           >
-            <div className="h-px w-20 bg-gradient-to-r from-transparent to-slate-500/40" />
-            <div className="h-1.5 w-1.5 rounded-full bg-slate-400/50" />
-            <div className="h-px w-20 bg-gradient-to-l from-transparent to-slate-500/40" />
+            <div className="h-px w-20 bg-gradient-to-r from-transparent to-slate-300" />
+            <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+            <div className="h-px w-20 bg-gradient-to-l from-transparent to-slate-300" />
           </motion.div>
 
           {/* Slogan */}
           <motion.p
-            className="text-slate-400 text-base md:text-lg font-light tracking-wide leading-relaxed mb-10"
+            className="text-slate-500 text-base md:text-lg font-light tracking-wide leading-relaxed mb-10"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
@@ -113,7 +107,7 @@ export default function LandingPage() {
           {/* CTA Button */}
           <motion.button
             onClick={() => navigate("/auth")}
-            className="group relative inline-flex items-center gap-3 px-10 py-4 bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] hover:border-white/[0.25] rounded-full text-white font-medium text-sm tracking-[0.2em] transition-all duration-500 backdrop-blur-sm"
+            className="group relative inline-flex items-center gap-3 px-10 py-4 bg-slate-800 hover:bg-slate-700 rounded-full text-white font-medium text-sm tracking-[0.2em] transition-all duration-500 shadow-[0_4px_20px_-4px_hsl(215_20%_30%/0.25)]"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 1.1 }}
@@ -129,20 +123,20 @@ export default function LandingPage() {
         <motion.div
           className="absolute bottom-8 left-1/2 -translate-x-1/2"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.4 }}
+          animate={{ opacity: 0.5 }}
           transition={{ delay: 2 }}
         >
           <div className="flex flex-col items-center gap-2">
-            <span className="text-[9px] text-slate-500 tracking-[0.3em]">
+            <span className="text-[9px] text-slate-400 tracking-[0.3em]">
               Conheça
             </span>
-            <div className="w-px h-6 bg-gradient-to-b from-slate-500/40 to-transparent animate-pulse" />
+            <div className="w-px h-6 bg-gradient-to-b from-slate-300 to-transparent animate-pulse" />
           </div>
         </motion.div>
       </section>
 
       {/* ─── ADVANTAGES ───────────────────────────────────────────────── */}
-      <section className="py-20 md:py-28 px-6 bg-[#fafafa]">
+      <section className="py-20 md:py-28 px-6 bg-white">
         <div className="max-w-5xl mx-auto">
           <motion.div
             className="text-center mb-16"
@@ -151,34 +145,34 @@ export default function LandingPage() {
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.6 }}
           >
-            <p className="text-[10px] tracking-[0.3em] text-gray-400 mb-3 font-medium">
+            <p className="text-[10px] tracking-[0.3em] text-slate-400 mb-3 font-medium">
               Plataforma
             </p>
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-3">
               Tecnologia que transforma
               <br />
-              <span className="text-gray-400 font-light">a gestão hospitalar</span>
+              <span className="text-slate-400 font-light">a gestão hospitalar</span>
             </h2>
-            <div className="h-px w-12 bg-gray-300 mx-auto mt-4" />
+            <div className="h-px w-12 bg-slate-200 mx-auto mt-4" />
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {advantages.map((item, idx) => (
               <motion.div
                 key={idx}
-                className="group p-6 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 hover:shadow-lg hover:shadow-gray-200/50 transition-all duration-500"
+                className="group p-6 rounded-2xl bg-slate-50/80 border border-slate-100 hover:border-slate-200 hover:shadow-lg hover:shadow-slate-200/40 transition-all duration-500"
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-40px" }}
                 transition={{ duration: 0.5, delay: idx * 0.08 }}
               >
-                <div className="h-10 w-10 rounded-xl bg-gray-900 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform duration-300">
+                <div className="h-10 w-10 rounded-xl bg-slate-800 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform duration-300">
                   <item.icon className="h-5 w-5 text-white" />
                 </div>
-                <h3 className="text-sm font-semibold text-gray-900 mb-2 tracking-wide">
+                <h3 className="text-sm font-semibold text-slate-800 mb-2 tracking-wide">
                   {item.title}
                 </h3>
-                <p className="text-xs text-gray-500 leading-relaxed font-light">
+                <p className="text-xs text-slate-500 leading-relaxed font-light">
                   {item.description}
                 </p>
               </motion.div>
@@ -188,17 +182,17 @@ export default function LandingPage() {
       </section>
 
       {/* ─── COMPLIANCE STRIP ─────────────────────────────────────────── */}
-      <section className="py-12 px-6 bg-gray-900">
+      <section className="py-12 px-6 bg-slate-100 border-y border-slate-200">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-              <FileCheck className="h-5 w-5 text-emerald-400" />
+            <div className="h-10 w-10 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+              <FileCheck className="h-5 w-5 text-emerald-600" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-white/90 tracking-wide">
+              <p className="text-xs font-semibold text-slate-700 tracking-wide">
                 {whitelabel.compliance.complianceBadgeTitle}
               </p>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-slate-500">
                 {whitelabel.compliance.legalReferences}
               </p>
             </div>
@@ -206,7 +200,7 @@ export default function LandingPage() {
 
           <motion.button
             onClick={() => navigate("/auth")}
-            className="group inline-flex items-center gap-2 px-8 py-3 bg-white text-gray-900 rounded-full text-xs font-semibold tracking-[0.15em] hover:bg-gray-100 transition-colors duration-300"
+            className="group inline-flex items-center gap-2 px-8 py-3 bg-slate-800 text-white rounded-full text-xs font-semibold tracking-[0.15em] hover:bg-slate-700 transition-colors duration-300 shadow-md"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
@@ -217,13 +211,13 @@ export default function LandingPage() {
       </section>
 
       {/* ─── FOOTER ───────────────────────────────────────────────────── */}
-      <footer className="py-8 px-6 bg-[#0a0f1a] text-center">
+      <footer className="py-8 px-6 bg-white border-t border-slate-100 text-center">
         <img
           src={axiusWordmark}
           alt="Axius"
-          className="h-6 object-contain mx-auto opacity-40 mb-3"
+          className="h-6 object-contain mx-auto opacity-30 mb-3"
         />
-        <p className="text-[9px] text-slate-600 tracking-[0.2em]">
+        <p className="text-[9px] text-slate-400 tracking-[0.2em]">
           {whitelabel.credits.developerLabel} •{" "}
           {whitelabel.credits.developerName}
         </p>
