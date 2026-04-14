@@ -50,7 +50,7 @@ const DESTINATION_SECTORS = [
   { value: "yellow", label: "UTI 2", available: true, color: "bg-yellow-500" },
   { value: "blue", label: "UCI 1", available: true, color: "bg-blue-500" },
   { value: "outside", label: "UCI 2", available: true, color: "bg-gray-500" },
-  { value: "sala_vermelha", label: "Sala Vermelha (Choque)", available: true, color: "bg-red-700" },
+  { value: "sala_vermelha", label: "Sala Vermelha", available: true, color: "bg-red-700" },
   { value: "sala_laranja", label: "Observação Laranja", available: true, color: "bg-orange-500" },
   { value: "ue_vertical", label: "Urgência e Emergência Vertical", available: true, color: "bg-purple-500" },
   { value: "ue_horizontal", label: "Urgência e Emergência Horizontal", available: true, color: "bg-indigo-500" },
