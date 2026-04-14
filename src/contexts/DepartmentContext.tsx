@@ -4,7 +4,18 @@ export type Department =
   | "URGÊNCIA E EMERGÊNCIA ADULTO"
   | "URGÊNCIA E EMERGÊNCIA PEDIÁTRICA"
   | "UTI"
-  | "POSTO INTERNAÇÃO";
+  | "UTI 1"
+  | "UTI 2"
+  | "UCI 1"
+  | "UCI 2"
+  | "UE VERTICAL"
+  | "UE HORIZONTAL"
+  | "SALA VERMELHA / CHOQUE"
+  | "OBSERVAÇÃO LARANJA"
+  | "POSTO INTERNAÇÃO"
+  | "CENTRO CIRÚRGICO"
+  | "CCIH"
+  | "NIR";
 
 interface DepartmentContextType {
   currentDepartment: Department;
@@ -45,6 +56,16 @@ export function useDepartment() {
 export const DEPARTMENTS: Department[] = [
   "URGÊNCIA E EMERGÊNCIA ADULTO",
   "URGÊNCIA E EMERGÊNCIA PEDIÁTRICA",
-  "UTI",
+  "UTI 1",
+  "UTI 2",
+  "UCI 1",
+  "UCI 2",
+  "UE VERTICAL",
+  "UE HORIZONTAL",
+  "SALA VERMELHA / CHOQUE",
+  "OBSERVAÇÃO LARANJA",
   "POSTO INTERNAÇÃO",
+  "CENTRO CIRÚRGICO",
+  "CCIH",
+  "NIR",
 ];
