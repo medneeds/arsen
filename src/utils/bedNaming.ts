@@ -20,7 +20,7 @@ export const SECTOR_BED_CONFIG: Record<string, SectorBedConfig> = {
   blue: { prefix: 'L', maxRegularBeds: 6, label: 'UCI 1', startNumber: 1 },
   outside: { prefix: 'L', maxRegularBeds: 8, label: 'UCI 2', startNumber: 7 },
   // UCC
-  ucc: { prefix: 'L', maxRegularBeds: 37, label: 'UCC', startNumber: 1 },
+  ucc: { prefix: 'L', maxRegularBeds: 37, label: 'UCC', startNumber: 1 }, // L36-L37 = estabilização
   // Enfermarias
   neuro_01: { prefix: 'L', maxRegularBeds: 10, label: 'Neuro 01', startNumber: 1 },
   neuro_02: { prefix: 'L', maxRegularBeds: 10, label: 'Neuro 02', startNumber: 11 },
