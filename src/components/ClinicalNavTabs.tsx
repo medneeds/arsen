@@ -1,29 +1,7 @@
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { LayoutDashboard, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const SECTOR_LABELS: Record<string, string> = {
-  red: "UTI 1",
-  yellow: "UTI 2",
-  blue: "UCI 1",
-  outside: "UCI 2",
-  ucc: "UCC",
-  neuro_01: "Neuro 01",
-  neuro_02: "Neuro 02",
-  clinica_cirurgica: "Clínica Cirúrgica",
-  enfermaria_transicao: "Enf. Transição",
-  enfermaria_vascular: "Enf. Vascular",
-  sala_vermelha: "Sala Vermelha",
-  sala_laranja: "Sala Laranja",
-  observacao_clinica: "Obs. Clínica",
-  internacao_ue: "Internação UE",
-  ue_vertical: "UE Vertical",
-  ue_horizontal: "UE Horizontal",
-  riv: "RIV",
-  cc_preparo: "CC Preparo",
-  cc_bloco: "CC Bloco Cirúrgico",
-  cc_rpa: "CC RPA",
-};
+import { useDepartment, SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 
 const tabs = [
   { label: "Mapa de leitos", path: "/mapa", icon: LayoutDashboard },
@@ -38,9 +16,13 @@ export function ClinicalNavTabs({ variant = "default" }: ClinicalNavTabsProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { currentSectorLabel } = useDepartment();
 
-  const sector = searchParams.get("patientSector") || localStorage.getItem("selected_sector") || "";
-  const sectorLabel = SECTOR_LABELS[sector] || sector;
+  // Use patient-specific sector from URL if available, otherwise use the global department context
+  const patientSector = searchParams.get("patientSector");
+  const sectorLabel = patientSector
+    ? (SECTOR_DISPLAY[patientSector] || patientSector)
+    : currentSectorLabel;
 
   return (
     <div className="flex items-center gap-1.5">
