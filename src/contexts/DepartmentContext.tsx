@@ -16,7 +16,9 @@ export type Department =
   | "INTERNAÇÃO UE"
   | "OBSERVAÇÃO CLÍNICA"
   | "POSTO INTERNAÇÃO"
-  | "CENTRO CIRÚRGICO"
+  | "CC PREPARO"
+  | "CC BLOCO CIRÚRGICO"
+  | "CC RPA"
   | "CCIH"
   | "NIR"
   | "NEUROCIRURGIA"
@@ -75,8 +77,9 @@ export const DEPARTMENTS: Department[] = [
   "SALA LARANJA",
   "INTERNAÇÃO UE",
   "OBSERVAÇÃO CLÍNICA",
-  "POSTO INTERNAÇÃO",
-  "CENTRO CIRÚRGICO",
+  "CC PREPARO",
+  "CC BLOCO CIRÚRGICO",
+  "CC RPA",
   "NEUROCIRURGIA",
   "CLÍNICA CIRÚRGICA",
   "ENFERMARIA DE TRANSIÇÃO",

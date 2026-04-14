@@ -162,8 +162,14 @@ export function AppSidebar({
         { name: "RIV", department: "RIV" as Department },
       ],
     },
-    { name: "Posto Internação", department: "POSTO INTERNAÇÃO" as Department },
-    { name: "Centro Cirúrgico", department: "CENTRO CIRÚRGICO" as Department },
+    {
+      group: "Centro Cirúrgico",
+      sectors: [
+        { name: "Preparo", department: "CC PREPARO" as Department },
+        { name: "Bloco Cirúrgico", department: "CC BLOCO CIRÚRGICO" as Department },
+        { name: "RPA", department: "CC RPA" as Department },
+      ],
+    },
   ];
 
   const handleSectorClick = (department: Department, customLink?: string) => {
@@ -665,8 +671,9 @@ export function AppSidebar({
                           );
                         }
 
-                        // Direct sector (e.g. UCC, UE Vertical)
-                        const directEntry = entry as { name: string; department: Department; link?: string };
+                        // Direct sector (e.g. standalone items)
+                        if (!('name' in entry) || !('department' in entry)) return null;
+                        const directEntry = entry as unknown as { name: string; department: Department; link?: string };
                         return (
                           <SidebarMenuItem key={directEntry.name}>
                             <SidebarMenuButton
