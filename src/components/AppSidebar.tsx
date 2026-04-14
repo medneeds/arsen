@@ -124,7 +124,8 @@ export function AppSidebar({
     {
       group: "Enfermarias",
       sectors: [
-        { name: "Neurocirurgia", department: "NEUROCIRURGIA" as Department },
+        { name: "Neuro 01", department: "NEURO 01" as Department },
+        { name: "Neuro 02", department: "NEURO 02" as Department },
         { name: "Clínica Cirúrgica", department: "CLÍNICA CIRÚRGICA" as Department },
         { name: "Enf. Transição", department: "ENFERMARIA DE TRANSIÇÃO" as Department },
         { name: "UCC", department: "UCC" as Department },

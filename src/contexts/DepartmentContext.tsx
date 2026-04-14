@@ -21,7 +21,8 @@ export type Department =
   | "CC RPA"
   | "CCIH"
   | "NIR"
-  | "NEUROCIRURGIA"
+  | "NEURO 01"
+  | "NEURO 02"
   | "CLÍNICA CIRÚRGICA"
   | "ENFERMARIA DE TRANSIÇÃO"
   | "ENFERMARIA VASCULAR"
@@ -80,7 +81,8 @@ export const DEPARTMENTS: Department[] = [
   "CC PREPARO",
   "CC BLOCO CIRÚRGICO",
   "CC RPA",
-  "NEUROCIRURGIA",
+  "NEURO 01",
+  "NEURO 02",
   "CLÍNICA CIRÚRGICA",
   "ENFERMARIA DE TRANSIÇÃO",
   "ENFERMARIA VASCULAR",

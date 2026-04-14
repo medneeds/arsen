@@ -22,7 +22,8 @@ export const SECTOR_BED_CONFIG: Record<string, SectorBedConfig> = {
   // UCC
   ucc: { prefix: 'L', maxRegularBeds: 37, label: 'UCC', startNumber: 1 },
   // Enfermarias
-  neurocirurgia: { prefix: 'L', maxRegularBeds: 20, label: 'Neurocirurgia', startNumber: 1 },
+  neuro_01: { prefix: 'L', maxRegularBeds: 10, label: 'Neuro 01', startNumber: 1 },
+  neuro_02: { prefix: 'L', maxRegularBeds: 10, label: 'Neuro 02', startNumber: 11 },
   clinica_cirurgica: { prefix: 'L', maxRegularBeds: 40, label: 'Clínica Cirúrgica', startNumber: 1 },
   enfermaria_transicao: { prefix: 'L', maxRegularBeds: 10, label: 'Enf. Transição', startNumber: 37 },
   enfermaria_vascular: { prefix: 'L', maxRegularBeds: 95, label: 'Enf. Vascular', startNumber: 1 },
@@ -112,7 +113,8 @@ export const SECTOR_DISPLAY_LABELS: Record<string, string> = {
   blue: 'UCI 1',
   outside: 'UCI 2',
   ucc: 'UCC',
-  neurocirurgia: 'Neurocirurgia',
+  neuro_01: 'Neuro 01',
+  neuro_02: 'Neuro 02',
   clinica_cirurgica: 'Clínica Cirúrgica',
   enfermaria_transicao: 'Enf. Transição',
   enfermaria_vascular: 'Enf. Vascular',
