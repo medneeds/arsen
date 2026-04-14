@@ -45,14 +45,14 @@ export function LoadingScreen({ onComplete, duration = 2500 }: LoadingScreenProp
         isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
       style={{
-        background: "linear-gradient(145deg, #060e1a 0%, #0a1628 30%, #0f2847 70%, #0a1628 100%)",
+        background: "linear-gradient(145deg, hsl(210 20% 98%) 0%, hsl(210 30% 96%) 30%, hsl(215 40% 94%) 70%, hsl(210 20% 97%) 100%)",
       }}
     >
       {/* Subtle grid */}
       <div
-        className="absolute inset-0 opacity-[0.02]"
+        className="absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(hsl(215 20% 65% / 0.3) 1px, transparent 1px), linear-gradient(90deg, hsl(215 20% 65% / 0.3) 1px, transparent 1px)`,
           backgroundSize: "80px 80px",
         }}
       />
@@ -62,7 +62,7 @@ export function LoadingScreen({ onComplete, duration = 2500 }: LoadingScreenProp
         <div
           className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-[140px]"
           style={{
-            background: "radial-gradient(ellipse, rgba(45, 212, 191, 0.06) 0%, transparent 70%)",
+            background: "radial-gradient(ellipse, hsl(215 60% 85% / 0.4) 0%, transparent 70%)",
           }}
         />
       </div>
@@ -91,7 +91,7 @@ export function LoadingScreen({ onComplete, duration = 2500 }: LoadingScreenProp
             transitionDelay: "300ms",
           }}
         >
-          <div className="h-px bg-gradient-to-r from-transparent via-[#2dd4bf]/30 to-transparent" />
+          <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
         </div>
 
         {/* Slogan */}
@@ -103,8 +103,8 @@ export function LoadingScreen({ onComplete, duration = 2500 }: LoadingScreenProp
             transitionDelay: "500ms",
           }}
         >
-          <p className="text-base sm:text-lg font-light tracking-wide text-slate-400/80 leading-relaxed">
-            Mapeando cuidados, salvando <span className="text-[#2dd4bf] font-medium">vidas</span>.
+          <p className="text-base sm:text-lg font-light tracking-wide text-slate-500 leading-relaxed">
+            Mapeando cuidados, salvando <span className="text-slate-700 font-medium">vidas</span>.
           </p>
         </div>
 
@@ -117,16 +117,16 @@ export function LoadingScreen({ onComplete, duration = 2500 }: LoadingScreenProp
             transitionDelay: "150ms",
           }}
         >
-          <div className="w-full h-[1.5px] bg-slate-800/60 rounded-full overflow-hidden">
+          <div className="w-full h-[1.5px] bg-slate-200 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-100 ease-out"
               style={{
                 width: `${progress}%`,
-                background: "linear-gradient(90deg, rgba(45,212,191,0.3) 0%, rgba(45,212,191,0.7) 50%, rgba(45,212,191,0.3) 100%)",
+                background: "linear-gradient(90deg, hsl(215 40% 75%) 0%, hsl(215 50% 55%) 50%, hsl(215 40% 75%) 100%)",
               }}
             />
           </div>
-          <p className="text-[9px] text-slate-600 tracking-[0.3em] text-center mt-3 font-light">
+          <p className="text-[9px] text-slate-400 tracking-[0.3em] text-center mt-3 font-light">
             {whitelabel.platform.loadingText}
           </p>
         </div>
