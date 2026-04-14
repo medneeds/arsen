@@ -41,9 +41,11 @@ const STATUS_CONFIG = {
 };
 
 export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
-  evolutions, onUpdate, onValidate, onSuspend, onDelete, onDuplicate,
+  evolutions, admissionDate, onUpdate, onValidate, onSuspend, onDelete, onDuplicate,
 }) => {
   const { user } = useAuth();
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [collapsedDays, setCollapsedDays] = useState<Set<number>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [savingId, setSavingId] = useState<string | null>(null);
   const [localEdits, setLocalEdits] = useState<Record<string, { soap: any; vitals: any; exam: any }>>({});
