@@ -63,6 +63,7 @@ import {
 import { ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDepartment, type Department } from "@/contexts/DepartmentContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -94,6 +95,7 @@ export function AppSidebar({
   const { open, setOpen, openMobile, setOpenMobile, state } = useSidebar();
   const navigate = useNavigate();
   const { signOut, user, role } = useAuth();
+  const { currentDepartment, setCurrentDepartment } = useDepartment();
   const isMobile = useIsMobile();
   const isCollapsed = state === "collapsed";
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -117,6 +119,37 @@ export function AppSidebar({
   // ── Menu structure with per-item profile visibility ──
   // Profiles: medico, gestor, multi, administrativo
   // "porta" and "visitante" roles get special handling below
+  // Sector hierarchy definition
+  const sectorHierarchy = [
+    {
+      group: "UTI",
+      sectors: [
+        { name: "UTI 1", department: "UTI 1" as Department },
+        { name: "UTI 2", department: "UTI 2" as Department },
+      ],
+    },
+    {
+      group: "UCI",
+      sectors: [
+        { name: "UCI 1", department: "UCI 1" as Department },
+        { name: "UCI 2", department: "UCI 2" as Department },
+      ],
+    },
+    { name: "UCC", department: "UCC" as Department },
+    { name: "UE Vertical", department: "UE VERTICAL" as Department, link: "/ue-vertical" },
+    { name: "UE Horizontal", department: "UE HORIZONTAL" as Department, link: "/ue-horizontal" },
+    { name: "Sala Vermelha / Choque", department: "SALA VERMELHA / CHOQUE" as Department },
+    { name: "Observação Laranja", department: "OBSERVAÇÃO LARANJA" as Department },
+    { name: "Posto Internação", department: "POSTO INTERNAÇÃO" as Department },
+    { name: "Centro Cirúrgico", department: "CENTRO CIRÚRGICO" as Department },
+  ];
+
+  const handleSectorClick = (department: Department, customLink?: string) => {
+    setCurrentDepartment(department);
+    navigate(customLink || "/mapa");
+    if (isMobile) setOpenMobile(false);
+  };
+
   const allMenuItems = [
     {
       title: "Início",
@@ -135,18 +168,6 @@ export function AppSidebar({
       icon: Activity,
       link: "/emergencia",
       profiles: ["gestor"],
-    },
-    {
-      title: "UE Vertical",
-      icon: Activity,
-      link: "/ue-vertical",
-      profiles: ["medico", "gestor", "porta"],
-    },
-    {
-      title: "UE Horizontal",
-      icon: Activity,
-      link: "/ue-horizontal",
-      profiles: ["medico", "gestor", "porta"],
     },
     {
       title: "Monitoramento",
@@ -542,6 +563,116 @@ export function AppSidebar({
             )}
           </div>
         ))}
+
+        {/* ── Hierarchical Sectors Section ── */}
+        {(accessProfile === "medico" || accessProfile === "gestor") && (
+          <>
+            <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-3 mx-4" />
+            <Collapsible defaultOpen={true} className="group/sectors">
+              <SidebarGroup className="py-0 my-0">
+                <CollapsibleTrigger className="w-full">
+                  <SidebarGroupLabel
+                    className={cn(
+                      "transition-all duration-200 hover:bg-accent/80 cursor-pointer !opacity-100 !mt-0",
+                      isCollapsed ? "justify-center px-2 py-3" : "justify-between px-4 py-3 hover:scale-105",
+                      "h-auto border-b border-border/50"
+                    )}
+                  >
+                    <div className={cn("flex items-center w-full", isCollapsed ? "justify-center" : "gap-3")}>
+                      <BedDouble className="h-5 w-5 text-primary transition-all duration-200" />
+                      {!isCollapsed && (
+                        <>
+                          <span className="text-xs font-medium tracking-wide text-foreground flex-1 text-left">
+                            Setores
+                          </span>
+                          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]/sectors:rotate-180" />
+                        </>
+                      )}
+                    </div>
+                  </SidebarGroupLabel>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="transition-all duration-300 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                  <SidebarGroupContent className="px-2">
+                    <SidebarMenu>
+                      {sectorHierarchy.map((entry) => {
+                        // Grouped sector (e.g. UTI with UTI 1, UTI 2)
+                        if ('group' in entry && entry.sectors) {
+                          return (
+                            <Collapsible key={entry.group} className="group/sectorgroup">
+                              <CollapsibleTrigger className="w-full">
+                                <SidebarMenuItem>
+                                  <SidebarMenuButton
+                                    className="group/item hover:bg-accent/80 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 mb-1 justify-between"
+                                    tooltip={entry.group}
+                                  >
+                                    <div className="flex items-center gap-3 flex-1">
+                                      <div className="rounded-full bg-primary/20 transition-all duration-200 group-hover/item:scale-150 flex-shrink-0 h-2 w-2 ml-1" />
+                                      <span className="flex-1 text-left font-medium ml-1 animate-fade-in">
+                                        {entry.group}
+                                      </span>
+                                    </div>
+                                    <ChevronDown className="h-3 w-3 text-muted-foreground transition-transform duration-200 group-data-[state=open]/sectorgroup:rotate-180 mr-2" />
+                                  </SidebarMenuButton>
+                                </SidebarMenuItem>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className="transition-all duration-300 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
+                                <SidebarMenu className="ml-4 border-l border-border/30 pl-2">
+                                  {entry.sectors.map((sector) => (
+                                    <SidebarMenuItem key={sector.name}>
+                                      <SidebarMenuButton
+                                        className={cn(
+                                          "group/subitem hover:bg-accent/60 transition-all duration-200 text-[10px] rounded-lg cursor-pointer gap-2 hover:translate-x-1 mb-1",
+                                          currentDepartment === sector.department && "bg-primary/10 text-primary font-semibold"
+                                        )}
+                                        tooltip={sector.name}
+                                        onClick={() => handleSectorClick(sector.department)}
+                                      >
+                                        <div className={cn(
+                                          "rounded-full transition-all duration-200 group-hover/subitem:scale-150 flex-shrink-0 h-1.5 w-1.5",
+                                          currentDepartment === sector.department ? "bg-primary" : "bg-primary/10"
+                                        )} />
+                                        <span className="flex-1 text-left animate-fade-in">
+                                          {sector.name}
+                                        </span>
+                                      </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                  ))}
+                                </SidebarMenu>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          );
+                        }
+
+                        // Direct sector (e.g. UCC, UE Vertical)
+                        const directEntry = entry as { name: string; department: Department; link?: string };
+                        return (
+                          <SidebarMenuItem key={directEntry.name}>
+                            <SidebarMenuButton
+                              className={cn(
+                                "group/item hover:bg-accent/80 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 hover:translate-x-1 mb-1",
+                                currentDepartment === directEntry.department && "bg-primary/10 text-primary font-semibold"
+                              )}
+                              tooltip={directEntry.name}
+                              onClick={() => handleSectorClick(directEntry.department, directEntry.link)}
+                            >
+                              <div className={cn(
+                                "rounded-full transition-all duration-200 group-hover/item:scale-150 flex-shrink-0 h-2 w-2 ml-1",
+                                currentDepartment === directEntry.department ? "bg-primary" : "bg-primary/20"
+                              )} />
+                              <span className="flex-1 text-left font-medium ml-1 animate-fade-in">
+                                {directEntry.name}
+                              </span>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        );
+                      })}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </SidebarGroup>
+            </Collapsible>
+          </>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/50 p-3 bg-muted/30 space-y-2">
