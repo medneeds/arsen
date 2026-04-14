@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { X, FileText, AlertTriangle, Activity, Pill, Stethoscope, Plus, Trash2 } from "lucide-react";
 import { useDepartment } from "@/contexts/DepartmentContext";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { cn } from "@/lib/utils";
 
 interface EditPatientDialogProps {

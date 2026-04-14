@@ -71,10 +71,8 @@ const STATUS_BADGE_COLORS: Record<string, string> = {
   D: "bg-violet-500/20 text-violet-700 dark:text-violet-400 border-violet-500/30",
 };
 
-const getSectorLabel = (sector: string): string => {
-  const { SECTOR_DISPLAY } = require("@/contexts/DepartmentContext");
-  return SECTOR_DISPLAY[sector] || sector;
-};
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
+const getSectorLabel = (sector: string): string => getSectorDisplayLabel(sector) || sector;
 
 export default function RoundPage() {
   const { currentHospital, currentState } = useHospital();
