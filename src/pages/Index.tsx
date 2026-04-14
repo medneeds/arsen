@@ -922,18 +922,9 @@ const Index = () => {
                   <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                     <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Socorrão I</span>
                     <span className="text-white/30 text-xs">/</span>
-                    <Select value={activeSector} onValueChange={handleSectorChange}>
-                      <SelectTrigger className="h-7 w-auto gap-1 bg-white/10 border-white/20 text-xs text-white font-medium px-2.5 focus:ring-0 focus:ring-offset-0 hover:bg-white/20 transition-colors [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-white/60 rounded-md">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(SECTOR_VISUAL).map(([key, cfg]) => (
-                          <SelectItem key={key} value={key} className="text-xs font-medium">
-                            {cfg.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <span className="text-[11px] font-semibold px-2 py-1 rounded-md whitespace-nowrap bg-white/15 text-white/90">
+                      {SECTOR_VISUAL[activeSector]?.title || activeSector}
+                    </span>
                     <span className="text-white/30 text-xs">/</span>
                     <ClinicalNavTabs variant="dark" />
                   </div>
