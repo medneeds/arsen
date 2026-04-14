@@ -1093,9 +1093,8 @@ const Index = () => {
               <div className="print:hidden">
                 <PreAdmissionSection />
               </div>
-              {currentDepartment === "UTI" ? (
+              {SECTOR_VISUAL[activeSector]?.isUti ? (
                 <div className="space-y-4">
-                  {/* Only render the active sector */}
                   <UtiSectorSection 
                     sector={activeSector as any}
                     patients={patients.filter(p => p.sector === activeSector)}
@@ -1119,137 +1118,25 @@ const Index = () => {
                   />
                 </div>
               ) : (
-                <>
-                  {/* Emergency sectors: Red, Yellow, Blue, Outside */}
+                <div className="space-y-4">
                   <SectorSection 
-                    sector="red" 
-                    patients={redPatients} 
+                    sector={activeSector as any}
+                    patients={filterPatients(patients.filter(p => p.sector === activeSector))}
                     onUpdatePatient={handleUpdatePatient}
                     onDeletePatient={handleDeletePatient}
                     onUndeletePatient={handleUndeletePatient}
-                    onPrintSector={() => handlePrintSector("red")}
-                    onAddExtraBed={() => handleAddExtraBed("red")}
+                    onPrintSector={() => handlePrintSector(activeSector)}
+                    onAddExtraBed={() => handleAddExtraBed(activeSector as Patient['sector'])}
                     selectionMode={selectionMode}
                     selectedPatients={selectedPatients}
                     onToggleSelection={handleToggleSelection}
-                    onReorderPatients={(reordered) => handleReorderPatients("red", reordered)}
+                    onReorderPatients={(reordered) => handleReorderPatients(activeSector, reordered)}
                     onTransfer={handleTransferPatient}
                     onPrintPatient={handlePrintPatient}
                     onRefetch={refetch}
                     onQuickView={handleQuickView}
                   />
-                  <SectorSection 
-                    sector="yellow" 
-                    patients={yellowPatients} 
-                    onUpdatePatient={handleUpdatePatient}
-                    onDeletePatient={handleDeletePatient}
-                    onUndeletePatient={handleUndeletePatient}
-                    onPrintSector={() => handlePrintSector("yellow")}
-                    onAddExtraBed={() => handleAddExtraBed("yellow")}
-                    selectionMode={selectionMode}
-                    selectedPatients={selectedPatients}
-                    onToggleSelection={handleToggleSelection}
-                    onReorderPatients={(reordered) => handleReorderPatients("yellow", reordered)}
-                    onTransfer={handleTransferPatient}
-                    onPrintPatient={handlePrintPatient}
-                    onRefetch={refetch}
-                    onQuickView={handleQuickView}
-                  />
-                  <SectorSection 
-                    sector="blue" 
-                    patients={bluePatients} 
-                    onUpdatePatient={handleUpdatePatient}
-                    onDeletePatient={handleDeletePatient}
-                    onUndeletePatient={handleUndeletePatient}
-                    onPrintSector={() => handlePrintSector("blue")}
-                    onAddExtraBed={() => handleAddExtraBed("blue")}
-                    selectionMode={selectionMode}
-                    selectedPatients={selectedPatients}
-                    onToggleSelection={handleToggleSelection}
-                    onReorderPatients={(reordered) => handleReorderPatients("blue", reordered)}
-                    onTransfer={handleTransferPatient}
-                    onPrintPatient={handlePrintPatient}
-                    onRefetch={refetch}
-                    onQuickView={handleQuickView}
-                  />
-
-                  {/* Pacientes Fora das Alas Section */}
-                  <Collapsible open={isOutsideSectionOpen} onOpenChange={setIsOutsideSectionOpen} className="space-y-3 mb-4 print:hidden">
-                      <div className="bg-gradient-card rounded-xl p-2 border border-border/50 shadow-md transition-all duration-200 min-h-[48px] flex items-center">
-                        <div className="flex items-center justify-between w-full">
-                          <CollapsibleTrigger asChild>
-                            <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                              <ChevronDown className={`h-5 w-5 transition-transform ${isOutsideSectionOpen ? '' : '-rotate-90'}`} />
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">📍</span>
-                                <h2 className="text-lg font-bold text-foreground">Fora das Alas</h2>
-                              </div>
-                            </button>
-                          </CollapsibleTrigger>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handleAddExtraBed("outside")}
-                              className="h-8 w-8"
-                              title="Adicionar paciente"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => handlePrintSector("outside")}
-                              className="h-8 w-8"
-                              title="Imprimir seção"
-                            >
-                              <Printer className="h-3.5 w-3.5" />
-                            </Button>
-                            <div className="flex items-center justify-center h-8 w-8 bg-card/80 backdrop-blur-sm rounded-lg border border-border/50">
-                              <p className="text-base font-bold text-foreground">{outsidePatients.length}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <CollapsibleContent>
-                        <div className="space-y-2 mt-3">
-                          {outsidePatients.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-4">
-                              Nenhum paciente fora das alas
-                            </p>
-                          ) : (
-                            <DndContext
-                              sensors={sensors}
-                              collisionDetection={closestCenter}
-                              onDragEnd={handleDragEndOutside}
-                            >
-                              <SortableContext
-                                items={outsidePatients.map(p => p.id)}
-                                strategy={verticalListSortingStrategy}
-                              >
-                                {outsidePatients.map((patient) => (
-                                <SortableOutsidePatientCard
-                                    key={patient.id}
-                                    patient={patient}
-                                    onUpdate={handleUpdatePatient}
-                                    onDelete={handleDeletePatient}
-                                    onUndelete={handleUndeletePatient}
-                                    selectionMode={selectionMode}
-                                    isSelected={selectedPatients.has(patient.id)}
-                                    onToggleSelection={handleToggleSelection}
-                                    onTransfer={handleTransferPatient}
-                                    onPrintPatient={handlePrintPatient}
-                                    onRefetch={refetch}
-                                    onQuickView={handleQuickView}
-                                  />
-                                ))}
-                              </SortableContext>
-                            </DndContext>
-                          )}
-                        </div>
-                      </CollapsibleContent>
-                  </Collapsible>
-                </>
+                </div>
               )}
 
               {/* Anotações e Lembretes Section */}
