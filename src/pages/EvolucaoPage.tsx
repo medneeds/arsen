@@ -194,6 +194,7 @@ const EvolucaoPage = () => {
         {!loading && (
           <EvolutionTimeline
             evolutions={evolutions}
+            admissionDate={patient.admissionDate}
             onUpdate={updateEvolution}
             onValidate={validateEvolution}
             onSuspend={suspendEvolution}
