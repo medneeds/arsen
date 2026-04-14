@@ -63,6 +63,7 @@ import {
 import { ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDepartment, type Department } from "@/contexts/DepartmentContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
