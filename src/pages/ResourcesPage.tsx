@@ -304,6 +304,7 @@ const ResourcesPage = () => {
       case 'yellow': return 'UTI 2';
       case 'blue': return 'UCI 1';
       case 'outside': return 'UCI 2';
+      case 'ucc': return 'UCC';
       default: return sector;
     }
   };

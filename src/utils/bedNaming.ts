@@ -17,6 +17,7 @@ export const SECTOR_BED_CONFIG: Record<string, SectorBedConfig> = {
   yellow: { prefix: 'L', maxRegularBeds: 10, label: 'UTI 2', startNumber: 9 },
   blue: { prefix: 'L', maxRegularBeds: 8, label: 'UCI 1', startNumber: 19 },
   outside: { prefix: 'L', maxRegularBeds: 8, label: 'UCI 2', startNumber: 27 },
+  ucc: { prefix: 'L', maxRegularBeds: 37, label: 'UCC', startNumber: 1 },
   sala_vermelha: { prefix: 'SV', maxRegularBeds: 6, label: 'Sala Vermelha' },
   sala_laranja: { prefix: 'OL', maxRegularBeds: 12, label: 'Obs. Laranja' },
   ue_vertical: { prefix: 'EV', maxRegularBeds: 20, label: 'UE Vertical' },
@@ -109,6 +110,7 @@ export const SECTOR_DISPLAY_LABELS: Record<string, string> = {
   yellow: 'UTI 2',
   blue: 'UCI 1',
   outside: 'UCI 2',
+  ucc: 'UCC',
   sala_vermelha: 'Sala Vermelha',
   sala_laranja: 'Obs. Laranja',
   ue_vertical: 'UE Vertical',
@@ -136,5 +138,6 @@ export function getSectorFromBedNumber(bedNumber: string): string | null {
   if (num >= 9 && num <= 18) return 'UTI 2';
   if (num >= 19 && num <= 26) return 'UCI 1';
   if (num >= 27 && num <= 34) return 'UCI 2';
+  // UCC uses L01-L37 but in its own department context
   return null;
 }

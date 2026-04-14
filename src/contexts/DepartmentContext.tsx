@@ -8,6 +8,7 @@ export type Department =
   | "UTI 2"
   | "UCI 1"
   | "UCI 2"
+  | "UCC"
   | "UE VERTICAL"
   | "UE HORIZONTAL"
   | "SALA VERMELHA / CHOQUE"
@@ -60,6 +61,7 @@ export const DEPARTMENTS: Department[] = [
   "UTI 2",
   "UCI 1",
   "UCI 2",
+  "UCC",
   "UE VERTICAL",
   "UE HORIZONTAL",
   "SALA VERMELHA / CHOQUE",

@@ -51,6 +51,7 @@ const SECTOR_COLORS: Record<string, string> = {
   'UTI 2': '#eab308',
   'UCI 1': '#3b82f6',
   'UCI 2': '#6b7280',
+  'UCC': '#8b5cf6',
 };
 
 const DashboardPage = () => {
