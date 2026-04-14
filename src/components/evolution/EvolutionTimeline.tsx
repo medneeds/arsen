@@ -308,6 +308,9 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
             </div>
           );
         })}
+            </div>
+          );
+        })}
       </div>
 
       {/* Validate dialog */}
