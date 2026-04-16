@@ -47,25 +47,27 @@ interface SectorSectionProps {
   onQuickView?: (patient: Patient) => void;
 }
 
-const sectorInfo = {
-  red: {
-    title: "UTI 1",
-    subtitle: "Unidade de Terapia Intensiva 1",
-    icon: "🔴",
-    gradientClass: "bg-gradient-critical"
-  },
-  yellow: {
-    title: "UTI 2",
-    subtitle: "Unidade de Terapia Intensiva 2",
-    icon: "🟡",
-    gradientClass: "bg-gradient-warning"
-  },
-  blue: {
-    title: "UCI 1",
-    subtitle: "Unidade de Cuidados Intermediários 1",
-    icon: "🔵",
-    gradientClass: "bg-gradient-stable"
-  }
+const sectorInfo: Record<string, { title: string; subtitle: string; icon: string; gradientClass: string }> = {
+  red: { title: "UTI 1", subtitle: "Unidade de Terapia Intensiva 1", icon: "🔴", gradientClass: "bg-gradient-critical" },
+  yellow: { title: "UTI 2", subtitle: "Unidade de Terapia Intensiva 2", icon: "🟡", gradientClass: "bg-gradient-warning" },
+  blue: { title: "UCI 1", subtitle: "Unidade de Cuidados Intermediários 1", icon: "🔵", gradientClass: "bg-gradient-stable" },
+  outside: { title: "UCI 2", subtitle: "Unidade de Cuidados Intermediários 2", icon: "🟢", gradientClass: "bg-gradient-stable" },
+  ucc: { title: "UCC", subtitle: "Unidade de Cuidados Clínicos", icon: "🟣", gradientClass: "bg-gradient-to-r from-violet-500/20 to-violet-600/10" },
+  neuro_01: { title: "Neuro 01", subtitle: "Enfermaria Neuro 01", icon: "🧠", gradientClass: "bg-gradient-to-r from-cyan-500/20 to-cyan-600/10" },
+  neuro_02: { title: "Neuro 02", subtitle: "Enfermaria Neuro 02", icon: "🧠", gradientClass: "bg-gradient-to-r from-cyan-500/20 to-cyan-600/10" },
+  clinica_cirurgica: { title: "Clínica Cirúrgica", subtitle: "Enfermaria Clínica Cirúrgica", icon: "🏥", gradientClass: "bg-gradient-to-r from-teal-500/20 to-teal-600/10" },
+  enfermaria_transicao: { title: "Enf. Transição", subtitle: "Enfermaria de Transição", icon: "🔄", gradientClass: "bg-gradient-to-r from-amber-500/20 to-amber-600/10" },
+  enfermaria_vascular: { title: "Enf. Vascular", subtitle: "Enfermaria Vascular", icon: "💗", gradientClass: "bg-gradient-to-r from-pink-500/20 to-pink-600/10" },
+  sala_vermelha: { title: "Sala Vermelha", subtitle: "Urgência - Sala Vermelha", icon: "🚨", gradientClass: "bg-gradient-critical" },
+  sala_laranja: { title: "Sala Laranja", subtitle: "Urgência - Sala Laranja", icon: "🟠", gradientClass: "bg-gradient-warning" },
+  observacao_clinica: { title: "Obs. Clínica", subtitle: "Observação Clínica", icon: "👁️", gradientClass: "bg-gradient-to-r from-sky-500/20 to-sky-600/10" },
+  internacao_ue: { title: "Internação UE", subtitle: "Internação UE", icon: "🏨", gradientClass: "bg-gradient-to-r from-indigo-500/20 to-indigo-600/10" },
+  ue_vertical: { title: "UE Vertical", subtitle: "UE Vertical", icon: "⬆️", gradientClass: "bg-gradient-to-r from-purple-500/20 to-purple-600/10" },
+  ue_horizontal: { title: "UE Horizontal", subtitle: "UE Horizontal", icon: "➡️", gradientClass: "bg-gradient-to-r from-indigo-500/20 to-indigo-600/10" },
+  riv: { title: "RIV", subtitle: "Referência de Internação Vascular", icon: "🩸", gradientClass: "bg-gradient-to-r from-rose-500/20 to-rose-600/10" },
+  cc_preparo: { title: "CC Preparo", subtitle: "Centro Cirúrgico - Preparo", icon: "⚕️", gradientClass: "bg-gradient-to-r from-slate-500/20 to-slate-600/10" },
+  cc_bloco: { title: "CC Bloco", subtitle: "Centro Cirúrgico - Bloco", icon: "🔪", gradientClass: "bg-gradient-to-r from-slate-500/20 to-slate-600/10" },
+  cc_rpa: { title: "CC RPA", subtitle: "Centro Cirúrgico - RPA", icon: "💤", gradientClass: "bg-gradient-to-r from-slate-500/20 to-slate-600/10" },
 };
 
 interface SortablePatientCardProps {
@@ -142,7 +144,7 @@ export function SectorSection({
   onRefetch,
   onQuickView
 }: SectorSectionProps) {
-  const info = sectorInfo[sector];
+  const info = sectorInfo[sector] || { title: sector, subtitle: sector, icon: "🏥", gradientClass: "bg-gradient-stable" };
   const displayTitle = customTitle || info.title;
   const displayIcon = customIcon || info.icon;
   const [internalIsOpen, setInternalIsOpen] = useState(patients.length > 0);
