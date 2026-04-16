@@ -256,6 +256,14 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           </div>
         </div>
       )}
+
+      {/* Examinus AI dialog — extracts and imports complementary exam results */}
+      <ExaminusAIDialog
+        open={examinusOpen}
+        onOpenChange={setExaminusOpen}
+        currentExams={soap.objective ? soap.objective.split("\n").filter(Boolean) : []}
+        onImportExams={handleImportExams}
+      />
     </div>
   );
 };
