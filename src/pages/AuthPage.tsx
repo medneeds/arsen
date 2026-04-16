@@ -110,8 +110,9 @@ export default function AuthPage() {
           .eq("email", internalEmail)
           .maybeSingle();
         
-        const route = getRedirectRoute(profileData?.access_profile || null, null);
+        const route = getRedirectRoute(selectedAccessProfile, null);
         setRedirectRoute(route);
+        localStorage.setItem("access_profile", selectedAccessProfile);
         
         setCurrentDepartment("UTI");
         toast.success("Login realizado com sucesso");
