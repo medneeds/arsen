@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   LogIn, User, Lock, Eye, EyeOff, ArrowRight, ArrowLeft,
-  Briefcase, Activity, ShieldCheck,
+  Briefcase, ShieldCheck,
 } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { cn } from "@/lib/utils";
@@ -35,22 +35,15 @@ function getRedirectRoute(accessProfile: string | null, role: string | null): st
 }
 
 /* ─── Shared chrome ─────────────────────────────────────────────── */
-function PageHeader({ onLogoClick }: { onLogoClick?: () => void }) {
+function PageHeader() {
   const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border/60">
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <button
-          onClick={onLogoClick ?? (() => navigate("/"))}
-          className="flex items-center gap-2.5 group"
-        >
-          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-md shadow-primary/20 group-hover:shadow-lg group-hover:shadow-primary/30 transition-all">
-            <Activity className="h-4 w-4 text-primary-foreground" strokeWidth={2.5} />
-          </div>
-          <span className="preserve-case text-lg font-semibold tracking-tight text-foreground">
-            Arsen
-          </span>
-        </button>
+      <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground tracking-[0.2em]">
+          <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+          ACESSO À PLATAFORMA
+        </div>
 
         <button
           onClick={() => navigate("/")}
