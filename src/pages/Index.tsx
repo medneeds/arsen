@@ -18,6 +18,7 @@ import { Patient, SectorType } from "@/types/patient";
 import { Activity, Users, Clock, Printer, Eye, EyeOff, ClipboardList, LogOut, CheckSquare, Trash2, Plus, StickyNote, Edit, List, X, FileText, ChevronDown, ChevronRight, GripVertical, ClipboardCheck, MoreVertical, Building2, RefreshCw, Maximize2, Minimize2, ArrowLeftRight, LayoutDashboard } from "lucide-react";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
 import { SectorSelector } from "@/components/SectorSelector";
+import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import { whitelabel } from "@/config/whitelabel";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -1077,20 +1078,8 @@ const Index = () => {
           {/* Main Content */}
           <main className="container mx-auto px-2 sm:px-4 py-3 sm:py-6 print:py-0 print:px-1 pt-[120px] sm:pt-[110px] print:pt-3">
             <div className="space-y-3 sm:space-y-4 print:space-y-1">
-              {/* Sector hierarchy breadcrumb with sector selector */}
-              <nav
-                aria-label="Hierarquia do setor"
-                className="print:hidden flex items-center flex-wrap gap-x-2 gap-y-1.5 text-[11px] sm:text-xs font-medium tracking-wide"
-              >
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/60 text-muted-foreground border border-border/50">
-                  <Building2 className="h-3.5 w-3.5" />
-                  <span className="uppercase">{whitelabel.institution.hospitalAbbreviation}</span>
-                </span>
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
-                <SectorSelector variant="light" />
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
-                <ClinicalNavTabs hideSector />
-              </nav>
+              {/* Unified breadcrumb bar */}
+              <BreadcrumbBar />
 
 
               {/* Pre-admission section */}

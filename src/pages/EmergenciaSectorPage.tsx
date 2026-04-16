@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
+import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import {
   AlertTriangle,
   BedDouble,
@@ -505,14 +506,32 @@ export default function EmergenciaSectorPage() {
 
   return (
     <MainLayout>
-      <EmergencyHeader
-        activeSector={activeSector}
-        onSectorChange={handleSectorChange}
-        onRefresh={handleRefresh}
-        isRefreshing={isRefreshing}
-      />
-
-      <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6 pt-[70px]">
+      <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4">
+        <BreadcrumbBar
+          actions={
+            <>
+              <Select value={activeSector} onValueChange={handleSectorChange}>
+                <SelectTrigger className="h-8 w-auto gap-1 text-xs font-semibold border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10 [&>svg]:h-3 [&>svg]:w-3">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EMERGENCY_SECTORS.map(s => (
+                    <SelectItem key={s.key} value={s.key} className="text-xs font-medium">{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="h-8 w-8"
+              >
+                <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+              </Button>
+            </>
+          }
+        />
         <AnimatePresence mode="wait">
           {isLoading ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-center h-[60vh]">
