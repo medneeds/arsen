@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDepartment, Department } from "@/contexts/DepartmentContext";
 import { HospitalSelector } from "@/components/HospitalSelector";
 import { useHospital } from "@/contexts/HospitalContext";
+import { AuthBackgroundFx } from "@/components/auth/AuthBackgroundFx";
 
 // Map access_profile to redirect routes
 function getRedirectRoute(accessProfile: string | null, role: string | null): string {
@@ -173,29 +174,12 @@ export default function AuthPage() {
           showLoadingScreen && "opacity-0"
         )}
       >
-        {/* Ambient background — discrete deep-blue gradient + grays */}
-        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-          {/* Top center soft glow */}
-          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[1100px] h-[700px] bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.08),transparent_70%)]" />
-          {/* Bottom right cool accent */}
-          <div className="absolute -bottom-40 -right-32 w-[600px] h-[600px] bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.06),transparent_70%)]" />
-          {/* Top-left gray wash */}
-          <div className="absolute top-1/4 -left-40 w-[500px] h-[500px] bg-[radial-gradient(ellipse_at_center,hsl(215_20%_60%/0.05),transparent_70%)]" />
-        </div>
+        {/* Animated background — clinical concept (ECG, pulses, particles) */}
+        <AuthBackgroundFx />
 
         <PageHeader />
 
         <main className="flex-1 flex items-center justify-center px-6 py-10 md:py-16 relative">
-          {/* Subtle grid */}
-          <div
-            className="absolute inset-0 -z-10 opacity-[0.025]"
-            style={{
-              backgroundImage:
-                "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
-              backgroundSize: "64px 64px",
-            }}
-          />
-
           <AnimatePresence mode="wait">
             {screen === "login" ? (
               <motion.div
