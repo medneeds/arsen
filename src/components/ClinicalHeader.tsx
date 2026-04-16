@@ -20,18 +20,21 @@ export function ClinicalHeader({ moduleLabel, showBack = true, actions }: Clinic
   const navigate = useNavigate();
 
   return (
-    <div className="border-b border-border/50 bg-gradient-to-r from-[#0a1628] via-[#0f2847] to-[#1a3a5c] px-2 sm:px-4 py-2 sm:py-3 print:hidden">
+    <div className="border-b border-primary-foreground/10 bg-gradient-to-r from-primary via-primary/95 to-primary/85 px-2 sm:px-4 py-2 sm:py-3 print:hidden shadow-md shadow-primary/20 relative">
+      {/* Subtle top accent line */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary-foreground/20 to-transparent" />
+
       <div className="flex items-center justify-between gap-2">
         {/* Left: Sidebar trigger + breadcrumb */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <SidebarTrigger className="flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
+          <SidebarTrigger className="flex-shrink-0 text-primary-foreground hover:text-primary-foreground hover:bg-primary-foreground/15 border-primary-foreground/25 hover:border-primary-foreground/40 data-[state=open]:bg-primary-foreground/15 transition-all duration-200" />
 
           {showBack && (
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate(-1)}
-              className="h-7 w-7 flex-shrink-0 text-white/70 hover:text-white hover:bg-white/15"
+              className="h-7 w-7 flex-shrink-0 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -40,9 +43,7 @@ export function ClinicalHeader({ moduleLabel, showBack = true, actions }: Clinic
           {/* Breadcrumb: Sector + Nav / Patient / Module Tabs */}
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-wrap">
             <ClinicalNavTabs variant="dark" />
-            {/* Patient switcher dropdown */}
             <PatientSwitcher variant="dark" />
-            {/* Module-level tabs (Prescrição / Evolução / Requisições / Docs) */}
             <ClinicalModuleTabs variant="dark" />
           </div>
         </div>
