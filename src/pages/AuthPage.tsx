@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   LogIn, User, Lock, Eye, EyeOff, ArrowRight, ArrowLeft,
-  Activity, Brain, MapPin, Stethoscope, HeartPulse, Shield,
+  Activity, Brain, MapPin, Stethoscope, HeartPulse, Shield, Briefcase,
 } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { BigHelpLogo } from "@/components/BigHelpLogo";
