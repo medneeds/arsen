@@ -6,6 +6,7 @@ import { SessionTimeoutProvider } from "./SessionTimeoutProvider";
 import { PendingApprovalScreen } from "./PendingApprovalScreen";
 import { ConsentTermsDialog, CURRENT_TERMS_VERSION } from "./ConsentTermsDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { AccessLimitsScreen } from "./AccessLimitsScreen";
 
 // Logins genéricos que não precisam de aprovação (período de transição)
 const LEGACY_GENERIC_USERS = [
@@ -27,6 +28,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [checkingTerms, setCheckingTerms] = useState(true);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showAccessLimits, setShowAccessLimits] = useState(false);
+  const [accessLimitsShown, setAccessLimitsShown] = useState(false);
 
   // Verificar se é um usuário genérico legado (não precisa de aprovação nem termos)
   const isLegacyGenericUser = user?.email && LEGACY_GENERIC_USERS.includes(user.email.toLowerCase());
@@ -83,7 +86,13 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (showLoadingScreen) {
-    return <LoadingScreen onComplete={() => setShowLoadingScreen(false)} />;
+    return <LoadingScreen onComplete={() => {
+      setShowLoadingScreen(false);
+      // Após loading, mostrar tela de limites de acesso (exceto genéricos)
+      if (!isLegacyGenericUser && !accessLimitsShown) {
+        setShowAccessLimits(true);
+      }
+    }} />;
   }
 
   // Mostrar diálogo de termos se ainda não aceitou
@@ -95,6 +104,18 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         onAccept={() => {
           setTermsAccepted(true);
           setShowTermsDialog(false);
+        }}
+      />
+    );
+  }
+
+  // Tela de limites de acesso
+  if (showAccessLimits && !accessLimitsShown) {
+    return (
+      <AccessLimitsScreen
+        onProceed={() => {
+          setShowAccessLimits(false);
+          setAccessLimitsShown(true);
         }}
       />
     );
