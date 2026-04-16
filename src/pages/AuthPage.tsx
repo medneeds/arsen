@@ -232,7 +232,7 @@ export default function AuthPage() {
                     transition={{ duration: 0.6, delay: 0.25 }}
                     className="preserve-case text-sm md:text-base text-slate-500 font-light tracking-tight"
                   >
-                    Inteligência clínica em tempo real
+                    Plataforma Clínica Inteligente
                   </motion.p>
                 </div>
 

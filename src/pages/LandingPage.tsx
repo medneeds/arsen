@@ -144,7 +144,7 @@ export default function LandingPage() {
             transition={{ duration: 0.7, delay: 0.4 }}
             className="preserve-case text-xl md:text-2xl text-slate-500 font-light tracking-tight mb-12"
           >
-            Inteligência clínica em tempo real
+            Plataforma Clínica Inteligente
           </motion.p>
 
           {/* CTA */}
