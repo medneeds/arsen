@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { whitelabel } from "@/config/whitelabel";
 import { BigHelpLogo } from "./BigHelpLogo";
+import { AuthBackgroundFx } from "./auth/AuthBackgroundFx";
 
 interface LoadingScreenProps {
   onComplete?: () => void;
@@ -17,7 +19,7 @@ export function LoadingScreen({ onComplete, duration = 2500 }: LoadingScreenProp
     const readyTimer = setTimeout(() => setPhase("ready"), 1400);
 
     const progressInterval = setInterval(() => {
-      setProgress(prev => {
+      setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(progressInterval);
           return 100;
@@ -41,108 +43,102 @@ export function LoadingScreen({ onComplete, duration = 2500 }: LoadingScreenProp
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-all duration-500 bg-gradient-to-br from-[#040a18] via-[#0a1628] to-[#0f2847] ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-background transition-opacity duration-500 ${
         isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
     >
-      {/* Background grid - matches AccessLimitsScreen */}
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(45,212,191,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(45,212,191,.4) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }}
-      />
+      <AuthBackgroundFx />
 
-      {/* Ambient glow */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(45,212,191,0.06) 0%, transparent 70%)",
-          }}
-        />
+      {/* Top status chip — matches AuthPage header */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-medium text-muted-foreground tracking-[0.2em]">
+        <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+        INICIALIZANDO SESSÃO
       </div>
 
       <div className="relative z-10 flex flex-col items-center w-full max-w-md px-8">
         {/* Logo */}
-        <div
-          className="mb-8 transition-all duration-700 ease-out"
-          style={{
-            opacity: phase !== "logo" ? 1 : 0,
-            transform: phase !== "logo" ? "translateY(0) scale(1)" : "translateY(20px) scale(0.95)",
-            transitionDelay: "150ms",
+        <motion.div
+          className="mb-6"
+          initial={{ opacity: 0, scale: 0.95, y: 12 }}
+          animate={{
+            opacity: phase !== "logo" ? 1 : 0.6,
+            scale: phase !== "logo" ? 1 : 0.95,
+            y: 0,
           }}
+          transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
         >
           <BigHelpLogo size="md" glow />
-        </div>
+        </motion.div>
 
-        {/* Section label - matches AccessLimits header style */}
-        <div
-          className="text-center mb-6 transition-all duration-700 ease-out"
-          style={{
+        {/* Platform name */}
+        <motion.h1
+          className="preserve-case text-3xl font-extralight tracking-[0.2em] text-foreground mb-2"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{
             opacity: phase === "slogan" || phase === "ready" ? 1 : 0,
-            transform: phase === "slogan" || phase === "ready" ? "translateY(0)" : "translateY(10px)",
-            transitionDelay: "300ms",
+            y: phase === "slogan" || phase === "ready" ? 0 : 8,
           }}
+          transition={{ duration: 0.6, delay: 0.3 }}
         >
-          <h2 className="text-white/90 text-sm font-light tracking-[0.2em] uppercase">
-            Inicializando Sessão
-          </h2>
-          <div className="h-px w-20 mx-auto bg-gradient-to-r from-transparent via-[#2dd4bf]/40 to-transparent mt-3" />
-        </div>
+          {whitelabel.platform.name}
+        </motion.h1>
+
+        {/* Divider */}
+        <motion.div
+          className="h-px w-16 bg-gradient-to-r from-transparent via-primary/40 to-transparent mb-4"
+          initial={{ opacity: 0, scaleX: 0 }}
+          animate={{
+            opacity: phase === "slogan" || phase === "ready" ? 1 : 0,
+            scaleX: phase === "slogan" || phase === "ready" ? 1 : 0,
+          }}
+          transition={{ duration: 0.6, delay: 0.45 }}
+        />
 
         {/* Slogan */}
-        <div
-          className="text-center mb-10 transition-all duration-700 ease-out"
-          style={{
+        <motion.p
+          className="preserve-case text-xs sm:text-sm font-light text-muted-foreground text-center mb-12 max-w-xs"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{
             opacity: phase === "slogan" || phase === "ready" ? 1 : 0,
-            transform: phase === "slogan" || phase === "ready" ? "translateY(0)" : "translateY(15px)",
-            transitionDelay: "500ms",
+            y: phase === "slogan" || phase === "ready" ? 0 : 8,
           }}
+          transition={{ duration: 0.6, delay: 0.55 }}
         >
-          <p className="text-xs sm:text-sm font-light tracking-wide text-white/50 leading-relaxed">
-            Mapeando cuidados, salvando{" "}
-            <span className="text-[#2dd4bf]/80 font-medium">vidas</span>.
-          </p>
-        </div>
+          Mapeando cuidados, salvando{" "}
+          <span className="text-primary font-medium">vidas</span>.
+        </motion.p>
 
         {/* Progress */}
-        <div
-          className="w-full max-w-[200px] transition-all duration-500 ease-out"
-          style={{
+        <motion.div
+          className="w-full max-w-[220px]"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{
             opacity: phase === "ready" ? 1 : 0,
-            transform: phase === "ready" ? "translateY(0)" : "translateY(8px)",
-            transitionDelay: "150ms",
+            y: phase === "ready" ? 0 : 8,
           }}
+          transition={{ duration: 0.5 }}
         >
-          <div className="w-full h-[2px] bg-white/[0.06] rounded-full overflow-hidden">
+          <div className="w-full h-[2px] bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full transition-all duration-100 ease-out"
-              style={{
-                width: `${progress}%`,
-                background:
-                  "linear-gradient(90deg, rgba(45,212,191,0.4) 0%, #2dd4bf 50%, rgba(45,212,191,0.4) 100%)",
-              }}
+              className="h-full rounded-full transition-all duration-100 ease-out bg-gradient-to-r from-primary/40 via-primary to-primary/40"
+              style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-[9px] text-white/30 tracking-[0.3em] text-center mt-3 font-light uppercase">
+          <p className="preserve-case text-[9px] text-muted-foreground/70 tracking-[0.3em] text-center mt-3 font-light uppercase">
             {whitelabel.platform.loadingText}
           </p>
-        </div>
-
-        {/* Footer - matches AccessLimits */}
-        <p
-          className="text-[9px] text-white/20 mt-10 tracking-[0.3em] transition-opacity duration-700"
-          style={{
-            opacity: phase === "ready" ? 1 : 0,
-            transitionDelay: "400ms",
-          }}
-        >
-          SESSÃO PROTEGIDA — LGPD/CFM
-        </p>
+        </motion.div>
       </div>
+
+      {/* Footer compliance */}
+      <motion.p
+        className="absolute bottom-6 text-[9px] text-muted-foreground/60 tracking-[0.3em]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: phase === "ready" ? 1 : 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+      >
+        SESSÃO PROTEGIDA — LGPD/CFM
+      </motion.p>
     </div>
   );
 }

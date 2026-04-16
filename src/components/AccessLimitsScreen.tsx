@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Shield, MapPin, ArrowRight, Building2, UserCog, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { BigHelpLogo } from "./BigHelpLogo";
+import { AuthBackgroundFx } from "./auth/AuthBackgroundFx";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "ADMINISTRADOR",
@@ -40,166 +40,183 @@ interface AccessLimitsScreenProps {
 
 export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
   const { role, allowedDepartments, user } = useAuth();
-  const username = user?.user_metadata?.username || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Usuário";
+  const username =
+    user?.user_metadata?.username ||
+    user?.user_metadata?.full_name ||
+    user?.email?.split("@")[0] ||
+    "Usuário";
 
   const isAdmin = role === "admin";
   const roleLabel = ROLE_LABELS[role || "medico"] || "MÉDICO";
-  const accessProfile = typeof window !== "undefined" ? localStorage.getItem("access_profile") || "medico" : "medico";
-  const accessProfileLabel = ACCESS_PROFILE_LABELS[accessProfile] || ACCESS_PROFILE_LABELS["medico"];
+  const accessProfile =
+    typeof window !== "undefined"
+      ? localStorage.getItem("access_profile") || "medico"
+      : "medico";
+  const accessProfileLabel =
+    ACCESS_PROFILE_LABELS[accessProfile] || ACCESS_PROFILE_LABELS["medico"];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#040a18] via-[#0a1628] to-[#0f2847] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background grid - matches LoadingScreen */}
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(45,212,191,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(45,212,191,.4) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }}
-      />
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+      <AuthBackgroundFx />
 
-      {/* Ambient glow - matches LoadingScreen (static, no pulse) */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full"
-          style={{
-            background: "radial-gradient(circle, rgba(45,212,191,0.06) 0%, transparent 70%)",
-          }}
-        />
+      {/* Top status chip — matches AuthPage header */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-medium text-muted-foreground tracking-[0.2em] z-20">
+        <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+        LIMITES DE ACESSO
       </div>
 
       <motion.div
-        className="relative z-10 w-full max-w-md px-2"
-        initial={{ opacity: 0, y: 20 }}
+        className="relative z-10 w-full max-w-md"
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Header - matches LoadingScreen structure */}
-        <div className="flex flex-col items-center mb-8">
+        {/* Header */}
+        <div className="flex flex-col items-center mb-6">
           <motion.div
-            className="mb-8"
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15 }}
           >
-            <BigHelpLogo size="md" glow />
+            <BigHelpLogo size="sm" glow />
           </motion.div>
           <motion.div
-            className="text-center"
-            initial={{ opacity: 0, y: 10 }}
+            className="text-center mt-4"
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.7 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
           >
-            <h2 className="text-white/90 text-sm font-light tracking-[0.2em] uppercase">
-              Limites de Acesso
+            <h2 className="preserve-case text-foreground text-base font-light tracking-[0.15em] uppercase">
+              Verificação de Acesso
             </h2>
-            <div className="h-px w-20 mx-auto bg-gradient-to-r from-transparent via-[#2dd4bf]/40 to-transparent mt-3" />
+            <div className="h-px w-16 mx-auto bg-gradient-to-r from-transparent via-primary/40 to-transparent mt-2" />
           </motion.div>
         </div>
 
         {/* Card */}
         <motion.div
-          className="bg-white/[0.04] backdrop-blur-sm border border-white/[0.08] rounded-2xl p-6 space-y-5"
+          className="bg-card/80 backdrop-blur-xl border border-border/60 rounded-2xl p-6 space-y-5 shadow-xl shadow-primary/5"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.5 }}
         >
           {/* User info */}
-          <div className="flex items-center gap-3 pb-4 border-b border-white/[0.06]">
-            <div className="h-10 w-10 rounded-full bg-[#2dd4bf]/10 border border-[#2dd4bf]/20 flex items-center justify-center">
-              <UserCog className="h-5 w-5 text-[#2dd4bf]" />
+          <div className="flex items-center gap-3 pb-4 border-b border-border/60">
+            <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <UserCog className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-white font-semibold text-sm tracking-wide uppercase">{username}</p>
-              <p className="text-[#2dd4bf]/70 text-xs tracking-[0.1em]">{roleLabel}</p>
+              <p className="preserve-case text-foreground font-semibold text-sm tracking-wide uppercase">
+                {username}
+              </p>
+              <p className="text-primary/80 text-xs tracking-[0.1em]">{roleLabel}</p>
             </div>
           </div>
 
-          {/* Tipo de Acesso (perfil) */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-white/60">
-              <Briefcase className="h-4 w-4 text-[#2dd4bf]/60" />
-              <span className="text-xs font-medium tracking-[0.1em] uppercase">Tipo de Acesso</span>
+          {/* Tipo de Acesso */}
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Briefcase className="h-3.5 w-3.5 text-primary/70" />
+              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase">
+                Tipo de Acesso
+              </span>
             </div>
-            <div className="bg-blue-500/[0.08] border border-blue-500/20 rounded-lg px-4 py-3">
-              <p className="text-blue-400 text-sm font-semibold tracking-wide">{accessProfileLabel}</p>
+            <div className="bg-primary/5 border border-primary/15 rounded-lg px-4 py-2.5">
+              <p className="text-primary text-sm font-semibold tracking-wide">
+                {accessProfileLabel}
+              </p>
             </div>
           </div>
 
-          {/* Access level */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-white/60">
-              <Shield className="h-4 w-4 text-[#2dd4bf]/60" />
-              <span className="text-xs font-medium tracking-[0.1em] uppercase">Nível de Acesso</span>
+          {/* Nível de Acesso */}
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Shield className="h-3.5 w-3.5 text-primary/70" />
+              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase">
+                Nível de Acesso
+              </span>
             </div>
 
             {isAdmin ? (
-              <div className="bg-[#2dd4bf]/[0.08] border border-[#2dd4bf]/20 rounded-lg px-4 py-3">
-                <p className="text-[#2dd4bf] text-sm font-semibold tracking-wide">ACESSO TOTAL</p>
-                <p className="text-white/40 text-xs mt-1">Todos os setores e funcionalidades</p>
+              <div className="bg-accent/10 border border-accent/20 rounded-lg px-4 py-2.5">
+                <p className="text-accent-foreground text-sm font-semibold tracking-wide">
+                  ACESSO TOTAL
+                </p>
+                <p className="preserve-case text-muted-foreground text-xs mt-0.5">
+                  Todos os setores e funcionalidades
+                </p>
               </div>
             ) : (
-              <div className="bg-amber-500/[0.08] border border-amber-500/20 rounded-lg px-4 py-3">
-                <p className="text-amber-400 text-sm font-semibold tracking-wide">ACESSO RESTRITO</p>
-                <p className="text-white/40 text-xs mt-1">Limitado aos setores vinculados</p>
+              <div className="bg-warning/10 border border-warning/25 rounded-lg px-4 py-2.5">
+                <p className="text-warning text-sm font-semibold tracking-wide">
+                  ACESSO RESTRITO
+                </p>
+                <p className="preserve-case text-muted-foreground text-xs mt-0.5">
+                  Limitado aos setores vinculados
+                </p>
               </div>
             )}
           </div>
 
-          {/* Departments */}
+          {/* Setores */}
           {!isAdmin && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-white/60">
-                <Building2 className="h-4 w-4 text-[#2dd4bf]/60" />
-                <span className="text-xs font-medium tracking-[0.1em] uppercase">Setores Habilitados</span>
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Building2 className="h-3.5 w-3.5 text-primary/70" />
+                <span className="text-[10px] font-semibold tracking-[0.15em] uppercase">
+                  Setores Habilitados
+                </span>
               </div>
 
               {allowedDepartments.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {allowedDepartments.map((dept) => (
                     <div
                       key={dept}
-                      className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] rounded-lg px-4 py-2.5"
+                      className="flex items-center gap-2 bg-muted/40 border border-border/60 rounded-lg px-3 py-2"
                     >
-                      <MapPin className="h-3.5 w-3.5 text-[#2dd4bf]/50" />
-                      <span className="text-white/80 text-xs font-medium tracking-wide uppercase">
+                      <MapPin className="h-3.5 w-3.5 text-primary/60" />
+                      <span className="text-foreground/85 text-xs font-medium tracking-wide uppercase">
                         {DEPARTMENT_LABELS[dept] || dept}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-4 py-3 text-center">
-                  <p className="text-white/40 text-xs">Nenhum setor vinculado</p>
-                  <p className="text-white/25 text-[10px] mt-1">Entre em contato com o coordenador</p>
+                <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-3 text-center">
+                  <p className="preserve-case text-muted-foreground text-xs">
+                    Nenhum setor vinculado
+                  </p>
+                  <p className="preserve-case text-muted-foreground/70 text-[10px] mt-0.5">
+                    Entre em contato com o coordenador
+                  </p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Proceed button */}
+          {/* Botão */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
+            transition={{ delay: 0.7 }}
           >
             <Button
               onClick={onProceed}
-              className="w-full h-11 bg-[#2dd4bf]/15 hover:bg-[#2dd4bf]/25 text-[#2dd4bf] border border-[#2dd4bf]/30 hover:border-[#2dd4bf]/50 rounded-xl text-xs font-semibold tracking-[0.15em] uppercase transition-all duration-300"
+              className="w-full h-11 rounded-xl text-xs font-semibold tracking-[0.15em] uppercase group"
             >
               CONTINUAR
-              <ArrowRight className="h-4 w-4 ml-2" />
+              <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-0.5" />
             </Button>
           </motion.div>
         </motion.div>
 
-        {/* Footer */}
+        {/* Footer compliance */}
         <motion.p
-          className="text-center text-[9px] text-white/20 mt-6 tracking-[0.3em]"
+          className="text-center text-[9px] text-muted-foreground/60 mt-6 tracking-[0.3em]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
+          transition={{ delay: 0.9 }}
         >
           SESSÃO PROTEGIDA — LGPD/CFM
         </motion.p>
