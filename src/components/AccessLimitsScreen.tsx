@@ -232,7 +232,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
 
         {/* Footer compliance */}
         <motion.p
-          className="text-center text-[9px] text-muted-foreground/60 mt-6 tracking-[0.3em]"
+          className="text-center text-[9px] text-foreground/55 mt-6 tracking-[0.3em] font-semibold"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9 }}
