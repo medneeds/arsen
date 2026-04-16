@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDepartment, Department } from "@/contexts/DepartmentContext";
 import { HospitalSelector } from "@/components/HospitalSelector";
 import { useHospital } from "@/contexts/HospitalContext";
+import { AuthBackgroundFx } from "@/components/auth/AuthBackgroundFx";
 
 // Map access_profile to redirect routes
 function getRedirectRoute(accessProfile: string | null, role: string | null): string {
