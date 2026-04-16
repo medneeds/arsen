@@ -32,6 +32,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { whitelabel } from "@/config/whitelabel";
 import { BigHelpLogo } from "./BigHelpLogo";
+import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
 import { useState } from "react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
@@ -418,11 +419,32 @@ export function AppSidebar({
     <>
       <SidebarHeader className="border-b border-border/50 px-3 py-3 bg-gradient-to-b from-card to-muted/20">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center justify-center flex-1 min-w-0">
-            {!isCollapsed ? (
-              <BigHelpLogo size="sm" showText={false} />
-            ) : (
-              <BigHelpLogo size="xs" />
+          <div className={cn(
+            "flex items-center flex-1 min-w-0",
+            isCollapsed ? "justify-center" : "justify-start gap-2.5"
+          )}>
+            <div className={cn(
+              "relative flex items-center justify-center rounded-lg overflow-hidden flex-shrink-0",
+              "bg-white dark:bg-white/95 dark:ring-1 dark:ring-white/20",
+              "shadow-sm dark:shadow-[0_2px_8px_-2px_hsl(var(--primary)/0.4)]",
+              isCollapsed ? "h-9 w-9 p-1" : "h-10 w-10 p-1"
+            )}>
+              <img
+                src={socorraoCrossLogo}
+                alt={whitelabel.institution.hospitalLogoAlt}
+                className="h-full w-full object-contain"
+                draggable={false}
+              />
+            </div>
+            {!isCollapsed && (
+              <div className="flex flex-col min-w-0 leading-tight">
+                <span className="text-[11px] font-semibold tracking-[0.18em] text-foreground uppercase truncate">
+                  {whitelabel.institution.hospitalAbbreviation}
+                </span>
+                <span className="text-[9px] font-medium tracking-wider text-muted-foreground uppercase truncate">
+                  {whitelabel.institution.hospitalShortName}
+                </span>
+              </div>
             )}
           </div>
           {!isCollapsed && (
