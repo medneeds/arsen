@@ -113,6 +113,17 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             </div>
           </div>
 
+          {/* Tipo de Acesso (perfil) */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-white/60">
+              <Briefcase className="h-4 w-4 text-[#2dd4bf]/60" />
+              <span className="text-xs font-medium tracking-[0.1em] uppercase">Tipo de Acesso</span>
+            </div>
+            <div className="bg-blue-500/[0.08] border border-blue-500/20 rounded-lg px-4 py-3">
+              <p className="text-blue-400 text-sm font-semibold tracking-wide">{accessProfileLabel}</p>
+            </div>
+          </div>
+
           {/* Access level */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-white/60">
