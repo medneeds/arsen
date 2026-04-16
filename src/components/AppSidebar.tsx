@@ -416,13 +416,11 @@ export function AppSidebar({
 
   const sidebarContent = (
     <>
-      <SidebarHeader className="border-b border-border/20 px-3 py-4 bg-card">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center justify-center flex-1">
+      <SidebarHeader className="border-b border-border/50 px-3 py-3 bg-gradient-to-b from-card to-muted/20">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-center flex-1 min-w-0">
             {!isCollapsed ? (
-              <div className="flex flex-col items-center gap-1">
-                <BigHelpLogo size="sm" showText={false} />
-              </div>
+              <BigHelpLogo size="sm" showText={false} />
             ) : (
               <BigHelpLogo size="xs" />
             )}
@@ -435,7 +433,7 @@ export function AppSidebar({
                 e.stopPropagation();
                 setOpen(false);
               }}
-              className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-foreground"
+              className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg"
               title="Retrair menu"
             >
               <PanelLeftClose className="h-4 w-4" />
