@@ -147,8 +147,8 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
                 </p>
               </div>
             ) : (
-              <div className="bg-amber-500/10 border border-amber-500/25 rounded-lg px-4 py-2.5">
-                <p className="text-amber-700 dark:text-amber-400 text-sm font-semibold tracking-wide">
+              <div className="bg-warning/10 border border-warning/25 rounded-lg px-4 py-2.5">
+                <p className="text-warning text-sm font-semibold tracking-wide">
                   ACESSO RESTRITO
                 </p>
                 <p className="preserve-case text-muted-foreground text-xs mt-0.5">
