@@ -164,12 +164,29 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                     </div>
                     <Separator />
                     <div>
-                      <Label className="text-[10px] text-muted-foreground">Dados objetivos adicionais</Label>
+                      <div className="flex items-center justify-between mb-1">
+                        <Label className="text-[10px] text-muted-foreground">
+                          Exames complementares (laboratoriais e de imagem)
+                        </Label>
+                        {!readOnly && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setExaminusOpen(true)}
+                            className="h-6 gap-1 text-[10px] border-primary/40 text-primary hover:bg-primary/10"
+                            title="Importar exames com Examinus AI"
+                          >
+                            <Sparkles className="h-3 w-3" />
+                            Examinus AI
+                          </Button>
+                        )}
+                      </div>
                       <Textarea
                         value={soap.objective}
                         onChange={e => onSOAPChange('objective', e.target.value)}
-                        placeholder="Resultados laboratoriais, imagens..."
-                        className="min-h-[80px] text-xs mt-1"
+                        placeholder="Cole resultados laboratoriais ou de imagem, ou use o Examinus AI para extrair automaticamente..."
+                        className="min-h-[100px] text-xs"
                         readOnly={readOnly}
                       />
                     </div>
