@@ -22,6 +22,18 @@ const DEPARTMENT_LABELS: Record<string, string> = {
   "CENTRO CIRÚRGICO": "CENTRO CIRÚRGICO",
 };
 
+const ACCESS_PROFILE_LABELS: Record<string, string> = {
+  medico: "MÉDICO ASSISTENTE",
+  gestor: "GESTOR HOSPITALAR",
+  farmacia: "FARMÁCIA CLÍNICA",
+  ccih: "CCIH — CONTROLE DE INFECÇÃO",
+  imagem: "SETOR DE IMAGEM",
+  laboratorio: "SETOR LABORATORIAL",
+  nir: "NIR — REGULAÇÃO INTERNA",
+  multi: "EQUIPE MULTIPROFISSIONAL",
+  administrativo: "ADMINISTRATIVO / RECEPÇÃO",
+};
+
 interface AccessLimitsScreenProps {
   onProceed: () => void;
 }
@@ -32,6 +44,8 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
 
   const isAdmin = role === "admin";
   const roleLabel = ROLE_LABELS[role || "medico"] || "MÉDICO";
+  const accessProfile = typeof window !== "undefined" ? localStorage.getItem("access_profile") || "medico" : "medico";
+  const accessProfileLabel = ACCESS_PROFILE_LABELS[accessProfile] || ACCESS_PROFILE_LABELS["medico"];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#040a18] via-[#0a1628] to-[#0f2847] flex items-center justify-center p-4 relative overflow-hidden">
