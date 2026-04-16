@@ -60,7 +60,7 @@ export default function ProtocolosUtiPage() {
             Protocolos Assistenciais UTI
           </h1>
           <p className="text-muted-foreground text-lg">
-            Serviço de Terapia Intensiva — Hospital Municipal Djalma Marques
+            Serviço de Terapia Intensiva
           </p>
           <div className="flex gap-2 mt-2">
             <Badge variant="secondary">{available} disponíveis</Badge>

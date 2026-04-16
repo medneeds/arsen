@@ -8,9 +8,9 @@ import socorraoLogo from "@/assets/socorrao-logo.jpg";
 
 export const whitelabel = {
   platform: {
-    name: "BigHelp Map",
+    name: "Arsen",
     version: "1.0",
-    fullName: "BigHelp Map 1.0",
+    fullName: "Arsen 1.0",
     slogan: "Mapeando cuidados, salvando vidas.",
     loadingText: "Iniciando",
   },
@@ -35,10 +35,10 @@ export const whitelabel = {
     qualityCoordinator: "Lyssa Riana Chaves Reis",
 
     /** Compatibilidade legado */
-    networkName: "BigHelp Map",
-    networkShortName: "BigHelp",
+    networkName: "Arsen",
+    networkShortName: "Arsen",
     hospitalName: "Hospital Mun. Djalma Marques — Socorrão I",
-    networkLogoAlt: "BigHelp Map",
+    networkLogoAlt: "Arsen",
     hospitalLogoAlt: "Socorrão I",
   },
 
@@ -66,15 +66,15 @@ export const whitelabel = {
   },
 
   credits: {
-    developerName: "BigHelp Map",
+    developerName: "Arsen",
     developerLabel: "Desenvolvido por",
-    authorSignature: "BigHelp Map",
-    footerText: "BigHelp Map",
+    authorSignature: "Arsen",
+    footerText: "Arsen",
   },
 
   compliance: {
     legalReferences: "Lei 13.709/2018 (LGPD) • CFM 1.821/2007",
-    systemNameInTerms: "BigHelp Map",
+    systemNameInTerms: "Arsen",
     complianceBadgeTitle: "Em Conformidade",
     /** Norma Zero - gestão documental */
     normaZeroCode: "MAN.05-001",
@@ -90,7 +90,7 @@ export const whitelabel = {
   ],
 
   admin: {
-    panelPassword: "BIGHELP2025",
+    panelPassword: "ARSEN2025",
   },
 
   print: {
@@ -103,7 +103,7 @@ export const whitelabel = {
     documentFooter: (date: string, time: string) =>
       `Documento gerado automaticamente • ${date} às ${time}`,
     confidentialityText: "Documento Confidencial",
-    systemLabel: "BigHelp Map - Mapa de Cuidados Intensivos",
+    systemLabel: "Arsen - Mapa de Cuidados Intensivos",
     institutionalFooter: "Rua do Passeio S/N, Centro, CEP: 65015-370, São Luís/MA\ngabinete.dg.hmdm@saoluis.ma.gov.br",
   },
 

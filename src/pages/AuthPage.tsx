@@ -207,8 +207,7 @@ export default function AuthPage() {
                 transition={{ duration: 0.8, delay: 0.6 }}
               >
                 <h1 className="text-4xl sm:text-5xl md:text-6xl text-white tracking-tight">
-                  <span className="font-extrabold">BIGHELP</span>
-                  <span className="font-extralight text-white/70 ml-1">MAP</span>
+                  <span className="font-extrabold">ARSEN</span>
                 </h1>
               </motion.div>
 
@@ -313,12 +312,11 @@ export default function AuthPage() {
                   transition={{ duration: 0.5, delay: 0.3 }}
                 >
                   <h1 className="text-2xl text-slate-800 tracking-tight mb-1">
-                    <span className="font-extrabold">BIGHELP</span>
-                    <span className="font-extralight text-slate-400 ml-0.5">MAP</span>
+                    <span className="font-extrabold">ARSEN</span>
                   </h1>
                   <div className="h-px w-24 mx-auto bg-gradient-to-r from-transparent via-slate-300 to-transparent my-3" />
                   <p className="text-[10px] text-slate-400 tracking-[0.15em]">
-                    {whitelabel.institution.hospitalName}
+                    Plataforma de Gestão Clínica
                   </p>
                 </motion.div>
               </div>

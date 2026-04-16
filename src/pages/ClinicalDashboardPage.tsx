@@ -275,8 +275,6 @@ const ClinicalDashboardPage = () => {
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <SidebarTrigger className="flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-wrap">
-              <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Socorrão I</span>
-              <span className="text-white/30 text-xs">/</span>
               <ClinicalNavTabs variant="dark" />
             </div>
           </div>

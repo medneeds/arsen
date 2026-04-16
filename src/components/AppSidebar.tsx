@@ -422,7 +422,6 @@ export function AppSidebar({
             {!isCollapsed ? (
               <div className="flex flex-col items-center gap-1">
                 <BigHelpLogo size="sm" showText={false} />
-                <span className="text-[9px] text-muted-foreground/60 tracking-widest font-light">Socorrão I</span>
               </div>
             ) : (
               <BigHelpLogo size="xs" />
