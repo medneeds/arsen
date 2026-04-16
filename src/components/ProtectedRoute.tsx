@@ -86,7 +86,13 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (showLoadingScreen) {
-    return <LoadingScreen onComplete={() => setShowLoadingScreen(false)} />;
+    return <LoadingScreen onComplete={() => {
+      setShowLoadingScreen(false);
+      // Após loading, mostrar tela de limites de acesso (exceto genéricos)
+      if (!isLegacyGenericUser && !accessLimitsShown) {
+        setShowAccessLimits(true);
+      }
+    }} />;
   }
 
   // Mostrar diálogo de termos se ainda não aceitou
@@ -98,6 +104,18 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         onAccept={() => {
           setTermsAccepted(true);
           setShowTermsDialog(false);
+        }}
+      />
+    );
+  }
+
+  // Tela de limites de acesso
+  if (showAccessLimits && !accessLimitsShown) {
+    return (
+      <AccessLimitsScreen
+        onProceed={() => {
+          setShowAccessLimits(false);
+          setAccessLimitsShown(true);
         }}
       />
     );
