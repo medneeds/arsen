@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import {
   Heart, User, Stethoscope, ClipboardList, FileText,
   ChevronDown, ChevronUp, Save, Loader2, CheckCircle2,
-  ShieldCheck, Printer,
+  ShieldCheck, Printer, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { ExaminusAIDialog } from "@/components/ExaminusAIDialog";
 import { cn } from "@/lib/utils";
 
 interface SOAPData {
