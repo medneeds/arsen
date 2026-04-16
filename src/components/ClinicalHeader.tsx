@@ -37,10 +37,8 @@ export function ClinicalHeader({ moduleLabel, showBack = true, actions }: Clinic
             </Button>
           )}
 
-          {/* Breadcrumb: Institution / Sector + Nav / Patient / Module Tabs */}
+          {/* Breadcrumb: Sector + Nav / Patient / Module Tabs */}
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-wrap">
-            <span className="text-xs sm:text-sm font-semibold text-white/90 whitespace-nowrap">Socorrão I</span>
-            <span className="text-white/30 text-xs">/</span>
             <ClinicalNavTabs variant="dark" />
             {/* Patient switcher dropdown */}
             <PatientSwitcher variant="dark" />
