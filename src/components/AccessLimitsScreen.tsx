@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Shield, MapPin, ArrowRight, Building2, UserCog } from "lucide-react";
+import { Shield, MapPin, ArrowRight, Building2, UserCog, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { BigHelpLogo } from "./BigHelpLogo";
@@ -22,6 +22,18 @@ const DEPARTMENT_LABELS: Record<string, string> = {
   "CENTRO CIRÚRGICO": "CENTRO CIRÚRGICO",
 };
 
+const ACCESS_PROFILE_LABELS: Record<string, string> = {
+  medico: "MÉDICO ASSISTENTE",
+  gestor: "GESTOR HOSPITALAR",
+  farmacia: "FARMÁCIA CLÍNICA",
+  ccih: "CCIH — CONTROLE DE INFECÇÃO",
+  imagem: "SETOR DE IMAGEM",
+  laboratorio: "SETOR LABORATORIAL",
+  nir: "NIR — REGULAÇÃO INTERNA",
+  multi: "EQUIPE MULTIPROFISSIONAL",
+  administrativo: "ADMINISTRATIVO / RECEPÇÃO",
+};
+
 interface AccessLimitsScreenProps {
   onProceed: () => void;
 }
@@ -32,6 +44,8 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
 
   const isAdmin = role === "admin";
   const roleLabel = ROLE_LABELS[role || "medico"] || "MÉDICO";
+  const accessProfile = typeof window !== "undefined" ? localStorage.getItem("access_profile") || "medico" : "medico";
+  const accessProfileLabel = ACCESS_PROFILE_LABELS[accessProfile] || ACCESS_PROFILE_LABELS["medico"];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#040a18] via-[#0a1628] to-[#0f2847] flex items-center justify-center p-4 relative overflow-hidden">
@@ -96,6 +110,17 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             <div>
               <p className="text-white font-semibold text-sm tracking-wide uppercase">{username}</p>
               <p className="text-[#2dd4bf]/70 text-xs tracking-[0.1em]">{roleLabel}</p>
+            </div>
+          </div>
+
+          {/* Tipo de Acesso (perfil) */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-white/60">
+              <Briefcase className="h-4 w-4 text-[#2dd4bf]/60" />
+              <span className="text-xs font-medium tracking-[0.1em] uppercase">Tipo de Acesso</span>
+            </div>
+            <div className="bg-blue-500/[0.08] border border-blue-500/20 rounded-lg px-4 py-3">
+              <p className="text-blue-400 text-sm font-semibold tracking-wide">{accessProfileLabel}</p>
             </div>
           </div>
 
