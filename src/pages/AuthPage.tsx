@@ -190,38 +190,7 @@ export default function AuthPage() {
                 transition={{ duration: 0.4 }}
                 className="w-full max-w-[440px] relative"
               >
-                {/* Brand block */}
-                <div className="text-center mb-8">
-                  <motion.div
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card border border-border/80 shadow-sm mb-5"
-                  >
-                    <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-                    <span className="preserve-case text-[11px] font-medium text-muted-foreground tracking-wide">
-                      Acesso à plataforma
-                    </span>
-                  </motion.div>
-
-                  <motion.h1
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.6, delay: 0.1 }}
-                    className="preserve-case text-5xl md:text-6xl font-bold tracking-tight mb-3 bg-gradient-to-b from-primary via-primary/85 to-primary/60 bg-clip-text text-transparent leading-none"
-                  >
-                    Arsen
-                  </motion.h1>
-
-                  <motion.p
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.25 }}
-                    className="preserve-case text-sm md:text-base text-muted-foreground font-light tracking-tight"
-                  >
-                    Plataforma Clínica Inteligente
-                  </motion.p>
-                </div>
+                {/* Brand block removed — focus on whitelabel */}
 
                 {/* Login Card */}
                 <motion.div
