@@ -10,9 +10,11 @@ const tabs = [
 
 interface ClinicalNavTabsProps {
   variant?: "default" | "dark";
+  /** Hide the leading sector badge (use when caller already renders it) */
+  hideSector?: boolean;
 }
 
-export function ClinicalNavTabs({ variant = "default" }: ClinicalNavTabsProps) {
+export function ClinicalNavTabs({ variant = "default", hideSector = false }: ClinicalNavTabsProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -27,7 +29,7 @@ export function ClinicalNavTabs({ variant = "default" }: ClinicalNavTabsProps) {
   return (
     <div className="flex items-center gap-1.5">
       {/* Sector badge */}
-      {sectorLabel && (
+      {!hideSector && sectorLabel && (
         <>
           <span className={cn(
             "text-[11px] font-semibold px-2 py-1 rounded-md whitespace-nowrap",
