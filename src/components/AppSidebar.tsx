@@ -182,21 +182,17 @@ export function AppSidebar({
   };
 
   // ── MENUS POR PERFIL ──
-  // MÉDICO: enxuto. Foco em pacientes + ferramentas essenciais do dia.
+  // MÉDICO: ultra-enxuto. Mapa/Painel acessados via breadcrumb superior.
+  // Round e demais módulos acessados via card do paciente / aba Docs.
   const medicoMenu = [
     { title: "Início", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
-    { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: ["medico"] },
-    { title: "Painel Clínico", icon: ClipboardCheck, link: "/painel-clinico", profiles: ["medico"] },
-    { title: "Round Diário", icon: ClipboardList, link: "/round", profiles: ["medico"] },
     { title: "Examinus AI", icon: Brain, link: "/ia", profiles: ["medico"] },
   ];
 
-  // GESTOR: completo. Visão executiva + acesso a todas as ferramentas.
+  // GESTOR: completo. Visão executiva. Mapa/Painel via breadcrumb superior.
   const gestorMenu = [
     { title: "Início", icon: LayoutDashboard, link: "/", profiles: ["gestor"] },
     { title: "Painel do Gestor", icon: BarChart3, link: "/painel-gestor", profiles: ["gestor"] },
-    { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: ["gestor"] },
-    { title: "Painel Clínico", icon: ClipboardCheck, link: "/painel-clinico", profiles: ["gestor"] },
     { title: "Monitoramento", icon: HeartPulse, link: "/monitoramento", profiles: ["gestor"] },
     { title: "Emergência", icon: Activity, link: "/emergencia", profiles: ["gestor"] },
     {

@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import {
   Heart, User, Stethoscope, ClipboardList, FileText,
   ChevronDown, ChevronUp, Save, Loader2, CheckCircle2,
-  ShieldCheck, Printer,
+  ShieldCheck, Printer, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { ExaminusAIDialog } from "@/components/ExaminusAIDialog";
 import { cn } from "@/lib/utils";
 
 interface SOAPData {
@@ -80,6 +81,14 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['subjective', 'objective', 'assessment', 'plan'])
   );
+  const [examinusOpen, setExaminusOpen] = useState(false);
+
+  const handleImportExams = (newExams: string[]) => {
+    const current = soap.objective?.trim() || "";
+    const block = newExams.filter(Boolean).join("\n");
+    const merged = current ? `${current}\n${block}` : block;
+    onSOAPChange('objective', merged);
+  };
 
   const toggleSection = (key: string) => {
     setExpandedSections(prev => {
@@ -155,12 +164,29 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                     </div>
                     <Separator />
                     <div>
-                      <Label className="text-[10px] text-muted-foreground">Dados objetivos adicionais</Label>
+                      <div className="flex items-center justify-between mb-1">
+                        <Label className="text-[10px] text-muted-foreground">
+                          Exames complementares (laboratoriais e de imagem)
+                        </Label>
+                        {!readOnly && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setExaminusOpen(true)}
+                            className="h-6 gap-1 text-[10px] border-primary/40 text-primary hover:bg-primary/10"
+                            title="Importar exames com Examinus AI"
+                          >
+                            <Sparkles className="h-3 w-3" />
+                            Examinus AI
+                          </Button>
+                        )}
+                      </div>
                       <Textarea
                         value={soap.objective}
                         onChange={e => onSOAPChange('objective', e.target.value)}
-                        placeholder="Resultados laboratoriais, imagens..."
-                        className="min-h-[80px] text-xs mt-1"
+                        placeholder="Cole resultados laboratoriais ou de imagem, ou use o Examinus AI para extrair automaticamente..."
+                        className="min-h-[100px] text-xs"
                         readOnly={readOnly}
                       />
                     </div>
@@ -230,6 +256,14 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           </div>
         </div>
       )}
+
+      {/* Examinus AI dialog — extracts and imports complementary exam results */}
+      <ExaminusAIDialog
+        open={examinusOpen}
+        onOpenChange={setExaminusOpen}
+        currentExams={soap.objective ? soap.objective.split("\n").filter(Boolean) : []}
+        onImportExams={handleImportExams}
+      />
     </div>
   );
 };
