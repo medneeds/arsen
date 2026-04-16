@@ -453,7 +453,7 @@ export function AppSidebar({
                     <SidebarMenuButton
                       onClick={() => handleItemClick(section.link)}
                       className={cn(
-                        "transition-all duration-200 hover:bg-accent/80 hover:scale-105",
+                        "transition-all duration-200 hover:bg-primary/8 hover:scale-105",
                         "justify-start px-4 py-3 h-auto",
                         "border-b border-border/50"
                       )}
@@ -478,7 +478,7 @@ export function AppSidebar({
                   <CollapsibleTrigger className="w-full">
                     <SidebarGroupLabel 
                       className={cn(
-                        "transition-all duration-200 hover:bg-accent/80 cursor-pointer !opacity-100 !mt-0",
+                        "transition-all duration-200 hover:bg-primary/8 cursor-pointer !opacity-100 !mt-0",
                         isCollapsed ? "justify-center px-2 py-3" : "justify-between px-4 py-3 hover:scale-105",
                         "h-auto border-b border-border/50"
                       )}
@@ -517,7 +517,7 @@ export function AppSidebar({
                               <CollapsibleTrigger className="w-full">
                                 <SidebarMenuItem>
                                   <SidebarMenuButton
-                                    className="group/item hover:bg-accent/80 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 mb-1 justify-between"
+                                    className="group/item hover:bg-primary/8 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 mb-1 justify-between"
                                     tooltip={itemName}
                                   >
                                     <div className="flex items-center gap-3 flex-1">
@@ -535,7 +535,7 @@ export function AppSidebar({
                                   {item.subsections && Array.isArray(item.subsections) && item.subsections.map((subitem: any) => (
                                     <SidebarMenuItem key={subitem.name}>
                                       <SidebarMenuButton
-                                        className="group/subitem hover:bg-accent/60 transition-all duration-200 text-[10px] rounded-lg cursor-pointer gap-2 hover:translate-x-1 mb-1"
+                                        className="group/subitem hover:bg-primary/5 transition-all duration-200 text-[10px] rounded-lg cursor-pointer gap-2 hover:translate-x-1 mb-1"
                                         tooltip={subitem.name}
                                         onClick={() => handleItemClick(subitem)}
                                       >
@@ -558,7 +558,7 @@ export function AppSidebar({
                         return (
                           <SidebarMenuItem key={itemKey}>
                                      <SidebarMenuButton
-                                        className="group/item hover:bg-accent/80 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 hover:translate-x-1 mb-1"
+                                        className="group/item hover:bg-primary/8 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 hover:translate-x-1 mb-1"
                                         tooltip={itemName}
                                         onClick={() => handleItemClick(item, section)}
                                       >
@@ -599,7 +599,7 @@ export function AppSidebar({
                 <CollapsibleTrigger className="w-full">
                   <SidebarGroupLabel
                     className={cn(
-                      "transition-all duration-200 hover:bg-accent/80 cursor-pointer !opacity-100 !mt-0",
+                      "transition-all duration-200 hover:bg-primary/8 cursor-pointer !opacity-100 !mt-0",
                       isCollapsed ? "justify-center px-2 py-3" : "justify-between px-4 py-3 hover:scale-105",
                       "h-auto border-b border-border/50"
                     )}
@@ -628,7 +628,7 @@ export function AppSidebar({
                               <CollapsibleTrigger className="w-full">
                                 <SidebarMenuItem>
                                   <SidebarMenuButton
-                                    className="group/item hover:bg-accent/80 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 mb-1 justify-between"
+                                    className="group/item hover:bg-primary/8 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 mb-1 justify-between"
                                     tooltip={entry.group}
                                   >
                                     <div className="flex items-center gap-3 flex-1">
@@ -647,7 +647,7 @@ export function AppSidebar({
                                     <SidebarMenuItem key={sector.name}>
                                       <SidebarMenuButton
                                         className={cn(
-                                          "group/subitem hover:bg-accent/60 transition-all duration-200 text-[10px] rounded-lg cursor-pointer gap-2 hover:translate-x-1 mb-1",
+                                          "group/subitem hover:bg-primary/5 transition-all duration-200 text-[10px] rounded-lg cursor-pointer gap-2 hover:translate-x-1 mb-1",
                                           currentDepartment === sector.department && "bg-primary/10 text-primary font-semibold"
                                         )}
                                         tooltip={sector.name}
@@ -676,7 +676,7 @@ export function AppSidebar({
                           <SidebarMenuItem key={directEntry.name}>
                             <SidebarMenuButton
                               className={cn(
-                                "group/item hover:bg-accent/80 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 hover:translate-x-1 mb-1",
+                                "group/item hover:bg-primary/8 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 hover:translate-x-1 mb-1",
                                 currentDepartment === directEntry.department && "bg-primary/10 text-primary font-semibold"
                               )}
                               tooltip={directEntry.name}
