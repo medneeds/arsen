@@ -7,29 +7,17 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   LogIn, User, Lock, Eye, EyeOff, ArrowRight, ArrowLeft,
-  Activity, Brain, MapPin, Stethoscope, HeartPulse, Shield, Briefcase,
+  Briefcase, Sparkles,
 } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { BigHelpLogo } from "@/components/BigHelpLogo";
 import { cn } from "@/lib/utils";
 import { whitelabel } from "@/config/whitelabel";
 import { motion, AnimatePresence } from "framer-motion";
 import { IndividualSignUpForm } from "@/components/IndividualSignUpForm";
-import { ForgotPasswordForm } from "@/components/ForgotPasswordForm";
 import { supabase } from "@/integrations/supabase/client";
 import { useDepartment, Department } from "@/contexts/DepartmentContext";
 import { HospitalSelector } from "@/components/HospitalSelector";
 import { useHospital } from "@/contexts/HospitalContext";
-
-// Floating icon data for background animation
-const floatingIcons = [
-  { Icon: Activity, x: "10%", y: "20%", delay: 0, duration: 6 },
-  { Icon: Brain, x: "85%", y: "15%", delay: 1.2, duration: 7 },
-  { Icon: MapPin, x: "75%", y: "70%", delay: 0.5, duration: 5.5 },
-  { Icon: Stethoscope, x: "15%", y: "75%", delay: 2, duration: 8 },
-  { Icon: HeartPulse, x: "50%", y: "85%", delay: 0.8, duration: 6.5 },
-  { Icon: Shield, x: "90%", y: "45%", delay: 1.5, duration: 7.5 },
-];
 
 // Map access_profile to redirect routes
 function getRedirectRoute(accessProfile: string | null, role: string | null): string {
@@ -46,8 +34,55 @@ function getRedirectRoute(accessProfile: string | null, role: string | null): st
   }
 }
 
+/* ─── Shared chrome ─────────────────────────────────────────────── */
+function PageHeader({ onLogoClick }: { onLogoClick?: () => void }) {
+  const navigate = useNavigate();
+  return (
+    <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-slate-100">
+      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <button
+          onClick={onLogoClick ?? (() => navigate("/"))}
+          className="flex items-center gap-2.5 group"
+        >
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+            <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
+          </div>
+          <span className="preserve-case text-lg font-semibold tracking-tight text-slate-800">
+            Arsen
+          </span>
+        </button>
+
+        <button
+          onClick={() => navigate("/")}
+          className="preserve-case inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-slate-600 hover:text-slate-900 text-xs font-medium transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Início
+        </button>
+      </div>
+    </header>
+  );
+}
+
+function PageFooter() {
+  const currentYear = new Date().getFullYear();
+  return (
+    <footer className="border-t border-slate-100 bg-slate-50/50 py-6 px-6">
+      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+        <p className="preserve-case text-xs text-slate-400">
+          © {currentYear} Arsen. Todos os direitos reservados.
+        </p>
+        <p className="preserve-case text-xs text-slate-400">
+          Desenvolvido por <span className="font-medium text-slate-600">Medneeds</span>
+        </p>
+      </div>
+    </footer>
+  );
+}
+
+/* ─── Page ──────────────────────────────────────────────────────── */
 export default function AuthPage() {
-  const { user, signIn, role } = useAuth();
+  const { user, signIn } = useAuth();
   const { setCurrentDepartment } = useDepartment();
   const { setCurrentHospital } = useHospital();
   const navigate = useNavigate();
@@ -55,7 +90,7 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [redirectRoute, setRedirectRoute] = useState("/");
-  const [screen, setScreen] = useState<"splash" | "login" | "signup" | "forgot">("splash");
+  const [screen, setScreen] = useState<"login" | "signup">("login");
   const [signupState, setSignupState] = useState("");
   const [signupHospital, setSignupHospital] = useState("");
   const [signupDepartment, setSignupDepartment] = useState<Department>("URGÊNCIA E EMERGÊNCIA ADULTO");
@@ -104,16 +139,16 @@ export default function AuthPage() {
         setLoading(false);
       } else {
         const internalEmail = `${loginData.username.toLowerCase()}@sistema.local`;
-        const { data: profileData } = await supabase
+        await supabase
           .from("profiles")
           .select("access_profile")
           .eq("email", internalEmail)
           .maybeSingle();
-        
+
         const route = getRedirectRoute(selectedAccessProfile, null);
         setRedirectRoute(route);
         localStorage.setItem("access_profile", selectedAccessProfile);
-        
+
         setCurrentDepartment("UTI");
         toast.success("Login realizado com sucesso");
         setShowLoadingScreen(true);
@@ -124,9 +159,6 @@ export default function AuthPage() {
     }
   };
 
-  // Shared dark background for splash
-  const bgSplash = "min-h-screen bg-gradient-to-br from-[#040a18] via-[#0a1628] to-[#0f2847] flex flex-col items-center justify-center relative overflow-hidden";
-
   return (
     <>
       {showLoadingScreen && (
@@ -136,362 +168,240 @@ export default function AuthPage() {
         />
       )}
 
-      <AnimatePresence mode="wait">
-        {screen === "splash" ? (
-          /* ─── SPLASH / CONCEPTUAL SCREEN ─────────────────────── */
-          <motion.div
-            key="splash"
-            className={bgSplash}
-            exit={{ opacity: 0, scale: 0.96 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div
-              className="absolute inset-0 opacity-[0.04]"
-              style={{
-                backgroundImage:
-                  "linear-gradient(rgba(45,212,191,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(45,212,191,.4) 1px, transparent 1px)",
-                backgroundSize: "60px 60px",
-              }}
-            />
+      <div
+        className={cn(
+          "min-h-screen flex flex-col bg-white text-slate-700 transition-opacity duration-500",
+          showLoadingScreen && "opacity-0"
+        )}
+      >
+        <PageHeader />
 
-            <motion.div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
-              style={{ background: "radial-gradient(circle, rgba(45,212,191,0.08) 0%, transparent 70%)" }}
-              animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            />
+        {/* Ambient gradients (shared across screens) */}
+        <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-gradient-to-br from-sky-100/60 via-blue-50/40 to-transparent rounded-full blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-gradient-to-tl from-teal-50/50 to-transparent rounded-full blur-3xl" />
+        </div>
 
-            {floatingIcons.map((item, i) => (
+        <main className="flex-1 flex items-center justify-center px-6 py-10 md:py-16 relative">
+          {/* Subtle grid */}
+          <div
+            className="absolute inset-0 -z-10 opacity-[0.04]"
+            style={{
+              backgroundImage:
+                "linear-gradient(hsl(215 20% 65% / 0.4) 1px, transparent 1px), linear-gradient(90deg, hsl(215 20% 65% / 0.4) 1px, transparent 1px)",
+              backgroundSize: "60px 60px",
+            }}
+          />
+
+          <AnimatePresence mode="wait">
+            {screen === "login" ? (
               <motion.div
-                key={i}
-                className="absolute text-[#2dd4bf]/[0.07]"
-                style={{ left: item.x, top: item.y }}
-                animate={{ y: [-12, 12, -12], rotate: [-5, 5, -5], opacity: [0.4, 0.8, 0.4] }}
-                transition={{ duration: item.duration, repeat: Infinity, ease: "easeInOut", delay: item.delay }}
-              >
-                <item.Icon className="h-8 w-8 sm:h-10 sm:w-10" />
-              </motion.div>
-            ))}
-
-            <motion.div
-              className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#2dd4bf]/20 to-transparent"
-              animate={{ top: ["0%", "100%"] }}
-              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-            />
-
-            <div className="relative z-10 text-center px-6 max-w-xl mx-auto flex flex-col items-center">
-              <motion.div
-                className="relative mb-6"
-                initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <motion.div
-                  className="absolute inset-0 -m-12 rounded-full border-2 border-[#2dd4bf]/15"
-                  animate={{ scale: [1, 1.8], opacity: [0.4, 0] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeOut" }}
-                />
-                <motion.div
-                  animate={{ y: [-3, 3, -3] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="drop-shadow-[0_0_40px_rgba(45,212,191,0.5)]"
-                >
-                  <BigHelpLogo size="xl" glow />
-                </motion.div>
-              </motion.div>
-
-              <motion.div
-                className="mb-2"
-                initial={{ opacity: 0, y: 16 }}
+                key="login"
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.4 }}
+                className="w-full max-w-[440px] relative"
               >
-                <h1 className="text-4xl sm:text-5xl md:text-6xl text-white tracking-tight">
-                  <span className="font-extrabold">ARSEN</span>
-                </h1>
-              </motion.div>
+                {/* Brand block */}
+                <div className="text-center mb-8">
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200/80 shadow-sm mb-5"
+                  >
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="preserve-case text-[11px] font-medium text-slate-600 tracking-wide">
+                      Acesso à plataforma
+                    </span>
+                  </motion.div>
 
-              <motion.div
-                className="flex items-center justify-center gap-3 my-5"
-                initial={{ opacity: 0, scaleX: 0 }}
-                animate={{ opacity: 1, scaleX: 1 }}
-                transition={{ duration: 0.6, delay: 0.8 }}
-              >
-                <div className="h-px w-20 bg-gradient-to-r from-transparent to-[#2dd4bf]/40" />
+                  <motion.h1
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.6, delay: 0.1 }}
+                    className="preserve-case text-5xl md:text-6xl font-bold tracking-tight mb-3 bg-gradient-to-b from-slate-800 via-slate-700 to-slate-500 bg-clip-text text-transparent leading-none"
+                  >
+                    Arsen
+                  </motion.h1>
+
+                  <motion.p
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.25 }}
+                    className="preserve-case text-sm md:text-base text-slate-500 font-light tracking-tight"
+                  >
+                    Inteligência clínica em tempo real
+                  </motion.p>
+                </div>
+
+                {/* Login Card */}
                 <motion.div
-                  className="h-2 w-2 rounded-full bg-[#2dd4bf]/60"
-                  animate={{ opacity: [0.4, 1, 0.4] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-                <div className="h-px w-20 bg-gradient-to-l from-transparent to-[#2dd4bf]/40" />
-              </motion.div>
-
-              <motion.p
-                className="text-lg sm:text-xl md:text-2xl text-slate-300 font-light tracking-wide leading-relaxed mb-10 max-w-md"
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 1 }}
-              >
-                Inteligência Clínica{" "}
-                <span className="text-[#2dd4bf] font-medium">em Tempo Real</span>
-              </motion.p>
-
-              <motion.button
-                onClick={() => setScreen("login")}
-                className="group relative inline-flex items-center gap-3 px-10 py-4 rounded-full text-white font-semibold text-sm tracking-[0.2em] transition-all duration-500 overflow-hidden border border-[#2dd4bf]/30 hover:border-[#2dd4bf]/60"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 1.3 }}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-[#2dd4bf]/20 via-[#2dd4bf]/10 to-transparent group-hover:from-[#2dd4bf]/30 group-hover:via-[#2dd4bf]/15 transition-all duration-500" />
-                <span className="relative z-10">ACESSAR PLATAFORMA</span>
-                <ArrowRight className="h-4 w-4 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
-              </motion.button>
-
-              <motion.div
-                className="mt-14 flex flex-col items-center gap-0.5"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.2, duration: 1 }}
-              >
-                <div className="h-px w-12 bg-gradient-to-r from-transparent via-slate-500/30 to-transparent mb-3" />
-                <p className="text-[9px] text-slate-600 tracking-[0.4em]">BY</p>
-                <p className="text-sm sm:text-base text-slate-300 font-bold tracking-[0.25em] mt-0.5">MEDNEEDS</p>
-                <p className="text-[8px] text-[#2dd4bf]/40 tracking-[0.35em] font-light mt-1">CLINICAL INTELLIGENT PLATFORM</p>
-              </motion.div>
-            </div>
-
-            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#2dd4bf]/20 to-transparent" />
-          </motion.div>
-
-        ) : screen === "login" ? (
-          /* ─── LOGIN SCREEN — LIGHT, CLEAN, ELEGANT ──────── */
-          <motion.div
-            key="login"
-            className={cn(
-              "min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-white flex items-center justify-center p-4 relative overflow-hidden transition-opacity duration-500",
-              showLoadingScreen && "opacity-0"
-            )}
-            initial={{ opacity: 0, scale: 1.02 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            {/* Subtle light background elements */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-blue-100/30 blur-[100px]" />
-              <div className="absolute -bottom-40 -left-40 w-[400px] h-[400px] rounded-full bg-teal-100/20 blur-[100px]" />
-              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-indigo-50/40 blur-[80px]" />
-            </div>
-
-            {/* Subtle grid */}
-            <div
-              className="absolute inset-0 opacity-[0.03]"
-              style={{
-                backgroundImage:
-                  "linear-gradient(rgba(0,0,0,.15) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.15) 1px, transparent 1px)",
-                backgroundSize: "40px 40px",
-              }}
-            />
-
-            <div className="w-full max-w-[420px] relative z-10">
-              {/* Header with logo */}
-              <div className="text-center mb-6">
-                <motion.div
-                  className="inline-block mb-4"
-                  initial={{ opacity: 0, y: -10 }}
+                  className="bg-white rounded-2xl shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] border border-slate-100 p-7"
+                  initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.1 }}
-                >
-                  <BigHelpLogo size="md" />
-                </motion.div>
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
                   transition={{ duration: 0.5, delay: 0.3 }}
                 >
-                  <h1 className="text-2xl text-slate-800 tracking-tight mb-1">
-                    <span className="font-extrabold">ARSEN</span>
-                  </h1>
-                  <div className="h-px w-24 mx-auto bg-gradient-to-r from-transparent via-slate-300 to-transparent my-3" />
-                  <p className="text-[10px] text-slate-400 tracking-[0.15em]">
-                    Plataforma de Gestão Clínica
-                  </p>
-                </motion.div>
-              </div>
-
-              {/* Login Card — Light with prominent shadow */}
-              <motion.div
-                className="bg-white rounded-2xl shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)] border border-slate-100 p-7"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-              >
-                {/* Hospital Selector */}
-                <div className="mb-5">
-                  <HospitalSelector
-                    selectedHospitalId={selectedHospitalId}
-                    onSelect={handleHospitalSelect}
-                  />
-                </div>
-
-                <div className="h-px w-full bg-slate-100 mb-5" />
-
-                <div className="mb-5 text-center">
-                  <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-blue-50 border border-blue-100 mb-3">
-                    <LogIn className="h-4 w-4 text-blue-600" />
+                  {/* Hospital Selector */}
+                  <div className="mb-5">
+                    <HospitalSelector
+                      selectedHospitalId={selectedHospitalId}
+                      onSelect={handleHospitalSelect}
+                    />
                   </div>
-                  <h2 className="text-xs font-semibold text-slate-500 tracking-[0.2em]">ACESSE SUA CONTA</h2>
-                </div>
 
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div>
-                    <Label htmlFor="username" className="text-[10px] font-medium text-slate-400 mb-1.5 block tracking-[0.15em]">
-                      USUÁRIO
-                    </Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                      <Input
-                        id="username"
-                        type="text"
-                        value={loginData.username}
-                        onChange={(e) => setLoginData({ ...loginData, username: e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, '') })}
-                        placeholder="Digite seu usuário"
-                        className="pl-10 h-11 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-300 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
-                        disabled={loading}
-                        autoComplete="username"
-                        autoFocus
-                      />
+                  <div className="h-px w-full bg-slate-100 mb-5" />
+
+                  <div className="mb-5 flex items-center gap-2.5">
+                    <div className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-gradient-to-br from-sky-50 to-blue-100/60 border border-sky-100">
+                      <LogIn className="h-4 w-4 text-sky-600" />
+                    </div>
+                    <div>
+                      <p className="preserve-case text-sm font-semibold text-slate-800">Acesse sua conta</p>
+                      <p className="preserve-case text-xs text-slate-500">Informe suas credenciais</p>
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="password" className="text-[10px] font-medium text-slate-400 mb-1.5 block tracking-[0.15em]">
-                      SENHA
-                    </Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        value={loginData.password}
-                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                        placeholder="Digite sua senha"
-                        className="pl-10 pr-10 h-11 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-300 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all"
-                        disabled={loading}
-                        autoComplete="current-password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
-                        tabIndex={-1}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Tipo de Acesso */}
-                  <div>
-                    <Label htmlFor="access-profile" className="text-[10px] font-medium text-slate-400 mb-1.5 block tracking-[0.15em]">
-                      TIPO DE ACESSO
-                    </Label>
-                    <div className="relative">
-                      <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 z-10 pointer-events-none" />
-                      <select
-                        id="access-profile"
-                        value={selectedAccessProfile}
-                        onChange={(e) => setSelectedAccessProfile(e.target.value)}
-                        className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 focus:bg-white transition-all appearance-none cursor-pointer uppercase tracking-wide"
-                        disabled={loading}
-                      >
-                        <option value="medico">MÉDICO ASSISTENTE</option>
-                        <option value="gestor">GESTOR HOSPITALAR</option>
-                        <option value="farmacia">FARMÁCIA CLÍNICA</option>
-                        <option value="ccih">CCIH — CONTROLE DE INFECÇÃO</option>
-                        <option value="imagem">SETOR DE IMAGEM</option>
-                        <option value="laboratorio">SETOR LABORATORIAL</option>
-                        <option value="nir">NIR — REGULAÇÃO INTERNA</option>
-                        <option value="multi">EQUIPE MULTIPROFISSIONAL</option>
-                        <option value="administrativo">ADMINISTRATIVO / RECEPÇÃO</option>
-                      </select>
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div>
+                      <Label htmlFor="username" className="text-[10px] font-medium text-slate-400 mb-1.5 block tracking-[0.15em]">
+                        USUÁRIO
+                      </Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                        <Input
+                          id="username"
+                          type="text"
+                          value={loginData.username}
+                          onChange={(e) => setLoginData({ ...loginData, username: e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, '') })}
+                          placeholder="Digite seu usuário"
+                          className="pl-10 h-11 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-300 focus:border-sky-300 focus:ring-2 focus:ring-sky-100 focus:bg-white transition-all"
+                          disabled={loading}
+                          autoComplete="username"
+                          autoFocus
+                        />
                       </div>
                     </div>
-                  </div>
 
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full h-11 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold text-xs rounded-xl tracking-[0.2em] transition-all duration-300 shadow-lg shadow-blue-600/20 hover:shadow-blue-600/30"
+                    <div>
+                      <Label htmlFor="password" className="text-[10px] font-medium text-slate-400 mb-1.5 block tracking-[0.15em]">
+                        SENHA
+                      </Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          value={loginData.password}
+                          onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                          placeholder="Digite sua senha"
+                          className="pl-10 pr-10 h-11 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 placeholder:text-slate-300 focus:border-sky-300 focus:ring-2 focus:ring-sky-100 focus:bg-white transition-all"
+                          disabled={loading}
+                          autoComplete="current-password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors"
+                          tabIndex={-1}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Tipo de Acesso */}
+                    <div>
+                      <Label htmlFor="access-profile" className="text-[10px] font-medium text-slate-400 mb-1.5 block tracking-[0.15em]">
+                        TIPO DE ACESSO
+                      </Label>
+                      <div className="relative">
+                        <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300 z-10 pointer-events-none" />
+                        <select
+                          id="access-profile"
+                          value={selectedAccessProfile}
+                          onChange={(e) => setSelectedAccessProfile(e.target.value)}
+                          className="w-full h-11 pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:border-sky-300 focus:ring-2 focus:ring-sky-100 focus:bg-white transition-all appearance-none cursor-pointer uppercase tracking-wide"
+                          disabled={loading}
+                        >
+                          <option value="medico">MÉDICO ASSISTENTE</option>
+                          <option value="gestor">GESTOR HOSPITALAR</option>
+                          <option value="farmacia">FARMÁCIA CLÍNICA</option>
+                          <option value="ccih">CCIH — CONTROLE DE INFECÇÃO</option>
+                          <option value="imagem">SETOR DE IMAGEM</option>
+                          <option value="laboratorio">SETOR LABORATORIAL</option>
+                          <option value="nir">NIR — REGULAÇÃO INTERNA</option>
+                          <option value="multi">EQUIPE MULTIPROFISSIONAL</option>
+                          <option value="administrativo">ADMINISTRATIVO / RECEPÇÃO</option>
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="preserve-case w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-xl transition-all duration-300 shadow-lg shadow-slate-900/10 hover:shadow-xl hover:shadow-slate-900/15 group"
+                    >
+                      {loading ? "Entrando..." : (
+                        <span className="inline-flex items-center gap-2">
+                          Entrar
+                          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                        </span>
+                      )}
+                    </Button>
+                  </form>
+                </motion.div>
+
+                {/* Signup link */}
+                <motion.div
+                  className="text-center mt-6"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <button
+                    onClick={() => setScreen("signup")}
+                    className="preserve-case inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors"
                   >
-                    {loading ? "ENTRANDO..." : "ENTRAR"}
-                  </Button>
-                </form>
+                    <User className="h-3.5 w-3.5" />
+                    Não tem conta?
+                    <span className="text-sky-600 font-medium">Cadastre-se</span>
+                  </button>
+                </motion.div>
               </motion.div>
-
-              {/* Footer links */}
+            ) : (
+              /* ─── SIGNUP SCREEN ─────────────────────────────── */
               <motion.div
-                className="text-center mt-5 space-y-3"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
+                key="signup"
+                initial={{ opacity: 0, x: 24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -24 }}
+                transition={{ duration: 0.4 }}
+                className="w-full max-w-lg relative"
               >
-                <button
-                  onClick={() => setScreen("splash")}
-                  className="inline-flex items-center gap-2 text-[10px] text-slate-400 hover:text-slate-600 tracking-[0.2em] transition-colors duration-300"
-                >
-                  <ArrowLeft className="h-3 w-3" />
-                  VOLTAR
-                </button>
-
-                <div className="h-px w-16 mx-auto bg-slate-200" />
-
-                <button
-                  onClick={() => setScreen("signup")}
-                  className="inline-flex items-center gap-2 text-[10px] text-slate-400 hover:text-slate-600 tracking-[0.15em] transition-colors duration-300"
-                >
-                  <User className="h-3 w-3" />
-                  NÃO TEM CONTA? <span className="text-blue-600 font-semibold">CADASTRE-SE</span>
-                </button>
-
-                <p className="text-[9px] text-slate-300 tracking-[0.3em] font-light">
-                  {whitelabel.credits.authorSignature}
-                </p>
+                <div className="bg-white rounded-2xl shadow-[0_8px_40px_-12px_rgba(0,0,0,0.08)] border border-slate-100 p-6 max-h-[80vh] overflow-y-auto">
+                  <IndividualSignUpForm
+                    onBack={() => setScreen("login")}
+                    onSuccess={() => setScreen("login")}
+                    selectedState={signupState}
+                    selectedHospitalId={signupHospital}
+                    selectedDepartment={signupDepartment}
+                    onStateChange={setSignupState}
+                    onHospitalChange={setSignupHospital}
+                    onDepartmentChange={setSignupDepartment}
+                  />
+                </div>
               </motion.div>
-            </div>
-          </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
 
-        ) : screen === "signup" ? (
-          /* ─── SIGNUP SCREEN ─────────────────────────────────────── */
-          <motion.div
-            key="signup"
-            className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-white flex items-center justify-center p-4 relative overflow-hidden"
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -30 }}
-            transition={{ duration: 0.4 }}
-          >
-            <div className="w-full max-w-lg relative z-10">
-              <div className="bg-white rounded-2xl shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)] border border-slate-100 p-6 max-h-[90vh] overflow-y-auto">
-                <IndividualSignUpForm
-                  onBack={() => setScreen("login")}
-                  onSuccess={() => setScreen("login")}
-                  selectedState={signupState}
-                  selectedHospitalId={signupHospital}
-                  selectedDepartment={signupDepartment}
-                  onStateChange={setSignupState}
-                  onHospitalChange={setSignupHospital}
-                  onDepartmentChange={setSignupDepartment}
-                />
-              </div>
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+        <PageFooter />
+      </div>
     </>
   );
 }
