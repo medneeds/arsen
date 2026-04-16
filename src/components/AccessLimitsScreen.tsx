@@ -202,11 +202,11 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
                   ))}
                 </div>
               ) : (
-                <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-3 text-center">
-                  <p className="preserve-case text-muted-foreground text-xs">
+                <div className="bg-muted/60 border border-border rounded-lg px-4 py-3 text-center">
+                  <p className="preserve-case text-foreground/80 text-xs font-medium">
                     Nenhum setor vinculado
                   </p>
-                  <p className="preserve-case text-muted-foreground/70 text-[10px] mt-0.5">
+                  <p className="preserve-case text-foreground/55 text-[10px] mt-0.5">
                     Entre em contato com o coordenador
                   </p>
                 </div>
