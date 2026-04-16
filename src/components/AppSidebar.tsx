@@ -180,63 +180,59 @@ export function AppSidebar({
     if (isMobile) setOpenMobile(false);
   };
 
-  const allMenuItems = [
-    {
-      title: "Início",
-      icon: LayoutDashboard,
-      link: "/",
-      profiles: ["medico", "gestor"],
-    },
-    {
-      title: "Painel do Gestor",
-      icon: BarChart3,
-      link: "/painel-gestor",
-      profiles: ["gestor"],
-    },
-    {
-      title: "Emergência",
-      icon: Activity,
-      link: "/emergencia",
-      profiles: ["gestor"],
-    },
-    {
-      title: "Monitoramento",
-      icon: HeartPulse,
-      link: "/monitoramento",
-      profiles: ["gestor"],
-    },
+  // ── MENUS POR PERFIL ──
+  // MÉDICO: enxuto. Foco em pacientes + ferramentas essenciais do dia.
+  const medicoMenu = [
+    { title: "Início", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
+    { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: ["medico"] },
+    { title: "Painel Clínico", icon: ClipboardCheck, link: "/painel-clinico", profiles: ["medico"] },
+    { title: "Round Diário", icon: ClipboardList, link: "/round", profiles: ["medico"] },
+    { title: "Examinus AI", icon: Brain, link: "/ia", profiles: ["medico"] },
+  ];
+
+  // GESTOR: completo. Visão executiva + acesso a todas as ferramentas.
+  const gestorMenu = [
+    { title: "Início", icon: LayoutDashboard, link: "/", profiles: ["gestor"] },
+    { title: "Painel do Gestor", icon: BarChart3, link: "/painel-gestor", profiles: ["gestor"] },
+    { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: ["gestor"] },
+    { title: "Painel Clínico", icon: ClipboardCheck, link: "/painel-clinico", profiles: ["gestor"] },
+    { title: "Monitoramento", icon: HeartPulse, link: "/monitoramento", profiles: ["gestor"] },
+    { title: "Emergência", icon: Activity, link: "/emergencia", profiles: ["gestor"] },
     {
       title: "Documentos",
       icon: FolderOpen,
-      profiles: ["medico", "gestor"],
+      profiles: ["gestor"],
       items: [
-        { name: "Round", link: "/round", profiles: ["medico", "gestor"] },
-        { name: "Hemoderivados", link: "/hemoderivados", profiles: ["medico", "gestor"] },
-        { name: "Relatório", link: "/relatorio", profiles: ["medico", "gestor"] },
-        { name: "Regulação", link: "/regulacoes", profiles: ["medico", "gestor"] },
-        { name: "Alta e Desfecho", link: "/alta-desfecho", profiles: ["medico", "gestor"] },
+        { name: "Round", link: "/round", profiles: ["gestor"] },
+        { name: "Relatórios", link: "/relatorio", profiles: ["gestor"] },
+        { name: "Regulação", link: "/regulacoes", profiles: ["gestor"] },
+        { name: "Alta e Desfecho", link: "/alta-desfecho", profiles: ["gestor"] },
+        { name: "Hemoderivados", link: "/hemoderivados", profiles: ["gestor"] },
       ],
     },
     {
       title: "Protocolos",
       icon: Stethoscope,
-      profiles: ["medico", "gestor"],
+      profiles: ["gestor"],
       items: [
-        { name: "Protocolos UTI", link: "/protocolos-uti", profiles: ["medico", "gestor"] },
-        { name: "SAPS 3", link: "/saps3", profiles: ["medico", "gestor"] },
+        { name: "Protocolos UTI", link: "/protocolos-uti", profiles: ["gestor"] },
+        { name: "SAPS 3", link: "/saps3", profiles: ["gestor"] },
       ],
     },
     {
       title: "Assistente Clínico",
       icon: Brain,
-      profiles: ["medico", "gestor"],
+      profiles: ["gestor"],
       items: [
+        { name: "Examinus AI", link: "/ia", profiles: ["gestor"] },
         { name: "Validação Farmacêutica", link: "/validacao-farmaceutica", profiles: ["gestor"] },
         { name: "Catálogo de Medicamentos", link: "/catalogo-medicamentos", profiles: ["gestor"] },
-        { name: "Examinus AI", link: "/ia", profiles: ["medico", "gestor"] },
       ],
     },
   ];
+
+  const allMenuItems = accessProfile === "gestor" ? gestorMenu : medicoMenu;
+
 
   // ── Build filtered menu based on role + profile ──
   const buildFilteredMenu = () => {
@@ -612,116 +608,8 @@ export function AppSidebar({
           </div>
         ))}
 
-        {/* ── Hierarchical Sectors Section ── */}
-        {(accessProfile === "medico" || accessProfile === "gestor") && (
-          <>
-            <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-3 mx-4" />
-            <Collapsible defaultOpen={true} className="group/sectors">
-              <SidebarGroup className="py-0 my-0">
-                <CollapsibleTrigger className="w-full">
-                  <SidebarGroupLabel
-                    className={cn(
-                      "transition-all duration-200 hover:bg-primary/8 cursor-pointer !opacity-100 !mt-0",
-                      isCollapsed ? "justify-center px-2 py-3" : "justify-between px-4 py-3 hover:scale-105",
-                      "h-auto border-b border-border/50"
-                    )}
-                  >
-                    <div className={cn("flex items-center w-full", isCollapsed ? "justify-center" : "gap-3")}>
-                      <BedDouble className="h-5 w-5 text-primary transition-all duration-200" />
-                      {!isCollapsed && (
-                        <>
-                          <span className="text-xs font-medium tracking-wide text-foreground flex-1 text-left">
-                            Setores
-                          </span>
-                          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]/sectors:rotate-180" />
-                        </>
-                      )}
-                    </div>
-                  </SidebarGroupLabel>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="transition-all duration-300 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-                  <SidebarGroupContent className="px-2">
-                    <SidebarMenu>
-                      {sectorHierarchy.map((entry) => {
-                        // Grouped sector (e.g. UTI with UTI 1, UTI 2)
-                        if ('group' in entry && entry.sectors) {
-                          return (
-                            <Collapsible key={entry.group} className="group/sectorgroup">
-                              <CollapsibleTrigger className="w-full">
-                                <SidebarMenuItem>
-                                  <SidebarMenuButton
-                                    className="group/item hover:bg-primary/8 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 mb-1 justify-between"
-                                    tooltip={entry.group}
-                                  >
-                                    <div className="flex items-center gap-3 flex-1">
-                                      <div className="rounded-full bg-primary/20 transition-all duration-200 group-hover/item:scale-150 flex-shrink-0 h-2 w-2 ml-1" />
-                                      <span className="flex-1 text-left font-medium ml-1 animate-fade-in">
-                                        {entry.group}
-                                      </span>
-                                    </div>
-                                    <ChevronDown className="h-3 w-3 text-muted-foreground transition-transform duration-200 group-data-[state=open]/sectorgroup:rotate-180 mr-2" />
-                                  </SidebarMenuButton>
-                                </SidebarMenuItem>
-                              </CollapsibleTrigger>
-                              <CollapsibleContent className="transition-all duration-300 data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up">
-                                <SidebarMenu className="ml-4 border-l border-border/30 pl-2">
-                                  {entry.sectors.map((sector) => (
-                                    <SidebarMenuItem key={sector.name}>
-                                      <SidebarMenuButton
-                                        className={cn(
-                                          "group/subitem hover:bg-primary/5 transition-all duration-200 text-[10px] rounded-lg cursor-pointer gap-2 hover:translate-x-1 mb-1",
-                                          currentDepartment === sector.department && "bg-primary/10 text-primary font-semibold"
-                                        )}
-                                        tooltip={sector.name}
-                                        onClick={() => handleSectorClick(sector.department)}
-                                      >
-                                        <div className={cn(
-                                          "rounded-full transition-all duration-200 group-hover/subitem:scale-150 flex-shrink-0 h-1.5 w-1.5",
-                                          currentDepartment === sector.department ? "bg-primary" : "bg-primary/10"
-                                        )} />
-                                        <span className="flex-1 text-left animate-fade-in">
-                                          {sector.name}
-                                        </span>
-                                      </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                  ))}
-                                </SidebarMenu>
-                              </CollapsibleContent>
-                            </Collapsible>
-                          );
-                        }
+        {/* Setores foram movidos para o seletor da breadcrumb (topo do conteúdo). */}
 
-                        // Direct sector (e.g. standalone items)
-                        if (!('name' in entry) || !('department' in entry)) return null;
-                        const directEntry = entry as unknown as { name: string; department: Department; link?: string };
-                        return (
-                          <SidebarMenuItem key={directEntry.name}>
-                            <SidebarMenuButton
-                              className={cn(
-                                "group/item hover:bg-primary/8 hover:border-l-2 hover:border-l-primary/50 transition-all duration-200 text-[11px] rounded-lg hover:shadow-sm cursor-pointer gap-3 hover:translate-x-1 mb-1",
-                                currentDepartment === directEntry.department && "bg-primary/10 text-primary font-semibold"
-                              )}
-                              tooltip={directEntry.name}
-                              onClick={() => handleSectorClick(directEntry.department, directEntry.link)}
-                            >
-                              <div className={cn(
-                                "rounded-full transition-all duration-200 group-hover/item:scale-150 flex-shrink-0 h-2 w-2 ml-1",
-                                currentDepartment === directEntry.department ? "bg-primary" : "bg-primary/20"
-                              )} />
-                              <span className="flex-1 text-left font-medium ml-1 animate-fade-in">
-                                {directEntry.name}
-                              </span>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        );
-                      })}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </CollapsibleContent>
-              </SidebarGroup>
-            </Collapsible>
-          </>
-        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/50 p-3 bg-muted/30 space-y-2">
