@@ -4,6 +4,7 @@ import {
   BookOpen,
   LogOut,
   ClipboardCheck,
+  ClipboardList,
   LayoutDashboard,
   History,
   User,
@@ -308,9 +309,9 @@ export function AppSidebar({
       ];
     }
     // Filter sections by profile, then filter sub-items within each section
-    return allMenuItems
-      .filter(section => !section.profiles || section.profiles.includes(accessProfile))
-      .map(section => {
+    return (allMenuItems as any[])
+      .filter((section: any) => !section.profiles || section.profiles.includes(accessProfile))
+      .map((section: any) => {
         if (!section.items) return section;
         const filteredItems = section.items.filter(
           (item: any) => !item.profiles || item.profiles.includes(accessProfile)
@@ -318,7 +319,7 @@ export function AppSidebar({
         if (filteredItems.length === 0) return null;
         return { ...section, items: filteredItems };
       })
-      .filter(Boolean) as typeof allMenuItems;
+      .filter(Boolean) as any[];
   };
 
   const menuItems = buildFilteredMenu();
