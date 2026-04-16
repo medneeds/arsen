@@ -41,95 +41,107 @@ export function LoadingScreen({ onComplete, duration = 2500 }: LoadingScreenProp
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-all duration-500 ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center transition-all duration-500 bg-gradient-to-br from-[#040a18] via-[#0a1628] to-[#0f2847] ${
         isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
-      style={{
-        background: "linear-gradient(145deg, hsl(210 20% 98%) 0%, hsl(210 30% 96%) 30%, hsl(215 40% 94%) 70%, hsl(210 20% 97%) 100%)",
-      }}
     >
-      {/* Subtle grid */}
+      {/* Background grid - matches AccessLimitsScreen */}
       <div
-        className="absolute inset-0 opacity-[0.04]"
+        className="absolute inset-0 opacity-[0.03]"
         style={{
-          backgroundImage: `linear-gradient(hsl(215 20% 65% / 0.3) 1px, transparent 1px), linear-gradient(90deg, hsl(215 20% 65% / 0.3) 1px, transparent 1px)`,
-          backgroundSize: "80px 80px",
+          backgroundImage:
+            "linear-gradient(rgba(45,212,191,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(45,212,191,.4) 1px, transparent 1px)",
+          backgroundSize: "60px 60px",
         }}
       />
 
       {/* Ambient glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
-          className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full blur-[140px]"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full"
           style={{
-            background: "radial-gradient(ellipse, hsl(215 60% 85% / 0.4) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(45,212,191,0.06) 0%, transparent 70%)",
           }}
         />
       </div>
 
-      <div className="relative z-10 flex flex-col items-center w-full max-w-lg px-8">
+      <div className="relative z-10 flex flex-col items-center w-full max-w-md px-8">
         {/* Logo */}
         <div
-          className="mb-10 transition-all duration-800 ease-out"
+          className="mb-8 transition-all duration-700 ease-out"
           style={{
             opacity: phase !== "logo" ? 1 : 0,
             transform: phase !== "logo" ? "translateY(0) scale(1)" : "translateY(20px) scale(0.95)",
             transitionDelay: "150ms",
           }}
         >
-          <div className="relative inline-block">
-            <BigHelpLogo size="lg" glow showText />
-          </div>
+          <BigHelpLogo size="md" glow />
         </div>
 
-        {/* Divider */}
+        {/* Section label - matches AccessLimits header style */}
         <div
-          className="w-full max-w-[200px] mb-8 transition-all duration-800 ease-out"
+          className="text-center mb-6 transition-all duration-700 ease-out"
           style={{
             opacity: phase === "slogan" || phase === "ready" ? 1 : 0,
-            transform: phase === "slogan" || phase === "ready" ? "scaleX(1)" : "scaleX(0)",
+            transform: phase === "slogan" || phase === "ready" ? "translateY(0)" : "translateY(10px)",
             transitionDelay: "300ms",
           }}
         >
-          <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+          <h2 className="text-white/90 text-sm font-light tracking-[0.2em] uppercase">
+            Inicializando Sessão
+          </h2>
+          <div className="h-px w-20 mx-auto bg-gradient-to-r from-transparent via-[#2dd4bf]/40 to-transparent mt-3" />
         </div>
 
         {/* Slogan */}
         <div
-          className="text-center mb-14 transition-all duration-800 ease-out"
+          className="text-center mb-10 transition-all duration-700 ease-out"
           style={{
             opacity: phase === "slogan" || phase === "ready" ? 1 : 0,
             transform: phase === "slogan" || phase === "ready" ? "translateY(0)" : "translateY(15px)",
             transitionDelay: "500ms",
           }}
         >
-          <p className="text-base sm:text-lg font-light tracking-wide text-slate-500 leading-relaxed">
-            Mapeando cuidados, salvando <span className="text-slate-700 font-medium">vidas</span>.
+          <p className="text-xs sm:text-sm font-light tracking-wide text-white/50 leading-relaxed">
+            Mapeando cuidados, salvando{" "}
+            <span className="text-[#2dd4bf]/80 font-medium">vidas</span>.
           </p>
         </div>
 
         {/* Progress */}
         <div
-          className="w-full max-w-[160px] transition-all duration-600 ease-out"
+          className="w-full max-w-[200px] transition-all duration-500 ease-out"
           style={{
             opacity: phase === "ready" ? 1 : 0,
             transform: phase === "ready" ? "translateY(0)" : "translateY(8px)",
             transitionDelay: "150ms",
           }}
         >
-          <div className="w-full h-[1.5px] bg-slate-200 rounded-full overflow-hidden">
+          <div className="w-full h-[2px] bg-white/[0.06] rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-100 ease-out"
               style={{
                 width: `${progress}%`,
-                background: "linear-gradient(90deg, hsl(215 40% 75%) 0%, hsl(215 50% 55%) 50%, hsl(215 40% 75%) 100%)",
+                background:
+                  "linear-gradient(90deg, rgba(45,212,191,0.4) 0%, #2dd4bf 50%, rgba(45,212,191,0.4) 100%)",
               }}
             />
           </div>
-          <p className="text-[9px] text-slate-400 tracking-[0.3em] text-center mt-3 font-light">
+          <p className="text-[9px] text-white/30 tracking-[0.3em] text-center mt-3 font-light uppercase">
             {whitelabel.platform.loadingText}
           </p>
         </div>
+
+        {/* Footer - matches AccessLimits */}
+        <p
+          className="text-[9px] text-white/20 mt-10 tracking-[0.3em] transition-opacity duration-700"
+          style={{
+            opacity: phase === "ready" ? 1 : 0,
+            transitionDelay: "400ms",
+          }}
+        >
+          SESSÃO PROTEGIDA — LGPD/CFM
+        </p>
       </div>
     </div>
   );
