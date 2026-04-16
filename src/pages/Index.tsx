@@ -915,17 +915,14 @@ const Index = () => {
             <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent print:hidden"></div>
             <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3 print:py-0.5 print:px-1">
               <div className="flex items-center justify-between gap-2">
-                {/* Left side: Sidebar trigger + Breadcrumb navigation */}
+                {/* Left side: Sidebar trigger only (sector hierarchy moved to body) */}
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 print:hidden">
                   <SidebarTrigger className="flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
-                  
-                  {/* Breadcrumb: Sector > View */}
-                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                    <span className="text-[11px] font-semibold px-2 py-1 rounded-md whitespace-nowrap bg-white/15 text-white/90">
-                      {SECTOR_VISUAL[activeSector]?.title || activeSector}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <LayoutDashboard className="h-4 w-4 text-white/70 flex-shrink-0" />
+                    <span className="text-[12px] sm:text-sm font-semibold text-white/95 tracking-wide truncate">
+                      Mapa de leitos
                     </span>
-                    <span className="text-white/30 text-xs">/</span>
-                    <ClinicalNavTabs variant="dark" />
                   </div>
                 </div>
 
