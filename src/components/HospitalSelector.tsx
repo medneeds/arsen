@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Search, Building2, MapPin, ChevronDown, Check } from "lucide-react";
+import { Search, Hospital as HospitalIcon, MapPin, ChevronDown, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -48,7 +48,6 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
 
         setHospitals(enriched);
 
-        // Auto-select HMDM if nothing selected
         if (!selectedHospitalId && enriched.length > 0) {
           const hmdm = enriched.find((h) =>
             h.name.toLowerCase().includes("djalma marques") ||
@@ -81,7 +80,7 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
 
   if (loading) {
     return (
-      <div className={cn("animate-pulse bg-slate-100 rounded-xl h-12", className)} />
+      <div className={cn("animate-pulse bg-muted rounded-xl h-12", className)} />
     );
   }
 
@@ -91,23 +90,23 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-3 px-4 py-3 bg-white border border-slate-200 rounded-xl hover:border-slate-300 hover:shadow-sm transition-all duration-200 text-left"
+        className="w-full flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-xl hover:border-primary/40 hover:shadow-sm hover:shadow-primary/5 transition-all duration-200 text-left group"
       >
-        <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-blue-50 shrink-0">
-          <Building2 className="h-4 w-4 text-blue-600" />
+        <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/15 shrink-0 group-hover:from-primary/15 group-hover:to-primary/10 transition-colors">
+          <HospitalIcon className="h-4 w-4 text-primary" strokeWidth={2.2} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[9px] text-slate-400 tracking-[0.15em] leading-none mb-0.5">
+          <p className="text-[9px] text-muted-foreground tracking-[0.15em] leading-none mb-0.5">
             Unidade hospitalar
           </p>
-          <p className="text-sm font-semibold text-slate-800 truncate">
+          <p className="text-sm font-semibold text-foreground truncate">
             {selected?.name || "Selecione um hospital"}
           </p>
         </div>
         <ChevronDown
           className={cn(
-            "h-4 w-4 text-slate-400 transition-transform duration-200",
-            isOpen && "rotate-180"
+            "h-4 w-4 text-muted-foreground transition-transform duration-200",
+            isOpen && "rotate-180 text-primary"
           )}
         />
       </button>
@@ -120,18 +119,18 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-xl shadow-slate-200/50 z-50 overflow-hidden"
+            className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-xl shadow-primary/10 z-50 overflow-hidden"
           >
             {/* Search */}
-            <div className="p-3 border-b border-slate-100">
+            <div className="p-3 border-b border-border/60">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar hospital..."
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-100 rounded-lg text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition-all"
+                  className="w-full pl-9 pr-3 py-2 text-sm bg-muted/40 border border-border rounded-lg text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
                   autoFocus
                 />
               </div>
@@ -140,7 +139,7 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
             {/* List */}
             <div className="max-h-[240px] overflow-y-auto py-1">
               {filtered.length === 0 ? (
-                <p className="text-center text-sm text-slate-400 py-6">
+                <p className="text-center text-sm text-muted-foreground py-6">
                   Nenhum hospital encontrado
                 </p>
               ) : (
@@ -154,26 +153,26 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
                       setSearch("");
                     }}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-blue-50/50 transition-colors",
-                      hospital.id === selectedHospitalId && "bg-blue-50"
+                      "w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-primary/5 transition-colors",
+                      hospital.id === selectedHospitalId && "bg-primary/8"
                     )}
                   >
                     <div className="flex-1 min-w-0">
                       <p className={cn(
                         "text-sm font-medium truncate",
-                        hospital.id === selectedHospitalId ? "text-blue-700" : "text-slate-700"
+                        hospital.id === selectedHospitalId ? "text-primary" : "text-foreground"
                       )}>
                         {hospital.name}
                       </p>
                       {hospital.address && (
-                        <p className="text-[10px] text-slate-400 truncate flex items-center gap-1 mt-0.5">
+                        <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
                           <MapPin className="h-2.5 w-2.5 shrink-0" />
                           {hospital.state_abbreviation} · {hospital.address}
                         </p>
                       )}
                     </div>
                     {hospital.id === selectedHospitalId && (
-                      <Check className="h-4 w-4 text-blue-600 shrink-0" />
+                      <Check className="h-4 w-4 text-primary shrink-0" />
                     )}
                   </button>
                 ))
