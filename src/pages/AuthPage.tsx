@@ -60,6 +60,7 @@ export default function AuthPage() {
   const [signupHospital, setSignupHospital] = useState("");
   const [signupDepartment, setSignupDepartment] = useState<Department>("URGÊNCIA E EMERGÊNCIA ADULTO");
   const [selectedHospitalId, setSelectedHospitalId] = useState<string | null>(null);
+  const [selectedAccessProfile, setSelectedAccessProfile] = useState("medico");
 
   const [loginData, setLoginData] = useState({
     username: "",
