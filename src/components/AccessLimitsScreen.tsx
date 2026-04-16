@@ -2,6 +2,8 @@ import { motion } from "framer-motion";
 import { Shield, MapPin, ArrowRight, Building2, UserCog, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useHospital } from "@/contexts/HospitalContext";
+import { whitelabel } from "@/config/whitelabel";
 import { BigHelpLogo } from "./BigHelpLogo";
 import { AuthBackgroundFx } from "./auth/AuthBackgroundFx";
 
@@ -40,6 +42,7 @@ interface AccessLimitsScreenProps {
 
 export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
   const { role, allowedDepartments, user } = useAuth();
+  const { currentHospital } = useHospital();
   const username =
     user?.user_metadata?.username ||
     user?.user_metadata?.full_name ||
@@ -55,14 +58,18 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
   const accessProfileLabel =
     ACCESS_PROFILE_LABELS[accessProfile] || ACCESS_PROFILE_LABELS["medico"];
 
+  const hospitalName =
+    currentHospital?.name || whitelabel.institution.hospitalShortName;
+  const hospitalLogo = whitelabel.logos.hospital;
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
       <AuthBackgroundFx />
 
-      {/* Top status chip — matches AuthPage header */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-medium text-muted-foreground tracking-[0.2em] z-20">
+      {/* Top status chip */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-semibold text-foreground/70 tracking-[0.25em] z-20">
         <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-        LIMITES DE ACESSO
+        VERIFICAÇÃO DE ACESSO
       </div>
 
       <motion.div
@@ -71,57 +78,69 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Header */}
+        {/* Header — Platform + Hospital lockup */}
         <div className="flex flex-col items-center mb-6">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 12 }}
+            className="flex items-center gap-4 mb-3"
+            initial={{ opacity: 0, scale: 0.95, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.15 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
           >
             <BigHelpLogo size="sm" glow />
+            <div className="h-10 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full blur-xl bg-primary/15 -m-2" />
+              <img
+                src={hospitalLogo}
+                alt={hospitalName}
+                className="relative h-11 w-11 rounded-full object-cover ring-2 ring-border shadow-md"
+              />
+            </div>
           </motion.div>
           <motion.div
-            className="text-center mt-4"
-            initial={{ opacity: 0, y: 8 }}
+            className="text-center"
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <h2 className="preserve-case text-foreground text-base font-light tracking-[0.15em] uppercase">
-              Verificação de Acesso
-            </h2>
-            <div className="h-px w-16 mx-auto bg-gradient-to-r from-transparent via-primary/40 to-transparent mt-2" />
+            <p className="preserve-case text-[11px] font-semibold tracking-[0.18em] uppercase text-foreground/80">
+              {whitelabel.platform.name} · {hospitalName}
+            </p>
+            <div className="h-px w-16 mx-auto bg-gradient-to-r from-transparent via-primary/50 to-transparent mt-2" />
           </motion.div>
         </div>
 
         {/* Card */}
         <motion.div
-          className="bg-card/80 backdrop-blur-xl border border-border/60 rounded-2xl p-6 space-y-5 shadow-xl shadow-primary/5"
+          className="bg-card/95 backdrop-blur-xl border border-border rounded-2xl p-6 space-y-5 shadow-2xl shadow-primary/10"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.5 }}
         >
           {/* User info */}
-          <div className="flex items-center gap-3 pb-4 border-b border-border/60">
-            <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+          <div className="flex items-center gap-3 pb-4 border-b border-border">
+            <div className="h-11 w-11 rounded-full bg-primary/10 border border-primary/25 flex items-center justify-center">
               <UserCog className="h-5 w-5 text-primary" />
             </div>
             <div>
               <p className="preserve-case text-foreground font-semibold text-sm tracking-wide uppercase">
                 {username}
               </p>
-              <p className="text-primary/80 text-xs tracking-[0.1em]">{roleLabel}</p>
+              <p className="text-primary text-xs font-semibold tracking-[0.12em]">
+                {roleLabel}
+              </p>
             </div>
           </div>
 
           {/* Tipo de Acesso */}
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Briefcase className="h-3.5 w-3.5 text-primary/70" />
-              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-foreground/70">
+              <Briefcase className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[10px] font-bold tracking-[0.18em] uppercase">
                 Tipo de Acesso
               </span>
             </div>
-            <div className="bg-primary/5 border border-primary/15 rounded-lg px-4 py-2.5">
+            <div className="bg-primary/8 border border-primary/20 rounded-lg px-4 py-2.5">
               <p className="text-primary text-sm font-semibold tracking-wide">
                 {accessProfileLabel}
               </p>
@@ -129,29 +148,29 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
           </div>
 
           {/* Nível de Acesso */}
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Shield className="h-3.5 w-3.5 text-primary/70" />
-              <span className="text-[10px] font-semibold tracking-[0.15em] uppercase">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-foreground/70">
+              <Shield className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[10px] font-bold tracking-[0.18em] uppercase">
                 Nível de Acesso
               </span>
             </div>
 
             {isAdmin ? (
-              <div className="bg-accent/10 border border-accent/20 rounded-lg px-4 py-2.5">
-                <p className="text-accent-foreground text-sm font-semibold tracking-wide">
+              <div className="bg-accent/15 border border-accent/30 rounded-lg px-4 py-2.5">
+                <p className="text-accent-foreground text-sm font-bold tracking-wide">
                   ACESSO TOTAL
                 </p>
-                <p className="preserve-case text-muted-foreground text-xs mt-0.5">
+                <p className="preserve-case text-foreground/65 text-xs mt-0.5">
                   Todos os setores e funcionalidades
                 </p>
               </div>
             ) : (
-              <div className="bg-warning/10 border border-warning/25 rounded-lg px-4 py-2.5">
-                <p className="text-warning text-sm font-semibold tracking-wide">
+              <div className="bg-warning/15 border border-warning/35 rounded-lg px-4 py-2.5">
+                <p className="text-warning text-sm font-bold tracking-wide">
                   ACESSO RESTRITO
                 </p>
-                <p className="preserve-case text-muted-foreground text-xs mt-0.5">
+                <p className="preserve-case text-foreground/65 text-xs mt-0.5">
                   Limitado aos setores vinculados
                 </p>
               </div>
@@ -160,10 +179,10 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
 
           {/* Setores */}
           {!isAdmin && (
-            <div className="space-y-2.5">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Building2 className="h-3.5 w-3.5 text-primary/70" />
-                <span className="text-[10px] font-semibold tracking-[0.15em] uppercase">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-foreground/70">
+                <Building2 className="h-3.5 w-3.5 text-primary" />
+                <span className="text-[10px] font-bold tracking-[0.18em] uppercase">
                   Setores Habilitados
                 </span>
               </div>
@@ -173,21 +192,21 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
                   {allowedDepartments.map((dept) => (
                     <div
                       key={dept}
-                      className="flex items-center gap-2 bg-muted/40 border border-border/60 rounded-lg px-3 py-2"
+                      className="flex items-center gap-2 bg-muted/60 border border-border rounded-lg px-3 py-2"
                     >
-                      <MapPin className="h-3.5 w-3.5 text-primary/60" />
-                      <span className="text-foreground/85 text-xs font-medium tracking-wide uppercase">
+                      <MapPin className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-foreground text-xs font-semibold tracking-wide uppercase">
                         {DEPARTMENT_LABELS[dept] || dept}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="bg-muted/40 border border-border/60 rounded-lg px-4 py-3 text-center">
-                  <p className="preserve-case text-muted-foreground text-xs">
+                <div className="bg-muted/60 border border-border rounded-lg px-4 py-3 text-center">
+                  <p className="preserve-case text-foreground/80 text-xs font-medium">
                     Nenhum setor vinculado
                   </p>
-                  <p className="preserve-case text-muted-foreground/70 text-[10px] mt-0.5">
+                  <p className="preserve-case text-foreground/55 text-[10px] mt-0.5">
                     Entre em contato com o coordenador
                   </p>
                 </div>
@@ -213,7 +232,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
 
         {/* Footer compliance */}
         <motion.p
-          className="text-center text-[9px] text-muted-foreground/60 mt-6 tracking-[0.3em]"
+          className="text-center text-[9px] text-foreground/55 mt-6 tracking-[0.3em] font-semibold"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9 }}
