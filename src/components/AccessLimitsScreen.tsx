@@ -42,6 +42,7 @@ interface AccessLimitsScreenProps {
 
 export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
   const { role, allowedDepartments, user } = useAuth();
+  const { currentHospital } = useHospital();
   const username =
     user?.user_metadata?.username ||
     user?.user_metadata?.full_name ||
@@ -57,14 +58,18 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
   const accessProfileLabel =
     ACCESS_PROFILE_LABELS[accessProfile] || ACCESS_PROFILE_LABELS["medico"];
 
+  const hospitalName =
+    currentHospital?.name || whitelabel.institution.hospitalShortName;
+  const hospitalLogo = whitelabel.logos.hospital;
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
       <AuthBackgroundFx />
 
-      {/* Top status chip — matches AuthPage header */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-medium text-muted-foreground tracking-[0.2em] z-20">
+      {/* Top status chip */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-semibold text-foreground/70 tracking-[0.25em] z-20">
         <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-        LIMITES DE ACESSO
+        VERIFICAÇÃO DE ACESSO
       </div>
 
       <motion.div
@@ -73,25 +78,35 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Header */}
+        {/* Header — Platform + Hospital lockup */}
         <div className="flex flex-col items-center mb-6">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 12 }}
+            className="flex items-center gap-4 mb-3"
+            initial={{ opacity: 0, scale: 0.95, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.15 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
           >
             <BigHelpLogo size="sm" glow />
+            <div className="h-10 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full blur-xl bg-primary/15 -m-2" />
+              <img
+                src={hospitalLogo}
+                alt={hospitalName}
+                className="relative h-11 w-11 rounded-full object-cover ring-2 ring-border shadow-md"
+              />
+            </div>
           </motion.div>
           <motion.div
-            className="text-center mt-4"
-            initial={{ opacity: 0, y: 8 }}
+            className="text-center"
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <h2 className="preserve-case text-foreground text-base font-light tracking-[0.15em] uppercase">
-              Verificação de Acesso
-            </h2>
-            <div className="h-px w-16 mx-auto bg-gradient-to-r from-transparent via-primary/40 to-transparent mt-2" />
+            <p className="preserve-case text-[11px] font-semibold tracking-[0.18em] uppercase text-foreground/80">
+              {whitelabel.platform.name} · {hospitalName}
+            </p>
+            <div className="h-px w-16 mx-auto bg-gradient-to-r from-transparent via-primary/50 to-transparent mt-2" />
           </motion.div>
         </div>
 
