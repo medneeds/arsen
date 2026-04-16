@@ -1079,10 +1079,34 @@ const Index = () => {
           {/* Main Content */}
           <main className="container mx-auto px-2 sm:px-4 py-3 sm:py-6 print:py-0 print:px-1 pt-[120px] sm:pt-[110px] print:pt-3">
             <div className="space-y-3 sm:space-y-4 print:space-y-1">
+              {/* Sector hierarchy breadcrumb (moved from header) */}
+              <nav
+                aria-label="Hierarquia do setor"
+                className="print:hidden flex items-center flex-wrap gap-x-2 gap-y-1 text-[11px] sm:text-xs font-medium tracking-wide"
+              >
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/60 text-muted-foreground border border-border/50">
+                  <Building2 className="h-3.5 w-3.5" />
+                  <span className="uppercase">{whitelabel.institution.hospitalAbbreviation}</span>
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
+                <span className="inline-flex items-center gap-1.5">
+                  <span className={cn(
+                    "h-2.5 w-2.5 rounded-full border",
+                    SECTOR_VISUAL[activeSector]?.dotClass
+                  )} />
+                  <span className="uppercase text-foreground font-semibold">
+                    {SECTOR_VISUAL[activeSector]?.title || activeSector}
+                  </span>
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
+                <ClinicalNavTabs hideSector />
+              </nav>
+
               {/* Pre-admission section */}
               <div className="print:hidden">
                 <PreAdmissionSection />
               </div>
+
               {SECTOR_VISUAL[activeSector]?.isUti ? (
                 <div className="space-y-4">
                   <UtiSectorSection 
