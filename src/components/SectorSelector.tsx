@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, BedDouble, Check } from "lucide-react";
+import { ChevronDown, BedDouble, Check, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDepartment, type Department } from "@/contexts/DepartmentContext";
 import {
@@ -8,7 +8,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useState, useMemo } from "react";
 
 interface SectorGroup {
   group: string;
@@ -78,6 +79,22 @@ export function SectorSelector({ variant = "light" }: SectorSelectorProps) {
   const { currentDepartment, currentSectorLabel, setCurrentDepartment } = useDepartment();
   const [open, setOpen] = useState(false);
 
+  // Determine which group contains the active sector — open it by default
+  const activeGroupName = useMemo(() => {
+    const found = SECTOR_HIERARCHY.find((g) =>
+      g.sectors.some((s) => s.department === currentDepartment)
+    );
+    return found?.group ?? SECTOR_HIERARCHY[0].group;
+  }, [currentDepartment]);
+
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => ({
+    [activeGroupName]: true,
+  }));
+
+  const toggleGroup = (group: string) => {
+    setOpenGroups((prev) => ({ ...prev, [group]: !prev[group] }));
+  };
+
   const handleSelect = (department: Department, link?: string) => {
     setCurrentDepartment(department);
     navigate(link || "/mapa");
@@ -115,34 +132,70 @@ export function SectorSelector({ variant = "light" }: SectorSelectorProps) {
         </div>
         <ScrollArea className="max-h-[60vh]">
           <div className="p-1.5">
-            {SECTOR_HIERARCHY.map((group) => (
-              <div key={group.group} className="mb-1.5 last:mb-0">
-                <div className="px-2 pt-1.5 pb-1 text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
-                  {group.group}
-                </div>
-                <div className="grid grid-cols-1 gap-0.5">
-                  {group.sectors.map((sector) => {
-                    const isActive = currentDepartment === sector.department;
-                    return (
-                      <button
-                        key={sector.name}
-                        type="button"
-                        onClick={() => handleSelect(sector.department, sector.link)}
+            {SECTOR_HIERARCHY.map((group) => {
+              const isGroupOpen = openGroups[group.group] ?? false;
+              const groupHasActive = group.sectors.some((s) => s.department === currentDepartment);
+              const activeCount = groupHasActive ? 1 : 0;
+
+              return (
+                <Collapsible
+                  key={group.group}
+                  open={isGroupOpen}
+                  onOpenChange={() => toggleGroup(group.group)}
+                  className="mb-0.5 last:mb-0"
+                >
+                  <CollapsibleTrigger
+                    className={cn(
+                      "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md transition-colors",
+                      groupHasActive ? "bg-primary/5" : "hover:bg-muted/60"
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <ChevronRight
                         className={cn(
-                          "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all duration-150 text-left",
-                          isActive
-                            ? "bg-primary/10 text-primary"
-                            : "text-foreground hover:bg-muted"
+                          "h-3 w-3 text-muted-foreground transition-transform flex-shrink-0",
+                          isGroupOpen && "rotate-90"
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "text-[10px] font-bold uppercase tracking-[0.14em] truncate",
+                          groupHasActive ? "text-primary" : "text-muted-foreground/80"
                         )}
                       >
-                        <span className="truncate">{sector.name}</span>
-                        {isActive && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+                        {group.group}
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-semibold text-muted-foreground/60 tabular-nums">
+                      {activeCount > 0 ? `${activeCount}/${group.sectors.length}` : group.sectors.length}
+                    </span>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+                    <div className="grid grid-cols-1 gap-0.5 pl-4 pr-1 pt-0.5 pb-1">
+                      {group.sectors.map((sector) => {
+                        const isActive = currentDepartment === sector.department;
+                        return (
+                          <button
+                            key={sector.name}
+                            type="button"
+                            onClick={() => handleSelect(sector.department, sector.link)}
+                            className={cn(
+                              "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all duration-150 text-left",
+                              isActive
+                                ? "bg-primary/10 text-primary"
+                                : "text-foreground hover:bg-muted"
+                            )}
+                          >
+                            <span className="truncate">{sector.name}</span>
+                            {isActive && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })}
           </div>
         </ScrollArea>
       </PopoverContent>
