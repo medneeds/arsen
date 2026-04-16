@@ -767,7 +767,7 @@ export function AppSidebar({
     <>
       <Sidebar 
         collapsible="icon" 
-        className="border-r border-border bg-card transition-all duration-300 data-[state=collapsed]:w-[72px]"
+        className="border-r border-border/60 bg-card shadow-[2px_0_24px_-12px_hsl(var(--primary)/0.12)] transition-all duration-300 data-[state=collapsed]:w-[72px]"
       >
         {sidebarContent}
       </Sidebar>
