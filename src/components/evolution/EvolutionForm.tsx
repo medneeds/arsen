@@ -81,6 +81,14 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(['subjective', 'objective', 'assessment', 'plan'])
   );
+  const [examinusOpen, setExaminusOpen] = useState(false);
+
+  const handleImportExams = (newExams: string[]) => {
+    const current = soap.objective?.trim() || "";
+    const block = newExams.filter(Boolean).join("\n");
+    const merged = current ? `${current}\n${block}` : block;
+    onSOAPChange('objective', merged);
+  };
 
   const toggleSection = (key: string) => {
     setExpandedSections(prev => {
