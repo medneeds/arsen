@@ -6,6 +6,7 @@ import { SessionTimeoutProvider } from "./SessionTimeoutProvider";
 import { PendingApprovalScreen } from "./PendingApprovalScreen";
 import { ConsentTermsDialog, CURRENT_TERMS_VERSION } from "./ConsentTermsDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { AccessLimitsScreen } from "./AccessLimitsScreen";
 
 // Logins genéricos que não precisam de aprovação (período de transição)
 const LEGACY_GENERIC_USERS = [
@@ -27,6 +28,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [checkingTerms, setCheckingTerms] = useState(true);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showAccessLimits, setShowAccessLimits] = useState(false);
+  const [accessLimitsShown, setAccessLimitsShown] = useState(false);
 
   // Verificar se é um usuário genérico legado (não precisa de aprovação nem termos)
   const isLegacyGenericUser = user?.email && LEGACY_GENERIC_USERS.includes(user.email.toLowerCase());
