@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,18 +7,27 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { format, formatDistanceToNow, startOfDay, startOfMonth } from "date-fns";
+import { format, formatDistanceToNow, startOfDay, startOfMonth, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Activity, BedDouble, Clock, FileText, Users, AlertTriangle,
   PhoneOutgoing, RefreshCw, ArrowRight, Loader2, ListTodo, History,
   CheckCircle2, XCircle, UserPlus, Play, FileWarning, UserX,
-  Footprints, Ambulance, Trophy, Timer, UserCheck,
+  Footprints, Ambulance, Trophy, Timer, UserCheck, Printer, MoreVertical,
+  CalendarRange, Siren, Volume2,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { ReceptionPoint } from "@/hooks/useReceptionPost";
 import { RECEPTION_POINT_SHORT } from "@/hooks/useReceptionPost";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
+import { printWristband } from "./PatientWristband";
+import { CompletePatientDataDialog } from "./CompletePatientDataDialog";
+import { PromoteNiDialog } from "./PromoteNiDialog";
+import { UserStatsPanel } from "./UserStatsPanel";
 
 interface KpiCardProps {
   icon: React.ElementType;
@@ -156,6 +165,23 @@ export function ReceptionDailyDashboard({
 
   // Filtro por posto: "all" | "vertical" | "horizontal"
   const [pointFilter, setPointFilter] = useState<"all" | ReceptionPoint>("all");
+  // Filtro de período
+  const [periodFilter, setPeriodFilter] = useState<"today" | "7d" | "30d">("today");
+
+  // Dialogs auxiliares
+  const [completeTarget, setCompleteTarget] = useState<{ registryId: string; name: string } | null>(null);
+  const [promoteTarget, setPromoteTarget] = useState<{ registryId: string; code: string | null; name: string } | null>(null);
+
+  // Tracking de Sala Vermelha — para tocar som ao chegar paciente novo
+  const { playNotificationSound } = useNotificationSound();
+  const seenRedRoomIds = useRef<Set<string>>(new Set());
+  const isFirstLoad = useRef(true);
+
+  const periodStart = useMemo(() => {
+    if (periodFilter === "today") return startOfDay(new Date()).toISOString();
+    if (periodFilter === "7d") return startOfDay(subDays(new Date(), 6)).toISOString();
+    return startOfDay(subDays(new Date(), 29)).toISOString();
+  }, [periodFilter]);
 
   const todayStart = useMemo(() => startOfDay(new Date()).toISOString(), []);
   const monthStart = useMemo(() => startOfMonth(new Date()).toISOString(), []);
@@ -169,7 +195,7 @@ export function ReceptionDailyDashboard({
           .from("patient_encounters")
           .select("id, encounter_code, patient_name, registry_id, destination_sector, triage_status, status, created_at, created_by, reception_point")
           .eq("hospital_unit_id", hospitalId)
-          .gte("created_at", todayStart)
+          .gte("created_at", periodStart)
           .order("created_at", { ascending: false }),
         supabase
           .from("pre_admissions" as any)
@@ -248,11 +274,102 @@ export function ReceptionDailyDashboard({
     } finally {
       setLoading(false);
     }
-  }, [hospitalId, todayStart, monthStart, user?.id]);
+  }, [hospitalId, periodStart, todayStart, monthStart, user?.id]);
 
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  // Realtime: detecta novo encounter direcionado a Sala Vermelha → toca som
+  useEffect(() => {
+    if (!hospitalId) return;
+    const channel = supabase
+      .channel(`reception-dash-${hospitalId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "patient_encounters",
+          filter: `hospital_unit_id=eq.${hospitalId}`,
+        },
+        (payload) => {
+          const row = payload.new as any;
+          if (row?.destination_sector === "sala_vermelha") {
+            // Toca beep urgente (3 vezes)
+            playNotificationSound();
+            setTimeout(() => playNotificationSound(), 350);
+            setTimeout(() => playNotificationSound(), 700);
+            toast.error(`🚨 SALA VERMELHA — ${row.patient_name}`, {
+              description: `Novo paciente direcionado · ${row.encounter_code}`,
+              duration: 8000,
+            });
+            seenRedRoomIds.current.add(row.id);
+          }
+          fetchAll();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [hospitalId, playNotificationSound, fetchAll]);
+
+  // Marca os encounters de sala vermelha já existentes como "vistos" no primeiro load
+  // para não tocar som retroativo
+  useEffect(() => {
+    if (isFirstLoad.current && todayEncounters.length > 0) {
+      todayEncounters
+        .filter((e) => e.destination_sector === "sala_vermelha")
+        .forEach((e) => seenRedRoomIds.current.add(e.id));
+      isFirstLoad.current = false;
+    }
+  }, [todayEncounters]);
+
+  /** Chama o paciente no painel — atualiza triage_status para "chamado" */
+  const handleCallNext = async (encounterId: string, patientName: string) => {
+    try {
+      const { error } = await supabase
+        .from("patient_encounters")
+        .update({
+          triage_status: "chamado",
+          called_at: new Date().toISOString(),
+          called_by: user?.id,
+        } as any)
+        .eq("id", encounterId);
+      if (error) throw error;
+      toast.success(`📢 ${patientName} chamado no painel da TV`);
+      fetchAll();
+    } catch (err: any) {
+      toast.error("Erro ao chamar paciente", { description: err?.message });
+    }
+  };
+
+  /** Imprime pulseira buscando dados completos do registry */
+  const handlePrintWristband = async (registryId: string | null, encounterCode: string) => {
+    if (!registryId) {
+      toast.error("Sem prontuário vinculado para imprimir pulseira");
+      return;
+    }
+    try {
+      const { data } = await supabase
+        .from("patient_registry")
+        .select("full_name, medical_record, birth_date, sex, mother_name")
+        .eq("id", registryId)
+        .maybeSingle();
+      if (!data) return;
+      printWristband({
+        patientName: (data as any).full_name,
+        medicalRecord: (data as any).medical_record,
+        birthDate: (data as any).birth_date,
+        sex: (data as any).sex,
+        motherName: (data as any).mother_name,
+        encounterCode,
+      });
+    } catch (err: any) {
+      toast.error("Erro ao imprimir", { description: err?.message });
+    }
+  };
 
   // Mapa userId → posto ATUAL (sessão aberta mais recente)
   const userPointMap = useMemo(() => {
@@ -383,8 +500,52 @@ export function ReceptionDailyDashboard({
       ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
       : "bg-muted text-muted-foreground";
 
+  // Próximo paciente da fila de triagem (mais antigo aguardando)
+  const nextInQueue = useMemo(() => {
+    return filteredEncounters
+      .filter((e) => e.destination_sector === "triagem" && e.triage_status === "aguardando_chamada")
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0];
+  }, [filteredEncounters]);
+
   return (
     <div className="space-y-4">
+      {/* Filtro de período */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5 p-1 rounded-lg bg-muted/40 w-fit">
+          <CalendarRange className="h-3.5 w-3.5 text-muted-foreground ml-2 mr-1" />
+          {([
+            { v: "today", label: "Hoje" },
+            { v: "7d", label: "7 dias" },
+            { v: "30d", label: "30 dias" },
+          ] as const).map((opt) => (
+            <button
+              key={opt.v}
+              onClick={() => setPeriodFilter(opt.v)}
+              className={cn(
+                "px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors",
+                periodFilter === opt.v
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Atalho "Chamar próximo da fila" */}
+        {nextInQueue && (
+          <Button
+            size="sm"
+            onClick={() => handleCallNext(nextInQueue.id, nextInQueue.patient_name)}
+            className="bg-primary text-primary-foreground gap-2"
+          >
+            <Volume2 className="h-3.5 w-3.5" />
+            Chamar próximo: <strong>{nextInQueue.patient_name}</strong>
+          </Button>
+        )}
+      </div>
+
       {/* Filtro segmentado por posto */}
       <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-lg bg-muted/40 w-fit">
         <button
@@ -437,9 +598,13 @@ export function ReceptionDailyDashboard({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
           icon={ListTodo}
-          label={pointFilter === "all" ? "Atendimentos hoje" : `Atendimentos ${RECEPTION_POINT_SHORT[pointFilter]}`}
+          label={
+            pointFilter === "all"
+              ? `Atendimentos ${periodFilter === "today" ? "hoje" : periodFilter === "7d" ? "(7 dias)" : "(30 dias)"}`
+              : `Atendimentos ${RECEPTION_POINT_SHORT[pointFilter]}`
+          }
           value={kpis.totalToday}
-          hint="Abertos no balcão"
+          hint={periodFilter === "today" ? "Abertos no balcão" : `Período: ${periodFilter === "7d" ? "últimos 7 dias" : "últimos 30 dias"}`}
           tone="default"
         />
         <KpiCard
@@ -530,89 +695,184 @@ export function ReceptionDailyDashboard({
         <TabsContent value="dia" className="mt-3">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Atendimentos abertos hoje pela recepção</CardTitle>
+              <CardTitle className="text-sm">
+                Atendimentos {periodFilter === "today" ? "abertos hoje" : periodFilter === "7d" ? "(últimos 7 dias)" : "(últimos 30 dias)"} pela recepção
+              </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {filteredEncounters.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">
                   <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">Nenhum atendimento {pointFilter !== "all" ? `na recepção ${RECEPTION_POINT_SHORT[pointFilter]}` : "aberto hoje"}</p>
+                  <p className="text-sm">Nenhum atendimento {pointFilter !== "all" ? `na recepção ${RECEPTION_POINT_SHORT[pointFilter]}` : "no período"}</p>
                 </div>
               ) : (
-                <ScrollArea className="max-h-[360px]">
+                <ScrollArea className="max-h-[420px]">
                   <div className="divide-y">
-                    {filteredEncounters.map((e) => (
-                      <div key={e.id} className="p-3 hover:bg-accent/40 transition-colors">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-medium text-sm truncate">{e.patient_name}</span>
-                              <Badge variant="outline" className="text-[10px] font-mono h-4">{e.encounter_code}</Badge>
-                              {e.status === "active" ? (
-                                <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-[9px] h-4">
-                                  ativo
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-[9px] h-4">{e.status}</Badge>
-                              )}
-                              {e.is_unidentified && (
-                                <Badge className="bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/30 text-[9px] h-4 gap-1">
-                                  <UserX className="h-2.5 w-2.5" /> NI
-                                </Badge>
-                              )}
-                              {e.documents_pending && (
-                                <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9px] h-4 gap-1" title="Documentação pendente">
-                                  <FileWarning className="h-2.5 w-2.5" /> docs pendentes
-                                </Badge>
-                              )}
-                              {e.partial_identification && !e.is_unidentified && (
-                                <Badge className="bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30 text-[9px] h-4">
-                                  identificação parcial
-                                </Badge>
-                              )}
-                              {(() => {
-                                const point = e.reception_point || (e.created_by ? userPointMap.get(e.created_by) : null);
-                                if (!point) return null;
-                                const Icon = point === "vertical" ? Footprints : Ambulance;
-                                return (
-                                  <Badge variant="outline" className={cn("text-[9px] h-4 gap-1 border", pointBadgeClasses(point))}>
-                                    <Icon className="h-2.5 w-2.5" />
-                                    {RECEPTION_POINT_SHORT[point]}
+                    {filteredEncounters.map((e) => {
+                      const waitMin = Math.round((Date.now() - new Date(e.created_at).getTime()) / 60000);
+                      const isWaitingTriage =
+                        e.destination_sector === "triagem" && e.triage_status === "aguardando_chamada";
+                      // SLA: verde <15min, amarelo 15-30, vermelho >30
+                      const slaTone =
+                        !isWaitingTriage ? null : waitMin > 30 ? "danger" : waitMin > 15 ? "warn" : "ok";
+                      const isRedRoom = e.destination_sector === "sala_vermelha";
+                      return (
+                        <div
+                          key={e.id}
+                          className={cn(
+                            "p-3 hover:bg-accent/40 transition-colors",
+                            isRedRoom && "bg-red-500/5 border-l-2 border-l-red-600",
+                            slaTone === "danger" && "bg-rose-500/5",
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {isRedRoom && <Siren className="h-3.5 w-3.5 text-red-600 animate-pulse shrink-0" />}
+                                <span className="font-medium text-sm truncate">{e.patient_name}</span>
+                                <Badge variant="outline" className="text-[10px] font-mono h-4">{e.encounter_code}</Badge>
+                                {e.status === "active" ? (
+                                  <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 text-[9px] h-4">
+                                    ativo
                                   </Badge>
-                                );
-                              })()}
+                                ) : (
+                                  <Badge variant="outline" className="text-[9px] h-4">{e.status}</Badge>
+                                )}
+                                {e.is_unidentified && (
+                                  <Badge className="bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/30 text-[9px] h-4 gap-1">
+                                    <UserX className="h-2.5 w-2.5" /> NI
+                                  </Badge>
+                                )}
+                                {e.documents_pending && (
+                                  <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9px] h-4 gap-1" title="Documentação pendente">
+                                    <FileWarning className="h-2.5 w-2.5" /> docs pendentes
+                                  </Badge>
+                                )}
+                                {e.partial_identification && !e.is_unidentified && (
+                                  <Badge className="bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30 text-[9px] h-4">
+                                    identificação parcial
+                                  </Badge>
+                                )}
+                                {(() => {
+                                  const point = e.reception_point || (e.created_by ? userPointMap.get(e.created_by) : null);
+                                  if (!point) return null;
+                                  const Icon = point === "vertical" ? Footprints : Ambulance;
+                                  return (
+                                    <Badge variant="outline" className={cn("text-[9px] h-4 gap-1 border", pointBadgeClasses(point))}>
+                                      <Icon className="h-2.5 w-2.5" />
+                                      {RECEPTION_POINT_SHORT[point]}
+                                    </Badge>
+                                  );
+                                })()}
+                                {/* SLA badge para fila de triagem */}
+                                {slaTone && (
+                                  <Badge
+                                    className={cn(
+                                      "text-[9px] h-4 gap-1 border",
+                                      slaTone === "ok" && "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
+                                      slaTone === "warn" && "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
+                                      slaTone === "danger" && "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30 animate-pulse",
+                                    )}
+                                  >
+                                    <Timer className="h-2.5 w-2.5" />
+                                    {waitMin}min
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1">
+                                <span>{format(new Date(e.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                                <span>•</span>
+                                <span className="capitalize">→ {e.destination_sector?.replace(/_/g, " ") || "—"}</span>
+                                {e.triage_status && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="capitalize">{e.triage_status.replace(/_/g, " ")}</span>
+                                  </>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1">
-                              <span>{format(new Date(e.created_at), "HH:mm", { locale: ptBR })}</span>
-                              <span>•</span>
-                              <span className="capitalize">→ {e.destination_sector?.replace(/_/g, " ") || "—"}</span>
-                              {e.triage_status && (
-                                <>
-                                  <span>•</span>
-                                  <span className="capitalize">{e.triage_status.replace(/_/g, " ")}</span>
-                                </>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {isWaitingTriage && (
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="h-7 text-[10px] gap-1"
+                                  onClick={() => handleCallNext(e.id, e.patient_name)}
+                                  title="Chamar paciente no painel da TV"
+                                >
+                                  <Volume2 className="h-3 w-3" />
+                                  Chamar
+                                </Button>
+                              )}
+                              {e.registry_id && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 text-[10px]"
+                                  onClick={() => onPickRegistry(e.registry_id!, e.patient_name)}
+                                >
+                                  <Play className="h-3 w-3 mr-1" />
+                                  Reatender
+                                </Button>
+                              )}
+                              {e.registry_id && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                                      <MoreVertical className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-56">
+                                    <DropdownMenuLabel className="text-[10px]">Ações rápidas</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => handlePrintWristband(e.registry_id, e.encounter_code)}>
+                                      <Printer className="h-3.5 w-3.5 mr-2" />
+                                      Reimprimir pulseira
+                                    </DropdownMenuItem>
+                                    {(e.documents_pending || e.partial_identification) && !e.is_unidentified && (
+                                      <DropdownMenuItem
+                                        onClick={() => setCompleteTarget({ registryId: e.registry_id!, name: e.patient_name })}
+                                      >
+                                        <FileWarning className="h-3.5 w-3.5 mr-2 text-amber-600" />
+                                        Completar pendências
+                                      </DropdownMenuItem>
+                                    )}
+                                    {e.is_unidentified && (
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          setPromoteTarget({
+                                            registryId: e.registry_id!,
+                                            code: null,
+                                            name: e.patient_name,
+                                          })
+                                        }
+                                      >
+                                        <UserCheck className="h-3.5 w-3.5 mr-2 text-emerald-600" />
+                                        Identificar paciente (NI → real)
+                                      </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => onPickRegistry(e.registry_id!, e.patient_name)}>
+                                      <Play className="h-3.5 w-3.5 mr-2" />
+                                      Abrir prontuário
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               )}
                             </div>
                           </div>
-                          {e.registry_id && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 text-[10px] shrink-0"
-                              onClick={() => onPickRegistry(e.registry_id!, e.patient_name)}
-                            >
-                              <Play className="h-3 w-3 mr-1" />
-                              Reatender
-                            </Button>
-                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </ScrollArea>
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Por usuário (ranking) */}
+        <TabsContent value="equipe" className="mt-3">
+          <UserStatsPanel stats={userStats} currentUserId={user?.id} />
         </TabsContent>
 
         {/* Aguardando admissão */}
