@@ -1,19 +1,20 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { 
   Building2, ArrowLeftRight, Globe, BedDouble, ClipboardPlus, 
   Repeat, LogOut, Lock, FileText, BarChart3, 
-  AlertTriangle, Clock, CheckCircle2, XCircle, Search,
-  Filter, RefreshCw
+  Clock, CheckCircle2, XCircle, Search, RefreshCw
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { useHospital } from "@/contexts/HospitalContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { useNirMetrics, type NirFilters } from "@/hooks/useNirMetrics";
+import { NirGlobalFilters } from "@/components/nir/NirGlobalFilters";
+import { NirKpiStrip } from "@/components/nir/NirKpiStrip";
+import { NirAlertBar } from "@/components/nir/NirAlertBar";
+import { NirAnalyticsPanel } from "@/components/nir/NirAnalyticsPanel";
 
 const NIR_MODULES = [
   {
