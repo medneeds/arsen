@@ -391,7 +391,7 @@ export default function MonitoramentoClinicoPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {filteredPatients.map(p => (
-                    <SelectItem key={p.id} value={p.id}>
+                    <SelectItem key={p.id} value={p.id} className="patient-id">
                       <span className="font-medium">{p.bed_number}</span> — {p.name}
                     </SelectItem>
                   ))}
