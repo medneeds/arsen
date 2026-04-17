@@ -274,11 +274,102 @@ export function ReceptionDailyDashboard({
     } finally {
       setLoading(false);
     }
-  }, [hospitalId, todayStart, monthStart, user?.id]);
+  }, [hospitalId, periodStart, todayStart, monthStart, user?.id]);
 
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  // Realtime: detecta novo encounter direcionado a Sala Vermelha → toca som
+  useEffect(() => {
+    if (!hospitalId) return;
+    const channel = supabase
+      .channel(`reception-dash-${hospitalId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "patient_encounters",
+          filter: `hospital_unit_id=eq.${hospitalId}`,
+        },
+        (payload) => {
+          const row = payload.new as any;
+          if (row?.destination_sector === "sala_vermelha") {
+            // Toca beep urgente (3 vezes)
+            playNotificationSound();
+            setTimeout(() => playNotificationSound(), 350);
+            setTimeout(() => playNotificationSound(), 700);
+            toast.error(`🚨 SALA VERMELHA — ${row.patient_name}`, {
+              description: `Novo paciente direcionado · ${row.encounter_code}`,
+              duration: 8000,
+            });
+            seenRedRoomIds.current.add(row.id);
+          }
+          fetchAll();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [hospitalId, playNotificationSound, fetchAll]);
+
+  // Marca os encounters de sala vermelha já existentes como "vistos" no primeiro load
+  // para não tocar som retroativo
+  useEffect(() => {
+    if (isFirstLoad.current && todayEncounters.length > 0) {
+      todayEncounters
+        .filter((e) => e.destination_sector === "sala_vermelha")
+        .forEach((e) => seenRedRoomIds.current.add(e.id));
+      isFirstLoad.current = false;
+    }
+  }, [todayEncounters]);
+
+  /** Chama o paciente no painel — atualiza triage_status para "chamado" */
+  const handleCallNext = async (encounterId: string, patientName: string) => {
+    try {
+      const { error } = await supabase
+        .from("patient_encounters")
+        .update({
+          triage_status: "chamado",
+          called_at: new Date().toISOString(),
+          called_by: user?.id,
+        } as any)
+        .eq("id", encounterId);
+      if (error) throw error;
+      toast.success(`📢 ${patientName} chamado no painel da TV`);
+      fetchAll();
+    } catch (err: any) {
+      toast.error("Erro ao chamar paciente", { description: err?.message });
+    }
+  };
+
+  /** Imprime pulseira buscando dados completos do registry */
+  const handlePrintWristband = async (registryId: string | null, encounterCode: string) => {
+    if (!registryId) {
+      toast.error("Sem prontuário vinculado para imprimir pulseira");
+      return;
+    }
+    try {
+      const { data } = await supabase
+        .from("patient_registry")
+        .select("full_name, medical_record, birth_date, sex, mother_name")
+        .eq("id", registryId)
+        .maybeSingle();
+      if (!data) return;
+      printWristband({
+        patientName: (data as any).full_name,
+        medicalRecord: (data as any).medical_record,
+        birthDate: (data as any).birth_date,
+        sex: (data as any).sex,
+        motherName: (data as any).mother_name,
+        encounterCode,
+      });
+    } catch (err: any) {
+      toast.error("Erro ao imprimir", { description: err?.message });
+    }
+  };
 
   // Mapa userId → posto ATUAL (sessão aberta mais recente)
   const userPointMap = useMemo(() => {
