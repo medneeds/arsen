@@ -1669,6 +1669,45 @@ export type Database = {
           },
         ]
       }
+      patient_merge_audit: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          payload: Json | null
+          performed_by: string | null
+          performed_by_email: string | null
+          source_registry_id: string
+          source_snapshot: Json | null
+          target_registry_id: string | null
+          target_snapshot: Json | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          performed_by?: string | null
+          performed_by_email?: string | null
+          source_registry_id: string
+          source_snapshot?: Json | null
+          target_registry_id?: string | null
+          target_snapshot?: Json | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          payload?: Json | null
+          performed_by?: string | null
+          performed_by_email?: string | null
+          source_registry_id?: string
+          source_snapshot?: Json | null
+          target_registry_id?: string | null
+          target_snapshot?: Json | null
+        }
+        Relationships: []
+      }
       patient_movements: {
         Row: {
           created_at: string
@@ -1773,9 +1812,14 @@ export type Database = {
           created_at: string
           created_by: string | null
           full_name: string
+          full_name_normalized: string | null
           hospital_unit_id: string | null
           id: string
+          is_unidentified: boolean
           medical_record: string | null
+          merged_at: string | null
+          merged_by: string | null
+          merged_into_registry_id: string | null
           mother_name: string | null
           neighborhood: string | null
           notes: string | null
@@ -1784,6 +1828,8 @@ export type Database = {
           social_name: string | null
           state: string | null
           state_id: string | null
+          unidentified_code: string | null
+          unidentified_features: Json | null
           updated_at: string
         }
         Insert: {
@@ -1798,9 +1844,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           full_name: string
+          full_name_normalized?: string | null
           hospital_unit_id?: string | null
           id?: string
+          is_unidentified?: boolean
           medical_record?: string | null
+          merged_at?: string | null
+          merged_by?: string | null
+          merged_into_registry_id?: string | null
           mother_name?: string | null
           neighborhood?: string | null
           notes?: string | null
@@ -1809,6 +1860,8 @@ export type Database = {
           social_name?: string | null
           state?: string | null
           state_id?: string | null
+          unidentified_code?: string | null
+          unidentified_features?: Json | null
           updated_at?: string
         }
         Update: {
@@ -1823,9 +1876,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           full_name?: string
+          full_name_normalized?: string | null
           hospital_unit_id?: string | null
           id?: string
+          is_unidentified?: boolean
           medical_record?: string | null
+          merged_at?: string | null
+          merged_by?: string | null
+          merged_into_registry_id?: string | null
           mother_name?: string | null
           neighborhood?: string | null
           notes?: string | null
@@ -1834,6 +1892,8 @@ export type Database = {
           social_name?: string | null
           state?: string | null
           state_id?: string | null
+          unidentified_code?: string | null
+          unidentified_features?: Json | null
           updated_at?: string
         }
         Relationships: [
@@ -1842,6 +1902,13 @@ export type Database = {
             columns: ["hospital_unit_id"]
             isOneToOne: false
             referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_registry_merged_into_registry_id_fkey"
+            columns: ["merged_into_registry_id"]
+            isOneToOne: false
+            referencedRelation: "patient_registry"
             referencedColumns: ["id"]
           },
           {
@@ -3244,6 +3311,24 @@ export type Database = {
           },
         ]
       }
+      unidentified_sequences: {
+        Row: {
+          last_sequence: number
+          updated_at: string
+          year_ref: string
+        }
+        Insert: {
+          last_sequence?: number
+          updated_at?: string
+          year_ref: string
+        }
+        Update: {
+          last_sequence?: number
+          updated_at?: string
+          year_ref?: string
+        }
+        Relationships: []
+      }
       user_consents: {
         Row: {
           accepted_at: string
@@ -3529,6 +3614,18 @@ export type Database = {
         Returns: Json
       }
       calc_dv_mod11: { Args: { p_base: string }; Returns: number }
+      check_patient_duplicate: {
+        Args: { p_cns?: string; p_cpf?: string }
+        Returns: {
+          birth_date: string
+          cns: string
+          cpf: string
+          full_name: string
+          id: string
+          match_field: string
+          medical_record: string
+        }[]
+      }
       create_patient_snapshot: {
         Args: { p_description: string; p_patient_id: string }
         Returns: string
@@ -3546,6 +3643,7 @@ export type Database = {
         }
         Returns: string
       }
+      generate_ni_code: { Args: never; Returns: string }
       get_auth_user_id_by_email: { Args: { p_email: string }; Returns: string }
       get_patient_timeline: {
         Args: {
@@ -3580,6 +3678,25 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      merge_unidentified_patient: {
+        Args: { p_ni_id: string; p_target_id: string }
+        Returns: string
+      }
+      normalize_text_immutable: { Args: { input: string }; Returns: string }
+      promote_unidentified_patient: {
+        Args: {
+          p_address?: string
+          p_birth_date?: string
+          p_cns?: string
+          p_cpf?: string
+          p_full_name: string
+          p_mother_name?: string
+          p_ni_id: string
+          p_phone?: string
+          p_sex?: string
+        }
+        Returns: string
       }
       search_movements_global: {
         Args: {
@@ -3618,6 +3735,9 @@ export type Database = {
       setup_medicoporta_user: { Args: never; Returns: undefined }
       setup_medicouti_user: { Args: never; Returns: undefined }
       setup_visitante_user: { Args: never; Returns: undefined }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
+      unaccent_immutable: { Args: { input: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "medico" | "porta" | "visitante" | "farmacia" | "nir"

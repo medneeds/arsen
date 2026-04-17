@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
-import { Camera, Upload, User, MapPin, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { Camera, Upload, User, MapPin, Loader2, Sparkles, AlertCircle, ShieldAlert, UserX } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +36,13 @@ interface PatientFormData {
   city: string;
   destination_sector: string;
   notes: string;
+  // NI fields
+  is_unidentified: boolean;
+  ni_estimated_age: string;
+  ni_apparent_sex: string;
+  ni_skin_color: string;
+  ni_distinctive_marks: string;
+  ni_arrival_circumstance: string;
 }
 
 const EMPTY_FORM: PatientFormData = {
@@ -53,6 +60,12 @@ const EMPTY_FORM: PatientFormData = {
   city: "",
   destination_sector: "",
   notes: "",
+  is_unidentified: false,
+  ni_estimated_age: "",
+  ni_apparent_sex: "",
+  ni_skin_color: "",
+  ni_distinctive_marks: "",
+  ni_arrival_circumstance: "",
 };
 
 const SECTORS = [
@@ -61,30 +74,86 @@ const SECTORS = [
   "Enfermaria", "Centro Cirúrgico"
 ];
 
+// Format CPF: 000.000.000-00
+const formatCPF = (v: string) => {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  return d.replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+};
+
+// CPF validation (algoritmo)
+const isValidCPF = (cpf: string) => {
+  const c = cpf.replace(/\D/g, "");
+  if (c.length !== 11 || /^(\d)\1+$/.test(c)) return false;
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(c[i]) * (10 - i);
+  let dv1 = 11 - (sum % 11);
+  if (dv1 >= 10) dv1 = 0;
+  if (dv1 !== parseInt(c[9])) return false;
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(c[i]) * (11 - i);
+  let dv2 = 11 - (sum % 11);
+  if (dv2 >= 10) dv2 = 0;
+  return dv2 === parseInt(c[10]);
+};
+
 export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: PatientRegistrationDialogProps) {
   const [activeTab, setActiveTab] = useState("ai");
   const [form, setForm] = useState<PatientFormData>(EMPTY_FORM);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [duplicateMatch, setDuplicateMatch] = useState<{ id: string; full_name: string; medical_record: string | null } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
 
-  const updateField = (field: keyof PatientFormData, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }));
+  const updateField = (field: keyof PatientFormData, value: string | boolean) => {
+    setForm(prev => ({ ...prev, [field]: value as never }));
+  };
+
+  // Toggle NI: limpa campos sensíveis e força sexo='ignorado' inicial
+  const toggleUnidentified = (checked: boolean) => {
+    setForm(prev => ({
+      ...prev,
+      is_unidentified: checked,
+      patient_name: checked ? "" : prev.patient_name,
+      social_name: checked ? "" : prev.social_name,
+      mother_name: checked ? "" : prev.mother_name,
+      cpf: checked ? "" : prev.cpf,
+      cns: checked ? "" : prev.cns,
+      birth_date: checked ? "" : prev.birth_date,
+      sex: checked ? "I" : prev.sex,
+      phone: checked ? "" : prev.phone,
+      address: checked ? "" : prev.address,
+      neighborhood: checked ? "" : prev.neighborhood,
+      city: checked ? "" : prev.city,
+    }));
+    if (checked) setActiveTab("dados");
+  };
+
+  // Live duplicate check on CPF blur
+  const checkDuplicateCPF = async () => {
+    setDuplicateMatch(null);
+    const c = form.cpf.replace(/\D/g, "");
+    if (c.length !== 11) return;
+    if (!isValidCPF(c)) {
+      toast({ title: "CPF inválido", description: "Verifique os dígitos digitados.", variant: "destructive" });
+      return;
+    }
+    const { data, error } = await (supabase.rpc as any)("check_patient_duplicate", { p_cpf: c, p_cns: null });
+    if (error) return;
+    if (data && data.length > 0) {
+      setDuplicateMatch(data[0]);
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (file.size > 10 * 1024 * 1024) {
       toast({ title: "Arquivo muito grande", description: "Máximo 10MB", variant: "destructive" });
       return;
     }
-
-    // Show preview (only for images)
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (ev) => setPreviewImage(ev.target?.result as string);
@@ -92,38 +161,31 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
     } else {
       setPreviewImage('pdf');
     }
-
-    // Convert to base64
     setIsExtracting(true);
     try {
       const arrayBuffer = await file.arrayBuffer();
       const bytes = new Uint8Array(arrayBuffer);
       let binary = "";
-      for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
       const base64 = btoa(binary);
-
       const response = await supabase.functions.invoke("extract-patient-data", {
         body: { imageBase64: base64, mimeType: file.type },
       });
-
       if (response.error) throw new Error(response.error.message);
-      
       const { data } = response.data;
       if (data) {
         setForm(prev => ({
           ...prev,
-          patient_name: data.patient_name || prev.patient_name,
-          mother_name: data.mother_name || prev.mother_name,
+          patient_name: (data.patient_name || prev.patient_name).toUpperCase(),
+          mother_name: (data.mother_name || prev.mother_name).toUpperCase(),
           birth_date: data.birth_date || prev.birth_date,
           sex: data.sex || prev.sex,
-          cpf: data.cpf || prev.cpf,
+          cpf: data.cpf ? formatCPF(data.cpf) : prev.cpf,
           cns: data.cns || prev.cns,
           phone: data.phone || prev.phone,
-          address: data.address || prev.address,
-          neighborhood: data.neighborhood || prev.neighborhood,
-          city: data.city || prev.city,
+          address: (data.address || prev.address).toUpperCase(),
+          neighborhood: (data.neighborhood || prev.neighborhood).toUpperCase(),
+          city: (data.city || prev.city).toUpperCase(),
         }));
         setActiveTab("dados");
         toast({ title: "✅ Dados extraídos com sucesso!", description: "Revise os campos preenchidos pela IA" });
@@ -137,64 +199,118 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
   };
 
   const handleSave = async () => {
-    if (!form.patient_name.trim()) {
-      toast({ title: "Nome obrigatório", variant: "destructive" });
-      return;
-    }
-    if (!form.birth_date) {
-      toast({ title: "Data de nascimento obrigatória", variant: "destructive" });
-      return;
-    }
-    if (!form.sex) {
-      toast({ title: "Sexo obrigatório", variant: "destructive" });
-      return;
-    }
-
     if (!currentHospital?.id || !currentState?.id) {
       toast({ title: "Selecione um hospital", variant: "destructive" });
       return;
     }
 
+    // Validations differ for NI
+    if (!form.is_unidentified) {
+      if (!form.patient_name.trim()) {
+        toast({ title: "Nome obrigatório", variant: "destructive" });
+        return;
+      }
+      if (!form.birth_date) {
+        toast({ title: "Data de nascimento obrigatória", variant: "destructive" });
+        return;
+      }
+      if (!form.sex) {
+        toast({ title: "Sexo obrigatório", variant: "destructive" });
+        return;
+      }
+      if (form.cpf && !isValidCPF(form.cpf)) {
+        toast({ title: "CPF inválido", description: "Verifique os dígitos.", variant: "destructive" });
+        return;
+      }
+      if (duplicateMatch) {
+        toast({
+          title: "🚫 Cadastro bloqueado",
+          description: `CPF já cadastrado: ${duplicateMatch.full_name} (${duplicateMatch.medical_record || "sem prontuário"})`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
-      
-      // If destination includes any UTI, set special status for the admission workflow
       const selectedSectors = form.destination_sector.split(", ").filter(Boolean);
       const isUtiDestination = selectedSectors.some(s => s.startsWith("UTI"));
       const status = isUtiDestination ? "aguardando_leito_uti" : "pre_admissao";
 
-      // Auto-generate medical record number if not provided manually
+      // Generate NI code if unidentified
+      let niCode: string | null = null;
+      let finalName = form.patient_name.trim().toUpperCase();
+      if (form.is_unidentified) {
+        const { data: ni, error: niErr } = await (supabase.rpc as any)("generate_ni_code");
+        if (niErr) throw niErr;
+        niCode = ni as string;
+        finalName = niCode; // Nome temporário = código NI
+      }
+
+      // Generate medical record number
       let prontuario = form.medical_record?.trim() || null;
       if (!prontuario) {
-        // Fetch the unit code (3 digits) for the current hospital
         const { data: unitRow, error: unitErr } = await supabase
-          .from("hospital_units")
-          .select("unit_code")
-          .eq("id", currentHospital.id)
-          .maybeSingle();
-
+          .from("hospital_units").select("unit_code").eq("id", currentHospital.id).maybeSingle();
         if (unitErr) throw unitErr;
         const unitCode = (unitRow as any)?.unit_code;
         if (!unitCode || !/^[0-9]{3}$/.test(unitCode)) {
           throw new Error("Unidade sem código de 3 dígitos configurado. Contate o administrador.");
         }
-
         const { data: gen, error: genErr } = await (supabase.rpc as any)(
           "generate_medical_record_number",
-          {
-            p_codigo_unidade: unitCode,
-            p_data_criacao: new Date().toISOString(),
-            p_patient_registry_id: null,
-            p_patient_id: null,
-          }
+          { p_codigo_unidade: unitCode, p_data_criacao: new Date().toISOString(), p_patient_registry_id: null, p_patient_id: null }
         );
         if (genErr) throw genErr;
         prontuario = gen as string;
       }
 
-      const { error } = await supabase.from("pre_admissions").insert({
-        patient_name: form.patient_name.trim().toUpperCase(),
+      // Create patient_registry record (single source of truth)
+      const niFeatures = form.is_unidentified ? {
+        estimated_age: form.ni_estimated_age || null,
+        apparent_sex: form.ni_apparent_sex || null,
+        skin_color: form.ni_skin_color || null,
+        distinctive_marks: form.ni_distinctive_marks || null,
+        arrival_circumstance: form.ni_arrival_circumstance || null,
+      } : null;
+
+      const { data: registry, error: regErr } = await supabase
+        .from("patient_registry")
+        .insert({
+          full_name: finalName,
+          social_name: form.social_name?.trim() || null,
+          mother_name: form.mother_name?.trim() || null,
+          birth_date: form.birth_date || null,
+          sex: form.sex || null,
+          cpf: form.cpf?.replace(/\D/g, "") || null,
+          cns: form.cns?.replace(/\D/g, "") || null,
+          medical_record: prontuario,
+          phone: form.phone?.trim() || null,
+          address: form.address?.trim() || null,
+          neighborhood: form.neighborhood?.trim() || null,
+          city: form.city?.trim() || null,
+          notes: form.notes?.trim() || null,
+          hospital_unit_id: currentHospital.id,
+          state_id: currentState.id,
+          created_by: userData?.user?.id || null,
+          is_unidentified: form.is_unidentified,
+          unidentified_code: niCode,
+          unidentified_features: niFeatures,
+        } as any)
+        .select("id")
+        .single();
+      if (regErr) {
+        // Friendly message for unique violation on CPF
+        if ((regErr as any).code === "23505") {
+          throw new Error("CPF já cadastrado em outro paciente. Não é possível duplicar.");
+        }
+        throw regErr;
+      }
+
+      const { error: paErr } = await supabase.from("pre_admissions").insert({
+        patient_name: finalName,
         social_name: form.social_name?.trim() || null,
         mother_name: form.mother_name?.trim() || null,
         birth_date: form.birth_date || null,
@@ -213,17 +329,20 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
         department: currentDepartment,
         created_by: userData?.user?.id || null,
         status,
-      });
+        patient_registry_id: registry?.id || null,
+      } as any);
+      if (paErr) throw paErr;
 
-      if (error) throw error;
-
-      const successMessage = isUtiDestination 
+      const successMessage = form.is_unidentified
+        ? `${niCode} • Prontuário ${prontuario} • Não Identificado`
+        : isUtiDestination
         ? `Prontuário ${prontuario} • Solicitação de leito UTI enviada`
         : `Prontuário ${prontuario} • Aguardando classificação de risco`;
 
       toast({ title: "✅ Paciente cadastrado!", description: successMessage });
       setForm(EMPTY_FORM);
       setPreviewImage(null);
+      setDuplicateMatch(null);
       setActiveTab("ai");
       onOpenChange(false);
       onSuccess?.();
@@ -238,6 +357,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
   const handleClose = () => {
     setForm(EMPTY_FORM);
     setPreviewImage(null);
+    setDuplicateMatch(null);
     setActiveTab("ai");
     onOpenChange(false);
   };
@@ -252,15 +372,38 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
           </DialogTitle>
         </DialogHeader>
 
+        {/* NI toggle - sempre visível no topo */}
+        <Card className={cn(
+          "border-2 transition-colors",
+          form.is_unidentified ? "border-amber-500 bg-amber-500/10" : "border-dashed border-muted"
+        )}>
+          <CardContent className="p-3 flex items-center gap-3">
+            <Checkbox
+              id="ni-toggle"
+              checked={form.is_unidentified}
+              onCheckedChange={(c) => toggleUnidentified(!!c)}
+            />
+            <label htmlFor="ni-toggle" className="flex-1 cursor-pointer">
+              <div className="flex items-center gap-2 font-semibold text-sm">
+                <UserX className="h-4 w-4 text-amber-600" />
+                Paciente NÃO IDENTIFICADO
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Será gerado código NI-AAAA-NNNNNN. Demais campos ficam vazios e podem ser preenchidos depois.
+              </p>
+            </label>
+          </CardContent>
+        </Card>
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="ai" className="text-xs gap-1">
+            <TabsTrigger value="ai" className="text-xs gap-1" disabled={form.is_unidentified}>
               <Sparkles className="h-3.5 w-3.5" />
               Importar com IA
             </TabsTrigger>
             <TabsTrigger value="dados" className="text-xs gap-1">
               <User className="h-3.5 w-3.5" />
-              Dados do Paciente
+              {form.is_unidentified ? "Características NI" : "Dados do Paciente"}
             </TabsTrigger>
             <TabsTrigger value="destino" className="text-xs gap-1">
               <MapPin className="h-3.5 w-3.5" />
@@ -268,134 +411,150 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
             </TabsTrigger>
           </TabsList>
 
-          {/* Tab 1: AI Import */}
-          <TabsContent value="ai" className="space-y-4 mt-4">
-            <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
-              <CardContent className="p-6 text-center space-y-4">
-                <div className="flex flex-col items-center gap-2">
-                  <Camera className="h-10 w-10 text-primary/60" />
-                  <h3 className="font-semibold">Upload de Documento</h3>
-                  <p className="text-sm text-muted-foreground max-w-sm">
-                    Fotografe ou faça upload de um documento de identidade (RG, CNH, Cartão SUS) em imagem ou PDF. 
-                    A IA extrairá automaticamente os dados do paciente.
-                  </p>
-                </div>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-
-                <div className="flex gap-2 justify-center">
-                  <Button
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isExtracting}
-                  >
-                    {isExtracting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Extraindo dados...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Selecionar Imagem ou PDF
-                      </>
-                    )}
+          {/* Tab 1: AI Import (oculta se NI) */}
+          {!form.is_unidentified && (
+            <TabsContent value="ai" className="space-y-4 mt-4">
+              <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
+                <CardContent className="p-6 text-center space-y-4">
+                  <div className="flex flex-col items-center gap-2">
+                    <Camera className="h-10 w-10 text-primary/60" />
+                    <h3 className="font-semibold">Upload de Documento</h3>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      Fotografe ou faça upload de RG, CNH ou Cartão SUS (imagem ou PDF). A IA extrairá os dados automaticamente.
+                    </p>
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="image/*,application/pdf" onChange={handleImageUpload} className="hidden" />
+                  <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isExtracting}>
+                    {isExtracting ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" />Extraindo dados...</>)
+                                  : (<><Upload className="h-4 w-4 mr-2" />Selecionar Imagem ou PDF</>)}
                   </Button>
-                </div>
-
-                {previewImage && (
-                  <div className="mt-4">
-                    {previewImage === 'pdf' ? (
-                      <div className="flex items-center justify-center gap-2 p-4 bg-muted rounded-lg border">
-                        <Upload className="h-6 w-6 text-primary" />
-                        <span className="text-sm font-medium">PDF carregado</span>
-                      </div>
-                    ) : (
-                      <img src={previewImage} alt="Documento" className="max-h-48 mx-auto rounded-lg border shadow-sm" />
-                    )}
-                  </div>
-                )}
-
-                {isExtracting && (
-                  <div className="flex items-center gap-2 justify-center text-sm text-primary">
-                    <Sparkles className="h-4 w-4 animate-pulse" />
-                    Analisando documento com Inteligência Artificial...
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <AlertCircle className="h-3.5 w-3.5" />
-              Você também pode preencher os dados manualmente na aba "Dados do Paciente"
-            </div>
-          </TabsContent>
+                  {previewImage && previewImage !== 'pdf' && (
+                    <img src={previewImage} alt="Documento" className="max-h-48 mx-auto rounded-lg border shadow-sm" />
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
           {/* Tab 2: Patient Data */}
           <TabsContent value="dados" className="space-y-3 mt-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <Label className="text-xs font-semibold">Nome Completo *</Label>
-                <Input value={form.patient_name} onChange={e => updateField("patient_name", e.target.value)} placeholder="Nome completo do paciente" className="uppercase" />
+            {form.is_unidentified ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/30 text-xs flex items-start gap-2">
+                  <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong>Modo Não Identificado:</strong> ao salvar, será gerado um código <code>NI-AAAA-NNNNNN</code> + prontuário oficial.
+                    Preencha apenas as características visíveis para auxiliar identificação posterior.
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Idade Estimada</Label>
+                  <Input value={form.ni_estimated_age} onChange={e => updateField("ni_estimated_age", e.target.value)} placeholder="Ex: ~40 anos" />
+                </div>
+                <div>
+                  <Label className="text-xs">Sexo Aparente</Label>
+                  <Select value={form.ni_apparent_sex} onValueChange={v => updateField("ni_apparent_sex", v)}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="M">Masculino</SelectItem>
+                      <SelectItem value="F">Feminino</SelectItem>
+                      <SelectItem value="I">Indeterminado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs">Cor / Etnia Aparente</Label>
+                  <Input value={form.ni_skin_color} onChange={e => updateField("ni_skin_color", e.target.value)} placeholder="Ex: Pardo, Branco, Negro" />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs">Sinais Distintivos</Label>
+                  <Textarea value={form.ni_distinctive_marks} onChange={e => updateField("ni_distinctive_marks", e.target.value)}
+                    placeholder="Tatuagens, cicatrizes, vestimenta, objetos pessoais..." rows={2} />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs">Circunstância de Chegada</Label>
+                  <Textarea value={form.ni_arrival_circumstance} onChange={e => updateField("ni_arrival_circumstance", e.target.value)}
+                    placeholder="Ex: SAMU – encontrado em via pública; trazido pela polícia..." rows={2} />
+                </div>
               </div>
-              <div className="col-span-2">
-                <Label className="text-xs">Nome Social</Label>
-                <Input value={form.social_name} onChange={e => updateField("social_name", e.target.value)} placeholder="Nome social (se aplicável)" />
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <Label className="text-xs font-semibold">Nome Completo *</Label>
+                  <Input
+                    value={form.patient_name}
+                    onChange={e => updateField("patient_name", e.target.value.toUpperCase())}
+                    placeholder="NOME COMPLETO COMO NO DOCUMENTO"
+                    className="uppercase font-semibold tracking-wide"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    Armazenado em CAIXA ALTA. Acentos preservados; busca ignora acentuação.
+                  </p>
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs">Nome Social</Label>
+                  <Input value={form.social_name} onChange={e => updateField("social_name", e.target.value.toUpperCase())} className="uppercase" />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs">Nome da Mãe</Label>
+                  <Input value={form.mother_name} onChange={e => updateField("mother_name", e.target.value.toUpperCase())} className="uppercase" />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">Data de Nascimento *</Label>
+                  <Input type="date" value={form.birth_date} onChange={e => updateField("birth_date", e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">Sexo *</Label>
+                  <Select value={form.sex} onValueChange={v => updateField("sex", v)}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="M">Masculino</SelectItem>
+                      <SelectItem value="F">Feminino</SelectItem>
+                      <SelectItem value="Outro">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">CPF</Label>
+                  <Input
+                    value={form.cpf}
+                    onChange={e => { updateField("cpf", formatCPF(e.target.value)); setDuplicateMatch(null); }}
+                    onBlur={checkDuplicateCPF}
+                    placeholder="000.000.000-00"
+                    inputMode="numeric"
+                  />
+                  {duplicateMatch && (
+                    <p className="text-[11px] text-destructive mt-1 flex items-center gap-1">
+                      <ShieldAlert className="h-3 w-3" /> CPF já existe: {duplicateMatch.full_name}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-xs">CNS</Label>
+                  <Input value={form.cns} onChange={e => updateField("cns", e.target.value)} placeholder="Cartão Nacional de Saúde" />
+                </div>
+                <div>
+                  <Label className="text-xs">Prontuário</Label>
+                  <Input value={form.medical_record} onChange={e => updateField("medical_record", e.target.value)} placeholder="Auto: AA-UUU-SSSSSS-DV" />
+                </div>
+                <div>
+                  <Label className="text-xs">Telefone</Label>
+                  <Input value={form.phone} onChange={e => updateField("phone", e.target.value)} placeholder="(00) 00000-0000" />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs">Endereço</Label>
+                  <Input value={form.address} onChange={e => updateField("address", e.target.value.toUpperCase())} className="uppercase" />
+                </div>
+                <div>
+                  <Label className="text-xs">Bairro</Label>
+                  <Input value={form.neighborhood} onChange={e => updateField("neighborhood", e.target.value.toUpperCase())} className="uppercase" />
+                </div>
+                <div>
+                  <Label className="text-xs">Cidade</Label>
+                  <Input value={form.city} onChange={e => updateField("city", e.target.value.toUpperCase())} className="uppercase" />
+                </div>
               </div>
-              <div className="col-span-2">
-                <Label className="text-xs">Nome da Mãe</Label>
-                <Input value={form.mother_name} onChange={e => updateField("mother_name", e.target.value)} placeholder="Nome completo da mãe" />
-              </div>
-              <div>
-                <Label className="text-xs font-semibold">Data de Nascimento *</Label>
-                <Input type="date" value={form.birth_date} onChange={e => updateField("birth_date", e.target.value)} />
-              </div>
-              <div>
-                <Label className="text-xs font-semibold">Sexo *</Label>
-                <Select value={form.sex} onValueChange={v => updateField("sex", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="M">Masculino</SelectItem>
-                    <SelectItem value="F">Feminino</SelectItem>
-                    <SelectItem value="Outro">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">CPF</Label>
-                <Input value={form.cpf} onChange={e => updateField("cpf", e.target.value)} placeholder="000.000.000-00" />
-              </div>
-              <div>
-                <Label className="text-xs">CNS</Label>
-                <Input value={form.cns} onChange={e => updateField("cns", e.target.value)} placeholder="Cartão Nacional de Saúde" />
-              </div>
-              <div>
-                <Label className="text-xs">Prontuário</Label>
-                <Input value={form.medical_record} onChange={e => updateField("medical_record", e.target.value)} placeholder="Auto: AA-UUU-SSSSSS-DV" />
-              </div>
-              <div>
-                <Label className="text-xs">Telefone</Label>
-                <Input value={form.phone} onChange={e => updateField("phone", e.target.value)} placeholder="(00) 00000-0000" />
-              </div>
-              <div className="col-span-2">
-                <Label className="text-xs">Endereço</Label>
-                <Input value={form.address} onChange={e => updateField("address", e.target.value)} placeholder="Rua, número" />
-              </div>
-              <div>
-                <Label className="text-xs">Bairro</Label>
-                <Input value={form.neighborhood} onChange={e => updateField("neighborhood", e.target.value)} />
-              </div>
-              <div>
-                <Label className="text-xs">Cidade</Label>
-                <Input value={form.city} onChange={e => updateField("city", e.target.value)} />
-              </div>
-            </div>
+            )}
           </TabsContent>
 
           {/* Tab 3: Destination */}
@@ -415,9 +574,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
                         checked={isChecked}
                         onCheckedChange={(checked) => {
                           const current = form.destination_sector.split(", ").filter(Boolean);
-                          const updated = checked
-                            ? [...current, s]
-                            : current.filter(x => x !== s);
+                          const updated = checked ? [...current, s] : current.filter(x => x !== s);
                           updateField("destination_sector", updated.join(", "));
                         }}
                       />
@@ -427,53 +584,18 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
                 })}
               </div>
             </div>
-
-            {/* UTI destination notice */}
-            {form.destination_sector.split(", ").some(s => s.startsWith("UTI")) && (
-              <Card className="border-amber-500/30 bg-amber-500/5">
-                <CardContent className="p-4 flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
-                  <div className="text-sm">
-                    <p className="font-medium text-amber-700 dark:text-amber-400">Solicitação de Leito UTI</p>
-                    <p className="text-muted-foreground mt-1">
-                      O cadastro será encaminhado como solicitação de leito. 
-                      O médico da UTI avaliará e definirá a alocação com preenchimento obrigatório do SAPS 3.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             <div>
               <Label className="text-xs">Observações</Label>
-              <Textarea
-                value={form.notes}
-                onChange={e => updateField("notes", e.target.value)}
-                placeholder="Informações adicionais sobre o paciente..."
-                rows={3}
-              />
+              <Textarea value={form.notes} onChange={e => updateField("notes", e.target.value)} rows={3} />
             </div>
-
-            {/* Summary */}
-            {form.patient_name && (
-              <Card className="bg-muted/50">
-                <CardContent className="p-4 space-y-1 text-sm">
-                  <p className="font-semibold">{form.patient_name.toUpperCase()}</p>
-                  {form.birth_date && <p className="text-muted-foreground">Nascimento: {new Date(form.birth_date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>}
-                  {form.sex && <p className="text-muted-foreground">Sexo: {form.sex === 'M' ? 'Masculino' : form.sex === 'F' ? 'Feminino' : 'Outro'}</p>}
-                  {form.cpf && <p className="text-muted-foreground">CPF: {form.cpf}</p>}
-                  {form.destination_sector && <p className="text-muted-foreground">Pedido: {form.destination_sector}</p>}
-                </CardContent>
-              </Card>
-            )}
           </TabsContent>
         </Tabs>
 
         <div className="flex justify-end gap-2 pt-2 border-t">
-          <Button variant="outline" onClick={handleClose}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={isSaving || !form.patient_name || !form.birth_date || !form.sex}>
-            {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Cadastrar Paciente
+          <Button variant="outline" onClick={handleClose} disabled={isSaving}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={isSaving || !!duplicateMatch}>
+            {isSaving ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" />Salvando...</>)
+                      : form.is_unidentified ? "Gerar Cadastro NI" : "Cadastrar Paciente"}
           </Button>
         </div>
       </DialogContent>
