@@ -1405,7 +1405,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                 {/* Leito - ultra compacto */}
                 <div className="flex flex-col shrink-0 md:col-span-1">
                   <span className="text-xs md:text-[9px] font-medium text-muted-foreground mb-0.5">Leito</span>
-                  <Badge className={cn("w-fit text-sm md:text-[10px] py-1 md:py-0 px-2 md:px-1 font-bold leading-tight", config.badgeColor)}>
+                  <Badge className={cn("patient-id w-fit text-sm md:text-[10px] py-1 md:py-0 px-2 md:px-1 font-bold leading-tight", config.badgeColor)}>
                     {patient.bedNumber}
                   </Badge>
                   <div className="flex flex-col gap-0.5 mt-1">
@@ -1554,7 +1554,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                            
                            <p 
                             className={cn(
-                              "font-semibold text-base md:text-sm text-foreground leading-tight break-words rounded px-1 -mx-1",
+                              "patient-id font-semibold text-base md:text-sm text-foreground leading-tight break-words rounded px-1 -mx-1",
                               canEdit && "cursor-pointer hover:bg-accent/50"
                             )}
                             onClick={() => canEdit && startEditing("name", patient.name)}
@@ -1562,7 +1562,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                           >
                             {namesHidden ? (
                               <span className="tracking-widest opacity-70 transition-all duration-300">{displayName}</span>
-                            ) : patient.name ? patient.name : <span className="text-muted-foreground italic">Clique para adicionar nome</span>}
+                            ) : patient.name ? patient.name : <span className="preserve-case text-muted-foreground italic">Clique para adicionar nome</span>}
                           </p>
                           
                           {/* Allocation Pending Badge - Hidden when status bar is visible, kept for dialog functionality */}

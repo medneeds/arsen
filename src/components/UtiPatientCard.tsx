@@ -1001,7 +1001,7 @@ export function UtiPatientCard({
             <div className="flex items-center gap-2">
               {/* Bed Number */}
               <div className={cn("shrink-0 px-1.5 py-0.5 rounded border", colors.bedBg)}>
-                <span className={cn("text-xs font-bold", colors.bedText)}>{patient.bedNumber}</span>
+                <span className={cn("patient-id text-xs font-bold", colors.bedText)}>{patient.bedNumber}</span>
               </div>
               {/* Vacant Message */}
               <div className="flex items-center gap-2 text-muted-foreground">
