@@ -23,7 +23,7 @@ export function MainLayout({ children, onOpenHandover }: MainLayoutProps) {
   });
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <div className="min-h-screen flex w-full bg-background relative">
         <AppSidebar onOpenHandover={onOpenHandover} />
         
