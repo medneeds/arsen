@@ -14,8 +14,11 @@ import {
   Activity, BedDouble, Clock, FileText, Users, AlertTriangle,
   PhoneOutgoing, RefreshCw, ArrowRight, Loader2, ListTodo, History,
   CheckCircle2, XCircle, UserPlus, Play, FileWarning, UserX,
+  Footprints, Ambulance, Trophy, Timer, UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import type { ReceptionPoint } from "@/hooks/useReceptionPost";
+import { RECEPTION_POINT_SHORT } from "@/hooks/useReceptionPost";
 
 interface KpiCardProps {
   icon: React.ElementType;
