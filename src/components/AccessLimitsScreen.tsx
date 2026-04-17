@@ -1,13 +1,46 @@
 import { motion } from "framer-motion";
-import { Shield, MapPin, ArrowRight, Building2, UserCog, Briefcase, ArrowLeft } from "lucide-react";
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { Shield, MapPin, ArrowRight, Building2, UserCog, Briefcase, ArrowLeft, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
+import { useDepartment, type Department, DEPARTMENT_TO_SECTOR, SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 import { whitelabel } from "@/config/whitelabel";
 import { BigHelpLogo } from "./BigHelpLogo";
 import { AuthBackgroundFx } from "./auth/AuthBackgroundFx";
 import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
 import arsenLogo from "@/assets/bighelp-symbol.png";
+
+/** Mapeia o "departamento amplo" do permissionamento para os subsetores reais selecionáveis */
+const DEPARTMENT_EXPANSION: Record<string, Department[]> = {
+  UTI: ["UTI 1", "UTI 2", "UCI 1", "UCI 2", "UCC"],
+  "URGÊNCIA E EMERGÊNCIA ADULTO": [
+    "UE VERTICAL",
+    "UE HORIZONTAL",
+    "SALA VERMELHA",
+    "SALA LARANJA",
+    "INTERNAÇÃO UE",
+    "OBSERVAÇÃO CLÍNICA",
+  ],
+  ENFERMARIA: [
+    "NEURO 01",
+    "NEURO 02",
+    "CLÍNICA CIRÚRGICA",
+    "ENFERMARIA DE TRANSIÇÃO",
+    "ENFERMARIA VASCULAR",
+  ],
+  "CENTRO CIRÚRGICO": ["CC PREPARO", "CC BLOCO CIRÚRGICO", "CC RPA"],
+};
+
+/** Rotas dedicadas (alguns setores possuem páginas próprias) */
+const SECTOR_ROUTES: Partial<Record<Department, string>> = {
+  "UE VERTICAL": "/ue-vertical",
+  "UE HORIZONTAL": "/ue-horizontal",
+};
+
+/** Lista completa de setores selecionáveis (admin tem acesso a todos) */
+const ALL_SELECTABLE_DEPARTMENTS: Department[] = Object.keys(DEPARTMENT_TO_SECTOR) as Department[];
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "ADMINISTRADOR",
@@ -47,6 +80,9 @@ const SERIF = "'Playfair Display', Georgia, serif";
 export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
   const { role, allowedDepartments, user, signOut } = useAuth();
   const { currentHospital } = useHospital();
+  const { setCurrentDepartment } = useDepartment();
+  const navigate = useNavigate();
+
   const username =
     user?.user_metadata?.username ||
     user?.user_metadata?.full_name ||
@@ -64,6 +100,39 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
 
   const hospitalName =
     currentHospital?.name || whitelabel.institution.hospitalShortName;
+
+  /** Setores selecionáveis com base no permissionamento */
+  const selectableSectors = useMemo<Department[]>(() => {
+    if (isAdmin) return ALL_SELECTABLE_DEPARTMENTS;
+    const expanded = new Set<Department>();
+    for (const dept of allowedDepartments) {
+      const subs = DEPARTMENT_EXPANSION[dept];
+      if (subs) {
+        subs.forEach((s) => expanded.add(s));
+      } else if (DEPARTMENT_TO_SECTOR[dept]) {
+        expanded.add(dept as Department);
+      }
+    }
+    return Array.from(expanded);
+  }, [isAdmin, allowedDepartments]);
+
+  const [selectedSector, setSelectedSector] = useState<Department | null>(
+    selectableSectors[0] ?? null
+  );
+
+  // Sincroniza seleção quando os setores carregam após o mount inicial
+  if (selectedSector === null && selectableSectors.length > 0) {
+    setSelectedSector(selectableSectors[0]);
+  }
+
+  const handleProceed = () => {
+    if (selectedSector) {
+      setCurrentDepartment(selectedSector);
+      const route = SECTOR_ROUTES[selectedSector] || "/mapa";
+      navigate(route);
+    }
+    onProceed();
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-start py-10 px-4 relative overflow-hidden">
@@ -264,6 +333,51 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             </InfoRow>
           )}
 
+          {/* Direcionar para setor — primary */}
+          <InfoRow icon={<Navigation className="h-3 w-3" />} label="Direcionar Para" tone="primary">
+            {selectableSectors.length > 0 ? (
+              <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto pr-1 -mr-1">
+                {selectableSectors.map((dept) => {
+                  const sectorCode = DEPARTMENT_TO_SECTOR[dept];
+                  const label = SECTOR_DISPLAY[sectorCode] || dept;
+                  const isSelected = selectedSector === dept;
+                  return (
+                    <button
+                      key={dept}
+                      type="button"
+                      onClick={() => setSelectedSector(dept)}
+                      className={`group flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-all ${
+                        isSelected
+                          ? "border-primary/60 bg-primary/10 shadow-sm shadow-primary/10"
+                          : "border-border/60 bg-card/40 hover:border-primary/30 hover:bg-primary/5"
+                      }`}
+                      aria-pressed={isSelected}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                          isSelected ? "bg-primary" : "bg-muted-foreground/40"
+                        }`}
+                      />
+                      <span
+                        className={`text-[11px] font-semibold tracking-wide uppercase truncate ${
+                          isSelected ? "text-primary" : "text-foreground/80"
+                        }`}
+                      >
+                        {label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-muted/50 border border-dashed border-border rounded-xl px-4 py-3 text-center">
+                <p className="preserve-case text-foreground/70 text-xs font-medium">
+                  Nenhum setor disponível para direcionamento
+                </p>
+              </div>
+            )}
+          </InfoRow>
+
           {/* Botão */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -272,10 +386,13 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             className="pt-1"
           >
             <Button
-              onClick={onProceed}
+              onClick={handleProceed}
+              disabled={selectableSectors.length > 0 && !selectedSector}
               className="w-full h-12 rounded-xl text-xs font-bold tracking-[0.25em] uppercase group shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-shadow"
             >
-              ACESSAR PLATAFORMA
+              {selectedSector
+                ? `IR PARA ${SECTOR_DISPLAY[DEPARTMENT_TO_SECTOR[selectedSector]] || selectedSector}`
+                : "ACESSAR PLATAFORMA"}
               <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
             </Button>
           </motion.div>
