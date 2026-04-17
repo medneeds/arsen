@@ -385,8 +385,6 @@ export function ReceptionDailyDashboard({
 
   return (
     <div className="space-y-4">
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {/* Filtro segmentado por posto */}
       <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-lg bg-muted/40 w-fit">
         <button
