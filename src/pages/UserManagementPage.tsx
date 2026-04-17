@@ -128,7 +128,7 @@ export default function UserManagementPage() {
     try {
       setLoading(true);
       
-      // Fetch profiles
+      // Fetch profiles (incluindo access_profile)
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
