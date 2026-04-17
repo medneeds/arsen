@@ -49,6 +49,7 @@ import { MedicalRecordsList } from "@/components/MedicalRecordsList";
 import { ReceptionDailyDashboard } from "@/components/reception/ReceptionDailyDashboard";
 import { DuplicatePatientWarning } from "@/components/reception/DuplicatePatientWarning";
 import { ReceptionGlobalSearch } from "@/components/reception/ReceptionGlobalSearch";
+import { TriageExpressDialog, type TriageExpressPayload } from "@/components/reception/TriageExpressDialog";
 
 // Destination sectors for encounter routing — agrupados por categoria
 type DestinationSector = {
@@ -210,6 +211,9 @@ const AdminDashboardPage = () => {
 
   // Busca global Ctrl+K
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+
+  // Triagem Express dialog
+  const [showTriageExpress, setShowTriageExpress] = useState(false);
 
   // Load recent encounters
   useEffect(() => {
