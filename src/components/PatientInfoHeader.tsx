@@ -40,7 +40,7 @@ export function PatientInfoHeader({
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden print:hidden">
+    <div className="patient-id rounded-xl border border-border bg-card overflow-hidden print:hidden">
       {/* Top bar: name + bed + weight/allergies */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border/50 gap-3">
         <div className="flex items-center gap-2.5 min-w-0">

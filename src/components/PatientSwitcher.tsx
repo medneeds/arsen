@@ -82,7 +82,7 @@ export function PatientSwitcher({ variant = "dark" }: PatientSwitcherProps) {
               : "text-foreground hover:bg-muted"
           )}>
             <User className="h-3 w-3 shrink-0 opacity-60" />
-            <span className="truncate">{patientName}</span>
+            <span className="truncate patient-id">{patientName}</span>
             <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
           </button>
         </DropdownMenuTrigger>
@@ -101,8 +101,8 @@ export function PatientSwitcher({ variant = "dark" }: PatientSwitcherProps) {
                   p.name === patientName && "bg-primary/10 font-semibold"
                 )}
               >
-                <span className="text-muted-foreground font-mono mr-2 w-8 text-right shrink-0">{p.bed_number}</span>
-                <span className="truncate">{p.name}</span>
+                <span className="patient-id text-muted-foreground font-mono mr-2 w-8 text-right shrink-0">{p.bed_number}</span>
+                <span className="patient-id truncate">{p.name}</span>
               </DropdownMenuItem>
             ))
           )}

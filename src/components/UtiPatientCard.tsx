@@ -1001,7 +1001,7 @@ export function UtiPatientCard({
             <div className="flex items-center gap-2">
               {/* Bed Number */}
               <div className={cn("shrink-0 px-1.5 py-0.5 rounded border", colors.bedBg)}>
-                <span className={cn("text-xs font-bold", colors.bedText)}>{patient.bedNumber}</span>
+                <span className={cn("patient-id text-xs font-bold", colors.bedText)}>{patient.bedNumber}</span>
               </div>
               {/* Vacant Message */}
               <div className="flex items-center gap-2 text-muted-foreground">
@@ -1082,13 +1082,13 @@ export function UtiPatientCard({
                 {/* Patient Name + Age - Flexible grow */}
                 <div className="flex-1 flex items-baseline gap-1 md:gap-1.5 min-w-0">
                   {namesHidden ? (
-                    <span className="text-xs md:text-sm font-semibold truncate tracking-widest opacity-70">{displayName}</span>
+                    <span className="patient-id text-xs md:text-sm font-semibold truncate tracking-widest opacity-70">{displayName}</span>
                   ) : (
                     <InlineEditableField
                       value={patient.name}
                       onUpdate={(v) => handleUpdateField("name", v)}
                       placeholder="NOME DO PACIENTE"
-                      className="text-xs md:text-sm font-semibold truncate"
+                      className="patient-id text-xs md:text-sm font-semibold truncate"
                     />
                   )}
                   <div className="shrink-0 flex items-center gap-1 text-[10px] md:text-xs text-muted-foreground">
