@@ -8,22 +8,31 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle, Loader2, UserX, Stethoscope, Clock, Phone, FileWarning,
-  ArrowRight, Zap,
+  ArrowRight, Zap, Cake, CalendarDays, Hash, Siren, Ambulance, Footprints,
 } from "lucide-react";
+import type { ReceptionPoint } from "@/hooks/useReceptionPost";
+
+export type AgeInputMode = "approx" | "exact" | "dob";
 
 export interface TriageExpressPayload {
   /** Nome (parcial ou completo). Vazio = NÃO IDENTIFICADO */
   partialName: string;
   sex: "M" | "F" | "I";
-  approxAge: string;        // texto livre: "60a", "ADULTO", "RN", etc.
-  chiefComplaint: string;   // queixa principal rápida
-  arrivalMode: string;      // "espontâneo" | "SAMU" | "PM" | etc.
+  /** Idade em anos calculada/digitada — string p/ retrocompatibilidade */
+  approxAge: string;
+  /** Modo escolhido para idade */
+  ageMode: AgeInputMode;
+  /** Data de nascimento ISO (YYYY-MM-DD) quando ageMode = 'dob' */
+  birthDate?: string | null;
+  chiefComplaint: string;
+  arrivalMode: string;
   contactPhone: string;
   documentsPending: boolean;
-  destinationValue: string; // value do DESTINATION_SECTORS
+  destinationValue: string;
   observations: string;
 }
 
@@ -42,6 +51,8 @@ interface Props {
   groups: string[];
   onConfirm: (payload: TriageExpressPayload) => Promise<void> | void;
   loading?: boolean;
+  /** Recepção ativa do usuário (vertical/horizontal). Influencia destino padrão. */
+  receptionPoint?: ReceptionPoint | null;
 }
 
 const ARRIVAL_MODES = [
@@ -53,44 +64,87 @@ const ARRIVAL_MODES = [
   "FAMILIAR / TERCEIRO",
 ];
 
+/** Calcula anos completos a partir de uma data ISO YYYY-MM-DD */
+function calcAgeFromDob(iso: string): number | null {
+  if (!iso) return null;
+  const d = new Date(iso + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age >= 0 && age < 130 ? age : null;
+}
+
 export function TriageExpressDialog({
-  open, onOpenChange, sectors, groups, onConfirm, loading = false,
+  open, onOpenChange, sectors, groups, onConfirm, loading = false, receptionPoint = null,
 }: Props) {
   const [partialName, setPartialName] = useState("");
   const [sex, setSex] = useState<"M" | "F" | "I">("I");
-  const [approxAge, setApproxAge] = useState("");
+
+  // Idade — três modos
+  const [ageMode, setAgeMode] = useState<AgeInputMode>("approx");
+  const [approxAgeText, setApproxAgeText] = useState(""); // texto livre (ADULTO, RN, etc)
+  const [exactAge, setExactAge] = useState(""); // número
+  const [birthDate, setBirthDate] = useState(""); // YYYY-MM-DD
+
   const [chiefComplaint, setChiefComplaint] = useState("");
   const [arrivalMode, setArrivalMode] = useState("ESPONTÂNEO");
   const [contactPhone, setContactPhone] = useState("");
-  const [documentsPending, setDocumentsPending] = useState(true); // padrão: marcado
+  const [documentsPending, setDocumentsPending] = useState(true);
   const [destinationValue, setDestinationValue] = useState("triagem");
   const [observations, setObservations] = useState("");
 
-  // Reset ao reabrir
+  // Reset ao reabrir — destino padrão sempre TRIAGEM (recomendado)
   useEffect(() => {
     if (open) {
       setPartialName("");
       setSex("I");
-      setApproxAge("");
+      setAgeMode("approx");
+      setApproxAgeText("");
+      setExactAge("");
+      setBirthDate("");
       setChiefComplaint("");
-      setArrivalMode("ESPONTÂNEO");
+      // Recepção horizontal → modo de chegada padrão é SAMU (mais comum em macas)
+      setArrivalMode(receptionPoint === "horizontal" ? "SAMU 192" : "ESPONTÂNEO");
       setContactPhone("");
       setDocumentsPending(true);
       setDestinationValue("triagem");
       setObservations("");
     }
-  }, [open]);
+  }, [open, receptionPoint]);
 
   const selectedSector = useMemo(
     () => sectors.find((s) => s.value === destinationValue),
     [sectors, destinationValue]
   );
 
+  // Setor "Sala Vermelha" — atalho de destaque na recepção horizontal
+  const salaVermelha = useMemo(
+    () => sectors.find((s) => s.value === "sala_vermelha"),
+    [sectors]
+  );
+  const triagemSector = useMemo(
+    () => sectors.find((s) => s.isTriage),
+    [sectors]
+  );
+
+  const computedAge = useMemo(() => {
+    if (ageMode === "dob" && birthDate) {
+      const a = calcAgeFromDob(birthDate);
+      return a !== null ? String(a) : "";
+    }
+    if (ageMode === "exact") return exactAge.trim();
+    return approxAgeText.trim();
+  }, [ageMode, birthDate, exactAge, approxAgeText]);
+
   const handleSubmit = async () => {
     await onConfirm({
       partialName: partialName.trim(),
       sex,
-      approxAge: approxAge.trim(),
+      approxAge: computedAge,
+      ageMode,
+      birthDate: ageMode === "dob" && birthDate ? birthDate : null,
       chiefComplaint: chiefComplaint.trim(),
       arrivalMode,
       contactPhone: contactPhone.trim(),
@@ -101,6 +155,7 @@ export function TriageExpressDialog({
   };
 
   const isFullyIdentified = partialName.trim().split(/\s+/).filter(Boolean).length >= 2;
+  const isHorizontal = receptionPoint === "horizontal";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -111,16 +166,71 @@ export function TriageExpressDialog({
             <DialogTitle className="flex items-center gap-2 text-white">
               <Zap className="h-5 w-5" />
               Triagem Express — Pré-identificação
+              {receptionPoint && (
+                <Badge
+                  variant="outline"
+                  className="ml-2 text-[10px] h-5 border-white/40 text-white bg-white/10 font-normal"
+                >
+                  {isHorizontal ? <Ambulance className="h-3 w-3 mr-1" /> : <Footprints className="h-3 w-3 mr-1" />}
+                  Recepção {isHorizontal ? "Horizontal" : "Vertical"}
+                </Badge>
+              )}
             </DialogTitle>
             <DialogDescription className="text-rose-50/90 text-xs">
-              Pergunte rapidamente o que conseguir. Tudo é opcional. Você pode finalizar e direcionar mesmo sem documentos.
+              {isHorizontal
+                ? "Maca/ambulância — destino prioritário sugerido: Sala Vermelha. Tudo é opcional."
+                : "Pergunte rapidamente o que conseguir. Tudo é opcional. Direcionamento padrão: Triagem."}
             </DialogDescription>
           </DialogHeader>
         </div>
 
         <ScrollArea className="max-h-[65vh]">
           <div className="px-5 py-4 space-y-4">
-            {/* Bloco 1 — Identificação parcial */}
+            {/* ========== ATALHO PRIORITÁRIO — só na horizontal ========== */}
+            {isHorizontal && salaVermelha && (
+              <section className="rounded-lg border-2 border-red-600/40 bg-red-600/5 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Siren className="h-4 w-4 text-red-600 animate-pulse" />
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-red-700 dark:text-red-400">
+                    Direcionamento prioritário (Recepção Horizontal)
+                  </h3>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDestinationValue(triagemSector?.value || "triagem")}
+                    className={cn(
+                      "flex items-center gap-2 p-2.5 rounded-md border text-left transition-all hover:bg-accent/50",
+                      destinationValue === (triagemSector?.value || "triagem") && "ring-2 ring-emerald-500 bg-emerald-500/10 border-emerald-500/40"
+                    )}
+                  >
+                    <div className="h-3 w-3 rounded-full bg-emerald-500 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold">Triagem</div>
+                      <div className="text-[10px] text-muted-foreground">classificação de risco</div>
+                    </div>
+                    <Badge variant="secondary" className="text-[8px] h-3.5 px-1">recomendado</Badge>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDestinationValue("sala_vermelha")}
+                    className={cn(
+                      "flex items-center gap-2 p-2.5 rounded-md border text-left transition-all hover:bg-accent/50",
+                      destinationValue === "sala_vermelha" && "ring-2 ring-red-600 bg-red-600/10 border-red-600/40"
+                    )}
+                  >
+                    <div className="h-3 w-3 rounded-full bg-red-700 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold">Sala Vermelha</div>
+                      <div className="text-[10px] text-muted-foreground">emergência crítica</div>
+                    </div>
+                    <Siren className="h-3 w-3 text-red-600" />
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {/* ========== Bloco 1 — Identificação parcial ========== */}
             <section className="space-y-3">
               <div className="flex items-center gap-2">
                 <UserX className="h-4 w-4 text-muted-foreground" />
@@ -162,18 +272,71 @@ export function TriageExpressDialog({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="te-age" className="text-xs flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> Idade aproximada
+              {/* Idade — toggle de modo */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <Label className="text-xs flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> Idade do paciente
                   </Label>
-                  <Input
-                    id="te-age"
-                    placeholder="Ex.: 60a, ADULTO, IDOSO, RN"
-                    value={approxAge}
-                    onChange={(e) => setApproxAge(e.target.value.toUpperCase())}
-                  />
+                  <ToggleGroup
+                    type="single"
+                    value={ageMode}
+                    onValueChange={(v) => v && setAgeMode(v as AgeInputMode)}
+                    size="sm"
+                    className="h-7"
+                  >
+                    <ToggleGroupItem value="approx" className="text-[10px] h-7 px-2 gap-1">
+                      <Hash className="h-3 w-3" /> Aproximada
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="exact" className="text-[10px] h-7 px-2 gap-1">
+                      <Cake className="h-3 w-3" /> Exata
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="dob" className="text-[10px] h-7 px-2 gap-1">
+                      <CalendarDays className="h-3 w-3" /> Data nasc.
+                    </ToggleGroupItem>
+                  </ToggleGroup>
                 </div>
+
+                {ageMode === "approx" && (
+                  <Input
+                    placeholder="Ex.: ADULTO, IDOSO, RN, ~60a"
+                    value={approxAgeText}
+                    onChange={(e) => setApproxAgeText(e.target.value.toUpperCase())}
+                  />
+                )}
+                {ageMode === "exact" && (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={130}
+                      placeholder="Ex.: 60"
+                      value={exactAge}
+                      onChange={(e) => setExactAge(e.target.value)}
+                      className="max-w-[140px]"
+                    />
+                    <span className="text-xs text-muted-foreground">anos</span>
+                  </div>
+                )}
+                {ageMode === "dob" && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Input
+                      type="date"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      max={new Date().toISOString().slice(0, 10)}
+                      className="max-w-[200px]"
+                    />
+                    {birthDate && computedAge && (
+                      <Badge variant="secondary" className="text-[10px]">
+                        {computedAge} anos
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="te-phone" className="text-xs flex items-center gap-1">
                     <Phone className="h-3 w-3" /> Contato (acompanhante)
@@ -229,19 +392,18 @@ export function TriageExpressDialog({
                     <span className="text-sm font-medium">Marcar como documentação pendente</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    O atendimento aparecerá no painel da Recepção com um indicador
-                    de pendência (CPF, CNS, RG ou nome completo) para complementação posterior.
+                    O atendimento aparecerá no painel da Recepção com indicador de pendência (CPF, CNS, RG ou nome completo) para complementação posterior.
                   </p>
                 </div>
               </label>
             </section>
 
-            {/* Bloco 4 — Destino */}
+            {/* Bloco 4 — Destino completo (sempre disponível) */}
             <section className="space-y-2">
               <div className="flex items-center gap-2">
                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Direcionamento do atendimento
+                  {isHorizontal ? "Outros destinos disponíveis" : "Direcionamento do atendimento"}
                 </h3>
               </div>
 
