@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { whitelabel } from "@/config/whitelabel";
+import { BigHelpLogo } from "@/components/BigHelpLogo";
 import {
   Activity,
   Brain,
@@ -10,8 +11,9 @@ import {
   Users,
   ArrowRight,
   FileCheck,
-  Sparkles,
 } from "lucide-react";
+
+const SERIF = "'Playfair Display', Georgia, serif";
 
 const advantages = [
   {
@@ -64,13 +66,14 @@ export default function LandingPage() {
           {/* Brand */}
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-2.5 group"
+            className="flex items-center gap-3 group"
           >
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-              <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="preserve-case text-lg font-semibold tracking-tight text-slate-800">
-              Arsen
+            <BigHelpLogo size="xs" />
+            <span
+              className="preserve-case text-lg font-light tracking-[0.25em] text-slate-800"
+              style={{ fontFamily: SERIF }}
+            >
+              ARSEN
             </span>
           </button>
 
@@ -119,30 +122,53 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200/80 shadow-sm mb-8"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200/80 shadow-sm mb-10"
           >
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="preserve-case text-[11px] font-medium text-slate-600 tracking-wide">
+            <span className="preserve-case text-[10px] font-semibold text-slate-600 tracking-[0.25em] uppercase">
               Plataforma de gestão clínica hospitalar
             </span>
           </motion.div>
 
-          {/* Brand name */}
-          <motion.h1
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-            className="preserve-case text-7xl md:text-8xl lg:text-9xl font-bold tracking-tight mb-6 bg-gradient-to-b from-slate-800 via-slate-700 to-slate-500 bg-clip-text text-transparent leading-none"
+          {/* Logo mark */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+            className="flex justify-center mb-8"
           >
-            Arsen
+            <BigHelpLogo size="lg" />
+          </motion.div>
+
+          {/* Brand name — serif elegante */}
+          <motion.h1
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="preserve-case text-5xl md:text-6xl lg:text-7xl font-extralight tracking-[0.3em] text-slate-800 mb-5 leading-none"
+            style={{ fontFamily: SERIF }}
+          >
+            ARSEN
           </motion.h1>
+
+          {/* Ornamental divider */}
+          <motion.div
+            initial={{ opacity: 0, scaleX: 0 }}
+            animate={{ opacity: 1, scaleX: 1 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="flex items-center justify-center gap-2 mb-6"
+          >
+            <span className="h-px w-10 bg-gradient-to-r from-transparent to-slate-300" />
+            <span className="h-1 w-1 rounded-full bg-sky-500/70" />
+            <span className="h-px w-10 bg-gradient-to-l from-transparent to-slate-300" />
+          </motion.div>
 
           {/* Slogan */}
           <motion.p
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.4 }}
-            className="preserve-case text-xl md:text-2xl text-slate-500 font-light tracking-tight mb-12"
+            transition={{ duration: 0.7, delay: 0.5 }}
+            className="preserve-case text-sm md:text-base text-slate-500 font-light tracking-[0.2em] uppercase mb-12"
           >
             Plataforma Clínica Inteligente
           </motion.p>
@@ -261,11 +287,12 @@ export default function LandingPage() {
       <footer className="border-t border-slate-100 bg-slate-50/50 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center">
-              <Sparkles className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="preserve-case text-sm font-semibold text-slate-700">
-              Arsen
+            <BigHelpLogo size="xs" />
+            <span
+              className="preserve-case text-sm font-light tracking-[0.25em] text-slate-700"
+              style={{ fontFamily: SERIF }}
+            >
+              ARSEN
             </span>
           </div>
 
