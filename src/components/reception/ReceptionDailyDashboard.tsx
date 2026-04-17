@@ -13,7 +13,7 @@ import { ptBR } from "date-fns/locale";
 import {
   Activity, BedDouble, Clock, FileText, Users, AlertTriangle,
   PhoneOutgoing, RefreshCw, ArrowRight, Loader2, ListTodo, History,
-  CheckCircle2, XCircle, UserPlus, Play,
+  CheckCircle2, XCircle, UserPlus, Play, FileWarning, UserX,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -61,6 +61,10 @@ interface DailyEncounter {
   status: string;
   created_at: string;
   created_by: string | null;
+  // Enriquecido a partir de patient_registry
+  documents_pending?: boolean;
+  partial_identification?: boolean;
+  is_unidentified?: boolean;
 }
 
 interface PendingAdmission {
