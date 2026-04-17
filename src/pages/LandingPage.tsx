@@ -287,11 +287,12 @@ export default function LandingPage() {
       <footer className="border-t border-slate-100 bg-slate-50/50 py-10 px-6">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center">
-              <Sparkles className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="preserve-case text-sm font-semibold text-slate-700">
-              Arsen
+            <BigHelpLogo size="xs" />
+            <span
+              className="preserve-case text-sm font-light tracking-[0.25em] text-slate-700"
+              style={{ fontFamily: SERIF }}
+            >
+              ARSEN
             </span>
           </div>
 
