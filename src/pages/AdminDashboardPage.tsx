@@ -626,100 +626,186 @@ const AdminDashboardPage = () => {
             </DialogDescription>
           </DialogHeader>
 
+          {/* Toggle Paciente Não Identificado — sempre visível no topo */}
+          <Card className={cn(
+            "border-2 transition-colors",
+            registerForm.is_unidentified ? "border-amber-500 bg-amber-500/10" : "border-dashed border-muted"
+          )}>
+            <CardContent className="p-3 flex items-center gap-3">
+              <Checkbox
+                id="ni-toggle-recepcao"
+                checked={registerForm.is_unidentified}
+                onCheckedChange={(c) => toggleUnidentified(!!c)}
+              />
+              <label htmlFor="ni-toggle-recepcao" className="flex-1 cursor-pointer">
+                <div className="flex items-center gap-2 font-semibold text-sm">
+                  <UserX className="h-4 w-4 text-amber-600" />
+                  Paciente NÃO IDENTIFICADO
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Gera código padronizado (NI-AAAA-NNNNNN) e cadastra como
+                  <span className="font-mono font-semibold"> &nbsp;NÃO IDENTIFICADO (NI-...) </span>
+                  para evitar variações de digitação.
+                </p>
+              </label>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-            <div className="md:col-span-2">
-              <Label>Nome Completo *</Label>
-              <Input
-                placeholder="Nome completo do paciente"
-                value={registerForm.full_name}
-                onChange={(e) => setRegisterForm(prev => ({ ...prev, full_name: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Nome Social</Label>
-              <Input
-                placeholder="Nome social (se aplicável)"
-                value={registerForm.social_name}
-                onChange={(e) => setRegisterForm(prev => ({ ...prev, social_name: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>CPF</Label>
-              <Input
-                placeholder="000.000.000-00"
-                value={registerForm.cpf}
-                onChange={(e) => setRegisterForm(prev => ({ ...prev, cpf: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>CNS (Cartão SUS)</Label>
-              <Input
-                placeholder="Número do cartão SUS"
-                value={registerForm.cns}
-                onChange={(e) => setRegisterForm(prev => ({ ...prev, cns: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Data de Nascimento</Label>
-              <Input
-                type="date"
-                value={registerForm.birth_date}
-                onChange={(e) => setRegisterForm(prev => ({ ...prev, birth_date: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Sexo</Label>
-              <Select value={registerForm.sex} onValueChange={(v) => setRegisterForm(prev => ({ ...prev, sex: v }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="M">Masculino</SelectItem>
-                  <SelectItem value="F">Feminino</SelectItem>
-                  <SelectItem value="I">Indeterminado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Nome da Mãe</Label>
-              <Input
-                placeholder="Nome da mãe"
-                value={registerForm.mother_name}
-                onChange={(e) => setRegisterForm(prev => ({ ...prev, mother_name: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Telefone</Label>
-              <Input
-                placeholder="(00) 00000-0000"
-                value={registerForm.phone}
-                onChange={(e) => setRegisterForm(prev => ({ ...prev, phone: e.target.value }))}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Label>Endereço</Label>
-              <Input
-                placeholder="Rua, número"
-                value={registerForm.address}
-                onChange={(e) => setRegisterForm(prev => ({ ...prev, address: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Bairro</Label>
-              <Input
-                placeholder="Bairro"
-                value={registerForm.neighborhood}
-                onChange={(e) => setRegisterForm(prev => ({ ...prev, neighborhood: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Cidade</Label>
-              <Input
-                placeholder="Cidade"
-                value={registerForm.city}
-                onChange={(e) => setRegisterForm(prev => ({ ...prev, city: e.target.value }))}
-              />
-            </div>
+            {registerForm.is_unidentified ? (
+              <>
+                <div className="md:col-span-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/30 text-xs flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    O nome será cadastrado automaticamente como
+                    <span className="font-mono font-semibold"> NÃO IDENTIFICADO (NI-AAAA-NNNNNN)</span>.
+                    Preencha as características físicas para auxiliar a identificação posterior.
+                  </div>
+                </div>
+                <div>
+                  <Label>Idade estimada</Label>
+                  <Input
+                    placeholder="Ex.: 40-50 anos"
+                    value={registerForm.ni_estimated_age}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, ni_estimated_age: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Sexo aparente</Label>
+                  <Select
+                    value={registerForm.ni_apparent_sex}
+                    onValueChange={(v) => setRegisterForm(prev => ({ ...prev, ni_apparent_sex: v }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="masculino">Masculino</SelectItem>
+                      <SelectItem value="feminino">Feminino</SelectItem>
+                      <SelectItem value="indeterminado">Indeterminado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Cor da pele</Label>
+                  <Input
+                    placeholder="Ex.: Parda, Negra, Branca"
+                    value={registerForm.ni_skin_color}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, ni_skin_color: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Circunstância de chegada</Label>
+                  <Input
+                    placeholder="SAMU / Bombeiros / Trazido por terceiros..."
+                    value={registerForm.ni_arrival_circumstance}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, ni_arrival_circumstance: e.target.value }))}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label>Sinais distintivos</Label>
+                  <Input
+                    placeholder="Tatuagens, cicatrizes, piercings, vestimenta..."
+                    value={registerForm.ni_distinctive_marks}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, ni_distinctive_marks: e.target.value }))}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="md:col-span-2">
+                  <Label>Nome Completo *</Label>
+                  <Input
+                    placeholder="Nome completo do paciente"
+                    value={registerForm.full_name}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, full_name: e.target.value.toUpperCase() }))}
+                  />
+                </div>
+                <div>
+                  <Label>Nome Social</Label>
+                  <Input
+                    placeholder="Nome social (se aplicável)"
+                    value={registerForm.social_name}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, social_name: e.target.value.toUpperCase() }))}
+                  />
+                </div>
+                <div>
+                  <Label>CPF</Label>
+                  <Input
+                    placeholder="000.000.000-00"
+                    value={registerForm.cpf}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, cpf: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>CNS (Cartão SUS)</Label>
+                  <Input
+                    placeholder="Número do cartão SUS"
+                    value={registerForm.cns}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, cns: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Data de Nascimento</Label>
+                  <Input
+                    type="date"
+                    value={registerForm.birth_date}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, birth_date: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Sexo</Label>
+                  <Select value={registerForm.sex} onValueChange={(v) => setRegisterForm(prev => ({ ...prev, sex: v }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="M">Masculino</SelectItem>
+                      <SelectItem value="F">Feminino</SelectItem>
+                      <SelectItem value="I">Indeterminado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Nome da Mãe</Label>
+                  <Input
+                    placeholder="Nome da mãe"
+                    value={registerForm.mother_name}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, mother_name: e.target.value.toUpperCase() }))}
+                  />
+                </div>
+                <div>
+                  <Label>Telefone</Label>
+                  <Input
+                    placeholder="(00) 00000-0000"
+                    value={registerForm.phone}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, phone: e.target.value }))}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label>Endereço</Label>
+                  <Input
+                    placeholder="Rua, número"
+                    value={registerForm.address}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, address: e.target.value.toUpperCase() }))}
+                  />
+                </div>
+                <div>
+                  <Label>Bairro</Label>
+                  <Input
+                    placeholder="Bairro"
+                    value={registerForm.neighborhood}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, neighborhood: e.target.value.toUpperCase() }))}
+                  />
+                </div>
+                <div>
+                  <Label>Cidade</Label>
+                  <Input
+                    placeholder="Cidade"
+                    value={registerForm.city}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, city: e.target.value.toUpperCase() }))}
+                  />
+                </div>
+              </>
+            )}
 
             <Separator className="md:col-span-2" />
 
