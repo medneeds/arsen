@@ -598,9 +598,13 @@ export function ReceptionDailyDashboard({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
           icon={ListTodo}
-          label={pointFilter === "all" ? "Atendimentos hoje" : `Atendimentos ${RECEPTION_POINT_SHORT[pointFilter]}`}
+          label={
+            pointFilter === "all"
+              ? `Atendimentos ${periodFilter === "today" ? "hoje" : periodFilter === "7d" ? "(7 dias)" : "(30 dias)"}`
+              : `Atendimentos ${RECEPTION_POINT_SHORT[pointFilter]}`
+          }
           value={kpis.totalToday}
-          hint="Abertos no balcão"
+          hint={periodFilter === "today" ? "Abertos no balcão" : `Período: ${periodFilter === "7d" ? "últimos 7 dias" : "últimos 30 dias"}`}
           tone="default"
         />
         <KpiCard
