@@ -104,13 +104,13 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
 
   // Rota padrão por perfil quando não há seleção de setor
   const PROFILE_DEFAULT_ROUTE: Record<string, string> = {
-    gestor: "/gestor",
+    gestor: "/painel-gestor",
     ccih: "/ccih",
     nir: "/nir",
     imagem: "/setor-imagem",
     laboratorio: "/setor-laboratorio",
     farmacia: "/validacao-farmaceutica",
-    administrativo: "/triagem",
+    administrativo: "/recepcao",
   };
 
   const hospitalName =
