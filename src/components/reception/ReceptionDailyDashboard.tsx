@@ -134,7 +134,14 @@ interface Props {
  * - Aguardando Admissão (pacientes direcionados ainda sem leito)
  * - Histórico de ações do recepcionista logado (24h)
  */
-export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNewRegistration, defaultSubTab = "dia", hideQuickActions = false }: Props) {
+export function ReceptionDailyDashboard({
+  onPickRegistry,
+  onTriageExpress,
+  onNewRegistration,
+  defaultSubTab = "dia",
+  hideQuickActions = false,
+  currentPoint = null,
+}: Props) {
   const { currentHospital } = useHospital();
   const { user } = useAuth();
   const hospitalId = currentHospital?.id;
@@ -143,7 +150,12 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
   const [todayEncounters, setTodayEncounters] = useState<DailyEncounter[]>([]);
   const [pendingAdmissions, setPendingAdmissions] = useState<PendingAdmission[]>([]);
   const [myActions, setMyActions] = useState<ReceptionAction[]>([]);
+  const [allActionsToday, setAllActionsToday] = useState<ReceptionAction[]>([]);
+  const [deskSessions, setDeskSessions] = useState<DeskSession[]>([]);
   const [monthRegistrations, setMonthRegistrations] = useState(0);
+
+  // Filtro por posto: "all" | "vertical" | "horizontal"
+  const [pointFilter, setPointFilter] = useState<"all" | ReceptionPoint>("all");
 
   const todayStart = useMemo(() => startOfDay(new Date()).toISOString(), []);
   const monthStart = useMemo(() => startOfMonth(new Date()).toISOString(), []);
@@ -152,10 +164,10 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
     if (!hospitalId) return;
     setLoading(true);
     try {
-      const [encRes, paRes, regRes, auditRes] = await Promise.all([
+      const [encRes, paRes, regRes, auditRes, allAuditRes, sessRes] = await Promise.all([
         supabase
           .from("patient_encounters")
-          .select("id, encounter_code, patient_name, registry_id, destination_sector, triage_status, status, created_at, created_by")
+          .select("id, encounter_code, patient_name, registry_id, destination_sector, triage_status, status, created_at, created_by, reception_point")
           .eq("hospital_unit_id", hospitalId)
           .gte("created_at", todayStart)
           .order("created_at", { ascending: false }),
@@ -175,13 +187,29 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
         user?.id
           ? supabase
               .from("audit_logs")
-              .select("table_name, action, record_id, created_at, new_data")
+              .select("table_name, action, record_id, created_at, new_data, user_id")
               .eq("user_id", user.id)
               .gte("created_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
               .in("table_name", ["patient_registry", "patient_encounters", "pre_admissions"])
               .order("created_at", { ascending: false })
               .limit(30)
           : Promise.resolve({ data: [], error: null } as any),
+        // Todas ações da equipe HOJE (para painel "Por usuário")
+        supabase
+          .from("audit_logs")
+          .select("table_name, action, record_id, created_at, new_data, user_id, user_email")
+          .eq("hospital_unit_id", hospitalId)
+          .gte("created_at", todayStart)
+          .in("table_name", ["patient_registry", "patient_encounters"])
+          .order("created_at", { ascending: false })
+          .limit(500),
+        // Sessões de posto da equipe (hoje)
+        supabase
+          .from("reception_desk_sessions" as any)
+          .select("id, user_id, user_name, reception_point, started_at, ended_at, last_heartbeat_at")
+          .eq("hospital_unit_id", hospitalId)
+          .gte("started_at", todayStart)
+          .order("started_at", { ascending: false }),
       ]);
 
       if (encRes.error) throw encRes.error;
@@ -209,10 +237,11 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
         ...(e.registry_id ? regMap[e.registry_id] || {} : {}),
       }));
       setTodayEncounters(enriched);
-      // pre_admissions pode não estar tipada — tratamento defensivo
       setPendingAdmissions((paRes.data as any[]) || []);
       setMonthRegistrations(regRes.count || 0);
       setMyActions((auditRes.data as ReceptionAction[]) || []);
+      setAllActionsToday((allAuditRes.data as ReceptionAction[]) || []);
+      setDeskSessions((sessRes.data as any[]) || []);
     } catch (err: any) {
       console.error("Erro ao carregar painel diário:", err);
       toast.error("Erro ao carregar painel da recepção", { description: err?.message });
