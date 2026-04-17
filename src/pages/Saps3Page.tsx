@@ -691,7 +691,7 @@ export default function Saps3Page() {
                   <div key={req.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold text-foreground truncate">{req.patient_name}</p>
+                        <p className="patient-id font-semibold text-foreground truncate">{req.patient_name}</p>
                         <Badge variant="outline" className="shrink-0 text-xs">
                           {req.destination_sector}
                         </Badge>
@@ -728,7 +728,7 @@ export default function Saps3Page() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Admitindo paciente</p>
-                  <p className="text-lg font-bold text-foreground">{patientName}</p>
+                  <p className="patient-id text-lg font-bold text-foreground">{patientName}</p>
                   {selectedRequest?.destination_sector && (
                     <p className="text-xs text-muted-foreground">
                       Pedido: {selectedRequest.destination_sector}
