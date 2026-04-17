@@ -383,8 +383,8 @@ const MovimentacoesPage = () => {
                 </div>
 
                 {/* Aviso: leito permanece ocupado até liberação administrativa */}
-                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                  <BedDouble className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-warning/10 border border-warning/30">
+                  <BedDouble className="h-4 w-4 text-warning mt-0.5 shrink-0" />
                   <div className="text-xs leading-relaxed">
                     <p className="font-semibold text-foreground">O leito permanece ocupado após a confirmação</p>
                     <p className="text-muted-foreground mt-0.5">
@@ -447,12 +447,12 @@ const MovimentacoesPage = () => {
                           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">→ {m.destination}</span>
                         )}
                         {isPending && (
-                          <Badge variant="outline" className="text-[9px] uppercase tracking-wider gap-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30">
+                          <Badge variant="outline" className="text-[9px] uppercase tracking-wider gap-1 bg-warning/10 text-warning border-warning/30">
                             <Clock className="h-2.5 w-2.5" /> Aguardando liberação do leito
                           </Badge>
                         )}
                         {isReleased && (
-                          <Badge variant="outline" className="text-[9px] uppercase tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">
+                          <Badge variant="outline" className="text-[9px] uppercase tracking-wider bg-accent/10 text-accent border-accent/30">
                             Leito liberado
                           </Badge>
                         )}
