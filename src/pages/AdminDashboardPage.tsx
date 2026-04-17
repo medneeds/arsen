@@ -694,6 +694,21 @@ const AdminDashboardPage = () => {
                 )}
               </CardContent>
             </Card>
+              </TabsContent>
+
+              <TabsContent value="prontuarios" className="mt-0">
+                <MedicalRecordsList
+                  onStartEncounter={(p) => {
+                    setSelectedPatient(p as any);
+                    setShowNewEncounter(true);
+                  }}
+                  onViewPatient={(p) => {
+                    setSelectedPatient(p as any);
+                    setShowPatientDetail(true);
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>
