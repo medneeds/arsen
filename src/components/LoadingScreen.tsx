@@ -4,6 +4,7 @@ import { whitelabel } from "@/config/whitelabel";
 import { useHospital } from "@/contexts/HospitalContext";
 import { BigHelpLogo } from "./BigHelpLogo";
 import { AuthBackgroundFx } from "./auth/AuthBackgroundFx";
+import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
 
 interface LoadingScreenProps {
   onComplete?: () => void;
