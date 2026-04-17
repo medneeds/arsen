@@ -45,18 +45,51 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
-// Destination sectors for encounter routing
-const DESTINATION_SECTORS = [
-  { value: "triagem", label: "Triagem", available: true, color: "bg-emerald-500" },
-  { value: "red", label: "UTI 1", available: true, color: "bg-red-500" },
-  { value: "yellow", label: "UTI 2", available: true, color: "bg-yellow-500" },
-  { value: "blue", label: "UCI 1", available: true, color: "bg-blue-500" },
-  { value: "outside", label: "UCI 2", available: true, color: "bg-gray-500" },
-  { value: "sala_vermelha", label: "Sala Vermelha", available: true, color: "bg-red-700" },
-  { value: "sala_laranja", label: "Sala Laranja", available: true, color: "bg-orange-500" },
-  { value: "ue_vertical", label: "Urgência e Emergência Vertical", available: true, color: "bg-purple-500" },
-  { value: "ue_horizontal", label: "Urgência e Emergência Horizontal", available: true, color: "bg-indigo-500" },
+// Destination sectors for encounter routing — agrupados por categoria
+type DestinationSector = {
+  value: string;
+  label: string;
+  group: string;
+  color: string;
+  // sectorKey: chave do SectorType usada em PreAdmissionSection (Index.tsx)
+  // Quando definida, gera também uma pre_admissions com destination_sector=label
+  // para que o paciente apareça em "Aguardando Admissão" do setor clínico.
+  sectorKey?: string;
+  isTriage?: boolean;
+};
+
+const DESTINATION_SECTORS: DestinationSector[] = [
+  // Triagem (recomendado para casos sem definição prévia)
+  { value: "triagem", label: "Triagem", group: "Triagem / Urgência", color: "bg-emerald-500", isTriage: true },
+  // Urgência e Emergência (admissão direta sem leito clínico fixo)
+  { value: "sala_vermelha", label: "Sala Vermelha", group: "Triagem / Urgência", color: "bg-red-700", sectorKey: "sala_vermelha" },
+  { value: "sala_laranja", label: "Sala Laranja", group: "Triagem / Urgência", color: "bg-orange-500", sectorKey: "sala_laranja" },
+  { value: "ue_vertical", label: "UE Vertical", group: "Triagem / Urgência", color: "bg-purple-500", sectorKey: "ue_vertical" },
+  { value: "ue_horizontal", label: "UE Horizontal", group: "Triagem / Urgência", color: "bg-indigo-500", sectorKey: "ue_horizontal" },
+  { value: "observacao_clinica", label: "Observação Clínica", group: "Triagem / Urgência", color: "bg-sky-500", sectorKey: "observacao_clinica" },
+  { value: "internacao_ue", label: "Internação UE", group: "Triagem / Urgência", color: "bg-indigo-600", sectorKey: "internacao_ue" },
+  // UTIs
+  { value: "red", label: "UTI 1", group: "Terapia Intensiva", color: "bg-red-500", sectorKey: "red" },
+  { value: "yellow", label: "UTI 2", group: "Terapia Intensiva", color: "bg-yellow-500", sectorKey: "yellow" },
+  // UCIs
+  { value: "blue", label: "UCI 1", group: "Cuidados Intermediários", color: "bg-blue-500", sectorKey: "blue" },
+  { value: "outside", label: "UCI 2", group: "Cuidados Intermediários", color: "bg-emerald-500", sectorKey: "outside" },
+  // UCC
+  { value: "ucc", label: "UCC — Unidade Cuidados Clínicos", group: "Cuidados Intermediários", color: "bg-violet-500", sectorKey: "ucc" },
+  // Enfermarias
+  { value: "neuro_01", label: "Enfermaria Neuro 01", group: "Enfermarias", color: "bg-cyan-500", sectorKey: "neuro_01" },
+  { value: "neuro_02", label: "Enfermaria Neuro 02", group: "Enfermarias", color: "bg-cyan-600", sectorKey: "neuro_02" },
+  { value: "clinica_cirurgica", label: "Clínica Cirúrgica", group: "Enfermarias", color: "bg-teal-500", sectorKey: "clinica_cirurgica" },
+  { value: "enfermaria_transicao", label: "Enfermaria de Transição", group: "Enfermarias", color: "bg-amber-500", sectorKey: "enfermaria_transicao" },
+  { value: "enfermaria_vascular", label: "Enfermaria Vascular", group: "Enfermarias", color: "bg-pink-500", sectorKey: "enfermaria_vascular" },
+  // RIV / Centro Cirúrgico
+  { value: "riv", label: "RIV — Ref. Internação Vascular", group: "Centro Cirúrgico / RIV", color: "bg-rose-500", sectorKey: "riv" },
+  { value: "cc_preparo", label: "CC — Preparo", group: "Centro Cirúrgico / RIV", color: "bg-slate-500", sectorKey: "cc_preparo" },
+  { value: "cc_bloco", label: "CC — Bloco Cirúrgico", group: "Centro Cirúrgico / RIV", color: "bg-slate-600", sectorKey: "cc_bloco" },
+  { value: "cc_rpa", label: "CC — RPA", group: "Centro Cirúrgico / RIV", color: "bg-slate-700", sectorKey: "cc_rpa" },
 ];
+
+const DESTINATION_GROUPS = Array.from(new Set(DESTINATION_SECTORS.map(s => s.group)));
 
 interface PatientRegistry {
   id: string;
