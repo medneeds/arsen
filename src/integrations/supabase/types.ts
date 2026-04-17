@@ -1568,6 +1568,7 @@ export type Database = {
           outcome_date: string | null
           patient_id: string | null
           patient_name: string
+          reception_point: string | null
           registry_id: string | null
           specialty: string | null
           state_id: string
@@ -1596,6 +1597,7 @@ export type Database = {
           outcome_date?: string | null
           patient_id?: string | null
           patient_name: string
+          reception_point?: string | null
           registry_id?: string | null
           specialty?: string | null
           state_id: string
@@ -1624,6 +1626,7 @@ export type Database = {
           outcome_date?: string | null
           patient_id?: string | null
           patient_name?: string
+          reception_point?: string | null
           registry_id?: string | null
           specialty?: string | null
           state_id?: string
@@ -2535,6 +2538,45 @@ export type Database = {
           terms_accepted_at?: string | null
           terms_version?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      reception_desk_sessions: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          hospital_unit_id: string
+          id: string
+          last_heartbeat_at: string
+          reception_point: string
+          started_at: string
+          state_id: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          hospital_unit_id: string
+          id?: string
+          last_heartbeat_at?: string
+          reception_point: string
+          started_at?: string
+          state_id: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          hospital_unit_id?: string
+          id?: string
+          last_heartbeat_at?: string
+          reception_point?: string
+          started_at?: string
+          state_id?: string
+          user_id?: string
+          user_name?: string | null
         }
         Relationships: []
       }
