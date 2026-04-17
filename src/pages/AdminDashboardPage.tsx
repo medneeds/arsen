@@ -208,12 +208,27 @@ const AdminDashboardPage = () => {
   const [recentEncounters, setRecentEncounters] = useState<Encounter[]>([]);
   const [isLoadingEncounters, setIsLoadingEncounters] = useState(false);
 
+  // Busca global Ctrl+K
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+
   // Load recent encounters
   useEffect(() => {
     if (selectedHospitalId) {
       loadRecentEncounters();
     }
   }, [selectedHospitalId]);
+
+  // Atalho global Ctrl+K / Cmd+K
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setGlobalSearchOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const loadRecentEncounters = async () => {
     if (!selectedHospitalId) return;
