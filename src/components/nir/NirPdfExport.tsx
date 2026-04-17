@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { useHospital } from "@/contexts/HospitalContext";
 import { whitelabel } from "@/config/whitelabel";
-import socorraoLogo from "@/assets/socorrao-logo.jpg";
+import socorraoLogo from "@/assets/socorrao-cross-logo.png";
 import type { NirMetrics } from "@/hooks/useNirMetrics";
 import type { DischargePrediction } from "@/hooks/useDischargePredictions";
 
@@ -88,14 +88,15 @@ export function NirPdfExport({ metrics, predictions = [] }: Props) {
       html, body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; font-size: 9.5pt; line-height: 1.35; }
 
       /* === TIMBRADO INSTITUCIONAL (Norma Zero MAN.05-001) === */
-      .header { background: #fff; border-bottom: 2.5pt solid #0054A6; padding: 8pt 0 6pt; margin-bottom: 8pt; }
-      .header-inner { display: flex; align-items: center; gap: 12pt; }
-      .logo { height: 56px; width: 56px; object-fit: contain; flex-shrink: 0; }
-      .h-text { flex: 1; text-align: center; }
+      .header { background: #fff; border-bottom: 2.5pt solid #0054A6; padding: 10pt 0 8pt; margin-bottom: 8pt; }
+      .header-inner { display: grid; grid-template-columns: 96px 1fr 96px; align-items: center; gap: 16pt; }
+      .logo-wrap { display: flex; align-items: center; justify-content: center; }
+      .logo { height: 88px; width: 88px; object-fit: contain; }
+      .h-text { text-align: center; }
       .h-line1, .h-line2 { font-size: 8.5pt; font-weight: 600; color: #475569; letter-spacing: 0.5pt; text-transform: uppercase; }
-      .h-line3 { font-size: 11pt; font-weight: 700; color: #0a1628; margin-top: 2pt; letter-spacing: 0.3pt; }
-      .h-tag { font-size: 7.5pt; color: #64748b; font-style: italic; margin-top: 2pt; }
-      .cruz-bar { display: flex; height: 4pt; margin-top: 4pt; border-radius: 2pt; overflow: hidden; }
+      .h-line3 { font-size: 11.5pt; font-weight: 700; color: #0a1628; margin-top: 3pt; letter-spacing: 0.3pt; }
+      .h-tag { font-size: 7.5pt; color: #64748b; font-style: italic; margin-top: 3pt; }
+      .cruz-bar { display: flex; height: 4pt; margin-top: 6pt; border-radius: 2pt; overflow: hidden; }
       .cruz-bar > div { flex: 1; }
 
       /* === MARCAÇÃO DOCUMENTO === */
@@ -156,14 +157,16 @@ export function NirPdfExport({ metrics, predictions = [] }: Props) {
     </style></head><body>
       <div class="header">
         <div class="header-inner">
-          ${logoData ? `<img src="${logoData}" class="logo" alt="${whitelabel.institution.hospitalAbbreviation}"/>` : `<div class="logo" style="background:#0054A6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;border-radius:6pt">${whitelabel.institution.hospitalAbbreviation}</div>`}
+          <div class="logo-wrap">
+            ${logoData ? `<img src="${logoData}" class="logo" alt="${whitelabel.institution.hospitalAbbreviation}"/>` : `<div class="logo" style="background:#0054A6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;border-radius:8pt">${whitelabel.institution.hospitalAbbreviation}</div>`}
+          </div>
           <div class="h-text">
             <div class="h-line1">${inst.line1}</div>
             <div class="h-line2">${inst.line2}</div>
             <div class="h-line3">${inst.line3}</div>
             <div class="h-tag">${whitelabel.institution.address}</div>
           </div>
-          <div style="width:56px"></div>
+          <div></div>
         </div>
         <div class="cruz-bar">
           <div style="background:${colors.red}"></div>
