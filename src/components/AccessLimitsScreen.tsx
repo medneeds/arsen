@@ -98,6 +98,21 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
   const accessProfileLabel =
     ACCESS_PROFILE_LABELS[accessProfile] || ACCESS_PROFILE_LABELS["medico"];
 
+  // Perfis que NÃO precisam selecionar setor — possuem painel próprio com filtros internos
+  const PROFILES_WITHOUT_SECTOR_ROUTING = ["gestor", "ccih", "nir", "imagem", "laboratorio", "farmacia", "administrativo"];
+  const skipSectorSelection = PROFILES_WITHOUT_SECTOR_ROUTING.includes(accessProfile);
+
+  // Rota padrão por perfil quando não há seleção de setor
+  const PROFILE_DEFAULT_ROUTE: Record<string, string> = {
+    gestor: "/gestor",
+    ccih: "/ccih",
+    nir: "/nir",
+    imagem: "/setor-imagem",
+    laboratorio: "/setor-laboratorio",
+    farmacia: "/validacao-farmaceutica",
+    administrativo: "/triagem",
+  };
+
   const hospitalName =
     currentHospital?.name || whitelabel.institution.hospitalShortName;
 
