@@ -2,8 +2,9 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { LayoutDashboard, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDepartment, SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
+import { useIsGestor } from "@/hooks/useIsGestor";
 
-const tabs = [
+const ALL_TABS = [
   { label: "Mapa de leitos", path: "/mapa", icon: LayoutDashboard },
   { label: "Painel clínico", path: "/painel-clinico", icon: ClipboardCheck },
 ];
@@ -19,6 +20,10 @@ export function ClinicalNavTabs({ variant = "default", hideSector = false }: Cli
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { currentSectorLabel } = useDepartment();
+  const isGestor = useIsGestor();
+
+  // Gestor não acessa o Painel Clínico — apenas o Mapa de Leitos
+  const tabs = isGestor ? ALL_TABS.filter((t) => t.path !== "/painel-clinico") : ALL_TABS;
 
   // Use patient-specific sector from URL if available, otherwise use the global department context
   const patientSector = searchParams.get("patientSector");

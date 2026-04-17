@@ -105,9 +105,19 @@ export function SectorSelector({ variant = "light" }: SectorSelectorProps) {
   const handleSelect = (department: Department, link?: string) => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("gestor_sector_filter");
+      // Para gestor, persistimos o setor escolhido e mantemos a navegação
+      // sincronizada entre o Painel do Gestor e o Mapa de Leitos (read-only).
+      if (isGestor) {
+        localStorage.setItem("gestor_sector_filter", department);
+      }
     }
     setCurrentDepartment(department);
-    navigate(link || "/mapa");
+    // Gestor permanece no Painel do Gestor; demais perfis vão ao mapa do setor.
+    if (isGestor) {
+      navigate("/painel-gestor");
+    } else {
+      navigate(link || "/mapa");
+    }
     setOpen(false);
   };
 

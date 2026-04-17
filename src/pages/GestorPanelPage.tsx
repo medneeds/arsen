@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
+import { useDepartment, DEPARTMENT_TO_SECTOR } from "@/contexts/DepartmentContext";
 import {
   Bed, Activity, AlertTriangle, Users, Clock,
   Pill, BarChart3, ArrowUpDown, HeartPulse,
@@ -59,6 +60,7 @@ const PIE_COLORS = [
 
 export default function GestorPanelPage() {
   const { currentHospital: selectedUnit } = useHospital();
+  const { currentDepartment } = useDepartment();
   const [bedStats, setBedStats] = useState<BedStats>({ total: 0, occupied: 0, vacant: 0, doorPatients: 0, bySector: {} });
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlert[]>([]);
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
@@ -68,6 +70,25 @@ export default function GestorPanelPage() {
   const [movementTrend, setMovementTrend] = useState<{ day: string; altas: number; admissoes: number; transferencias: number; obitos: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [sectorFilter, setSectorFilter] = useState<string>(() => {
+    if (typeof window === "undefined") return "ALL";
+    return localStorage.getItem("gestor_sector_filter") || "ALL";
+  });
+
+  // Sincroniza o filtro de setor com mudanças externas (sidebar/seletor) e
+  // mantém alinhado ao currentDepartment do contexto.
+  useEffect(() => {
+    const stored = typeof window !== "undefined" ? localStorage.getItem("gestor_sector_filter") : null;
+    setSectorFilter(stored || "ALL");
+  }, [currentDepartment]);
+
+  const isAllSectors = sectorFilter === "ALL";
+  const sectorCodeFilter = !isAllSectors
+    ? DEPARTMENT_TO_SECTOR[sectorFilter as keyof typeof DEPARTMENT_TO_SECTOR] || null
+    : null;
+  const sectorDisplayName = !isAllSectors
+    ? getSectorDisplayLabel(sectorCodeFilter || sectorFilter)
+    : "Todos os setores";
 
   const fetchData = async () => {
     if (!selectedUnit) return;
@@ -75,10 +96,14 @@ export default function GestorPanelPage() {
 
     try {
       // ── 1. Patients ──
-      const { data: patients } = await supabase
+      let patientsQuery = supabase
         .from("patients")
         .select("id, name, bed_number, sector, is_vacant, is_door_patient, clinical_status, diagnoses, relevant_exams")
         .eq("hospital_unit_id", selectedUnit.id);
+      if (sectorCodeFilter) {
+        patientsQuery = patientsQuery.eq("sector", sectorCodeFilter);
+      }
+      const { data: patients } = await patientsQuery;
 
       if (patients) {
         const occupied = patients.filter(p => !p.is_vacant && p.name?.trim());
@@ -109,12 +134,16 @@ export default function GestorPanelPage() {
 
       // ── 2. Movements (last 7 days for trend) ──
       const sevenDaysAgo = subDays(new Date(), 7).toISOString();
-      const { data: movements } = await supabase
+      let movementsQuery = supabase
         .from("patient_movements")
         .select("*")
         .eq("hospital_unit_id", selectedUnit.id)
         .gte("created_at", sevenDaysAgo)
         .order("created_at", { ascending: false });
+      if (sectorCodeFilter) {
+        movementsQuery = movementsQuery.eq("patient_sector", sectorCodeFilter);
+      }
+      const { data: movements } = await movementsQuery;
 
       setRecentMovements((movements || []).slice(0, 15));
 
@@ -141,23 +170,35 @@ export default function GestorPanelPage() {
       setMedicationCount(count || 0);
 
       // ── 4. Pending bed allocation requests ──
-      const { count: pendCount } = await supabase
+      let pendingQuery = supabase
         .from("bed_allocation_requests")
         .select("id", { count: "exact", head: true })
         .eq("hospital_unit_id", selectedUnit.id)
         .eq("status", "pending");
+      if (!isAllSectors) {
+        pendingQuery = pendingQuery.eq("requested_sector", sectorFilter);
+      }
+      const { count: pendCount } = await pendingQuery;
       setPendingRequests(pendCount || 0);
 
       // ── 5. Prescription & validation stats ──
-      const { count: totalPrescriptions } = await supabase
+      let prescriptionQuery = supabase
         .from("prescriptions")
         .select("id", { count: "exact", head: true })
         .eq("hospital_unit_id", selectedUnit.id);
+      if (!isAllSectors) {
+        prescriptionQuery = prescriptionQuery.eq("department", sectorFilter);
+      }
+      const { count: totalPrescriptions } = await prescriptionQuery;
 
-      const { data: validations } = await supabase
+      let validationsQuery = supabase
         .from("prescription_validations")
         .select("status")
         .eq("hospital_unit_id", selectedUnit.id);
+      if (!isAllSectors) {
+        validationsQuery = validationsQuery.eq("department", sectorFilter);
+      }
+      const { data: validations } = await validationsQuery;
 
       const valCounts = { validated: 0, pending: 0, rejected: 0 };
       (validations || []).forEach((v: any) => {
@@ -174,7 +215,7 @@ export default function GestorPanelPage() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [selectedUnit]);
+  useEffect(() => { fetchData(); }, [selectedUnit, sectorFilter]);
 
   const occupancyRate = bedStats.total > 0 ? Math.round((bedStats.occupied / bedStats.total) * 100) : 0;
 
@@ -250,8 +291,11 @@ export default function GestorPanelPage() {
               </div>
               Painel do Gestor
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Visão consolidada — {selectedUnit?.name || "Unidade"}
+            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+              <span>{isAllSectors ? "Visão consolidada" : "Setor"} — {selectedUnit?.name || "Unidade"}</span>
+              <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
+                {sectorDisplayName}
+              </Badge>
             </p>
           </div>
           <div className="flex gap-2">

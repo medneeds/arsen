@@ -474,6 +474,14 @@ export default function PainelClinicoPage() {
   const { patients: dbPatients, isLoading, updatePatient } = usePatients(currentDepartment);
   const navigate = useNavigate();
 
+  // Gestor não acessa o Painel Clínico — redireciona para o Mapa de Leitos
+  const accessProfile = typeof window !== "undefined" ? localStorage.getItem("access_profile") : null;
+  useEffect(() => {
+    if (accessProfile === "gestor") {
+      navigate("/mapa", { replace: true });
+    }
+  }, [accessProfile, navigate]);
+
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState<string>(() => {
     return localStorage.getItem("selected_sector") || "all";
