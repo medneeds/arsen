@@ -61,7 +61,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
 
   const hospitalName =
     currentHospital?.name || whitelabel.institution.hospitalShortName;
-  const hospitalLogo = whitelabel.logos.hospital;
+  const hospitalLogo = socorraoCrossLogo;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
