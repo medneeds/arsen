@@ -807,46 +807,58 @@ const AdminDashboardPage = () => {
               </>
             )}
 
-            <Separator className="md:col-span-2" />
+            {!registerForm.is_unidentified && (
+              <>
+                <Separator className="md:col-span-2" />
 
-            <div>
-              <Label>Tipo Sanguíneo</Label>
-              <Select value={registerForm.blood_type} onValueChange={(v) => setRegisterForm(prev => ({ ...prev, blood_type: v }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bt => (
-                    <SelectItem key={bt} value={bt}>{bt}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Alergias</Label>
-              <Input
-                placeholder="Alergias conhecidas"
-                value={registerForm.allergies}
-                onChange={(e) => setRegisterForm(prev => ({ ...prev, allergies: e.target.value }))}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Label>Comorbidades</Label>
-              <Input
-                placeholder="Comorbidades conhecidas"
-                value={registerForm.comorbidities}
-                onChange={(e) => setRegisterForm(prev => ({ ...prev, comorbidities: e.target.value }))}
-              />
-            </div>
+                <div>
+                  <Label>Tipo Sanguíneo</Label>
+                  <Select value={registerForm.blood_type} onValueChange={(v) => setRegisterForm(prev => ({ ...prev, blood_type: v }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(bt => (
+                        <SelectItem key={bt} value={bt}>{bt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Alergias</Label>
+                  <Input
+                    placeholder="Alergias conhecidas"
+                    value={registerForm.allergies}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, allergies: e.target.value }))}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label>Comorbidades</Label>
+                  <Input
+                    placeholder="Comorbidades conhecidas"
+                    value={registerForm.comorbidities}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, comorbidities: e.target.value }))}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowRegisterDialog(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleRegister} disabled={isRegistering || !registerForm.full_name.trim()}>
-              {isRegistering ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-              Criar Prontuário
+            <Button
+              onClick={handleRegister}
+              disabled={isRegistering || (!registerForm.is_unidentified && !registerForm.full_name.trim())}
+              className={cn(registerForm.is_unidentified && "bg-amber-600 hover:bg-amber-700 text-white")}
+            >
+              {isRegistering
+                ? <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                : registerForm.is_unidentified
+                  ? <UserX className="h-4 w-4 mr-2" />
+                  : <CheckCircle2 className="h-4 w-4 mr-2" />}
+              {registerForm.is_unidentified ? "Cadastrar Paciente NI" : "Criar Prontuário"}
             </Button>
           </DialogFooter>
         </DialogContent>
