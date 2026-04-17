@@ -71,6 +71,7 @@ import UeVerticalPage from "./pages/UeVerticalPage";
 import UeHorizontalPage from "./pages/UeHorizontalPage";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import { FloatingThemeToggle } from "@/components/FloatingThemeToggle";
 
 // Lazy: página standalone, carregada sob demanda para preservar fluidez do app
 const HistoricoPacientePage = lazy(() => import("./pages/HistoricoPacientePage"));
@@ -677,6 +678,7 @@ const App = () => {
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <FloatingThemeToggle />
     </TooltipProvider>
       </PrivacyProvider>
   </QueryClientProvider>
