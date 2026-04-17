@@ -152,7 +152,7 @@ function SimplifiedPatientCard({ patient, onView }: { patient: EmergencyPatient;
             <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0.5 bg-primary/10 text-primary border-primary/30">
               {patient.bed_number}
             </Badge>
-            <span className="text-xs font-semibold text-foreground truncate max-w-[180px]">
+            <span className="patient-id text-xs font-semibold text-foreground truncate max-w-[180px]">
               {patient.is_vacant ? "— Vago —" : patient.name}
             </span>
           </div>
@@ -257,7 +257,7 @@ function FullPatientCard({ patient, onView }: { patient: EmergencyPatient; onVie
               <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0.5 bg-orange-500/10 text-orange-600 border-orange-500/30">
                 {patient.bed_number}
               </Badge>
-              <span className="text-xs font-semibold text-foreground">{patient.name}</span>
+              <span className="patient-id text-xs font-semibold text-foreground">{patient.name}</span>
               {patient.age && <span className="text-[10px] text-muted-foreground">({patient.age}a)</span>}
               {patient.clinical_status && (
                 <Badge
@@ -376,10 +376,10 @@ function PatientDetailDialog({ patient, open, onClose }: { patient: EmergencyPat
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-sm">
+          <DialogTitle className="patient-id flex items-center gap-2 text-sm">
             <Badge variant="outline" className="text-xs">{patient.bed_number}</Badge>
             {patient.name}
-            {patient.age && <span className="text-muted-foreground font-normal">({patient.age}a)</span>}
+            {patient.age && <span className="preserve-case text-muted-foreground font-normal">({patient.age}a)</span>}
           </DialogTitle>
         </DialogHeader>
         <ScrollArea className="max-h-[60vh]">

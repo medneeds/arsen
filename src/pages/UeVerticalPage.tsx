@@ -145,7 +145,7 @@ function PatientRow({ patient, onQuickAttendance, onNavigate }: {
             <Badge variant="outline" className="text-[10px] font-bold px-1.5 bg-primary/10 text-primary border-primary/30">
               {patient.bed_number}
             </Badge>
-            <span className="text-xs font-bold truncate">{patient.name}</span>
+            <span className="patient-id text-xs font-bold truncate">{patient.name}</span>
             {patient.age && <span className="text-[10px] text-muted-foreground">{patient.age}a</span>}
             {waitTime && (
               <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
@@ -248,7 +248,7 @@ function PullPatientDialog({ open, onOpenChange, waitingPatients, onPull }: {
                     </Badge>
                   )}
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{wp.patient_name}</p>
+                    <p className="patient-id text-sm font-medium truncate">{wp.patient_name}</p>
                     {wp.chief_complaint && <p className="text-[10px] text-muted-foreground truncate">{wp.chief_complaint}</p>}
                   </div>
                 </div>

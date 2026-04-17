@@ -338,7 +338,7 @@ const ValidacaoFarmaceuticaPage = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-foreground truncate">{p.patient_name}</h3>
+                          <h3 className="patient-id font-semibold text-foreground truncate">{p.patient_name}</h3>
                           <Badge variant="outline" className={cn("text-xs border", config.color)}>
                             <StatusIcon className="h-3 w-3 mr-1" />
                             {config.label}
@@ -382,7 +382,7 @@ const ValidacaoFarmaceuticaPage = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
-              Validação Farmacêutica — {selectedPrescription?.patient_name}
+              Validação Farmacêutica — <span className="patient-id">{selectedPrescription?.patient_name}</span>
             </DialogTitle>
             <DialogDescription>
               Confira dose, via, diluição, alergias e interações antes de aprovar.

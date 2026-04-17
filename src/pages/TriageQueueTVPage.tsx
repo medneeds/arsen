@@ -110,7 +110,7 @@ const TriageQueueTVPage = () => {
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-4xl font-bold">{calledPatient.patient_name}</p>
+                <p className="patient-id text-4xl font-bold">{calledPatient.patient_name}</p>
                 <p className="text-xl text-white/60 font-mono mt-1">{calledPatient.encounter_code}</p>
               </div>
               <div className="text-right">
@@ -144,7 +144,7 @@ const TriageQueueTVPage = () => {
                     {index + 1}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold truncate">{patient.patient_name}</p>
+                    <p className="patient-id font-semibold truncate">{patient.patient_name}</p>
                     <div className="flex items-center gap-2 text-sm text-white/40">
                       <span className="font-mono">{patient.encounter_code}</span>
                       <span className="flex items-center gap-1">
