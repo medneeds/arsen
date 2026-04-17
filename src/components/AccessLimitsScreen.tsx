@@ -69,6 +69,20 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
     <div className="min-h-screen bg-background flex flex-col items-center justify-start py-10 px-4 relative overflow-hidden">
       <AuthBackgroundFx />
 
+      {/* Back button — top-left */}
+      <motion.button
+        type="button"
+        onClick={() => signOut()}
+        className="absolute top-6 left-6 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border/60 bg-card/60 backdrop-blur-md text-foreground/70 hover:text-foreground hover:bg-card/80 hover:border-border transition-all text-[10px] font-semibold tracking-[0.2em] uppercase"
+        initial={{ opacity: 0, x: -8 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5 }}
+        aria-label="Voltar para login"
+      >
+        <ArrowLeft className="h-3 w-3" />
+        Voltar
+      </motion.button>
+
       {/* Top status chip — in flow */}
       <motion.div
         className="relative flex items-center gap-2.5 z-20 mb-6"
