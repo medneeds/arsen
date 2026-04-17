@@ -20,6 +20,10 @@ export function ClinicalNavTabs({ variant = "default", hideSector = false }: Cli
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { currentSectorLabel } = useDepartment();
+  const isGestor = useIsGestor();
+
+  // Gestor não acessa o Painel Clínico — apenas o Mapa de Leitos
+  const tabs = isGestor ? ALL_TABS.filter((t) => t.path !== "/painel-clinico") : ALL_TABS;
 
   // Use patient-specific sector from URL if available, otherwise use the global department context
   const patientSector = searchParams.get("patientSector");
