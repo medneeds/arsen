@@ -167,8 +167,8 @@ export default function GestorPanelPage() {
         .from("patients")
         .select("id, name, bed_number, sector, is_vacant, is_door_patient, clinical_status, diagnoses, relevant_exams")
         .eq("hospital_unit_id", selectedUnit.id);
-      if (sectorCodeFilter) {
-        patientsQuery = patientsQuery.eq("sector", sectorCodeFilter);
+      if (filteredSectorCodes && filteredSectorCodes.length > 0) {
+        patientsQuery = patientsQuery.in("sector", filteredSectorCodes);
       }
       const { data: patients } = await patientsQuery;
 
@@ -207,8 +207,8 @@ export default function GestorPanelPage() {
         .eq("hospital_unit_id", selectedUnit.id)
         .gte("created_at", sevenDaysAgo)
         .order("created_at", { ascending: false });
-      if (sectorCodeFilter) {
-        movementsQuery = movementsQuery.eq("patient_sector", sectorCodeFilter);
+      if (filteredSectorCodes && filteredSectorCodes.length > 0) {
+        movementsQuery = movementsQuery.in("patient_sector", filteredSectorCodes);
       }
       const { data: movements } = await movementsQuery;
 
