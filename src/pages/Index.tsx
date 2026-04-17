@@ -1082,9 +1082,15 @@ const Index = () => {
               <BreadcrumbBar />
 
 
-              {/* Pre-admission section */}
+              {/* Pre-admission section — filtra por setor ativo (exceto UE Vertical/Horizontal que mostram todos) */}
               <div className="print:hidden">
-                <PreAdmissionSection />
+                <PreAdmissionSection
+                  sectorFilterLabel={
+                    activeSector === "ue_vertical" || activeSector === "ue_horizontal"
+                      ? undefined
+                      : SECTOR_VISUAL[activeSector]?.title
+                  }
+                />
               </div>
 
               {SECTOR_VISUAL[activeSector]?.isUti ? (

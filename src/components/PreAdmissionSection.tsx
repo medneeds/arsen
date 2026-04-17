@@ -49,7 +49,16 @@ const RISK_LABELS: Record<string, string> = {
   azul: "NÃO URGENTE",
 };
 
-export function PreAdmissionSection() {
+interface PreAdmissionSectionProps {
+  /**
+   * Quando definido, filtra a lista para mostrar apenas pacientes
+   * cujo destination_sector corresponde ao label do setor visualizado.
+   * Quando undefined (ex.: visão UE), mostra todos.
+   */
+  sectorFilterLabel?: string;
+}
+
+export function PreAdmissionSection({ sectorFilterLabel }: PreAdmissionSectionProps = {}) {
   const [preAdmissions, setPreAdmissions] = useState<PreAdmission[]>([]);
   const [isOpen, setIsOpen] = useState(true);
   const [showRegistration, setShowRegistration] = useState(false);
@@ -64,13 +73,20 @@ export function PreAdmissionSection() {
     if (!currentHospital?.id || !currentState?.id) return;
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("pre_admissions")
         .select("*")
         .eq("hospital_unit_id", currentHospital.id)
         .eq("state_id", currentState.id)
         .in("status", ["pre_admissao", "classificado", "aguardando_leito"])
         .order("created_at", { ascending: false });
+
+      // Filtra por setor de destino (quando estamos visualizando um setor clínico específico)
+      if (sectorFilterLabel) {
+        query = query.eq("destination_sector", sectorFilterLabel);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setPreAdmissions((data as PreAdmission[]) || []);
@@ -83,7 +99,7 @@ export function PreAdmissionSection() {
 
   useEffect(() => {
     fetchPreAdmissions();
-  }, [currentHospital?.id, currentState?.id]);
+  }, [currentHospital?.id, currentState?.id, sectorFilterLabel]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;

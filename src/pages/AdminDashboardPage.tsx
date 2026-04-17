@@ -45,18 +45,51 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
-// Destination sectors for encounter routing
-const DESTINATION_SECTORS = [
-  { value: "triagem", label: "Triagem", available: true, color: "bg-emerald-500" },
-  { value: "red", label: "UTI 1", available: true, color: "bg-red-500" },
-  { value: "yellow", label: "UTI 2", available: true, color: "bg-yellow-500" },
-  { value: "blue", label: "UCI 1", available: true, color: "bg-blue-500" },
-  { value: "outside", label: "UCI 2", available: true, color: "bg-gray-500" },
-  { value: "sala_vermelha", label: "Sala Vermelha", available: true, color: "bg-red-700" },
-  { value: "sala_laranja", label: "Sala Laranja", available: true, color: "bg-orange-500" },
-  { value: "ue_vertical", label: "Urgência e Emergência Vertical", available: true, color: "bg-purple-500" },
-  { value: "ue_horizontal", label: "Urgência e Emergência Horizontal", available: true, color: "bg-indigo-500" },
+// Destination sectors for encounter routing — agrupados por categoria
+type DestinationSector = {
+  value: string;
+  label: string;
+  group: string;
+  color: string;
+  // sectorKey: chave do SectorType usada em PreAdmissionSection (Index.tsx)
+  // Quando definida, gera também uma pre_admissions com destination_sector=label
+  // para que o paciente apareça em "Aguardando Admissão" do setor clínico.
+  sectorKey?: string;
+  isTriage?: boolean;
+};
+
+const DESTINATION_SECTORS: DestinationSector[] = [
+  // Triagem (recomendado para casos sem definição prévia)
+  { value: "triagem", label: "Triagem", group: "Triagem / Urgência", color: "bg-emerald-500", isTriage: true },
+  // Urgência e Emergência (admissão direta sem leito clínico fixo)
+  { value: "sala_vermelha", label: "Sala Vermelha", group: "Triagem / Urgência", color: "bg-red-700", sectorKey: "sala_vermelha" },
+  { value: "sala_laranja", label: "Sala Laranja", group: "Triagem / Urgência", color: "bg-orange-500", sectorKey: "sala_laranja" },
+  { value: "ue_vertical", label: "UE Vertical", group: "Triagem / Urgência", color: "bg-purple-500", sectorKey: "ue_vertical" },
+  { value: "ue_horizontal", label: "UE Horizontal", group: "Triagem / Urgência", color: "bg-indigo-500", sectorKey: "ue_horizontal" },
+  { value: "observacao_clinica", label: "Observação Clínica", group: "Triagem / Urgência", color: "bg-sky-500", sectorKey: "observacao_clinica" },
+  { value: "internacao_ue", label: "Internação UE", group: "Triagem / Urgência", color: "bg-indigo-600", sectorKey: "internacao_ue" },
+  // UTIs
+  { value: "red", label: "UTI 1", group: "Terapia Intensiva", color: "bg-red-500", sectorKey: "red" },
+  { value: "yellow", label: "UTI 2", group: "Terapia Intensiva", color: "bg-yellow-500", sectorKey: "yellow" },
+  // UCIs
+  { value: "blue", label: "UCI 1", group: "Cuidados Intermediários", color: "bg-blue-500", sectorKey: "blue" },
+  { value: "outside", label: "UCI 2", group: "Cuidados Intermediários", color: "bg-emerald-500", sectorKey: "outside" },
+  // UCC
+  { value: "ucc", label: "UCC — Unidade Cuidados Clínicos", group: "Cuidados Intermediários", color: "bg-violet-500", sectorKey: "ucc" },
+  // Enfermarias
+  { value: "neuro_01", label: "Enfermaria Neuro 01", group: "Enfermarias", color: "bg-cyan-500", sectorKey: "neuro_01" },
+  { value: "neuro_02", label: "Enfermaria Neuro 02", group: "Enfermarias", color: "bg-cyan-600", sectorKey: "neuro_02" },
+  { value: "clinica_cirurgica", label: "Clínica Cirúrgica", group: "Enfermarias", color: "bg-teal-500", sectorKey: "clinica_cirurgica" },
+  { value: "enfermaria_transicao", label: "Enfermaria de Transição", group: "Enfermarias", color: "bg-amber-500", sectorKey: "enfermaria_transicao" },
+  { value: "enfermaria_vascular", label: "Enfermaria Vascular", group: "Enfermarias", color: "bg-pink-500", sectorKey: "enfermaria_vascular" },
+  // RIV / Centro Cirúrgico
+  { value: "riv", label: "RIV — Ref. Internação Vascular", group: "Centro Cirúrgico / RIV", color: "bg-rose-500", sectorKey: "riv" },
+  { value: "cc_preparo", label: "CC — Preparo", group: "Centro Cirúrgico / RIV", color: "bg-slate-500", sectorKey: "cc_preparo" },
+  { value: "cc_bloco", label: "CC — Bloco Cirúrgico", group: "Centro Cirúrgico / RIV", color: "bg-slate-600", sectorKey: "cc_bloco" },
+  { value: "cc_rpa", label: "CC — RPA", group: "Centro Cirúrgico / RIV", color: "bg-slate-700", sectorKey: "cc_rpa" },
 ];
+
+const DESTINATION_GROUPS = Array.from(new Set(DESTINATION_SECTORS.map(s => s.group)));
 
 interface PatientRegistry {
   id: string;
@@ -303,7 +336,7 @@ const AdminDashboardPage = () => {
     }
   };
 
-  // Create new encounter
+  // Create new encounter — opcionalmente cria pré-admissão no setor clínico de destino
   const handleCreateEncounter = async () => {
     if (!selectedPatient || !destinationSector) {
       toast.error("Selecione o setor de destino");
@@ -311,10 +344,18 @@ const AdminDashboardPage = () => {
     }
     if (!selectedHospitalId) return;
 
+    const sectorDef = DESTINATION_SECTORS.find(s => s.value === destinationSector);
+    if (!sectorDef) {
+      toast.error("Setor de destino inválido");
+      return;
+    }
+
     setIsCreatingEncounter(true);
     try {
       const stateId = localStorage.getItem("selected_state_id");
-      const { data, error } = await supabase
+
+      // 1) Cria o atendimento (encounter)
+      const { data: enc, error: encErr } = await supabase
         .from("patient_encounters")
         .insert({
           patient_name: selectedPatient.full_name,
@@ -323,24 +364,56 @@ const AdminDashboardPage = () => {
           state_id: stateId,
           department: currentDepartment,
           destination_sector: destinationSector,
-          triage_status: destinationSector === "triagem" ? "aguardando_chamada" : "encaminhado",
+          triage_status: sectorDef.isTriage ? "aguardando_chamada" : "encaminhado",
           status: "active",
+          created_by: user?.id,
         } as any)
         .select()
         .single();
 
-      if (error) throw error;
+      if (encErr) throw encErr;
 
-      const sectorLabel = DESTINATION_SECTORS.find(s => s.value === destinationSector)?.label || destinationSector;
+      // 2) Se for setor clínico (não triagem), cria pré-admissão "aguardando_leito"
+      //    para aparecer no card "Aguardando Admissão" do setor escolhido.
+      if (!sectorDef.isTriage && sectorDef.sectorKey) {
+        const { error: paErr } = await supabase
+          .from("pre_admissions")
+          .insert({
+            patient_name: selectedPatient.full_name,
+            social_name: selectedPatient.social_name || null,
+            mother_name: selectedPatient.mother_name || null,
+            birth_date: selectedPatient.birth_date || null,
+            sex: selectedPatient.sex || null,
+            cpf: selectedPatient.cpf || null,
+            cns: selectedPatient.cns || null,
+            medical_record: selectedPatient.medical_record || null,
+            phone: selectedPatient.phone || null,
+            patient_registry_id: selectedPatient.id,
+            destination_sector: sectorDef.label,
+            status: "aguardando_leito",
+            hospital_unit_id: selectedHospitalId,
+            state_id: stateId,
+            department: currentDepartment,
+            created_by: user?.id,
+            notes: `Direcionado pela Recepção • Atendimento ${(enc as any).encounter_code}`,
+          } as any);
+        if (paErr) {
+          console.error("Erro ao criar pré-admissão:", paErr);
+          toast.warning("Atendimento criado, mas falha ao notificar setor", {
+            description: paErr.message,
+          });
+        }
+      }
+
       toast.success("Atendimento iniciado!", {
-        description: `Código: ${(data as any).encounter_code} → ${sectorLabel}`,
+        description: `Código: ${(enc as any).encounter_code} → ${sectorDef.label}`,
       });
       setShowNewEncounter(false);
       setDestinationSector("");
       loadRecentEncounters();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating encounter:", err);
-      toast.error("Erro ao criar atendimento");
+      toast.error("Erro ao criar atendimento", { description: err?.message });
     } finally {
       setIsCreatingEncounter(false);
     }
@@ -977,29 +1050,50 @@ const AdminDashboardPage = () => {
 
               <div>
                 <Label className="mb-2 block">Setor de Destino *</Label>
-                <div className="grid grid-cols-1 gap-2">
-                  {DESTINATION_SECTORS.map((sector) => (
-                    <button
-                      key={sector.value}
-                      disabled={!sector.available}
-                      onClick={() => setDestinationSector(sector.value)}
-                      className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border text-left transition-all",
-                        sector.available ? "hover:bg-accent/50 cursor-pointer" : "opacity-40 cursor-not-allowed",
-                        destinationSector === sector.value && "ring-2 ring-primary bg-primary/5 border-primary/30"
-                      )}
-                    >
-                      <div className={cn("h-3 w-3 rounded-full shrink-0", sector.color)} />
-                      <span className="text-sm font-medium">{sector.label}</span>
-                      {!sector.available && (
-                        <Badge variant="outline" className="ml-auto text-[10px]">Em breve</Badge>
-                      )}
-                      {sector.value === "triagem" && destinationSector === "triagem" && (
-                        <Badge className="ml-auto bg-emerald-500 text-white text-[10px]">Recomendado</Badge>
-                      )}
-                    </button>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Selecione um setor clínico para que o paciente apareça automaticamente
+                  em <span className="font-semibold">"Aguardando Admissão"</span> daquele setor,
+                  ou envie para <span className="font-semibold">Triagem</span> para classificação de risco.
+                </p>
+                <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                  {DESTINATION_GROUPS.map((group) => (
+                    <div key={group}>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                        {group}
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        {DESTINATION_SECTORS.filter(s => s.group === group).map((sector) => (
+                          <button
+                            key={sector.value}
+                            onClick={() => setDestinationSector(sector.value)}
+                            className={cn(
+                              "flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all hover:bg-accent/50 cursor-pointer",
+                              destinationSector === sector.value && "ring-2 ring-primary bg-primary/5 border-primary/30"
+                            )}
+                          >
+                            <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", sector.color)} />
+                            <span className="text-xs font-medium flex-1 truncate">{sector.label}</span>
+                            {sector.isTriage && (
+                              <Badge className="bg-emerald-500 text-white text-[9px] px-1.5 py-0 h-4">
+                                Recomendado
+                              </Badge>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
+                {destinationSector && (() => {
+                  const def = DESTINATION_SECTORS.find(s => s.value === destinationSector);
+                  if (!def || def.isTriage) return null;
+                  return (
+                    <div className="mt-3 p-2.5 rounded-md bg-blue-500/10 border border-blue-500/30 text-xs text-blue-700 dark:text-blue-300">
+                      ✓ Paciente entrará em <strong>"Aguardando Admissão"</strong> de{" "}
+                      <strong>{def.label}</strong>. NIR ou médico do setor poderá efetivar a admissão no leito.
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
