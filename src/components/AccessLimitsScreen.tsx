@@ -213,7 +213,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
                     ACESSO RESTRITO
                   </p>
                 </div>
-                <p className="preserve-case text-foreground/60 text-xs mt-1 italic" style={{ fontFamily: SERIF }}>
+                <p className="preserve-case text-foreground/60 text-xs mt-1 font-light tracking-wide">
                   Limitado aos setores vinculados
                 </p>
               </div>
