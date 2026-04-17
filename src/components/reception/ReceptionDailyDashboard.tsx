@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,18 +7,27 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { format, formatDistanceToNow, startOfDay, startOfMonth } from "date-fns";
+import { format, formatDistanceToNow, startOfDay, startOfMonth, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Activity, BedDouble, Clock, FileText, Users, AlertTriangle,
   PhoneOutgoing, RefreshCw, ArrowRight, Loader2, ListTodo, History,
   CheckCircle2, XCircle, UserPlus, Play, FileWarning, UserX,
-  Footprints, Ambulance, Trophy, Timer, UserCheck,
+  Footprints, Ambulance, Trophy, Timer, UserCheck, Printer, MoreVertical,
+  CalendarRange, Siren, Volume2,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { ReceptionPoint } from "@/hooks/useReceptionPost";
 import { RECEPTION_POINT_SHORT } from "@/hooks/useReceptionPost";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
+import { printWristband } from "./PatientWristband";
+import { CompletePatientDataDialog } from "./CompletePatientDataDialog";
+import { PromoteNiDialog } from "./PromoteNiDialog";
+import { UserStatsPanel } from "./UserStatsPanel";
 
 interface KpiCardProps {
   icon: React.ElementType;
