@@ -1504,6 +1504,7 @@ const AdminDashboardPage = () => {
         groups={DESTINATION_GROUPS}
         onConfirm={handleTriageExpressConfirm}
         loading={isCreatingEncounter}
+        receptionPoint={receptionPoint}
       />
     </MainLayout>
   );
