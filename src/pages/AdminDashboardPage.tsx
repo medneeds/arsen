@@ -771,7 +771,7 @@ const AdminDashboardPage = () => {
             {/* Painel diário da recepção (KPIs + Triagem Express + sub-tabs) */}
             <ReceptionDailyDashboard
               onPickRegistry={handlePickRegistryFromDashboard}
-              onTriageExpress={handleTriageExpress}
+              onTriageExpress={openTriageExpress}
               onNewRegistration={() => setShowRegisterDialog(true)}
             />
 
@@ -995,7 +995,7 @@ const AdminDashboardPage = () => {
               <TabsContent value="dia" className="mt-0">
                 <ReceptionDailyDashboard
                   onPickRegistry={handlePickRegistryFromDashboard}
-                  onTriageExpress={handleTriageExpress}
+                  onTriageExpress={openTriageExpress}
                   onNewRegistration={() => setShowRegisterDialog(true)}
                   defaultSubTab="dia"
                 />
@@ -1004,7 +1004,7 @@ const AdminDashboardPage = () => {
               <TabsContent value="aguardando" className="mt-0">
                 <ReceptionDailyDashboard
                   onPickRegistry={handlePickRegistryFromDashboard}
-                  onTriageExpress={handleTriageExpress}
+                  onTriageExpress={openTriageExpress}
                   onNewRegistration={() => setShowRegisterDialog(true)}
                   defaultSubTab="aguardando"
                 />
@@ -1487,6 +1487,16 @@ const AdminDashboardPage = () => {
             toast.info("Atendimento sem prontuário vinculado", { description: code });
           }
         }}
+      />
+
+      {/* Triagem Express — pop-up de pré-identificação */}
+      <TriageExpressDialog
+        open={showTriageExpress}
+        onOpenChange={setShowTriageExpress}
+        sectors={DESTINATION_SECTORS}
+        groups={DESTINATION_GROUPS}
+        onConfirm={handleTriageExpressConfirm}
+        loading={isCreatingEncounter}
       />
     </MainLayout>
   );
