@@ -23,6 +23,7 @@ import { AuthBackgroundFx } from "@/components/auth/AuthBackgroundFx";
 function getRedirectRoute(accessProfile: string | null, role: string | null): string {
   const profile = accessProfile || role || "medico";
   switch (profile) {
+    case "gestor": return "/painel-gestor";
     case "imagem": return "/setor-imagem";
     case "laboratorio": return "/setor-laboratorio";
     case "nir": return "/nir";
