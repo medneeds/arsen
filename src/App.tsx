@@ -69,6 +69,7 @@ import FichaAtendimentoPage from "./pages/FichaAtendimentoPage";
 import NirDashboardPage from "./pages/NirDashboardPage";
 import UeVerticalPage from "./pages/UeVerticalPage";
 import UeHorizontalPage from "./pages/UeHorizontalPage";
+import HistoricoPacientePage from "./pages/HistoricoPacientePage";
 
 const queryClient = new QueryClient();
 
