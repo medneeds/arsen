@@ -78,7 +78,13 @@ interface SectorSelectorProps {
 export function SectorSelector({ variant = "light" }: SectorSelectorProps) {
   const navigate = useNavigate();
   const { currentDepartment, currentSectorLabel, setCurrentDepartment } = useDepartment();
+  const { role } = useAuth();
   const [open, setOpen] = useState(false);
+
+  // Perfil Gestor enxerga visão consolidada — opção "Todos os setores" disponível
+  const accessProfile =
+    typeof window !== "undefined" ? localStorage.getItem("access_profile") : null;
+  const isGestor = role === "admin" || accessProfile === "gestor";
 
   // Determine which group contains the active sector — open it by default
   const activeGroupName = useMemo(() => {
@@ -97,10 +103,25 @@ export function SectorSelector({ variant = "light" }: SectorSelectorProps) {
   };
 
   const handleSelect = (department: Department, link?: string) => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("gestor_sector_filter");
+    }
     setCurrentDepartment(department);
     navigate(link || "/mapa");
     setOpen(false);
   };
+
+  const handleSelectAll = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("gestor_sector_filter", "ALL");
+    }
+    navigate("/painel-gestor");
+    setOpen(false);
+  };
+
+  const allActive =
+    typeof window !== "undefined" &&
+    localStorage.getItem("gestor_sector_filter") === "ALL";
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
