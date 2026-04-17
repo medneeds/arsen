@@ -407,10 +407,12 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
           >
             <Button
               onClick={handleProceed}
-              disabled={selectableSectors.length > 0 && !selectedSector}
+              disabled={!skipSectorSelection && selectableSectors.length > 0 && !selectedSector}
               className="w-full h-12 rounded-xl text-xs font-bold tracking-[0.25em] uppercase group shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-shadow"
             >
-              {selectedSector
+              {skipSectorSelection
+                ? "ACESSAR PAINEL"
+                : selectedSector
                 ? `IR PARA ${SECTOR_DISPLAY[DEPARTMENT_TO_SECTOR[selectedSector]] || selectedSector}`
                 : "ACESSAR PLATAFORMA"}
               <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
