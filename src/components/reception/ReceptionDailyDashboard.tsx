@@ -223,27 +223,29 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
       </div>
 
       {/* Botões de ação rápida — Triagem Express */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          onClick={onTriageExpress}
-          className="bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
-          size="sm"
-        >
-          <AlertTriangle className="h-4 w-4 mr-2" />
-          Triagem Express (NI + Triagem em 1 clique)
-        </Button>
-        <Button onClick={onNewRegistration} variant="outline" size="sm">
-          <UserPlus className="h-4 w-4 mr-2" />
-          Novo cadastro completo
-        </Button>
-        <Button onClick={fetchAll} variant="ghost" size="sm" disabled={loading} className="ml-auto">
-          <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} />
-          Atualizar
-        </Button>
-      </div>
+      {!hideQuickActions && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            onClick={onTriageExpress}
+            className="bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
+            size="sm"
+          >
+            <AlertTriangle className="h-4 w-4 mr-2" />
+            Triagem Express (NI + Triagem em 1 clique)
+          </Button>
+          <Button onClick={onNewRegistration} variant="outline" size="sm">
+            <UserPlus className="h-4 w-4 mr-2" />
+            Novo cadastro completo
+          </Button>
+          <Button onClick={fetchAll} variant="ghost" size="sm" disabled={loading} className="ml-auto">
+            <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} />
+            Atualizar
+          </Button>
+        </div>
+      )}
 
       {/* Tabs internas */}
-      <Tabs defaultValue="dia" className="w-full">
+      <Tabs defaultValue={defaultSubTab} className="w-full">
         <TabsList>
           <TabsTrigger value="dia" className="gap-1.5">
             <Activity className="h-3.5 w-3.5" />

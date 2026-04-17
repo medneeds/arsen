@@ -659,12 +659,25 @@ const AdminDashboardPage = () => {
                 <TabsTrigger value="inicio" className="gap-1.5">
                   <ClipboardList className="h-3.5 w-3.5" /> Início
                 </TabsTrigger>
+                <TabsTrigger value="dia" className="gap-1.5">
+                  <Clock className="h-3.5 w-3.5" /> Atendimentos do Dia
+                </TabsTrigger>
+                <TabsTrigger value="aguardando" className="gap-1.5">
+                  <Send className="h-3.5 w-3.5" /> Aguardando Admissão
+                </TabsTrigger>
                 <TabsTrigger value="prontuarios" className="gap-1.5">
                   <FileText className="h-3.5 w-3.5" /> Prontuários
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="inicio" className="space-y-6 mt-0">
+
+            {/* Painel diário da recepção (KPIs + Triagem Express + sub-tabs) */}
+            <ReceptionDailyDashboard
+              onPickRegistry={handlePickRegistryFromDashboard}
+              onTriageExpress={handleTriageExpress}
+              onNewRegistration={() => setShowRegisterDialog(true)}
+            />
 
             {/* Search & Quick Actions */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -881,6 +894,24 @@ const AdminDashboardPage = () => {
                 )}
               </CardContent>
             </Card>
+              </TabsContent>
+
+              <TabsContent value="dia" className="mt-0">
+                <ReceptionDailyDashboard
+                  onPickRegistry={handlePickRegistryFromDashboard}
+                  onTriageExpress={handleTriageExpress}
+                  onNewRegistration={() => setShowRegisterDialog(true)}
+                  defaultSubTab="dia"
+                />
+              </TabsContent>
+
+              <TabsContent value="aguardando" className="mt-0">
+                <ReceptionDailyDashboard
+                  onPickRegistry={handlePickRegistryFromDashboard}
+                  onTriageExpress={handleTriageExpress}
+                  onNewRegistration={() => setShowRegisterDialog(true)}
+                  defaultSubTab="aguardando"
+                />
               </TabsContent>
 
               <TabsContent value="prontuarios" className="mt-0">
