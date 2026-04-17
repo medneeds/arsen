@@ -94,12 +94,14 @@ export function LoadingScreen({ onComplete, duration = 2800 }: LoadingScreenProp
             }}
             transition={{ duration: 0.6, delay: 0.35, ease: "easeOut" }}
           >
-            <div className="absolute inset-0 rounded-full blur-2xl bg-primary/15 -m-3" />
-            <img
-              src={hospitalLogo}
-              alt={hospitalName}
-              className="relative h-14 w-14 rounded-full object-cover ring-2 ring-border shadow-lg shadow-primary/10"
-            />
+            <div className="absolute inset-0 rounded-2xl blur-2xl bg-primary/15 -m-3" />
+            <div className="relative h-16 w-16 rounded-2xl bg-white ring-2 ring-border shadow-lg shadow-primary/10 flex items-center justify-center overflow-hidden p-1.5">
+              <img
+                src={hospitalLogo}
+                alt={hospitalName}
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
           </motion.div>
         </div>
 

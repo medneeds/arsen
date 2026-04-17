@@ -89,12 +89,14 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             <BigHelpLogo size="sm" glow />
             <div className="h-10 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
             <div className="relative">
-              <div className="absolute inset-0 rounded-full blur-xl bg-primary/15 -m-2" />
-              <img
-                src={hospitalLogo}
-                alt={hospitalName}
-                className="relative h-11 w-11 rounded-full object-cover ring-2 ring-border shadow-md"
-              />
+              <div className="absolute inset-0 rounded-xl blur-xl bg-primary/15 -m-2" />
+              <div className="relative h-12 w-12 rounded-xl bg-white ring-2 ring-border shadow-md flex items-center justify-center overflow-hidden p-1">
+                <img
+                  src={hospitalLogo}
+                  alt={hospitalName}
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
             </div>
           </motion.div>
           <motion.div
@@ -157,8 +159,8 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             </div>
 
             {isAdmin ? (
-              <div className="bg-accent/15 border border-accent/30 rounded-lg px-4 py-2.5">
-                <p className="text-accent-foreground text-sm font-bold tracking-wide">
+              <div className="bg-primary/10 border border-primary/30 rounded-lg px-4 py-2.5">
+                <p className="text-primary text-sm font-bold tracking-wide">
                   ACESSO TOTAL
                 </p>
                 <p className="preserve-case text-foreground/65 text-xs mt-0.5">
