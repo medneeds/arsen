@@ -134,12 +134,16 @@ export default function GestorPanelPage() {
 
       // ── 2. Movements (last 7 days for trend) ──
       const sevenDaysAgo = subDays(new Date(), 7).toISOString();
-      const { data: movements } = await supabase
+      let movementsQuery = supabase
         .from("patient_movements")
         .select("*")
         .eq("hospital_unit_id", selectedUnit.id)
         .gte("created_at", sevenDaysAgo)
         .order("created_at", { ascending: false });
+      if (sectorCodeFilter) {
+        movementsQuery = movementsQuery.eq("patient_sector", sectorCodeFilter);
+      }
+      const { data: movements } = await movementsQuery;
 
       setRecentMovements((movements || []).slice(0, 15));
 
@@ -166,23 +170,35 @@ export default function GestorPanelPage() {
       setMedicationCount(count || 0);
 
       // ── 4. Pending bed allocation requests ──
-      const { count: pendCount } = await supabase
+      let pendingQuery = supabase
         .from("bed_allocation_requests")
         .select("id", { count: "exact", head: true })
         .eq("hospital_unit_id", selectedUnit.id)
         .eq("status", "pending");
+      if (!isAllSectors) {
+        pendingQuery = pendingQuery.eq("requested_sector", sectorFilter);
+      }
+      const { count: pendCount } = await pendingQuery;
       setPendingRequests(pendCount || 0);
 
       // ── 5. Prescription & validation stats ──
-      const { count: totalPrescriptions } = await supabase
+      let prescriptionQuery = supabase
         .from("prescriptions")
         .select("id", { count: "exact", head: true })
         .eq("hospital_unit_id", selectedUnit.id);
+      if (!isAllSectors) {
+        prescriptionQuery = prescriptionQuery.eq("department", sectorFilter);
+      }
+      const { count: totalPrescriptions } = await prescriptionQuery;
 
-      const { data: validations } = await supabase
+      let validationsQuery = supabase
         .from("prescription_validations")
         .select("status")
         .eq("hospital_unit_id", selectedUnit.id);
+      if (!isAllSectors) {
+        validationsQuery = validationsQuery.eq("department", sectorFilter);
+      }
+      const { data: validations } = await validationsQuery;
 
       const valCounts = { validated: 0, pending: 0, rejected: 0 };
       (validations || []).forEach((v: any) => {
@@ -199,7 +215,7 @@ export default function GestorPanelPage() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [selectedUnit]);
+  useEffect(() => { fetchData(); }, [selectedUnit, sectorFilter]);
 
   const occupancyRate = bedStats.total > 0 ? Math.round((bedStats.occupied / bedStats.total) * 100) : 0;
 
