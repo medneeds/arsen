@@ -107,6 +107,7 @@ const ROLE_CONFIG: Record<string, { label: string; color: string }> = {
 
 export default function UserManagementPage() {
   const { user, role: currentUserRole } = useAuth();
+  const isGestor = useIsGestor();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -115,6 +116,8 @@ export default function UserManagementPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
   const [userToResetPassword, setUserToResetPassword] = useState<UserWithRole | null>(null);
+  const [permissionsOpen, setPermissionsOpen] = useState(false);
+  const [userToManagePermissions, setUserToManagePermissions] = useState<UserWithRole | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
@@ -298,7 +301,10 @@ export default function UserManagementPage() {
 
   const pendingCount = users.filter(u => u.status === "pending").length;
 
-  if (currentUserRole !== "admin") {
+  // Coordenadores (admin) e Gestores podem acessar a gestão de usuários
+  const canManageUsers = currentUserRole === "admin" || isGestor;
+
+  if (!canManageUsers) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center h-full">
