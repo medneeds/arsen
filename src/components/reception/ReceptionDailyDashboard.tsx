@@ -155,7 +155,30 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
       ]);
 
       if (encRes.error) throw encRes.error;
-      setTodayEncounters((encRes.data as DailyEncounter[]) || []);
+      const baseEncounters = (encRes.data as DailyEncounter[]) || [];
+
+      // Enriquece com features de pendência via patient_registry
+      const registryIds = Array.from(new Set(baseEncounters.map((e) => e.registry_id).filter(Boolean))) as string[];
+      let regMap: Record<string, { documents_pending?: boolean; partial_identification?: boolean; is_unidentified?: boolean }> = {};
+      if (registryIds.length > 0) {
+        const { data: regs } = await supabase
+          .from("patient_registry")
+          .select("id, is_unidentified, unidentified_features")
+          .in("id", registryIds);
+        (regs as any[] | null)?.forEach((r) => {
+          const feats = (r.unidentified_features as any) || {};
+          regMap[r.id] = {
+            is_unidentified: r.is_unidentified,
+            documents_pending: Boolean(feats.documents_pending),
+            partial_identification: Boolean(feats.partial_identification),
+          };
+        });
+      }
+      const enriched = baseEncounters.map((e) => ({
+        ...e,
+        ...(e.registry_id ? regMap[e.registry_id] || {} : {}),
+      }));
+      setTodayEncounters(enriched);
       // pre_admissions pode não estar tipada — tratamento defensivo
       setPendingAdmissions((paRes.data as any[]) || []);
       setMonthRegistrations(regRes.count || 0);
