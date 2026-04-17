@@ -1503,6 +1503,7 @@ export type Database = {
           hospital_unit_id: string
           id: string
           last_medical_attendance_at: string | null
+          medical_record_id: string | null
           outcome: string | null
           outcome_date: string | null
           patient_id: string | null
@@ -1530,6 +1531,7 @@ export type Database = {
           hospital_unit_id: string
           id?: string
           last_medical_attendance_at?: string | null
+          medical_record_id?: string | null
           outcome?: string | null
           outcome_date?: string | null
           patient_id?: string | null
@@ -1557,6 +1559,7 @@ export type Database = {
           hospital_unit_id?: string
           id?: string
           last_medical_attendance_at?: string | null
+          medical_record_id?: string | null
           outcome?: string | null
           outcome_date?: string | null
           patient_id?: string | null
@@ -1574,6 +1577,13 @@ export type Database = {
             columns: ["hospital_unit_id"]
             isOneToOne: false
             referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_encounters_medical_record_id_fkey"
+            columns: ["medical_record_id"]
+            isOneToOne: false
+            referencedRelation: "medical_records"
             referencedColumns: ["id"]
           },
           {
@@ -3402,6 +3412,10 @@ export type Database = {
         Returns: Json
       }
       calc_dv_mod11: { Args: { p_base: string }; Returns: number }
+      generate_encounter_code_v2: {
+        Args: { p_data_hora_admissao?: string; p_medical_record_id: string }
+        Returns: string
+      }
       generate_medical_record_number: {
         Args: {
           p_codigo_unidade: string
