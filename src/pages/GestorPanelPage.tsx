@@ -242,8 +242,8 @@ export default function GestorPanelPage() {
         .select("id", { count: "exact", head: true })
         .eq("hospital_unit_id", selectedUnit.id)
         .eq("status", "pending");
-      if (!isAllSectors) {
-        pendingQuery = pendingQuery.eq("requested_sector", sectorFilter);
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        pendingQuery = pendingQuery.in("requested_sector", filteredDepartments);
       }
       const { count: pendCount } = await pendingQuery;
       setPendingRequests(pendCount || 0);
@@ -253,8 +253,8 @@ export default function GestorPanelPage() {
         .from("prescriptions")
         .select("id", { count: "exact", head: true })
         .eq("hospital_unit_id", selectedUnit.id);
-      if (!isAllSectors) {
-        prescriptionQuery = prescriptionQuery.eq("department", sectorFilter);
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        prescriptionQuery = prescriptionQuery.in("department", filteredDepartments);
       }
       const { count: totalPrescriptions } = await prescriptionQuery;
 
@@ -262,8 +262,8 @@ export default function GestorPanelPage() {
         .from("prescription_validations")
         .select("status")
         .eq("hospital_unit_id", selectedUnit.id);
-      if (!isAllSectors) {
-        validationsQuery = validationsQuery.eq("department", sectorFilter);
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        validationsQuery = validationsQuery.in("department", filteredDepartments);
       }
       const { data: validations } = await validationsQuery;
 
