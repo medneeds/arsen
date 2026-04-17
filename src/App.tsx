@@ -47,6 +47,7 @@ import RelatorioPage from "./pages/RelatorioPage";
 import RequisicaoUnificadaPage from "./pages/RequisicaoUnificadaPage";
 import PrescricaoPage from "./pages/PrescricaoPage";
 import EvolucaoPage from "./pages/EvolucaoPage";
+import MovimentacoesPage from "./pages/MovimentacoesPage";
 import MedicationCatalogPage from "./pages/MedicationCatalogPage";
 import GestorPanelPage from "./pages/GestorPanelPage";
 import ValidacaoFarmaceuticaPage from "./pages/ValidacaoFarmaceuticaPage";
@@ -489,6 +490,16 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
                 <EvolucaoPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/movimentacoes"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <MovimentacoesPage />
               </MainLayout>
             </ProtectedRoute>
           }
