@@ -76,34 +76,46 @@ export function LoadingScreen({ onComplete, duration = 2800 }: LoadingScreenProp
       </motion.div>
 
       <div className="relative z-10 flex flex-col items-center w-full max-w-md px-8">
-        {/* Hero — Hospital logo with orbital ring */}
+        {/* Hero — Dual logos (Arsen × Socorrão) with soft edges */}
         <motion.div
-          className="relative mb-10"
-          initial={{ opacity: 0, scale: 0.92, y: 12 }}
+          className="relative mb-10 flex items-center gap-5"
+          initial={{ opacity: 0, scale: 0.94, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
         >
-          {/* Orbital ring */}
-          <motion.div
-            className="absolute inset-0 -m-6 rounded-full border border-primary/20"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 24, repeat: Infinity, ease: "linear" }}
-          >
-            <span className="absolute -top-1 left-1/2 -translate-x-1/2 h-2 w-2 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary))]" />
-          </motion.div>
+          {/* Arsen logo */}
+          <div className="relative">
+            <div className="absolute inset-0 rounded-2xl blur-xl bg-primary/20 -m-2" />
+            <div className="relative h-16 w-16 rounded-2xl bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border border-border/60 flex items-center justify-center p-2 shadow-lg shadow-primary/10">
+              <img
+                src={arsenLogo}
+                alt="Arsen"
+                className="h-full w-full object-contain"
+              />
+            </div>
+          </div>
 
-          {/* Soft glow */}
-          <div className="absolute inset-0 rounded-full blur-3xl bg-primary/25 -m-4" />
+          {/* Divider — vertical ornament */}
+          <div className="flex flex-col items-center gap-1.5">
+            <span className="h-3 w-px bg-gradient-to-b from-transparent to-foreground/30" />
+            <span className="h-1 w-1 rounded-full bg-primary/70" />
+            <span className="h-3 w-px bg-gradient-to-t from-transparent to-foreground/30" />
+          </div>
 
-          {/* Logo */}
-          <img
-            src={hospitalLogo}
-            alt={hospitalName}
-            className="relative h-24 w-24 object-contain drop-shadow-[0_4px_16px_hsl(var(--primary)/0.3)]"
-          />
+          {/* Socorrão logo */}
+          <div className="relative">
+            <div className="absolute inset-0 rounded-2xl blur-xl bg-primary/20 -m-2" />
+            <div className="relative h-16 w-16 rounded-2xl bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border border-border/60 flex items-center justify-center p-2 shadow-lg shadow-primary/10">
+              <img
+                src={socorraoCrossLogo}
+                alt={hospitalName}
+                className="h-full w-full object-contain"
+              />
+            </div>
+          </div>
         </motion.div>
 
-        {/* Platform wordmark — editorial style */}
+        {/* Platform wordmark — editorial serif (only here) */}
         <motion.div
           className="text-center mb-1"
           initial={{ opacity: 0, y: 8 }}
@@ -115,7 +127,7 @@ export function LoadingScreen({ onComplete, duration = 2800 }: LoadingScreenProp
         >
           <h1
             className="preserve-case text-4xl font-extralight tracking-[0.35em] text-foreground"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+            style={{ fontFamily: SERIF }}
           >
             {whitelabel.platform.name.toUpperCase()}
           </h1>
@@ -136,7 +148,7 @@ export function LoadingScreen({ onComplete, duration = 2800 }: LoadingScreenProp
           <span className="h-px w-8 bg-gradient-to-l from-transparent to-foreground/30" />
         </motion.div>
 
-        {/* Hospital name */}
+        {/* Hospital name — sans-serif, subtle */}
         <motion.p
           className="preserve-case text-[11px] font-semibold tracking-[0.22em] uppercase text-foreground/75 text-center"
           initial={{ opacity: 0, y: 6 }}
