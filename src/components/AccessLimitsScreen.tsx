@@ -201,7 +201,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
                     ACESSO TOTAL
                   </p>
                 </div>
-                <p className="preserve-case text-foreground/60 text-xs mt-1 italic" style={{ fontFamily: SERIF }}>
+                <p className="preserve-case text-foreground/60 text-xs mt-1 font-light tracking-wide">
                   Todos os setores e funcionalidades
                 </p>
               </div>
