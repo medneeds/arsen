@@ -72,6 +72,7 @@ export default function MovementsPage() {
   const { toast } = useToast();
   const { currentDepartment } = useDepartment();
   const { currentState, currentHospital } = useHospital();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchMovements();
