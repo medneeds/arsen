@@ -141,7 +141,10 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
   }
 
   const handleProceed = () => {
-    if (selectedSector) {
+    if (skipSectorSelection) {
+      const route = PROFILE_DEFAULT_ROUTE[accessProfile] || "/mapa";
+      navigate(route);
+    } else if (selectedSector) {
       setCurrentDepartment(selectedSector);
       const route = SECTOR_ROUTES[selectedSector] || "/mapa";
       navigate(route);
