@@ -630,6 +630,7 @@ const AdminDashboardPage = () => {
           hospital_unit_id: selectedHospitalId,
           state_id: stateId,
           department: currentDepartment,
+          reception_point: receptionPoint || null,
           destination_sector: payload.destinationValue,
           triage_status: sectorDef.isTriage ? "aguardando_chamada" : "encaminhado",
           status: "active",
