@@ -88,7 +88,7 @@ export function LoadingScreen({ onComplete, duration = 2800 }: LoadingScreenProp
             <div className="absolute inset-0 rounded-2xl blur-xl bg-primary/20 -m-2" />
             <div className="relative h-16 w-16 rounded-2xl bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border border-border/60 flex items-center justify-center p-2 shadow-lg shadow-primary/10">
               <img
-                src={socorraoCrossLogo}
+                src={arsenLogo}
                 alt="Arsen"
                 className="h-full w-full object-contain"
               />
