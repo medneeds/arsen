@@ -291,8 +291,11 @@ export default function GestorPanelPage() {
               </div>
               Painel do Gestor
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Visão consolidada — {selectedUnit?.name || "Unidade"}
+            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+              <span>{isAllSectors ? "Visão consolidada" : "Setor"} — {selectedUnit?.name || "Unidade"}</span>
+              <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
+                {sectorDisplayName}
+              </Badge>
             </p>
           </div>
           <div className="flex gap-2">
