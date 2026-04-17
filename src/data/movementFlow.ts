@@ -11,10 +11,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export type MovementCategory = "ENTRADA" | "TRANSFERENCIA" | "SAIDA";
+export type MovementCategory = "TRANSFERENCIA" | "SAIDA";
 
 export type MovementSubtype =
-  // Entrada
+  // Entrada (legado — coberto pelo fluxo de Admissão)
   | "ENTRADA"
   | "ADMISSAO"
   | "INTERNACAO"
@@ -56,13 +56,6 @@ export interface CategoryDef {
 
 export const MOVEMENT_CATEGORIES: CategoryDef[] = [
   {
-    id: "ENTRADA",
-    label: "Entrada",
-    description: "Chegada e admissão do paciente no serviço",
-    tone: "accent",
-    icon: LogIn,
-  },
-  {
     id: "TRANSFERENCIA",
     label: "Transferências",
     description: "Movimentação entre setores ou para outra instituição",
@@ -72,39 +65,13 @@ export const MOVEMENT_CATEGORIES: CategoryDef[] = [
   {
     id: "SAIDA",
     label: "Saídas",
-    description: "Encerramento do atendimento",
+    description: "Encerramento do atendimento — leito liberado pelo setor administrativo",
     tone: "destructive",
     icon: LogOut,
   },
 ];
 
 export const MOVEMENT_SUBTYPES: SubtypeDef[] = [
-  // Entrada
-  {
-    id: "ENTRADA",
-    label: "Entrada",
-    shortLabel: "Entrada",
-    description: "Registro inicial do paciente na recepção/triagem",
-    icon: LogIn,
-    category: "ENTRADA",
-  },
-  {
-    id: "ADMISSAO",
-    label: "Admissão Médica",
-    shortLabel: "Admissão",
-    description: "Avaliação médica formal e abertura de prontuário",
-    icon: ClipboardCheck,
-    category: "ENTRADA",
-  },
-  {
-    id: "INTERNACAO",
-    label: "Internação",
-    shortLabel: "Internação",
-    description: "Alocação em leito hospitalar com plano terapêutico",
-    icon: BedDouble,
-    category: "ENTRADA",
-    needsDestination: true,
-  },
   // Transferência
   {
     id: "TRANSFERENCIA_INTERNA",
