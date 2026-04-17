@@ -500,8 +500,52 @@ export function ReceptionDailyDashboard({
       ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
       : "bg-muted text-muted-foreground";
 
+  // Próximo paciente da fila de triagem (mais antigo aguardando)
+  const nextInQueue = useMemo(() => {
+    return filteredEncounters
+      .filter((e) => e.destination_sector === "triagem" && e.triage_status === "aguardando_chamada")
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0];
+  }, [filteredEncounters]);
+
   return (
     <div className="space-y-4">
+      {/* Filtro de período */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5 p-1 rounded-lg bg-muted/40 w-fit">
+          <CalendarRange className="h-3.5 w-3.5 text-muted-foreground ml-2 mr-1" />
+          {([
+            { v: "today", label: "Hoje" },
+            { v: "7d", label: "7 dias" },
+            { v: "30d", label: "30 dias" },
+          ] as const).map((opt) => (
+            <button
+              key={opt.v}
+              onClick={() => setPeriodFilter(opt.v)}
+              className={cn(
+                "px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors",
+                periodFilter === opt.v
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Atalho "Chamar próximo da fila" */}
+        {nextInQueue && (
+          <Button
+            size="sm"
+            onClick={() => handleCallNext(nextInQueue.id, nextInQueue.patient_name)}
+            className="bg-primary text-primary-foreground gap-2"
+          >
+            <Volume2 className="h-3.5 w-3.5" />
+            Chamar próximo: <strong>{nextInQueue.patient_name}</strong>
+          </Button>
+        )}
+      </div>
+
       {/* Filtro segmentado por posto */}
       <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-lg bg-muted/40 w-fit">
         <button
