@@ -189,26 +189,45 @@ export function AppSidebar({
     { title: "Examinus AI", icon: Brain, link: "/ia", profiles: ["medico"] },
   ];
 
-  // GESTOR: completo. Visão executiva. Mapa/Painel via breadcrumb superior.
+  // GESTOR: organizado em blocos lógicos
+  // 1. Visão Geral (acessos rápidos diretos)
+  // 2. Operação Clínica (setores em tempo real)
+  // 3. Gestão e Documentação (relatórios, regulação, fluxos)
+  // 4. Conhecimento Clínico (protocolos e escalas)
+  // 5. Inteligência e Farmácia (IA + suporte farmacêutico)
   const gestorMenu = [
+    // ── Visão Geral ──
     { title: "Início", icon: LayoutDashboard, link: "/", profiles: ["gestor"] },
     { title: "Painel do Gestor", icon: BarChart3, link: "/painel-gestor", profiles: ["gestor"] },
-    { title: "Monitoramento", icon: HeartPulse, link: "/monitoramento", profiles: ["gestor"] },
-    { title: "Emergência", icon: Activity, link: "/emergencia", profiles: ["gestor"] },
+
+    // ── Operação Clínica em tempo real ──
     {
-      title: "Documentos",
+      title: "Operação Clínica",
+      icon: Activity,
+      profiles: ["gestor"],
+      items: [
+        { name: "Monitoramento de Sinais", link: "/monitoramento", profiles: ["gestor"] },
+        { name: "Emergência", link: "/emergencia", profiles: ["gestor"] },
+        { name: "Round Multiprofissional", link: "/round", profiles: ["gestor"] },
+      ],
+    },
+
+    // ── Gestão e Documentação ──
+    {
+      title: "Gestão & Documentos",
       icon: FolderOpen,
       profiles: ["gestor"],
       items: [
-        { name: "Round", link: "/round", profiles: ["gestor"] },
         { name: "Relatórios", link: "/relatorio", profiles: ["gestor"] },
-        { name: "Regulação", link: "/regulacoes", profiles: ["gestor"] },
+        { name: "Regulação de Leitos", link: "/regulacoes", profiles: ["gestor"] },
         { name: "Alta e Desfecho", link: "/alta-desfecho", profiles: ["gestor"] },
         { name: "Hemoderivados", link: "/hemoderivados", profiles: ["gestor"] },
       ],
     },
+
+    // ── Conhecimento Clínico ──
     {
-      title: "Protocolos",
+      title: "Protocolos & Escalas",
       icon: Stethoscope,
       profiles: ["gestor"],
       items: [
@@ -216,8 +235,10 @@ export function AppSidebar({
         { name: "SAPS 3", link: "/saps3", profiles: ["gestor"] },
       ],
     },
+
+    // ── Farmácia e IA ──
     {
-      title: "Assistente Clínico",
+      title: "Farmácia & IA",
       icon: Brain,
       profiles: ["gestor"],
       items: [
