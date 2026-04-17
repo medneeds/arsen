@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format, subDays, subMonths, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Search, TrendingUp, UserX, Skull, ArrowLeftRight, FileText, RotateCcw, CalendarIcon, Filter, Loader2 } from "lucide-react";
+import { Search, FileText, RotateCcw, CalendarIcon, Filter, Loader2 } from "lucide-react";
 import { ViewPatientSnapshotDialog } from "@/components/ViewPatientSnapshotDialog";
 import { ScrollToTopButton } from "@/components/ScrollToTopButton";
 import { useDepartment } from "@/contexts/DepartmentContext";
@@ -17,13 +18,18 @@ import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import {
+  MOVEMENT_CATEGORIES,
+  getSubtypeDef,
+  type MovementCategory,
+} from "@/data/movementFlow";
 
 interface PatientMovement {
   id: string;
   patient_name: string;
   patient_bed: string | null;
   patient_sector: string | null;
-  movement_type: "ALTA" | "ÓBITO" | "TRANSFERÊNCIA";
+  movement_type: string;
   destination: string | null;
   notes: string | null;
   responsible_doctor: string | null;
@@ -31,25 +37,16 @@ interface PatientMovement {
   patient_snapshot: any;
 }
 
-const movementConfig = {
-  ALTA: {
-    label: "Alta",
-    icon: TrendingUp,
-    color: "bg-green-500/10 text-green-600 border-green-500/30",
-    badgeColor: "bg-green-500 hover:bg-green-600"
-  },
-  ÓBITO: {
-    label: "Óbito",
-    icon: Skull,
-    color: "bg-red-500/10 text-red-600 border-red-500/30",
-    badgeColor: "bg-red-500 hover:bg-red-600"
-  },
-  TRANSFERÊNCIA: {
-    label: "Transferência",
-    icon: ArrowLeftRight,
-    color: "bg-blue-500/10 text-blue-600 border-blue-500/30",
-    badgeColor: "bg-blue-500 hover:bg-blue-600"
-  }
+const TONE_BADGE: Record<MovementCategory, string> = {
+  ENTRADA: "bg-accent/15 text-accent border-accent/30",
+  TRANSFERENCIA: "bg-primary/15 text-primary border-primary/30",
+  SAIDA: "bg-destructive/15 text-destructive border-destructive/30",
+};
+
+const TONE_BORDER: Record<MovementCategory, string> = {
+  ENTRADA: "border-accent/30 bg-accent/5",
+  TRANSFERENCIA: "border-primary/30 bg-primary/5",
+  SAIDA: "border-destructive/30 bg-destructive/5",
 };
 
 export default function MovementsPage() {
