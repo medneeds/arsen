@@ -976,6 +976,24 @@ export function ReceptionDailyDashboard({
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Dialog: completar pendências de cadastro */}
+      <CompletePatientDataDialog
+        open={!!completeTarget}
+        onOpenChange={(v) => !v && setCompleteTarget(null)}
+        registryId={completeTarget?.registryId ?? null}
+        onSaved={fetchAll}
+      />
+
+      {/* Dialog: promover NI → identificado */}
+      <PromoteNiDialog
+        open={!!promoteTarget}
+        onOpenChange={(v) => !v && setPromoteTarget(null)}
+        niRegistryId={promoteTarget?.registryId ?? null}
+        niCode={promoteTarget?.code ?? null}
+        niName={promoteTarget?.name ?? null}
+        onPromoted={fetchAll}
+      />
     </div>
   );
 }
