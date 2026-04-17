@@ -50,6 +50,7 @@ import { ReceptionDailyDashboard } from "@/components/reception/ReceptionDailyDa
 import { DuplicatePatientWarning } from "@/components/reception/DuplicatePatientWarning";
 import { ReceptionGlobalSearch } from "@/components/reception/ReceptionGlobalSearch";
 import { TriageExpressDialog, type TriageExpressPayload } from "@/components/reception/TriageExpressDialog";
+import { useReceptionPost } from "@/hooks/useReceptionPost";
 
 // Destination sectors for encounter routing — agrupados por categoria
 type DestinationSector = {
