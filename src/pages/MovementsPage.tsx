@@ -192,9 +192,12 @@ export default function MovementsPage() {
       );
     }
 
-    // Tab filter
+    // Tab filter (filter by category id)
     if (activeTab !== "all") {
-      filtered = filtered.filter(movement => movement.movement_type === activeTab);
+      filtered = filtered.filter((movement) => {
+        const def = getSubtypeDef(movement.movement_type);
+        return def?.category === activeTab;
+      });
     }
 
     // Date filter using APPLIED dates
@@ -241,11 +244,14 @@ export default function MovementsPage() {
       });
     }
 
+    const byCategory = (cat: MovementCategory) =>
+      baseFiltered.filter((m) => getSubtypeDef(m.movement_type)?.category === cat).length;
+
     return {
       all: baseFiltered.length,
-      ALTA: baseFiltered.filter(m => m.movement_type === "ALTA").length,
-      ÓBITO: baseFiltered.filter(m => m.movement_type === "ÓBITO").length,
-      TRANSFERÊNCIA: baseFiltered.filter(m => m.movement_type === "TRANSFERÊNCIA").length,
+      ENTRADA: byCategory("ENTRADA"),
+      TRANSFERENCIA: byCategory("TRANSFERENCIA"),
+      SAIDA: byCategory("SAIDA"),
     };
   };
 
