@@ -43,8 +43,8 @@ function PageHeader() {
       <div className="max-w-6xl mx-auto px-4 md:px-6 h-12 md:h-14 flex items-center justify-between">
         <div className="flex items-center gap-2 text-[9px] md:text-[10px] font-medium text-muted-foreground tracking-[0.18em] md:tracking-[0.2em]">
           <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-          <span className="hidden xs:inline">ACESSO À PLATAFORMA</span>
-          <span className="xs:hidden">ACESSO</span>
+          <span className="hidden sm:inline">ACESSO À PLATAFORMA</span>
+          <span className="sm:hidden">ACESSO</span>
         </div>
 
         <button
