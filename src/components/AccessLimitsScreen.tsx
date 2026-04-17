@@ -1,13 +1,46 @@
 import { motion } from "framer-motion";
-import { Shield, MapPin, ArrowRight, Building2, UserCog, Briefcase, ArrowLeft } from "lucide-react";
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { Shield, MapPin, ArrowRight, Building2, UserCog, Briefcase, ArrowLeft, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
+import { useDepartment, type Department, DEPARTMENT_TO_SECTOR, SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 import { whitelabel } from "@/config/whitelabel";
 import { BigHelpLogo } from "./BigHelpLogo";
 import { AuthBackgroundFx } from "./auth/AuthBackgroundFx";
 import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
 import arsenLogo from "@/assets/bighelp-symbol.png";
+
+/** Mapeia o "departamento amplo" do permissionamento para os subsetores reais selecionáveis */
+const DEPARTMENT_EXPANSION: Record<string, Department[]> = {
+  UTI: ["UTI 1", "UTI 2", "UCI 1", "UCI 2", "UCC"],
+  "URGÊNCIA E EMERGÊNCIA ADULTO": [
+    "UE VERTICAL",
+    "UE HORIZONTAL",
+    "SALA VERMELHA",
+    "SALA LARANJA",
+    "INTERNAÇÃO UE",
+    "OBSERVAÇÃO CLÍNICA",
+  ],
+  ENFERMARIA: [
+    "NEURO 01",
+    "NEURO 02",
+    "CLÍNICA CIRÚRGICA",
+    "ENFERMARIA DE TRANSIÇÃO",
+    "ENFERMARIA VASCULAR",
+  ],
+  "CENTRO CIRÚRGICO": ["CC PREPARO", "CC BLOCO CIRÚRGICO", "CC RPA"],
+};
+
+/** Rotas dedicadas (alguns setores possuem páginas próprias) */
+const SECTOR_ROUTES: Partial<Record<Department, string>> = {
+  "UE VERTICAL": "/ue-vertical",
+  "UE HORIZONTAL": "/ue-horizontal",
+};
+
+/** Lista completa de setores selecionáveis (admin tem acesso a todos) */
+const ALL_SELECTABLE_DEPARTMENTS: Department[] = Object.keys(DEPARTMENT_TO_SECTOR) as Department[];
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "ADMINISTRADOR",
