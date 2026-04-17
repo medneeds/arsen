@@ -86,6 +86,14 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
 
   return (
     <div className={cn("relative", className)}>
+      {/* Click-outside overlay (must come BEFORE dropdown so dropdown sits on top) */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-[60]"
+          onClick={() => { setIsOpen(false); setSearch(""); }}
+        />
+      )}
+
       {/* Trigger */}
       <button
         type="button"
