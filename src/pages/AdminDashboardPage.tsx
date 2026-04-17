@@ -535,12 +535,15 @@ const AdminDashboardPage = () => {
         return;
       }
 
-      const hasName = payload.partialName.length > 0;
-      const isPartial = !hasName || payload.partialName.split(/\s+/).filter(Boolean).length < 2;
+      // Flag explícita "Não identificado" tem prioridade sobre o nome
+      const forcedNI = payload.isUnidentified === true;
+      const hasName = !forcedNI && payload.partialName.length > 0;
+      const isPartial =
+        !forcedNI && (!hasName || payload.partialName.split(/\s+/).filter(Boolean).length < 2);
 
-      // 1) Gera NI code apenas se sem nome OU marcou pendência
+      // 1) Gera NI code se: marcou NI explicitamente OU não digitou nome
       let niCode: string | null = null;
-      if (!hasName) {
+      if (forcedNI || !hasName) {
         const { data: code, error: niErr } = await (supabase.rpc as any)("generate_ni_code");
         if (niErr) throw niErr;
         niCode = code as string;

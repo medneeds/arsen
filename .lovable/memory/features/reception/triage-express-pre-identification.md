@@ -10,6 +10,7 @@ type: feature
 `src/components/reception/TriageExpressDialog.tsx` — dialog disparado em `AdminDashboardPage` via botão "Triagem Express".
 
 ## Campos
+- **Toggle "Paciente NÃO IDENTIFICADO (NI)"** no topo da seção de identificação. Quando marcado: oculta/desabilita o campo de nome, força geração de código NI mesmo sem nome digitado, e o registry é salvo com `is_unidentified=true`. Payload carrega `isUnidentified: boolean`.
 - **Nome parcial** (vazio → NI automático via RPC `generate_ni_code`).
 - **Sexo** (M/F/I).
 - **Idade** com 3 modos via ToggleGroup (`ageMode`):

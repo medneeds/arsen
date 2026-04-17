@@ -19,8 +19,10 @@ import type { ReceptionPoint } from "@/hooks/useReceptionPost";
 export type AgeInputMode = "approx" | "exact" | "dob";
 
 export interface TriageExpressPayload {
-  /** Nome (parcial ou completo). Vazio = NÃO IDENTIFICADO */
+  /** Nome (parcial ou completo). Vazio ou isUnidentified=true = NÃO IDENTIFICADO */
   partialName: string;
+  /** Forçar paciente como Não Identificado (NI) — gera código NI mesmo se houver nome */
+  isUnidentified: boolean;
   sex: "M" | "F" | "I";
   /** Idade em anos calculada/digitada — string p/ retrocompatibilidade */
   approxAge: string;
@@ -80,6 +82,7 @@ export function TriageExpressDialog({
   open, onOpenChange, sectors, groups, onConfirm, loading = false, receptionPoint = null,
 }: Props) {
   const [partialName, setPartialName] = useState("");
+  const [isUnidentified, setIsUnidentified] = useState(false);
   const [sex, setSex] = useState<"M" | "F" | "I">("I");
 
   // Idade — três modos
@@ -99,6 +102,7 @@ export function TriageExpressDialog({
   useEffect(() => {
     if (open) {
       setPartialName("");
+      setIsUnidentified(false);
       setSex("I");
       setAgeMode("approx");
       setApproxAgeText("");
@@ -140,7 +144,8 @@ export function TriageExpressDialog({
 
   const handleSubmit = async () => {
     await onConfirm({
-      partialName: partialName.trim(),
+      partialName: isUnidentified ? "" : partialName.trim(),
+      isUnidentified,
       sex,
       approxAge: computedAge,
       ageMode,
@@ -232,31 +237,68 @@ export function TriageExpressDialog({
 
             {/* ========== Bloco 1 — Identificação parcial ========== */}
             <section className="space-y-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <UserX className="h-4 w-4 text-muted-foreground" />
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Identificação rápida (opcional)
                 </h3>
-                {!isFullyIdentified && partialName.trim() && (
+                {isUnidentified && (
+                  <Badge variant="outline" className="text-[9px] h-4 border-slate-500/50 bg-slate-500/10 text-slate-700 dark:text-slate-300 gap-1">
+                    <UserX className="h-2.5 w-2.5" /> NI — código automático
+                  </Badge>
+                )}
+                {!isUnidentified && !isFullyIdentified && partialName.trim() && (
                   <Badge variant="outline" className="text-[9px] h-4 border-amber-500/40 text-amber-700 dark:text-amber-400">
                     parcial
                   </Badge>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Toggle "Não identificado" */}
+              <label
+                className={cn(
+                  "flex items-start gap-3 rounded-lg border p-2.5 cursor-pointer transition-all",
+                  isUnidentified
+                    ? "border-slate-500/50 bg-slate-500/10"
+                    : "border-border hover:bg-accent/40"
+                )}
+              >
+                <Checkbox
+                  checked={isUnidentified}
+                  onCheckedChange={(c) => {
+                    const v = Boolean(c);
+                    setIsUnidentified(v);
+                    if (v) setPartialName("");
+                  }}
+                  className="mt-0.5"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <UserX className="h-3.5 w-3.5 text-slate-600 dark:text-slate-300" />
+                    <span className="text-xs font-semibold">Paciente NÃO IDENTIFICADO (NI)</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Marque quando não houver nenhuma informação de identificação. O sistema gera um código NI automático (ex.: NI-2026-0042) e oculta o campo de nome.
+                  </p>
+                </div>
+              </label>
+
+              <div className={cn("grid grid-cols-1 md:grid-cols-3 gap-3", isUnidentified && "opacity-60")}>
                 <div className="md:col-span-2 space-y-1.5">
                   <Label htmlFor="te-name" className="text-xs">Nome do paciente</Label>
                   <Input
                     id="te-name"
-                    placeholder="Ex.: JOÃO ou JOÃO DA SILVA SANTOS"
+                    placeholder={isUnidentified ? "— gerado automaticamente como NI —" : "Ex.: JOÃO ou JOÃO DA SILVA SANTOS"}
                     value={partialName}
                     onChange={(e) => setPartialName(e.target.value.toUpperCase())}
-                    autoFocus
+                    autoFocus={!isUnidentified}
+                    disabled={isUnidentified}
                     className="font-medium"
                   />
                   <p className="text-[10px] text-muted-foreground">
-                    Vazio = paciente NÃO IDENTIFICADO (gera código NI automático).
+                    {isUnidentified
+                      ? "Código NI será atribuído ao salvar. Você poderá complementar dados depois."
+                      : "Vazio = paciente NÃO IDENTIFICADO (gera código NI automático)."}
                   </p>
                 </div>
                 <div className="space-y-1.5">
