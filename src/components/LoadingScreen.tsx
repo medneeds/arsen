@@ -83,15 +83,11 @@ export function LoadingScreen({ onComplete, duration = 2800 }: LoadingScreenProp
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
         >
-          {/* Arsen logo */}
+          {/* Arsen logo (BigHelp symbol) */}
           <div className="relative">
             <div className="absolute inset-0 rounded-2xl blur-xl bg-primary/20 -m-2" />
-            <div className="relative h-16 w-16 rounded-2xl bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border border-border/60 flex items-center justify-center p-2 shadow-lg shadow-primary/10">
-              <img
-                src={arsenLogo}
-                alt="Arsen"
-                className="h-full w-full object-contain"
-              />
+            <div className="relative h-16 w-16 rounded-2xl bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border border-border/60 flex items-center justify-center shadow-lg shadow-primary/10">
+              <BigHelpLogo size="sm" />
             </div>
           </div>
 
