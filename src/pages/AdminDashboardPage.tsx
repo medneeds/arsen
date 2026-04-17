@@ -1404,6 +1404,22 @@ const AdminDashboardPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Busca global Ctrl+K */}
+      <ReceptionGlobalSearch
+        open={globalSearchOpen}
+        onOpenChange={setGlobalSearchOpen}
+        onPickRegistry={(id, name) => {
+          handlePickRegistryFromDashboard(id, name);
+        }}
+        onPickEncounter={(code, regId, name) => {
+          if (regId) {
+            handlePickRegistryFromDashboard(regId, name);
+          } else {
+            toast.info("Atendimento sem prontuário vinculado", { description: code });
+          }
+        }}
+      />
     </MainLayout>
   );
 };
