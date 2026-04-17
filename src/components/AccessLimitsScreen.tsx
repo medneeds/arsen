@@ -196,17 +196,17 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             </div>
           </div>
 
-          {/* Tipo de Acesso */}
-          <InfoRow icon={<Briefcase className="h-3 w-3" />} label="Tipo de Acesso">
-            <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-xl px-4 py-3">
-              <p className="text-primary text-sm font-semibold tracking-wide">
+          {/* Tipo de Acesso — accent (verde) */}
+          <InfoRow icon={<Briefcase className="h-3 w-3" />} label="Tipo de Acesso" tone="accent">
+            <div className="bg-gradient-to-r from-accent/12 to-accent/5 border border-accent/25 rounded-xl px-4 py-3">
+              <p className="text-accent text-sm font-semibold tracking-wide">
                 {accessProfileLabel}
               </p>
             </div>
           </InfoRow>
 
-          {/* Nível de Acesso */}
-          <InfoRow icon={<Shield className="h-3 w-3" />} label="Nível de Acesso">
+          {/* Nível de Acesso — primary (azul) */}
+          <InfoRow icon={<Shield className="h-3 w-3" />} label="Nível de Acesso" tone="primary">
             {isAdmin ? (
               <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-xl px-4 py-3">
                 <div className="flex items-center gap-2">
@@ -234,17 +234,17 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             )}
           </InfoRow>
 
-          {/* Setores */}
+          {/* Setores — accent (verde) */}
           {!isAdmin && (
-            <InfoRow icon={<Building2 className="h-3 w-3" />} label="Setores Habilitados">
+            <InfoRow icon={<Building2 className="h-3 w-3" />} label="Setores Habilitados" tone="accent">
               {allowedDepartments.length > 0 ? (
                 <div className="space-y-1.5">
                   {allowedDepartments.map((dept) => (
                     <div
                       key={dept}
-                      className="flex items-center gap-2.5 bg-muted/50 border border-border/80 rounded-lg px-3 py-2 hover:bg-muted/70 transition-colors"
+                      className="flex items-center gap-2.5 bg-gradient-to-r from-accent/8 to-transparent border border-accent/20 rounded-lg px-3 py-2 hover:border-accent/35 hover:from-accent/12 transition-all"
                     >
-                      <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <MapPin className="h-3.5 w-3.5 text-accent shrink-0" />
                       <span className="text-foreground text-xs font-semibold tracking-[0.05em] uppercase">
                         {DEPARTMENT_LABELS[dept] || dept}
                       </span>
@@ -317,15 +317,18 @@ function InfoRow({
   icon,
   label,
   children,
+  tone = "primary",
 }: {
   icon: React.ReactNode;
   label: string;
   children: React.ReactNode;
+  tone?: "primary" | "accent";
 }) {
+  const toneClass = tone === "accent" ? "text-accent" : "text-primary";
   return (
     <div className="space-y-2.5">
       <div className="flex items-center gap-2 text-foreground/65">
-        <span className="text-primary">{icon}</span>
+        <span className={toneClass}>{icon}</span>
         <span className="text-[9px] font-bold tracking-[0.25em] uppercase">
           {label}
         </span>
