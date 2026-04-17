@@ -69,6 +69,7 @@ import FichaAtendimentoPage from "./pages/FichaAtendimentoPage";
 import NirDashboardPage from "./pages/NirDashboardPage";
 import UeVerticalPage from "./pages/UeVerticalPage";
 import UeHorizontalPage from "./pages/UeHorizontalPage";
+import HistoricoPacientePage from "./pages/HistoricoPacientePage";
 
 const queryClient = new QueryClient();
 
@@ -646,6 +647,16 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
                 <FichaAtendimentoPage />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/historico-paciente"
+          element={
+            <ProtectedRoute>
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <HistoricoPacientePage />
               </MainLayout>
             </ProtectedRoute>
           }

@@ -29,6 +29,7 @@ export type Database = {
           initial_conduct: string | null
           macro_diagnosis: string | null
           patient_id: string
+          patient_registry_id: string | null
           state_id: string
           updated_at: string
           updated_by: string | null
@@ -47,6 +48,7 @@ export type Database = {
           initial_conduct?: string | null
           macro_diagnosis?: string | null
           patient_id: string
+          patient_registry_id?: string | null
           state_id: string
           updated_at?: string
           updated_by?: string | null
@@ -65,6 +67,7 @@ export type Database = {
           initial_conduct?: string | null
           macro_diagnosis?: string | null
           patient_id?: string
+          patient_registry_id?: string | null
           state_id?: string
           updated_at?: string
           updated_by?: string | null
@@ -82,6 +85,13 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: true
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admission_histories_patient_registry_id_fkey"
+            columns: ["patient_registry_id"]
+            isOneToOne: false
+            referencedRelation: "patient_registry"
             referencedColumns: ["id"]
           },
           {
@@ -431,6 +441,7 @@ export type Database = {
           patient_bed: string | null
           patient_id: string | null
           patient_name: string
+          patient_registry_id: string | null
           patient_sector: string | null
           physical_exam: Json
           soap_data: Json
@@ -455,6 +466,7 @@ export type Database = {
           patient_bed?: string | null
           patient_id?: string | null
           patient_name: string
+          patient_registry_id?: string | null
           patient_sector?: string | null
           physical_exam?: Json
           soap_data?: Json
@@ -479,6 +491,7 @@ export type Database = {
           patient_bed?: string | null
           patient_id?: string | null
           patient_name?: string
+          patient_registry_id?: string | null
           patient_sector?: string | null
           physical_exam?: Json
           soap_data?: Json
@@ -509,6 +522,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "clinical_evolutions_patient_registry_id_fkey"
+            columns: ["patient_registry_id"]
+            isOneToOne: false
+            referencedRelation: "patient_registry"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "clinical_evolutions_state_id_fkey"
             columns: ["state_id"]
             isOneToOne: false
@@ -529,6 +549,7 @@ export type Database = {
           new_value: string | null
           old_value: string | null
           patient_id: string
+          patient_registry_id: string | null
           state_id: string
         }
         Insert: {
@@ -542,6 +563,7 @@ export type Database = {
           new_value?: string | null
           old_value?: string | null
           patient_id: string
+          patient_registry_id?: string | null
           state_id: string
         }
         Update: {
@@ -555,6 +577,7 @@ export type Database = {
           new_value?: string | null
           old_value?: string | null
           patient_id?: string
+          patient_registry_id?: string | null
           state_id?: string
         }
         Relationships: [
@@ -570,6 +593,13 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conduct_history_patient_registry_id_fkey"
+            columns: ["patient_registry_id"]
+            isOneToOne: false
+            referencedRelation: "patient_registry"
             referencedColumns: ["id"]
           },
           {
@@ -595,6 +625,7 @@ export type Database = {
           patient_bed: string | null
           patient_id: string | null
           patient_name: string
+          patient_registry_id: string | null
           patient_sector: string
           read_at: string | null
           read_by_doctor: boolean | null
@@ -620,6 +651,7 @@ export type Database = {
           patient_bed?: string | null
           patient_id?: string | null
           patient_name: string
+          patient_registry_id?: string | null
           patient_sector: string
           read_at?: string | null
           read_by_doctor?: boolean | null
@@ -645,6 +677,7 @@ export type Database = {
           patient_bed?: string | null
           patient_id?: string | null
           patient_name?: string
+          patient_registry_id?: string | null
           patient_sector?: string
           read_at?: string | null
           read_by_doctor?: boolean | null
@@ -670,6 +703,13 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "culture_results_patient_registry_id_fkey"
+            columns: ["patient_registry_id"]
+            isOneToOne: false
+            referencedRelation: "patient_registry"
             referencedColumns: ["id"]
           },
           {
@@ -767,6 +807,7 @@ export type Database = {
           medication_schedule: string | null
           patient_age: string | null
           patient_name: string
+          patient_registry_id: string | null
           start_date: string
           state_id: string
           status: string
@@ -785,6 +826,7 @@ export type Database = {
           medication_schedule?: string | null
           patient_age?: string | null
           patient_name: string
+          patient_registry_id?: string | null
           start_date: string
           state_id: string
           status?: string
@@ -803,6 +845,7 @@ export type Database = {
           medication_schedule?: string | null
           patient_age?: string | null
           patient_name?: string
+          patient_registry_id?: string | null
           start_date?: string
           state_id?: string
           status?: string
@@ -814,6 +857,13 @@ export type Database = {
             columns: ["hospital_unit_id"]
             isOneToOne: false
             referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dhd_patients_patient_registry_id_fkey"
+            columns: ["patient_registry_id"]
+            isOneToOne: false
+            referencedRelation: "patient_registry"
             referencedColumns: ["id"]
           },
           {
@@ -913,6 +963,7 @@ export type Database = {
           patient_bed: string | null
           patient_id: string | null
           patient_name: string
+          patient_registry_id: string | null
           patient_sector: string | null
           priority: string
           requested_by: string | null
@@ -937,6 +988,7 @@ export type Database = {
           patient_bed?: string | null
           patient_id?: string | null
           patient_name: string
+          patient_registry_id?: string | null
           patient_sector?: string | null
           priority?: string
           requested_by?: string | null
@@ -961,6 +1013,7 @@ export type Database = {
           patient_bed?: string | null
           patient_id?: string | null
           patient_name?: string
+          patient_registry_id?: string | null
           patient_sector?: string | null
           priority?: string
           requested_by?: string | null
@@ -984,6 +1037,13 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_requests_patient_registry_id_fkey"
+            columns: ["patient_registry_id"]
+            isOneToOne: false
+            referencedRelation: "patient_registry"
             referencedColumns: ["id"]
           },
           {
@@ -1622,6 +1682,7 @@ export type Database = {
           patient_bed: string | null
           patient_id: string | null
           patient_name: string
+          patient_registry_id: string | null
           patient_sector: string | null
           patient_snapshot: Json | null
           release_status: string
@@ -1643,6 +1704,7 @@ export type Database = {
           patient_bed?: string | null
           patient_id?: string | null
           patient_name: string
+          patient_registry_id?: string | null
           patient_sector?: string | null
           patient_snapshot?: Json | null
           release_status?: string
@@ -1664,6 +1726,7 @@ export type Database = {
           patient_bed?: string | null
           patient_id?: string | null
           patient_name?: string
+          patient_registry_id?: string | null
           patient_sector?: string | null
           patient_snapshot?: Json | null
           release_status?: string
@@ -1679,6 +1742,13 @@ export type Database = {
             columns: ["hospital_unit_id"]
             isOneToOne: false
             referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_movements_patient_registry_id_fkey"
+            columns: ["patient_registry_id"]
+            isOneToOne: false
+            referencedRelation: "patient_registry"
             referencedColumns: ["id"]
           },
           {
@@ -1858,6 +1928,7 @@ export type Database = {
           medical_record: string | null
           medical_responsibility: Json | null
           name: string
+          patient_registry_id: string | null
           pendencies: string | null
           psm_status: string | null
           relevant_exams: string | null
@@ -1902,6 +1973,7 @@ export type Database = {
           medical_record?: string | null
           medical_responsibility?: Json | null
           name?: string
+          patient_registry_id?: string | null
           pendencies?: string | null
           psm_status?: string | null
           relevant_exams?: string | null
@@ -1946,6 +2018,7 @@ export type Database = {
           medical_record?: string | null
           medical_responsibility?: Json | null
           name?: string
+          patient_registry_id?: string | null
           pendencies?: string | null
           psm_status?: string | null
           relevant_exams?: string | null
@@ -1970,6 +2043,13 @@ export type Database = {
             columns: ["hospital_unit_id"]
             isOneToOne: false
             referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patients_patient_registry_id_fkey"
+            columns: ["patient_registry_id"]
+            isOneToOne: false
+            referencedRelation: "patient_registry"
             referencedColumns: ["id"]
           },
           {
@@ -2015,6 +2095,7 @@ export type Database = {
           oxygen_therapy_detail: string | null
           pain_scale: number | null
           patient_name: string
+          patient_registry_id: string | null
           peripheral_perfusion: string | null
           phone: string | null
           pulse_quality: string | null
@@ -2062,6 +2143,7 @@ export type Database = {
           oxygen_therapy_detail?: string | null
           pain_scale?: number | null
           patient_name: string
+          patient_registry_id?: string | null
           peripheral_perfusion?: string | null
           phone?: string | null
           pulse_quality?: string | null
@@ -2109,6 +2191,7 @@ export type Database = {
           oxygen_therapy_detail?: string | null
           pain_scale?: number | null
           patient_name?: string
+          patient_registry_id?: string | null
           peripheral_perfusion?: string | null
           phone?: string | null
           pulse_quality?: string | null
@@ -2129,6 +2212,13 @@ export type Database = {
             columns: ["hospital_unit_id"]
             isOneToOne: false
             referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pre_admissions_patient_registry_id_fkey"
+            columns: ["patient_registry_id"]
+            isOneToOne: false
+            referencedRelation: "patient_registry"
             referencedColumns: ["id"]
           },
           {
@@ -2233,6 +2323,7 @@ export type Database = {
           parent_id: string | null
           patient_data: Json
           patient_name: string
+          patient_registry_id: string | null
           state_id: string
           status: string
           updated_at: string
@@ -2251,6 +2342,7 @@ export type Database = {
           parent_id?: string | null
           patient_data?: Json
           patient_name: string
+          patient_registry_id?: string | null
           state_id: string
           status?: string
           updated_at?: string
@@ -2269,6 +2361,7 @@ export type Database = {
           parent_id?: string | null
           patient_data?: Json
           patient_name?: string
+          patient_registry_id?: string | null
           state_id?: string
           status?: string
           updated_at?: string
@@ -2294,6 +2387,13 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescriptions_patient_registry_id_fkey"
+            columns: ["patient_registry_id"]
+            isOneToOne: false
+            referencedRelation: "patient_registry"
             referencedColumns: ["id"]
           },
           {
@@ -3404,7 +3504,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      patient_timeline: {
+        Row: {
+          author_id: string | null
+          department: string | null
+          event_at: string | null
+          event_id: string | null
+          event_label: string | null
+          event_type: string | null
+          hospital_unit_id: string | null
+          patient_id: string | null
+          patient_name: string | null
+          patient_registry_id: string | null
+          payload: Json | null
+          state_id: string | null
+          summary: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_update_user_password: {
@@ -3412,6 +3529,10 @@ export type Database = {
         Returns: Json
       }
       calc_dv_mod11: { Args: { p_base: string }; Returns: number }
+      create_patient_snapshot: {
+        Args: { p_description: string; p_patient_id: string }
+        Returns: string
+      }
       generate_encounter_code_v2: {
         Args: { p_data_hora_admissao?: string; p_medical_record_id: string }
         Returns: string
@@ -3426,6 +3547,33 @@ export type Database = {
         Returns: string
       }
       get_auth_user_id_by_email: { Args: { p_email: string }; Returns: string }
+      get_patient_timeline: {
+        Args: {
+          p_event_types?: string[]
+          p_from_date?: string
+          p_limit?: number
+          p_patient_id?: string
+          p_patient_registry_id?: string
+          p_search?: string
+          p_to_date?: string
+        }
+        Returns: {
+          author_email: string
+          author_id: string
+          department: string
+          event_at: string
+          event_id: string
+          event_label: string
+          event_type: string
+          hospital_unit_id: string
+          patient_id: string
+          patient_name: string
+          patient_registry_id: string
+          payload: Json
+          state_id: string
+          summary: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

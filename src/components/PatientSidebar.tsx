@@ -233,6 +233,18 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             <FileText className="h-3.5 w-3.5 mr-1.5" />
             Ficha de Atendimento
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 text-xs"
+            onClick={() => {
+              navigate(`/historico-paciente?patientId=${patient.id}&patientName=${encodeURIComponent(patient.name)}&patientBed=${encodeURIComponent(patient.bedNumber)}&patientSector=${encodeURIComponent(patient.sector)}`);
+              onOpenChange(false);
+            }}
+          >
+            <Clock className="h-3.5 w-3.5 mr-1.5" />
+            Histórico
+          </Button>
         </div>
       </SheetContent>
     </Sheet>
