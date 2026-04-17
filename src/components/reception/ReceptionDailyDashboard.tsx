@@ -87,6 +87,10 @@ interface Props {
   onTriageExpress: () => void;
   /** Abre cadastro de novo prontuário */
   onNewRegistration: () => void;
+  /** Sub-tab inicial: "dia" | "aguardando" | "minhas" */
+  defaultSubTab?: "dia" | "aguardando" | "minhas";
+  /** Esconde botões de ação rápida (quando o pai já tem) */
+  hideQuickActions?: boolean;
 }
 
 /**
@@ -96,7 +100,7 @@ interface Props {
  * - Aguardando Admissão (pacientes direcionados ainda sem leito)
  * - Histórico de ações do recepcionista logado (24h)
  */
-export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNewRegistration }: Props) {
+export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNewRegistration, defaultSubTab = "dia", hideQuickActions = false }: Props) {
   const { currentHospital } = useHospital();
   const { user } = useAuth();
   const hospitalId = currentHospital?.id;
