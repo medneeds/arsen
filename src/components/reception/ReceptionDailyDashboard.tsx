@@ -254,21 +254,113 @@ export function ReceptionDailyDashboard({
     fetchAll();
   }, [fetchAll]);
 
-  // KPIs derivados
+  // Mapa userId → posto ATUAL (sessão aberta mais recente)
+  const userPointMap = useMemo(() => {
+    const map = new Map<string, ReceptionPoint>();
+    for (const s of deskSessions) {
+      if (!s.ended_at && !map.has(s.user_id)) {
+        map.set(s.user_id, s.reception_point);
+      }
+    }
+    return map;
+  }, [deskSessions]);
+
+  // Encounters filtrados pelo posto selecionado
+  const filteredEncounters = useMemo(() => {
+    if (pointFilter === "all") return todayEncounters;
+    return todayEncounters.filter((e) => {
+      const point = e.reception_point || (e.created_by ? userPointMap.get(e.created_by) : null);
+      return point === pointFilter;
+    });
+  }, [todayEncounters, pointFilter, userPointMap]);
+
+  // KPIs (segmentados pelo filtro) + split comparativo
   const kpis = useMemo(() => {
-    const totalToday = todayEncounters.length;
-    const waitingTriage = todayEncounters.filter(
+    const totalToday = filteredEncounters.length;
+    const waitingTriage = filteredEncounters.filter(
       (e) => e.destination_sector === "triagem" && e.triage_status === "aguardando_chamada"
     ).length;
     const waitingAdmission = pendingAdmissions.length;
-    const docsPending = todayEncounters.filter(
+    const docsPending = filteredEncounters.filter(
       (e) => e.documents_pending || e.partial_identification || e.is_unidentified
     ).length;
     const myToday = myActions.filter(
       (a) => a.table_name === "patient_registry" && a.action === "INSERT"
     ).length;
-    return { totalToday, waitingTriage, waitingAdmission, docsPending, myToday };
-  }, [todayEncounters, pendingAdmissions, myActions]);
+
+    const splitByPoint = todayEncounters.reduce(
+      (acc, e) => {
+        const point = e.reception_point || (e.created_by ? userPointMap.get(e.created_by) : null);
+        if (point === "vertical") acc.vertical += 1;
+        else if (point === "horizontal") acc.horizontal += 1;
+        else acc.unassigned += 1;
+        return acc;
+      },
+      { vertical: 0, horizontal: 0, unassigned: 0 },
+    );
+
+    return { totalToday, waitingTriage, waitingAdmission, docsPending, myToday, splitByPoint };
+  }, [filteredEncounters, todayEncounters, pendingAdmissions, myActions, userPointMap]);
+
+  // Stats por usuário (recepcionistas com sessão hoje OU que abriram encounters)
+  const userStats = useMemo<UserStats[]>(() => {
+    const userIds = new Set<string>();
+    deskSessions.forEach((s) => userIds.add(s.user_id));
+    todayEncounters.forEach((e) => e.created_by && userIds.add(e.created_by));
+
+    return Array.from(userIds)
+      .map((uid) => {
+        const sessions = deskSessions.filter((s) => s.user_id === uid);
+        const userEncounters = todayEncounters.filter((e) => e.created_by === uid);
+        const userName =
+          sessions[0]?.user_name ||
+          allActionsToday.find((a) => a.user_id === uid)?.new_data?.created_by_name ||
+          `Usuário ${uid.slice(0, 8)}`;
+
+        const activeMs = sessions.reduce((acc, s) => {
+          const start = new Date(s.started_at).getTime();
+          const end = s.ended_at ? new Date(s.ended_at).getTime() : Date.now();
+          return acc + Math.max(0, end - start);
+        }, 0);
+
+        // Tempo médio de cadastro: intervalos entre INSERTs consecutivos
+        const inserts = allActionsToday
+          .filter((a) => a.user_id === uid && a.table_name === "patient_registry" && a.action === "INSERT")
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        let avgRegSec: number | null = null;
+        if (inserts.length >= 2) {
+          const diffs: number[] = [];
+          for (let i = 1; i < inserts.length; i++) {
+            const d = (new Date(inserts[i].created_at).getTime() - new Date(inserts[i - 1].created_at).getTime()) / 1000;
+            if (d < 60 * 30) diffs.push(d);
+          }
+          if (diffs.length > 0) avgRegSec = Math.round(diffs.reduce((a, b) => a + b, 0) / diffs.length);
+        }
+
+        const expressCount = userEncounters.filter((e) => e.is_unidentified || e.partial_identification).length;
+        const pendingDocsCount = userEncounters.filter((e) => e.documents_pending).length;
+
+        const destinationCounts: Record<string, number> = {};
+        userEncounters.forEach((e) => {
+          const k = e.destination_sector || "—";
+          destinationCounts[k] = (destinationCounts[k] || 0) + 1;
+        });
+
+        return {
+          userId: uid,
+          userName,
+          point: userPointMap.get(uid) || sessions[0]?.reception_point || null,
+          totalEncounters: userEncounters.length,
+          expressCount,
+          pendingDocsCount,
+          destinationCounts,
+          avgRegistrationSec: avgRegSec,
+          activeMinutes: Math.round(activeMs / 60000),
+          isOnline: sessions.some((s) => !s.ended_at),
+        };
+      })
+      .sort((a, b) => b.totalEncounters - a.totalEncounters);
+  }, [deskSessions, todayEncounters, allActionsToday, userPointMap]);
 
   const actionLabel = (a: ReceptionAction) => {
     const op = a.action === "INSERT" ? "Criou" : a.action === "UPDATE" ? "Atualizou" : a.action === "DELETE" ? "Removeu" : a.action;
@@ -276,6 +368,20 @@ export function ReceptionDailyDashboard({
     const name = a.new_data?.patient_name || a.new_data?.full_name || a.new_data?.encounter_code || "";
     return `${op} ${tab}${name ? ` — ${name}` : ""}`;
   };
+
+  const formatActiveTime = (min: number) => {
+    if (min < 60) return `${min}min`;
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return `${h}h${m > 0 ? ` ${m}min` : ""}`;
+  };
+
+  const pointBadgeClasses = (p: ReceptionPoint | null) =>
+    p === "vertical"
+      ? "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30"
+      : p === "horizontal"
+      ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
+      : "bg-muted text-muted-foreground";
 
   return (
     <div className="space-y-4">
