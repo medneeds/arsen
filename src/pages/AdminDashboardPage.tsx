@@ -46,6 +46,8 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MedicalRecordsList } from "@/components/MedicalRecordsList";
+import { ReceptionDailyDashboard } from "@/components/reception/ReceptionDailyDashboard";
+import { DuplicatePatientWarning } from "@/components/reception/DuplicatePatientWarning";
 
 // Destination sectors for encounter routing — agrupados por categoria
 type DestinationSector = {
@@ -130,10 +132,13 @@ const AdminDashboardPage = () => {
   const selectedHospitalId = currentHospital?.id;
   const { currentDepartment } = useDepartment();
 
-  // Tab state synced with URL (?tab=inicio|prontuarios) — sincroniza com sidebar
+  // Tab state synced with URL (?tab=inicio|dia|aguardando|prontuarios) — sincroniza com sidebar
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const activeTab = tabParam === "prontuarios" ? "prontuarios" : "inicio";
+  const validTabs = ["inicio", "dia", "aguardando", "prontuarios"] as const;
+  const activeTab = (validTabs as readonly string[]).includes(tabParam || "")
+    ? (tabParam as (typeof validTabs)[number])
+    : "inicio";
   const handleTabChange = (value: string) => {
     const next = new URLSearchParams(searchParams);
     next.set("tab", value);
@@ -487,6 +492,121 @@ const AdminDashboardPage = () => {
     }
   };
 
+  // ── Triagem Express: cria NI + atendimento direcionado para Triagem em 1 clique ──
+  const handleTriageExpress = async () => {
+    if (!selectedHospitalId) {
+      toast.error("Unidade hospitalar não selecionada");
+      return;
+    }
+    setIsCreatingEncounter(true);
+    try {
+      const stateId = localStorage.getItem("selected_state_id");
+      // 1) Gera NI code + cria registry mínimo
+      const { data: niCode, error: niErr } = await (supabase.rpc as any)("generate_ni_code");
+      if (niErr) throw niErr;
+      const finalName = `NÃO IDENTIFICADO (${niCode})`;
+      const { data: registry, error: regErr } = await supabase
+        .from("patient_registry")
+        .insert({
+          full_name: finalName,
+          sex: "I",
+          is_unidentified: true,
+          unidentified_code: niCode,
+          unidentified_features: { arrival_circumstance: "Triagem Express" },
+          created_by: user?.id,
+          hospital_unit_id: selectedHospitalId,
+          state_id: stateId,
+        } as any)
+        .select()
+        .single();
+      if (regErr) throw regErr;
+
+      // 2) Gera prontuário oficial
+      let officialMr: string | null = (registry as any).medical_record;
+      try {
+        const { data: unit } = await supabase
+          .from("hospital_units").select("unit_code").eq("id", selectedHospitalId).maybeSingle();
+        const unitCode = (unit as any)?.unit_code && /^[0-9]{3}$/.test((unit as any).unit_code) ? (unit as any).unit_code : "117";
+        const { data: gen } = await (supabase.rpc as any)("generate_medical_record_number", {
+          p_codigo_unidade: unitCode,
+          p_data_criacao: new Date().toISOString(),
+          p_patient_registry_id: (registry as any).id,
+          p_patient_id: null,
+        });
+        if (gen) {
+          officialMr = gen as string;
+          await supabase.from("patient_registry").update({ medical_record: officialMr }).eq("id", (registry as any).id);
+        }
+      } catch (e) { console.warn("MR gen falhou:", e); }
+
+      // 3) Gera código de atendimento e cria encounter direto pra Triagem
+      let preGenCode: string | null = null;
+      let mrId: string | null = null;
+      try {
+        const { data: mr } = await supabase
+          .from("medical_records")
+          .select("id")
+          .eq("patient_registry_id", (registry as any).id)
+          .order("created_at", { ascending: true }).limit(1).maybeSingle();
+        mrId = (mr as any)?.id ?? null;
+        if (mrId) {
+          const { data: code } = await (supabase.rpc as any)(
+            "generate_encounter_code_v2",
+            { p_medical_record_id: mrId, p_data_hora_admissao: new Date().toISOString() }
+          );
+          preGenCode = (code as string) || null;
+        }
+      } catch (e) { console.warn("Encounter code falhou:", e); }
+
+      const { data: enc, error: encErr } = await supabase
+        .from("patient_encounters")
+        .insert({
+          patient_name: finalName,
+          registry_id: (registry as any).id,
+          medical_record_id: mrId,
+          encounter_code: preGenCode || undefined,
+          hospital_unit_id: selectedHospitalId,
+          state_id: stateId,
+          department: currentDepartment,
+          destination_sector: "triagem",
+          triage_status: "aguardando_chamada",
+          status: "active",
+          created_by: user?.id,
+        } as any)
+        .select()
+        .single();
+      if (encErr) throw encErr;
+
+      toast.success("Triagem Express criada!", {
+        description: `${niCode} • Atd ${(enc as any).encounter_code}`,
+      });
+      loadRecentEncounters();
+    } catch (err: any) {
+      console.error("Erro Triagem Express:", err);
+      toast.error("Falha na Triagem Express", { description: err?.message });
+    } finally {
+      setIsCreatingEncounter(false);
+    }
+  };
+
+  // Pega paciente do dashboard daily (por registry_id) para reatender
+  const handlePickRegistryFromDashboard = async (registryId: string, _patientName: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("patient_registry")
+        .select("*")
+        .eq("id", registryId)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        setSelectedPatient(data as any);
+        setShowNewEncounter(true);
+      }
+    } catch (err: any) {
+      toast.error("Erro ao carregar paciente", { description: err?.message });
+    }
+  };
+
   const getTriageStatusBadge = (status?: string) => {
     switch (status) {
       case "aguardando_chamada":
@@ -539,12 +659,25 @@ const AdminDashboardPage = () => {
                 <TabsTrigger value="inicio" className="gap-1.5">
                   <ClipboardList className="h-3.5 w-3.5" /> Início
                 </TabsTrigger>
+                <TabsTrigger value="dia" className="gap-1.5">
+                  <Clock className="h-3.5 w-3.5" /> Atendimentos do Dia
+                </TabsTrigger>
+                <TabsTrigger value="aguardando" className="gap-1.5">
+                  <Send className="h-3.5 w-3.5" /> Aguardando Admissão
+                </TabsTrigger>
                 <TabsTrigger value="prontuarios" className="gap-1.5">
                   <FileText className="h-3.5 w-3.5" /> Prontuários
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="inicio" className="space-y-6 mt-0">
+
+            {/* Painel diário da recepção (KPIs + Triagem Express + sub-tabs) */}
+            <ReceptionDailyDashboard
+              onPickRegistry={handlePickRegistryFromDashboard}
+              onTriageExpress={handleTriageExpress}
+              onNewRegistration={() => setShowRegisterDialog(true)}
+            />
 
             {/* Search & Quick Actions */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -763,6 +896,24 @@ const AdminDashboardPage = () => {
             </Card>
               </TabsContent>
 
+              <TabsContent value="dia" className="mt-0">
+                <ReceptionDailyDashboard
+                  onPickRegistry={handlePickRegistryFromDashboard}
+                  onTriageExpress={handleTriageExpress}
+                  onNewRegistration={() => setShowRegisterDialog(true)}
+                  defaultSubTab="dia"
+                />
+              </TabsContent>
+
+              <TabsContent value="aguardando" className="mt-0">
+                <ReceptionDailyDashboard
+                  onPickRegistry={handlePickRegistryFromDashboard}
+                  onTriageExpress={handleTriageExpress}
+                  onNewRegistration={() => setShowRegisterDialog(true)}
+                  defaultSubTab="aguardando"
+                />
+              </TabsContent>
+
               <TabsContent value="prontuarios" className="mt-0">
                 <MedicalRecordsList
                   onStartEncounter={(p) => {
@@ -792,6 +943,21 @@ const AdminDashboardPage = () => {
               Cadastre um novo paciente no sistema. O número do prontuário será gerado automaticamente.
             </DialogDescription>
           </DialogHeader>
+
+          {/* Detecção de duplicatas em tempo real (só quando NÃO é NI) */}
+          {!registerForm.is_unidentified && (
+            <DuplicatePatientWarning
+              fullName={registerForm.full_name}
+              birthDate={registerForm.birth_date}
+              cpf={registerForm.cpf}
+              onUseExisting={(p) => {
+                setShowRegisterDialog(false);
+                setSelectedPatient(p as any);
+                setShowPatientDetail(true);
+                toast.info("Paciente existente selecionado", { description: p.full_name });
+              }}
+            />
+          )}
 
           {/* Toggle Paciente Não Identificado — sempre visível no topo */}
           <Card className={cn(

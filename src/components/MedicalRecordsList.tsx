@@ -23,6 +23,7 @@ import {
   Search, Loader2, ChevronLeft, ChevronRight, Eye, Play, UserCheck, UserX,
   ArrowUpDown, FileText, Users, RefreshCw, Activity,
 } from "lucide-react";
+import { PatientRowActions } from "@/components/reception/PatientRowActions";
 
 // Tipos
 interface PatientRow {
@@ -35,6 +36,7 @@ interface PatientRow {
   birth_date?: string | null;
   sex?: string | null;
   city?: string | null;
+  mother_name?: string | null;
   is_unidentified: boolean;
   unidentified_code?: string | null;
   created_at: string;
@@ -101,7 +103,7 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
     try {
       let query = supabase
         .from("patient_registry")
-        .select("id, medical_record, full_name, social_name, cpf, cns, birth_date, sex, city, is_unidentified, unidentified_code, created_at, updated_at", { count: "exact" })
+        .select("id, medical_record, full_name, social_name, cpf, cns, birth_date, sex, city, mother_name, is_unidentified, unidentified_code, created_at, updated_at", { count: "exact" })
         .is("merged_into_registry_id", null);
 
       // Busca: nome, CPF, CNS, prontuário, NI code
@@ -453,6 +455,13 @@ export function MedicalRecordsList({ onStartEncounter, onViewPatient }: MedicalR
                           >
                             <Play className="h-3 w-3 mr-1" /> Atender
                           </Button>
+                          <PatientRowActions
+                            patient={p}
+                            onReopenEncounter={(_code, registryId) => {
+                              // Reabrir = selecionar para atendimento (mesmo fluxo do Atender)
+                              onStartEncounter({ ...p, id: registryId });
+                            }}
+                          />
                         </div>
                       </TableCell>
                     </TableRow>
