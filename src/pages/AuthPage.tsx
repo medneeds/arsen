@@ -40,15 +40,16 @@ function PageHeader() {
   const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border/60">
-      <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground tracking-[0.2em]">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 h-12 md:h-14 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-[9px] md:text-[10px] font-medium text-muted-foreground tracking-[0.18em] md:tracking-[0.2em]">
           <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-          ACESSO À PLATAFORMA
+          <span className="hidden sm:inline">ACESSO À PLATAFORMA</span>
+          <span className="sm:hidden">ACESSO</span>
         </div>
 
         <button
           onClick={() => navigate("/")}
-          className="preserve-case inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 text-xs font-medium transition-all"
+          className="preserve-case inline-flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 text-xs font-medium transition-all"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Início
@@ -173,7 +174,7 @@ export default function AuthPage() {
 
         <PageHeader />
 
-        <main className="flex-1 flex items-center justify-center px-6 py-10 md:py-16 relative">
+        <main className="flex-1 flex items-center justify-center px-3 sm:px-6 py-4 md:py-16 relative">
           <AnimatePresence mode="wait">
             {screen === "login" ? (
               <motion.div
@@ -188,7 +189,7 @@ export default function AuthPage() {
 
                 {/* Login Card */}
                 <motion.div
-                  className="relative bg-card rounded-2xl border border-border/70 p-7 shadow-[0_20px_60px_-20px_hsl(var(--primary)/0.18),0_8px_24px_-12px_hsl(215_25%_12%/0.08)]"
+                  className="relative bg-card rounded-2xl border border-border/70 p-4 sm:p-7 shadow-[0_20px_60px_-20px_hsl(var(--primary)/0.18),0_8px_24px_-12px_hsl(215_25%_12%/0.08)]"
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.3 }}
@@ -197,16 +198,16 @@ export default function AuthPage() {
                   <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
                   {/* Hospital Selector */}
-                  <div className="mb-5">
+                  <div className="mb-4 sm:mb-5">
                     <HospitalSelector
                       selectedHospitalId={selectedHospitalId}
                       onSelect={handleHospitalSelect}
                     />
                   </div>
 
-                  <div className="h-px w-full bg-border/60 mb-5" />
+                  <div className="h-px w-full bg-border/60 mb-4 sm:mb-5" />
 
-                  <div className="mb-5 flex items-center gap-2.5">
+                  <div className="mb-4 sm:mb-5 flex items-center gap-2.5">
                     <div className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/15">
                       <LogIn className="h-4 w-4 text-primary" />
                     </div>
@@ -216,7 +217,7 @@ export default function AuthPage() {
                     </div>
                   </div>
 
-                  <form onSubmit={handleLogin} className="space-y-4">
+                  <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
                     <div>
                       <Label htmlFor="username" className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]">
                         USUÁRIO
@@ -229,10 +230,12 @@ export default function AuthPage() {
                           value={loginData.username}
                           onChange={(e) => setLoginData({ ...loginData, username: e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, '') })}
                           placeholder="Digite seu usuário"
-                          className="pl-10 h-11 bg-muted/40 border border-border rounded-xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
+                          className="pl-10 h-12 md:h-11 text-base md:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
                           disabled={loading}
                           autoComplete="username"
                           autoFocus
+                          inputMode="text"
+                          autoCapitalize="characters"
                         />
                       </div>
                     </div>
@@ -249,14 +252,15 @@ export default function AuthPage() {
                           value={loginData.password}
                           onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                           placeholder="Digite sua senha"
-                          className="pl-10 pr-10 h-11 bg-muted/40 border border-border rounded-xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
+                          className="pl-10 pr-11 h-12 md:h-11 text-base md:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
                           disabled={loading}
                           autoComplete="current-password"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground transition-colors"
+                          aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 inline-flex items-center justify-center rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors"
                           tabIndex={-1}
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -275,7 +279,7 @@ export default function AuthPage() {
                           id="access-profile"
                           value={selectedAccessProfile}
                           onChange={(e) => setSelectedAccessProfile(e.target.value)}
-                          className="w-full h-11 pl-10 pr-4 bg-muted/40 border border-border rounded-xl text-sm font-medium text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all appearance-none cursor-pointer uppercase tracking-wide"
+                          className="w-full h-12 md:h-11 pl-10 pr-9 bg-muted/40 border border-border rounded-xl text-base md:text-sm font-medium text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all appearance-none cursor-pointer uppercase tracking-wide"
                           disabled={loading}
                         >
                           <option value="medico">MÉDICO ASSISTENTE</option>
@@ -297,7 +301,7 @@ export default function AuthPage() {
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="preserve-case w-full h-11 bg-gradient-to-b from-primary to-primary/90 hover:from-primary/95 hover:to-primary/80 text-primary-foreground font-medium text-sm rounded-xl transition-all duration-300 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 group border border-primary/20"
+                      className="preserve-case w-full h-12 md:h-11 bg-gradient-to-b from-primary to-primary/90 hover:from-primary/95 hover:to-primary/80 text-primary-foreground font-medium text-sm rounded-xl transition-all duration-300 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 group border border-primary/20"
                     >
                       {loading ? "Entrando..." : (
                         <span className="inline-flex items-center gap-2">
@@ -344,7 +348,7 @@ export default function AuthPage() {
                 transition={{ duration: 0.4 }}
                 className="w-full max-w-lg relative"
               >
-                <div className="relative bg-card rounded-2xl border border-border/70 p-6 max-h-[80vh] overflow-y-auto shadow-[0_20px_60px_-20px_hsl(var(--primary)/0.18),0_8px_24px_-12px_hsl(215_25%_12%/0.08)]">
+                <div className="relative bg-card rounded-2xl border border-border/70 p-4 sm:p-6 max-h-[85vh] sm:max-h-[80vh] overflow-y-auto shadow-[0_20px_60px_-20px_hsl(var(--primary)/0.18),0_8px_24px_-12px_hsl(215_25%_12%/0.08)]">
                   <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
                   <IndividualSignUpForm
                     onBack={() => setScreen("login")}
