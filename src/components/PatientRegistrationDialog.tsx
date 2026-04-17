@@ -377,7 +377,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
               </div>
               <div>
                 <Label className="text-xs">Prontuário</Label>
-                <Input value={form.medical_record} onChange={e => updateField("medical_record", e.target.value)} placeholder="Nº prontuário" />
+                <Input value={form.medical_record} onChange={e => updateField("medical_record", e.target.value)} placeholder="Auto: AA-UUU-SSSSSS-DV" />
               </div>
               <div>
                 <Label className="text-xs">Telefone</Label>
