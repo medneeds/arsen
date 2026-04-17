@@ -46,6 +46,8 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MedicalRecordsList } from "@/components/MedicalRecordsList";
+import { ReceptionDailyDashboard } from "@/components/reception/ReceptionDailyDashboard";
+import { DuplicatePatientWarning } from "@/components/reception/DuplicatePatientWarning";
 
 // Destination sectors for encounter routing — agrupados por categoria
 type DestinationSector = {
@@ -130,10 +132,13 @@ const AdminDashboardPage = () => {
   const selectedHospitalId = currentHospital?.id;
   const { currentDepartment } = useDepartment();
 
-  // Tab state synced with URL (?tab=inicio|prontuarios) — sincroniza com sidebar
+  // Tab state synced with URL (?tab=inicio|dia|aguardando|prontuarios) — sincroniza com sidebar
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const activeTab = tabParam === "prontuarios" ? "prontuarios" : "inicio";
+  const validTabs = ["inicio", "dia", "aguardando", "prontuarios"] as const;
+  const activeTab = (validTabs as readonly string[]).includes(tabParam || "")
+    ? (tabParam as (typeof validTabs)[number])
+    : "inicio";
   const handleTabChange = (value: string) => {
     const next = new URLSearchParams(searchParams);
     next.set("tab", value);
