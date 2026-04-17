@@ -195,7 +195,7 @@ export function ReceptionDailyDashboard({
           .from("patient_encounters")
           .select("id, encounter_code, patient_name, registry_id, destination_sector, triage_status, status, created_at, created_by, reception_point")
           .eq("hospital_unit_id", hospitalId)
-          .gte("created_at", todayStart)
+          .gte("created_at", periodStart)
           .order("created_at", { ascending: false }),
         supabase
           .from("pre_admissions" as any)
