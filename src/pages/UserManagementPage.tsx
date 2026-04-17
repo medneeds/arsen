@@ -451,10 +451,11 @@ export default function UserManagementPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
+                            title="Ver detalhes"
                             onClick={() => {
                               setSelectedUser(u);
                               setDetailsOpen(true);
@@ -462,12 +463,26 @@ export default function UserManagementPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Gerenciar setores e permissões"
+                            className="text-primary hover:text-primary hover:bg-primary/10"
+                            onClick={() => {
+                              setUserToManagePermissions(u);
+                              setPermissionsOpen(true);
+                            }}
+                          >
+                            <Settings2 className="h-4 w-4" />
+                          </Button>
+
                           {u.status === "pending" && (
                             <>
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                title="Aprovar"
                                 className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                                 onClick={() => handleApprove(u.id)}
                                 disabled={actionLoading}
@@ -477,6 +492,7 @@ export default function UserManagementPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                title="Rejeitar"
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                 onClick={() => handleReject(u.id)}
                                 disabled={actionLoading}
