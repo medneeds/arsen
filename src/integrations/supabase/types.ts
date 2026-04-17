@@ -1527,6 +1527,10 @@ export type Database = {
           patient_name: string
           patient_sector: string | null
           patient_snapshot: Json | null
+          release_status: string
+          released_at: string | null
+          released_by: string | null
+          released_by_name: string | null
           responsible_doctor: string | null
           state_id: string
         }
@@ -1544,6 +1548,10 @@ export type Database = {
           patient_name: string
           patient_sector?: string | null
           patient_snapshot?: Json | null
+          release_status?: string
+          released_at?: string | null
+          released_by?: string | null
+          released_by_name?: string | null
           responsible_doctor?: string | null
           state_id: string
         }
@@ -1561,6 +1569,10 @@ export type Database = {
           patient_name?: string
           patient_sector?: string | null
           patient_snapshot?: Json | null
+          release_status?: string
+          released_at?: string | null
+          released_by?: string | null
+          released_by_name?: string | null
           responsible_doctor?: string | null
           state_id?: string
         }

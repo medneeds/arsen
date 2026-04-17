@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, ArrowRight, ArrowLeftRight, FileText, History, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowLeftRight, FileText, History, Loader2, BedDouble, Clock } from "lucide-react";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PatientInfoHeader } from "@/components/PatientInfoHeader";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,9 @@ interface MovementRow {
   notes: string | null;
   responsible_doctor: string | null;
   created_at: string;
+  release_status?: string | null;
+  released_at?: string | null;
+  released_by_name?: string | null;
 }
 
 const MovimentacoesPage = () => {
@@ -93,7 +96,7 @@ const MovimentacoesPage = () => {
     try {
       const query = supabase
         .from("patient_movements")
-        .select("id, movement_type, destination, notes, responsible_doctor, created_at")
+        .select("id, movement_type, destination, notes, responsible_doctor, created_at, release_status, released_at, released_by_name")
         .order("created_at", { ascending: false })
         .limit(20);
       // Prefer patient_id if available, fallback to name
@@ -208,7 +211,7 @@ const MovimentacoesPage = () => {
             </div>
             <div>
               <h1 className="text-lg font-bold text-foreground">Movimentações do Paciente</h1>
-              <p className="text-xs text-muted-foreground">Registro otimizado de Entradas, Transferências e Saídas</p>
+              <p className="text-xs text-muted-foreground">Sinalize transferências e saídas — a liberação efetiva do leito é feita pelo setor administrativo</p>
             </div>
           </div>
           {step !== "category" && (
@@ -235,7 +238,7 @@ const MovimentacoesPage = () => {
         <div className="rounded-xl border-2 border-primary/20 bg-card p-4 space-y-4">
           {/* Stepper */}
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            <span className={cn("font-semibold", step === "category" && "text-primary")}>1. Categoria</span>
+            <span className={cn("font-semibold", step === "category" && "text-primary")}>1. Tipo</span>
             <ArrowRight className="h-3 w-3" />
             <span className={cn("font-semibold", step === "subtype" && "text-primary")}>2. Subtipo</span>
             <ArrowRight className="h-3 w-3" />
@@ -244,7 +247,7 @@ const MovimentacoesPage = () => {
 
           {/* Step 1: Category */}
           {step === "category" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               {MOVEMENT_CATEGORIES.map((cat) => {
                 const t = TONE_CLASSES[cat.tone];
                 const Icon = cat.icon;
@@ -379,15 +382,19 @@ const MovimentacoesPage = () => {
                   </div>
                 </div>
 
-                {subtypeDef.linksToDischargeSummary && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border/60">
-                    <FileText className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Após confirmar, você poderá complementar este registro com o{" "}
-                      <span className="font-medium text-foreground">Sumário de Alta</span> detalhado.
+                {/* Aviso: leito permanece ocupado até liberação administrativa */}
+                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-warning/10 border border-warning/30">
+                  <BedDouble className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                  <div className="text-xs leading-relaxed">
+                    <p className="font-semibold text-foreground">O leito permanece ocupado após a confirmação</p>
+                    <p className="text-muted-foreground mt-0.5">
+                      Esta ação <span className="font-medium text-foreground">sinaliza</span> a movimentação no sistema. A liberação efetiva do leito é realizada pelo <span className="font-medium text-foreground">setor administrativo</span>.
+                      {subtypeDef.linksToDischargeSummary && (
+                        <> Você poderá complementar com o <span className="font-medium text-foreground">Sumário de Alta</span> em seguida.</>
+                      )}
                     </p>
                   </div>
-                )}
+                </div>
 
                 <div className="flex justify-end gap-2 pt-2">
                   <Button variant="outline" size="sm" onClick={resetWizard} disabled={submitting}>Cancelar</Button>
@@ -421,6 +428,8 @@ const MovimentacoesPage = () => {
                 const cat = def ? MOVEMENT_CATEGORIES.find((c) => c.id === def.category)! : null;
                 const tone = cat ? TONE_CLASSES[cat.tone] : TONE_CLASSES.primary;
                 const Icon = def?.icon ?? ArrowLeftRight;
+                const isPending = (m.release_status ?? "pending_release") === "pending_release";
+                const isReleased = m.release_status === "released";
                 return (
                   <li key={m.id} className="py-2.5 flex items-start gap-3">
                     <div className={cn("h-8 w-8 rounded-md flex items-center justify-center shrink-0", tone.bg)}>
@@ -437,11 +446,22 @@ const MovimentacoesPage = () => {
                         {m.destination && (
                           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">→ {m.destination}</span>
                         )}
+                        {isPending && (
+                          <Badge variant="outline" className="text-[9px] uppercase tracking-wider gap-1 bg-warning/10 text-warning border-warning/30">
+                            <Clock className="h-2.5 w-2.5" /> Aguardando liberação do leito
+                          </Badge>
+                        )}
+                        {isReleased && (
+                          <Badge variant="outline" className="text-[9px] uppercase tracking-wider bg-accent/10 text-accent border-accent/30">
+                            Leito liberado
+                          </Badge>
+                        )}
                       </div>
                       {m.notes && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{m.notes}</p>}
                       <p className="text-[10px] text-muted-foreground/70 mt-1">
                         {format(new Date(m.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                         {m.responsible_doctor ? ` • ${m.responsible_doctor}` : ""}
+                        {isReleased && m.released_at ? ` • Liberado ${format(new Date(m.released_at), "dd/MM HH:mm", { locale: ptBR })}${m.released_by_name ? ` por ${m.released_by_name}` : ""}` : ""}
                       </p>
                     </div>
                   </li>
