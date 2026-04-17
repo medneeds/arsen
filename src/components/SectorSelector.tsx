@@ -137,7 +137,7 @@ export function SectorSelector({ variant = "light" }: SectorSelectorProps) {
         >
           <BedDouble className={cn("h-3.5 w-3.5", variant === "dark" ? "text-white/80" : "text-primary")} />
           <span className="truncate max-w-[140px]">
-            {currentSectorLabel || "Selecionar setor"}
+            {allActive ? "Todos os setores" : currentSectorLabel || "Selecionar setor"}
           </span>
           <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180", variant === "dark" ? "text-white/60" : "text-muted-foreground")} />
         </button>
