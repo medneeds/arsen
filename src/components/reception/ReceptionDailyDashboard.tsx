@@ -165,6 +165,23 @@ export function ReceptionDailyDashboard({
 
   // Filtro por posto: "all" | "vertical" | "horizontal"
   const [pointFilter, setPointFilter] = useState<"all" | ReceptionPoint>("all");
+  // Filtro de período
+  const [periodFilter, setPeriodFilter] = useState<"today" | "7d" | "30d">("today");
+
+  // Dialogs auxiliares
+  const [completeTarget, setCompleteTarget] = useState<{ registryId: string; name: string } | null>(null);
+  const [promoteTarget, setPromoteTarget] = useState<{ registryId: string; code: string | null; name: string } | null>(null);
+
+  // Tracking de Sala Vermelha — para tocar som ao chegar paciente novo
+  const { playNotificationSound } = useNotificationSound();
+  const seenRedRoomIds = useRef<Set<string>>(new Set());
+  const isFirstLoad = useRef(true);
+
+  const periodStart = useMemo(() => {
+    if (periodFilter === "today") return startOfDay(new Date()).toISOString();
+    if (periodFilter === "7d") return startOfDay(subDays(new Date(), 6)).toISOString();
+    return startOfDay(subDays(new Date(), 29)).toISOString();
+  }, [periodFilter]);
 
   const todayStart = useMemo(() => startOfDay(new Date()).toISOString(), []);
   const monthStart = useMemo(() => startOfMonth(new Date()).toISOString(), []);
