@@ -348,7 +348,7 @@ export default function AuthPage() {
                 transition={{ duration: 0.4 }}
                 className="w-full max-w-lg relative"
               >
-                <div className="relative bg-card rounded-2xl border border-border/70 p-6 max-h-[80vh] overflow-y-auto shadow-[0_20px_60px_-20px_hsl(var(--primary)/0.18),0_8px_24px_-12px_hsl(215_25%_12%/0.08)]">
+                <div className="relative bg-card rounded-2xl border border-border/70 p-4 sm:p-6 max-h-[85vh] sm:max-h-[80vh] overflow-y-auto shadow-[0_20px_60px_-20px_hsl(var(--primary)/0.18),0_8px_24px_-12px_hsl(215_25%_12%/0.08)]">
                   <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
                   <IndividualSignUpForm
                     onBack={() => setScreen("login")}
