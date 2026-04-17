@@ -242,7 +242,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
                   <p className="preserve-case text-foreground/80 text-xs font-medium">
                     Nenhum setor vinculado
                   </p>
-                  <p className="preserve-case text-foreground/55 text-[10px] mt-1 italic" style={{ fontFamily: SERIF }}>
+                  <p className="preserve-case text-foreground/55 text-[10px] mt-1 font-light tracking-wide">
                     Entre em contato com o coordenador
                   </p>
                 </div>
