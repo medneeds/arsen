@@ -99,10 +99,10 @@ export function RoleProfileSelector({
 
       {/* Smart hint when role/profile mismatch */}
       {isMisaligned && (
-        <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-amber-500/10 border border-amber-500/30 text-xs">
-          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+        <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-warning/10 border border-warning/30 text-xs">
+          <div className="flex items-center gap-2 text-warning">
             <Sparkles className="h-3.5 w-3.5 shrink-0" />
-            <span>
+            <span className="text-foreground/90">
               Sugestão: o perfil <strong>{accessProfile}</strong> normalmente usa o papel{" "}
               <strong>{suggestedRole}</strong>.
             </span>
