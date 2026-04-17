@@ -44,6 +44,7 @@ import {
   UserX,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { MedicalRecordsList } from "@/components/MedicalRecordsList";
 
 // Destination sectors for encounter routing — agrupados por categoria
 type DestinationSector = {
