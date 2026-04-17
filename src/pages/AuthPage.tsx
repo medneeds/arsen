@@ -230,10 +230,12 @@ export default function AuthPage() {
                           value={loginData.username}
                           onChange={(e) => setLoginData({ ...loginData, username: e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, '') })}
                           placeholder="Digite seu usuário"
-                          className="pl-10 h-11 bg-muted/40 border border-border rounded-xl text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
+                          className="pl-10 h-12 md:h-11 text-base md:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
                           disabled={loading}
                           autoComplete="username"
                           autoFocus
+                          inputMode="text"
+                          autoCapitalize="characters"
                         />
                       </div>
                     </div>
