@@ -2,8 +2,9 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { LayoutDashboard, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDepartment, SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
+import { useIsGestor } from "@/hooks/useIsGestor";
 
-const tabs = [
+const ALL_TABS = [
   { label: "Mapa de leitos", path: "/mapa", icon: LayoutDashboard },
   { label: "Painel clínico", path: "/painel-clinico", icon: ClipboardCheck },
 ];
