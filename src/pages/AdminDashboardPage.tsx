@@ -134,6 +134,7 @@ const AdminDashboardPage = () => {
   const { currentHospital } = useHospital();
   const selectedHospitalId = currentHospital?.id;
   const { currentDepartment } = useDepartment();
+  const { point: receptionPoint } = useReceptionPost();
 
   // Tab state synced with URL (?tab=inicio|dia|aguardando|prontuarios) — sincroniza com sidebar
   const [searchParams, setSearchParams] = useSearchParams();
