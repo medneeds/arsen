@@ -533,15 +533,15 @@ export function ReceptionDailyDashboard({
               <CardTitle className="text-sm">Atendimentos abertos hoje pela recepção</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              {todayEncounters.length === 0 ? (
+              {filteredEncounters.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">
                   <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">Nenhum atendimento aberto hoje</p>
+                  <p className="text-sm">Nenhum atendimento {pointFilter !== "all" ? `na recepção ${RECEPTION_POINT_SHORT[pointFilter]}` : "aberto hoje"}</p>
                 </div>
               ) : (
                 <ScrollArea className="max-h-[360px]">
                   <div className="divide-y">
-                    {todayEncounters.map((e) => (
+                    {filteredEncounters.map((e) => (
                       <div key={e.id} className="p-3 hover:bg-accent/40 transition-colors">
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0 flex-1">
