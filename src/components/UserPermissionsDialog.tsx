@@ -10,80 +10,17 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { UserCog, Loader2, Save } from "lucide-react";
+import { RoleProfileSelector } from "@/components/permissions/RoleProfileSelector";
+import { HospitalUnitPicker } from "@/components/permissions/HospitalUnitPicker";
+import { SectorPermissionsPicker } from "@/components/permissions/SectorPermissionsPicker";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Shield,
-  Building2,
-  Layers,
-  UserCog,
-  Loader2,
-  Save,
-  CheckCircle2,
-} from "lucide-react";
-import { DEPARTMENTS } from "@/contexts/DepartmentContext";
-
-/** Roles disponíveis no sistema (enum app_role) */
-const SYSTEM_ROLES: { value: string; label: string; description: string }[] = [
-  { value: "admin", label: "Coordenador (Admin)", description: "Acesso total ao sistema" },
-  { value: "medico", label: "Médico", description: "Atendimento clínico padrão" },
-  { value: "porta", label: "Porta / Visitante Médico", description: "Avaliação inicial / triagem" },
-  { value: "visitante", label: "Visitante", description: "Apenas visualização do mapa" },
-  { value: "farmacia", label: "Farmácia Clínica", description: "Validação farmacêutica" },
-  { value: "nir", label: "NIR", description: "Núcleo Interno de Regulação" },
-];
-
-/** Perfis de acesso (access_profile) — controlam UI/sidebar */
-const ACCESS_PROFILES: { value: string; label: string; description: string }[] = [
-  { value: "medico", label: "Médico Assistente", description: "Sidebar clínica completa" },
-  { value: "gestor", label: "Gestor Hospitalar", description: "Painel executivo somente leitura" },
-  { value: "farmacia", label: "Farmácia Clínica", description: "Ambiente farmacêutico" },
-  { value: "ccih", label: "CCIH", description: "Controle de infecção hospitalar" },
-  { value: "nir", label: "NIR", description: "Regulação interna" },
-  { value: "imagem", label: "Setor de Imagem", description: "Painel de imagem diagnóstica" },
-  { value: "laboratorio", label: "Laboratório", description: "Painel laboratorial" },
-  { value: "administrativo", label: "Administrativo", description: "Cadastros e fluxos administrativos" },
-  { value: "multi", label: "Equipe Multi", description: "Triagem e equipe multiprofissional" },
-];
-
-/** Agrupamento dos setores em blocos para facilitar a seleção em massa */
-const SECTOR_GROUPS: { id: string; label: string; departments: string[] }[] = [
-  { id: "uti", label: "UTI", departments: ["UTI 1", "UTI 2"] },
-  { id: "uci", label: "UCI / UCC", departments: ["UCI 1", "UCI 2", "UCC"] },
-  {
-    id: "enfermarias",
-    label: "Enfermarias",
-    departments: ["NEURO 01", "NEURO 02", "CLÍNICA CIRÚRGICA", "ENFERMARIA DE TRANSIÇÃO", "ENFERMARIA VASCULAR", "RIV"],
-  },
-  {
-    id: "emergencia",
-    label: "Urgência e Emergência",
-    departments: [
-      "URGÊNCIA E EMERGÊNCIA ADULTO",
-      "URGÊNCIA E EMERGÊNCIA PEDIÁTRICA",
-      "UE VERTICAL",
-      "UE HORIZONTAL",
-      "SALA VERMELHA",
-      "SALA LARANJA",
-      "INTERNAÇÃO UE",
-      "OBSERVAÇÃO CLÍNICA",
-    ],
-  },
-  {
-    id: "centro_cirurgico",
-    label: "Centro Cirúrgico",
-    departments: ["CC PREPARO", "CC BLOCO CIRÚRGICO", "CC RPA"],
-  },
-  { id: "regulacao", label: "Regulação / Infecção", departments: ["CCIH", "NIR"] },
-];
+  type AppRole,
+  type AccessProfile,
+  ACCESS_PROFILES,
+} from "@/config/userProfiles";
 
 interface HospitalUnit {
   id: string;
@@ -114,11 +51,15 @@ export function UserPermissionsDialog({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [role, setRole] = useState<string>(currentRole || "medico");
-  const [accessProfile, setAccessProfile] = useState<string>(currentAccessProfile || "medico");
+  const [role, setRole] = useState<AppRole>((currentRole as AppRole) || "medico");
+  const [accessProfile, setAccessProfile] = useState<AccessProfile>(
+    (currentAccessProfile as AccessProfile) || "medico",
+  );
   const [selectedDepartments, setSelectedDepartments] = useState<Set<string>>(new Set());
   const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set());
   const [hospitalUnits, setHospitalUnits] = useState<HospitalUnit[]>([]);
+
+  const profileMeta = ACCESS_PROFILES.find((p) => p.value === accessProfile);
 
   // ── Load current permissions when dialog opens ──
   useEffect(() => {
@@ -131,7 +72,10 @@ export function UserPermissionsDialog({
         const [unitsRes, deptRes, assignRes, profileRes] = await Promise.all([
           supabase.from("hospital_units").select("id, name").order("name"),
           supabase.from("user_departments").select("department").eq("user_id", userId),
-          supabase.from("user_hospital_assignments").select("hospital_unit_id").eq("user_id", userId),
+          supabase
+            .from("user_hospital_assignments")
+            .select("hospital_unit_id")
+            .eq("user_id", userId),
           supabase.from("profiles").select("access_profile").eq("id", userId).maybeSingle(),
         ]);
 
@@ -140,8 +84,12 @@ export function UserPermissionsDialog({
         if (unitsRes.data) setHospitalUnits(unitsRes.data);
         setSelectedDepartments(new Set(deptRes.data?.map((d) => d.department) || []));
         setSelectedUnits(new Set(assignRes.data?.map((a) => a.hospital_unit_id) || []));
-        setRole(currentRole || "medico");
-        setAccessProfile(profileRes.data?.access_profile || currentAccessProfile || "medico");
+        setRole((currentRole as AppRole) || "medico");
+        setAccessProfile(
+          ((profileRes.data as { access_profile?: string } | null)?.access_profile as AccessProfile) ||
+            (currentAccessProfile as AccessProfile) ||
+            "medico",
+        );
       } catch (err) {
         console.error("[UserPermissionsDialog] load error", err);
         toast.error("Erro ao carregar permissões");
@@ -155,45 +103,6 @@ export function UserPermissionsDialog({
       cancelled = true;
     };
   }, [open, userId, currentRole, currentAccessProfile]);
-
-  const toggleDepartment = (dept: string) => {
-    setSelectedDepartments((prev) => {
-      const next = new Set(prev);
-      if (next.has(dept)) next.delete(dept);
-      else next.add(dept);
-      return next;
-    });
-  };
-
-  const toggleGroup = (group: typeof SECTOR_GROUPS[number]) => {
-    const allSelected = group.departments.every((d) => selectedDepartments.has(d));
-    setSelectedDepartments((prev) => {
-      const next = new Set(prev);
-      if (allSelected) {
-        group.departments.forEach((d) => next.delete(d));
-      } else {
-        group.departments.forEach((d) => next.add(d));
-      }
-      return next;
-    });
-  };
-
-  const toggleUnit = (unitId: string) => {
-    setSelectedUnits((prev) => {
-      const next = new Set(prev);
-      if (next.has(unitId)) next.delete(unitId);
-      else next.add(unitId);
-      return next;
-    });
-  };
-
-  const handleSelectAllSectors = () => {
-    setSelectedDepartments(new Set(DEPARTMENTS));
-  };
-
-  const handleClearSectors = () => {
-    setSelectedDepartments(new Set());
-  };
 
   // ── Save: updates role, access_profile, departments, hospital assignments ──
   const handleSave = async () => {
@@ -209,12 +118,14 @@ export function UserPermissionsDialog({
       if (existingRole) {
         const { error } = await supabase
           .from("user_roles")
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .update({ role: role as any })
           .eq("user_id", userId);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("user_roles")
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .insert({ user_id: userId, role: role as any });
         if (error) throw error;
       }
@@ -222,7 +133,8 @@ export function UserPermissionsDialog({
       // 2) Update access_profile in profiles
       const { error: profileError } = await supabase
         .from("profiles")
-        .update({ access_profile: accessProfile })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({ access_profile: accessProfile } as any)
         .eq("id", userId);
       if (profileError) throw profileError;
 
@@ -244,16 +156,19 @@ export function UserPermissionsDialog({
           user_id: userId,
           hospital_unit_id,
         }));
-        const { error: unitError } = await supabase.from("user_hospital_assignments").insert(rows);
+        const { error: unitError } = await supabase
+          .from("user_hospital_assignments")
+          .insert(rows);
         if (unitError) throw unitError;
       }
 
       toast.success("Permissões atualizadas com sucesso");
       onSaved?.();
       onOpenChange(false);
-    } catch (err: any) {
+    } catch (err) {
       console.error("[UserPermissionsDialog] save error", err);
-      toast.error(err?.message || "Erro ao salvar permissões");
+      const msg = err instanceof Error ? err.message : "Erro ao salvar permissões";
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -267,9 +182,16 @@ export function UserPermissionsDialog({
             <UserCog className="h-5 w-5 text-primary" />
             Permissões e Acessos
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-foreground">{userName}</span>
-            <span className="text-muted-foreground"> · {userEmail.replace("@sistema.local", "")}</span>
+            <span className="text-muted-foreground">
+              · {userEmail.replace("@sistema.local", "")}
+            </span>
+            {profileMeta && (
+              <Badge variant="secondary" className="text-[10px] ml-1">
+                {profileMeta.shortLabel}
+              </Badge>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -281,158 +203,48 @@ export function UserPermissionsDialog({
         ) : (
           <ScrollArea className="max-h-[65vh]">
             <div className="p-6 space-y-6">
-              {/* ── Role + Access Profile ── */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <Shield className="h-3.5 w-3.5" /> Papel no Sistema
-                  </label>
-                  <Select value={role} onValueChange={setRole}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SYSTEM_ROLES.map((r) => (
-                        <SelectItem key={r.value} value={r.value}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{r.label}</span>
-                            <span className="text-[10px] text-muted-foreground">{r.description}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[10px] text-muted-foreground">
-                    Define o nível técnico de acesso (RLS).
+              <RoleProfileSelector
+                role={role}
+                accessProfile={accessProfile}
+                onRoleChange={setRole}
+                onAccessProfileChange={setAccessProfile}
+              />
+
+              <HospitalUnitPicker
+                units={hospitalUnits}
+                selected={selectedUnits}
+                onChange={setSelectedUnits}
+              />
+
+              {/* Sector picker only for profiles that route by sector */}
+              {profileMeta && !profileMeta.skipSectorSelection ? (
+                <SectorPermissionsPicker
+                  selected={selectedDepartments}
+                  onChange={setSelectedDepartments}
+                />
+              ) : (
+                <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-4 text-xs text-muted-foreground">
+                  <p className="font-medium text-foreground mb-1">
+                    Este perfil não exige seleção de setor
                   </p>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <Layers className="h-3.5 w-3.5" /> Perfil de Acesso (Sidebar)
-                  </label>
-                  <Select value={accessProfile} onValueChange={setAccessProfile}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ACCESS_PROFILES.map((p) => (
-                        <SelectItem key={p.value} value={p.value}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{p.label}</span>
-                            <span className="text-[10px] text-muted-foreground">{p.description}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[10px] text-muted-foreground">
-                    Define a UI exibida (sidebar, dashboards, restrições visuais).
+                  <p>
+                    O perfil <strong>{profileMeta?.label}</strong> possui painel próprio com filtros
+                    internos. Você pode opcionalmente restringir setores abaixo se desejar limitar
+                    a visibilidade.
                   </p>
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-foreground/80 hover:text-foreground">
+                      Restringir setores manualmente
+                    </summary>
+                    <div className="mt-3">
+                      <SectorPermissionsPicker
+                        selected={selectedDepartments}
+                        onChange={setSelectedDepartments}
+                      />
+                    </div>
+                  </details>
                 </div>
-              </div>
-
-              {/* ── Hospital Units ── */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <Building2 className="h-3.5 w-3.5" /> Unidades Hospitalares
-                  </label>
-                  <Badge variant="outline" className="text-[10px]">
-                    {selectedUnits.size} de {hospitalUnits.length}
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 p-3 rounded-lg bg-muted/30 border border-border/40">
-                  {hospitalUnits.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Nenhuma unidade cadastrada.</p>
-                  ) : (
-                    hospitalUnits.map((unit) => {
-                      const checked = selectedUnits.has(unit.id);
-                      return (
-                        <label
-                          key={unit.id}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-background cursor-pointer transition-colors"
-                        >
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={() => toggleUnit(unit.id)}
-                          />
-                          <span className="text-sm">{unit.name}</span>
-                          {checked && <CheckCircle2 className="h-3.5 w-3.5 text-primary ml-auto" />}
-                        </label>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-
-              {/* ── Sectors / Departments ── */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <Layers className="h-3.5 w-3.5" /> Setores Acessíveis
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[10px]">
-                      {selectedDepartments.size} de {DEPARTMENTS.length}
-                    </Badge>
-                    <Button type="button" size="sm" variant="ghost" className="h-7 text-[11px]" onClick={handleSelectAllSectors}>
-                      Selecionar todos
-                    </Button>
-                    <Button type="button" size="sm" variant="ghost" className="h-7 text-[11px]" onClick={handleClearSectors}>
-                      Limpar
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {SECTOR_GROUPS.map((group) => {
-                    const allChecked = group.departments.every((d) => selectedDepartments.has(d));
-                    const someChecked = group.departments.some((d) => selectedDepartments.has(d));
-                    return (
-                      <div key={group.id} className="rounded-lg border border-border/40 bg-card overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() => toggleGroup(group)}
-                          className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-muted/40 hover:bg-muted/60 transition-colors"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              checked={allChecked}
-                              data-state={allChecked ? "checked" : someChecked ? "indeterminate" : "unchecked"}
-                              onCheckedChange={() => toggleGroup(group)}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-foreground">
-                              {group.label}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-muted-foreground">
-                            {group.departments.filter((d) => selectedDepartments.has(d)).length}/{group.departments.length}
-                          </span>
-                        </button>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 p-2">
-                          {group.departments.map((dept) => {
-                            const checked = selectedDepartments.has(dept);
-                            return (
-                              <label
-                                key={dept}
-                                className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-muted/50 cursor-pointer text-xs transition-colors"
-                              >
-                                <Checkbox
-                                  checked={checked}
-                                  onCheckedChange={() => toggleDepartment(dept)}
-                                />
-                                <span className="truncate">{dept}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              )}
             </div>
           </ScrollArea>
         )}
