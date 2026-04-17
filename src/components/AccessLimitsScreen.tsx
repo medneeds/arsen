@@ -45,7 +45,7 @@ interface AccessLimitsScreenProps {
 const SERIF = "'Playfair Display', Georgia, serif";
 
 export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
-  const { role, allowedDepartments, user } = useAuth();
+  const { role, allowedDepartments, user, signOut } = useAuth();
   const { currentHospital } = useHospital();
   const username =
     user?.user_metadata?.username ||
