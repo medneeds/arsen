@@ -1050,29 +1050,50 @@ const AdminDashboardPage = () => {
 
               <div>
                 <Label className="mb-2 block">Setor de Destino *</Label>
-                <div className="grid grid-cols-1 gap-2">
-                  {DESTINATION_SECTORS.map((sector) => (
-                    <button
-                      key={sector.value}
-                      disabled={!sector.available}
-                      onClick={() => setDestinationSector(sector.value)}
-                      className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border text-left transition-all",
-                        sector.available ? "hover:bg-accent/50 cursor-pointer" : "opacity-40 cursor-not-allowed",
-                        destinationSector === sector.value && "ring-2 ring-primary bg-primary/5 border-primary/30"
-                      )}
-                    >
-                      <div className={cn("h-3 w-3 rounded-full shrink-0", sector.color)} />
-                      <span className="text-sm font-medium">{sector.label}</span>
-                      {!sector.available && (
-                        <Badge variant="outline" className="ml-auto text-[10px]">Em breve</Badge>
-                      )}
-                      {sector.value === "triagem" && destinationSector === "triagem" && (
-                        <Badge className="ml-auto bg-emerald-500 text-white text-[10px]">Recomendado</Badge>
-                      )}
-                    </button>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Selecione um setor clínico para que o paciente apareça automaticamente
+                  em <span className="font-semibold">"Aguardando Admissão"</span> daquele setor,
+                  ou envie para <span className="font-semibold">Triagem</span> para classificação de risco.
+                </p>
+                <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+                  {DESTINATION_GROUPS.map((group) => (
+                    <div key={group}>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                        {group}
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        {DESTINATION_SECTORS.filter(s => s.group === group).map((sector) => (
+                          <button
+                            key={sector.value}
+                            onClick={() => setDestinationSector(sector.value)}
+                            className={cn(
+                              "flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all hover:bg-accent/50 cursor-pointer",
+                              destinationSector === sector.value && "ring-2 ring-primary bg-primary/5 border-primary/30"
+                            )}
+                          >
+                            <div className={cn("h-2.5 w-2.5 rounded-full shrink-0", sector.color)} />
+                            <span className="text-xs font-medium flex-1 truncate">{sector.label}</span>
+                            {sector.isTriage && (
+                              <Badge className="bg-emerald-500 text-white text-[9px] px-1.5 py-0 h-4">
+                                Recomendado
+                              </Badge>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
+                {destinationSector && (() => {
+                  const def = DESTINATION_SECTORS.find(s => s.value === destinationSector);
+                  if (!def || def.isTriage) return null;
+                  return (
+                    <div className="mt-3 p-2.5 rounded-md bg-blue-500/10 border border-blue-500/30 text-xs text-blue-700 dark:text-blue-300">
+                      ✓ Paciente entrará em <strong>"Aguardando Admissão"</strong> de{" "}
+                      <strong>{def.label}</strong>. NIR ou médico do setor poderá efetivar a admissão no leito.
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
