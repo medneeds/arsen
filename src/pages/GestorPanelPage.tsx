@@ -15,8 +15,12 @@ import {
   Bed, Activity, AlertTriangle, Users, Clock,
   Pill, BarChart3, ArrowUpDown, HeartPulse,
   RefreshCw, Download, TrendingUp, FileText,
-  ShieldCheck, Loader2,
+  ShieldCheck, Loader2, LayoutGrid, Filter, Check,
 } from "lucide-react";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -58,9 +62,42 @@ const PIE_COLORS = [
   "hsl(var(--muted-foreground))",
 ];
 
+// ── Hierarchical sector blocks for the gestor filter ──
+interface SectorBlock {
+  id: string;
+  label: string;
+  /** Department names (matching DEPARTMENT_TO_SECTOR keys / requested_sector / department fields) */
+  departments: string[];
+}
+
+const SECTOR_BLOCKS: SectorBlock[] = [
+  { id: "uti", label: "UTI", departments: ["UTI 1", "UTI 2"] },
+  { id: "uci", label: "UCI", departments: ["UCI 1", "UCI 2"] },
+  {
+    id: "enfermarias",
+    label: "Enfermarias",
+    departments: ["NEURO 01", "NEURO 02", "CLÍNICA CIRÚRGICA", "ENFERMARIA DE TRANSIÇÃO", "UCC"],
+  },
+  {
+    id: "emergencia",
+    label: "Urgência e Emergência",
+    departments: ["UE VERTICAL", "UE HORIZONTAL", "SALA VERMELHA", "SALA LARANJA", "INTERNAÇÃO UE", "OBSERVAÇÃO CLÍNICA"],
+  },
+  {
+    id: "vascular",
+    label: "Anexo Vascular",
+    departments: ["ENFERMARIA VASCULAR", "RIV"],
+  },
+  {
+    id: "cc",
+    label: "Centro Cirúrgico",
+    departments: ["CC PREPARO", "CC BLOCO CIRÚRGICO", "CC RPA"],
+  },
+];
+
 export default function GestorPanelPage() {
   const { currentHospital: selectedUnit } = useHospital();
-  const { currentDepartment } = useDepartment();
+  const { currentDepartment, setCurrentDepartment } = useDepartment();
   const [bedStats, setBedStats] = useState<BedStats>({ total: 0, occupied: 0, vacant: 0, doorPatients: 0, bySector: {} });
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlert[]>([]);
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
@@ -82,13 +119,43 @@ export default function GestorPanelPage() {
     setSectorFilter(stored || "ALL");
   }, [currentDepartment]);
 
+  // ── Filter resolution: ALL | BLOCK:<id> | specific department ──
   const isAllSectors = sectorFilter === "ALL";
-  const sectorCodeFilter = !isAllSectors
-    ? DEPARTMENT_TO_SECTOR[sectorFilter as keyof typeof DEPARTMENT_TO_SECTOR] || null
+  const isBlockFilter = sectorFilter.startsWith("BLOCK:");
+  const activeBlock = isBlockFilter
+    ? SECTOR_BLOCKS.find(b => b.id === sectorFilter.slice(6)) || null
     : null;
-  const sectorDisplayName = !isAllSectors
-    ? getSectorDisplayLabel(sectorCodeFilter || sectorFilter)
-    : "Todos os setores";
+
+  /** Department names this filter resolves to. null = no filter (ALL). */
+  const filteredDepartments: string[] | null = isAllSectors
+    ? null
+    : activeBlock
+      ? activeBlock.departments
+      : [sectorFilter];
+
+  /** Sector codes (red/yellow/neuro_01/...) for patients/movements queries. */
+  const filteredSectorCodes: string[] | null = filteredDepartments
+    ? (filteredDepartments
+        .map(d => DEPARTMENT_TO_SECTOR[d as keyof typeof DEPARTMENT_TO_SECTOR])
+        .filter(Boolean) as string[])
+    : null;
+
+  const sectorDisplayName = isAllSectors
+    ? "Todos os setores"
+    : activeBlock
+      ? activeBlock.label
+      : getSectorDisplayLabel(filteredSectorCodes?.[0] || sectorFilter);
+
+  // ── Apply a new filter (ALL / BLOCK / specific department) ──
+  const applyFilter = (next: string) => {
+    setSectorFilter(next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("gestor_sector_filter", next);
+    }
+    if (next !== "ALL" && !next.startsWith("BLOCK:")) {
+      try { setCurrentDepartment(next as any); } catch { /* noop */ }
+    }
+  };
 
   const fetchData = async () => {
     if (!selectedUnit) return;
@@ -100,8 +167,8 @@ export default function GestorPanelPage() {
         .from("patients")
         .select("id, name, bed_number, sector, is_vacant, is_door_patient, clinical_status, diagnoses, relevant_exams")
         .eq("hospital_unit_id", selectedUnit.id);
-      if (sectorCodeFilter) {
-        patientsQuery = patientsQuery.eq("sector", sectorCodeFilter);
+      if (filteredSectorCodes && filteredSectorCodes.length > 0) {
+        patientsQuery = patientsQuery.in("sector", filteredSectorCodes);
       }
       const { data: patients } = await patientsQuery;
 
@@ -140,8 +207,8 @@ export default function GestorPanelPage() {
         .eq("hospital_unit_id", selectedUnit.id)
         .gte("created_at", sevenDaysAgo)
         .order("created_at", { ascending: false });
-      if (sectorCodeFilter) {
-        movementsQuery = movementsQuery.eq("patient_sector", sectorCodeFilter);
+      if (filteredSectorCodes && filteredSectorCodes.length > 0) {
+        movementsQuery = movementsQuery.in("patient_sector", filteredSectorCodes);
       }
       const { data: movements } = await movementsQuery;
 
@@ -175,8 +242,8 @@ export default function GestorPanelPage() {
         .select("id", { count: "exact", head: true })
         .eq("hospital_unit_id", selectedUnit.id)
         .eq("status", "pending");
-      if (!isAllSectors) {
-        pendingQuery = pendingQuery.eq("requested_sector", sectorFilter);
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        pendingQuery = pendingQuery.in("requested_sector", filteredDepartments);
       }
       const { count: pendCount } = await pendingQuery;
       setPendingRequests(pendCount || 0);
@@ -186,8 +253,8 @@ export default function GestorPanelPage() {
         .from("prescriptions")
         .select("id", { count: "exact", head: true })
         .eq("hospital_unit_id", selectedUnit.id);
-      if (!isAllSectors) {
-        prescriptionQuery = prescriptionQuery.eq("department", sectorFilter);
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        prescriptionQuery = prescriptionQuery.in("department", filteredDepartments);
       }
       const { count: totalPrescriptions } = await prescriptionQuery;
 
@@ -195,8 +262,8 @@ export default function GestorPanelPage() {
         .from("prescription_validations")
         .select("status")
         .eq("hospital_unit_id", selectedUnit.id);
-      if (!isAllSectors) {
-        validationsQuery = validationsQuery.eq("department", sectorFilter);
+      if (filteredDepartments && filteredDepartments.length > 0) {
+        validationsQuery = validationsQuery.in("department", filteredDepartments);
       }
       const { data: validations } = await validationsQuery;
 
@@ -298,7 +365,88 @@ export default function GestorPanelPage() {
               </Badge>
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {/* Hierarchical sector filter */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Filter className="h-4 w-4 text-primary" />
+                  <span className="font-semibold">{sectorDisplayName}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" sideOffset={6} className="w-80 p-0 border-border/60 shadow-lg">
+                <div className="px-3 py-2.5 border-b border-border/60 bg-muted/40">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Filtrar dados do painel
+                  </p>
+                </div>
+                <ScrollArea className="max-h-[60vh]">
+                  <div className="p-1.5 space-y-3">
+                    {/* All sectors */}
+                    <button
+                      type="button"
+                      onClick={() => applyFilter("ALL")}
+                      className={cn(
+                        "w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md text-[11px] font-semibold transition-all",
+                        isAllSectors ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <LayoutGrid className={cn("h-3.5 w-3.5", isAllSectors ? "text-primary" : "text-muted-foreground")} />
+                        <span className="uppercase tracking-wide">Todos os setores</span>
+                      </div>
+                      {isAllSectors && <Check className="h-3.5 w-3.5" />}
+                    </button>
+
+                    {/* Blocks + sectors */}
+                    <div className="space-y-2">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 px-2">
+                        Blocos e setores
+                      </p>
+                      {SECTOR_BLOCKS.map(block => {
+                        const blockId = `BLOCK:${block.id}`;
+                        const blockActive = sectorFilter === blockId;
+                        return (
+                          <div key={block.id} className="space-y-0.5">
+                            <button
+                              type="button"
+                              onClick={() => applyFilter(blockId)}
+                              className={cn(
+                                "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-[0.14em] transition-all",
+                                blockActive ? "bg-primary/10 text-primary" : "text-muted-foreground/80 hover:bg-muted/60 hover:text-foreground"
+                              )}
+                            >
+                              <span>📊 Bloco {block.label}</span>
+                              {blockActive && <Check className="h-3 w-3" />}
+                            </button>
+                            <div className="grid grid-cols-1 gap-0.5 pl-3">
+                              {block.departments.map(dept => {
+                                const isActive = sectorFilter === dept;
+                                return (
+                                  <button
+                                    key={dept}
+                                    type="button"
+                                    onClick={() => applyFilter(dept)}
+                                    className={cn(
+                                      "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all text-left",
+                                      isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                                    )}
+                                  >
+                                    <span className="truncate">{dept}</span>
+                                    {isActive && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
+
             <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="gap-2">
               {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               Exportar CSV
