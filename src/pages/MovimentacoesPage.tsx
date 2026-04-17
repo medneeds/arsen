@@ -431,7 +431,7 @@ const MovimentacoesPage = () => {
                 const isPending = (m.release_status ?? "pending_release") === "pending_release";
                 const isReleased = m.release_status === "released";
                 return (
-                  <li key={m.id} className="py-2.5 flex items-start gap-3">
+                  <li key={m.id} className="patient-id py-2.5 flex items-start gap-3">
                     <div className={cn("h-8 w-8 rounded-md flex items-center justify-center shrink-0", tone.bg)}>
                       <Icon className={cn("h-4 w-4", tone.icon)} />
                     </div>

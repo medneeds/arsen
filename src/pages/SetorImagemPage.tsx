@@ -473,7 +473,7 @@ const SetorImagemPage = () => {
                         <div className="flex-1 min-w-0">
                           {/* Patient info line */}
                           <div className="flex items-center gap-2 mb-1.5">
-                            <span className="font-bold text-sm text-foreground truncate">{req.patient_name}</span>
+                            <span className="patient-id font-bold text-sm text-foreground truncate">{req.patient_name}</span>
                             {req.patient_bed && (
                               <Badge variant="outline" className="text-[10px] shrink-0">
                                 {req.patient_sector && `${getSectorLabel(req.patient_sector)} · `}Leito {req.patient_bed}
@@ -556,7 +556,7 @@ const SetorImagemPage = () => {
               {/* Patient info */}
               <div className="p-3 rounded-lg bg-muted/50 border space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-foreground">{selectedRequest.patient_name}</span>
+                  <span className="patient-id font-bold text-foreground">{selectedRequest.patient_name}</span>
                   {getPriorityBadge(selectedRequest.priority)}
                 </div>
                 <div className="text-xs text-muted-foreground flex gap-3">

@@ -345,7 +345,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         {/* Patient Header */}
         <div className="flex items-start justify-between gap-3 p-3 rounded-lg bg-muted/50 border">
           <div>
-            <p className="font-bold text-sm">{pa.patient_name}</p>
+            <p className="patient-id font-bold text-sm">{pa.patient_name}</p>
             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
               {age !== null && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{age} anos</span>}
               {pa.sex && <span>• {pa.sex}</span>}

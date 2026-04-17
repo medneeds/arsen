@@ -139,7 +139,7 @@ export default function DhdHistoryPage() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="text-xl">{patient.patient_name}</CardTitle>
+                    <CardTitle className="patient-id text-xl">{patient.patient_name}</CardTitle>
                     <CardDescription className="mt-1">
                       {patient.patient_age && `${patient.patient_age} • `}
                       {format(parseISO(patient.start_date), "dd/MM/yyyy", { locale: ptBR })} até{" "}

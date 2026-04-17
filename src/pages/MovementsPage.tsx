@@ -543,7 +543,7 @@ export default function MovementsPage() {
                               <Icon className="h-5 w-5" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <CardTitle className="text-base font-semibold truncate">
+                              <CardTitle className="patient-id text-base font-semibold truncate">
                                 {movement.patient_name}
                               </CardTitle>
                               <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">

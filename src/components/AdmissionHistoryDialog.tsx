@@ -152,7 +152,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
             História Admissional
           </DialogTitle>
           <DialogDescription className="flex items-center justify-between">
-            <span>{patient.name} — Leito {patient.bedNumber}</span>
+            <span className="patient-id">{patient.name} — Leito {patient.bedNumber}</span>
             {lastUpdated && (
               <Badge variant="outline" className="text-xs gap-1">
                 <Clock className="h-3 w-3" />

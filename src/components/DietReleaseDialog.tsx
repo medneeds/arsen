@@ -128,7 +128,7 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
             </div>
             <div>
               <span>Autorização de Dieta</span>
-              <p className="text-sm font-normal text-muted-foreground mt-0.5">
+              <p className="patient-id text-sm font-normal text-muted-foreground mt-0.5">
                 {patient.name} • Leito {patient.bedNumber}
               </p>
             </div>

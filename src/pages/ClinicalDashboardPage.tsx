@@ -538,7 +538,7 @@ const ClinicalDashboardPage = () => {
                                       <span className="text-[9px] text-muted-foreground">• {mov.patient_bed}</span>
                                     )}
                                   </div>
-                                  <p className="text-[11px] text-foreground/80 truncate">{mov.patient_name}</p>
+                                  <p className="patient-id text-[11px] text-foreground/80 truncate">{mov.patient_name}</p>
                                   <p className="text-[9px] text-muted-foreground mt-0.5">
                                     {formatDistanceToNow(new Date(mov.created_at), { addSuffix: true, locale: ptBR })}
                                   </p>

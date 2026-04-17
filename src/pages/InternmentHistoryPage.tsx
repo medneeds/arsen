@@ -420,7 +420,7 @@ const InternmentHistoryPage = () => {
                 ) : (
                   filteredRequests.map((request) => (
                     <TableRow key={request.id} className="hover:bg-muted/30 transition-colors">
-                      <TableCell className="font-medium uppercase">
+                      <TableCell className="patient-id font-medium">
                         {request.patient_name}
                       </TableCell>
                       <TableCell className="uppercase">
@@ -483,7 +483,7 @@ const InternmentHistoryPage = () => {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground uppercase text-xs">Nome:</span>
-                      <p className="font-medium uppercase">{selectedRequest.patient_name}</p>
+                      <p className="patient-id font-medium">{selectedRequest.patient_name}</p>
                     </div>
                     <div>
                       <span className="text-muted-foreground uppercase text-xs">Idade:</span>

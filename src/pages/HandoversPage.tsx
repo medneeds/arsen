@@ -313,8 +313,8 @@ export default function HandoversPage() {
                                     key={patient.id}
                                     className="p-2 bg-muted/20 rounded text-xs space-y-1"
                                   >
-                                    <div className="font-semibold">
-                                      LEITO {patient.bedNumber} - {patient.name}, {formatAgeDisplay(patient.age)}
+                                    <div className="patient-id font-semibold">
+                                      LEITO {patient.bedNumber} - {patient.name}, <span className="preserve-case">{formatAgeDisplay(patient.age)}</span>
                                     </div>
                                     {patient.diagnoses.length > 0 && (
                                       <div className="text-muted-foreground">

@@ -415,7 +415,7 @@ export default function GestorPanelPage() {
                     <div key={alert.id} className={cn("flex items-center gap-3 p-2.5 rounded-lg border", alert.severity === "critical" ? "border-destructive/30 bg-destructive/5" : "border-amber-300/30 bg-amber-50/50 dark:bg-amber-950/10")}>
                       <AlertTriangle className={cn("h-3.5 w-3.5 shrink-0", alert.severity === "critical" ? "text-destructive" : "text-amber-600")} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-foreground truncate">{alert.patientName}</p>
+                        <p className="patient-id text-xs font-semibold text-foreground truncate">{alert.patientName}</p>
                         <p className="text-[10px] text-muted-foreground">{alert.sector} · L{alert.bed} — {alert.detail}</p>
                       </div>
                     </div>
@@ -457,7 +457,7 @@ export default function GestorPanelPage() {
                         )} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold truncate text-foreground">{mov.patient_name}</p>
+                        <p className="patient-id text-xs font-semibold truncate text-foreground">{mov.patient_name}</p>
                         <p className="text-[10px] text-muted-foreground">
                           {mov.movement_type}{mov.destination ? ` → ${mov.destination}` : ""}
                         </p>

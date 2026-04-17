@@ -235,7 +235,7 @@ export default function NirDashboardPage() {
                             <span className="text-xs font-bold block">{bed.bed_number}</span>
                             <span className={cn("h-2 w-2 rounded-full inline-block mt-1", statusInfo.color)} />
                             {bed.patient_name && (
-                              <p className="text-[9px] text-muted-foreground truncate mt-0.5">{bed.patient_name}</p>
+                              <p className="patient-id text-[9px] text-muted-foreground truncate mt-0.5">{bed.patient_name}</p>
                             )}
                           </div>
                         );
@@ -342,7 +342,7 @@ export default function NirDashboardPage() {
                     <CardContent className="py-3 px-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{req.patient_name}</p>
+                          <p className="patient-id text-sm font-medium text-foreground truncate">{req.patient_name}</p>
                           <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                             {req.origin_sector && <span>De: {req.origin_sector}</span>}
                             {req.destination_sector && <span>→ {req.destination_sector}</span>}
