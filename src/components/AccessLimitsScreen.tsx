@@ -7,6 +7,7 @@ import { whitelabel } from "@/config/whitelabel";
 import { BigHelpLogo } from "./BigHelpLogo";
 import { AuthBackgroundFx } from "./auth/AuthBackgroundFx";
 import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
+import arsenLogo from "@/assets/bighelp-map-logo.png";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "ADMINISTRADOR",
@@ -90,20 +91,36 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Header — Hospital hero */}
+        {/* Header — Dual logos hero */}
         <div className="flex flex-col items-center mb-6">
           <motion.div
-            className="relative mb-4"
-            initial={{ opacity: 0, scale: 0.92, y: 8 }}
+            className="relative mb-4 flex items-center gap-4"
+            initial={{ opacity: 0, scale: 0.94, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="absolute inset-0 rounded-full blur-2xl bg-primary/25 -m-3" />
-            <img
-              src={socorraoCrossLogo}
-              alt={hospitalName}
-              className="relative h-16 w-16 object-contain drop-shadow-[0_4px_12px_hsl(var(--primary)/0.3)]"
-            />
+            {/* Arsen */}
+            <div className="relative">
+              <div className="absolute inset-0 rounded-2xl blur-lg bg-primary/20 -m-1.5" />
+              <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border border-border/60 flex items-center justify-center p-1.5 shadow-md shadow-primary/10">
+                <img src={arsenLogo} alt="Arsen" className="h-full w-full object-contain" />
+              </div>
+            </div>
+
+            {/* Vertical ornament */}
+            <div className="flex flex-col items-center gap-1">
+              <span className="h-2 w-px bg-gradient-to-b from-transparent to-foreground/30" />
+              <span className="h-1 w-1 rounded-full bg-primary/70" />
+              <span className="h-2 w-px bg-gradient-to-t from-transparent to-foreground/30" />
+            </div>
+
+            {/* Socorrão */}
+            <div className="relative">
+              <div className="absolute inset-0 rounded-2xl blur-lg bg-primary/20 -m-1.5" />
+              <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border border-border/60 flex items-center justify-center p-1.5 shadow-md shadow-primary/10">
+                <img src={socorraoCrossLogo} alt={hospitalName} className="h-full w-full object-contain" />
+              </div>
+            </div>
           </motion.div>
 
           <motion.h1
@@ -155,8 +172,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             </div>
             <div className="flex-1 min-w-0">
               <p
-                className="preserve-case text-foreground font-medium text-base tracking-tight truncate"
-                style={{ fontFamily: SERIF }}
+                className="preserve-case text-foreground font-semibold text-base tracking-tight truncate"
               >
                 {username}
               </p>
@@ -185,7 +201,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
                     ACESSO TOTAL
                   </p>
                 </div>
-                <p className="preserve-case text-foreground/60 text-xs mt-1 italic" style={{ fontFamily: SERIF }}>
+                <p className="preserve-case text-foreground/60 text-xs mt-1 font-light tracking-wide">
                   Todos os setores e funcionalidades
                 </p>
               </div>
@@ -197,7 +213,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
                     ACESSO RESTRITO
                   </p>
                 </div>
-                <p className="preserve-case text-foreground/60 text-xs mt-1 italic" style={{ fontFamily: SERIF }}>
+                <p className="preserve-case text-foreground/60 text-xs mt-1 font-light tracking-wide">
                   Limitado aos setores vinculados
                 </p>
               </div>
@@ -226,7 +242,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
                   <p className="preserve-case text-foreground/80 text-xs font-medium">
                     Nenhum setor vinculado
                   </p>
-                  <p className="preserve-case text-foreground/55 text-[10px] mt-1 italic" style={{ fontFamily: SERIF }}>
+                  <p className="preserve-case text-foreground/55 text-[10px] mt-1 font-light tracking-wide">
                     Entre em contato com o coordenador
                   </p>
                 </div>
