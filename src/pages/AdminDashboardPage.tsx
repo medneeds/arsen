@@ -326,9 +326,40 @@ const AdminDashboardPage = () => {
         return;
       }
 
+      // Padronização AA-UUU-SSSSSS-DV: gera prontuário oficial e atualiza o cadastro
+      let officialMr: string | null = (data as any).medical_record;
+      try {
+        const { data: unit } = await supabase
+          .from("hospital_units")
+          .select("unit_code")
+          .eq("id", selectedHospitalId)
+          .maybeSingle();
+        const unitCode = (unit as any)?.unit_code && /^[0-9]{3}$/.test((unit as any).unit_code)
+          ? (unit as any).unit_code
+          : "117";
+        const { data: gen, error: genErr } = await (supabase.rpc as any)(
+          "generate_medical_record_number",
+          {
+            p_codigo_unidade: unitCode,
+            p_data_criacao: new Date().toISOString(),
+            p_patient_registry_id: (data as any).id,
+            p_patient_id: null,
+          }
+        );
+        if (!genErr && gen) {
+          officialMr = gen as string;
+          await supabase
+            .from("patient_registry")
+            .update({ medical_record: officialMr })
+            .eq("id", (data as any).id);
+        }
+      } catch (e) {
+        console.warn("Falha ao gerar prontuário oficial (mantém fallback):", e);
+      }
+
       toast.success(
         registerForm.is_unidentified ? "Paciente NÃO IDENTIFICADO cadastrado!" : "Prontuário criado com sucesso!",
-        { description: `Nº ${(data as any).medical_record}${niCode ? ` • ${niCode}` : ""}` }
+        { description: `Nº ${officialMr}${niCode ? ` • ${niCode}` : ""}` }
       );
       setShowRegisterDialog(false);
       setRegisterForm({
@@ -338,7 +369,7 @@ const AdminDashboardPage = () => {
         is_unidentified: false, ni_estimated_age: "", ni_apparent_sex: "",
         ni_skin_color: "", ni_distinctive_marks: "", ni_arrival_circumstance: "",
       });
-      setSelectedPatient(data as any);
+      setSelectedPatient({ ...(data as any), medical_record: officialMr });
       setShowPatientDetail(true);
     } catch (err: any) {
       console.error("Error registering:", err);
@@ -366,12 +397,37 @@ const AdminDashboardPage = () => {
     try {
       const stateId = localStorage.getItem("selected_state_id");
 
-      // 1) Cria o atendimento (encounter)
+      // 1) Cria o atendimento (encounter) — vincula ao prontuário oficial e
+      //    pré-gera o código de atendimento via generate_encounter_code_v2 (12 dígitos sequencial)
+      let preGeneratedCode: string | null = null;
+      let medicalRecordId: string | null = null;
+      try {
+        const { data: mr } = await supabase
+          .from("medical_records")
+          .select("id")
+          .eq("patient_registry_id", selectedPatient.id)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        medicalRecordId = (mr as any)?.id ?? null;
+        if (medicalRecordId) {
+          const { data: code } = await (supabase.rpc as any)(
+            "generate_encounter_code_v2",
+            { p_medical_record_id: medicalRecordId, p_data_hora_admissao: new Date().toISOString() }
+          );
+          preGeneratedCode = (code as string) || null;
+        }
+      } catch (e) {
+        console.warn("Falha ao pré-gerar código de atendimento (usa trigger):", e);
+      }
+
       const { data: enc, error: encErr } = await supabase
         .from("patient_encounters")
         .insert({
           patient_name: selectedPatient.full_name,
           registry_id: selectedPatient.id,
+          medical_record_id: medicalRecordId,
+          encounter_code: preGeneratedCode || undefined,
           hospital_unit_id: selectedHospitalId,
           state_id: stateId,
           department: currentDepartment,
