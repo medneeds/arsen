@@ -548,3 +548,55 @@
     border-radius: inherit;
   }
 }
+
+/* ============================================================
+   Modo Gestor — somente leitura
+   ============================================================ */
+body.gestor-readonly [data-readonly-hide],
+body.gestor-readonly button[title*="Edição"],
+body.gestor-readonly button[title*="edição"],
+body.gestor-readonly button[title*="Editar"],
+body.gestor-readonly button[title*="Excluir"],
+body.gestor-readonly button[title*="Deletar"],
+body.gestor-readonly button[title*="Remover"],
+body.gestor-readonly button[title*="Mover"],
+body.gestor-readonly button[title*="Transferir"],
+body.gestor-readonly button[title*="Movimentar"],
+body.gestor-readonly button[aria-label*="Edit"],
+body.gestor-readonly button[aria-label*="Editar"],
+body.gestor-readonly button[aria-label*="Excluir"],
+body.gestor-readonly button[aria-label*="Remover"] {
+  display: none !important;
+}
+
+body.gestor-readonly main input:not([type="search"]):not([type="checkbox"]):not([type="radio"]),
+body.gestor-readonly main textarea,
+body.gestor-readonly main [contenteditable="true"] {
+  pointer-events: none !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  user-select: text;
+}
+
+body.gestor-readonly main button:has(svg.lucide-grip-vertical),
+body.gestor-readonly main button:has(svg.lucide-plus):not([data-keep-readonly]) {
+  display: none !important;
+}
+
+body.gestor-readonly main::before {
+  content: "Modo Gestor — somente leitura";
+  position: fixed;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 60;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  background: hsl(var(--primary) / 0.12);
+  color: hsl(var(--primary));
+  border: 1px solid hsl(var(--primary) / 0.3);
+  pointer-events: none;
+}
