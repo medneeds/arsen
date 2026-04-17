@@ -86,6 +86,14 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
 
   return (
     <div className={cn("relative", className)}>
+      {/* Click-outside overlay (must come BEFORE dropdown so dropdown sits on top) */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-[60]"
+          onClick={() => { setIsOpen(false); setSearch(""); }}
+        />
+      )}
+
       {/* Trigger */}
       <button
         type="button"
@@ -119,7 +127,7 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-xl shadow-primary/10 z-50 overflow-hidden"
+            className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-xl shadow-primary/10 z-[70] overflow-hidden"
           >
             {/* Search */}
             <div className="p-3 border-b border-border/60">
@@ -147,7 +155,10 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
                   <button
                     key={hospital.id}
                     type="button"
-                    onClick={() => {
+                    onMouseDown={(e) => {
+                      // Prevent overlay from intercepting before click fires on mobile
+                      e.preventDefault();
+                      e.stopPropagation();
                       onSelect(hospital);
                       setIsOpen(false);
                       setSearch("");
@@ -181,14 +192,6 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Click-outside overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => { setIsOpen(false); setSearch(""); }}
-        />
-      )}
     </div>
   );
 }
