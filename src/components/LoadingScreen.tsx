@@ -174,10 +174,9 @@ export function LoadingScreen({ onComplete, duration = 2800 }: LoadingScreenProp
           </span>
         </motion.div>
 
-        {/* Slogan */}
+        {/* Slogan — sans, subtle */}
         <motion.p
-          className="preserve-case text-xs font-light italic text-foreground/65 text-center mb-8 max-w-xs"
-          style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+          className="preserve-case text-[11px] font-light text-foreground/65 text-center mb-8 max-w-xs tracking-wide"
           initial={{ opacity: 0, y: 8 }}
           animate={{
             opacity: phase === "ready" ? 1 : 0,
@@ -185,8 +184,8 @@ export function LoadingScreen({ onComplete, duration = 2800 }: LoadingScreenProp
           }}
           transition={{ duration: 0.5, delay: 0.15 }}
         >
-          “Mapeando cuidados, salvando{" "}
-          <span className="text-primary not-italic font-medium">vidas</span>.”
+          Mapeando cuidados, salvando{" "}
+          <span className="text-primary font-medium">vidas</span>.
         </motion.p>
 
         {/* Progress */}
