@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format, subDays, subMonths, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Search, TrendingUp, UserX, Skull, ArrowLeftRight, FileText, RotateCcw, CalendarIcon, Filter, Loader2 } from "lucide-react";
+import { Search, FileText, RotateCcw, CalendarIcon, Filter, Loader2 } from "lucide-react";
 import { ViewPatientSnapshotDialog } from "@/components/ViewPatientSnapshotDialog";
 import { ScrollToTopButton } from "@/components/ScrollToTopButton";
 import { useDepartment } from "@/contexts/DepartmentContext";
@@ -17,13 +18,18 @@ import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import {
+  MOVEMENT_CATEGORIES,
+  getSubtypeDef,
+  type MovementCategory,
+} from "@/data/movementFlow";
 
 interface PatientMovement {
   id: string;
   patient_name: string;
   patient_bed: string | null;
   patient_sector: string | null;
-  movement_type: "ALTA" | "ÓBITO" | "TRANSFERÊNCIA";
+  movement_type: string;
   destination: string | null;
   notes: string | null;
   responsible_doctor: string | null;
@@ -31,25 +37,16 @@ interface PatientMovement {
   patient_snapshot: any;
 }
 
-const movementConfig = {
-  ALTA: {
-    label: "Alta",
-    icon: TrendingUp,
-    color: "bg-green-500/10 text-green-600 border-green-500/30",
-    badgeColor: "bg-green-500 hover:bg-green-600"
-  },
-  ÓBITO: {
-    label: "Óbito",
-    icon: Skull,
-    color: "bg-red-500/10 text-red-600 border-red-500/30",
-    badgeColor: "bg-red-500 hover:bg-red-600"
-  },
-  TRANSFERÊNCIA: {
-    label: "Transferência",
-    icon: ArrowLeftRight,
-    color: "bg-blue-500/10 text-blue-600 border-blue-500/30",
-    badgeColor: "bg-blue-500 hover:bg-blue-600"
-  }
+const TONE_BADGE: Record<MovementCategory, string> = {
+  ENTRADA: "bg-accent/15 text-accent border-accent/30",
+  TRANSFERENCIA: "bg-primary/15 text-primary border-primary/30",
+  SAIDA: "bg-destructive/15 text-destructive border-destructive/30",
+};
+
+const TONE_BORDER: Record<MovementCategory, string> = {
+  ENTRADA: "border-accent/30 bg-accent/5",
+  TRANSFERENCIA: "border-primary/30 bg-primary/5",
+  SAIDA: "border-destructive/30 bg-destructive/5",
 };
 
 export default function MovementsPage() {
@@ -75,6 +72,7 @@ export default function MovementsPage() {
   const { toast } = useToast();
   const { currentDepartment } = useDepartment();
   const { currentState, currentHospital } = useHospital();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchMovements();
@@ -194,9 +192,12 @@ export default function MovementsPage() {
       );
     }
 
-    // Tab filter
+    // Tab filter (filter by category id)
     if (activeTab !== "all") {
-      filtered = filtered.filter(movement => movement.movement_type === activeTab);
+      filtered = filtered.filter((movement) => {
+        const def = getSubtypeDef(movement.movement_type);
+        return def?.category === activeTab;
+      });
     }
 
     // Date filter using APPLIED dates
@@ -243,11 +244,14 @@ export default function MovementsPage() {
       });
     }
 
+    const byCategory = (cat: MovementCategory) =>
+      baseFiltered.filter((m) => getSubtypeDef(m.movement_type)?.category === cat).length;
+
     return {
       all: baseFiltered.length,
-      ALTA: baseFiltered.filter(m => m.movement_type === "ALTA").length,
-      ÓBITO: baseFiltered.filter(m => m.movement_type === "ÓBITO").length,
-      TRANSFERÊNCIA: baseFiltered.filter(m => m.movement_type === "TRANSFERÊNCIA").length,
+      ENTRADA: byCategory("ENTRADA"),
+      TRANSFERENCIA: byCategory("TRANSFERENCIA"),
+      SAIDA: byCategory("SAIDA"),
     };
   };
 
@@ -495,24 +499,24 @@ export default function MovementsPage() {
             </CardContent>
           </Card>
 
-          {/* Tabs */}
+          {/* Tabs — 3 categorias */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="all">
+              <TabsTrigger value="all" className="uppercase text-xs tracking-wider">
                 Todas <Badge variant="secondary" className="ml-2">{counts.all}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="ALTA">
-                Altas <Badge variant="secondary" className="ml-2">{counts.ALTA}</Badge>
+              <TabsTrigger value="ENTRADA" className="uppercase text-xs tracking-wider">
+                Entradas <Badge variant="secondary" className="ml-2">{counts.ENTRADA}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="ÓBITO">
-                Óbitos <Badge variant="secondary" className="ml-2">{counts.ÓBITO}</Badge>
+              <TabsTrigger value="TRANSFERENCIA" className="uppercase text-xs tracking-wider">
+                Transferências <Badge variant="secondary" className="ml-2">{counts.TRANSFERENCIA}</Badge>
               </TabsTrigger>
-              <TabsTrigger value="TRANSFERÊNCIA">
-                Transferências <Badge variant="secondary" className="ml-2">{counts.TRANSFERÊNCIA}</Badge>
+              <TabsTrigger value="SAIDA" className="uppercase text-xs tracking-wider">
+                Saídas <Badge variant="secondary" className="ml-2">{counts.SAIDA}</Badge>
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value={activeTab} className="mt-6 space-y-4">
+            <TabsContent value={activeTab} className="mt-6 space-y-3">
               {isLoading ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
@@ -522,32 +526,34 @@ export default function MovementsPage() {
               ) : filteredMovements.length === 0 ? (
                 <Card>
                   <CardContent className="p-8 text-center text-muted-foreground">
-                    {searchTerm 
+                    {searchTerm
                       ? "Nenhuma movimentação encontrada para esta busca."
                       : "Nenhuma movimentação registrada ainda."}
                   </CardContent>
                 </Card>
               ) : (
                 filteredMovements.map((movement) => {
-                  const config = movementConfig[movement.movement_type];
-                  const Icon = config.icon;
+                  const def = getSubtypeDef(movement.movement_type);
+                  const cat = def?.category ?? "TRANSFERENCIA";
+                  const catDef = MOVEMENT_CATEGORIES.find((c) => c.id === cat)!;
+                  const Icon = def?.icon ?? catDef.icon;
+                  const borderTone = TONE_BORDER[cat];
+                  const badgeTone = TONE_BADGE[cat];
 
                   return (
-                    <Card key={movement.id} className={`border ${config.color}`}>
+                    <Card key={movement.id} className={cn("border", borderTone)}>
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className={`p-2 rounded-lg ${config.color} border`}>
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className={cn("p-2 rounded-lg border", badgeTone)}>
                               <Icon className="h-5 w-5" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <CardTitle className="text-lg font-semibold">
+                              <CardTitle className="text-base font-semibold truncate">
                                 {movement.patient_name}
                               </CardTitle>
                               <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                                {movement.patient_bed && (
-                                  <span>Leito: {movement.patient_bed}</span>
-                                )}
+                                {movement.patient_bed && <span>Leito: {movement.patient_bed}</span>}
                                 {movement.patient_sector && (
                                   <>
                                     {movement.patient_bed && <span>•</span>}
@@ -557,9 +563,9 @@ export default function MovementsPage() {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge className={config.badgeColor}>
-                              {config.label}
+                          <div className="flex items-center gap-2 flex-wrap justify-end">
+                            <Badge variant="outline" className={cn("uppercase text-[10px] tracking-wider", badgeTone)}>
+                              {def?.label ?? movement.movement_type}
                             </Badge>
                             {movement.patient_snapshot && (
                               <Button
@@ -575,7 +581,22 @@ export default function MovementsPage() {
                                 Ver Dados
                               </Button>
                             )}
-                            {movement.movement_type === "TRANSFERÊNCIA" && movement.patient_snapshot && (
+                            {def?.linksToDischargeSummary && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  navigate(
+                                    `/alta-desfecho?patient=${encodeURIComponent(movement.patient_name)}&bed=${encodeURIComponent(movement.patient_bed ?? "")}`,
+                                  )
+                                }
+                                className="h-7 gap-1.5"
+                              >
+                                <FileText className="h-3.5 w-3.5" />
+                                Sumário
+                              </Button>
+                            )}
+                            {cat === "TRANSFERENCIA" && movement.patient_snapshot && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -589,27 +610,33 @@ export default function MovementsPage() {
                           </div>
                         </div>
                       </CardHeader>
-                      <CardContent className="space-y-3">
+                      <CardContent className="space-y-2">
                         {movement.destination && (
                           <div className="flex items-start gap-2">
-                            <span className="text-sm font-medium text-muted-foreground min-w-[120px]">Destino:</span>
+                            <span className="text-xs font-medium text-muted-foreground min-w-[110px] uppercase tracking-wider">
+                              Destino
+                            </span>
                             <span className="text-sm font-medium uppercase">{movement.destination}</span>
                           </div>
                         )}
                         {movement.responsible_doctor && (
                           <div className="flex items-start gap-2">
-                            <span className="text-sm font-medium text-muted-foreground min-w-[120px]">Médico Resp.:</span>
+                            <span className="text-xs font-medium text-muted-foreground min-w-[110px] uppercase tracking-wider">
+                              Médico Resp.
+                            </span>
                             <span className="text-sm font-medium uppercase">{movement.responsible_doctor}</span>
                           </div>
                         )}
                         {movement.notes && (
                           <div className="flex items-start gap-2">
-                            <span className="text-sm font-medium text-muted-foreground min-w-[120px]">Observações:</span>
+                            <span className="text-xs font-medium text-muted-foreground min-w-[110px] uppercase tracking-wider">
+                              Observações
+                            </span>
                             <span className="text-sm uppercase">{movement.notes}</span>
                           </div>
                         )}
                         <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
-                          <span>Registrado em:</span>
+                          <span className="uppercase tracking-wider">Registrado em</span>
                           <span className="font-medium">
                             {format(new Date(movement.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                           </span>
