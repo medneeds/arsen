@@ -64,6 +64,7 @@ interface DailyEncounter {
   status: string;
   created_at: string;
   created_by: string | null;
+  reception_point: ReceptionPoint | null;
   // Enriquecido a partir de patient_registry
   documents_pending?: boolean;
   partial_identification?: boolean;
@@ -85,6 +86,30 @@ interface ReceptionAction {
   record_id: string | null;
   created_at: string;
   new_data: any;
+  user_id: string | null;
+}
+
+interface DeskSession {
+  id: string;
+  user_id: string;
+  user_name: string | null;
+  reception_point: ReceptionPoint;
+  started_at: string;
+  ended_at: string | null;
+  last_heartbeat_at: string;
+}
+
+interface UserStats {
+  userId: string;
+  userName: string;
+  point: ReceptionPoint | null;
+  totalEncounters: number;
+  expressCount: number;
+  pendingDocsCount: number;
+  destinationCounts: Record<string, number>;
+  avgRegistrationSec: number | null;
+  activeMinutes: number;
+  isOnline: boolean;
 }
 
 interface Props {
@@ -94,10 +119,12 @@ interface Props {
   onTriageExpress: () => void;
   /** Abre cadastro de novo prontuário */
   onNewRegistration: () => void;
-  /** Sub-tab inicial: "dia" | "aguardando" | "minhas" */
-  defaultSubTab?: "dia" | "aguardando" | "minhas";
+  /** Sub-tab inicial: "dia" | "aguardando" | "minhas" | "equipe" */
+  defaultSubTab?: "dia" | "aguardando" | "minhas" | "equipe";
   /** Esconde botões de ação rápida (quando o pai já tem) */
   hideQuickActions?: boolean;
+  /** Posto atual do recepcionista logado (para destacar suas ações) */
+  currentPoint?: ReceptionPoint | null;
 }
 
 /**
