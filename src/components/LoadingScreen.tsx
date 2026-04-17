@@ -5,6 +5,9 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { BigHelpLogo } from "./BigHelpLogo";
 import { AuthBackgroundFx } from "./auth/AuthBackgroundFx";
 import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
+import arsenLogo from "@/assets/bighelp-map-logo.png";
+
+const SERIF = "'Playfair Display', Georgia, serif";
 
 interface LoadingScreenProps {
   onComplete?: () => void;
