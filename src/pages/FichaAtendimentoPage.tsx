@@ -516,14 +516,18 @@ const FichaAtendimentoPage = () => {
             display: block !important;
             position: absolute; top: 0; left: 0; width: 100%;
           }
-          @page { size: A4 portrait; margin: 12mm; }
+          @page { size: A4 portrait; margin: 14mm 14mm 16mm 14mm; }
+          html, body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
         }
       `}</style>
     </div>
   );
 };
 
-// === PRINTABLE FICHA DE ATENDIMENTO ===
+// === PRINTABLE FICHA DE ATENDIMENTO — Padrão Institucional Socorrão I ===
 function PrintableFicha({
   patient,
   encounters,
@@ -533,246 +537,705 @@ function PrintableFicha({
   encounters: Encounter[];
   hospitalName: string;
 }) {
+  const inst = whitelabel.institution;
+  const colors = whitelabel.theme.institutionalColors;
+  const headerLines = getInstitutionalHeaderLines();
+  const now = new Date();
+
+  // ---- Tipologia institucional ----
+  const fontFamily =
+    "'Helvetica Neue', 'Segoe UI', Helvetica, Arial, sans-serif";
+  const ink = "#0a1628";
+  const inkSoft = "#475569";
+  const inkMuted = "#94a3b8";
+  const lineSoft = "#cbd5e1";
+  const surfaceSoft = "#f8fafc";
+
   const cellStyle: React.CSSProperties = {
-    border: "0.5px solid #94a3b8",
-    padding: "3px 6px",
-    fontSize: "7.5pt",
-    lineHeight: 1.3,
+    border: `0.5px solid ${lineSoft}`,
+    padding: "4px 7px",
+    fontSize: "8pt",
+    lineHeight: 1.35,
     verticalAlign: "top",
+    color: ink,
   };
-  const headerCellStyle: React.CSSProperties = {
+  const labelCellStyle: React.CSSProperties = {
     ...cellStyle,
     fontWeight: 700,
     fontSize: "6.5pt",
-    backgroundColor: "#f1f5f9",
-    color: "#334155",
+    backgroundColor: surfaceSoft,
+    color: inkSoft,
     textTransform: "uppercase",
-    letterSpacing: "0.3px",
+    letterSpacing: "0.4px",
+    width: "70px",
   };
-  const sectionStyle: React.CSSProperties = {
-    fontWeight: 800,
-    fontSize: "8pt",
-    backgroundColor: "#0c4a6e",
-    color: "#fff",
-    textAlign: "center",
-    letterSpacing: "0.5px",
-    padding: "5px 6px",
-    border: "0.5px solid #0c4a6e",
+
+  // Cor do tipo de atendimento (timeline dot)
+  const typeMeta = (type: string) => {
+    if (type === "classificacao_risco")
+      return { color: colors.red, label: "Classificação de Risco" };
+    if (type === "prescricao")
+      return { color: colors.blue, label: "Prescrição Médica" };
+    if (type === "evolucao")
+      return { color: colors.green, label: "Evolução Clínica" };
+    return { color: colors.orange, label: "Atendimento" };
   };
+
+  // Banda colorida institucional (cruz Socorrão)
+  const InstitutionalBand = () => (
+    <div style={{ display: "flex", height: "4px", marginTop: "6px" }}>
+      <div style={{ flex: 1, backgroundColor: colors.red }} />
+      <div style={{ flex: 1, backgroundColor: colors.orange }} />
+      <div style={{ flex: 1, backgroundColor: colors.yellow }} />
+      <div style={{ flex: 1, backgroundColor: colors.green }} />
+      <div style={{ flex: 1, backgroundColor: colors.blue }} />
+    </div>
+  );
 
   return (
     <div
       style={{
-        fontFamily: "Arial, Helvetica, sans-serif",
-        color: "#0f172a",
-        width: "186mm",
+        fontFamily,
+        color: ink,
+        width: "182mm",
         margin: "0 auto",
-        lineHeight: 1.3,
+        lineHeight: 1.35,
+        position: "relative",
       }}
     >
-      {/* Header */}
-      <div
+      {/* Marca d'água — cruz colorida muito sutil */}
+      <img
+        src={socorraoCross}
+        alt=""
+        aria-hidden
         style={{
-          borderBottom: "2px solid #0c4a6e",
-          paddingBottom: "4px",
-          marginBottom: "6px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "120mm",
+          height: "auto",
+          opacity: 0.04,
+          zIndex: 0,
+          pointerEvents: "none",
         }}
-      >
-        <div>
-          <div style={{ fontSize: "7pt", color: "#64748b", fontWeight: 600 }}>
-            PREFEITURA DE SÃO LUÍS — SECRETARIA MUNICIPAL DE SAÚDE
+      />
+
+      {/* ========== CABEÇALHO INSTITUCIONAL (Norma Zero) ========== */}
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            paddingBottom: "8px",
+          }}
+        >
+          {/* Logo institucional */}
+          <img
+            src={socorraoCross}
+            alt={inst.hospitalLogoAlt}
+            style={{
+              width: "62px",
+              height: "62px",
+              objectFit: "contain",
+              flexShrink: 0,
+            }}
+          />
+
+          {/* Hierarquia institucional centralizada */}
+          <div style={{ flex: 1, textAlign: "center" }}>
+            <div
+              style={{
+                fontSize: "7.5pt",
+                fontWeight: 600,
+                color: inkSoft,
+                letterSpacing: "0.6px",
+                textTransform: "uppercase",
+              }}
+            >
+              {headerLines[0]}
+            </div>
+            <div
+              style={{
+                fontSize: "8pt",
+                fontWeight: 600,
+                color: inkSoft,
+                letterSpacing: "0.5px",
+                textTransform: "uppercase",
+                marginTop: "1px",
+              }}
+            >
+              {headerLines[1]}
+            </div>
+            <div
+              style={{
+                fontSize: "11pt",
+                fontWeight: 800,
+                color: ink,
+                letterSpacing: "0.8px",
+                textTransform: "uppercase",
+                marginTop: "3px",
+                lineHeight: 1.15,
+              }}
+            >
+              {headerLines[2]}
+            </div>
+            <div
+              style={{
+                fontSize: "6.5pt",
+                color: inkMuted,
+                marginTop: "3px",
+                fontStyle: "italic",
+              }}
+            >
+              {inst.address}
+            </div>
           </div>
-          <div style={{ fontSize: "11pt", fontWeight: 800, color: "#0c4a6e" }}>
-            {hospitalName}
+
+          {/* Bloco direito — número da ficha */}
+          <div
+            style={{
+              minWidth: "120px",
+              textAlign: "right",
+              borderLeft: `1px solid ${lineSoft}`,
+              paddingLeft: "10px",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "6pt",
+                color: inkMuted,
+                letterSpacing: "0.8px",
+                textTransform: "uppercase",
+                fontWeight: 700,
+              }}
+            >
+              Ficha de Atendimento
+            </div>
+            <div
+              style={{
+                fontSize: "11pt",
+                fontWeight: 800,
+                color: ink,
+                marginTop: "2px",
+                fontVariantNumeric: "tabular-nums",
+                letterSpacing: "0.5px",
+              }}
+            >
+              Nº {patient.fichaNumber || "—"}
+            </div>
+            <div
+              style={{
+                fontSize: "6.5pt",
+                color: inkSoft,
+                marginTop: "2px",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {patient.fichaDate}
+            </div>
           </div>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: "9pt", fontWeight: 800, color: "#0c4a6e" }}>
-            Ficha {patient.fichaNumber || "—"}
-          </div>
-          <div style={{ fontSize: "6.5pt", color: "#64748b" }}>{patient.fichaDate}</div>
+
+        {/* Banda colorida institucional (cruz Socorrão) */}
+        <InstitutionalBand />
+      </div>
+
+      {/* ========== TÍTULO DO DOCUMENTO ========== */}
+      <div
+        style={{
+          textAlign: "center",
+          margin: "10px 0 8px 0",
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <div
+          style={{
+            fontSize: "12pt",
+            fontWeight: 800,
+            color: ink,
+            letterSpacing: "2px",
+            textTransform: "uppercase",
+          }}
+        >
+          Ficha de Atendimento
+        </div>
+        <div
+          style={{
+            fontSize: "7pt",
+            color: inkSoft,
+            marginTop: "2px",
+            letterSpacing: "0.4px",
+          }}
+        >
+          Histórico Cronológico do Atendimento — Setor de Urgência e Emergência
         </div>
       </div>
 
-      {/* DADOS DO PACIENTE */}
-      <div style={{ ...sectionStyle, marginBottom: "2px" }}>DADOS DO(A) PACIENTE</div>
-      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "6px" }}>
+      {/* ========== DADOS DO PACIENTE ========== */}
+      <SectionTitle title="Identificação do Paciente" color={ink} />
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          marginBottom: "10px",
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
         <tbody>
           <tr>
-            <td style={headerCellStyle}>Nome</td>
-            <td style={{ ...cellStyle, fontWeight: 800, fontSize: "8.5pt" }} colSpan={3}>
+            <td style={labelCellStyle}>Nome</td>
+            <td
+              style={{
+                ...cellStyle,
+                fontWeight: 800,
+                fontSize: "9pt",
+                textTransform: "uppercase",
+                letterSpacing: "0.3px",
+              }}
+              colSpan={3}
+            >
               {patient.name || "—"}
             </td>
-            <td style={headerCellStyle}>Prontuário</td>
-            <td style={{ ...cellStyle, fontWeight: 700 }}>{patient.record || "—"}</td>
+            <td style={labelCellStyle}>Prontuário</td>
+            <td
+              style={{
+                ...cellStyle,
+                fontWeight: 700,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {patient.record || "—"}
+            </td>
           </tr>
           <tr>
-            <td style={headerCellStyle}>Nome Social</td>
-            <td style={cellStyle} colSpan={3}>{patient.socialName || "Não cadastrado"}</td>
-            <td style={headerCellStyle}>Sexo</td>
+            <td style={labelCellStyle}>Nome social</td>
+            <td style={cellStyle} colSpan={3}>
+              {patient.socialName || "Não cadastrado"}
+            </td>
+            <td style={labelCellStyle}>Sexo</td>
             <td style={cellStyle}>{patient.sex || "—"}</td>
           </tr>
           <tr>
-            <td style={headerCellStyle}>Data Nasc.</td>
-            <td style={cellStyle}>{patient.birthDate || "—"} {patient.age ? `${patient.age}` : ""}</td>
-            <td style={headerCellStyle}>CNS</td>
+            <td style={labelCellStyle}>Nascimento</td>
+            <td style={cellStyle}>
+              {patient.birthDate || "—"}{" "}
+              {patient.age ? (
+                <span style={{ color: inkSoft }}>· {patient.age}</span>
+              ) : null}
+            </td>
+            <td style={labelCellStyle}>CNS</td>
             <td style={cellStyle}>{patient.cns || "—"}</td>
-            <td style={headerCellStyle}>CPF</td>
+            <td style={labelCellStyle}>CPF</td>
             <td style={cellStyle}>{patient.cpf || "—"}</td>
           </tr>
           <tr>
-            <td style={headerCellStyle}>Mãe</td>
-            <td style={cellStyle} colSpan={3}>{patient.motherName || "—"}</td>
-            <td style={headerCellStyle}>Raça</td>
+            <td style={labelCellStyle}>Mãe</td>
+            <td style={cellStyle} colSpan={3}>
+              {patient.motherName || "—"}
+            </td>
+            <td style={labelCellStyle}>Raça/Cor</td>
             <td style={cellStyle}>{patient.race || "—"}</td>
           </tr>
           <tr>
-            <td style={headerCellStyle}>Endereço</td>
-            <td style={cellStyle} colSpan={3}>{patient.address || "—"}</td>
-            <td style={headerCellStyle}>Telefones</td>
+            <td style={labelCellStyle}>Endereço</td>
+            <td style={cellStyle} colSpan={3}>
+              {patient.address || "—"}
+            </td>
+            <td style={labelCellStyle}>Telefone</td>
             <td style={cellStyle}>{patient.phone || "—"}</td>
           </tr>
           <tr>
-            <td style={headerCellStyle}>Cidade</td>
-            <td style={cellStyle} colSpan={5}>{patient.city || "—"}</td>
+            <td style={labelCellStyle}>Cidade</td>
+            <td style={cellStyle} colSpan={5}>
+              {patient.city || "—"}
+            </td>
           </tr>
         </tbody>
       </table>
 
-      {/* ATENDIMENTOS */}
-      <div style={{ ...sectionStyle, marginBottom: "4px" }}>ATENDIMENTOS</div>
+      {/* ========== TIMELINE CRONOLÓGICA ========== */}
+      <SectionTitle
+        title={`Linha do Tempo do Atendimento · ${encounters.length} evento${
+          encounters.length !== 1 ? "s" : ""
+        }`}
+        color={ink}
+      />
 
-      {encounters.map((enc, idx) => (
-        <div
-          key={enc.id}
-          style={{
-            border: "0.5px solid #94a3b8",
-            marginBottom: "4px",
-            pageBreakInside: "avoid",
-          }}
-        >
-          {/* Encounter header */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "3px 6px",
-              borderBottom: "0.5px solid #cbd5e1",
-              backgroundColor: "#f8fafc",
-            }}
-          >
-            <div>
-              <span
-                style={{
-                  fontWeight: 800,
-                  fontSize: "8pt",
-                  color: "#0c4a6e",
-                  marginRight: "8px",
-                }}
-              >
-                {idx + 1}/{encounters.length}
-              </span>
-              <span style={{ fontWeight: 700, fontSize: "7.5pt" }}>{enc.sector}</span>
-              {enc.professionalName && (
-                <span style={{ fontSize: "7pt", color: "#475569", marginLeft: "8px" }}>
-                  {enc.professionalName}
-                  {enc.professionalCRM ? ` — CRM ${enc.professionalCRM}` : ""}
-                </span>
-              )}
-            </div>
-            <div style={{ fontSize: "6.5pt", color: "#64748b", textAlign: "right" }}>
-              <div>Início: {format(new Date(enc.startTime), "dd/MM/yyyy HH:mm:ss")}</div>
-              <div>Encerrado: {format(new Date(enc.endTime), "dd/MM/yyyy HH:mm:ss")}</div>
-            </div>
-          </div>
+      <div style={{ position: "relative", zIndex: 1 }}>
+        {encounters.map((enc, idx) => {
+          const meta = typeMeta(enc.type);
+          const isLast = idx === encounters.length - 1;
+          const start = new Date(enc.startTime);
+          const end = new Date(enc.endTime);
+          const sameDay =
+            format(start, "yyyyMMdd") === format(end, "yyyyMMdd");
+          const durMin = Math.max(
+            0,
+            Math.round((end.getTime() - start.getTime()) / 60000)
+          );
 
-          {/* Encounter content */}
-          <div style={{ padding: "4px 6px" }}>
-            {enc.type === "classificacao_risco" && (
-              <div style={{ fontSize: "6.5pt", fontWeight: 700, color: "#dc2626", marginBottom: "2px", letterSpacing: "0.3px" }}>
-                CLASSIFICAÇÃO DE RISCO
-              </div>
-            )}
+          return (
             <div
+              key={enc.id}
               style={{
-                fontSize: "7pt",
-                lineHeight: 1.4,
-                color: "#0f172a",
-                whiteSpace: "pre-wrap",
+                display: "flex",
+                gap: "10px",
+                pageBreakInside: "avoid",
+                marginBottom: isLast ? "0" : "8px",
               }}
             >
-              {enc.content}
-            </div>
-            {enc.diagnoses && (
-              <div style={{ fontSize: "7pt", color: "#334155", marginTop: "3px" }}>
-                <span style={{ fontWeight: 800 }}>Diagnósticos: </span>
-                {enc.diagnoses}
+              {/* Coluna timeline (dot + linha) */}
+              <div
+                style={{
+                  position: "relative",
+                  width: "26px",
+                  flexShrink: 0,
+                  paddingTop: "2px",
+                }}
+              >
+                {/* Linha vertical */}
+                {!isLast && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: "12px",
+                      top: "18px",
+                      bottom: "-8px",
+                      width: "1px",
+                      backgroundColor: lineSoft,
+                    }}
+                  />
+                )}
+                {/* Dot colorido */}
+                <div
+                  style={{
+                    width: "14px",
+                    height: "14px",
+                    borderRadius: "50%",
+                    backgroundColor: meta.color,
+                    border: "2px solid #fff",
+                    boxShadow: `0 0 0 1px ${meta.color}`,
+                    margin: "0 auto",
+                  }}
+                />
+                {/* Numeração */}
+                <div
+                  style={{
+                    fontSize: "6pt",
+                    fontWeight: 800,
+                    color: inkSoft,
+                    textAlign: "center",
+                    marginTop: "3px",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {String(idx + 1).padStart(2, "0")}
+                </div>
               </div>
-            )}
-            {enc.requests && (
-              <div style={{ fontSize: "7pt", color: "#334155" }}>
-                <span style={{ fontWeight: 800 }}>Solicitações: </span>
-                {enc.requests}
-              </div>
-            )}
-            {enc.outcome && (
-              <div style={{ fontSize: "7pt", color: "#334155" }}>
-                <span style={{ fontWeight: 800 }}>Desfecho: </span>
-                {enc.outcome}
-              </div>
-            )}
-          </div>
-        </div>
-      ))}
 
-      {/* Footer */}
+              {/* Card do evento */}
+              <div
+                style={{
+                  flex: 1,
+                  border: `0.5px solid ${lineSoft}`,
+                  borderLeft: `3px solid ${meta.color}`,
+                  borderRadius: "2px",
+                  backgroundColor: "#fff",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Cabeçalho do evento */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    padding: "5px 8px",
+                    backgroundColor: surfaceSoft,
+                    borderBottom: `0.5px solid ${lineSoft}`,
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: "6pt",
+                        fontWeight: 800,
+                        color: meta.color,
+                        letterSpacing: "0.6px",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {meta.label}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "8pt",
+                        fontWeight: 700,
+                        color: ink,
+                        marginTop: "1px",
+                      }}
+                    >
+                      {enc.sector}
+                      {enc.professionalName && (
+                        <span
+                          style={{
+                            fontSize: "7pt",
+                            color: inkSoft,
+                            fontWeight: 500,
+                            marginLeft: "6px",
+                          }}
+                        >
+                          · {enc.professionalName}
+                          {enc.professionalCRM
+                            ? ` — CRM ${enc.professionalCRM}`
+                            : ""}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      textAlign: "right",
+                      fontSize: "6.5pt",
+                      color: inkSoft,
+                      fontVariantNumeric: "tabular-nums",
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, color: ink }}>
+                      {format(start, "dd/MM/yyyy")}
+                    </div>
+                    <div>
+                      {format(start, "HH:mm:ss")}
+                      {sameDay
+                        ? ` → ${format(end, "HH:mm:ss")}`
+                        : ` → ${format(end, "dd/MM HH:mm")}`}
+                    </div>
+                    {durMin > 0 && (
+                      <div style={{ color: inkMuted, fontSize: "6pt" }}>
+                        Duração: {durMin >= 60
+                          ? `${Math.floor(durMin / 60)}h ${durMin % 60}min`
+                          : `${durMin} min`}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Conteúdo do evento */}
+                <div style={{ padding: "6px 8px" }}>
+                  <div
+                    style={{
+                      fontSize: "7.5pt",
+                      lineHeight: 1.45,
+                      color: ink,
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {enc.content}
+                  </div>
+
+                  {(enc.diagnoses || enc.requests || enc.outcome) && (
+                    <div
+                      style={{
+                        marginTop: "5px",
+                        paddingTop: "4px",
+                        borderTop: `0.5px dashed ${lineSoft}`,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "2px",
+                      }}
+                    >
+                      {enc.diagnoses && (
+                        <FieldRow
+                          label="Diagnósticos"
+                          value={enc.diagnoses}
+                          color={ink}
+                          labelColor={inkSoft}
+                        />
+                      )}
+                      {enc.requests && (
+                        <FieldRow
+                          label="Solicitações"
+                          value={enc.requests}
+                          color={ink}
+                          labelColor={inkSoft}
+                        />
+                      )}
+                      {enc.outcome && (
+                        <FieldRow
+                          label="Desfecho"
+                          value={enc.outcome}
+                          color={ink}
+                          labelColor={inkSoft}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {encounters.length === 0 && (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "20px",
+              fontSize: "8pt",
+              color: inkMuted,
+              border: `0.5px dashed ${lineSoft}`,
+              borderRadius: "2px",
+            }}
+          >
+            Nenhum evento registrado para este atendimento
+          </div>
+        )}
+      </div>
+
+      {/* ========== ASSINATURA ========== */}
       <div
         style={{
-          marginTop: "16px",
-          borderTop: "0.5px solid #cbd5e1",
-          paddingTop: "6px",
+          marginTop: "20px",
+          paddingTop: "10px",
+          borderTop: `1px solid ${lineSoft}`,
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-end",
           pageBreakInside: "avoid",
+          position: "relative",
+          zIndex: 1,
         }}
       >
-        <div style={{ fontSize: "6pt", color: "#94a3b8", lineHeight: 1.4 }}>
-          <div>Endereço: Rua do Passeio, S/N, Centro, São Luís-MA</div>
-          <div>CNPJ: 07008865000143 — Telefone: (98) 2211054</div>
-          <div>
-            Impresso em {format(new Date(), "dd/MM/yyyy HH:mm:ss")} [Ficha de Atendimento]
+        <div style={{ fontSize: "6.5pt", color: inkMuted, lineHeight: 1.5 }}>
+          <div style={{ fontWeight: 700, color: inkSoft }}>
+            {inst.hospitalFullName}
           </div>
+          <div>{inst.address}</div>
+          <div>{inst.email}</div>
         </div>
-        <div style={{ textAlign: "center" }}>
+
+        <div style={{ textAlign: "center", minWidth: "200px" }}>
           <div
             style={{
-              width: "180px",
-              borderBottom: "1.5px solid #0f172a",
+              width: "100%",
+              borderBottom: `1px solid ${ink}`,
               marginBottom: "4px",
+              height: "30px",
             }}
           />
-          <div style={{ fontSize: "7pt", fontWeight: 700 }}>Assinatura / Carimbo do Médico</div>
-          <div style={{ fontSize: "6.5pt", color: "#64748b" }}>CRM: _______________</div>
+          <div style={{ fontSize: "7pt", fontWeight: 700, color: ink }}>
+            Assinatura e Carimbo do Médico Responsável
+          </div>
+          <div
+            style={{
+              fontSize: "6.5pt",
+              color: inkSoft,
+              marginTop: "2px",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            CRM/____ Nº _____________
+          </div>
         </div>
       </div>
 
-      {/* System footer */}
+      {/* ========== RODAPÉ DO SISTEMA ========== */}
       <div
         style={{
-          marginTop: "8px",
+          marginTop: "10px",
+          paddingTop: "5px",
+          borderTop: `0.5px solid ${lineSoft}`,
+          display: "flex",
+          justifyContent: "space-between",
           fontSize: "5.5pt",
-          color: "#94a3b8",
-          textAlign: "center",
-          borderTop: "0.5px solid #e2e8f0",
-          paddingTop: "3px",
+          color: inkMuted,
+          letterSpacing: "0.3px",
+          position: "relative",
+          zIndex: 1,
         }}
       >
-        Documento gerado pelo sistema BigHelp Map — {format(new Date(), "dd/MM/yyyy HH:mm:ss")}
+        <span>
+          {whitelabel.print.systemLabel} · Documento gerado automaticamente
+        </span>
+        <span style={{ fontVariantNumeric: "tabular-nums" }}>
+          {format(now, "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR })}
+        </span>
+        <span>
+          {whitelabel.compliance.normaZeroCode} · v
+          {whitelabel.compliance.normaZeroVersion}
+        </span>
       </div>
+    </div>
+  );
+}
+
+// === Helpers de UI institucional ===
+function SectionTitle({ title, color }: { title: string; color: string }) {
+  return (
+    <div
+      style={{
+        position: "relative",
+        zIndex: 1,
+        marginBottom: "4px",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+      }}
+    >
+      <div
+        style={{
+          fontSize: "7pt",
+          fontWeight: 800,
+          color,
+          letterSpacing: "1.5px",
+          textTransform: "uppercase",
+        }}
+      >
+        {title}
+      </div>
+      <div
+        style={{
+          flex: 1,
+          height: "1px",
+          backgroundColor: "#cbd5e1",
+        }}
+      />
+    </div>
+  );
+}
+
+function FieldRow({
+  label,
+  value,
+  color,
+  labelColor,
+}: {
+  label: string;
+  value: string;
+  color: string;
+  labelColor: string;
+}) {
+  return (
+    <div style={{ fontSize: "7pt", lineHeight: 1.4, color }}>
+      <span
+        style={{
+          fontWeight: 800,
+          color: labelColor,
+          textTransform: "uppercase",
+          fontSize: "6.5pt",
+          letterSpacing: "0.4px",
+          marginRight: "4px",
+        }}
+      >
+        {label}:
+      </span>
+      {value}
     </div>
   );
 }
