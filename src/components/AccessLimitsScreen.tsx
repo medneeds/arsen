@@ -6,6 +6,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { whitelabel } from "@/config/whitelabel";
 import { BigHelpLogo } from "./BigHelpLogo";
 import { AuthBackgroundFx } from "./auth/AuthBackgroundFx";
+import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "ADMINISTRADOR",
@@ -60,7 +61,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
 
   const hospitalName =
     currentHospital?.name || whitelabel.institution.hospitalShortName;
-  const hospitalLogo = whitelabel.logos.hospital;
+  const hospitalLogo = socorraoCrossLogo;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
@@ -89,14 +90,12 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             <BigHelpLogo size="sm" glow />
             <div className="h-10 w-px bg-gradient-to-b from-transparent via-border to-transparent" />
             <div className="relative">
-              <div className="absolute inset-0 rounded-xl blur-xl bg-primary/15 -m-2" />
-              <div className="relative h-12 w-12 rounded-xl bg-white ring-2 ring-border shadow-md flex items-center justify-center overflow-hidden p-1">
-                <img
-                  src={hospitalLogo}
-                  alt={hospitalName}
-                  className="max-h-full max-w-full object-contain"
-                />
-              </div>
+              <div className="absolute inset-0 rounded-full blur-xl bg-primary/20 -m-1.5" />
+              <img
+                src={hospitalLogo}
+                alt={hospitalName}
+                className="relative h-12 w-12 object-contain drop-shadow-md"
+              />
             </div>
           </motion.div>
           <motion.div
