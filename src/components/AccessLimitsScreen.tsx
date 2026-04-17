@@ -103,7 +103,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             <div className="relative">
               <div className="absolute inset-0 rounded-2xl blur-lg bg-primary/20 -m-1.5" />
               <div className="relative h-12 w-12 rounded-2xl bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border border-border/60 flex items-center justify-center p-1.5 shadow-md shadow-primary/10">
-                <img src={arsenLogo} alt="Arsen" className="h-full w-full object-contain" />
+                <img src={socorraoCrossLogo} alt="Arsen" className="h-full w-full object-contain" />
               </div>
             </div>
 
