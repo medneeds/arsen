@@ -365,7 +365,88 @@ export default function GestorPanelPage() {
               </Badge>
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            {/* Hierarchical sector filter */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Filter className="h-4 w-4 text-primary" />
+                  <span className="font-semibold">{sectorDisplayName}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" sideOffset={6} className="w-80 p-0 border-border/60 shadow-lg">
+                <div className="px-3 py-2.5 border-b border-border/60 bg-muted/40">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    Filtrar dados do painel
+                  </p>
+                </div>
+                <ScrollArea className="max-h-[60vh]">
+                  <div className="p-1.5 space-y-3">
+                    {/* All sectors */}
+                    <button
+                      type="button"
+                      onClick={() => applyFilter("ALL")}
+                      className={cn(
+                        "w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md text-[11px] font-semibold transition-all",
+                        isAllSectors ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <LayoutGrid className={cn("h-3.5 w-3.5", isAllSectors ? "text-primary" : "text-muted-foreground")} />
+                        <span className="uppercase tracking-wide">Todos os setores</span>
+                      </div>
+                      {isAllSectors && <Check className="h-3.5 w-3.5" />}
+                    </button>
+
+                    {/* Blocks + sectors */}
+                    <div className="space-y-2">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70 px-2">
+                        Blocos e setores
+                      </p>
+                      {SECTOR_BLOCKS.map(block => {
+                        const blockId = `BLOCK:${block.id}`;
+                        const blockActive = sectorFilter === blockId;
+                        return (
+                          <div key={block.id} className="space-y-0.5">
+                            <button
+                              type="button"
+                              onClick={() => applyFilter(blockId)}
+                              className={cn(
+                                "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-[0.14em] transition-all",
+                                blockActive ? "bg-primary/10 text-primary" : "text-muted-foreground/80 hover:bg-muted/60 hover:text-foreground"
+                              )}
+                            >
+                              <span>📊 Bloco {block.label}</span>
+                              {blockActive && <Check className="h-3 w-3" />}
+                            </button>
+                            <div className="grid grid-cols-1 gap-0.5 pl-3">
+                              {block.departments.map(dept => {
+                                const isActive = sectorFilter === dept;
+                                return (
+                                  <button
+                                    key={dept}
+                                    type="button"
+                                    onClick={() => applyFilter(dept)}
+                                    className={cn(
+                                      "flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all text-left",
+                                      isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-muted"
+                                    )}
+                                  >
+                                    <span className="truncate">{dept}</span>
+                                    {isActive && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
+
             <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="gap-2">
               {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               Exportar CSV
