@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { whitelabel } from "@/config/whitelabel";
+import { BigHelpLogo } from "@/components/BigHelpLogo";
 import {
   Activity,
   Brain,
@@ -10,8 +11,9 @@ import {
   Users,
   ArrowRight,
   FileCheck,
-  Sparkles,
 } from "lucide-react";
+
+const SERIF = "'Playfair Display', Georgia, serif";
 
 const advantages = [
   {
