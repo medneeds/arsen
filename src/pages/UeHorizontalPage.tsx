@@ -157,7 +157,7 @@ function HorizontalPatientCard({ patient, onQuickAttendance, onNavigate, onDesti
             <Badge variant="outline" className="text-[10px] font-bold px-1.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700">
               🛏 {patient.bed_number}
             </Badge>
-            <span className="text-xs font-bold truncate">{patient.name}</span>
+            <span className="patient-id text-xs font-bold truncate">{patient.name}</span>
             {patient.age && <span className="text-[10px] text-muted-foreground">{patient.age}a</span>}
             {patient.medical_record && <span className="text-[10px] text-muted-foreground">Pront: {patient.medical_record}</span>}
           </div>
@@ -267,7 +267,7 @@ function PullPatientHorizontalDialog({ open, onOpenChange, waitingPatients, onPu
                     </Badge>
                   )}
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{wp.patient_name}</p>
+                    <p className="patient-id text-sm font-medium truncate">{wp.patient_name}</p>
                     {wp.chief_complaint && <p className="text-[10px] text-muted-foreground truncate">{wp.chief_complaint}</p>}
                   </div>
                 </div>

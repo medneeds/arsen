@@ -431,7 +431,7 @@ export default function RoundPage() {
                     onClick={() => setSelectedPatient(p)}
                     className="text-left p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-all text-sm group"
                   >
-                    <div className="font-medium text-foreground group-hover:text-primary transition-colors truncate">{p.name}</div>
+                    <div className="patient-id font-medium text-foreground group-hover:text-primary transition-colors truncate">{p.name}</div>
                     <div className="text-xs text-muted-foreground mt-0.5">
                       {getSectorLabel(p.sector)} • Leito {p.bed_number} {p.age ? `• ${p.age}` : ""}
                     </div>
