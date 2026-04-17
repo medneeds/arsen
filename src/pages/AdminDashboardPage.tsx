@@ -944,6 +944,21 @@ const AdminDashboardPage = () => {
             </DialogDescription>
           </DialogHeader>
 
+          {/* Detecção de duplicatas em tempo real (só quando NÃO é NI) */}
+          {!registerForm.is_unidentified && (
+            <DuplicatePatientWarning
+              fullName={registerForm.full_name}
+              birthDate={registerForm.birth_date}
+              cpf={registerForm.cpf}
+              onUseExisting={(p) => {
+                setShowRegisterDialog(false);
+                setSelectedPatient(p as any);
+                setShowPatientDetail(true);
+                toast.info("Paciente existente selecionado", { description: p.full_name });
+              }}
+            />
+          )}
+
           {/* Toggle Paciente Não Identificado — sempre visível no topo */}
           <Card className={cn(
             "border-2 transition-colors",
