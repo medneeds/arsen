@@ -174,7 +174,7 @@ export default function AuthPage() {
 
         <PageHeader />
 
-        <main className="flex-1 flex items-center justify-center px-6 py-10 md:py-16 relative">
+        <main className="flex-1 flex items-center justify-center px-3 sm:px-6 py-4 md:py-16 relative">
           <AnimatePresence mode="wait">
             {screen === "login" ? (
               <motion.div
@@ -189,7 +189,7 @@ export default function AuthPage() {
 
                 {/* Login Card */}
                 <motion.div
-                  className="relative bg-card rounded-2xl border border-border/70 p-7 shadow-[0_20px_60px_-20px_hsl(var(--primary)/0.18),0_8px_24px_-12px_hsl(215_25%_12%/0.08)]"
+                  className="relative bg-card rounded-2xl border border-border/70 p-4 sm:p-7 shadow-[0_20px_60px_-20px_hsl(var(--primary)/0.18),0_8px_24px_-12px_hsl(215_25%_12%/0.08)]"
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.3 }}
@@ -198,16 +198,16 @@ export default function AuthPage() {
                   <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
                   {/* Hospital Selector */}
-                  <div className="mb-5">
+                  <div className="mb-4 sm:mb-5">
                     <HospitalSelector
                       selectedHospitalId={selectedHospitalId}
                       onSelect={handleHospitalSelect}
                     />
                   </div>
 
-                  <div className="h-px w-full bg-border/60 mb-5" />
+                  <div className="h-px w-full bg-border/60 mb-4 sm:mb-5" />
 
-                  <div className="mb-5 flex items-center gap-2.5">
+                  <div className="mb-4 sm:mb-5 flex items-center gap-2.5">
                     <div className="inline-flex items-center justify-center h-9 w-9 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/15">
                       <LogIn className="h-4 w-4 text-primary" />
                     </div>
@@ -217,7 +217,7 @@ export default function AuthPage() {
                     </div>
                   </div>
 
-                  <form onSubmit={handleLogin} className="space-y-4">
+                  <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
                     <div>
                       <Label htmlFor="username" className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]">
                         USUÁRIO
