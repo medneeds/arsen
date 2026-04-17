@@ -152,6 +152,29 @@ export function SectorSelector({ variant = "light" }: SectorSelectorProps) {
             Trocar de setor
           </p>
         </div>
+        {isGestor && (
+          <div className="p-1.5 border-b border-border/60">
+            <button
+              type="button"
+              onClick={handleSelectAll}
+              className={cn(
+                "w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-md text-[11px] font-semibold transition-all",
+                allActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-foreground hover:bg-muted"
+              )}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <LayoutGrid className={cn("h-3.5 w-3.5 flex-shrink-0", allActive ? "text-primary" : "text-muted-foreground")} />
+                <span className="uppercase tracking-wide">Todos os setores</span>
+              </div>
+              {allActive && <Check className="h-3.5 w-3.5 flex-shrink-0" />}
+            </button>
+            <p className="text-[9px] text-muted-foreground/70 mt-1 px-1">
+              Visão consolidada — Painel do Gestor
+            </p>
+          </div>
+        )}
         <ScrollArea className="max-h-[60vh]">
           <div className="p-1.5">
             {SECTOR_HIERARCHY.map((group) => {
