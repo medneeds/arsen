@@ -19,8 +19,10 @@ import type { ReceptionPoint } from "@/hooks/useReceptionPost";
 export type AgeInputMode = "approx" | "exact" | "dob";
 
 export interface TriageExpressPayload {
-  /** Nome (parcial ou completo). Vazio = NÃO IDENTIFICADO */
+  /** Nome (parcial ou completo). Vazio ou isUnidentified=true = NÃO IDENTIFICADO */
   partialName: string;
+  /** Forçar paciente como Não Identificado (NI) — gera código NI mesmo se houver nome */
+  isUnidentified: boolean;
   sex: "M" | "F" | "I";
   /** Idade em anos calculada/digitada — string p/ retrocompatibilidade */
   approxAge: string;
