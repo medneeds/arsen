@@ -570,6 +570,17 @@ export function ReceptionDailyDashboard({
                                   identificação parcial
                                 </Badge>
                               )}
+                              {(() => {
+                                const point = e.reception_point || (e.created_by ? userPointMap.get(e.created_by) : null);
+                                if (!point) return null;
+                                const Icon = point === "vertical" ? Footprints : Ambulance;
+                                return (
+                                  <Badge variant="outline" className={cn("text-[9px] h-4 gap-1 border", pointBadgeClasses(point))}>
+                                    <Icon className="h-2.5 w-2.5" />
+                                    {RECEPTION_POINT_SHORT[point]}
+                                  </Badge>
+                                );
+                              })()}
                             </div>
                             <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1">
                               <span>{format(new Date(e.created_at), "HH:mm", { locale: ptBR })}</span>
