@@ -387,9 +387,59 @@ export function ReceptionDailyDashboard({
     <div className="space-y-4">
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Filtro segmentado por posto */}
+      <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-lg bg-muted/40 w-fit">
+        <button
+          onClick={() => setPointFilter("all")}
+          className={cn(
+            "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
+            pointFilter === "all"
+              ? "bg-background shadow-sm text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Users className="h-3.5 w-3.5" />
+          Visão geral
+          <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{todayEncounters.length}</Badge>
+        </button>
+        <button
+          onClick={() => setPointFilter("vertical")}
+          className={cn(
+            "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
+            pointFilter === "vertical"
+              ? "bg-sky-500/15 text-sky-700 dark:text-sky-300 shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Footprints className="h-3.5 w-3.5" />
+          Vertical
+          <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{kpis.splitByPoint.vertical}</Badge>
+        </button>
+        <button
+          onClick={() => setPointFilter("horizontal")}
+          className={cn(
+            "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
+            pointFilter === "horizontal"
+              ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Ambulance className="h-3.5 w-3.5" />
+          Horizontal
+          <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{kpis.splitByPoint.horizontal}</Badge>
+        </button>
+        {kpis.splitByPoint.unassigned > 0 && (
+          <span className="text-[10px] text-muted-foreground ml-2 italic">
+            {kpis.splitByPoint.unassigned} sem posto
+          </span>
+        )}
+      </div>
+
+      {/* KPIs (segmentados pelo filtro) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
           icon={ListTodo}
-          label="Atendimentos hoje"
+          label={pointFilter === "all" ? "Atendimentos hoje" : `Atendimentos ${RECEPTION_POINT_SHORT[pointFilter]}`}
           value={kpis.totalToday}
           hint="Abertos no balcão"
           tone="default"
@@ -421,6 +471,13 @@ export function ReceptionDailyDashboard({
           value={monthRegistrations.toLocaleString("pt-BR")}
           hint="Novos prontuários"
           tone="success"
+        />
+        <KpiCard
+          icon={UserCheck}
+          label="Equipe ativa agora"
+          value={userStats.filter((u) => u.isOnline).length}
+          hint={`${userStats.length} no dia`}
+          tone="info"
         />
       </div>
 
