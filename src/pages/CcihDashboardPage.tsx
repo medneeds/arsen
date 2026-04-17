@@ -613,7 +613,7 @@ const CcihDashboardPage = () => {
                 <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", colors.dot)} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-foreground truncate">{c.patient_name}</span>
+                    <span className="patient-id text-xs font-bold text-foreground truncate">{c.patient_name}</span>
                     <Badge variant="outline" className="text-[9px] shrink-0">
                       {getSectorDisplayLabel(c.patient_sector)} · {c.patient_bed}
                     </Badge>
@@ -767,7 +767,7 @@ const CcihDashboardPage = () => {
             <div className="space-y-4">
               <div className="p-3 rounded-lg bg-muted/50 border space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-foreground">{viewCulture.patient_name}</span>
+                  <span className="patient-id font-bold text-sm text-foreground">{viewCulture.patient_name}</span>
                   <Badge variant="outline" className="text-[10px]">
                     {getSectorDisplayLabel(viewCulture.patient_sector)} · {viewCulture.patient_bed}
                   </Badge>
@@ -853,7 +853,7 @@ const CcihDashboardPage = () => {
               {/* Patient header */}
               <div className="p-3 rounded-lg bg-muted/50 border space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm text-foreground">{detailPatient.name}</span>
+                  <span className="patient-id font-bold text-sm text-foreground">{detailPatient.name}</span>
                   <Badge variant="outline" className="text-[10px]">
                     {getSectorDisplayLabel(detailPatient.sector)} · {detailPatient.bed_number}
                   </Badge>

@@ -618,7 +618,7 @@ export default function PainelClinicoPage() {
                     >
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-foreground">{patient.bedNumber}</span>
+                          <span className="patient-id font-mono font-bold text-foreground">{patient.bedNumber}</span>
                           <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 whitespace-nowrap", getSectorColor(patient.sector))}>
                             {getSectorLabel(patient.sector)}
                           </Badge>
@@ -729,7 +729,7 @@ export default function PainelClinicoPage() {
               <div className="px-4 py-3 border-b bg-card">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-bold text-lg text-foreground leading-tight">{selectedPatient.name}</p>
+                    <p className="patient-id font-bold text-lg text-foreground leading-tight">{selectedPatient.name}</p>
                     <p className="text-sm text-muted-foreground">
                       Leito {selectedPatient.bedNumber} • {selectedPatient.age ? `${selectedPatient.age} anos` : ""} • {getSectorLabel(selectedPatient.sector)}
                     </p>
