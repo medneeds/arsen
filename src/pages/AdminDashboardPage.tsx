@@ -661,8 +661,20 @@ const AdminDashboardPage = () => {
             <h1 className="text-lg font-bold text-foreground">Recepção / Administrativo</h1>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setGlobalSearchOpen(true)}
+              className="gap-2 text-xs h-8 text-muted-foreground hover:text-foreground"
+            >
+              <Search className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Buscar paciente / atendimento</span>
+              <kbd className="hidden md:inline-flex h-5 items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[9px] font-medium text-muted-foreground">
+                <span className="text-[10px]">⌘</span>K
+              </kbd>
+            </Button>
             <Badge variant="secondary" className="text-xs">
-              {recentEncounters.filter(e => e.status === "active").length} atendimentos ativos
+              {recentEncounters.filter(e => e.status === "active").length} ativos
             </Badge>
           </div>
         </header>
