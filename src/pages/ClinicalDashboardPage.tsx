@@ -62,6 +62,7 @@ const ClinicalDashboardPage = () => {
   const { currentHospital, currentState } = useHospital();
   
   const navigate = useNavigate();
+  const isGestor = useIsGestor();
 
   const [activeSector, setActiveSector] = useState<string>(() => {
     return localStorage.getItem("selected_sector") || "red";
