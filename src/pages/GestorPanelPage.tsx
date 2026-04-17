@@ -60,6 +60,7 @@ const PIE_COLORS = [
 
 export default function GestorPanelPage() {
   const { currentHospital: selectedUnit } = useHospital();
+  const { currentDepartment } = useDepartment();
   const [bedStats, setBedStats] = useState<BedStats>({ total: 0, occupied: 0, vacant: 0, doorPatients: 0, bySector: {} });
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlert[]>([]);
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
@@ -69,6 +70,25 @@ export default function GestorPanelPage() {
   const [movementTrend, setMovementTrend] = useState<{ day: string; altas: number; admissoes: number; transferencias: number; obitos: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [sectorFilter, setSectorFilter] = useState<string>(() => {
+    if (typeof window === "undefined") return "ALL";
+    return localStorage.getItem("gestor_sector_filter") || "ALL";
+  });
+
+  // Sincroniza o filtro de setor com mudanças externas (sidebar/seletor) e
+  // mantém alinhado ao currentDepartment do contexto.
+  useEffect(() => {
+    const stored = typeof window !== "undefined" ? localStorage.getItem("gestor_sector_filter") : null;
+    setSectorFilter(stored || "ALL");
+  }, [currentDepartment]);
+
+  const isAllSectors = sectorFilter === "ALL";
+  const sectorCodeFilter = !isAllSectors
+    ? DEPARTMENT_TO_SECTOR[sectorFilter as keyof typeof DEPARTMENT_TO_SECTOR] || null
+    : null;
+  const sectorDisplayName = !isAllSectors
+    ? getSectorDisplayLabel(sectorCodeFilter || sectorFilter)
+    : "Todos os setores";
 
   const fetchData = async () => {
     if (!selectedUnit) return;
@@ -76,10 +96,14 @@ export default function GestorPanelPage() {
 
     try {
       // ── 1. Patients ──
-      const { data: patients } = await supabase
+      let patientsQuery = supabase
         .from("patients")
         .select("id, name, bed_number, sector, is_vacant, is_door_patient, clinical_status, diagnoses, relevant_exams")
         .eq("hospital_unit_id", selectedUnit.id);
+      if (sectorCodeFilter) {
+        patientsQuery = patientsQuery.eq("sector", sectorCodeFilter);
+      }
+      const { data: patients } = await patientsQuery;
 
       if (patients) {
         const occupied = patients.filter(p => !p.is_vacant && p.name?.trim());
