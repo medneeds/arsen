@@ -333,6 +333,51 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             </InfoRow>
           )}
 
+          {/* Direcionar para setor — primary */}
+          <InfoRow icon={<Navigation className="h-3 w-3" />} label="Direcionar Para" tone="primary">
+            {selectableSectors.length > 0 ? (
+              <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto pr-1 -mr-1">
+                {selectableSectors.map((dept) => {
+                  const sectorCode = DEPARTMENT_TO_SECTOR[dept];
+                  const label = SECTOR_DISPLAY[sectorCode] || dept;
+                  const isSelected = selectedSector === dept;
+                  return (
+                    <button
+                      key={dept}
+                      type="button"
+                      onClick={() => setSelectedSector(dept)}
+                      className={`group flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition-all ${
+                        isSelected
+                          ? "border-primary/60 bg-primary/10 shadow-sm shadow-primary/10"
+                          : "border-border/60 bg-card/40 hover:border-primary/30 hover:bg-primary/5"
+                      }`}
+                      aria-pressed={isSelected}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full shrink-0 ${
+                          isSelected ? "bg-primary" : "bg-muted-foreground/40"
+                        }`}
+                      />
+                      <span
+                        className={`text-[11px] font-semibold tracking-wide uppercase truncate ${
+                          isSelected ? "text-primary" : "text-foreground/80"
+                        }`}
+                      >
+                        {label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="bg-muted/50 border border-dashed border-border rounded-xl px-4 py-3 text-center">
+                <p className="preserve-case text-foreground/70 text-xs font-medium">
+                  Nenhum setor disponível para direcionamento
+                </p>
+              </div>
+            )}
+          </InfoRow>
+
           {/* Botão */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -341,10 +386,13 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             className="pt-1"
           >
             <Button
-              onClick={onProceed}
+              onClick={handleProceed}
+              disabled={selectableSectors.length > 0 && !selectedSector}
               className="w-full h-12 rounded-xl text-xs font-bold tracking-[0.25em] uppercase group shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-shadow"
             >
-              ACESSAR PLATAFORMA
+              {selectedSector
+                ? `IR PARA ${SECTOR_DISPLAY[DEPARTMENT_TO_SECTOR[selectedSector]] || selectedSector}`
+                : "ACESSAR PLATAFORMA"}
               <ArrowRight className="h-4 w-4 ml-2 transition-transform group-hover:translate-x-1" />
             </Button>
           </motion.div>
