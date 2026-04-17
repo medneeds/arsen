@@ -82,6 +82,7 @@ export function TriageExpressDialog({
   open, onOpenChange, sectors, groups, onConfirm, loading = false, receptionPoint = null,
 }: Props) {
   const [partialName, setPartialName] = useState("");
+  const [isUnidentified, setIsUnidentified] = useState(false);
   const [sex, setSex] = useState<"M" | "F" | "I">("I");
 
   // Idade — três modos
