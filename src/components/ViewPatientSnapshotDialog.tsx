@@ -54,7 +54,7 @@ export function ViewPatientSnapshotDialog({
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-3">
                   <User className="h-5 w-5 text-muted-foreground" />
-                  <h3 className="text-xl font-bold uppercase">{patient.name}</h3>
+                  <h3 className="patient-id text-xl font-bold">{patient.name}</h3>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
