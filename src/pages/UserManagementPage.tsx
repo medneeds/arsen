@@ -703,6 +703,23 @@ export default function UserManagementPage() {
           onSuccess={fetchUsers}
         />
       )}
+
+      {/* Permissions / Sectors Dialog */}
+      {userToManagePermissions && (
+        <UserPermissionsDialog
+          open={permissionsOpen}
+          onOpenChange={(open) => {
+            setPermissionsOpen(open);
+            if (!open) setUserToManagePermissions(null);
+          }}
+          userId={userToManagePermissions.id}
+          userName={userToManagePermissions.full_name || "Usuário"}
+          userEmail={userToManagePermissions.email || ""}
+          currentRole={userToManagePermissions.role}
+          currentAccessProfile={userToManagePermissions.access_profile}
+          onSaved={fetchUsers}
+        />
+      )}
     </MainLayout>
   );
 }
