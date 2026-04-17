@@ -49,10 +49,13 @@ import {
   Calendar,
   Building2,
   KeyRound,
+  Settings2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ResetUserPasswordDialog } from "@/components/ResetUserPasswordDialog";
+import { UserPermissionsDialog } from "@/components/UserPermissionsDialog";
+import { useIsGestor } from "@/hooks/useIsGestor";
 
 interface UserProfile {
   id: string;
@@ -65,6 +68,7 @@ interface UserProfile {
   created_at: string;
   approved_at: string | null;
   approved_by: string | null;
+  access_profile?: string | null;
 }
 
 interface UserWithRole extends UserProfile {
@@ -103,6 +107,7 @@ const ROLE_CONFIG: Record<string, { label: string; color: string }> = {
 
 export default function UserManagementPage() {
   const { user, role: currentUserRole } = useAuth();
+  const isGestor = useIsGestor();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -111,6 +116,8 @@ export default function UserManagementPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
   const [userToResetPassword, setUserToResetPassword] = useState<UserWithRole | null>(null);
+  const [permissionsOpen, setPermissionsOpen] = useState(false);
+  const [userToManagePermissions, setUserToManagePermissions] = useState<UserWithRole | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
@@ -121,7 +128,7 @@ export default function UserManagementPage() {
     try {
       setLoading(true);
       
-      // Fetch profiles
+      // Fetch profiles (incluindo access_profile)
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
@@ -294,7 +301,10 @@ export default function UserManagementPage() {
 
   const pendingCount = users.filter(u => u.status === "pending").length;
 
-  if (currentUserRole !== "admin") {
+  // Coordenadores (admin) e Gestores podem acessar a gestão de usuários
+  const canManageUsers = currentUserRole === "admin" || isGestor;
+
+  if (!canManageUsers) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center h-full">
@@ -441,10 +451,11 @@ export default function UserManagementPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
+                            title="Ver detalhes"
                             onClick={() => {
                               setSelectedUser(u);
                               setDetailsOpen(true);
@@ -452,12 +463,26 @@ export default function UserManagementPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Gerenciar setores e permissões"
+                            className="text-primary hover:text-primary hover:bg-primary/10"
+                            onClick={() => {
+                              setUserToManagePermissions(u);
+                              setPermissionsOpen(true);
+                            }}
+                          >
+                            <Settings2 className="h-4 w-4" />
+                          </Button>
+
                           {u.status === "pending" && (
                             <>
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                title="Aprovar"
                                 className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                                 onClick={() => handleApprove(u.id)}
                                 disabled={actionLoading}
@@ -467,6 +492,7 @@ export default function UserManagementPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                title="Rejeitar"
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                 onClick={() => handleReject(u.id)}
                                 disabled={actionLoading}
@@ -675,6 +701,23 @@ export default function UserManagementPage() {
           userName={userToResetPassword.full_name || ""}
           userEmail={userToResetPassword.email || ""}
           onSuccess={fetchUsers}
+        />
+      )}
+
+      {/* Permissions / Sectors Dialog */}
+      {userToManagePermissions && (
+        <UserPermissionsDialog
+          open={permissionsOpen}
+          onOpenChange={(open) => {
+            setPermissionsOpen(open);
+            if (!open) setUserToManagePermissions(null);
+          }}
+          userId={userToManagePermissions.id}
+          userName={userToManagePermissions.full_name || "Usuário"}
+          userEmail={userToManagePermissions.email || ""}
+          currentRole={userToManagePermissions.role}
+          currentAccessProfile={userToManagePermissions.access_profile}
+          onSaved={fetchUsers}
         />
       )}
     </MainLayout>
