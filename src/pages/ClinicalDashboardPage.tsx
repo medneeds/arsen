@@ -25,6 +25,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useIsGestor } from "@/hooks/useIsGestor";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
@@ -569,15 +570,17 @@ const ClinicalDashboardPage = () => {
                   <BedDouble className="h-3.5 w-3.5" />
                   Abrir mapa de leitos
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate("/painel-clinico")}
-                  className="text-xs gap-1.5 h-8"
-                >
-                  <ClipboardList className="h-3.5 w-3.5" />
-                  Abrir painel clínico
-                </Button>
+                {!isGestor && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate("/painel-clinico")}
+                    className="text-xs gap-1.5 h-8"
+                  >
+                    <ClipboardList className="h-3.5 w-3.5" />
+                    Abrir painel clínico
+                  </Button>
+                )}
               </motion.div>
             </motion.div>
           )}
