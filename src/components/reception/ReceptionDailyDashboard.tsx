@@ -514,6 +514,11 @@ export function ReceptionDailyDashboard({
             Aguardando Admissão
             <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{kpis.waitingAdmission}</Badge>
           </TabsTrigger>
+          <TabsTrigger value="equipe" className="gap-1.5">
+            <Trophy className="h-3.5 w-3.5" />
+            Por usuário
+            <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{userStats.length}</Badge>
+          </TabsTrigger>
           <TabsTrigger value="minhas" className="gap-1.5">
             <History className="h-3.5 w-3.5" />
             Minhas Ações (24h)
