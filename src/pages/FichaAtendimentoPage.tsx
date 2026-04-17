@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
+import { whitelabel, getInstitutionalHeaderLines } from "@/config/whitelabel";
+import socorraoCross from "@/assets/socorrao-cross-logo.png";
 
 interface Encounter {
   id: string;
