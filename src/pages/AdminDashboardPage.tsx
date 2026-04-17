@@ -336,7 +336,7 @@ const AdminDashboardPage = () => {
     }
   };
 
-  // Create new encounter
+  // Create new encounter — opcionalmente cria pré-admissão no setor clínico de destino
   const handleCreateEncounter = async () => {
     if (!selectedPatient || !destinationSector) {
       toast.error("Selecione o setor de destino");
@@ -344,10 +344,18 @@ const AdminDashboardPage = () => {
     }
     if (!selectedHospitalId) return;
 
+    const sectorDef = DESTINATION_SECTORS.find(s => s.value === destinationSector);
+    if (!sectorDef) {
+      toast.error("Setor de destino inválido");
+      return;
+    }
+
     setIsCreatingEncounter(true);
     try {
       const stateId = localStorage.getItem("selected_state_id");
-      const { data, error } = await supabase
+
+      // 1) Cria o atendimento (encounter)
+      const { data: enc, error: encErr } = await supabase
         .from("patient_encounters")
         .insert({
           patient_name: selectedPatient.full_name,
@@ -356,24 +364,56 @@ const AdminDashboardPage = () => {
           state_id: stateId,
           department: currentDepartment,
           destination_sector: destinationSector,
-          triage_status: destinationSector === "triagem" ? "aguardando_chamada" : "encaminhado",
+          triage_status: sectorDef.isTriage ? "aguardando_chamada" : "encaminhado",
           status: "active",
+          created_by: user?.id,
         } as any)
         .select()
         .single();
 
-      if (error) throw error;
+      if (encErr) throw encErr;
 
-      const sectorLabel = DESTINATION_SECTORS.find(s => s.value === destinationSector)?.label || destinationSector;
+      // 2) Se for setor clínico (não triagem), cria pré-admissão "aguardando_leito"
+      //    para aparecer no card "Aguardando Admissão" do setor escolhido.
+      if (!sectorDef.isTriage && sectorDef.sectorKey) {
+        const { error: paErr } = await supabase
+          .from("pre_admissions")
+          .insert({
+            patient_name: selectedPatient.full_name,
+            social_name: selectedPatient.social_name || null,
+            mother_name: selectedPatient.mother_name || null,
+            birth_date: selectedPatient.birth_date || null,
+            sex: selectedPatient.sex || null,
+            cpf: selectedPatient.cpf || null,
+            cns: selectedPatient.cns || null,
+            medical_record: selectedPatient.medical_record || null,
+            phone: selectedPatient.phone || null,
+            patient_registry_id: selectedPatient.id,
+            destination_sector: sectorDef.label,
+            status: "aguardando_leito",
+            hospital_unit_id: selectedHospitalId,
+            state_id: stateId,
+            department: currentDepartment,
+            created_by: user?.id,
+            notes: `Direcionado pela Recepção • Atendimento ${(enc as any).encounter_code}`,
+          } as any);
+        if (paErr) {
+          console.error("Erro ao criar pré-admissão:", paErr);
+          toast.warning("Atendimento criado, mas falha ao notificar setor", {
+            description: paErr.message,
+          });
+        }
+      }
+
       toast.success("Atendimento iniciado!", {
-        description: `Código: ${(data as any).encounter_code} → ${sectorLabel}`,
+        description: `Código: ${(enc as any).encounter_code} → ${sectorDef.label}`,
       });
       setShowNewEncounter(false);
       setDestinationSector("");
       loadRecentEncounters();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error creating encounter:", err);
-      toast.error("Erro ao criar atendimento");
+      toast.error("Erro ao criar atendimento", { description: err?.message });
     } finally {
       setIsCreatingEncounter(false);
     }
