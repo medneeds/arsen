@@ -317,15 +317,18 @@ function InfoRow({
   icon,
   label,
   children,
+  tone = "primary",
 }: {
   icon: React.ReactNode;
   label: string;
   children: React.ReactNode;
+  tone?: "primary" | "accent";
 }) {
+  const toneClass = tone === "accent" ? "text-accent" : "text-primary";
   return (
     <div className="space-y-2.5">
       <div className="flex items-center gap-2 text-foreground/65">
-        <span className="text-primary">{icon}</span>
+        <span className={toneClass}>{icon}</span>
         <span className="text-[9px] font-bold tracking-[0.25em] uppercase">
           {label}
         </span>
