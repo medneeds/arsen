@@ -62,9 +62,42 @@ const PIE_COLORS = [
   "hsl(var(--muted-foreground))",
 ];
 
+// ── Hierarchical sector blocks for the gestor filter ──
+interface SectorBlock {
+  id: string;
+  label: string;
+  /** Department names (matching DEPARTMENT_TO_SECTOR keys / requested_sector / department fields) */
+  departments: string[];
+}
+
+const SECTOR_BLOCKS: SectorBlock[] = [
+  { id: "uti", label: "UTI", departments: ["UTI 1", "UTI 2"] },
+  { id: "uci", label: "UCI", departments: ["UCI 1", "UCI 2"] },
+  {
+    id: "enfermarias",
+    label: "Enfermarias",
+    departments: ["NEURO 01", "NEURO 02", "CLÍNICA CIRÚRGICA", "ENFERMARIA DE TRANSIÇÃO", "UCC"],
+  },
+  {
+    id: "emergencia",
+    label: "Urgência e Emergência",
+    departments: ["UE VERTICAL", "UE HORIZONTAL", "SALA VERMELHA", "SALA LARANJA", "INTERNAÇÃO UE", "OBSERVAÇÃO CLÍNICA"],
+  },
+  {
+    id: "vascular",
+    label: "Anexo Vascular",
+    departments: ["ENFERMARIA VASCULAR", "RIV"],
+  },
+  {
+    id: "cc",
+    label: "Centro Cirúrgico",
+    departments: ["CC PREPARO", "CC BLOCO CIRÚRGICO", "CC RPA"],
+  },
+];
+
 export default function GestorPanelPage() {
   const { currentHospital: selectedUnit } = useHospital();
-  const { currentDepartment } = useDepartment();
+  const { currentDepartment, setCurrentDepartment } = useDepartment();
   const [bedStats, setBedStats] = useState<BedStats>({ total: 0, occupied: 0, vacant: 0, doorPatients: 0, bySector: {} });
   const [criticalAlerts, setCriticalAlerts] = useState<CriticalAlert[]>([]);
   const [recentMovements, setRecentMovements] = useState<any[]>([]);
