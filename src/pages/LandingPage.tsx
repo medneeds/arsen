@@ -66,13 +66,14 @@ export default function LandingPage() {
           {/* Brand */}
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-2.5 group"
+            className="flex items-center gap-3 group"
           >
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-              <Sparkles className="h-4 w-4 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="preserve-case text-lg font-semibold tracking-tight text-slate-800">
-              Arsen
+            <BigHelpLogo size="xs" />
+            <span
+              className="preserve-case text-lg font-light tracking-[0.25em] text-slate-800"
+              style={{ fontFamily: SERIF }}
+            >
+              ARSEN
             </span>
           </button>
 
