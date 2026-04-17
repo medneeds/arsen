@@ -80,6 +80,9 @@ const SERIF = "'Playfair Display', Georgia, serif";
 export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
   const { role, allowedDepartments, user, signOut } = useAuth();
   const { currentHospital } = useHospital();
+  const { setCurrentDepartment } = useDepartment();
+  const navigate = useNavigate();
+
   const username =
     user?.user_metadata?.username ||
     user?.user_metadata?.full_name ||
@@ -97,6 +100,39 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
 
   const hospitalName =
     currentHospital?.name || whitelabel.institution.hospitalShortName;
+
+  /** Setores selecionáveis com base no permissionamento */
+  const selectableSectors = useMemo<Department[]>(() => {
+    if (isAdmin) return ALL_SELECTABLE_DEPARTMENTS;
+    const expanded = new Set<Department>();
+    for (const dept of allowedDepartments) {
+      const subs = DEPARTMENT_EXPANSION[dept];
+      if (subs) {
+        subs.forEach((s) => expanded.add(s));
+      } else if (DEPARTMENT_TO_SECTOR[dept]) {
+        expanded.add(dept as Department);
+      }
+    }
+    return Array.from(expanded);
+  }, [isAdmin, allowedDepartments]);
+
+  const [selectedSector, setSelectedSector] = useState<Department | null>(
+    selectableSectors[0] ?? null
+  );
+
+  // Sincroniza seleção quando os setores carregam após o mount inicial
+  if (selectedSector === null && selectableSectors.length > 0) {
+    setSelectedSector(selectableSectors[0]);
+  }
+
+  const handleProceed = () => {
+    if (selectedSector) {
+      setCurrentDepartment(selectedSector);
+      const route = SECTOR_ROUTES[selectedSector] || "/mapa";
+      navigate(route);
+    }
+    onProceed();
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-start py-10 px-4 relative overflow-hidden">
