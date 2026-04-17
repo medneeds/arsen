@@ -314,10 +314,13 @@ export function AppSidebar({
         { title: "Painel NIR", icon: LayoutDashboard, link: "/nir", profiles: ["nir"] },
       ];
     }
-    // Administrativo
+    // Administrativo — Recepção com sub-abas sincronizadas (?tab=inicio|prontuarios)
     if (accessProfile === "administrativo") {
       return [
-        { title: "Recepção", icon: LayoutDashboard, link: "/recepcao", profiles: ["administrativo"] },
+        { title: "Recepção", icon: LayoutDashboard, profiles: ["administrativo"], items: [
+          { name: "Início", link: "/recepcao?tab=inicio", profiles: ["administrativo"] },
+          { name: "Prontuários", link: "/recepcao?tab=prontuarios", profiles: ["administrativo"] },
+        ]},
       ];
     }
     // Equipe Multi: dedicated sidebar with all specialties
