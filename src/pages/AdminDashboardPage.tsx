@@ -44,6 +44,7 @@ import {
   UserX,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { MedicalRecordsList } from "@/components/MedicalRecordsList";
 
 // Destination sectors for encounter routing — agrupados por categoria
 type DestinationSector = {
@@ -466,6 +467,17 @@ const AdminDashboardPage = () => {
         {/* Main content */}
         <div className="flex-1 overflow-auto p-4">
           <div className="max-w-6xl mx-auto space-y-6">
+            <Tabs defaultValue="inicio" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="inicio" className="gap-1.5">
+                  <ClipboardList className="h-3.5 w-3.5" /> Início
+                </TabsTrigger>
+                <TabsTrigger value="prontuarios" className="gap-1.5">
+                  <FileText className="h-3.5 w-3.5" /> Prontuários
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="inicio" className="space-y-6 mt-0">
 
             {/* Search & Quick Actions */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -682,6 +694,21 @@ const AdminDashboardPage = () => {
                 )}
               </CardContent>
             </Card>
+              </TabsContent>
+
+              <TabsContent value="prontuarios" className="mt-0">
+                <MedicalRecordsList
+                  onStartEncounter={(p) => {
+                    setSelectedPatient(p as any);
+                    setShowNewEncounter(true);
+                  }}
+                  onViewPatient={(p) => {
+                    setSelectedPatient(p as any);
+                    setShowPatientDetail(true);
+                  }}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>
