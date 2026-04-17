@@ -19,7 +19,7 @@ export function LoadingScreen({ onComplete, duration = 2800 }: LoadingScreenProp
 
   const hospitalName =
     currentHospital?.name || whitelabel.institution.hospitalShortName;
-  const hospitalLogo = whitelabel.logos.hospital;
+  const hospitalLogo = socorraoCrossLogo;
 
   useEffect(() => {
     const hospitalTimer = setTimeout(() => setPhase("hospital"), 700);
