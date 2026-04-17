@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, ArrowRight, ArrowLeftRight, FileText, History, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowLeftRight, FileText, History, Loader2, BedDouble, Clock } from "lucide-react";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PatientInfoHeader } from "@/components/PatientInfoHeader";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,9 @@ interface MovementRow {
   notes: string | null;
   responsible_doctor: string | null;
   created_at: string;
+  release_status?: string | null;
+  released_at?: string | null;
+  released_by_name?: string | null;
 }
 
 const MovimentacoesPage = () => {
@@ -93,7 +96,7 @@ const MovimentacoesPage = () => {
     try {
       const query = supabase
         .from("patient_movements")
-        .select("id, movement_type, destination, notes, responsible_doctor, created_at")
+        .select("id, movement_type, destination, notes, responsible_doctor, created_at, release_status, released_at, released_by_name")
         .order("created_at", { ascending: false })
         .limit(20);
       // Prefer patient_id if available, fallback to name
