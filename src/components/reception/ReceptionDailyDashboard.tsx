@@ -14,8 +14,11 @@ import {
   Activity, BedDouble, Clock, FileText, Users, AlertTriangle,
   PhoneOutgoing, RefreshCw, ArrowRight, Loader2, ListTodo, History,
   CheckCircle2, XCircle, UserPlus, Play, FileWarning, UserX,
+  Footprints, Ambulance, Trophy, Timer, UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import type { ReceptionPoint } from "@/hooks/useReceptionPost";
+import { RECEPTION_POINT_SHORT } from "@/hooks/useReceptionPost";
 
 interface KpiCardProps {
   icon: React.ElementType;
@@ -61,6 +64,7 @@ interface DailyEncounter {
   status: string;
   created_at: string;
   created_by: string | null;
+  reception_point: ReceptionPoint | null;
   // Enriquecido a partir de patient_registry
   documents_pending?: boolean;
   partial_identification?: boolean;
@@ -82,6 +86,30 @@ interface ReceptionAction {
   record_id: string | null;
   created_at: string;
   new_data: any;
+  user_id: string | null;
+}
+
+interface DeskSession {
+  id: string;
+  user_id: string;
+  user_name: string | null;
+  reception_point: ReceptionPoint;
+  started_at: string;
+  ended_at: string | null;
+  last_heartbeat_at: string;
+}
+
+interface UserStats {
+  userId: string;
+  userName: string;
+  point: ReceptionPoint | null;
+  totalEncounters: number;
+  expressCount: number;
+  pendingDocsCount: number;
+  destinationCounts: Record<string, number>;
+  avgRegistrationSec: number | null;
+  activeMinutes: number;
+  isOnline: boolean;
 }
 
 interface Props {
@@ -91,10 +119,12 @@ interface Props {
   onTriageExpress: () => void;
   /** Abre cadastro de novo prontuário */
   onNewRegistration: () => void;
-  /** Sub-tab inicial: "dia" | "aguardando" | "minhas" */
-  defaultSubTab?: "dia" | "aguardando" | "minhas";
+  /** Sub-tab inicial: "dia" | "aguardando" | "minhas" | "equipe" */
+  defaultSubTab?: "dia" | "aguardando" | "minhas" | "equipe";
   /** Esconde botões de ação rápida (quando o pai já tem) */
   hideQuickActions?: boolean;
+  /** Posto atual do recepcionista logado (para destacar suas ações) */
+  currentPoint?: ReceptionPoint | null;
 }
 
 /**
@@ -104,7 +134,14 @@ interface Props {
  * - Aguardando Admissão (pacientes direcionados ainda sem leito)
  * - Histórico de ações do recepcionista logado (24h)
  */
-export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNewRegistration, defaultSubTab = "dia", hideQuickActions = false }: Props) {
+export function ReceptionDailyDashboard({
+  onPickRegistry,
+  onTriageExpress,
+  onNewRegistration,
+  defaultSubTab = "dia",
+  hideQuickActions = false,
+  currentPoint = null,
+}: Props) {
   const { currentHospital } = useHospital();
   const { user } = useAuth();
   const hospitalId = currentHospital?.id;
@@ -113,7 +150,12 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
   const [todayEncounters, setTodayEncounters] = useState<DailyEncounter[]>([]);
   const [pendingAdmissions, setPendingAdmissions] = useState<PendingAdmission[]>([]);
   const [myActions, setMyActions] = useState<ReceptionAction[]>([]);
+  const [allActionsToday, setAllActionsToday] = useState<ReceptionAction[]>([]);
+  const [deskSessions, setDeskSessions] = useState<DeskSession[]>([]);
   const [monthRegistrations, setMonthRegistrations] = useState(0);
+
+  // Filtro por posto: "all" | "vertical" | "horizontal"
+  const [pointFilter, setPointFilter] = useState<"all" | ReceptionPoint>("all");
 
   const todayStart = useMemo(() => startOfDay(new Date()).toISOString(), []);
   const monthStart = useMemo(() => startOfMonth(new Date()).toISOString(), []);
@@ -122,10 +164,10 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
     if (!hospitalId) return;
     setLoading(true);
     try {
-      const [encRes, paRes, regRes, auditRes] = await Promise.all([
+      const [encRes, paRes, regRes, auditRes, allAuditRes, sessRes] = await Promise.all([
         supabase
           .from("patient_encounters")
-          .select("id, encounter_code, patient_name, registry_id, destination_sector, triage_status, status, created_at, created_by")
+          .select("id, encounter_code, patient_name, registry_id, destination_sector, triage_status, status, created_at, created_by, reception_point")
           .eq("hospital_unit_id", hospitalId)
           .gte("created_at", todayStart)
           .order("created_at", { ascending: false }),
@@ -145,13 +187,29 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
         user?.id
           ? supabase
               .from("audit_logs")
-              .select("table_name, action, record_id, created_at, new_data")
+              .select("table_name, action, record_id, created_at, new_data, user_id")
               .eq("user_id", user.id)
               .gte("created_at", new Date(Date.now() - 24 * 3600 * 1000).toISOString())
               .in("table_name", ["patient_registry", "patient_encounters", "pre_admissions"])
               .order("created_at", { ascending: false })
               .limit(30)
           : Promise.resolve({ data: [], error: null } as any),
+        // Todas ações da equipe HOJE (para painel "Por usuário")
+        supabase
+          .from("audit_logs")
+          .select("table_name, action, record_id, created_at, new_data, user_id, user_email")
+          .eq("hospital_unit_id", hospitalId)
+          .gte("created_at", todayStart)
+          .in("table_name", ["patient_registry", "patient_encounters"])
+          .order("created_at", { ascending: false })
+          .limit(500),
+        // Sessões de posto da equipe (hoje)
+        supabase
+          .from("reception_desk_sessions" as any)
+          .select("id, user_id, user_name, reception_point, started_at, ended_at, last_heartbeat_at")
+          .eq("hospital_unit_id", hospitalId)
+          .gte("started_at", todayStart)
+          .order("started_at", { ascending: false }),
       ]);
 
       if (encRes.error) throw encRes.error;
@@ -179,10 +237,11 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
         ...(e.registry_id ? regMap[e.registry_id] || {} : {}),
       }));
       setTodayEncounters(enriched);
-      // pre_admissions pode não estar tipada — tratamento defensivo
       setPendingAdmissions((paRes.data as any[]) || []);
       setMonthRegistrations(regRes.count || 0);
       setMyActions((auditRes.data as ReceptionAction[]) || []);
+      setAllActionsToday((allAuditRes.data as ReceptionAction[]) || []);
+      setDeskSessions((sessRes.data as any[]) || []);
     } catch (err: any) {
       console.error("Erro ao carregar painel diário:", err);
       toast.error("Erro ao carregar painel da recepção", { description: err?.message });
@@ -195,21 +254,113 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
     fetchAll();
   }, [fetchAll]);
 
-  // KPIs derivados
+  // Mapa userId → posto ATUAL (sessão aberta mais recente)
+  const userPointMap = useMemo(() => {
+    const map = new Map<string, ReceptionPoint>();
+    for (const s of deskSessions) {
+      if (!s.ended_at && !map.has(s.user_id)) {
+        map.set(s.user_id, s.reception_point);
+      }
+    }
+    return map;
+  }, [deskSessions]);
+
+  // Encounters filtrados pelo posto selecionado
+  const filteredEncounters = useMemo(() => {
+    if (pointFilter === "all") return todayEncounters;
+    return todayEncounters.filter((e) => {
+      const point = e.reception_point || (e.created_by ? userPointMap.get(e.created_by) : null);
+      return point === pointFilter;
+    });
+  }, [todayEncounters, pointFilter, userPointMap]);
+
+  // KPIs (segmentados pelo filtro) + split comparativo
   const kpis = useMemo(() => {
-    const totalToday = todayEncounters.length;
-    const waitingTriage = todayEncounters.filter(
+    const totalToday = filteredEncounters.length;
+    const waitingTriage = filteredEncounters.filter(
       (e) => e.destination_sector === "triagem" && e.triage_status === "aguardando_chamada"
     ).length;
     const waitingAdmission = pendingAdmissions.length;
-    const docsPending = todayEncounters.filter(
+    const docsPending = filteredEncounters.filter(
       (e) => e.documents_pending || e.partial_identification || e.is_unidentified
     ).length;
     const myToday = myActions.filter(
       (a) => a.table_name === "patient_registry" && a.action === "INSERT"
     ).length;
-    return { totalToday, waitingTriage, waitingAdmission, docsPending, myToday };
-  }, [todayEncounters, pendingAdmissions, myActions]);
+
+    const splitByPoint = todayEncounters.reduce(
+      (acc, e) => {
+        const point = e.reception_point || (e.created_by ? userPointMap.get(e.created_by) : null);
+        if (point === "vertical") acc.vertical += 1;
+        else if (point === "horizontal") acc.horizontal += 1;
+        else acc.unassigned += 1;
+        return acc;
+      },
+      { vertical: 0, horizontal: 0, unassigned: 0 },
+    );
+
+    return { totalToday, waitingTriage, waitingAdmission, docsPending, myToday, splitByPoint };
+  }, [filteredEncounters, todayEncounters, pendingAdmissions, myActions, userPointMap]);
+
+  // Stats por usuário (recepcionistas com sessão hoje OU que abriram encounters)
+  const userStats = useMemo<UserStats[]>(() => {
+    const userIds = new Set<string>();
+    deskSessions.forEach((s) => userIds.add(s.user_id));
+    todayEncounters.forEach((e) => e.created_by && userIds.add(e.created_by));
+
+    return Array.from(userIds)
+      .map((uid) => {
+        const sessions = deskSessions.filter((s) => s.user_id === uid);
+        const userEncounters = todayEncounters.filter((e) => e.created_by === uid);
+        const userName =
+          sessions[0]?.user_name ||
+          allActionsToday.find((a) => a.user_id === uid)?.new_data?.created_by_name ||
+          `Usuário ${uid.slice(0, 8)}`;
+
+        const activeMs = sessions.reduce((acc, s) => {
+          const start = new Date(s.started_at).getTime();
+          const end = s.ended_at ? new Date(s.ended_at).getTime() : Date.now();
+          return acc + Math.max(0, end - start);
+        }, 0);
+
+        // Tempo médio de cadastro: intervalos entre INSERTs consecutivos
+        const inserts = allActionsToday
+          .filter((a) => a.user_id === uid && a.table_name === "patient_registry" && a.action === "INSERT")
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        let avgRegSec: number | null = null;
+        if (inserts.length >= 2) {
+          const diffs: number[] = [];
+          for (let i = 1; i < inserts.length; i++) {
+            const d = (new Date(inserts[i].created_at).getTime() - new Date(inserts[i - 1].created_at).getTime()) / 1000;
+            if (d < 60 * 30) diffs.push(d);
+          }
+          if (diffs.length > 0) avgRegSec = Math.round(diffs.reduce((a, b) => a + b, 0) / diffs.length);
+        }
+
+        const expressCount = userEncounters.filter((e) => e.is_unidentified || e.partial_identification).length;
+        const pendingDocsCount = userEncounters.filter((e) => e.documents_pending).length;
+
+        const destinationCounts: Record<string, number> = {};
+        userEncounters.forEach((e) => {
+          const k = e.destination_sector || "—";
+          destinationCounts[k] = (destinationCounts[k] || 0) + 1;
+        });
+
+        return {
+          userId: uid,
+          userName,
+          point: userPointMap.get(uid) || sessions[0]?.reception_point || null,
+          totalEncounters: userEncounters.length,
+          expressCount,
+          pendingDocsCount,
+          destinationCounts,
+          avgRegistrationSec: avgRegSec,
+          activeMinutes: Math.round(activeMs / 60000),
+          isOnline: sessions.some((s) => !s.ended_at),
+        };
+      })
+      .sort((a, b) => b.totalEncounters - a.totalEncounters);
+  }, [deskSessions, todayEncounters, allActionsToday, userPointMap]);
 
   const actionLabel = (a: ReceptionAction) => {
     const op = a.action === "INSERT" ? "Criou" : a.action === "UPDATE" ? "Atualizou" : a.action === "DELETE" ? "Removeu" : a.action;
@@ -218,13 +369,75 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
     return `${op} ${tab}${name ? ` — ${name}` : ""}`;
   };
 
+  const formatActiveTime = (min: number) => {
+    if (min < 60) return `${min}min`;
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return `${h}h${m > 0 ? ` ${m}min` : ""}`;
+  };
+
+  const pointBadgeClasses = (p: ReceptionPoint | null) =>
+    p === "vertical"
+      ? "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30"
+      : p === "horizontal"
+      ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
+      : "bg-muted text-muted-foreground";
+
   return (
     <div className="space-y-4">
-      {/* KPIs */}
+      {/* Filtro segmentado por posto */}
+      <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-lg bg-muted/40 w-fit">
+        <button
+          onClick={() => setPointFilter("all")}
+          className={cn(
+            "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
+            pointFilter === "all"
+              ? "bg-background shadow-sm text-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Users className="h-3.5 w-3.5" />
+          Visão geral
+          <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{todayEncounters.length}</Badge>
+        </button>
+        <button
+          onClick={() => setPointFilter("vertical")}
+          className={cn(
+            "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
+            pointFilter === "vertical"
+              ? "bg-sky-500/15 text-sky-700 dark:text-sky-300 shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Footprints className="h-3.5 w-3.5" />
+          Vertical
+          <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{kpis.splitByPoint.vertical}</Badge>
+        </button>
+        <button
+          onClick={() => setPointFilter("horizontal")}
+          className={cn(
+            "px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
+            pointFilter === "horizontal"
+              ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Ambulance className="h-3.5 w-3.5" />
+          Horizontal
+          <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{kpis.splitByPoint.horizontal}</Badge>
+        </button>
+        {kpis.splitByPoint.unassigned > 0 && (
+          <span className="text-[10px] text-muted-foreground ml-2 italic">
+            {kpis.splitByPoint.unassigned} sem posto
+          </span>
+        )}
+      </div>
+
+      {/* KPIs (segmentados pelo filtro) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard
           icon={ListTodo}
-          label="Atendimentos hoje"
+          label={pointFilter === "all" ? "Atendimentos hoje" : `Atendimentos ${RECEPTION_POINT_SHORT[pointFilter]}`}
           value={kpis.totalToday}
           hint="Abertos no balcão"
           tone="default"
@@ -256,6 +469,13 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
           value={monthRegistrations.toLocaleString("pt-BR")}
           hint="Novos prontuários"
           tone="success"
+        />
+        <KpiCard
+          icon={UserCheck}
+          label="Equipe ativa agora"
+          value={userStats.filter((u) => u.isOnline).length}
+          hint={`${userStats.length} no dia`}
+          tone="info"
         />
       </div>
 
@@ -294,6 +514,11 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
             Aguardando Admissão
             <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{kpis.waitingAdmission}</Badge>
           </TabsTrigger>
+          <TabsTrigger value="equipe" className="gap-1.5">
+            <Trophy className="h-3.5 w-3.5" />
+            Por usuário
+            <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1.5">{userStats.length}</Badge>
+          </TabsTrigger>
           <TabsTrigger value="minhas" className="gap-1.5">
             <History className="h-3.5 w-3.5" />
             Minhas Ações (24h)
@@ -308,15 +533,15 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
               <CardTitle className="text-sm">Atendimentos abertos hoje pela recepção</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              {todayEncounters.length === 0 ? (
+              {filteredEncounters.length === 0 ? (
                 <div className="text-center py-10 text-muted-foreground">
                   <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">Nenhum atendimento aberto hoje</p>
+                  <p className="text-sm">Nenhum atendimento {pointFilter !== "all" ? `na recepção ${RECEPTION_POINT_SHORT[pointFilter]}` : "aberto hoje"}</p>
                 </div>
               ) : (
                 <ScrollArea className="max-h-[360px]">
                   <div className="divide-y">
-                    {todayEncounters.map((e) => (
+                    {filteredEncounters.map((e) => (
                       <div key={e.id} className="p-3 hover:bg-accent/40 transition-colors">
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0 flex-1">
@@ -345,6 +570,17 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
                                   identificação parcial
                                 </Badge>
                               )}
+                              {(() => {
+                                const point = e.reception_point || (e.created_by ? userPointMap.get(e.created_by) : null);
+                                if (!point) return null;
+                                const Icon = point === "vertical" ? Footprints : Ambulance;
+                                return (
+                                  <Badge variant="outline" className={cn("text-[9px] h-4 gap-1 border", pointBadgeClasses(point))}>
+                                    <Icon className="h-2.5 w-2.5" />
+                                    {RECEPTION_POINT_SHORT[point]}
+                                  </Badge>
+                                );
+                              })()}
                             </div>
                             <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1">
                               <span>{format(new Date(e.created_at), "HH:mm", { locale: ptBR })}</span>
