@@ -48,6 +48,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { MedicalRecordsList } from "@/components/MedicalRecordsList";
 import { ReceptionDailyDashboard } from "@/components/reception/ReceptionDailyDashboard";
 import { DuplicatePatientWarning } from "@/components/reception/DuplicatePatientWarning";
+import { ReceptionGlobalSearch } from "@/components/reception/ReceptionGlobalSearch";
 
 // Destination sectors for encounter routing — agrupados por categoria
 type DestinationSector = {
