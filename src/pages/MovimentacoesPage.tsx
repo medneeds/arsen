@@ -211,7 +211,7 @@ const MovimentacoesPage = () => {
             </div>
             <div>
               <h1 className="text-lg font-bold text-foreground">Movimentações do Paciente</h1>
-              <p className="text-xs text-muted-foreground">Registro otimizado de Entradas, Transferências e Saídas</p>
+              <p className="text-xs text-muted-foreground">Sinalize transferências e saídas — a liberação efetiva do leito é feita pelo setor administrativo</p>
             </div>
           </div>
           {step !== "category" && (
@@ -238,7 +238,7 @@ const MovimentacoesPage = () => {
         <div className="rounded-xl border-2 border-primary/20 bg-card p-4 space-y-4">
           {/* Stepper */}
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            <span className={cn("font-semibold", step === "category" && "text-primary")}>1. Categoria</span>
+            <span className={cn("font-semibold", step === "category" && "text-primary")}>1. Tipo</span>
             <ArrowRight className="h-3 w-3" />
             <span className={cn("font-semibold", step === "subtype" && "text-primary")}>2. Subtipo</span>
             <ArrowRight className="h-3 w-3" />
@@ -247,7 +247,7 @@ const MovimentacoesPage = () => {
 
           {/* Step 1: Category */}
           {step === "category" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               {MOVEMENT_CATEGORIES.map((cat) => {
                 const t = TONE_CLASSES[cat.tone];
                 const Icon = cat.icon;
