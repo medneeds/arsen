@@ -314,12 +314,23 @@ export function AppSidebar({
         { title: "Painel NIR", icon: LayoutDashboard, link: "/nir", profiles: ["nir"] },
       ];
     }
-    // Administrativo — Recepção com sub-abas sincronizadas (?tab=inicio|prontuarios)
+    // Administrativo — Recepção em 3 grupos: Atendimento, Fluxos, Documentos
     if (accessProfile === "administrativo") {
       return [
-        { title: "Recepção", icon: LayoutDashboard, profiles: ["administrativo"], items: [
+        { title: "Atendimento", icon: ClipboardList, profiles: ["administrativo"], items: [
           { name: "Início", link: "/recepcao?tab=inicio", profiles: ["administrativo"] },
+          { name: "Atendimentos do Dia", link: "/recepcao?tab=dia", profiles: ["administrativo"] },
           { name: "Prontuários", link: "/recepcao?tab=prontuarios", profiles: ["administrativo"] },
+        ]},
+        { title: "Fluxos", icon: ArrowRight, profiles: ["administrativo"], items: [
+          { name: "Movimentações", link: "/movements", profiles: ["administrativo"] },
+          { name: "Solicitações de Internação", link: "/resources", profiles: ["administrativo"] },
+          { name: "Aguardando Admissão", link: "/recepcao?tab=aguardando", profiles: ["administrativo"] },
+        ]},
+        { title: "Documentos", icon: FolderOpen, profiles: ["administrativo"], items: [
+          { name: "Documentos do Paciente", link: "/documentos-paciente", profiles: ["administrativo"] },
+          { name: "Ficha de Atendimento", link: "/ficha-atendimento", profiles: ["administrativo"] },
+          { name: "Histórico de Internações", link: "/internment-history", profiles: ["administrativo"] },
         ]},
       ];
     }
