@@ -316,6 +316,9 @@ export default function NirDashboardPage() {
         </Card>
       )}
 
+      {/* Previsão de altas */}
+      <NirDischargeForecast hospitalUnitId={currentHospital?.id} />
+
       {/* Module Grid */}
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Módulos de Acesso</h2>
