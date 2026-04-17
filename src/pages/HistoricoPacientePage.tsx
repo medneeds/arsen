@@ -101,9 +101,10 @@ export default function HistoricoPacientePage() {
             <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
           </Button>
           <Separator orientation="vertical" className="h-6" />
+          <Clock className="h-4 w-4 text-primary" />
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-semibold truncate patient-id">
-              Histórico • {patientName}
+              Histórico longitudinal • {patientName}
             </h1>
             <p className="text-xs text-muted-foreground">
               {patientBed && <span className="patient-id">Leito {patientBed}</span>}

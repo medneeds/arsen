@@ -69,7 +69,20 @@ import FichaAtendimentoPage from "./pages/FichaAtendimentoPage";
 import NirDashboardPage from "./pages/NirDashboardPage";
 import UeVerticalPage from "./pages/UeVerticalPage";
 import UeHorizontalPage from "./pages/UeHorizontalPage";
-import HistoricoPacientePage from "./pages/HistoricoPacientePage";
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
+
+// Lazy: página standalone, carregada sob demanda para preservar fluidez do app
+const HistoricoPacientePage = lazy(() => import("./pages/HistoricoPacientePage"));
+
+const HistoricoFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="flex items-center gap-2 text-muted-foreground text-sm">
+      <Loader2 className="h-4 w-4 animate-spin" />
+      Carregando histórico do paciente...
+    </div>
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -655,9 +668,9 @@ const App = () => {
           path="/historico-paciente"
           element={
             <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+              <Suspense fallback={<HistoricoFallback />}>
                 <HistoricoPacientePage />
-              </MainLayout>
+              </Suspense>
             </ProtectedRoute>
           }
         />
