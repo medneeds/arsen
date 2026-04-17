@@ -66,12 +66,12 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
     currentHospital?.name || whitelabel.institution.hospitalShortName;
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-start py-10 px-4 relative overflow-hidden">
       <AuthBackgroundFx />
 
-      {/* Top status chip */}
+      {/* Top status chip — in flow */}
       <motion.div
-        className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-2.5 z-20"
+        className="relative flex items-center gap-2.5 z-20 mb-6"
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
