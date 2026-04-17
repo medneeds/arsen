@@ -48,6 +48,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { MedicalRecordsList } from "@/components/MedicalRecordsList";
 import { ReceptionDailyDashboard } from "@/components/reception/ReceptionDailyDashboard";
 import { DuplicatePatientWarning } from "@/components/reception/DuplicatePatientWarning";
+import { ReceptionGlobalSearch } from "@/components/reception/ReceptionGlobalSearch";
 
 // Destination sectors for encounter routing — agrupados por categoria
 type DestinationSector = {
@@ -207,12 +208,27 @@ const AdminDashboardPage = () => {
   const [recentEncounters, setRecentEncounters] = useState<Encounter[]>([]);
   const [isLoadingEncounters, setIsLoadingEncounters] = useState(false);
 
+  // Busca global Ctrl+K
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+
   // Load recent encounters
   useEffect(() => {
     if (selectedHospitalId) {
       loadRecentEncounters();
     }
   }, [selectedHospitalId]);
+
+  // Atalho global Ctrl+K / Cmd+K
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setGlobalSearchOpen((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const loadRecentEncounters = async () => {
     if (!selectedHospitalId) return;
@@ -645,8 +661,20 @@ const AdminDashboardPage = () => {
             <h1 className="text-lg font-bold text-foreground">Recepção / Administrativo</h1>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setGlobalSearchOpen(true)}
+              className="gap-2 text-xs h-8 text-muted-foreground hover:text-foreground"
+            >
+              <Search className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Buscar paciente / atendimento</span>
+              <kbd className="hidden md:inline-flex h-5 items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[9px] font-medium text-muted-foreground">
+                <span className="text-[10px]">⌘</span>K
+              </kbd>
+            </Button>
             <Badge variant="secondary" className="text-xs">
-              {recentEncounters.filter(e => e.status === "active").length} atendimentos ativos
+              {recentEncounters.filter(e => e.status === "active").length} ativos
             </Badge>
           </div>
         </header>
@@ -1376,6 +1404,22 @@ const AdminDashboardPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Busca global Ctrl+K */}
+      <ReceptionGlobalSearch
+        open={globalSearchOpen}
+        onOpenChange={setGlobalSearchOpen}
+        onPickRegistry={(id, name) => {
+          handlePickRegistryFromDashboard(id, name);
+        }}
+        onPickEncounter={(code, regId, name) => {
+          if (regId) {
+            handlePickRegistryFromDashboard(regId, name);
+          } else {
+            toast.info("Atendimento sem prontuário vinculado", { description: code });
+          }
+        }}
+      />
     </MainLayout>
   );
 };
