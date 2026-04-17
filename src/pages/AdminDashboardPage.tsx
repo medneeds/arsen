@@ -210,25 +210,48 @@ const AdminDashboardPage = () => {
 
   // Register new patient
   const handleRegister = async () => {
-    if (!registerForm.full_name.trim()) {
-      toast.error("Nome completo é obrigatório");
-      return;
-    }
     if (!selectedHospitalId) {
       toast.error("Unidade hospitalar não selecionada");
+      return;
+    }
+
+    if (!registerForm.is_unidentified && !registerForm.full_name.trim()) {
+      toast.error("Nome completo é obrigatório");
       return;
     }
 
     setIsRegistering(true);
     try {
       const stateId = localStorage.getItem("selected_state_id");
+
+      // Gera código NI quando paciente não identificado
+      let niCode: string | null = null;
+      let finalName = registerForm.full_name.trim().toUpperCase();
+      const niFeatures = registerForm.is_unidentified
+        ? {
+            estimated_age: registerForm.ni_estimated_age || null,
+            apparent_sex: registerForm.ni_apparent_sex || null,
+            skin_color: registerForm.ni_skin_color || null,
+            distinctive_marks: registerForm.ni_distinctive_marks || null,
+            arrival_circumstance: registerForm.ni_arrival_circumstance || null,
+          }
+        : null;
+
+      if (registerForm.is_unidentified) {
+        const { data: ni, error: niErr } = await (supabase.rpc as any)("generate_ni_code");
+        if (niErr) throw niErr;
+        niCode = ni as string;
+        // Padronização universal: "NÃO IDENTIFICADO (NI-AAAA-NNNNNN)"
+        finalName = `NÃO IDENTIFICADO (${niCode})`;
+      }
+
       const { data, error } = await supabase
         .from("patient_registry")
         .insert({
-          full_name: registerForm.full_name.trim().toUpperCase(),
+          full_name: finalName,
           social_name: registerForm.social_name.trim() || null,
-          cpf: registerForm.cpf.trim() || null,
-          cns: registerForm.cns.trim() || null,
+          cpf: registerForm.cpf.replace(/\D/g, "") || null,
+          cns: registerForm.cns.replace(/\D/g, "") || null,
           birth_date: registerForm.birth_date || null,
           sex: registerForm.sex || null,
           mother_name: registerForm.mother_name.trim() || null,
@@ -239,6 +262,9 @@ const AdminDashboardPage = () => {
           blood_type: registerForm.blood_type || null,
           allergies: registerForm.allergies.trim() || null,
           comorbidities: registerForm.comorbidities.trim() || null,
+          is_unidentified: registerForm.is_unidentified,
+          unidentified_code: niCode,
+          unidentified_features: niFeatures,
           created_by: user?.id,
           hospital_unit_id: selectedHospitalId,
           state_id: stateId,
@@ -255,14 +281,17 @@ const AdminDashboardPage = () => {
         return;
       }
 
-      toast.success("Prontuário criado com sucesso!", {
-        description: `Nº ${(data as any).medical_record}`,
-      });
+      toast.success(
+        registerForm.is_unidentified ? "Paciente NÃO IDENTIFICADO cadastrado!" : "Prontuário criado com sucesso!",
+        { description: `Nº ${(data as any).medical_record}${niCode ? ` • ${niCode}` : ""}` }
+      );
       setShowRegisterDialog(false);
       setRegisterForm({
         full_name: "", social_name: "", cpf: "", cns: "", birth_date: "",
         sex: "", mother_name: "", phone: "", address: "", neighborhood: "",
         city: "", blood_type: "", allergies: "", comorbidities: "",
+        is_unidentified: false, ni_estimated_age: "", ni_apparent_sex: "",
+        ni_skin_color: "", ni_distinctive_marks: "", ni_arrival_circumstance: "",
       });
       setSelectedPatient(data as any);
       setShowPatientDetail(true);
