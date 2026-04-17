@@ -41,7 +41,9 @@ import {
   Plus,
   Send,
   Clock,
+  UserX,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Destination sectors for encounter routing
 const DESTINATION_SECTORS = [
@@ -116,8 +118,33 @@ const AdminDashboardPage = () => {
     blood_type: "",
     allergies: "",
     comorbidities: "",
+    is_unidentified: false,
+    ni_estimated_age: "",
+    ni_apparent_sex: "",
+    ni_skin_color: "",
+    ni_distinctive_marks: "",
+    ni_arrival_circumstance: "",
   });
   const [isRegistering, setIsRegistering] = useState(false);
+
+  const toggleUnidentified = (checked: boolean) => {
+    setRegisterForm(prev => ({
+      ...prev,
+      is_unidentified: checked,
+      // Limpa campos sensíveis quando ativa NI
+      full_name: checked ? "" : prev.full_name,
+      social_name: checked ? "" : prev.social_name,
+      mother_name: checked ? "" : prev.mother_name,
+      cpf: checked ? "" : prev.cpf,
+      cns: checked ? "" : prev.cns,
+      birth_date: checked ? "" : prev.birth_date,
+      sex: checked ? "I" : prev.sex,
+      phone: checked ? "" : prev.phone,
+      address: checked ? "" : prev.address,
+      neighborhood: checked ? "" : prev.neighborhood,
+      city: checked ? "" : prev.city,
+    }));
+  };
 
   // Selected patient & encounter
   const [selectedPatient, setSelectedPatient] = useState<PatientRegistry | null>(null);
