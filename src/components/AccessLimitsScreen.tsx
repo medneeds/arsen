@@ -6,6 +6,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { whitelabel } from "@/config/whitelabel";
 import { BigHelpLogo } from "./BigHelpLogo";
 import { AuthBackgroundFx } from "./auth/AuthBackgroundFx";
+import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "ADMINISTRADOR",
