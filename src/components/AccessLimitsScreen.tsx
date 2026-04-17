@@ -172,8 +172,7 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
             </div>
             <div className="flex-1 min-w-0">
               <p
-                className="preserve-case text-foreground font-medium text-base tracking-tight truncate"
-                style={{ fontFamily: SERIF }}
+                className="preserve-case text-foreground font-semibold text-base tracking-tight truncate"
               >
                 {username}
               </p>
