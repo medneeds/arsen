@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { useHospital } from "@/contexts/HospitalContext";
 import { whitelabel } from "@/config/whitelabel";
-import socorraoLogo from "@/assets/socorrao-logo.jpg";
+import socorraoLogo from "@/assets/socorrao-cross-logo.png";
 import type { NirMetrics } from "@/hooks/useNirMetrics";
 import type { DischargePrediction } from "@/hooks/useDischargePredictions";
 
