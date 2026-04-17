@@ -1,31 +1,47 @@
 ---
 name: Triage Express Pre-identification Dialog
-description: Pop-up TriageExpressDialog com perguntas opcionais (nome parcial, sexo, idade aproximada, queixa, modo de chegada, contato), checkbox de pendência de documentação e seleção de destino (Triagem ou setor direto). Salva em patient_registry.unidentified_features (jsonb) os campos documents_pending, partial_identification, chief_complaint, arrival_mode, approx_age. Painel da Recepção exibe KPI "Documentação pendente" e badges (NI / docs pendentes / identificação parcial) nos cards de atendimentos.
+description: Pop-up TriageExpressDialog com 3 modos de idade (data nasc/exata/aproximada via ToggleGroup), atalho prioritário Sala Vermelha quando recepção horizontal, destino padrão sempre Triagem (recomendado). Persiste reception_point no encounter, birth_date no registry, e age_mode/birth_date/reception_point em unidentified_features.
 type: feature
 ---
 
 # Triagem Express com Pré-identificação
 
 ## Componente
-- `src/components/reception/TriageExpressDialog.tsx` — dialog com 5 blocos: identificação rápida, queixa, pendência (checkbox marcado por padrão), destino (seleção visual por grupo) e observações.
+`src/components/reception/TriageExpressDialog.tsx` — dialog disparado em `AdminDashboardPage` via botão "Triagem Express".
 
-## Fluxo
-1. Usuário clica em "Triagem Express" no painel da Recepção → abre dialog.
-2. Pode preencher nome (vazio = NI automático via RPC `generate_ni_code`), sexo, idade aproximada, queixa, modo de chegada, telefone do acompanhante.
-3. Marca/desmarca "Documentação pendente" (default: true).
-4. Escolhe destino entre todos `DESTINATION_SECTORS` (Triagem é o recomendado).
-5. Sistema cria `patient_registry` com `unidentified_features` enriquecido + prontuário oficial + encounter_code + (se setor clínico) `pre_admissions` com nota incluindo "⚠ Documentação pendente".
+## Campos
+- **Nome parcial** (vazio → NI automático via RPC `generate_ni_code`).
+- **Sexo** (M/F/I).
+- **Idade** com 3 modos via ToggleGroup (`ageMode`):
+  - `approx` — texto livre (ADULTO, IDOSO, RN, ~60a) — padrão.
+  - `exact` — input numérico em anos.
+  - `dob` — input date (YYYY-MM-DD); calcula anos automaticamente e salva em `patient_registry.birth_date`.
+- **Modo de chegada** — padrão SAMU 192 quando `receptionPoint === "horizontal"`; ESPONTÂNEO quando vertical.
+- **Telefone do acompanhante**.
+- **Queixa principal**.
+- **Documentação pendente** (checkbox padrão marcado).
+- **Destino** — sempre lista todos os setores; padrão `triagem` (recomendado).
+- **Observações**.
+
+## Atalho prioritário (Recepção Horizontal)
+Quando `receptionPoint === "horizontal"`, exibe bloco destacado no topo com 2 botões grandes:
+1. **Triagem** (recomendado, primeiro, com badge "recomendado").
+2. **Sala Vermelha** (emergência crítica, ícone Siren animate-pulse).
+A lista completa de setores permanece visível abaixo como "Outros destinos disponíveis". Mesmo na horizontal, `destinationValue` inicia como `"triagem"` — Sala Vermelha é apenas atalho secundário.
+
+## Persistência
+- `patient_registry`:
+  - `birth_date` (quando ageMode = dob).
+  - `unidentified_features`: `arrival_circumstance`, `arrival_mode`, `approx_age`, `age_mode`, `birth_date`, `chief_complaint`, `documents_pending`, `partial_identification`, `observations`, `reception_point`, `registered_at`.
+- `patient_encounters`:
+  - `reception_point` (vertical/horizontal — herdado do hook `useReceptionPost`).
+  - `destination_sector`, `triage_status` (`aguardando_chamada` se Triagem; `encaminhado` se setor clínico).
+- Se setor clínico (não-Triagem): cria também `pre_admissions` com `status=aguardando_leito`.
 
 ## Sinalização no painel
 - KPI "Documentação pendente" no `ReceptionDailyDashboard`.
-- Badges nos cards de atendimentos: `NI` (slate + UserX), `docs pendentes` (amber + FileWarning), `identificação parcial` (orange).
-- Enriquecimento via segunda query batch em `patient_registry` por `registry_id`.
-
-## Persistência
-- `is_unidentified`: true apenas se nome vazio.
-- `unidentified_features.documents_pending`: boolean.
-- `unidentified_features.partial_identification`: true se nome tem menos de 2 palavras.
-- `unidentified_features.arrival_mode`, `chief_complaint`, `approx_age`, `observations`: strings.
+- Badges nos cards: `NI` (slate + UserX), `docs pendentes` (amber + FileWarning), `identificação parcial` (orange).
+- Ícones por recepção no card: Footprints (Vertical) / Ambulance (Horizontal).
 
 ## Why
-Permite que recepção registre rapidamente paciente que chega sem documentos mas com nome parcial, mantendo rastreabilidade da pendência para complementação posterior.
+Recepção horizontal recebe pacientes em maca (SAMU/ambulância) com perfil prioritário de Sala Vermelha. O dialog acelera triagem mantendo flexibilidade total de destino e formato de idade conforme o que o acompanhante consegue informar.

@@ -50,6 +50,7 @@ import { ReceptionDailyDashboard } from "@/components/reception/ReceptionDailyDa
 import { DuplicatePatientWarning } from "@/components/reception/DuplicatePatientWarning";
 import { ReceptionGlobalSearch } from "@/components/reception/ReceptionGlobalSearch";
 import { TriageExpressDialog, type TriageExpressPayload } from "@/components/reception/TriageExpressDialog";
+import { useReceptionPost } from "@/hooks/useReceptionPost";
 
 // Destination sectors for encounter routing — agrupados por categoria
 type DestinationSector = {
@@ -133,6 +134,7 @@ const AdminDashboardPage = () => {
   const { currentHospital } = useHospital();
   const selectedHospitalId = currentHospital?.id;
   const { currentDepartment } = useDepartment();
+  const { point: receptionPoint } = useReceptionPost();
 
   // Tab state synced with URL (?tab=inicio|dia|aguardando|prontuarios) — sincroniza com sidebar
   const [searchParams, setSearchParams] = useSearchParams();
@@ -555,16 +557,20 @@ const AdminDashboardPage = () => {
           full_name: finalName,
           sex: payload.sex,
           phone: payload.contactPhone || null,
+          birth_date: payload.birthDate || null,
           is_unidentified: !hasName,
           unidentified_code: niCode,
           unidentified_features: {
             arrival_circumstance: "Triagem Express",
             arrival_mode: payload.arrivalMode,
             approx_age: payload.approxAge || null,
+            age_mode: payload.ageMode,
+            birth_date: payload.birthDate || null,
             chief_complaint: payload.chiefComplaint || null,
             documents_pending: payload.documentsPending,
             partial_identification: isPartial,
             observations: payload.observations || null,
+            reception_point: receptionPoint || null,
             registered_at: new Date().toISOString(),
           },
           notes: payload.observations || null,
@@ -624,6 +630,7 @@ const AdminDashboardPage = () => {
           hospital_unit_id: selectedHospitalId,
           state_id: stateId,
           department: currentDepartment,
+          reception_point: receptionPoint || null,
           destination_sector: payload.destinationValue,
           triage_status: sectorDef.isTriage ? "aguardando_chamada" : "encaminhado",
           status: "active",
@@ -1497,6 +1504,7 @@ const AdminDashboardPage = () => {
         groups={DESTINATION_GROUPS}
         onConfirm={handleTriageExpressConfirm}
         loading={isCreatingEncounter}
+        receptionPoint={receptionPoint}
       />
     </MainLayout>
   );
