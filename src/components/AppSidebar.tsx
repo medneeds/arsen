@@ -247,6 +247,16 @@ export function AppSidebar({
         { name: "Catálogo de Medicamentos", link: "/catalogo-medicamentos", profiles: ["gestor"] },
       ],
     },
+
+    // ── Administração ──
+    {
+      title: "Administração",
+      icon: Users,
+      profiles: ["gestor"],
+      items: [
+        { name: "Gerenciamento de Usuários", link: "/user-management", profiles: ["gestor"] },
+      ],
+    },
   ];
 
   const allMenuItems = accessProfile === "gestor" ? gestorMenu : medicoMenu;
