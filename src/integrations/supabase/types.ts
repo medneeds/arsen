@@ -1002,6 +1002,7 @@ export type Database = {
           id: string
           name: string
           state_id: string
+          unit_code: string | null
         }
         Insert: {
           address?: string | null
@@ -1009,6 +1010,7 @@ export type Database = {
           id?: string
           name: string
           state_id: string
+          unit_code?: string | null
         }
         Update: {
           address?: string | null
@@ -1016,6 +1018,7 @@ export type Database = {
           id?: string
           name?: string
           state_id?: string
+          unit_code?: string | null
         }
         Relationships: [
           {
@@ -1166,6 +1169,90 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      medical_record_sequences: {
+        Row: {
+          id: string
+          last_sequence: number
+          unit_code: string
+          updated_at: string
+          year_ref: string
+        }
+        Insert: {
+          id?: string
+          last_sequence?: number
+          unit_code: string
+          updated_at?: string
+          year_ref: string
+        }
+        Update: {
+          id?: string
+          last_sequence?: number
+          unit_code?: string
+          updated_at?: string
+          year_ref?: string
+        }
+        Relationships: []
+      }
+      medical_records: {
+        Row: {
+          ano_referencia: string
+          codigo_unidade: string
+          created_at: string
+          created_by: string | null
+          data_criacao: string
+          dv: number
+          id: string
+          numero_base: string
+          numero_prontuario: string
+          patient_id: string | null
+          patient_registry_id: string | null
+          sequencia: number
+        }
+        Insert: {
+          ano_referencia: string
+          codigo_unidade: string
+          created_at?: string
+          created_by?: string | null
+          data_criacao?: string
+          dv: number
+          id?: string
+          numero_base: string
+          numero_prontuario: string
+          patient_id?: string | null
+          patient_registry_id?: string | null
+          sequencia: number
+        }
+        Update: {
+          ano_referencia?: string
+          codigo_unidade?: string
+          created_at?: string
+          created_by?: string | null
+          data_criacao?: string
+          dv?: number
+          id?: string
+          numero_base?: string
+          numero_prontuario?: string
+          patient_id?: string | null
+          patient_registry_id?: string | null
+          sequencia?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_records_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_records_patient_registry_id_fkey"
+            columns: ["patient_registry_id"]
+            isOneToOne: false
+            referencedRelation: "patient_registry"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       medication_aliases: {
         Row: {
@@ -3313,6 +3400,16 @@ export type Database = {
       admin_update_user_password: {
         Args: { p_email: string; p_new_password: string }
         Returns: Json
+      }
+      calc_dv_mod11: { Args: { p_base: string }; Returns: number }
+      generate_medical_record_number: {
+        Args: {
+          p_codigo_unidade: string
+          p_data_criacao?: string
+          p_patient_id?: string
+          p_patient_registry_id?: string
+        }
+        Returns: string
       }
       get_auth_user_id_by_email: { Args: { p_email: string }; Returns: string }
       has_role: {

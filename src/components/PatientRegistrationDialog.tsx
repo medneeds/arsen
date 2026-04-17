@@ -163,9 +163,35 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
       const selectedSectors = form.destination_sector.split(", ").filter(Boolean);
       const isUtiDestination = selectedSectors.some(s => s.startsWith("UTI"));
       const status = isUtiDestination ? "aguardando_leito_uti" : "pre_admissao";
-      const successMessage = isUtiDestination 
-        ? "Solicitação de leito UTI enviada para avaliação médica"
-        : "Aguardando classificação de risco";
+
+      // Auto-generate medical record number if not provided manually
+      let prontuario = form.medical_record?.trim() || null;
+      if (!prontuario) {
+        // Fetch the unit code (3 digits) for the current hospital
+        const { data: unitRow, error: unitErr } = await supabase
+          .from("hospital_units")
+          .select("unit_code")
+          .eq("id", currentHospital.id)
+          .maybeSingle();
+
+        if (unitErr) throw unitErr;
+        const unitCode = (unitRow as any)?.unit_code;
+        if (!unitCode || !/^[0-9]{3}$/.test(unitCode)) {
+          throw new Error("Unidade sem código de 3 dígitos configurado. Contate o administrador.");
+        }
+
+        const { data: gen, error: genErr } = await (supabase.rpc as any)(
+          "generate_medical_record_number",
+          {
+            p_codigo_unidade: unitCode,
+            p_data_criacao: new Date().toISOString(),
+            p_patient_registry_id: null,
+            p_patient_id: null,
+          }
+        );
+        if (genErr) throw genErr;
+        prontuario = gen as string;
+      }
 
       const { error } = await supabase.from("pre_admissions").insert({
         patient_name: form.patient_name.trim().toUpperCase(),
@@ -175,7 +201,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
         sex: form.sex || null,
         cpf: form.cpf?.replace(/\D/g, "") || null,
         cns: form.cns?.replace(/\D/g, "") || null,
-        medical_record: form.medical_record?.trim() || null,
+        medical_record: prontuario,
         phone: form.phone?.trim() || null,
         address: form.address?.trim() || null,
         neighborhood: form.neighborhood?.trim() || null,
@@ -190,6 +216,10 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
       });
 
       if (error) throw error;
+
+      const successMessage = isUtiDestination 
+        ? `Prontuário ${prontuario} • Solicitação de leito UTI enviada`
+        : `Prontuário ${prontuario} • Aguardando classificação de risco`;
 
       toast({ title: "✅ Paciente cadastrado!", description: successMessage });
       setForm(EMPTY_FORM);
@@ -347,7 +377,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
               </div>
               <div>
                 <Label className="text-xs">Prontuário</Label>
-                <Input value={form.medical_record} onChange={e => updateField("medical_record", e.target.value)} placeholder="Nº prontuário" />
+                <Input value={form.medical_record} onChange={e => updateField("medical_record", e.target.value)} placeholder="Auto: AA-UUU-SSSSSS-DV" />
               </div>
               <div>
                 <Label className="text-xs">Telefone</Label>
