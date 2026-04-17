@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Pill, NotebookPen, FileText, FolderOpen } from "lucide-react";
+import { Pill, NotebookPen, FileText, FolderOpen, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const MODULE_TABS = [
@@ -8,6 +8,7 @@ const MODULE_TABS = [
   { label: "Evolução", path: "/evolucao", icon: NotebookPen },
   { label: "Requisições", path: "/requisicoes", icon: FileText },
   { label: "Docs", path: "/documentos", icon: FolderOpen },
+  { label: "Movimentações", path: "/movimentacoes", icon: ArrowLeftRight },
 ];
 
 interface ClinicalModuleTabsProps {
