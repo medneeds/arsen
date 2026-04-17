@@ -157,14 +157,16 @@ export function NirPdfExport({ metrics, predictions = [] }: Props) {
     </style></head><body>
       <div class="header">
         <div class="header-inner">
-          ${logoData ? `<img src="${logoData}" class="logo" alt="${whitelabel.institution.hospitalAbbreviation}"/>` : `<div class="logo" style="background:#0054A6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;border-radius:6pt">${whitelabel.institution.hospitalAbbreviation}</div>`}
+          <div class="logo-wrap">
+            ${logoData ? `<img src="${logoData}" class="logo" alt="${whitelabel.institution.hospitalAbbreviation}"/>` : `<div class="logo" style="background:#0054A6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;border-radius:8pt">${whitelabel.institution.hospitalAbbreviation}</div>`}
+          </div>
           <div class="h-text">
             <div class="h-line1">${inst.line1}</div>
             <div class="h-line2">${inst.line2}</div>
             <div class="h-line3">${inst.line3}</div>
             <div class="h-tag">${whitelabel.institution.address}</div>
           </div>
-          <div style="width:56px"></div>
+          <div></div>
         </div>
         <div class="cruz-bar">
           <div style="background:${colors.red}"></div>
