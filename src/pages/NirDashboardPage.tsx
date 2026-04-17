@@ -17,6 +17,9 @@ import { NirGlobalFilters } from "@/components/nir/NirGlobalFilters";
 import { NirKpiStrip } from "@/components/nir/NirKpiStrip";
 import { NirAlertBar } from "@/components/nir/NirAlertBar";
 import { NirAnalyticsPanel } from "@/components/nir/NirAnalyticsPanel";
+import { NirDischargeForecast } from "@/components/nir/NirDischargeForecast";
+import { NirPdfExport } from "@/components/nir/NirPdfExport";
+import { useDischargePredictions } from "@/hooks/useDischargePredictions";
 
 const NIR_MODULES = [
   { key: "regulacao_interna", label: "Regulação Interna", subtitle: "Transferências entre setores", icon: ArrowLeftRight, color: "text-blue-500", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/20" },
@@ -51,6 +54,7 @@ export default function NirDashboardPage() {
   const [filters, setFilters] = useState<NirFilters>({ period: "today", sectorScope: "all", priority: "all" });
 
   const { isLoading, refetch, beds, requests, metrics, historical, heatmap, flow } = useNirMetrics(currentHospital?.id, filters);
+  const { data: predictions = [] } = useDischargePredictions(currentHospital?.id);
 
   const bedsBySector = useMemo(
     () =>
@@ -257,14 +261,17 @@ export default function NirDashboardPage() {
   return (
     <div className="space-y-4 p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Building2 className="h-6 w-6 text-primary" />
-          Núcleo Interno de Regulação (NIR)
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Gestão centralizada de leitos, regulações e fluxo de pacientes
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Building2 className="h-6 w-6 text-primary" />
+            Núcleo Interno de Regulação (NIR)
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Gestão centralizada de leitos, regulações e fluxo de pacientes
+          </p>
+        </div>
+        <NirPdfExport metrics={metrics} predictions={predictions} />
       </div>
 
       {/* Filtros globais */}
