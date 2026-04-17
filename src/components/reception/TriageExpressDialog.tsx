@@ -102,6 +102,7 @@ export function TriageExpressDialog({
   useEffect(() => {
     if (open) {
       setPartialName("");
+      setIsUnidentified(false);
       setSex("I");
       setAgeMode("approx");
       setApproxAgeText("");
