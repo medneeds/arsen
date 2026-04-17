@@ -204,7 +204,7 @@ export function InternmentStatusDialog({
           </DialogTitle>
           <DialogDescription>
             Gerenciar status de solicitação de internação para{" "}
-            <span className="font-semibold">{patientName}</span>
+            <span className="patient-id font-semibold">{patientName}</span>
           </DialogDescription>
         </DialogHeader>
 
