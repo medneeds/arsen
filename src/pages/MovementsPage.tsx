@@ -38,13 +38,11 @@ interface PatientMovement {
 }
 
 const TONE_BADGE: Record<MovementCategory, string> = {
-  ENTRADA: "bg-accent/15 text-accent border-accent/30",
   TRANSFERENCIA: "bg-primary/15 text-primary border-primary/30",
   SAIDA: "bg-destructive/15 text-destructive border-destructive/30",
 };
 
 const TONE_BORDER: Record<MovementCategory, string> = {
-  ENTRADA: "border-accent/30 bg-accent/5",
   TRANSFERENCIA: "border-primary/30 bg-primary/5",
   SAIDA: "border-destructive/30 bg-destructive/5",
 };
@@ -249,7 +247,6 @@ export default function MovementsPage() {
 
     return {
       all: baseFiltered.length,
-      ENTRADA: byCategory("ENTRADA"),
       TRANSFERENCIA: byCategory("TRANSFERENCIA"),
       SAIDA: byCategory("SAIDA"),
     };
@@ -501,12 +498,9 @@ export default function MovementsPage() {
 
           {/* Tabs — 3 categorias */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="all" className="uppercase text-xs tracking-wider">
                 Todas <Badge variant="secondary" className="ml-2">{counts.all}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="ENTRADA" className="uppercase text-xs tracking-wider">
-                Entradas <Badge variant="secondary" className="ml-2">{counts.ENTRADA}</Badge>
               </TabsTrigger>
               <TabsTrigger value="TRANSFERENCIA" className="uppercase text-xs tracking-wider">
                 Transferências <Badge variant="secondary" className="ml-2">{counts.TRANSFERENCIA}</Badge>
