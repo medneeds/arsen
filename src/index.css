@@ -6,20 +6,21 @@
 
 @layer base {
   * {
-    @apply border-border uppercase;
+    @apply border-border;
   }
-  
-  /* Preserve case for actual text inputs and textareas */
-  input[type="text"],
-  input[type="password"],
-  input[type="email"],
-  input[type="search"],
-  input[type="tel"],
-  input[type="url"],
-  input[type="number"],
-  textarea,
-  [contenteditable="true"],
-  pre, code, .preserve-case {
+
+  /* Patient identification fields are always rendered in uppercase
+     for medical/legal clarity (name, bed, sector, record, etc.).
+     Apply this class to wrappers or specific elements that display
+     patient identity data. */
+  .patient-id,
+  .patient-id * {
+    text-transform: uppercase !important;
+  }
+
+  /* Explicit opt-out when needed inside a .patient-id wrapper */
+  .preserve-case,
+  .preserve-case * {
     text-transform: none !important;
   }
   
