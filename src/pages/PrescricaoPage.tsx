@@ -3321,7 +3321,7 @@ const PrescricaoPage = () => {
             <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
               <span className="text-xs font-bold text-primary">{patient.name ? patient.name.charAt(0).toUpperCase() : '?'}</span>
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 patient-id">
               <h2 className="text-sm font-semibold text-foreground leading-tight truncate">{patient.name || 'Paciente não identificado'}</h2>
               <p className="text-[10px] text-muted-foreground">Leito {patient.bed || '—'} · {patient.unit || '—'}</p>
             </div>
