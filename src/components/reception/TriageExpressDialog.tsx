@@ -144,7 +144,8 @@ export function TriageExpressDialog({
 
   const handleSubmit = async () => {
     await onConfirm({
-      partialName: partialName.trim(),
+      partialName: isUnidentified ? "" : partialName.trim(),
+      isUnidentified,
       sex,
       approxAge: computedAge,
       ageMode,
