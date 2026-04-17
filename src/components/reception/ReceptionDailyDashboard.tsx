@@ -202,10 +202,13 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
       (e) => e.destination_sector === "triagem" && e.triage_status === "aguardando_chamada"
     ).length;
     const waitingAdmission = pendingAdmissions.length;
+    const docsPending = todayEncounters.filter(
+      (e) => e.documents_pending || e.partial_identification || e.is_unidentified
+    ).length;
     const myToday = myActions.filter(
       (a) => a.table_name === "patient_registry" && a.action === "INSERT"
     ).length;
-    return { totalToday, waitingTriage, waitingAdmission, myToday };
+    return { totalToday, waitingTriage, waitingAdmission, docsPending, myToday };
   }, [todayEncounters, pendingAdmissions, myActions]);
 
   const actionLabel = (a: ReceptionAction) => {
@@ -239,6 +242,13 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
           value={kpis.waitingAdmission}
           hint="Direcionados sem leito"
           tone="info"
+        />
+        <KpiCard
+          icon={FileWarning}
+          label="Documentação pendente"
+          value={kpis.docsPending}
+          hint="Express / sem documentos"
+          tone="warn"
         />
         <KpiCard
           icon={UserPlus}
