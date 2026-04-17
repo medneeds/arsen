@@ -111,11 +111,11 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
           <SheetHeader className="space-y-1">
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <SheetTitle className="text-base font-bold truncate">
+                <SheetTitle className="patient-id text-base font-bold truncate">
                   {maskName(patient.name, namesHidden)}
                 </SheetTitle>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <Badge variant="outline" className="text-[10px] font-mono gap-1">
+                  <Badge variant="outline" className="patient-id text-[10px] font-mono gap-1">
                     <BedDouble className="h-3 w-3" />
                     {patient.bedNumber}
                   </Badge>
