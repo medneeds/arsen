@@ -330,6 +330,21 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
                               ) : (
                                 <Badge variant="outline" className="text-[9px] h-4">{e.status}</Badge>
                               )}
+                              {e.is_unidentified && (
+                                <Badge className="bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/30 text-[9px] h-4 gap-1">
+                                  <UserX className="h-2.5 w-2.5" /> NI
+                                </Badge>
+                              )}
+                              {e.documents_pending && (
+                                <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9px] h-4 gap-1" title="Documentação pendente">
+                                  <FileWarning className="h-2.5 w-2.5" /> docs pendentes
+                                </Badge>
+                              )}
+                              {e.partial_identification && !e.is_unidentified && (
+                                <Badge className="bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30 text-[9px] h-4">
+                                  identificação parcial
+                                </Badge>
+                              )}
                             </div>
                             <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1">
                               <span>{format(new Date(e.created_at), "HH:mm", { locale: ptBR })}</span>
