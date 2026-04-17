@@ -279,7 +279,7 @@ export default function AuthPage() {
                           id="access-profile"
                           value={selectedAccessProfile}
                           onChange={(e) => setSelectedAccessProfile(e.target.value)}
-                          className="w-full h-11 pl-10 pr-4 bg-muted/40 border border-border rounded-xl text-sm font-medium text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all appearance-none cursor-pointer uppercase tracking-wide"
+                          className="w-full h-12 md:h-11 pl-10 pr-9 bg-muted/40 border border-border rounded-xl text-base md:text-sm font-medium text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all appearance-none cursor-pointer uppercase tracking-wide"
                           disabled={loading}
                         >
                           <option value="medico">MÉDICO ASSISTENTE</option>
@@ -301,7 +301,7 @@ export default function AuthPage() {
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="preserve-case w-full h-11 bg-gradient-to-b from-primary to-primary/90 hover:from-primary/95 hover:to-primary/80 text-primary-foreground font-medium text-sm rounded-xl transition-all duration-300 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 group border border-primary/20"
+                      className="preserve-case w-full h-12 md:h-11 bg-gradient-to-b from-primary to-primary/90 hover:from-primary/95 hover:to-primary/80 text-primary-foreground font-medium text-sm rounded-xl transition-all duration-300 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 group border border-primary/20"
                     >
                       {loading ? "Entrando..." : (
                         <span className="inline-flex items-center gap-2">
