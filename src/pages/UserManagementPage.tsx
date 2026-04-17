@@ -49,10 +49,13 @@ import {
   Calendar,
   Building2,
   KeyRound,
+  Settings2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ResetUserPasswordDialog } from "@/components/ResetUserPasswordDialog";
+import { UserPermissionsDialog } from "@/components/UserPermissionsDialog";
+import { useIsGestor } from "@/hooks/useIsGestor";
 
 interface UserProfile {
   id: string;
@@ -65,6 +68,7 @@ interface UserProfile {
   created_at: string;
   approved_at: string | null;
   approved_by: string | null;
+  access_profile?: string | null;
 }
 
 interface UserWithRole extends UserProfile {
