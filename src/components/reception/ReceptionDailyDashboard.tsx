@@ -13,7 +13,7 @@ import { ptBR } from "date-fns/locale";
 import {
   Activity, BedDouble, Clock, FileText, Users, AlertTriangle,
   PhoneOutgoing, RefreshCw, ArrowRight, Loader2, ListTodo, History,
-  CheckCircle2, XCircle, UserPlus, Play,
+  CheckCircle2, XCircle, UserPlus, Play, FileWarning, UserX,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -61,6 +61,10 @@ interface DailyEncounter {
   status: string;
   created_at: string;
   created_by: string | null;
+  // Enriquecido a partir de patient_registry
+  documents_pending?: boolean;
+  partial_identification?: boolean;
+  is_unidentified?: boolean;
 }
 
 interface PendingAdmission {
@@ -151,7 +155,30 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
       ]);
 
       if (encRes.error) throw encRes.error;
-      setTodayEncounters((encRes.data as DailyEncounter[]) || []);
+      const baseEncounters = (encRes.data as DailyEncounter[]) || [];
+
+      // Enriquece com features de pendência via patient_registry
+      const registryIds = Array.from(new Set(baseEncounters.map((e) => e.registry_id).filter(Boolean))) as string[];
+      let regMap: Record<string, { documents_pending?: boolean; partial_identification?: boolean; is_unidentified?: boolean }> = {};
+      if (registryIds.length > 0) {
+        const { data: regs } = await supabase
+          .from("patient_registry")
+          .select("id, is_unidentified, unidentified_features")
+          .in("id", registryIds);
+        (regs as any[] | null)?.forEach((r) => {
+          const feats = (r.unidentified_features as any) || {};
+          regMap[r.id] = {
+            is_unidentified: r.is_unidentified,
+            documents_pending: Boolean(feats.documents_pending),
+            partial_identification: Boolean(feats.partial_identification),
+          };
+        });
+      }
+      const enriched = baseEncounters.map((e) => ({
+        ...e,
+        ...(e.registry_id ? regMap[e.registry_id] || {} : {}),
+      }));
+      setTodayEncounters(enriched);
       // pre_admissions pode não estar tipada — tratamento defensivo
       setPendingAdmissions((paRes.data as any[]) || []);
       setMonthRegistrations(regRes.count || 0);
@@ -175,10 +202,13 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
       (e) => e.destination_sector === "triagem" && e.triage_status === "aguardando_chamada"
     ).length;
     const waitingAdmission = pendingAdmissions.length;
+    const docsPending = todayEncounters.filter(
+      (e) => e.documents_pending || e.partial_identification || e.is_unidentified
+    ).length;
     const myToday = myActions.filter(
       (a) => a.table_name === "patient_registry" && a.action === "INSERT"
     ).length;
-    return { totalToday, waitingTriage, waitingAdmission, myToday };
+    return { totalToday, waitingTriage, waitingAdmission, docsPending, myToday };
   }, [todayEncounters, pendingAdmissions, myActions]);
 
   const actionLabel = (a: ReceptionAction) => {
@@ -212,6 +242,13 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
           value={kpis.waitingAdmission}
           hint="Direcionados sem leito"
           tone="info"
+        />
+        <KpiCard
+          icon={FileWarning}
+          label="Documentação pendente"
+          value={kpis.docsPending}
+          hint="Express / sem documentos"
+          tone="warn"
         />
         <KpiCard
           icon={UserPlus}
@@ -292,6 +329,21 @@ export function ReceptionDailyDashboard({ onPickRegistry, onTriageExpress, onNew
                                 </Badge>
                               ) : (
                                 <Badge variant="outline" className="text-[9px] h-4">{e.status}</Badge>
+                              )}
+                              {e.is_unidentified && (
+                                <Badge className="bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/30 text-[9px] h-4 gap-1">
+                                  <UserX className="h-2.5 w-2.5" /> NI
+                                </Badge>
+                              )}
+                              {e.documents_pending && (
+                                <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[9px] h-4 gap-1" title="Documentação pendente">
+                                  <FileWarning className="h-2.5 w-2.5" /> docs pendentes
+                                </Badge>
+                              )}
+                              {e.partial_identification && !e.is_unidentified && (
+                                <Badge className="bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30 text-[9px] h-4">
+                                  identificação parcial
+                                </Badge>
                               )}
                             </div>
                             <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1">

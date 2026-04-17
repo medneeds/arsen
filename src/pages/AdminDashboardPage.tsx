@@ -49,6 +49,7 @@ import { MedicalRecordsList } from "@/components/MedicalRecordsList";
 import { ReceptionDailyDashboard } from "@/components/reception/ReceptionDailyDashboard";
 import { DuplicatePatientWarning } from "@/components/reception/DuplicatePatientWarning";
 import { ReceptionGlobalSearch } from "@/components/reception/ReceptionGlobalSearch";
+import { TriageExpressDialog, type TriageExpressPayload } from "@/components/reception/TriageExpressDialog";
 
 // Destination sectors for encounter routing — agrupados por categoria
 type DestinationSector = {
@@ -210,6 +211,9 @@ const AdminDashboardPage = () => {
 
   // Busca global Ctrl+K
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+
+  // Triagem Express dialog
+  const [showTriageExpress, setShowTriageExpress] = useState(false);
 
   // Load recent encounters
   useEffect(() => {
@@ -508,27 +512,62 @@ const AdminDashboardPage = () => {
     }
   };
 
-  // ── Triagem Express: cria NI + atendimento direcionado para Triagem em 1 clique ──
-  const handleTriageExpress = async () => {
+  // ── Triagem Express: abre dialog para coletar dados parciais antes de gerar atendimento ──
+  const openTriageExpress = () => {
     if (!selectedHospitalId) {
       toast.error("Unidade hospitalar não selecionada");
       return;
     }
+    setShowTriageExpress(true);
+  };
+
+  // Recebe payload do dialog e cria registry parcial + atendimento direcionado
+  const handleTriageExpressConfirm = async (payload: TriageExpressPayload) => {
+    if (!selectedHospitalId) return;
     setIsCreatingEncounter(true);
     try {
       const stateId = localStorage.getItem("selected_state_id");
-      // 1) Gera NI code + cria registry mínimo
-      const { data: niCode, error: niErr } = await (supabase.rpc as any)("generate_ni_code");
-      if (niErr) throw niErr;
-      const finalName = `NÃO IDENTIFICADO (${niCode})`;
+      const sectorDef = DESTINATION_SECTORS.find((s) => s.value === payload.destinationValue);
+      if (!sectorDef) {
+        toast.error("Setor de destino inválido");
+        return;
+      }
+
+      const hasName = payload.partialName.length > 0;
+      const isPartial = !hasName || payload.partialName.split(/\s+/).filter(Boolean).length < 2;
+
+      // 1) Gera NI code apenas se sem nome OU marcou pendência
+      let niCode: string | null = null;
+      if (!hasName) {
+        const { data: code, error: niErr } = await (supabase.rpc as any)("generate_ni_code");
+        if (niErr) throw niErr;
+        niCode = code as string;
+      }
+
+      const finalName = hasName
+        ? payload.partialName
+        : `NÃO IDENTIFICADO (${niCode})`;
+
+      // 2) Cria registry parcial
       const { data: registry, error: regErr } = await supabase
         .from("patient_registry")
         .insert({
           full_name: finalName,
-          sex: "I",
-          is_unidentified: true,
+          sex: payload.sex,
+          phone: payload.contactPhone || null,
+          is_unidentified: !hasName,
           unidentified_code: niCode,
-          unidentified_features: { arrival_circumstance: "Triagem Express" },
+          unidentified_features: {
+            arrival_circumstance: "Triagem Express",
+            arrival_mode: payload.arrivalMode,
+            approx_age: payload.approxAge || null,
+            chief_complaint: payload.chiefComplaint || null,
+            documents_pending: payload.documentsPending,
+            partial_identification: isPartial,
+            observations: payload.observations || null,
+            registered_at: new Date().toISOString(),
+          },
+          notes: payload.observations || null,
           created_by: user?.id,
           hospital_unit_id: selectedHospitalId,
           state_id: stateId,
@@ -537,7 +576,7 @@ const AdminDashboardPage = () => {
         .single();
       if (regErr) throw regErr;
 
-      // 2) Gera prontuário oficial
+      // 3) Gera prontuário oficial
       let officialMr: string | null = (registry as any).medical_record;
       try {
         const { data: unit } = await supabase
@@ -555,7 +594,7 @@ const AdminDashboardPage = () => {
         }
       } catch (e) { console.warn("MR gen falhou:", e); }
 
-      // 3) Gera código de atendimento e cria encounter direto pra Triagem
+      // 4) Gera código de atendimento
       let preGenCode: string | null = null;
       let mrId: string | null = null;
       try {
@@ -574,6 +613,7 @@ const AdminDashboardPage = () => {
         }
       } catch (e) { console.warn("Encounter code falhou:", e); }
 
+      // 5) Cria encounter direcionado
       const { data: enc, error: encErr } = await supabase
         .from("patient_encounters")
         .insert({
@@ -584,18 +624,46 @@ const AdminDashboardPage = () => {
           hospital_unit_id: selectedHospitalId,
           state_id: stateId,
           department: currentDepartment,
-          destination_sector: "triagem",
-          triage_status: "aguardando_chamada",
+          destination_sector: payload.destinationValue,
+          triage_status: sectorDef.isTriage ? "aguardando_chamada" : "encaminhado",
           status: "active",
+          entry_type: payload.arrivalMode?.toLowerCase().includes("samu") ? "samu" : "espontaneo",
           created_by: user?.id,
         } as any)
         .select()
         .single();
       if (encErr) throw encErr;
 
+      // 6) Se for setor clínico (não triagem), cria pré-admissão
+      if (!sectorDef.isTriage && sectorDef.sectorKey) {
+        const noteParts = [
+          `Triagem Express • Atendimento ${(enc as any).encounter_code}`,
+          payload.chiefComplaint && `Queixa: ${payload.chiefComplaint}`,
+          payload.documentsPending && "⚠ Documentação pendente",
+        ].filter(Boolean).join(" • ");
+        const { error: paErr } = await supabase
+          .from("pre_admissions" as any)
+          .insert({
+            patient_name: finalName,
+            patient_age: payload.approxAge ? parseInt(payload.approxAge) || null : null,
+            patient_sex: payload.sex,
+            phone: payload.contactPhone || null,
+            patient_registry_id: (registry as any).id,
+            destination_sector: sectorDef.label,
+            status: "aguardando_leito",
+            hospital_unit_id: selectedHospitalId,
+            state_id: stateId,
+            department: currentDepartment,
+            created_by: user?.id,
+            notes: noteParts,
+          } as any);
+        if (paErr) console.warn("Pre-admissão falhou:", paErr);
+      }
+
       toast.success("Triagem Express criada!", {
-        description: `${niCode} • Atd ${(enc as any).encounter_code}`,
+        description: `${niCode || "Identificado"} • Atd ${(enc as any).encounter_code} → ${sectorDef.label}`,
       });
+      setShowTriageExpress(false);
       loadRecentEncounters();
     } catch (err: any) {
       console.error("Erro Triagem Express:", err);
@@ -703,7 +771,7 @@ const AdminDashboardPage = () => {
             {/* Painel diário da recepção (KPIs + Triagem Express + sub-tabs) */}
             <ReceptionDailyDashboard
               onPickRegistry={handlePickRegistryFromDashboard}
-              onTriageExpress={handleTriageExpress}
+              onTriageExpress={openTriageExpress}
               onNewRegistration={() => setShowRegisterDialog(true)}
             />
 
@@ -927,7 +995,7 @@ const AdminDashboardPage = () => {
               <TabsContent value="dia" className="mt-0">
                 <ReceptionDailyDashboard
                   onPickRegistry={handlePickRegistryFromDashboard}
-                  onTriageExpress={handleTriageExpress}
+                  onTriageExpress={openTriageExpress}
                   onNewRegistration={() => setShowRegisterDialog(true)}
                   defaultSubTab="dia"
                 />
@@ -936,7 +1004,7 @@ const AdminDashboardPage = () => {
               <TabsContent value="aguardando" className="mt-0">
                 <ReceptionDailyDashboard
                   onPickRegistry={handlePickRegistryFromDashboard}
-                  onTriageExpress={handleTriageExpress}
+                  onTriageExpress={openTriageExpress}
                   onNewRegistration={() => setShowRegisterDialog(true)}
                   defaultSubTab="aguardando"
                 />
@@ -1419,6 +1487,16 @@ const AdminDashboardPage = () => {
             toast.info("Atendimento sem prontuário vinculado", { description: code });
           }
         }}
+      />
+
+      {/* Triagem Express — pop-up de pré-identificação */}
+      <TriageExpressDialog
+        open={showTriageExpress}
+        onOpenChange={setShowTriageExpress}
+        sectors={DESTINATION_SECTORS}
+        groups={DESTINATION_GROUPS}
+        onConfirm={handleTriageExpressConfirm}
+        loading={isCreatingEncounter}
       />
     </MainLayout>
   );
