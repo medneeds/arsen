@@ -119,13 +119,43 @@ export default function GestorPanelPage() {
     setSectorFilter(stored || "ALL");
   }, [currentDepartment]);
 
+  // ── Filter resolution: ALL | BLOCK:<id> | specific department ──
   const isAllSectors = sectorFilter === "ALL";
-  const sectorCodeFilter = !isAllSectors
-    ? DEPARTMENT_TO_SECTOR[sectorFilter as keyof typeof DEPARTMENT_TO_SECTOR] || null
+  const isBlockFilter = sectorFilter.startsWith("BLOCK:");
+  const activeBlock = isBlockFilter
+    ? SECTOR_BLOCKS.find(b => b.id === sectorFilter.slice(6)) || null
     : null;
-  const sectorDisplayName = !isAllSectors
-    ? getSectorDisplayLabel(sectorCodeFilter || sectorFilter)
-    : "Todos os setores";
+
+  /** Department names this filter resolves to. null = no filter (ALL). */
+  const filteredDepartments: string[] | null = isAllSectors
+    ? null
+    : activeBlock
+      ? activeBlock.departments
+      : [sectorFilter];
+
+  /** Sector codes (red/yellow/neuro_01/...) for patients/movements queries. */
+  const filteredSectorCodes: string[] | null = filteredDepartments
+    ? (filteredDepartments
+        .map(d => DEPARTMENT_TO_SECTOR[d as keyof typeof DEPARTMENT_TO_SECTOR])
+        .filter(Boolean) as string[])
+    : null;
+
+  const sectorDisplayName = isAllSectors
+    ? "Todos os setores"
+    : activeBlock
+      ? activeBlock.label
+      : getSectorDisplayLabel(filteredSectorCodes?.[0] || sectorFilter);
+
+  // ── Apply a new filter (ALL / BLOCK / specific department) ──
+  const applyFilter = (next: string) => {
+    setSectorFilter(next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("gestor_sector_filter", next);
+    }
+    if (next !== "ALL" && !next.startsWith("BLOCK:")) {
+      try { setCurrentDepartment(next as any); } catch { /* noop */ }
+    }
+  };
 
   const fetchData = async () => {
     if (!selectedUnit) return;
