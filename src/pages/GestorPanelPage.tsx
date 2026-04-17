@@ -15,8 +15,12 @@ import {
   Bed, Activity, AlertTriangle, Users, Clock,
   Pill, BarChart3, ArrowUpDown, HeartPulse,
   RefreshCw, Download, TrendingUp, FileText,
-  ShieldCheck, Loader2,
+  ShieldCheck, Loader2, LayoutGrid, Filter, Check,
 } from "lucide-react";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
