@@ -748,14 +748,29 @@ function SortablePrescriptionItemRow({
     const renewalCutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
     const validatedAfterCutoff = !!(item.validatedAt && new Date(item.validatedAt) > renewalCutoff);
     const isValidated = !!item.validated && (!isPastRenewalTime || validatedAfterCutoff);
-    const isPending = !isValidated;
+
+    // Regras: prescrição ainda não validada como um todo → desabilita clique individual
+    // (validação só pode ocorrer em bloco). Item já validado → não pode ser desvalidado.
+    // Item novo (pendente) em prescrição já validada → pode validar individualmente (com senha).
+    const canClick = !isValidated && prescriptionLocked;
+    const tooltipMsg = isValidated
+      ? "Validado — para retirar, suspenda o item"
+      : prescriptionLocked
+      ? "Pendente — clique para validar com senha"
+      : "Use 'Validar prescrição' para validar todos os itens";
+
     return (
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             type="button"
-            onClick={() => onToggleValidation(item.id)}
-            className="shrink-0 transition-transform hover:scale-125"
+            onClick={() => canClick && onToggleValidation(item.id)}
+            disabled={!canClick}
+            className={cn(
+              "shrink-0 transition-transform",
+              canClick ? "hover:scale-125 cursor-pointer" : "cursor-not-allowed",
+              isValidated && "cursor-default"
+            )}
           >
             <Circle className={cn(
               "h-3 w-3 fill-current",
@@ -764,7 +779,7 @@ function SortablePrescriptionItemRow({
           </button>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
-          {isValidated ? "Validado — clique para desmarcar" : "Pendente validação — clique para validar"}
+          {tooltipMsg}
         </TooltipContent>
       </Tooltip>
     );
