@@ -3330,6 +3330,9 @@ const PrescricaoPage = () => {
                   )}
                 </PopoverContent>
               </Popover>
+              <Button variant="outline" size="sm" onClick={openRepeatDialog} disabled={!patient.name.trim()} className="h-6 text-[10px] gap-1">
+                <CopyPlus className="h-3 w-3" /> Repetir de ontem
+              </Button>
               <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-6 text-[10px] gap-1">
                 <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
               </Button>
