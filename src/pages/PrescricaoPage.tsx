@@ -531,7 +531,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
 }, ref) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
-  const [selectedCat, setSelectedCat] = useState<PrescriptionCategory | 'all' | 'favorites'>('all');
+  const [selectedCat, setSelectedCat] = useState<PrescriptionCategory | 'all' | 'favorites'>(TAB_ORDER[0]);
   const inputRef = useRef<HTMLInputElement>(null);
   React.useImperativeHandle(ref, () => ({
     focus: () => inputRef.current?.focus(),
@@ -566,33 +566,6 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
     <div className="space-y-2">
       {/* Category filter chips */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        <button
-          type="button"
-          onClick={() => setSelectedCat('all')}
-          className={cn(
-            "text-[10px] font-medium px-2.5 py-1 rounded-full border transition-all",
-            selectedCat === 'all'
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
-          )}
-        >
-          Todos
-        </button>
-        {favTotal > 0 && (
-          <button
-            type="button"
-            onClick={() => setSelectedCat('favorites')}
-            className={cn(
-              "text-[10px] font-medium px-2.5 py-1 rounded-full border transition-all flex items-center gap-1",
-              selectedCat === 'favorites'
-                ? "bg-amber-400/20 text-amber-700 border-amber-400 dark:text-amber-300"
-                : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
-            )}
-          >
-            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-            Favoritos ({favTotal})
-          </button>
-        )}
         {TAB_ORDER.map(cat => {
           const config = CATEGORY_CONFIG[cat];
           const Icon = CATEGORY_ICONS[config.icon] || Pill;
