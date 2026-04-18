@@ -3,11 +3,13 @@ import { format, differenceInCalendarDays, parseISO, startOfDay } from "date-fns
 import { ptBR } from "date-fns/locale";
 import {
   ChevronDown, ChevronUp, Copy, Trash2, ShieldCheck, ShieldOff,
-  Clock, FileText, AlertTriangle, Loader2, Calendar,
+  Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { EvolutionRecord } from "@/hooks/useEvolutions";
 import { EvolutionForm } from "./EvolutionForm";
