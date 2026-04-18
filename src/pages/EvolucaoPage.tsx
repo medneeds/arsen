@@ -104,22 +104,27 @@ const EvolucaoPage = () => {
   };
 
   // Adapt PatientHeader → minimal Patient for cockpit (must run before any early return)
-  const cockpitPatient: Patient = useMemo(() => ({
-    id: initialPatientId || "evolucao-stub",
-    bedNumber: patient.bed,
-    name: patient.name,
-    age: typeof patient.age === "string" ? patient.age.replace(/\s*anos?$/i, "") : patient.age,
-    sector: (initialPatientSector as Patient["sector"]) || "outside",
-    diagnoses: [],
-    medicalHistory: [],
-    relevantExams: [],
-    pendencies: [],
-    schedule: [],
-    admissionHistory: "",
-    admissionDate: patient.admissionDate,
-    utiAllergies: patient.allergies && patient.allergies !== "NDAM" ? [patient.allergies] : [],
-    clinicalStatus: "regular",
-  }), [patient, initialPatientId, initialPatientSector]);
+  const cockpitPatient: Patient = useMemo(() => {
+    const diagnoses: string[] = [];
+    if (cidPrimary) diagnoses.push(`[Primário] ${cidPrimary}`);
+    cidSecondary.forEach(c => c && diagnoses.push(c));
+    return {
+      id: initialPatientId || "evolucao-stub",
+      bedNumber: patient.bed,
+      name: patient.name,
+      age: typeof patient.age === "string" ? patient.age.replace(/\s*anos?$/i, "") : patient.age,
+      sector: (initialPatientSector as Patient["sector"]) || "outside",
+      diagnoses,
+      medicalHistory: [],
+      relevantExams: [],
+      pendencies: [],
+      schedule: [],
+      admissionHistory: "",
+      admissionDate: patient.admissionDate,
+      utiAllergies: patient.allergies && patient.allergies !== "NDAM" ? [patient.allergies] : [],
+      clinicalStatus: "regular",
+    };
+  }, [patient, initialPatientId, initialPatientSector, cidPrimary, cidSecondary]);
 
   if (!hasPatient) {
     return (
