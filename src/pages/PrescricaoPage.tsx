@@ -4549,6 +4549,15 @@ const PrescricaoPage = () => {
         }}
       />
 
+      {/* Dose Calculator Dialog (peso/SC) */}
+      <DoseCalculatorDialog
+        open={doseCalcOpen}
+        onClose={() => setDoseCalcOpen(false)}
+        initialMedication={doseCalcInitialMed}
+        initialWeight={patient.weight}
+        onApply={applyDoseCalculatorResult}
+      />
+
       {/* Keyboard Shortcuts Help Dialog */}
       <Dialog open={shortcutsHelpOpen} onOpenChange={setShortcutsHelpOpen}>
         <DialogContent className="max-w-md">
