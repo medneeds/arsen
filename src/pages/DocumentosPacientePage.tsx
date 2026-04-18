@@ -41,6 +41,7 @@ const DocumentosPacientePage = () => {
   const sectorLabel = getSectorDisplayLabel(patientSector);
 
   const cockpitPatient = useCockpitPatient();
+  const [selectedModule, setSelectedModule] = useState<string | null>(null);
 
   if (!hasPatient) {
     return (
