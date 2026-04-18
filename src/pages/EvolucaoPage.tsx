@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useEvolutions, EvolutionRecord } from "@/hooks/useEvolutions";
 import { usePatientCid } from "@/hooks/usePatientCid";
+import { usePatientLive } from "@/hooks/usePatientLive";
 import { EvolutionForm } from "@/components/evolution/EvolutionForm";
 import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import type { Patient } from "@/types/patient";
@@ -73,6 +74,9 @@ const EvolucaoPage = () => {
     updateSecondary: updateCidSecondary,
   } = usePatientCid(initialPatientId || null);
 
+  // Live patient row (realtime sync with Painel Clínico)
+  const { patient: livePatient } = usePatientLive(initialPatientId || null);
+
   const hasPatient = patient.name.trim() !== "";
 
   const resetNewForm = () => {
@@ -104,17 +108,26 @@ const EvolucaoPage = () => {
   };
 
   // Adapt PatientHeader → minimal Patient for cockpit (must run before any early return)
+  // When live patient row is loaded, prefer it; otherwise fall back to URL stub.
   const cockpitPatient: Patient = useMemo(() => {
-    const diagnoses: string[] = [];
-    if (cidPrimary) diagnoses.push(`[Primário] ${cidPrimary}`);
-    cidSecondary.forEach(c => c && diagnoses.push(c));
+    const cidDiagnoses: string[] = [];
+    if (cidPrimary) cidDiagnoses.push(`[Primário] ${cidPrimary}`);
+    cidSecondary.forEach(c => c && cidDiagnoses.push(c));
+
+    if (livePatient) {
+      // Merge CID-derived diagnoses on top of stored ones, deduped.
+      const stored = livePatient.diagnoses || [];
+      const merged = [...cidDiagnoses, ...stored.filter(d => !cidDiagnoses.includes(d))];
+      return { ...livePatient, diagnoses: merged };
+    }
+
     return {
       id: initialPatientId || "evolucao-stub",
       bedNumber: patient.bed,
       name: patient.name,
       age: typeof patient.age === "string" ? patient.age.replace(/\s*anos?$/i, "") : patient.age,
       sector: (initialPatientSector as Patient["sector"]) || "outside",
-      diagnoses,
+      diagnoses: cidDiagnoses,
       medicalHistory: [],
       relevantExams: [],
       pendencies: [],
@@ -124,7 +137,7 @@ const EvolucaoPage = () => {
       utiAllergies: patient.allergies && patient.allergies !== "NDAM" ? [patient.allergies] : [],
       clinicalStatus: "regular",
     };
-  }, [patient, initialPatientId, initialPatientSector, cidPrimary, cidSecondary]);
+  }, [livePatient, patient, initialPatientId, initialPatientSector, cidPrimary, cidSecondary]);
 
   if (!hasPatient) {
     return (
