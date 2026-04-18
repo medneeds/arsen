@@ -2487,7 +2487,7 @@ const PrescricaoPage = () => {
   // === Pré-validação clínica: alertas (alergia / interações graves / duplicidade) ===
   // O médico é alertado mas NÃO bloqueado: pode confirmar ciência e prosseguir.
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
-  const [pendingAlerts, setPendingAlerts] = useState<import('@/lib/clinicalAlertChecks').ClinicalAlert[]>([]);
+  const [pendingAlerts, setPendingAlerts] = useState<Awaited<ReturnType<typeof import('@/lib/clinicalAlertChecks').runClinicalAlertChecks>>>([]);
 
   // Continua o fluxo de validação após (eventual) checagem de alertas:
   // se sessão ativa → aplica direto; senão → pede senha.
