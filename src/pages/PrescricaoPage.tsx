@@ -4084,7 +4084,7 @@ const PrescricaoPage = () => {
                             value={activeTab === 'nonstandard' ? nonStdName : ''}
                             onChange={(e) => { setActiveTab('nonstandard'); setNonStdName(e.target.value); }}
                             onKeyDown={(e) => { if (e.key === "Enter") addNonStandard(); }}
-                            placeholder="Adicionar item não padronizado..."
+                            placeholder="Adicionar item não padrão..."
                             className="bg-background/60 border-border/50 h-7 text-xs"
                           />
                           <Button variant="outline" size="sm" onClick={addNonStandard} disabled={!nonStdName.trim()} className="h-7 px-2">
