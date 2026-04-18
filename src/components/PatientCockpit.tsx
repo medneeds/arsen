@@ -478,3 +478,17 @@ function PrescriptionStatusBadge({ status, signed }: { status: string; signed: b
     </span>
   );
 }
+
+function PendingStat({ label, value, tone }: { label: string; value: number; tone: "warning" | "success" | "danger" }) {
+  const toneClasses = {
+    warning: "bg-warning/10 text-warning border-warning/20",
+    success: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+    danger: "bg-destructive/10 text-destructive border-destructive/20",
+  }[tone];
+  return (
+    <div className={cn("rounded-md border px-2 py-1 flex items-center justify-between gap-1", toneClasses)}>
+      <span className="text-[9.5px] font-medium leading-tight uppercase tracking-tight">{label}</span>
+      <span className="text-sm font-bold tabular-nums">{value}</span>
+    </div>
+  );
+}
