@@ -3928,8 +3928,10 @@ const PrescricaoPage = () => {
         <Button variant="ghost" size="sm" onClick={handleDispense} disabled={!currentPrescriptionId} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
           <Package className="h-3 w-3" /> Dispensar
         </Button>
-        {/* Botão "Salvar" removido — salvamento é automático. */}
-      </div>
+          {/* Botão "Salvar" removido — salvamento é automático. */}
+        </div>,
+        document.body
+      )}
 
       {/* ===== UNIFIED PRESCRIPTION WORKBENCH (itens + histórico + busca) ===== */}
       <div className="rounded-xl border border-border bg-card overflow-hidden print:hidden divide-y divide-border/40">
