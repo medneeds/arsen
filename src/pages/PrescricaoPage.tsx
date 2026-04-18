@@ -3934,39 +3934,7 @@ const PrescricaoPage = () => {
           </div>
         )}
 
-        {/* Section 3 — Prescrições anteriores deste paciente */}
-        <div className="px-3 py-2">
-          <div className="flex items-center justify-between mb-1.5">
-            <h2 className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase">
-              Prescrições anteriores
-            </h2>
-            <span className="text-[10px] text-muted-foreground">{savedPrescriptions.length} {savedPrescriptions.length === 1 ? 'prescrição' : 'prescrições'}</span>
-          </div>
-          {savedPrescriptions.length > 0 ? (
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {savedPrescriptions.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => loadPrescription(p.id)}
-                  className={cn(
-                    "shrink-0 text-left px-2 py-1 rounded-md border text-xs transition-colors hover:bg-accent/50",
-                    currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border"
-                  )}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
-                      {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
-                    </Badge>
-                    <span className="text-[9px] text-muted-foreground">v{p.version}</span>
-                    <span className="text-[9px] text-muted-foreground">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[11px] text-muted-foreground italic">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
-          )}
-        </div>
+        {/* Prescrições anteriores agora acessíveis via popup do Calendário no cabeçalho. */}
 
         {/* Section 4 — Busca global (sem rótulo redundante) */}
         <div className="px-3 py-2">
