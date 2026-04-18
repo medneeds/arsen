@@ -4820,6 +4820,14 @@ const PrescricaoPage = () => {
         onCancel={handleAlertCancelled}
         onConfirm={handleAlertAcknowledged}
       />
+
+      {/* Diff visual entre versões da prescrição */}
+      <PrescriptionDiffDialog
+        open={diffDialogOpen}
+        onOpenChange={setDiffDialogOpen}
+        versions={versionHistory}
+        defaultRightId={currentPrescriptionId ?? undefined}
+      />
       </div>
     </div>
   );
