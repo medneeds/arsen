@@ -1391,6 +1391,39 @@ export type Database = {
         }
         Relationships: []
       }
+      medication_favorites: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          last_used_at: string
+          medication_id: string
+          medication_name: string
+          use_count: number
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          last_used_at?: string
+          medication_id: string
+          medication_name: string
+          use_count?: number
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          last_used_at?: string
+          medication_id?: string
+          medication_name?: string
+          use_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       medication_presentations: {
         Row: {
           concentration: string
@@ -3779,6 +3812,14 @@ export type Database = {
       setup_visitante_user: { Args: never; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      track_medication_use: {
+        Args: {
+          p_category: string
+          p_medication_id: string
+          p_medication_name: string
+        }
+        Returns: undefined
+      }
       unaccent_immutable: { Args: { input: string }; Returns: string }
     }
     Enums: {
