@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Patient } from "@/types/patient";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -5,19 +6,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
-  Activity, AlertTriangle, ArrowRight, ChevronRight,
-  ClipboardList, FileText, Heart, LogOut, Pill, Plus, Route,
+  Activity, AlertTriangle, ArrowRight, ChevronDown, ChevronRight,
+  ClipboardList, Copy, FileText, Heart, IdCard, LogOut, Pill, Plus, Route,
   ShieldAlert, Stethoscope, TestTubes, TrendingUp, User2
 } from "lucide-react";
 import { differenceInDays, parseISO, isValid, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { useNavigate } from "react-router-dom";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useActivePrescription } from "@/hooks/useActivePrescription";
 import { usePatientPendingItems } from "@/hooks/usePatientPendingItems";
 import { usePatientMovements } from "@/hooks/usePatientMovements";
+import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { formatDistanceToNow } from "date-fns";
 
 interface PatientCockpitProps {
