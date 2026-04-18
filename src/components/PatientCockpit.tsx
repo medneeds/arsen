@@ -14,6 +14,9 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { useNavigate } from "react-router-dom";
+import { useHospital } from "@/contexts/HospitalContext";
+import { useActivePrescription } from "@/hooks/useActivePrescription";
+import { formatDistanceToNow } from "date-fns";
 
 interface PatientCockpitProps {
   patient: Patient | null;
