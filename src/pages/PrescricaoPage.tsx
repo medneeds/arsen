@@ -3904,8 +3904,80 @@ const PrescricaoPage = () => {
           )}
         </div>
 
-      </div>
+        {/* Section 2 — Itens summary chips */}
+        {items.length > 0 && (
+          <div className="px-3 py-2 bg-muted/20">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[10px] font-semibold text-muted-foreground tracking-wider">Itens:</span>
+              {TAB_ORDER.map(cat => {
+                const count = itemsByCategory[cat].length;
+                if (count === 0) return null;
+                const config = CATEGORY_CONFIG[cat];
+                const validatedCount = itemsByCategory[cat].filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
+                return (
+                  <div key={cat} className="flex items-center gap-1">
+                    <Circle className={cn("h-2 w-2 fill-current", validatedCount === count ? "text-emerald-500" : "text-amber-500")} />
+                    <span className="text-[10px] text-foreground font-medium">{count} {config.label.toLowerCase()}</span>
+                  </div>
+                );
+              })}
+              {!allItemsValidated && (
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-300 text-amber-600 bg-amber-50 dark:bg-amber-950/20 ml-auto">
+                  Pendente validação
+                </Badge>
+              )}
+              {allItemsValidated && (
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-300 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 ml-auto">
+                  ✓ Validada
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
 
+        {/* Section 3 — Prescrições anteriores deste paciente */}
+        <div className="px-3 py-2">
+          <div className="flex items-center justify-between mb-1.5">
+            <h2 className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase">
+              Prescrições anteriores
+            </h2>
+            <span className="text-[10px] text-muted-foreground">{savedPrescriptions.length} {savedPrescriptions.length === 1 ? 'prescrição' : 'prescrições'}</span>
+          </div>
+          {savedPrescriptions.length > 0 ? (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {savedPrescriptions.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => loadPrescription(p.id)}
+                  className={cn(
+                    "shrink-0 text-left px-2 py-1 rounded-md border text-xs transition-colors hover:bg-accent/50",
+                    currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border"
+                  )}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
+                      {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
+                    </Badge>
+                    <span className="text-[9px] text-muted-foreground">v{p.version}</span>
+                    <span className="text-[9px] text-muted-foreground">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[11px] text-muted-foreground italic">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
+          )}
+        </div>
+
+        {/* Section 4 — Busca global (sem rótulo redundante) */}
+        <div className="px-3 py-2">
+          <GlobalPrescriptionSearch
+            ref={globalSearchRef}
+            onAddItem={addItem}
+            onAddNonStandard={(name: string) => { setNonStdName(name); addNonStandard(); }}
+            getFavoriteCount={getFavoriteCount}
+          />
+        </div>
       {/* Items summary strip (cartão independente) */}
       {items.length > 0 && (
         <div className="rounded-lg border border-border bg-muted/20 px-4 py-2 print:hidden">
