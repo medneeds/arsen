@@ -3597,8 +3597,8 @@ const PrescricaoPage = () => {
         }
       ` }} />
 
-      {/* Page Title + Action toolbar */}
-      <div className="print:hidden flex items-start justify-between gap-3 flex-wrap">
+      {/* Page Title + Inline Requirements + Action toolbar */}
+      <div className="print:hidden flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3 min-w-0">
           <div className="p-2 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10 shrink-0">
             <Pill className="h-4 w-4 text-primary" />
@@ -3608,7 +3608,46 @@ const PrescricaoPage = () => {
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {currentPrescriptionId && <Badge variant="outline" className="text-[9px] h-4 px-1.5 text-primary border-primary/30">Salva</Badge>}
               {patient.encounterCode && <span className="font-mono text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded"><Hash className="inline h-3 w-3 mr-0.5" />{patient.encounterCode}</span>}
+              <span className="text-[10px] text-muted-foreground font-mono">{prescriptionDate}</span>
             </div>
+          </div>
+
+          {/* Inline requirements: Peso + Alergias */}
+          <div className="flex items-center gap-2 flex-wrap pl-2 ml-2 border-l border-border/60">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
+              <Input
+                value={patient.weight}
+                onChange={(e) => updatePatient("weight", e.target.value)}
+                placeholder="72"
+                className={cn(
+                  "h-7 w-14 text-xs font-medium",
+                  !patient.weight.trim() && "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
+                )}
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
+                <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
+              </Label>
+              <Input
+                value={patient.allergies}
+                onChange={(e) => updatePatient("allergies", e.target.value)}
+                placeholder="NDAM ou listar"
+                className={cn(
+                  "h-7 w-40 text-xs font-medium",
+                  !patient.allergies.trim()
+                    ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
+                    : "border-destructive/20"
+                )}
+              />
+            </div>
+            {(!patient.weight.trim() || !patient.allergies.trim()) && (
+              <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                <AlertTriangle className="h-3 w-3" />
+                Preencha {!patient.weight.trim() && !patient.allergies.trim() ? 'peso e alergias' : !patient.weight.trim() ? 'o peso' : 'as alergias'}
+              </span>
+            )}
           </div>
         </div>
 
@@ -3677,44 +3716,7 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== COMPACT REQUIREMENTS BAR (peso + alergias) — abaixo do cabeçalho, alinhada à direita ===== */}
-      <div className="print:hidden flex items-center justify-end gap-2 flex-wrap -mt-2">
-        <div className="flex items-center gap-1.5">
-          <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
-          <Input
-            value={patient.weight}
-            onChange={(e) => updatePatient("weight", e.target.value)}
-            placeholder="72"
-            className={cn(
-              "h-7 w-16 text-xs font-medium",
-              !patient.weight.trim() && "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
-            )}
-          />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
-            <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
-          </Label>
-          <Input
-            value={patient.allergies}
-            onChange={(e) => updatePatient("allergies", e.target.value)}
-            placeholder="NDAM ou listar"
-            className={cn(
-              "h-7 w-44 text-xs font-medium",
-              !patient.allergies.trim()
-                ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
-                : "border-destructive/20"
-            )}
-          />
-        </div>
-        <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-2 py-0.5 rounded">{prescriptionDate}</span>
-        {(!patient.weight.trim() || !patient.allergies.trim()) && (
-          <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-            <AlertTriangle className="h-3 w-3" />
-            Preencha {!patient.weight.trim() && !patient.allergies.trim() ? 'peso e alergias' : !patient.weight.trim() ? 'o peso' : 'as alergias'}
-          </span>
-        )}
-      </div>
+      {/* Requisitos (peso/alergias) integrados ao cabeçalho acima. */}
 
       {/* "Prescrições anteriores" foi integrado ao workbench unificado abaixo. */}
       {/* ===== VERSION HISTORY ===== */}
