@@ -508,29 +508,34 @@ function MedicationAutocomplete({
 function GlobalPrescriptionSearch({
   onAddItem,
   onAddNonStandard,
+  getFavoriteCount,
 }: {
   onAddItem: (med: MedicationEntry) => void;
   onAddNonStandard: (name: string) => void;
+  getFavoriteCount?: (id: string) => number;
 }) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
-  const [selectedCat, setSelectedCat] = useState<PrescriptionCategory | 'all'>('all');
+  const [selectedCat, setSelectedCat] = useState<PrescriptionCategory | 'all' | 'favorites'>('all');
   const inputRef = useRef<HTMLInputElement>(null);
   const [freeText, setFreeText] = useState("");
+  const favCount = getFavoriteCount ?? (() => 0);
 
   const allItems = useMemo(() => Object.values(ALL_ITEMS_BY_CATEGORY).flat(), []);
 
   const filtered = useMemo(() => {
-    const source = selectedCat === 'all' ? allItems : (ALL_ITEMS_BY_CATEGORY[selectedCat] || []);
-    if (!query.trim()) return source.slice(0, 12);
-    const q = normalizeSearch(query);
-    return source.filter(
-      (m) =>
-        normalizeSearch(m.name).includes(q) ||
-        normalizeSearch(m.presentation).includes(q) ||
-        (m.aliases && m.aliases.some(a => normalizeSearch(a).includes(q)))
-    ).slice(0, 15);
-  }, [query, selectedCat, allItems]);
+    let source: MedicationEntry[];
+    if (selectedCat === 'favorites') {
+      source = allItems.filter(m => favCount(m.id) > 0);
+    } else if (selectedCat === 'all') {
+      source = allItems;
+    } else {
+      source = ALL_ITEMS_BY_CATEGORY[selectedCat] || [];
+    }
+    return fuzzySearch(query, source, favCount, 15);
+  }, [query, selectedCat, allItems, favCount]);
+
+  const favTotal = useMemo(() => allItems.filter(m => favCount(m.id) > 0).length, [allItems, favCount]);
 
   const handleSelect = (med: MedicationEntry) => {
     onAddItem(med);
