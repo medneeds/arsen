@@ -3943,6 +3943,8 @@ const PrescricaoPage = () => {
           <Package className="h-3 w-3" /> Dispensar
         </Button>
           {/* Botão "Salvar" removido — salvamento é automático. */}
+            </div>
+          </div>
         </div>,
         document.body
       )}
