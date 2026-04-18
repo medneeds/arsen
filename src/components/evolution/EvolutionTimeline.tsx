@@ -324,12 +324,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
           const isEditable = isAuthor && evo.status === "draft";
           const data = getLocalOrOriginal(evo);
           const hasUnsaved = !!localEdits[evo.id];
+          const isCurrent = evo.id === currentEvolutionId;
 
           return (
             <div key={evo.id} className={cn(
               "rounded-xl border bg-card transition-all",
               evo.status === "suspended" && "opacity-60",
-              isExpanded ? "border-primary/30" : "border-border"
+              isCurrent && !isExpanded && "border-primary/50 shadow-sm shadow-primary/10",
+              isExpanded ? "border-primary/30" : !isCurrent && "border-border"
             )}>
               {/* Collapsed header */}
               <button
