@@ -3338,7 +3338,7 @@ const PrescricaoPage = () => {
           size="sm"
           onClick={() => {
             if (!allItemsValidated) {
-              toast.error("Valide todos os itens antes de imprimir", { description: "Clique nos círculos à esquerda de cada item ou use 'Validar todos'." });
+              toast.error("Valide a prescrição antes de imprimir", { description: "Use o botão 'Validar prescrição' para validar com sua senha." });
               return;
             }
             handlePrint();
@@ -3347,8 +3347,20 @@ const PrescricaoPage = () => {
         >
           <Printer className="h-3 w-3" /> Imprimir
         </Button>
-        <Button variant="ghost" size="sm" onClick={validateAllItems} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
-          <Check className="h-3 w-3" /> Validar todos
+        <Button
+          variant={prescriptionLocked ? "ghost" : "default"}
+          size="sm"
+          onClick={requestValidateAll}
+          disabled={allItemsValidated}
+          className={cn(
+            "gap-1 text-xs h-7 px-2",
+            prescriptionLocked
+              ? "text-muted-foreground hover:text-foreground"
+              : "bg-emerald-600 hover:bg-emerald-700 text-white"
+          )}
+        >
+          <ShieldCheck className="h-3 w-3" />
+          {allItemsValidated ? "Prescrição validada" : prescriptionLocked ? "Validar pendentes" : "Validar prescrição"}
         </Button>
         <Tooltip>
           <TooltipTrigger asChild>
