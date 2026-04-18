@@ -173,6 +173,12 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
             </div>
           </div>
 
+          {/* Identificadores oficiais — sempre visíveis */}
+          <div className="grid grid-cols-1 gap-1 mb-2">
+            <IdRow label="Prontuário" value={prontuario} mono />
+            <IdRow label="Atendimento" value={atendimento} mono />
+          </div>
+
           <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
             <div className="text-muted-foreground">
               Internação: <span className="text-foreground font-medium"><StayDays admissionDate={patient.admissionDate} /></span>
@@ -180,10 +186,51 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
             <div className="text-muted-foreground truncate">
               Adm: <span className="text-foreground font-medium">{formatDate(patient.admissionDate)}</span>
             </div>
-            <div className="text-muted-foreground col-span-2 truncate">
-              ID: <span className="text-foreground font-medium font-mono">{patient.id}</span>
-            </div>
           </div>
+
+          {/* Botão Ver mais — abre painel completo do prontuário */}
+          <button
+            type="button"
+            onClick={() => setShowFullId((v) => !v)}
+            className="mt-2 w-full inline-flex items-center justify-between gap-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border/50 hover:bg-muted/40"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <IdCard className="h-3 w-3" />
+              {showFullId ? "Ocultar dados completos" : "Ver dados do prontuário"}
+            </span>
+            <ChevronDown className={cn("h-3 w-3 transition-transform", showFullId && "rotate-180")} />
+          </button>
+
+          {showFullId && (
+            <div className="mt-2 rounded-md border border-border/60 bg-background/60 p-2.5 space-y-1.5 text-[11px]">
+              <FullIdRow label="Nome social" value={registry?.socialName} />
+              <FullIdRow label="CPF" value={registry?.cpf} mono />
+              <FullIdRow label="CNS" value={registry?.cns} mono />
+              <FullIdRow label="Nascimento" value={formatDate(registry?.birthDate || undefined)} />
+              <FullIdRow label="Sexo" value={registry?.sex} />
+              <FullIdRow label="Tipo sanguíneo" value={registry?.bloodType} />
+              <FullIdRow label="Mãe" value={registry?.motherName} />
+              <FullIdRow label="Telefone" value={registry?.phone} />
+              <FullIdRow
+                label="Endereço"
+                value={
+                  [registry?.address, registry?.neighborhood, registry?.city, registry?.state]
+                    .filter(Boolean)
+                    .join(", ") || null
+                }
+              />
+              <FullIdRow label="Alergias" value={registry?.allergies} />
+              <FullIdRow label="Comorbidades" value={registry?.comorbidities} />
+              {registry?.isUnidentified && (
+                <div className="text-[10px] uppercase font-semibold text-warning">
+                  Paciente não identificado · {registry.unidentifiedCode || "—"}
+                </div>
+              )}
+              <div className="pt-1 border-t border-border/40 text-[10px] text-muted-foreground/80 font-mono break-all">
+                ID interno: {patient.id}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ===== ZONA 2: AÇÕES PRIMÁRIAS ===== */}
