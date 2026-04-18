@@ -3716,44 +3716,7 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== COMPACT REQUIREMENTS BAR (peso + alergias) — abaixo do cabeçalho, alinhada à direita ===== */}
-      <div className="print:hidden flex items-center justify-end gap-2 flex-wrap -mt-2">
-        <div className="flex items-center gap-1.5">
-          <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
-          <Input
-            value={patient.weight}
-            onChange={(e) => updatePatient("weight", e.target.value)}
-            placeholder="72"
-            className={cn(
-              "h-7 w-16 text-xs font-medium",
-              !patient.weight.trim() && "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
-            )}
-          />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
-            <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
-          </Label>
-          <Input
-            value={patient.allergies}
-            onChange={(e) => updatePatient("allergies", e.target.value)}
-            placeholder="NDAM ou listar"
-            className={cn(
-              "h-7 w-44 text-xs font-medium",
-              !patient.allergies.trim()
-                ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
-                : "border-destructive/20"
-            )}
-          />
-        </div>
-        <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-2 py-0.5 rounded">{prescriptionDate}</span>
-        {(!patient.weight.trim() || !patient.allergies.trim()) && (
-          <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-            <AlertTriangle className="h-3 w-3" />
-            Preencha {!patient.weight.trim() && !patient.allergies.trim() ? 'peso e alergias' : !patient.weight.trim() ? 'o peso' : 'as alergias'}
-          </span>
-        )}
-      </div>
+      {/* Requisitos (peso/alergias) integrados ao cabeçalho acima. */}
 
       {/* "Prescrições anteriores" foi integrado ao workbench unificado abaixo. */}
       {/* ===== VERSION HISTORY ===== */}
