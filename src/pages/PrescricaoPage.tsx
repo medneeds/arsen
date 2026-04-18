@@ -3984,6 +3984,23 @@ const PrescricaoPage = () => {
         onOpenChange={setTevProtocolOpen}
         patient={patient ? { name: patient.name, age: patient.age, bed: patient.bed, weight: patient.weight } : null}
       />
+
+      {/* Password Confirmation Dialog (validação) */}
+      <PasswordConfirmDialog
+        open={passwordConfirmOpen}
+        onOpenChange={(open) => {
+          setPasswordConfirmOpen(open);
+          if (!open) setPendingValidationAction(null);
+        }}
+        title={pendingValidationAction?.type === 'all' ? "Validar prescrição" : "Validar item"}
+        description={
+          pendingValidationAction?.type === 'all'
+            ? "Confirme sua senha para validar todos os itens ativos da prescrição."
+            : "Este item foi adicionado após a validação. Confirme sua senha para validá-lo."
+        }
+        actionLabel="Validar"
+        onConfirmed={executeValidation}
+      />
       </div>
     </div>
   );
