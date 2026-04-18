@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { useLocation, useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PatientInfoHeader } from "@/components/PatientInfoHeader";
+import { PatientCockpit } from "@/components/PatientCockpit";
+import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -194,6 +196,9 @@ const RequisicaoUnificadaPage = () => {
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+
+  // Cockpit (right rail) — same pattern as Evolução / Prescrição
+  const cockpitPatient = useCockpitPatient();
 
   // ── New request form ──
   const [showNewRequest, setShowNewRequest] = useState(false);
@@ -433,7 +438,8 @@ const RequisicaoUnificadaPage = () => {
       <div className="print:hidden">
         <ClinicalHeader moduleLabel="Requisições" />
       </div>
-      <div className="p-4 md:p-6 space-y-4 max-w-6xl mx-auto print:p-0 print:m-0">
+      <div className="flex print:block">
+        <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4 max-w-6xl mx-auto print:p-0 print:m-0">
       {/* Header */}
       <div className="print:hidden">
         <div className="flex items-center gap-3 mb-1">
@@ -967,6 +973,9 @@ const RequisicaoUnificadaPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </div>
+        {/* Patient Cockpit — fixed right sidebar */}
+        <PatientCockpit patient={cockpitPatient} className="print:hidden" />
       </div>
     </div>
   );

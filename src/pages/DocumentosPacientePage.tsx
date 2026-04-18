@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PatientInfoHeader } from "@/components/PatientInfoHeader";
+import { PatientCockpit } from "@/components/PatientCockpit";
+import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import {
   FolderOpen, ClipboardList, Droplet, FileCheck, Radar,
   DollarSign, Scissors, ScanLine, NotebookPen,
@@ -38,6 +40,7 @@ const DocumentosPacientePage = () => {
 
   const sectorLabel = getSectorDisplayLabel(patientSector);
 
+  const cockpitPatient = useCockpitPatient();
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
 
   if (!hasPatient) {
@@ -67,82 +70,87 @@ const DocumentosPacientePage = () => {
   return (
     <div>
       <ClinicalHeader moduleLabel="Documentos" />
-      <div className="p-4 md:p-6 space-y-4 max-w-5xl mx-auto">
-        {/* Title */}
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10">
-            <FolderOpen className="h-4 w-4 text-primary" />
+      <div className="flex print:block">
+        <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4 max-w-5xl mx-auto">
+          {/* Title */}
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10">
+              <FolderOpen className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold text-foreground leading-tight">Documentos</h1>
+              <p className="text-xs text-muted-foreground">Documentos clínicos vinculados ao paciente</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground leading-tight">Documentos</h1>
-            <p className="text-xs text-muted-foreground">Documentos clínicos vinculados ao paciente</p>
-          </div>
-        </div>
 
-        {/* Patient Identification — shared component */}
-        <PatientInfoHeader
-          name={patientName}
-          bed={patientBed}
-          unit={sectorLabel}
-          age=""
-          sex=""
-          weight=""
-          allergies=""
-          record=""
-        />
+          {/* Patient Identification — shared component */}
+          <PatientInfoHeader
+            name={patientName}
+            bed={patientBed}
+            unit={sectorLabel}
+            age=""
+            sex=""
+            weight=""
+            allergies=""
+            record=""
+          />
 
-        {/* Document Modules Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {DOC_MODULES.map(mod => {
-            const Icon = mod.icon;
-            const isAvailable = mod.status === "disponivel";
-            const isSelected = selectedModule === mod.id;
-            return (
-              <button
-                key={mod.id}
-                onClick={() => isAvailable && setSelectedModule(isSelected ? null : mod.id)}
-                disabled={!isAvailable}
-                className={cn(
-                  "text-left p-4 rounded-xl border transition-all duration-200",
-                  isAvailable
-                    ? isSelected
-                      ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
-                      : "border-border hover:bg-muted/50 hover:border-border hover:shadow-sm cursor-pointer"
-                    : "border-border/50 opacity-60 cursor-not-allowed"
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  <div className={cn(
-                    "p-2 rounded-lg shrink-0",
-                    isSelected ? "bg-primary/15" : "bg-muted"
-                  )}>
-                    <Icon className={cn("h-4 w-4", isSelected ? "text-primary" : "text-muted-foreground")} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className={cn("text-sm font-semibold", isSelected ? "text-foreground" : "text-foreground/80")}>{mod.label}</p>
-                      {!isAvailable && (
-                        <Badge variant="outline" className="text-[9px] h-4 px-1.5 text-muted-foreground border-border">
-                          Em breve
-                        </Badge>
-                      )}
+          {/* Document Modules Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {DOC_MODULES.map(mod => {
+              const Icon = mod.icon;
+              const isAvailable = mod.status === "disponivel";
+              const isSelected = selectedModule === mod.id;
+              return (
+                <button
+                  key={mod.id}
+                  onClick={() => isAvailable && setSelectedModule(isSelected ? null : mod.id)}
+                  disabled={!isAvailable}
+                  className={cn(
+                    "text-left p-4 rounded-xl border transition-all duration-200",
+                    isAvailable
+                      ? isSelected
+                        ? "border-primary bg-primary/5 shadow-sm ring-1 ring-primary/20"
+                        : "border-border hover:bg-muted/50 hover:border-border hover:shadow-sm cursor-pointer"
+                      : "border-border/50 opacity-60 cursor-not-allowed"
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "p-2 rounded-lg shrink-0",
+                      isSelected ? "bg-primary/15" : "bg-muted"
+                    )}>
+                      <Icon className={cn("h-4 w-4", isSelected ? "text-primary" : "text-muted-foreground")} />
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{mod.description}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className={cn("text-sm font-semibold", isSelected ? "text-foreground" : "text-foreground/80")}>{mod.label}</p>
+                        {!isAvailable && (
+                          <Badge variant="outline" className="text-[9px] h-4 px-1.5 text-muted-foreground border-border">
+                            Em breve
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{mod.description}</p>
+                    </div>
                   </div>
-                </div>
-              </button>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Selected Module Placeholder */}
+          {selectedModule && (
+            <div className="rounded-xl border border-primary/20 bg-card p-6">
+              <p className="text-sm text-muted-foreground text-center">
+                Módulo <span className="font-semibold text-foreground">{DOC_MODULES.find(m => m.id === selectedModule)?.label}</span> será implementado em breve.
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Selected Module Placeholder */}
-        {selectedModule && (
-          <div className="rounded-xl border border-primary/20 bg-card p-6">
-            <p className="text-sm text-muted-foreground text-center">
-              Módulo <span className="font-semibold text-foreground">{DOC_MODULES.find(m => m.id === selectedModule)?.label}</span> será implementado em breve.
-            </p>
-          </div>
-        )}
+        {/* Patient Cockpit — fixed right sidebar */}
+        <PatientCockpit patient={cockpitPatient} />
       </div>
     </div>
   );
