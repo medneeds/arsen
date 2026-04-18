@@ -681,6 +681,7 @@ function SortablePrescriptionItemRow({
   onReactivate,
   onToggleValidation,
   isPastRenewalTime,
+  prescriptionLocked,
 }: {
   item: PrescriptionItem;
   index: number;
@@ -696,6 +697,7 @@ function SortablePrescriptionItemRow({
   onReactivate: (id: string) => void;
   onToggleValidation: (id: string) => void;
   isPastRenewalTime: boolean;
+  prescriptionLocked: boolean;
 }) {
   const [individualExpanded, setIndividualExpanded] = useState(false);
   const {
