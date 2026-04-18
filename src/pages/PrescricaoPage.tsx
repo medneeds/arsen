@@ -4779,6 +4779,15 @@ const PrescricaoPage = () => {
         actionLabel="Validar"
         onConfirmed={executeValidation}
       />
+
+      {/* Pre-Validation Clinical Alerts (alergia, interação grave, duplicidade) */}
+      <PreValidationAlertDialog
+        open={alertDialogOpen}
+        alerts={pendingAlerts}
+        scopeLabel={pendingValidationAction?.type === 'all' ? 'na prescrição' : 'neste item'}
+        onCancel={handleAlertCancelled}
+        onConfirm={handleAlertAcknowledged}
+      />
       </div>
     </div>
   );
