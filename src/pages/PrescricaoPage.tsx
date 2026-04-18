@@ -3677,40 +3677,7 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== SAVED PRESCRIPTIONS FOR THIS PATIENT ===== */}
-        <div className="rounded-xl border border-border bg-card p-3 print:hidden">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-semibold text-muted-foreground tracking-wider">
-              Prescrições de {patient.name || 'paciente'}
-            </h2>
-            <span className="text-[10px] text-muted-foreground">{savedPrescriptions.length} {savedPrescriptions.length === 1 ? 'prescrição' : 'prescrições'}</span>
-          </div>
-          {savedPrescriptions.length > 0 ? (
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {savedPrescriptions.map(p => (
-              <button
-                key={p.id}
-                onClick={() => loadPrescription(p.id)}
-                className={cn(
-                  "shrink-0 text-left p-2 rounded-lg border text-xs transition-colors hover:bg-accent/50",
-                  currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border"
-                )}
-              >
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
-                    {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
-                  </Badge>
-                  <span className="text-[9px] text-muted-foreground">v{p.version}</span>
-                  <span className="text-[9px] text-muted-foreground">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-          ) : (
-            <p className="text-xs text-muted-foreground italic py-2">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
-          )}
-        </div>
-
+      {/* "Prescrições anteriores" foi integrado ao workbench unificado abaixo. */}
       {/* ===== VERSION HISTORY ===== */}
       {versionHistory.length > 1 && currentPrescriptionId && (
         <div className="rounded-xl border border-border bg-card p-3 print:hidden">
@@ -3891,83 +3858,127 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== PRESCRIPTION REQUIREMENTS BAR (peso + alergias editáveis) ===== */}
-      {/* Identidade do paciente vive no PatientCockpit (rail direito). Aqui apenas os campos
-          editáveis indispensáveis para liberar a prescrição. */}
-      <div className="rounded-lg border border-border bg-card px-3 py-2 print:hidden">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div className="flex items-center gap-1.5">
-            <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
-            <Input
-              value={patient.weight}
-              onChange={(e) => updatePatient("weight", e.target.value)}
-              placeholder="Ex: 72"
-              className={cn(
-                "h-7 w-20 text-xs font-medium",
-                !patient.weight.trim() && "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
-              )}
-            />
+      {/* ===== UNIFIED PRESCRIPTION WORKBENCH (requisitos + itens + histórico + busca) ===== */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden print:hidden divide-y divide-border/40">
+        {/* Section 1 — Requisitos para prescrever (peso + alergias) */}
+        <div className="px-3 py-2">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
+              <Input
+                value={patient.weight}
+                onChange={(e) => updatePatient("weight", e.target.value)}
+                placeholder="Ex: 72"
+                className={cn(
+                  "h-7 w-20 text-xs font-medium",
+                  !patient.weight.trim() && "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
+                )}
+              />
+            </div>
+            <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+              <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
+                <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
+              </Label>
+              <Input
+                value={patient.allergies}
+                onChange={(e) => updatePatient("allergies", e.target.value)}
+                placeholder="NDAM ou listar"
+                className={cn(
+                  "h-7 flex-1 text-xs font-medium",
+                  !patient.allergies.trim()
+                    ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
+                    : "border-destructive/20"
+                )}
+              />
+            </div>
+            <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-2 py-0.5 rounded ml-auto">{prescriptionDate}</span>
           </div>
-          <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
-            <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
-              <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
-            </Label>
-            <Input
-              value={patient.allergies}
-              onChange={(e) => updatePatient("allergies", e.target.value)}
-              placeholder="NDAM ou listar"
-              className={cn(
-                "h-7 flex-1 text-xs font-medium",
-                !patient.allergies.trim()
-                  ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
-                  : "border-destructive/20"
-              )}
-            />
-          </div>
-          <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-2 py-0.5 rounded ml-auto">{prescriptionDate}</span>
+
+          {(!patient.weight.trim() || !patient.allergies.trim()) && (
+            <div className="flex items-center gap-2 px-3 py-1.5 mt-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              <p className="text-[11px] font-medium">
+                Preencha {!patient.weight.trim() && !patient.allergies.trim() ? 'o peso e as alergias' : !patient.weight.trim() ? 'o peso' : 'as alergias'} para habilitar a prescrição.
+              </p>
+            </div>
+          )}
         </div>
 
-        {(!patient.weight.trim() || !patient.allergies.trim()) && (
-          <div className="flex items-center gap-2 px-3 py-1.5 mt-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400">
-            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-            <p className="text-[11px] font-medium">
-              Preencha {!patient.weight.trim() && !patient.allergies.trim() ? 'o peso e as alergias' : !patient.weight.trim() ? 'o peso' : 'as alergias'} para habilitar a prescrição.
-            </p>
+        {/* Section 2 — Itens summary chips */}
+        {items.length > 0 && (
+          <div className="px-3 py-2 bg-muted/20">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[10px] font-semibold text-muted-foreground tracking-wider">Itens:</span>
+              {TAB_ORDER.map(cat => {
+                const count = itemsByCategory[cat].length;
+                if (count === 0) return null;
+                const config = CATEGORY_CONFIG[cat];
+                const validatedCount = itemsByCategory[cat].filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
+                return (
+                  <div key={cat} className="flex items-center gap-1">
+                    <Circle className={cn("h-2 w-2 fill-current", validatedCount === count ? "text-emerald-500" : "text-amber-500")} />
+                    <span className="text-[10px] text-foreground font-medium">{count} {config.label.toLowerCase()}</span>
+                  </div>
+                );
+              })}
+              {!allItemsValidated && (
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-300 text-amber-600 bg-amber-50 dark:bg-amber-950/20 ml-auto">
+                  Pendente validação
+                </Badge>
+              )}
+              {allItemsValidated && (
+                <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-300 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 ml-auto">
+                  ✓ Validada
+                </Badge>
+              )}
+            </div>
           </div>
         )}
 
-      </div>
-
-      {/* Items summary strip (cartão independente) */}
-      {items.length > 0 && (
-        <div className="rounded-lg border border-border bg-muted/20 px-4 py-2 print:hidden">
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-[10px] font-semibold text-muted-foreground tracking-wider">Itens:</span>
-            {TAB_ORDER.map(cat => {
-              const count = itemsByCategory[cat].length;
-              if (count === 0) return null;
-              const config = CATEGORY_CONFIG[cat];
-              const validatedCount = itemsByCategory[cat].filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
-              return (
-                <div key={cat} className="flex items-center gap-1">
-                  <Circle className={cn("h-2 w-2 fill-current", validatedCount === count ? "text-emerald-500" : "text-amber-500")} />
-                  <span className="text-[10px] text-foreground font-medium">{count} {config.label.toLowerCase()}</span>
-                </div>
-              );
-            })}
-            {!allItemsValidated && (
-              <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-amber-300 text-amber-600 bg-amber-50 dark:bg-amber-950/20 ml-auto">
-                Pendente validação
-              </Badge>
-            )}
-            {allItemsValidated && (
-              <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-emerald-300 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 ml-auto">
-                ✓ Validada
-              </Badge>
-            )}
+        {/* Section 3 — Prescrições anteriores deste paciente */}
+        <div className="px-3 py-2">
+          <div className="flex items-center justify-between mb-1.5">
+            <h2 className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase">
+              Prescrições anteriores
+            </h2>
+            <span className="text-[10px] text-muted-foreground">{savedPrescriptions.length} {savedPrescriptions.length === 1 ? 'prescrição' : 'prescrições'}</span>
           </div>
+          {savedPrescriptions.length > 0 ? (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {savedPrescriptions.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => loadPrescription(p.id)}
+                  className={cn(
+                    "shrink-0 text-left px-2 py-1 rounded-md border text-xs transition-colors hover:bg-accent/50",
+                    currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border"
+                  )}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
+                      {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
+                    </Badge>
+                    <span className="text-[9px] text-muted-foreground">v{p.version}</span>
+                    <span className="text-[9px] text-muted-foreground">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[11px] text-muted-foreground italic">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
+          )}
         </div>
-      )}
+
+        {/* Section 4 — Busca global (sem rótulo redundante) */}
+        <div className="px-3 py-2">
+          <GlobalPrescriptionSearch
+            ref={globalSearchRef}
+            onAddItem={addItem}
+            onAddNonStandard={(name: string) => { setNonStdName(name); addNonStandard(); }}
+            getFavoriteCount={getFavoriteCount}
+          />
+        </div>
+      </div>
 
       {/* ===== SHIFT RENEWAL ALERT (05:00 turnover) ===== */}
       {canPrescribe && (
@@ -4002,19 +4013,7 @@ const PrescricaoPage = () => {
 
       {/* ===== FULL PRESCRIPTION VIEW (all categories) ===== */}
       <div className={cn("space-y-3 print:hidden", !canPrescribe && "opacity-50 pointer-events-none")}>
-        {/* Global search bar with category filters */}
-        <div className="rounded-xl border border-border bg-card p-3 space-y-2">
-          <div className="flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="text-xs font-semibold text-foreground whitespace-nowrap">Adicionar item</span>
-          </div>
-          <GlobalPrescriptionSearch
-            ref={globalSearchRef}
-            onAddItem={addItem}
-            onAddNonStandard={(name: string) => { setNonStdName(name); addNonStandard(); }}
-            getFavoriteCount={getFavoriteCount}
-          />
-        </div>
+        {/* Busca global movida para o workbench unificado acima. */}
 
 
         <DndContext
