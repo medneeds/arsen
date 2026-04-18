@@ -66,9 +66,12 @@ const EvolucaoPage = () => {
   const [newVitals, setNewVitals] = useState({ pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" });
   const [newExam, setNewExam] = useState({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
   const [creating, setCreating] = useState(false);
-  // CID state for compact header
-  const [cidPrimary, setCidPrimary] = useState<string>("");
-  const [cidSecondary, setCidSecondary] = useState<string[]>([]);
+  // CID state — persisted to admission_histories via usePatientCid
+  const {
+    cidPrimary, cidSecondary,
+    updatePrimary: updateCidPrimary,
+    updateSecondary: updateCidSecondary,
+  } = usePatientCid(initialPatientId || null);
 
   const hasPatient = patient.name.trim() !== "";
 
