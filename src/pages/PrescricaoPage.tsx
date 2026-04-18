@@ -3657,15 +3657,27 @@ const PrescricaoPage = () => {
       {/* ===== VERSION HISTORY ===== */}
       {versionHistory.length > 1 && currentPrescriptionId && (
         <div className="rounded-xl border border-border bg-card p-3 print:hidden">
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="w-full flex items-center justify-between text-xs"
-          >
-            <span className="flex items-center gap-2 font-semibold text-muted-foreground tracking-wider">
+          <div className="w-full flex items-center justify-between text-xs gap-2">
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="flex items-center gap-2 font-semibold text-muted-foreground tracking-wider hover:text-foreground transition-colors"
+            >
               <History className="h-3.5 w-3.5" /> Histórico de versões ({versionHistory.length})
-            </span>
-            <span className="text-muted-foreground text-[10px]">{showHistory ? 'Ocultar' : 'Expandir'}</span>
-          </button>
+              <span className="text-muted-foreground/70 text-[10px] font-normal">
+                {showHistory ? '— ocultar' : '— expandir'}
+              </span>
+            </button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setDiffDialogOpen(true)}
+              disabled={versionHistory.length < 2}
+              className="h-6 text-[10px] gap-1 px-2"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Comparar versões
+            </Button>
+          </div>
           {showHistory && (
             <div className="mt-3 space-y-1">
               {versionHistory.map((v, i) => (
