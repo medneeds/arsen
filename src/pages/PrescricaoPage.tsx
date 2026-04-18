@@ -92,6 +92,8 @@ import { DoseCalculatorDialog, type DoseCalculatorResult } from "@/components/Do
 import { PreValidationAlertDialog } from "@/components/PreValidationAlertDialog";
 import { runClinicalAlertChecks, type ClinicalAlert } from "@/lib/clinicalAlertChecks";
 import { Star, Calculator } from "lucide-react";
+import { getProtocolsFor, type PosologyProtocol } from "@/lib/posologyProtocols";
+import { PosologySuggestionsBar } from "@/components/PosologySuggestionsBar";
 
 // --- Types ---
 interface DigitalSignature {
@@ -2316,6 +2318,12 @@ const PrescricaoPage = () => {
   const initialDemoItems = useMemo(() => initialPatientBed ? getDemoPrescriptionItems(initialPatientBed) : [], []);
   const [items, setItems] = useState<PrescriptionItem[]>(initialDemoItems);
   const [activeTab, setActiveTab] = useState<PrescriptionCategory>(initialDemoItems.length > 0 ? 'medication' : 'nutrition');
+  // Sugestões de posologia para o último item adicionado
+  const [posologySuggestion, setPosologySuggestion] = useState<{
+    itemId: string;
+    name: string;
+    protocols: PosologyProtocol[];
+  } | null>(null);
   const [nonStdName, setNonStdName] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [freeRecommendation, setFreeRecommendation] = useState("");
@@ -2769,7 +2777,35 @@ const PrescricaoPage = () => {
       setAntimicrobialGuideOpen(true);
       return;
     }
-    setItems((prev) => [...prev, createItem(med)]);
+    const newItem = createItem(med);
+    setItems((prev) => [...prev, newItem]);
+    // Sugerir protocolos de posologia, se houver
+    const protocols = getProtocolsFor(med.name);
+    if (protocols.length > 0) {
+      setPosologySuggestion({ itemId: newItem.id, name: med.name, protocols });
+    } else {
+      setPosologySuggestion(null);
+    }
+  };
+
+  // Aplica um protocolo de posologia ao item-alvo, sobrescrevendo dose/via/etc.
+  const applyPosologyProtocol = (itemId: string, p: PosologyProtocol) => {
+    setItems((prev) => prev.map((it) => {
+      if (it.id !== itemId) return it;
+      return {
+        ...it,
+        dose: p.dose || it.dose,
+        route: p.route || it.route,
+        posology: p.posology || it.posology,
+        schedule: p.schedule || it.schedule,
+        instructions: p.instructions || it.instructions,
+        diluent: p.diluent ?? it.diluent,
+        diluentVolume: p.diluentVolume ?? it.diluentVolume,
+        infusionTime: p.infusionTime ?? it.infusionTime,
+      };
+    }));
+    toast.success(`Protocolo "${p.label}" aplicado`);
+    setPosologySuggestion(null);
   };
 
   // Callback when antimicrobial guide is confirmed — add both guide entry data and the prescription item
@@ -4189,6 +4225,15 @@ const PrescricaoPage = () => {
             })}
           </SortableContext>
         </DndContext>
+
+        {posologySuggestion && items.some(i => i.id === posologySuggestion.itemId) && (
+          <PosologySuggestionsBar
+            medicationName={posologySuggestion.name}
+            protocols={posologySuggestion.protocols}
+            onApply={(p) => applyPosologyProtocol(posologySuggestion.itemId, p)}
+            onDismiss={() => setPosologySuggestion(null)}
+          />
+        )}
 
         <BatchActionBar
           selectedCount={selectedIds.size}
