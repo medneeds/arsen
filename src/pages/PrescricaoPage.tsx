@@ -94,6 +94,8 @@ import { runClinicalAlertChecks, type ClinicalAlert } from "@/lib/clinicalAlertC
 import { Star, Calculator } from "lucide-react";
 import { getProtocolsFor, type PosologyProtocol } from "@/lib/posologyProtocols";
 import { PosologySuggestionsBar } from "@/components/PosologySuggestionsBar";
+import { PatientCockpit } from "@/components/PatientCockpit";
+import type { Patient } from "@/types/patient";
 
 // --- Types ---
 interface DigitalSignature {
@@ -3563,10 +3565,28 @@ const PrescricaoPage = () => {
     );
   }
 
+  const cockpitPatient: Patient = useMemo(() => ({
+    id: searchParams.get('patientId') || 'prescricao-stub',
+    bedNumber: patient.bed,
+    name: patient.name,
+    age: typeof patient.age === 'string' ? patient.age.replace(/\s*anos?$/i, '') : patient.age,
+    sector: (initialPatientSector as Patient['sector']) || 'outside',
+    diagnoses: [],
+    medicalHistory: [],
+    relevantExams: [],
+    pendencies: [],
+    schedule: [],
+    admissionHistory: '',
+    admissionDate: patient.admissionDate,
+    utiAllergies: patient.allergies && patient.allergies !== 'NDAM' ? [patient.allergies] : [],
+    clinicalStatus: 'regular',
+  }), [patient, searchParams, initialPatientSector]);
+
   return (
     <div className="animate-fade-in">
       <ClinicalHeader moduleLabel="Prescrição Médica" />
-      <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-5">
+      <div className="flex print:block">
+        <div className="flex-1 min-w-0 max-w-6xl mx-auto p-4 sm:p-6 space-y-5">
       {/* Print styles — hide everything except portal */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
@@ -4873,6 +4893,8 @@ const PrescricaoPage = () => {
         versions={versionHistory}
         defaultRightId={currentPrescriptionId ?? undefined}
       />
+      </div>
+        <PatientCockpit patient={cockpitPatient} className="print:hidden" />
       </div>
     </div>
   );
