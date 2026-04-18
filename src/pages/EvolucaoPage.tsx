@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
-import { PatientInfoHeader } from "@/components/PatientInfoHeader";
+
 import { CompactPatientHeader } from "@/components/CompactPatientHeader";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { format } from "date-fns";

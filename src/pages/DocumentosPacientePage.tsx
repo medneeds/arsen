@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
-import { PatientInfoHeader } from "@/components/PatientInfoHeader";
+
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import {
