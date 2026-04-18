@@ -2277,6 +2277,7 @@ const PrescricaoPage = () => {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
   const [searchParams] = useSearchParams();
+  const { getCount: getFavoriteCount, trackUse: trackMedicationUse } = useMedicationFavorites();
 
   // Initialize patient and items directly from URL params to avoid render delay
   const initialPatientName = searchParams.get('patientName') || '';
@@ -2666,6 +2667,10 @@ const PrescricaoPage = () => {
   };
 
   const addItem = (med: MedicationEntry) => {
+    // Track usage for favorites/ranking (best-effort, non-blocking)
+    if (med.id && med.category !== 'nonstandard') {
+      trackMedicationUse(med.id, med.name, med.category);
+    }
     // Antimicrobials must go through the Antimicrobial Guide first
     if (med.category === 'antimicrobial') {
       setPendingAntimicrobialMed(med);
