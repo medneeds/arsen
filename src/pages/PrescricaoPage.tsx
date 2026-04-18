@@ -2777,7 +2777,35 @@ const PrescricaoPage = () => {
       setAntimicrobialGuideOpen(true);
       return;
     }
-    setItems((prev) => [...prev, createItem(med)]);
+    const newItem = createItem(med);
+    setItems((prev) => [...prev, newItem]);
+    // Sugerir protocolos de posologia, se houver
+    const protocols = getProtocolsFor(med.name);
+    if (protocols.length > 0) {
+      setPosologySuggestion({ itemId: newItem.id, name: med.name, protocols });
+    } else {
+      setPosologySuggestion(null);
+    }
+  };
+
+  // Aplica um protocolo de posologia ao item-alvo, sobrescrevendo dose/via/etc.
+  const applyPosologyProtocol = (itemId: string, p: PosologyProtocol) => {
+    setItems((prev) => prev.map((it) => {
+      if (it.id !== itemId) return it;
+      return {
+        ...it,
+        dose: p.dose || it.dose,
+        route: p.route || it.route,
+        posology: p.posology || it.posology,
+        schedule: p.schedule || it.schedule,
+        instructions: p.instructions || it.instructions,
+        diluent: p.diluent ?? it.diluent,
+        diluentVolume: p.diluentVolume ?? it.diluentVolume,
+        infusionTime: p.infusionTime ?? it.infusionTime,
+      };
+    }));
+    toast.success(`Protocolo "${p.label}" aplicado`);
+    setPosologySuggestion(null);
   };
 
   // Callback when antimicrobial guide is confirmed — add both guide entry data and the prescription item
