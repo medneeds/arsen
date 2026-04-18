@@ -16,6 +16,7 @@ import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { useNavigate } from "react-router-dom";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useActivePrescription } from "@/hooks/useActivePrescription";
+import { usePatientPendingItems } from "@/hooks/usePatientPendingItems";
 import { formatDistanceToNow } from "date-fns";
 
 interface PatientCockpitProps {
