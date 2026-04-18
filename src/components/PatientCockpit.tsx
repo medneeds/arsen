@@ -111,7 +111,7 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
   const conducts = parseList(patient.utiDailyConducts);
   const devices = parseList(patient.utiDevices);
 
-  const displayName = namesHidden ? maskName(patient.name) : patient.name;
+  const displayName = maskName(patient.name, namesHidden);
 
   const goPatient = (path: string) => {
     const params = new URLSearchParams({
@@ -157,11 +157,9 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
             <div className="text-muted-foreground truncate">
               Adm: <span className="text-foreground font-medium">{formatDate(patient.admissionDate)}</span>
             </div>
-            {patient.medicalRecord && (
-              <div className="text-muted-foreground col-span-2 truncate">
-                Pront.: <span className="text-foreground font-medium font-mono">{patient.medicalRecord}</span>
-              </div>
-            )}
+            <div className="text-muted-foreground col-span-2 truncate">
+              ID: <span className="text-foreground font-medium font-mono">{patient.id}</span>
+            </div>
           </div>
         </div>
 
