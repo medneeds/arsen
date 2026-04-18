@@ -2969,6 +2969,79 @@ const PrescricaoPage = () => {
     }
   }, [fetchVersionHistory]);
 
+  // ===== Repeat previous prescription =====
+  const openRepeatDialog = useCallback(async () => {
+    if (!currentHospital || !currentState || !patient.name.trim()) {
+      toast.error("Preencha o nome do paciente para buscar prescrições anteriores");
+      return;
+    }
+    setRepeatLoading(true);
+    setRepeatDialogOpen(true);
+    try {
+      // Buscar última prescrição do paciente, excluindo a atual
+      let query = supabase
+        .from('prescriptions')
+        .select('id, items, version, created_at')
+        .eq('hospital_unit_id', currentHospital.id)
+        .eq('state_id', currentState.id)
+        .eq('patient_name', patient.name.trim())
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (currentPrescriptionId) {
+        query = query.neq('id', currentPrescriptionId);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      const previous = (data || []).find(d => Array.isArray(d.items) && (d.items as unknown[]).length > 0);
+      if (!previous) {
+        setRepeatSourceItems([]);
+        setRepeatSourceMeta(null);
+        setRepeatSelectedIds(new Set());
+        return;
+      }
+      const sourceItems = (previous.items as unknown as PrescriptionItem[]).filter(
+        i => i.status === 'active' && !i.isExtra
+      );
+      setRepeatSourceItems(sourceItems);
+      setRepeatSourceMeta({
+        date: format(new Date(previous.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }),
+        version: previous.version,
+      });
+      // Pré-seleciona todos
+      setRepeatSelectedIds(new Set(sourceItems.map(i => i.id)));
+    } catch (err: any) {
+      toast.error("Erro ao buscar prescrição anterior", { description: err.message });
+      setRepeatDialogOpen(false);
+    } finally {
+      setRepeatLoading(false);
+    }
+  }, [currentHospital, currentState, patient.name, currentPrescriptionId]);
+
+  const applyRepeatedItems = useCallback(() => {
+    if (repeatSelectedIds.size === 0) {
+      toast.error("Selecione ao menos um item para repetir");
+      return;
+    }
+    const cloned: PrescriptionItem[] = repeatSourceItems
+      .filter(i => repeatSelectedIds.has(i.id))
+      .map(i => ({
+        ...i,
+        id: crypto.randomUUID(),
+        status: 'active',
+        suspensionReason: undefined,
+        suspendedAt: undefined,
+        validated: false,
+        validatedAt: undefined,
+        isExtra: false,
+      }));
+    setItems(prev => [...prev, ...cloned]);
+    toast.success(`${cloned.length} item(ns) repetido(s) da prescrição anterior`);
+    setRepeatDialogOpen(false);
+    setRepeatSourceItems([]);
+    setRepeatSelectedIds(new Set());
+    setRepeatSourceMeta(null);
+  }, [repeatSelectedIds, repeatSourceItems]);
+
   // Save prescription to database
   const handleSave = async () => {
     if (!patient.name.trim()) { toast.error("Preencha o nome do paciente"); return; }
