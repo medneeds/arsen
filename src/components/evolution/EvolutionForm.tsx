@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ExaminusAIDialog } from "@/components/ExaminusAIDialog";
 import { cn } from "@/lib/utils";
+import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 
 interface SOAPData {
   subjective: string;
@@ -222,7 +223,48 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
       )}
       {readOnly && isValidated && (
         <div className="flex items-center gap-2 justify-end">
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => window.print()}>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={async () => {
+            const logo = await prepareLogo();
+            const escape = (s: string) => (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>");
+            const vitalsRow = [
+              vitals.pa && `PA ${vitals.pa}`,
+              vitals.fc && `FC ${vitals.fc}`,
+              vitals.fr && `FR ${vitals.fr}`,
+              vitals.temp && `T ${vitals.temp}°C`,
+              vitals.spo2 && `SpO₂ ${vitals.spo2}%`,
+              vitals.glasgow && `Glasgow ${vitals.glasgow}`,
+              vitals.diurese && `Diurese ${vitals.diurese} mL/24h`,
+              vitals.dor && `Dor ${vitals.dor}`,
+            ].filter(Boolean).join(" • ");
+
+            const examRows = EXAM_FIELDS
+              .filter(f => physicalExam[f.key])
+              .map(f => `<tr><th style="width:130px">${f.label}</th><td>${escape(physicalExam[f.key])}</td></tr>`)
+              .join("");
+
+            const bodyHtml = `
+              <h2 class="nz-section">SOAP</h2>
+              <table class="nz">
+                <tr><th style="width:60px">S</th><td>${escape(soap.subjective) || "<em>—</em>"}</td></tr>
+                <tr><th>O</th><td>${escape(soap.objective) || "<em>—</em>"}</td></tr>
+                <tr><th>A</th><td>${escape(soap.assessment) || "<em>—</em>"}</td></tr>
+                <tr><th>P</th><td>${escape(soap.plan) || "<em>—</em>"}</td></tr>
+              </table>
+              ${vitalsRow ? `<h2 class="nz-section">Sinais Vitais</h2><div style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:9pt">${vitalsRow}</div>` : ""}
+              ${examRows ? `<h2 class="nz-section">Exame Físico</h2><table class="nz"><tbody>${examRows}</tbody></table>` : ""}
+            `;
+
+            const html = buildNormaZeroDocument({
+              title: "Evolução Clínica",
+              subtitle: "Registro SOAP",
+              sectorLabel: "Assistência Médica",
+              docCodePrefix: "EVOL",
+              bodyHtml,
+              logoDataUrl: logo,
+              signatures: [{ label: "Médico Assistente", caption: "CRM e assinatura" }],
+            });
+            openPrintWindow(html, "Preparando evolução…");
+          }}>
             <Printer className="h-3.5 w-3.5" /> Imprimir Evolução
           </Button>
         </div>

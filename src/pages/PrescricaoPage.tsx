@@ -7,6 +7,7 @@ import { format, addDays, isAfter, setHours, setMinutes, setSeconds, startOfDay 
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
 import socorraoLogo from "@/assets/socorrao1-logo.png";
 import { BigHelpLogo } from "@/components/BigHelpLogo";
+import { NormaZeroPrintHeader, NormaZeroPrintFooter, generatePrintDocCode } from "@/components/NormaZeroPrintHeader";
 import { ptBR } from "date-fns/locale";
 import {
   Pill, Plus, Trash2, Copy, Printer, Save, RefreshCw,
@@ -3928,29 +3929,17 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
 
   const isSimple = (cat: PrescriptionCategory) => ['nutrition', 'care'].includes(cat);
 
+  const docCode = generatePrintDocCode("PRESC");
+
   return (
     <div style={{ fontFamily: 'Arial, Helvetica, sans-serif', color: '#1e293b', width: '186mm', margin: '0 auto', lineHeight: 1.3 }}>
-      {/* Header with Logo */}
-      <div style={{ borderBottom: '2px solid #0c4a6e', paddingBottom: '5px', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {/* Hospital logo - medical cross */}
-          <svg width="28" height="32" viewBox="0 0 120 140" fill="none">
-            <path d="M45 8C45 4 49 0 53 0H67C71 0 75 4 75 8V35H102C106 35 110 39 110 43V57C110 61 106 65 102 65H75V92C75 96 71 100 67 100H53C49 100 45 96 45 92V65H18C14 65 10 61 10 57V43C10 39 14 35 18 35H45V8Z" fill="#0c4a6e"/>
-            <path d="M50 98L60 130L70 98" fill="#0c4a6e"/>
-            <g transform="translate(60, 50)">
-              <path d="M0 -20 C4 -8, 8 -4, 20 0 C8 4, 4 8, 0 20 C-4 8, -8 4, -20 0 C-8 -4, -4 -8, 0 -20Z" fill="white"/>
-            </g>
-          </svg>
-          <div>
-            <div style={{ fontSize: '11pt', fontWeight: 800, color: '#0c4a6e' }}>{hospitalName}</div>
-            <div style={{ fontSize: '7pt', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.5px' }}>PRESCRIÇÃO MÉDICA DIÁRIA</div>
-          </div>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '9pt', fontWeight: 800, color: '#0c4a6e' }}>PRESCRIÇÃO MÉDICA</div>
-          <div style={{ fontSize: '6.5pt', color: '#94a3b8' }}>{prescriptionDate}</div>
-        </div>
-      </div>
+      {/* Cabeçalho institucional Norma Zero (MAN.05-001) */}
+      <NormaZeroPrintHeader
+        documentLabel="Prescrição Médica Diária"
+        documentCode={docCode}
+        documentSubtitle={prescriptionDate}
+        width="186mm"
+      />
 
       {/* Patient Data — compact with allergy inline */}
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '5px' }}>
@@ -4155,10 +4144,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         </div>
       </div>
 
-      {/* Footer */}
-      <div style={{ marginTop: '10px', fontSize: '5.5pt', color: '#94a3b8', textAlign: 'center', borderTop: '0.5px solid #e2e8f0', paddingTop: '3px' }}>
-        Documento gerado pelo sistema BigHelp Map — {prescriptionDate} — Válido quando assinado
-      </div>
+      {/* Rodapé Norma Zero (MAN.05-001) */}
+      <NormaZeroPrintFooter width="186mm" />
     </div>
   );
 }

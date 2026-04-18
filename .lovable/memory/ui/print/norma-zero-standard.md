@@ -47,13 +47,21 @@ const handlePrint = async () => {
 ```
 
 ## Já implementado
-- `src/components/nir/NirPdfExport.tsx`
+- `src/components/nir/NirPdfExport.tsx` (janela popup com `buildNormaZeroDocument`)
+- `src/pages/PrescricaoPage.tsx` → `PrintablePrescription` (cabeçalho/rodapé via `<NormaZeroPrintHeader />`)
+- `src/components/evolution/EvolutionForm.tsx` → botão Imprimir Evolução (popup `buildNormaZeroDocument`, prefixo EVOL)
+- `src/pages/FichaAtendimentoPage.tsx` (cabeçalho nativo Norma Zero, prefixo FAT)
+
+## Componente React reutilizável
+`src/components/NormaZeroPrintHeader.tsx` expõe:
+- `<NormaZeroPrintHeader documentLabel docCode subtitle width />` — para layouts impressos baseados em DOM (portal/iframe), espelha o template HTML da janela popup
+- `<NormaZeroPrintFooter width />` — rodapé MAN.05-001
+- `generatePrintDocCode(prefix)` — mesmo formato de `generateDocCode` mas exportado para uso React
 
 ## Migração futura (quando o usuário pedir)
 - `PrintableDietDocument.tsx`, `PrintableRequisitionGuide.tsx`, `PrintMapPreviewDialog.tsx`,
   `PrintUtiPreviewDialog.tsx`, `PrintPatientPreviewDialog.tsx`, `PatientWristband.tsx`,
-  `FichaAtendimentoPage.tsx`, `RequisicaoUnificada/Imagens/Laboratorio/Parecer`, `RoundPage`,
-  `EvolucaoPage`, `PrescricaoPage`
+  `RequisicaoUnificada/Imagens/Laboratorio/Parecer`, `RoundPage`
 
 ## Prefixos de código por documento (sugestão)
 - NIR (relatórios NIR), PRESC (prescrições), APAC, FAT (ficha atendimento), DIET, EVOL,
