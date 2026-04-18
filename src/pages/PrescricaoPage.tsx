@@ -3659,9 +3659,12 @@ const PrescricaoPage = () => {
               <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1 px-2">
                 <CalendarDays className="h-3 w-3" />
                 {historyDate ? format(historyDate, "dd/MM/yyyy") : "Calendário"}
+                {savedPrescriptions.length > 0 && (
+                  <span className="ml-0.5 text-[9px] font-mono text-muted-foreground">({savedPrescriptions.length})</span>
+                )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
+            <PopoverContent className="w-[320px] p-0" align="end">
               <Calendar
                 mode="single"
                 selected={historyDate}
@@ -3676,6 +3679,38 @@ const PrescricaoPage = () => {
                   </Button>
                 </div>
               )}
+              <div className="border-t p-2 max-h-64 overflow-y-auto">
+                <div className="flex items-center justify-between mb-1.5 px-1">
+                  <h3 className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase">
+                    Prescrições anteriores
+                  </h3>
+                  <span className="text-[10px] text-muted-foreground">{savedPrescriptions.length}</span>
+                </div>
+                {savedPrescriptions.length > 0 ? (
+                  <div className="space-y-1">
+                    {savedPrescriptions.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => loadPrescription(p.id)}
+                        className={cn(
+                          "w-full text-left px-2 py-1.5 rounded-md border text-xs transition-colors hover:bg-accent/50",
+                          currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border"
+                        )}
+                      >
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
+                            {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
+                          </Badge>
+                          <span className="text-[9px] text-muted-foreground">v{p.version}</span>
+                          <span className="text-[9px] text-muted-foreground ml-auto">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground italic px-1 py-2">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
+                )}
+              </div>
             </PopoverContent>
           </Popover>
           {/* "Repetir de ontem" removido — agora ocorre automaticamente ao Renovar dia. */}
@@ -3934,39 +3969,7 @@ const PrescricaoPage = () => {
           </div>
         )}
 
-        {/* Section 3 — Prescrições anteriores deste paciente */}
-        <div className="px-3 py-2">
-          <div className="flex items-center justify-between mb-1.5">
-            <h2 className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase">
-              Prescrições anteriores
-            </h2>
-            <span className="text-[10px] text-muted-foreground">{savedPrescriptions.length} {savedPrescriptions.length === 1 ? 'prescrição' : 'prescrições'}</span>
-          </div>
-          {savedPrescriptions.length > 0 ? (
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {savedPrescriptions.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => loadPrescription(p.id)}
-                  className={cn(
-                    "shrink-0 text-left px-2 py-1 rounded-md border text-xs transition-colors hover:bg-accent/50",
-                    currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border"
-                  )}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
-                      {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
-                    </Badge>
-                    <span className="text-[9px] text-muted-foreground">v{p.version}</span>
-                    <span className="text-[9px] text-muted-foreground">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[11px] text-muted-foreground italic">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
-          )}
-        </div>
+        {/* Prescrições anteriores agora acessíveis via popup do Calendário no cabeçalho. */}
 
         {/* Section 4 — Busca global (sem rótulo redundante) */}
         <div className="px-3 py-2">
