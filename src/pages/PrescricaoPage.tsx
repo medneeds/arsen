@@ -48,6 +48,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
+import { ShiftRenewalAlert } from "@/components/ShiftRenewalAlert";
 import { useHospital } from "@/contexts/HospitalContext";
 import {
   DndContext,
@@ -2431,6 +2432,12 @@ const PrescricaoPage = () => {
     return activeItems.length > 0 && activeItems.every(isItemValidatedToday);
   }, [items, isItemValidatedToday]);
 
+  // Itens ativos que NÃO foram revalidados após o corte 05:00 de hoje
+  const renewalPendingCount = useMemo(() => {
+    const activeItems = items.filter(i => i.status === 'active');
+    return activeItems.filter(i => !isItemValidatedToday(i)).length;
+  }, [items, isItemValidatedToday]);
+
   // Password confirmation dialog state
   const [passwordConfirmOpen, setPasswordConfirmOpen] = useState(false);
   const [pendingValidationAction, setPendingValidationAction] = useState<
@@ -3923,6 +3930,17 @@ const PrescricaoPage = () => {
           </div>
         )}
       </div>
+
+      {/* ===== SHIFT RENEWAL ALERT (05:00 turnover) ===== */}
+      {canPrescribe && (
+        <ShiftRenewalAlert
+          pendingCount={renewalPendingCount}
+          activeCount={activeItemsCount}
+          isPastRenewal={isPastRenewalTime}
+          onRenewAll={requestValidateAll}
+          disabled={!canPrescribe}
+        />
+      )}
 
       {/* ===== DISPENSATION HISTORY ===== */}
       {dispensations.length > 0 && (
