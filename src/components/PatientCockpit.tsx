@@ -303,8 +303,45 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
               </CockpitSection>
             </TabsContent>
 
-            {/* ABA EXAMES: exames relevantes + dispositivos */}
+            {/* ABA EXAMES: realtime + relevantes + dispositivos */}
             <TabsContent value="exames" className="px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+              <CockpitSection icon={TestTubes} title="Atividade em tempo real">
+                <div className="grid grid-cols-2 gap-1.5 mb-2">
+                  <PendingStat label="Exames pendentes" value={pendingSummary.pendingExams} tone="warning" />
+                  <PendingStat label="Exames concluídos" value={pendingSummary.completedExams} tone="success" />
+                  <PendingStat label="Culturas pendentes" value={pendingSummary.pendingCultures} tone="warning" />
+                  <PendingStat label="Culturas positivas" value={pendingSummary.positiveCultures} tone="danger" />
+                </div>
+                {pendingItems.length === 0 ? (
+                  <EmptyMsg>Nenhum exame ou cultura registrado.</EmptyMsg>
+                ) : (
+                  <ul className="space-y-1">
+                    {pendingItems.slice(0, 5).map((it) => (
+                      <li
+                        key={`${it.kind}-${it.id}`}
+                        className="flex items-center justify-between gap-2 text-[11px] py-1 border-b border-border/50 last:border-0"
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {it.kind === "culture" ? (
+                            <ShieldAlert className={cn("h-3 w-3 shrink-0", it.critical ? "text-destructive" : "text-muted-foreground")} />
+                          ) : (
+                            <TestTubes className="h-3 w-3 shrink-0 text-muted-foreground" />
+                          )}
+                          <span className="truncate preserve-case">{it.label}</span>
+                        </div>
+                        <span className={cn(
+                          "text-[9px] uppercase font-semibold px-1 rounded shrink-0",
+                          it.status === "completed" && "text-emerald-700 dark:text-emerald-400",
+                          it.status === "pending" && "text-warning",
+                          it.critical && "text-destructive",
+                        )}>
+                          {it.status}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CockpitSection>
               <CockpitSection icon={TestTubes} title="Exames relevantes" count={exams.length}>
                 <ItemList items={exams} emptyMsg="Sem exames destacados." />
               </CockpitSection>
