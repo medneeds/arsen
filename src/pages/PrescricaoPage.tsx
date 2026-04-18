@@ -4226,6 +4226,15 @@ const PrescricaoPage = () => {
           </SortableContext>
         </DndContext>
 
+        {posologySuggestion && items.some(i => i.id === posologySuggestion.itemId) && (
+          <PosologySuggestionsBar
+            medicationName={posologySuggestion.name}
+            protocols={posologySuggestion.protocols}
+            onApply={(p) => applyPosologyProtocol(posologySuggestion.itemId, p)}
+            onDismiss={() => setPosologySuggestion(null)}
+          />
+        )}
+
         <BatchActionBar
           selectedCount={selectedIds.size}
           allSelected={items.length > 0 && selectedIds.size === items.length}
