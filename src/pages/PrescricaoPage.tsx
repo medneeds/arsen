@@ -92,6 +92,8 @@ import { DoseCalculatorDialog, type DoseCalculatorResult } from "@/components/Do
 import { PreValidationAlertDialog } from "@/components/PreValidationAlertDialog";
 import { runClinicalAlertChecks, type ClinicalAlert } from "@/lib/clinicalAlertChecks";
 import { Star, Calculator } from "lucide-react";
+import { getProtocolsFor, type PosologyProtocol } from "@/lib/posologyProtocols";
+import { PosologySuggestionsBar } from "@/components/PosologySuggestionsBar";
 
 // --- Types ---
 interface DigitalSignature {
