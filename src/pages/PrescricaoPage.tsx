@@ -4506,6 +4506,13 @@ const PrescricaoPage = () => {
         patient={patient ? { name: patient.name, age: patient.age, bed: patient.bed, weight: patient.weight } : null}
       />
 
+      {/* MAV — High-Alert Medications Guide */}
+      <HighAlertGuideDialog
+        open={highAlertGuideOpen}
+        onOpenChange={setHighAlertGuideOpen}
+        onAddItem={(med) => { addItem(med); }}
+      />
+
       {/* Quick Templates Dialog */}
       <Dialog open={quickTemplatesDialogOpen} onOpenChange={setQuickTemplatesDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
