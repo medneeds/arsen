@@ -3891,50 +3891,51 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== PRESCRIPTION REQUIREMENTS BAR (peso + alergias editáveis) ===== */}
-      {/* Identidade do paciente vive no PatientCockpit (rail direito). Aqui apenas os campos
-          editáveis indispensáveis para liberar a prescrição. */}
-      <div className="rounded-lg border border-border bg-card px-3 py-2 print:hidden">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div className="flex items-center gap-1.5">
-            <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
-            <Input
-              value={patient.weight}
-              onChange={(e) => updatePatient("weight", e.target.value)}
-              placeholder="Ex: 72"
-              className={cn(
-                "h-7 w-20 text-xs font-medium",
-                !patient.weight.trim() && "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
-              )}
-            />
+      {/* ===== UNIFIED PRESCRIPTION WORKBENCH (requisitos + itens + histórico + busca) ===== */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden print:hidden divide-y divide-border/40">
+        {/* Section 1 — Requisitos para prescrever (peso + alergias) */}
+        <div className="px-3 py-2">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="flex items-center gap-1.5">
+              <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
+              <Input
+                value={patient.weight}
+                onChange={(e) => updatePatient("weight", e.target.value)}
+                placeholder="Ex: 72"
+                className={cn(
+                  "h-7 w-20 text-xs font-medium",
+                  !patient.weight.trim() && "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
+                )}
+              />
+            </div>
+            <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+              <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
+                <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
+              </Label>
+              <Input
+                value={patient.allergies}
+                onChange={(e) => updatePatient("allergies", e.target.value)}
+                placeholder="NDAM ou listar"
+                className={cn(
+                  "h-7 flex-1 text-xs font-medium",
+                  !patient.allergies.trim()
+                    ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
+                    : "border-destructive/20"
+                )}
+              />
+            </div>
+            <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-2 py-0.5 rounded ml-auto">{prescriptionDate}</span>
           </div>
-          <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
-            <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
-              <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
-            </Label>
-            <Input
-              value={patient.allergies}
-              onChange={(e) => updatePatient("allergies", e.target.value)}
-              placeholder="NDAM ou listar"
-              className={cn(
-                "h-7 flex-1 text-xs font-medium",
-                !patient.allergies.trim()
-                  ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
-                  : "border-destructive/20"
-              )}
-            />
-          </div>
-          <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-2 py-0.5 rounded ml-auto">{prescriptionDate}</span>
-        </div>
 
-        {(!patient.weight.trim() || !patient.allergies.trim()) && (
-          <div className="flex items-center gap-2 px-3 py-1.5 mt-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400">
-            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-            <p className="text-[11px] font-medium">
-              Preencha {!patient.weight.trim() && !patient.allergies.trim() ? 'o peso e as alergias' : !patient.weight.trim() ? 'o peso' : 'as alergias'} para habilitar a prescrição.
-            </p>
-          </div>
-        )}
+          {(!patient.weight.trim() || !patient.allergies.trim()) && (
+            <div className="flex items-center gap-2 px-3 py-1.5 mt-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              <p className="text-[11px] font-medium">
+                Preencha {!patient.weight.trim() && !patient.allergies.trim() ? 'o peso e as alergias' : !patient.weight.trim() ? 'o peso' : 'as alergias'} para habilitar a prescrição.
+              </p>
+            </div>
+          )}
+        </div>
 
       </div>
 
