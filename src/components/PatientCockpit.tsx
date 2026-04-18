@@ -14,6 +14,9 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { useNavigate } from "react-router-dom";
+import { useHospital } from "@/contexts/HospitalContext";
+import { useActivePrescription } from "@/hooks/useActivePrescription";
+import { formatDistanceToNow } from "date-fns";
 
 interface PatientCockpitProps {
   patient: Patient | null;
@@ -76,6 +79,11 @@ function formatDate(d?: string): string {
 export function PatientCockpit({ patient, className, variant = "fixed" }: PatientCockpitProps) {
   const { namesHidden } = usePrivacy();
   const navigate = useNavigate();
+  const { currentHospital } = useHospital();
+  const { prescription } = useActivePrescription(
+    patient?.name || null,
+    currentHospital?.id || null,
+  );
 
   if (!patient) {
     return (
@@ -228,6 +236,40 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
           )}
         </div>
 
+        {/* ===== ZONA 3.5: PRESCRIÇÃO ATIVA (realtime) ===== */}
+        {prescription && (
+          <button
+            onClick={() => goPatient("/prescricao")}
+            className="mx-3 mt-2 mb-1 flex items-center justify-between gap-2 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition px-2.5 py-1.5 text-left"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Pill className="h-3.5 w-3.5 text-primary shrink-0" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-foreground">
+                    Prescrição v{prescription.version}
+                  </span>
+                  <PrescriptionStatusBadge status={prescription.status} signed={prescription.signed} />
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-tight">
+                  {prescription.itemsCount} {prescription.itemsCount === 1 ? "item" : "itens"} •{" "}
+                  {(() => {
+                    try {
+                      return formatDistanceToNow(new Date(prescription.updatedAt), {
+                        addSuffix: true,
+                        locale: ptBR,
+                      });
+                    } catch {
+                      return "—";
+                    }
+                  })()}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          </button>
+        )}
+
         {/* ===== ZONA 4: ABAS OTIMIZADAS ===== */}
         <Tabs defaultValue="resumo" className="flex-1 min-h-0 flex flex-col">
           <TabsList className="mx-3 mt-2 grid grid-cols-4 h-8 p-0.5">
@@ -375,4 +417,21 @@ function ItemList({ items, emptyMsg }: { items: string[]; emptyMsg: string }) {
 
 function EmptyMsg({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] text-muted-foreground italic preserve-case">{children}</p>;
+}
+
+function PrescriptionStatusBadge({ status, signed }: { status: string; signed: boolean }) {
+  const map: Record<string, { label: string; className: string }> = {
+    draft: { label: "Rascunho", className: "bg-muted text-muted-foreground" },
+    pending_validation: { label: "Aguard. validação", className: "bg-warning/15 text-warning" },
+    validated: { label: "Validada", className: "bg-primary/10 text-primary" },
+    suspended: { label: "Suspensa", className: "bg-destructive/10 text-destructive" },
+    finalized: { label: "Finalizada", className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+  };
+  const cfg = map[status] || map.draft;
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
+      {cfg.label}
+      {signed && <span className="opacity-80">• assinada</span>}
+    </span>
+  );
 }
