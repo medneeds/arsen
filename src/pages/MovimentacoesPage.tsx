@@ -75,9 +75,31 @@ const MovimentacoesPage = () => {
   const [responsibleDoctor, setResponsibleDoctor] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // History
-  const [history, setHistory] = useState<MovementRow[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
+  // History — realtime via shared hook (synced with PatientCockpit "Trajeto" tab)
+  const { movements, loading: loadingHistory, refresh: loadHistory } = usePatientMovements(
+    patientId || null,
+    patientName || null,
+    currentHospital?.id || null,
+  );
+
+  // Adapt to legacy MovementRow shape used by the existing renderer
+  const history: MovementRow[] = useMemo(
+    () => movements.map((m) => ({
+      id: m.id,
+      movement_type: m.movementType,
+      destination: m.destination,
+      notes: m.notes,
+      responsible_doctor: null,
+      created_at: m.createdAt,
+      release_status: m.releaseStatus,
+      released_at: m.releasedAt,
+      released_by_name: null,
+    })),
+    [movements],
+  );
+
+  // Cockpit (right rail) — same pattern as Evolução / Prescrição
+  const cockpitPatient = useCockpitPatient();
 
   const subtypeDef: SubtypeDef | null = useMemo(
     () => MOVEMENT_SUBTYPES.find((s) => s.id === subtype) ?? null,
@@ -91,30 +113,6 @@ const MovimentacoesPage = () => {
     if (subtypeDef.id === "INTERNACAO") return INTERNMENT_DESTINATIONS;
     return [];
   }, [subtypeDef]);
-
-  const loadHistory = async () => {
-    if (!patientName) return;
-    setLoadingHistory(true);
-    try {
-      const query = supabase
-        .from("patient_movements")
-        .select("id, movement_type, destination, notes, responsible_doctor, created_at, release_status, released_at, released_by_name")
-        .order("created_at", { ascending: false })
-        .limit(20);
-      // Prefer patient_id if available, fallback to name
-      const { data, error } = patientId
-        ? await query.eq("patient_id", patientId)
-        : await query.eq("patient_name", patientName);
-      if (error) throw error;
-      setHistory((data as MovementRow[]) || []);
-    } catch (e) {
-      console.error("Erro carregando histórico:", e);
-    } finally {
-      setLoadingHistory(false);
-    }
-  };
-
-  useEffect(() => { loadHistory(); /* eslint-disable-next-line */ }, [patientId, patientName]);
 
   const resetWizard = () => {
     setStep("category");
