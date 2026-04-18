@@ -3,7 +3,7 @@ import { format, differenceInCalendarDays, parseISO, startOfDay } from "date-fns
 import { ptBR } from "date-fns/locale";
 import {
   ChevronDown, ChevronUp, Copy, Trash2, ShieldCheck, ShieldOff,
-  Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X,
+  Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X, Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -204,6 +204,24 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     return Array.from(groups.values()).sort((a, b) => b.dayNumber - a.dayNumber);
   }, [filteredEvolutions, admissionDate]);
 
+  // ID of the most recent validated evolution → marked as "Atual"
+  const currentEvolutionId = useMemo(() => {
+    const validated = evolutions
+      .filter(e => e.status === "validated")
+      .sort((a, b) => new Date(b.validated_at || b.created_at).getTime() - new Date(a.validated_at || a.created_at).getTime());
+    return validated[0]?.id || null;
+  }, [evolutions]);
+
+  // Auto-collapse all days except the most recent one (only on first render with data)
+  const [didAutoCollapse, setDidAutoCollapse] = useState(false);
+  React.useEffect(() => {
+    if (!didAutoCollapse && dayGroups.length > 1) {
+      const olderDays = dayGroups.slice(1).map(g => g.dayNumber);
+      setCollapsedDays(new Set(olderDays));
+      setDidAutoCollapse(true);
+    }
+  }, [dayGroups, didAutoCollapse]);
+
   if (evolutions.length === 0) return null;
 
   return (
@@ -306,12 +324,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
           const isEditable = isAuthor && evo.status === "draft";
           const data = getLocalOrOriginal(evo);
           const hasUnsaved = !!localEdits[evo.id];
+          const isCurrent = evo.id === currentEvolutionId;
 
           return (
             <div key={evo.id} className={cn(
               "rounded-xl border bg-card transition-all",
               evo.status === "suspended" && "opacity-60",
-              isExpanded ? "border-primary/30" : "border-border"
+              isCurrent && !isExpanded && "border-primary/50 shadow-sm shadow-primary/10",
+              isExpanded ? "border-primary/30" : !isCurrent && "border-border"
             )}>
               {/* Collapsed header */}
               <button
@@ -329,6 +349,12 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       <span className="text-xs font-semibold text-foreground">
                         {format(new Date(evo.created_at), "dd/MM/yyyy", { locale: ptBR })}
                       </span>
+                      {isCurrent && (
+                        <Badge className="text-[9px] px-1.5 py-0 h-4 bg-primary text-primary-foreground gap-0.5">
+                          <Star className="h-2.5 w-2.5 fill-current" />
+                          Atual
+                        </Badge>
+                      )}
                       {evo.status === "validated" && evo.validated_at && (
                         <span className="text-[10px] text-muted-foreground">
                           Validada em {format(new Date(evo.validated_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
