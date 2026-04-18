@@ -29,7 +29,7 @@ const TYPE_META: Record<
 > = {
   allergy: { label: "Alergia", Icon: ShieldAlert, tone: "text-destructive" },
   interaction: { label: "Interação grave", Icon: AlertTriangle, tone: "text-destructive" },
-  duplicate: { label: "Duplicidade", Icon: Layers, tone: "text-amber-600 dark:text-amber-400" },
+  duplicate: { label: "Duplicidade", Icon: Layers, tone: "text-warning" },
 };
 
 export function PreValidationAlertDialog({
@@ -64,7 +64,7 @@ export function PreValidationAlertDialog({
               </span>
             )}
             {mediumCount > 0 && (
-              <span className="ml-1 text-amber-600 dark:text-amber-400">
+              <span className="ml-1 text-warning">
                 {" • "}
                 {mediumCount} moderado{mediumCount > 1 ? "s" : ""}
               </span>
@@ -85,7 +85,7 @@ export function PreValidationAlertDialog({
                     "rounded-md border p-3 text-sm",
                     alert.severity === "high"
                       ? "border-destructive/40 bg-destructive/5"
-                      : "border-amber-300/40 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-950/20"
+                      : "border-warning/40 bg-warning/10"
                   )}
                 >
                   <div className="flex items-start gap-2">
