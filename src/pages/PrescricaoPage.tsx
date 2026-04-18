@@ -2431,6 +2431,17 @@ const PrescricaoPage = () => {
     return activeItems.length > 0 && activeItems.every(isItemValidatedToday);
   }, [items, isItemValidatedToday]);
 
+  // Itens ativos que NÃO foram revalidados após o corte 05:00 de hoje
+  const renewalPendingCount = useMemo(() => {
+    const activeItems = items.filter(i => i.status === 'active');
+    return activeItems.filter(i => !isItemValidatedToday(i)).length;
+  }, [items, isItemValidatedToday]);
+
+  const activeItemsCount = useMemo(
+    () => items.filter(i => i.status === 'active').length,
+    [items]
+  );
+
   // Password confirmation dialog state
   const [passwordConfirmOpen, setPasswordConfirmOpen] = useState(false);
   const [pendingValidationAction, setPendingValidationAction] = useState<
