@@ -2318,6 +2318,12 @@ const PrescricaoPage = () => {
   const initialDemoItems = useMemo(() => initialPatientBed ? getDemoPrescriptionItems(initialPatientBed) : [], []);
   const [items, setItems] = useState<PrescriptionItem[]>(initialDemoItems);
   const [activeTab, setActiveTab] = useState<PrescriptionCategory>(initialDemoItems.length > 0 ? 'medication' : 'nutrition');
+  // Sugestões de posologia para o último item adicionado
+  const [posologySuggestion, setPosologySuggestion] = useState<{
+    itemId: string;
+    name: string;
+    protocols: PosologyProtocol[];
+  } | null>(null);
   const [nonStdName, setNonStdName] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [freeRecommendation, setFreeRecommendation] = useState("");
