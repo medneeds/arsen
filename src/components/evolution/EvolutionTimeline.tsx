@@ -204,6 +204,24 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     return Array.from(groups.values()).sort((a, b) => b.dayNumber - a.dayNumber);
   }, [filteredEvolutions, admissionDate]);
 
+  // ID of the most recent validated evolution → marked as "Atual"
+  const currentEvolutionId = useMemo(() => {
+    const validated = evolutions
+      .filter(e => e.status === "validated")
+      .sort((a, b) => new Date(b.validated_at || b.created_at).getTime() - new Date(a.validated_at || a.created_at).getTime());
+    return validated[0]?.id || null;
+  }, [evolutions]);
+
+  // Auto-collapse all days except the most recent one (only on first render with data)
+  const [didAutoCollapse, setDidAutoCollapse] = useState(false);
+  React.useEffect(() => {
+    if (!didAutoCollapse && dayGroups.length > 1) {
+      const olderDays = dayGroups.slice(1).map(g => g.dayNumber);
+      setCollapsedDays(new Set(olderDays));
+      setDidAutoCollapse(true);
+    }
+  }, [dayGroups, didAutoCollapse]);
+
   if (evolutions.length === 0) return null;
 
   return (
