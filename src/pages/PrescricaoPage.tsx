@@ -2893,7 +2893,69 @@ const PrescricaoPage = () => {
     setSelectedIds(new Set());
   }, [selectedIds]);
 
-  const duplicateSelected = useCallback(() => {
+  // ===== Keyboard shortcuts =====
+  // Ctrl/⌘+K or "/" → focus search · Ctrl/⌘+D → duplicate selected
+  // Ctrl/⌘+Enter → validate prescription · Ctrl/⌘+R → repeat yesterday
+  // ? → show help
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTyping =
+        !!target && (
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable
+        );
+      const mod = e.ctrlKey || e.metaKey;
+
+      // Focus search: Ctrl/⌘+K (works even while typing) or "/" (only when not typing)
+      if (mod && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        globalSearchRef.current?.focus();
+        return;
+      }
+      if (!isTyping && e.key === "/") {
+        e.preventDefault();
+        globalSearchRef.current?.focus();
+        return;
+      }
+
+      if (isTyping) return;
+
+      // Help: ?
+      if (e.key === "?" || (e.shiftKey && e.key === "/")) {
+        e.preventDefault();
+        setShortcutsHelpOpen(true);
+        return;
+      }
+
+      // Duplicate selected: Ctrl/⌘+D
+      if (mod && e.key.toLowerCase() === "d") {
+        if (selectedIds.size > 0) {
+          e.preventDefault();
+          duplicateSelected();
+        }
+        return;
+      }
+
+      // Repeat yesterday: Ctrl/⌘+Y
+      if (mod && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        openRepeatDialog();
+        return;
+      }
+
+      // Validate all: Ctrl/⌘+Enter
+      if (mod && e.key === "Enter") {
+        e.preventDefault();
+        requestValidateAll();
+        return;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedIds, duplicateSelected, openRepeatDialog, requestValidateAll]);
     setItems(prev => {
       const duplicates = prev
         .filter(item => selectedIds.has(item.id))
