@@ -88,6 +88,7 @@ import { useQuickPrescriptionTemplates, type QuickPrescriptionTemplate, type Qui
 import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
 import { DoseCalculatorDialog, type DoseCalculatorResult } from "@/components/DoseCalculatorDialog";
 import { PreValidationAlertDialog } from "@/components/PreValidationAlertDialog";
+import { runClinicalAlertChecks, type ClinicalAlert } from "@/lib/clinicalAlertChecks";
 import { Star, Calculator } from "lucide-react";
 
 // --- Types ---
