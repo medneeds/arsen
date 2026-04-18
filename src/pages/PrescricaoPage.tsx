@@ -4269,6 +4269,49 @@ const PrescricaoPage = () => {
         patient={patient ? { name: patient.name, age: patient.age, bed: patient.bed, weight: patient.weight } : null}
       />
 
+      {/* Keyboard Shortcuts Help Dialog */}
+      <Dialog open={shortcutsHelpOpen} onOpenChange={setShortcutsHelpOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Zap className="h-4 w-4 text-primary" />
+              Atalhos de teclado · Prescrição
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Use atalhos para agilizar o fluxo. Funcionam em qualquer lugar da página.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1">
+            {[
+              { keys: ["Ctrl/⌘", "K"], desc: "Focar na busca de itens" },
+              { keys: ["/"], desc: "Focar na busca (alternativa)" },
+              { keys: ["Ctrl/⌘", "D"], desc: "Duplicar itens selecionados" },
+              { keys: ["Ctrl/⌘", "Y"], desc: "Repetir prescrição anterior" },
+              { keys: ["Ctrl/⌘", "Enter"], desc: "Validar prescrição" },
+              { keys: ["Esc"], desc: "Fechar diálogos" },
+              { keys: ["?"], desc: "Mostrar este painel" },
+            ].map((s) => (
+              <div key={s.desc} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-accent/40 transition-colors">
+                <span className="text-sm text-foreground">{s.desc}</span>
+                <div className="flex items-center gap-1">
+                  {s.keys.map((k, i) => (
+                    <span key={i} className="flex items-center gap-1">
+                      <kbd className="inline-flex items-center justify-center min-w-[28px] h-6 px-1.5 rounded border border-border bg-muted text-[11px] font-mono font-medium text-muted-foreground shadow-sm">
+                        {k}
+                      </kbd>
+                      {i < s.keys.length - 1 && <span className="text-muted-foreground text-xs">+</span>}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground text-center mt-1">
+            Atalhos não disparam enquanto você digita em campos de texto (exceto <kbd className="px-1 py-0.5 rounded border border-border bg-muted text-[10px] font-mono">Ctrl/⌘+K</kbd>).
+          </p>
+        </DialogContent>
+      </Dialog>
+
       {/* Repeat Previous Prescription Dialog */}
       <Dialog open={repeatDialogOpen} onOpenChange={setRepeatDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
