@@ -130,6 +130,7 @@ export function SectorSelector({ variant = "light" }: SectorSelectorProps) {
   };
 
   const allActive =
+    isGestor &&
     typeof window !== "undefined" &&
     localStorage.getItem("gestor_sector_filter") === "ALL";
 
