@@ -2296,6 +2296,8 @@ const PrescricaoPage = () => {
   const { currentHospital, currentState } = useHospital();
   const [searchParams] = useSearchParams();
   const { getCount: getFavoriteCount, trackUse: trackMedicationUse } = useMedicationFavorites();
+  const { state: sidebarState, isMobile: sidebarIsMobile } = useSidebar();
+  const sidebarCollapsed = sidebarState === "collapsed";
 
   // Initialize patient and items directly from URL params to avoid render delay
   const initialPatientName = searchParams.get('patientName') || '';
