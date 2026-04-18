@@ -518,6 +518,10 @@ function MedicationAutocomplete({
 }
 
 // --- Global Prescription Search with Category Filters ---
+// Categorias com pop-up dedicado disparam o pop-up ao clicar no chip;
+// demais categorias filtram a busca digitada (comportamento clássico).
+const POPUP_CATEGORIES: ReadonlyArray<PrescriptionCategory> = ['antimicrobial', 'high_alert', 'care'];
+
 export interface GlobalPrescriptionSearchHandle {
   focus: () => void;
 }
@@ -525,31 +529,44 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
   onAddItem: (med: MedicationEntry) => void;
   onAddNonStandard: (name: string) => void;
   getFavoriteCount?: (id: string) => number;
+  onCategoryPopup?: (cat: PrescriptionCategory) => void;
 }>(function GlobalPrescriptionSearch({
   onAddItem,
   onAddNonStandard,
   getFavoriteCount,
+  onCategoryPopup,
 }, ref) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
-  const [selectedCat, setSelectedCat] = useState<PrescriptionCategory | 'all' | 'favorites'>(TAB_ORDER[0]);
+  // 'all' = busca em todas; categoria normal = filtra busca; chips com pop-up disparam o pop-up sem alterar este estado
+  const [selectedCat, setSelectedCat] = useState<PrescriptionCategory | 'all'>('all');
   const inputRef = useRef<HTMLInputElement>(null);
   React.useImperativeHandle(ref, () => ({
     focus: () => inputRef.current?.focus(),
-  }), []);
+  }));
   const [freeText, setFreeText] = useState("");
   const favCount = getFavoriteCount ?? (() => 0);
 
   const allItems = useMemo(() => Object.values(ALL_ITEMS_BY_CATEGORY).flat(), []);
 
   const filtered = useMemo(() => {
-    // Busca SEMPRE global (todas as categorias) — os chips de categoria acima
-    // servem como atalho de contexto para o placeholder, mas não restringem
-    // os resultados. Assim qualquer item digitado é encontrado.
-    return fuzzySearch(query, allItems, favCount, 15);
-  }, [query, allItems, favCount]);
+    // Restringe a busca à categoria selecionada quando o usuário escolhe uma
+    // (categorias com pop-up nunca alteram selectedCat — sempre filtram global = 'all').
+    const pool = selectedCat === 'all'
+      ? allItems
+      : allItems.filter(m => m.category === selectedCat);
+    return fuzzySearch(query, pool, favCount, 15);
+  }, [query, selectedCat, allItems, favCount]);
 
-  const favTotal = useMemo(() => allItems.filter(m => favCount(m.id) > 0).length, [allItems, favCount]);
+  const handleChipClick = (cat: PrescriptionCategory) => {
+    if (POPUP_CATEGORIES.includes(cat) && onCategoryPopup) {
+      onCategoryPopup(cat);
+      return;
+    }
+    // Toggle: clicar de novo no chip ativo volta para "Todas"
+    setSelectedCat(prev => (prev === cat ? 'all' : cat));
+    inputRef.current?.focus();
+  };
 
   const handleSelect = (med: MedicationEntry) => {
     onAddItem(med);
@@ -560,25 +577,43 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
 
   return (
     <div className="space-y-2">
-      {/* Category filter chips */}
+      {/* Category chips — pop-up categories open dialogs; others filter the search */}
       <div className="flex items-center gap-1.5 flex-wrap">
+        {/* "Todas" reset chip */}
+        <button
+          type="button"
+          onClick={() => { setSelectedCat('all'); inputRef.current?.focus(); }}
+          className={cn(
+            "text-[10px] font-medium px-2.5 py-1 rounded-full border transition-all",
+            selectedCat === 'all'
+              ? "bg-foreground text-background border-foreground"
+              : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
+          )}
+        >
+          Todas
+        </button>
         {TAB_ORDER.map(cat => {
           const config = CATEGORY_CONFIG[cat];
           const Icon = CATEGORY_ICONS[config.icon] || Pill;
+          const isPopup = POPUP_CATEGORIES.includes(cat);
+          const active = selectedCat === cat;
           return (
             <button
               key={cat}
               type="button"
-              onClick={() => setSelectedCat(cat)}
+              onClick={() => handleChipClick(cat)}
+              title={isPopup ? `Abrir guia de ${config.label}` : `Filtrar busca por ${config.label}`}
               className={cn(
                 "text-[10px] font-medium px-2.5 py-1 rounded-full border transition-all flex items-center gap-1",
-                selectedCat === cat
+                active
                   ? cn("border-current", config.color, config.bgColor)
-                  : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
+                  : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60",
+                isPopup && "ring-1 ring-current/20"
               )}
             >
               <Icon className="h-3 w-3" />
               {config.label}
+              {isPopup && <span className="text-[8px] opacity-60 ml-0.5">▸</span>}
             </button>
           );
         })}
@@ -595,9 +630,9 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
             onFocus={() => setFocused(true)}
             onBlur={() => setTimeout(() => setFocused(false), 200)}
             placeholder={
-              selectedCat === 'all' ? "Buscar em todas as categorias (tolera erros de digitação)..."
-              : selectedCat === 'favorites' ? "Buscar nos seus favoritos..."
-              : `Buscar em ${CATEGORY_CONFIG[selectedCat]?.label.toLowerCase()}...`
+              selectedCat === 'all'
+                ? "Buscar em todas as categorias (tolera erros de digitação)..."
+                : `Buscar em ${CATEGORY_CONFIG[selectedCat]?.label.toLowerCase()}...`
             }
             className="pl-9 bg-background/60 border-border/50 h-9 text-sm focus:border-primary/50 transition-colors"
           />
