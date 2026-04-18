@@ -4008,111 +4008,130 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         </div>
       )}
 
-      {/* Prescription Items by Category */}
-      {TAB_ORDER.map(cat => {
-        const catItems = itemsByCategory[cat].filter(i => i.status === 'active');
-        if (catItems.length === 0) return null;
-        const config = CATEGORY_CONFIG[cat];
-        const simple = isSimple(cat);
+      {/* Prescription Items — Lista contínua sem subtítulos de categoria (Cuidados separados ao final) */}
+      {(() => {
+        // Itens contínuos seguindo TAB_ORDER, EXCETO 'care' (vai à parte ao final)
+        const continuousItems: PrescriptionItem[] = TAB_ORDER
+          .filter(cat => cat !== 'care')
+          .flatMap(cat => itemsByCategory[cat].filter(i => i.status === 'active'));
+        const careItems = itemsByCategory['care'].filter(i => i.status === 'active');
+
+        const renderItemRow = (item: PrescriptionItem, displayIndex: number, rowBg: string) => {
+          const hasPreparo = item.diluent || item.diluentVolume || item.accessType || item.infusionTime;
+          const slots = parseScheduleSlots(item.schedule);
+          return (
+            <tr key={item.id} style={{ pageBreakInside: 'avoid' }}>
+              <td style={{ ...cellStyle, width: '22px', textAlign: 'center', backgroundColor: rowBg, verticalAlign: 'top', color: '#64748b', fontSize: '7pt', fontWeight: 700 }}>
+                {displayIndex}
+              </td>
+              <td style={{ ...cellStyle, backgroundColor: rowBg }}>
+                <div style={{ fontSize: '7.5pt', lineHeight: 1.4, color: '#1e293b' }}>
+                  <span style={{ fontWeight: 800 }}>{item.name}</span>
+                  {item.presentation && item.presentation !== '-' && (
+                    <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: '7pt' }}> ({item.presentation})</span>
+                  )}
+                  {item.quantity && item.quantityUnit && (
+                    <span style={{ fontWeight: 600, color: '#475569', fontSize: '7pt' }}> — {item.quantity} {item.quantityUnit}</span>
+                  )}
+                </div>
+                <div style={{ fontSize: '7pt', color: '#475569', lineHeight: 1.3, marginTop: '1px' }}>
+                  {[
+                    item.dose && item.dose !== '-' ? item.dose : null,
+                    item.route && item.route !== '-' ? item.route : null,
+                    item.posology && item.posology !== '-' ? item.posology : null,
+                  ].filter(Boolean).join(' · ')}
+                  {item.flags.length > 0 && (
+                    <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#334155', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
+                  )}
+                  {item.isExtra && (
+                    <span style={{ fontSize: '5.5pt', fontWeight: 700, marginLeft: '3px', color: '#ea580c', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fed7aa' }}>EXTRA</span>
+                  )}
+                  {item.status === 'suspended' && (
+                    <span style={{ fontSize: '6pt', fontWeight: 700, color: '#fff', backgroundColor: '#dc2626', padding: '0.5px 4px', borderRadius: '2px', marginLeft: '3px' }}>SUSPENSO</span>
+                  )}
+                </div>
+                {hasPreparo && (
+                  <div style={{ fontSize: '6.5pt', color: '#94a3b8', lineHeight: 1.2, marginTop: '2px', paddingLeft: '8px', borderLeft: '1.5px solid #e2e8f0' }}>
+                    {[
+                      item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'Sem diluição' : null,
+                      item.accessType && item.accessType !== '-' ? item.accessType : null,
+                      item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
+                      item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
+                      item.infusionRate ? `${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
+                      item.concentration ? `Conc: ${item.concentration}` : null,
+                    ].filter(Boolean).join(' · ')}
+                  </div>
+                )}
+                {item.instructions && !hasPreparo && (
+                  <div style={{ fontSize: '6.5pt', color: '#94a3b8', lineHeight: 1.2, marginTop: '2px', paddingLeft: '8px', borderLeft: '1.5px solid #e2e8f0' }}>
+                    {item.instructions}
+                  </div>
+                )}
+              </td>
+              <td style={{ ...cellStyle, width: '140px', textAlign: 'center', verticalAlign: 'middle', fontFamily: 'monospace', fontSize: '7pt', fontWeight: 700, color: '#0c4a6e', backgroundColor: rowBg, whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>
+                {slots.length > 0 ? slots.join('  ') : '—'}
+              </td>
+            </tr>
+          );
+        };
 
         return (
-          <div key={cat} style={{ marginBottom: '3px', pageBreakInside: 'avoid' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <td style={sectionStyle} colSpan={3}>
-                    {config.label} ({catItems.length})
-                  </td>
-                </tr>
-                {!simple && (
-                  <tr>
-                    <td style={{ ...thStyle, width: '22px', textAlign: 'center', fontSize: '6pt' }}>Nº</td>
-                    <td style={thStyle}>Descrição</td>
-                    <td style={{ ...thStyle, width: '140px', textAlign: 'center', fontSize: '6.5pt' }}>Aprazamento</td>
-                  </tr>
-                )}
-              </thead>
-              <tbody>
-                {catItems.map((item, i) => {
-                  const rowBg = i % 2 === 0 ? '#ffffff' : '#fafbfc';
-                  const hasPreparo = item.diluent || item.diluentVolume || item.accessType || item.infusionTime;
-                  const slots = parseScheduleSlots(item.schedule);
+          <>
+            {continuousItems.length > 0 && (
+              <div style={{ marginBottom: '3px', pageBreakInside: 'avoid' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <td style={{ ...thStyle, width: '22px', textAlign: 'center', fontSize: '6pt' }}>Nº</td>
+                      <td style={thStyle}>Descrição</td>
+                      <td style={{ ...thStyle, width: '140px', textAlign: 'center', fontSize: '6.5pt' }}>Aprazamento</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {continuousItems.map((item, idx) => renderItemRow(item, idx + 1, idx % 2 === 0 ? '#ffffff' : '#fafbfc'))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-                  if (simple) {
-                    return (
-                      <tr key={item.id} style={{ pageBreakInside: 'avoid' }}>
-                        <td style={{ ...cellStyle, width: '22px', textAlign: 'center', backgroundColor: rowBg, color: '#64748b', fontSize: '7pt', fontWeight: 700 }}>
-                          {i + 1}
-                        </td>
-                        <td colSpan={2} style={{ ...cellStyle, backgroundColor: rowBg }}>
-                          <span style={{ fontWeight: 700, fontSize: '7.5pt' }}>{item.name}</span>
-                          {item.dose && item.dose !== '-' && <span style={{ color: '#475569', fontWeight: 500, fontSize: '7pt' }}> — {item.dose}</span>}
-                          {item.posology && item.posology !== '-' && <span style={{ color: '#94a3b8', fontWeight: 500, fontSize: '7pt' }}> — {item.posology}</span>}
-                        </td>
-                      </tr>
-                    );
-                  }
-
-                  return (
-                    <tr key={item.id} style={{ pageBreakInside: 'avoid' }}>
-                      <td style={{ ...cellStyle, width: '22px', textAlign: 'center', backgroundColor: rowBg, verticalAlign: 'top', color: '#64748b', fontSize: '7pt', fontWeight: 700 }}>
-                        {i + 1}
-                      </td>
-                      <td style={{ ...cellStyle, backgroundColor: rowBg }}>
-                        <div style={{ fontSize: '7.5pt', lineHeight: 1.4, color: '#1e293b' }}>
-                          <span style={{ fontWeight: 800 }}>{item.name}</span>
-                          {item.presentation && item.presentation !== '-' && (
-                            <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: '7pt' }}> ({item.presentation})</span>
-                          )}
-                          {item.quantity && item.quantityUnit && (
-                            <span style={{ fontWeight: 600, color: '#475569', fontSize: '7pt' }}> — {item.quantity} {item.quantityUnit}</span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: '7pt', color: '#475569', lineHeight: 1.3, marginTop: '1px' }}>
-                          {[
-                            item.dose && item.dose !== '-' ? item.dose : null,
-                            item.route && item.route !== '-' ? item.route : null,
-                            item.posology && item.posology !== '-' ? item.posology : null,
-                          ].filter(Boolean).join(' · ')}
-                          {item.flags.length > 0 && (
-                            <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#334155', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
-                          )}
-                          {item.isExtra && (
-                            <span style={{ fontSize: '5.5pt', fontWeight: 700, marginLeft: '3px', color: '#ea580c', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fed7aa' }}>EXTRA</span>
-                          )}
-                          {item.status === 'suspended' && (
-                            <span style={{ fontSize: '6pt', fontWeight: 700, color: '#fff', backgroundColor: '#dc2626', padding: '0.5px 4px', borderRadius: '2px', marginLeft: '3px' }}>SUSPENSO</span>
-                          )}
-                        </div>
-                        {hasPreparo && (
-                          <div style={{ fontSize: '6.5pt', color: '#94a3b8', lineHeight: 1.2, marginTop: '2px', paddingLeft: '8px', borderLeft: '1.5px solid #e2e8f0' }}>
-                            {[
-                              item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'Sem diluição' : null,
-                              item.accessType && item.accessType !== '-' ? item.accessType : null,
-                              item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
-                              item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
-                              item.infusionRate ? `${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
-                              item.concentration ? `Conc: ${item.concentration}` : null,
-                            ].filter(Boolean).join(' · ')}
-                          </div>
-                        )}
-                        {item.instructions && !hasPreparo && (
-                          <div style={{ fontSize: '6.5pt', color: '#94a3b8', lineHeight: 1.2, marginTop: '2px', paddingLeft: '8px', borderLeft: '1.5px solid #e2e8f0' }}>
-                            {item.instructions}
-                          </div>
-                        )}
-                      </td>
-                      <td style={{ ...cellStyle, width: '140px', textAlign: 'center', verticalAlign: 'middle', fontFamily: 'monospace', fontSize: '7pt', fontWeight: 700, color: '#0c4a6e', backgroundColor: rowBg, whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>
-                        {slots.length > 0 ? slots.join('  ') : '—'}
+            {careItems.length > 0 && (
+              <div style={{ marginTop: '8px', marginBottom: '3px', pageBreakInside: 'avoid' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <td style={sectionStyle} colSpan={2}>
+                        CUIDADOS ({careItems.length})
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
+                  <tbody>
+                    {careItems.map((item, i) => {
+                      const rowBg = i % 2 === 0 ? '#ffffff' : '#fafbfc';
+                      return (
+                        <tr key={item.id} style={{ pageBreakInside: 'avoid' }}>
+                          <td style={{ ...cellStyle, width: '22px', textAlign: 'center', backgroundColor: rowBg, color: '#64748b', fontSize: '7pt', fontWeight: 700 }}>
+                            {i + 1}
+                          </td>
+                          <td style={{ ...cellStyle, backgroundColor: rowBg }}>
+                            <span style={{ fontWeight: 700, fontSize: '7.5pt' }}>{item.name}</span>
+                            {item.dose && item.dose !== '-' && <span style={{ color: '#475569', fontWeight: 500, fontSize: '7pt' }}> — {item.dose}</span>}
+                            {item.posology && item.posology !== '-' && <span style={{ color: '#94a3b8', fontWeight: 500, fontSize: '7pt' }}> — {item.posology}</span>}
+                            {item.instructions && (
+                              <div style={{ fontSize: '6.5pt', color: '#94a3b8', lineHeight: 1.2, marginTop: '2px', paddingLeft: '8px', borderLeft: '1.5px solid #e2e8f0' }}>
+                                {item.instructions}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         );
-      })}
+      })()}
 
       {/* Signature */}
       <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', gap: '20px', pageBreakInside: 'avoid' }}>
