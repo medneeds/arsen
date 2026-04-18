@@ -87,6 +87,7 @@ import { useMedicationFavorites } from "@/hooks/useMedicationFavorites";
 import { useQuickPrescriptionTemplates, type QuickPrescriptionTemplate, type QuickTemplateItem } from "@/hooks/useQuickPrescriptionTemplates";
 import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
 import { DoseCalculatorDialog, type DoseCalculatorResult } from "@/components/DoseCalculatorDialog";
+import { PreValidationAlertDialog } from "@/components/PreValidationAlertDialog";
 import { Star, Calculator } from "lucide-react";
 
 // --- Types ---
