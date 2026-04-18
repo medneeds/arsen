@@ -335,32 +335,41 @@ function AlertChip({ icon: Icon, tone, label, value, count }: AlertChipProps) {
   );
 }
 
-interface CockpitAccordionProps {
-  value: string;
+interface CockpitSectionProps {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   count?: number;
   children: React.ReactNode;
 }
 
-function CockpitAccordion({ value, icon: Icon, title, count, children }: CockpitAccordionProps) {
+function CockpitSection({ icon: Icon, title, count, children }: CockpitSectionProps) {
   return (
-    <AccordionItem value={value} className="border-b border-border/60 last:border-b-0">
-      <AccordionTrigger className="py-2.5 hover:no-underline group">
-        <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-          <Icon className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-          <span>{title}</span>
-          {count !== undefined && count > 0 && (
-            <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-medium">
-              {count}
-            </Badge>
-          )}
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="pb-3 pt-0.5">
-        {children}
-      </AccordionContent>
-    </AccordionItem>
+    <section className="space-y-1.5">
+      <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+        <span>{title}</span>
+        {count !== undefined && count > 0 && (
+          <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-medium">
+            {count}
+          </Badge>
+        )}
+      </div>
+      <div className="pl-1">{children}</div>
+    </section>
+  );
+}
+
+function ItemList({ items, emptyMsg }: { items: string[]; emptyMsg: string }) {
+  if (items.length === 0) return <EmptyMsg>{emptyMsg}</EmptyMsg>;
+  return (
+    <ul className="space-y-1.5">
+      {items.map((item, i) => (
+        <li key={i} className="text-xs text-foreground leading-snug flex gap-1.5">
+          <ChevronRight className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+          <span className="preserve-case">{item}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
