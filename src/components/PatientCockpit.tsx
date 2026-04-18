@@ -599,3 +599,63 @@ function PendingStat({ label, value, tone }: { label: string; value: number; ton
     </div>
   );
 }
+
+/* ===== Identity rows ===== */
+
+function IdRow({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
+  const display = value || "—";
+  const handleCopy = () => {
+    if (!value) return;
+    navigator.clipboard.writeText(value).then(
+      () => toast.success(`${label} copiado`),
+      () => toast.error("Não foi possível copiar"),
+    );
+  };
+  return (
+    <div className="flex items-center justify-between gap-2 text-[11px] group">
+      <span className="text-muted-foreground uppercase tracking-wide text-[9.5px] font-semibold">
+        {label}
+      </span>
+      <div className="flex items-center gap-1 min-w-0">
+        <span
+          className={cn(
+            "text-foreground font-semibold truncate",
+            mono && "font-mono",
+            !value && "text-muted-foreground italic font-normal",
+          )}
+          title={display}
+        >
+          {display}
+        </span>
+        {value && (
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+            aria-label={`Copiar ${label}`}
+          >
+            <Copy className="h-2.5 w-2.5" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FullIdRow({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
+  return (
+    <div className="flex justify-between gap-2 text-[11px] preserve-case">
+      <span className="text-muted-foreground shrink-0">{label}:</span>
+      <span
+        className={cn(
+          "text-foreground text-right truncate",
+          mono && "font-mono",
+          !value && "text-muted-foreground italic",
+        )}
+        title={value || ""}
+      >
+        {value || "—"}
+      </span>
+    </div>
+  );
+}
