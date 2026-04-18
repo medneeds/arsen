@@ -3517,6 +3517,20 @@ const PrescricaoPage = () => {
               <Button variant="outline" size="sm" onClick={openRepeatDialog} disabled={!patient.name.trim()} className="h-6 text-[10px] gap-1">
                 <CopyPlus className="h-3 w-3" /> Repetir de ontem
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setQuickTemplatesDialogOpen(true)}
+                className="h-6 text-[10px] gap-1 border-amber-400/40 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+                title="Templates clínicos prontos (Sepse, Pós-op, DPOC...)"
+              >
+                <Zap className="h-3 w-3 text-amber-500" /> Templates
+                {quickTemplates.length > 0 && (
+                  <span className="ml-0.5 text-[9px] font-mono text-muted-foreground">
+                    ({quickTemplates.length})
+                  </span>
+                )}
+              </Button>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button variant="ghost" size="sm" onClick={() => setShortcutsHelpOpen(true)} className="h-6 px-1.5 text-[10px] gap-1 text-muted-foreground hover:text-foreground">
