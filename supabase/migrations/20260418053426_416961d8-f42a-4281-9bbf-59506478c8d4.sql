@@ -1,0 +1,2 @@
+ALTER TABLE public.exam_requests REPLICA IDENTITY FULL;
+ALTER TABLE public.culture_results REPLICA IDENTITY FULL;

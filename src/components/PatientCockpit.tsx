@@ -16,6 +16,7 @@ import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { useNavigate } from "react-router-dom";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useActivePrescription } from "@/hooks/useActivePrescription";
+import { usePatientPendingItems } from "@/hooks/usePatientPendingItems";
 import { formatDistanceToNow } from "date-fns";
 
 interface PatientCockpitProps {
@@ -81,6 +82,11 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
   const navigate = useNavigate();
   const { currentHospital } = useHospital();
   const { prescription } = useActivePrescription(
+    patient?.name || null,
+    currentHospital?.id || null,
+  );
+  const { summary: pendingSummary, items: pendingItems } = usePatientPendingItems(
+    patient?.id || null,
     patient?.name || null,
     currentHospital?.id || null,
   );
@@ -297,8 +303,45 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
               </CockpitSection>
             </TabsContent>
 
-            {/* ABA EXAMES: exames relevantes + dispositivos */}
+            {/* ABA EXAMES: realtime + relevantes + dispositivos */}
             <TabsContent value="exames" className="px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+              <CockpitSection icon={TestTubes} title="Atividade em tempo real">
+                <div className="grid grid-cols-2 gap-1.5 mb-2">
+                  <PendingStat label="Exames pendentes" value={pendingSummary.pendingExams} tone="warning" />
+                  <PendingStat label="Exames concluídos" value={pendingSummary.completedExams} tone="success" />
+                  <PendingStat label="Culturas pendentes" value={pendingSummary.pendingCultures} tone="warning" />
+                  <PendingStat label="Culturas positivas" value={pendingSummary.positiveCultures} tone="danger" />
+                </div>
+                {pendingItems.length === 0 ? (
+                  <EmptyMsg>Nenhum exame ou cultura registrado.</EmptyMsg>
+                ) : (
+                  <ul className="space-y-1">
+                    {pendingItems.slice(0, 5).map((it) => (
+                      <li
+                        key={`${it.kind}-${it.id}`}
+                        className="flex items-center justify-between gap-2 text-[11px] py-1 border-b border-border/50 last:border-0"
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {it.kind === "culture" ? (
+                            <ShieldAlert className={cn("h-3 w-3 shrink-0", it.critical ? "text-destructive" : "text-muted-foreground")} />
+                          ) : (
+                            <TestTubes className="h-3 w-3 shrink-0 text-muted-foreground" />
+                          )}
+                          <span className="truncate preserve-case">{it.label}</span>
+                        </div>
+                        <span className={cn(
+                          "text-[9px] uppercase font-semibold px-1 rounded shrink-0",
+                          it.status === "completed" && "text-emerald-700 dark:text-emerald-400",
+                          it.status === "pending" && "text-warning",
+                          it.critical && "text-destructive",
+                        )}>
+                          {it.status}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CockpitSection>
               <CockpitSection icon={TestTubes} title="Exames relevantes" count={exams.length}>
                 <ItemList items={exams} emptyMsg="Sem exames destacados." />
               </CockpitSection>
@@ -433,5 +476,19 @@ function PrescriptionStatusBadge({ status, signed }: { status: string; signed: b
       {cfg.label}
       {signed && <span className="opacity-80">• assinada</span>}
     </span>
+  );
+}
+
+function PendingStat({ label, value, tone }: { label: string; value: number; tone: "warning" | "success" | "danger" }) {
+  const toneClasses = {
+    warning: "bg-warning/10 text-warning border-warning/20",
+    success: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+    danger: "bg-destructive/10 text-destructive border-destructive/20",
+  }[tone];
+  return (
+    <div className={cn("rounded-md border px-2 py-1 flex items-center justify-between gap-1", toneClasses)}>
+      <span className="text-[9.5px] font-medium leading-tight uppercase tracking-tight">{label}</span>
+      <span className="text-sm font-bold tabular-nums">{value}</span>
+    </div>
   );
 }
