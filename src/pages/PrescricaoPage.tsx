@@ -3826,9 +3826,7 @@ const PrescricaoPage = () => {
         <Button variant="ghost" size="sm" onClick={handleNewPrescription} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
           <Plus className="h-3 w-3" /> Nova
         </Button>
-        <Button variant="ghost" size="sm" onClick={handleRenew} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
-          <RefreshCw className="h-3 w-3" /> Renovar
-        </Button>
+        {/* Botão "Renovar" removido — renovação é automática. */}
         <span className="w-px h-4 bg-border/60" />
         <Button
           variant="ghost"
