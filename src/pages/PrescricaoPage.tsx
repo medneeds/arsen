@@ -531,7 +531,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
 }, ref) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
-  const [selectedCat, setSelectedCat] = useState<PrescriptionCategory | 'all' | 'favorites'>('all');
+  const [selectedCat, setSelectedCat] = useState<PrescriptionCategory | 'all' | 'favorites'>(TAB_ORDER[0]);
   const inputRef = useRef<HTMLInputElement>(null);
   React.useImperativeHandle(ref, () => ({
     focus: () => inputRef.current?.focus(),
