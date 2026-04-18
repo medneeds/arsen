@@ -49,6 +49,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { ShiftRenewalAlert } from "@/components/ShiftRenewalAlert";
+import { PrescriptionDiffDialog } from "@/components/PrescriptionDiffDialog";
 import { useHospital } from "@/contexts/HospitalContext";
 import {
   DndContext,
@@ -2362,6 +2363,7 @@ const PrescricaoPage = () => {
   const [loadingList, setLoadingList] = useState(false);
   const [versionHistory, setVersionHistory] = useState<Array<{ id: string; version: number; status: string; created_at: string; digital_signature: DigitalSignature | null }>>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [diffDialogOpen, setDiffDialogOpen] = useState(false);
 
   // Keyboard shortcuts
   const globalSearchRef = useRef<GlobalPrescriptionSearchHandle | null>(null);
@@ -3655,15 +3657,27 @@ const PrescricaoPage = () => {
       {/* ===== VERSION HISTORY ===== */}
       {versionHistory.length > 1 && currentPrescriptionId && (
         <div className="rounded-xl border border-border bg-card p-3 print:hidden">
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="w-full flex items-center justify-between text-xs"
-          >
-            <span className="flex items-center gap-2 font-semibold text-muted-foreground tracking-wider">
+          <div className="w-full flex items-center justify-between text-xs gap-2">
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="flex items-center gap-2 font-semibold text-muted-foreground tracking-wider hover:text-foreground transition-colors"
+            >
               <History className="h-3.5 w-3.5" /> Histórico de versões ({versionHistory.length})
-            </span>
-            <span className="text-muted-foreground text-[10px]">{showHistory ? 'Ocultar' : 'Expandir'}</span>
-          </button>
+              <span className="text-muted-foreground/70 text-[10px] font-normal">
+                {showHistory ? '— ocultar' : '— expandir'}
+              </span>
+            </button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setDiffDialogOpen(true)}
+              disabled={versionHistory.length < 2}
+              className="h-6 text-[10px] gap-1 px-2"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Comparar versões
+            </Button>
+          </div>
           {showHistory && (
             <div className="mt-3 space-y-1">
               {versionHistory.map((v, i) => (
@@ -4805,6 +4819,14 @@ const PrescricaoPage = () => {
         scopeLabel={pendingValidationAction?.type === 'all' ? 'na prescrição' : 'neste item'}
         onCancel={handleAlertCancelled}
         onConfirm={handleAlertAcknowledged}
+      />
+
+      {/* Diff visual entre versões da prescrição */}
+      <PrescriptionDiffDialog
+        open={diffDialogOpen}
+        onOpenChange={setDiffDialogOpen}
+        versions={versionHistory}
+        defaultRightId={currentPrescriptionId ?? undefined}
       />
       </div>
     </div>
