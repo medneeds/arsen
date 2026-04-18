@@ -5,8 +5,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
-  Activity, AlertTriangle, ChevronRight,
-  ClipboardList, FileText, Heart, LogOut, Pill, Plus,
+  Activity, AlertTriangle, ArrowRight, ChevronRight,
+  ClipboardList, FileText, Heart, LogOut, Pill, Plus, Route,
   ShieldAlert, Stethoscope, TestTubes, TrendingUp, User2
 } from "lucide-react";
 import { differenceInDays, parseISO, isValid, format } from "date-fns";
@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useActivePrescription } from "@/hooks/useActivePrescription";
 import { usePatientPendingItems } from "@/hooks/usePatientPendingItems";
+import { usePatientMovements } from "@/hooks/usePatientMovements";
 import { formatDistanceToNow } from "date-fns";
 
 interface PatientCockpitProps {
@@ -86,6 +87,11 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
     currentHospital?.id || null,
   );
   const { summary: pendingSummary, items: pendingItems } = usePatientPendingItems(
+    patient?.id || null,
+    patient?.name || null,
+    currentHospital?.id || null,
+  );
+  const { movements } = usePatientMovements(
     patient?.id || null,
     patient?.name || null,
     currentHospital?.id || null,
@@ -282,7 +288,7 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
             <TabsTrigger value="resumo" className="text-[11px] h-7 px-1">Resumo</TabsTrigger>
             <TabsTrigger value="exames" className="text-[11px] h-7 px-1">Exames</TabsTrigger>
             <TabsTrigger value="condutas" className="text-[11px] h-7 px-1">Condutas</TabsTrigger>
-            <TabsTrigger value="alta" className="text-[11px] h-7 px-1">Alta</TabsTrigger>
+            <TabsTrigger value="trajeto" className="text-[11px] h-7 px-1">Trajeto</TabsTrigger>
           </TabsList>
 
           <ScrollArea className="flex-1 min-h-0 mt-1">
@@ -360,8 +366,8 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
               </CockpitSection>
             </TabsContent>
 
-            {/* ABA ALTA: previsão de alta */}
-            <TabsContent value="alta" className="px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+            {/* ABA TRAJETO: previsão de alta + movimentações realtime */}
+            <TabsContent value="trajeto" className="px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
               <CockpitSection icon={TrendingUp} title="Previsão de alta">
                 <div className="text-xs text-foreground preserve-case">
                   {patient.utiDischargePrediction && patient.utiDischargePrediction.length > 0
@@ -369,6 +375,51 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
                     : <EmptyMsg>Sem previsão definida.</EmptyMsg>}
                 </div>
               </CockpitSection>
+
+              <CockpitSection icon={Route} title="Movimentações" count={movements.length}>
+                {movements.length === 0 ? (
+                  <EmptyMsg>Nenhuma movimentação registrada.</EmptyMsg>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {movements.slice(0, 5).map((m) => {
+                      const origin = [m.patientSector, m.patientBed].filter(Boolean).join(" · ");
+                      const released = m.releaseStatus === "released";
+                      return (
+                        <li key={m.id} className="text-[11px] border-b border-border/40 last:border-0 pb-1.5 last:pb-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-semibold text-foreground uppercase tracking-wide text-[10px]">
+                              {m.movementType.replace(/_/g, " ")}
+                            </span>
+                            <span className={cn(
+                              "text-[9px] uppercase font-semibold px-1 rounded",
+                              released ? "text-emerald-700 dark:text-emerald-400" : "text-warning",
+                            )}>
+                              {released ? "liberado" : "pendente"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-muted-foreground preserve-case mt-0.5">
+                            <span className="truncate">{origin || "—"}</span>
+                            {m.destination && (
+                              <>
+                                <ArrowRight className="h-2.5 w-2.5 shrink-0" />
+                                <span className="truncate text-foreground">{m.destination}</span>
+                              </>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {(() => {
+                              try {
+                                return formatDistanceToNow(new Date(m.createdAt), { addSuffix: true, locale: ptBR });
+                              } catch { return "—"; }
+                            })()}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </CockpitSection>
+
               <Button
                 size="sm"
                 variant="outline"
