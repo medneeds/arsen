@@ -471,6 +471,7 @@ const MovimentacoesPage = () => {
             </ul>
           )}
         </div>
+        </div>
         {/* Patient Cockpit — fixed right sidebar */}
         <PatientCockpit patient={cockpitPatient} />
       </div>
