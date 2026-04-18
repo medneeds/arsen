@@ -82,6 +82,9 @@ import {
 import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
 import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/PsychotropicFormDialog";
 import { TevProtocolDialog } from "@/components/TevProtocolDialog";
+import { fuzzySearch } from "@/lib/fuzzySearch";
+import { useMedicationFavorites } from "@/hooks/useMedicationFavorites";
+import { Star } from "lucide-react";
 
 // --- Types ---
 interface DigitalSignature {
@@ -432,25 +435,21 @@ function MedicationAutocomplete({
   source,
   onSelect,
   placeholder,
+  getFavoriteCount,
 }: {
   source: MedicationEntry[];
   onSelect: (med: MedicationEntry) => void;
   placeholder: string;
+  getFavoriteCount?: (id: string) => number;
 }) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const favCount = getFavoriteCount ?? (() => 0);
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return source.slice(0, 8);
-    const q = normalizeSearch(query);
-    return source.filter(
-      (m) =>
-        normalizeSearch(m.name).includes(q) ||
-        normalizeSearch(m.presentation).includes(q) ||
-        (m.aliases && m.aliases.some(a => normalizeSearch(a).includes(q)))
-    ).slice(0, 10);
-  }, [query, source]);
+    return fuzzySearch(query, source, favCount, 10);
+  }, [query, source, favCount]);
 
   const handleSelect = (med: MedicationEntry) => {
     onSelect(med);
