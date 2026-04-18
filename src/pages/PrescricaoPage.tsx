@@ -3890,84 +3890,50 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== PATIENT HEADER ===== */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden print:hidden">
-        {/* Top bar: patient name + weight/allergies */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border/50 gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-              <span className="text-xs font-bold text-primary">{patient.name ? patient.name.charAt(0).toUpperCase() : '?'}</span>
-            </div>
-            <div className="min-w-0 patient-id">
-              <h2 className="text-sm font-semibold text-foreground leading-tight truncate">{patient.name || 'Paciente não identificado'}</h2>
-              <p className="text-[10px] text-muted-foreground">Leito {patient.bed || '—'} · {patient.unit || '—'}</p>
-            </div>
+      {/* ===== PRESCRIPTION REQUIREMENTS BAR (peso + alergias editáveis) ===== */}
+      {/* Identidade do paciente vive no PatientCockpit (rail direito). Aqui apenas os campos
+          editáveis indispensáveis para liberar a prescrição. */}
+      <div className="rounded-lg border border-border bg-card px-3 py-2 print:hidden">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex items-center gap-1.5">
+            <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
+            <Input
+              value={patient.weight}
+              onChange={(e) => updatePatient("weight", e.target.value)}
+              placeholder="Ex: 72"
+              className={cn(
+                "h-7 w-20 text-xs font-medium",
+                !patient.weight.trim() && "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
+              )}
+            />
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-1.5">
-              <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
-              <Input
-                value={patient.weight}
-                onChange={(e) => updatePatient("weight", e.target.value)}
-                placeholder="Ex: 72"
-                className={cn(
-                  "h-7 w-20 text-xs font-medium",
-                  !patient.weight.trim() && "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
-                )}
-              />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
-                <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
-              </Label>
-              <Input
-                value={patient.allergies}
-                onChange={(e) => updatePatient("allergies", e.target.value)}
-                placeholder="NDAM ou listar"
-                className={cn(
-                  "h-7 w-40 text-xs font-medium",
-                  !patient.allergies.trim()
-                    ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
-                    : "border-destructive/20"
-                )}
-              />
-            </div>
-            <span className="text-[10px] text-muted-foreground font-mono bg-background/60 px-2 py-0.5 rounded ml-1">{prescriptionDate}</span>
+          <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+            <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
+              <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
+            </Label>
+            <Input
+              value={patient.allergies}
+              onChange={(e) => updatePatient("allergies", e.target.value)}
+              placeholder="NDAM ou listar"
+              className={cn(
+                "h-7 flex-1 text-xs font-medium",
+                !patient.allergies.trim()
+                  ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
+                  : "border-destructive/20"
+              )}
+            />
           </div>
+          <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-2 py-0.5 rounded ml-auto">{prescriptionDate}</span>
         </div>
 
-        {/* Info grid - read-only fields */}
-        <div className="px-4 py-2.5">
-          <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs">
-            {[
-              { label: 'Nascimento', value: patient.birthDate ? format(new Date(patient.birthDate + 'T12:00:00'), 'dd/MM/yyyy') : '—' },
-              { label: 'Idade', value: patient.age || '—' },
-              { label: 'Sexo', value: patient.sex || '—' },
-              { label: 'Prontuário', value: patient.record || '—' },
-              { label: 'Cód. Atendimento', value: patient.encounterCode || '—' },
-              { label: 'Nome da Mãe', value: patient.motherName || '—' },
-              { label: 'Admissão Hospital', value: patient.admissionDate ? format(new Date(patient.admissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '—' },
-              { label: 'Admissão UTI', value: patient.utiAdmissionDate ? format(new Date(patient.utiAdmissionDate + 'T12:00:00'), 'dd/MM/yyyy') : '—' },
-              { label: 'Unidade', value: patient.unit || '—' },
-              { label: 'Endereço', value: patient.address ? `${patient.address}${patient.city ? ` — ${patient.city}` : ''}` : '—' },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex items-center gap-1.5">
-                <span className="text-muted-foreground">{label}:</span>
-                <span className="font-medium text-foreground">{value}</span>
-              </div>
-            ))}
+        {(!patient.weight.trim() || !patient.allergies.trim()) && (
+          <div className="flex items-center gap-2 px-3 py-1.5 mt-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            <p className="text-[11px] font-medium">
+              Preencha {!patient.weight.trim() && !patient.allergies.trim() ? 'o peso e as alergias' : !patient.weight.trim() ? 'o peso' : 'as alergias'} para habilitar a prescrição.
+            </p>
           </div>
-
-          {/* Missing fields warning */}
-          {(!patient.weight.trim() || !patient.allergies.trim()) && (
-            <div className="flex items-center gap-2 px-3 py-1.5 mt-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              <p className="text-[11px] font-medium">
-                Preencha {!patient.weight.trim() && !patient.allergies.trim() ? 'o peso e as alergias' : !patient.weight.trim() ? 'o peso' : 'as alergias'} para habilitar a prescrição.
-              </p>
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Items summary strip below patient header */}
         {items.length > 0 && (
