@@ -418,3 +418,20 @@ function ItemList({ items, emptyMsg }: { items: string[]; emptyMsg: string }) {
 function EmptyMsg({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] text-muted-foreground italic preserve-case">{children}</p>;
 }
+
+function PrescriptionStatusBadge({ status, signed }: { status: string; signed: boolean }) {
+  const map: Record<string, { label: string; className: string }> = {
+    draft: { label: "Rascunho", className: "bg-muted text-muted-foreground" },
+    pending_validation: { label: "Aguard. validação", className: "bg-warning/15 text-warning" },
+    validated: { label: "Validada", className: "bg-primary/10 text-primary" },
+    suspended: { label: "Suspensa", className: "bg-destructive/10 text-destructive" },
+    finalized: { label: "Finalizada", className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+  };
+  const cfg = map[status] || map.draft;
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
+      {cfg.label}
+      {signed && <span className="opacity-80">• assinada</span>}
+    </span>
+  );
+}
