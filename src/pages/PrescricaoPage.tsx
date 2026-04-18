@@ -4128,6 +4128,135 @@ const PrescricaoPage = () => {
         patient={patient ? { name: patient.name, age: patient.age, bed: patient.bed, weight: patient.weight } : null}
       />
 
+      {/* Repeat Previous Prescription Dialog */}
+      <Dialog open={repeatDialogOpen} onOpenChange={setRepeatDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CopyPlus className="h-5 w-5 text-primary" />
+              Repetir prescrição anterior
+            </DialogTitle>
+            <DialogDescription>
+              {repeatLoading
+                ? "Buscando última prescrição do paciente..."
+                : repeatSourceMeta
+                  ? `Última prescrição encontrada: v${repeatSourceMeta.version} — ${repeatSourceMeta.date}. Selecione os itens que deseja repetir.`
+                  : "Nenhuma prescrição anterior encontrada para este paciente."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {repeatLoading ? (
+            <div className="flex-1 flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : repeatSourceItems.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-8 gap-2 text-center">
+              <ClipboardList className="h-10 w-10 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">
+                Não há itens ativos em prescrições anteriores deste paciente.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-2 px-1">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="repeat-select-all"
+                    checked={repeatSelectedIds.size === repeatSourceItems.length}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setRepeatSelectedIds(new Set(repeatSourceItems.map(i => i.id)));
+                      } else {
+                        setRepeatSelectedIds(new Set());
+                      }
+                    }}
+                  />
+                  <label htmlFor="repeat-select-all" className="text-xs font-medium cursor-pointer">
+                    Selecionar todos ({repeatSelectedIds.size}/{repeatSourceItems.length})
+                  </label>
+                </div>
+                <span className="text-[10px] text-muted-foreground">
+                  Itens copiados sem validação — você revalida no fluxo padrão
+                </span>
+              </div>
+
+              <div className="flex-1 overflow-y-auto border border-border rounded-lg divide-y divide-border">
+                {repeatSourceItems.map(item => {
+                  const checked = repeatSelectedIds.has(item.id);
+                  const catConfig = CATEGORY_CONFIG[item.category];
+                  return (
+                    <div
+                      key={item.id}
+                      className={cn(
+                        "flex items-start gap-3 p-3 cursor-pointer hover:bg-accent/40 transition-colors",
+                        checked && "bg-primary/5"
+                      )}
+                      onClick={() => {
+                        setRepeatSelectedIds(prev => {
+                          const n = new Set(prev);
+                          if (n.has(item.id)) n.delete(item.id);
+                          else n.add(item.id);
+                          return n;
+                        });
+                      }}
+                    >
+                      <Checkbox checked={checked} className="mt-0.5" onClick={(e) => e.stopPropagation()} onCheckedChange={() => {
+                        setRepeatSelectedIds(prev => {
+                          const n = new Set(prev);
+                          if (n.has(item.id)) n.delete(item.id);
+                          else n.add(item.id);
+                          return n;
+                        });
+                      }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {catConfig && (
+                            <Badge variant="outline" className="text-[9px] h-4 px-1.5">
+                              {catConfig.label}
+                            </Badge>
+                          )}
+                          <span className="text-sm font-semibold text-foreground">{item.name}</span>
+                          {item.highAlert && (
+                            <Badge variant="destructive" className="text-[9px] h-4 px-1.5 gap-1">
+                              <AlertTriangle className="h-2.5 w-2.5" /> Alta vigilância
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
+                          {item.presentation && <span>{item.presentation}</span>}
+                          {item.dose && <span>· {item.dose}</span>}
+                          {item.route && <span>· {item.route}</span>}
+                          {item.posology && <span>· {item.posology}</span>}
+                        </div>
+                        {item.instructions && (
+                          <div className="text-[10px] text-muted-foreground/80 mt-1 italic line-clamp-2">
+                            {item.instructions}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setRepeatDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={applyRepeatedItems}
+              disabled={repeatLoading || repeatSelectedIds.size === 0}
+              className="gap-2"
+            >
+              <CopyPlus className="h-4 w-4" />
+              Adicionar {repeatSelectedIds.size > 0 ? `${repeatSelectedIds.size} item(ns)` : ''} à prescrição
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Password Confirmation Dialog (validação) */}
       <PasswordConfirmDialog
         open={passwordConfirmOpen}
