@@ -2893,9 +2893,20 @@ const PrescricaoPage = () => {
     setSelectedIds(new Set());
   }, [selectedIds]);
 
+  const duplicateSelected = useCallback(() => {
+    setItems(prev => {
+      const duplicates = prev
+        .filter(item => selectedIds.has(item.id))
+        .map(item => ({ ...item, id: crypto.randomUUID(), status: 'active' as const, suspensionReason: undefined, suspendedAt: undefined }));
+      return [...prev, ...duplicates];
+    });
+    toast.success(`${selectedIds.size} item(ns) duplicado(s)`);
+    setSelectedIds(new Set());
+  }, [selectedIds]);
+
   // ===== Keyboard shortcuts =====
   // Ctrl/⌘+K or "/" → focus search · Ctrl/⌘+D → duplicate selected
-  // Ctrl/⌘+Enter → validate prescription · Ctrl/⌘+R → repeat yesterday
+  // Ctrl/⌘+Enter → validate prescription · Ctrl/⌘+Y → repeat yesterday
   // ? → show help
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -2956,15 +2967,6 @@ const PrescricaoPage = () => {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [selectedIds, duplicateSelected, openRepeatDialog, requestValidateAll]);
-    setItems(prev => {
-      const duplicates = prev
-        .filter(item => selectedIds.has(item.id))
-        .map(item => ({ ...item, id: crypto.randomUUID(), status: 'active' as const, suspensionReason: undefined, suspendedAt: undefined }));
-      return [...prev, ...duplicates];
-    });
-    toast.success(`${selectedIds.size} item(ns) duplicado(s)`);
-    setSelectedIds(new Set());
-  }, [selectedIds]);
 
   // Drag & drop
   const handleDragEnd = useCallback((event: DragEndEvent) => {
