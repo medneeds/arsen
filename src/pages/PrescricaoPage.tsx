@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { useSidebar } from "@/components/ui/sidebar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -2295,6 +2296,8 @@ const PrescricaoPage = () => {
   const { currentHospital, currentState } = useHospital();
   const [searchParams] = useSearchParams();
   const { getCount: getFavoriteCount, trackUse: trackMedicationUse } = useMedicationFavorites();
+  const { state: sidebarState, isMobile: sidebarIsMobile } = useSidebar();
+  const sidebarCollapsed = sidebarState === "collapsed";
 
   // Initialize patient and items directly from URL params to avoid render delay
   const initialPatientName = searchParams.get('patientName') || '';
@@ -3825,7 +3828,16 @@ const PrescricaoPage = () => {
       <div aria-hidden className="h-14 print:hidden" />
       {/* ===== ACTION TOOLBAR — fixa no rodapé via Portal (escapa de ancestrais com transform/overflow) ===== */}
       {typeof document !== "undefined" && createPortal(
-        <div className="fixed bottom-0 left-0 right-0 md:left-[20rem] z-[60] px-3 py-2 flex items-center justify-center gap-1 flex-wrap border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 print:hidden shadow-[0_-2px_12px_-4px_hsl(var(--foreground)/0.12)]">
+        <div
+          style={{
+            left: sidebarIsMobile
+              ? 0
+              : sidebarCollapsed
+                ? "var(--sidebar-width-icon)"
+                : "var(--sidebar-width)",
+          }}
+          className="fixed bottom-0 right-0 z-[60] px-3 py-2 flex items-center justify-center gap-1 flex-wrap border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 print:hidden shadow-[0_-2px_12px_-4px_hsl(var(--foreground)/0.12)] transition-[left] duration-200 ease-linear"
+        >
           <Button variant="ghost" size="sm" onClick={handleNewPrescription} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
             <Plus className="h-3 w-3" /> Nova
           </Button>
