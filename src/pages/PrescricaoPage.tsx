@@ -87,6 +87,8 @@ import { useMedicationFavorites } from "@/hooks/useMedicationFavorites";
 import { useQuickPrescriptionTemplates, type QuickPrescriptionTemplate, type QuickTemplateItem } from "@/hooks/useQuickPrescriptionTemplates";
 import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
 import { DoseCalculatorDialog, type DoseCalculatorResult } from "@/components/DoseCalculatorDialog";
+import { PreValidationAlertDialog } from "@/components/PreValidationAlertDialog";
+import { runClinicalAlertChecks, type ClinicalAlert } from "@/lib/clinicalAlertChecks";
 import { Star, Calculator } from "lucide-react";
 
 // --- Types ---
@@ -2483,33 +2485,64 @@ const PrescricaoPage = () => {
     }
   }, []);
 
-  // Solicita validação em bloco — pula senha se sessão estiver ativa
+  // === Pré-validação clínica: alertas (alergia / interações graves / duplicidade) ===
+  // O médico é alertado mas NÃO bloqueado: pode confirmar ciência e prosseguir.
+  const [alertDialogOpen, setAlertDialogOpen] = useState(false);
+  const [pendingAlerts, setPendingAlerts] = useState<ClinicalAlert[]>([]);
+
+  // Continua o fluxo de validação após (eventual) checagem de alertas:
+  // se sessão ativa → aplica direto; senão → pede senha.
+  const proceedValidation = useCallback((action: { type: 'all' } | { type: 'item'; itemId: string }) => {
+    if (isValidationSessionActive) {
+      applyValidation(action);
+      setValidationSessionExpiresAt(Date.now() + VALIDATION_SESSION_MS);
+      return;
+    }
+    setPendingValidationAction(action);
+    setPasswordConfirmOpen(true);
+  }, [isValidationSessionActive, applyValidation, VALIDATION_SESSION_MS]);
+
+  // Solicita validação em bloco — checa alertas antes; pode pular senha se sessão ativa
   const requestValidateAll = useCallback(() => {
     const activeItems = items.filter(i => i.status === 'active');
     if (activeItems.length === 0) {
       toast.error("Nenhum item ativo para validar");
       return;
     }
-    if (isValidationSessionActive) {
-      applyValidation({ type: 'all' });
-      // Renova a janela de 20min a cada validação dentro da sessão
-      setValidationSessionExpiresAt(Date.now() + VALIDATION_SESSION_MS);
+    const alerts = runClinicalAlertChecks(items, patient.allergies);
+    if (alerts.length > 0) {
+      setPendingAlerts(alerts);
+      setPendingValidationAction({ type: 'all' });
+      setAlertDialogOpen(true);
       return;
     }
-    setPendingValidationAction({ type: 'all' });
-    setPasswordConfirmOpen(true);
-  }, [items, isValidationSessionActive, applyValidation, VALIDATION_SESSION_MS]);
+    proceedValidation({ type: 'all' });
+  }, [items, patient.allergies, proceedValidation]);
 
-  // Solicita validação individual — pula senha se sessão estiver ativa
+  // Solicita validação individual — checa alertas relativos ao item
   const requestValidateItem = useCallback((id: string) => {
-    if (isValidationSessionActive) {
-      applyValidation({ type: 'item', itemId: id });
-      setValidationSessionExpiresAt(Date.now() + VALIDATION_SESSION_MS);
+    const alerts = runClinicalAlertChecks(items, patient.allergies, { onlyItemId: id });
+    if (alerts.length > 0) {
+      setPendingAlerts(alerts);
+      setPendingValidationAction({ type: 'item', itemId: id });
+      setAlertDialogOpen(true);
       return;
     }
-    setPendingValidationAction({ type: 'item', itemId: id });
-    setPasswordConfirmOpen(true);
-  }, [isValidationSessionActive, applyValidation, VALIDATION_SESSION_MS]);
+    proceedValidation({ type: 'item', itemId: id });
+  }, [items, patient.allergies, proceedValidation]);
+
+  // Após o médico confirmar ciência dos alertas → continua o fluxo
+  const handleAlertAcknowledged = useCallback(() => {
+    setAlertDialogOpen(false);
+    setPendingAlerts([]);
+    if (pendingValidationAction) proceedValidation(pendingValidationAction);
+  }, [pendingValidationAction, proceedValidation]);
+
+  const handleAlertCancelled = useCallback(() => {
+    setAlertDialogOpen(false);
+    setPendingAlerts([]);
+    setPendingValidationAction(null);
+  }, []);
 
   // Executa a validação após confirmação de senha — abre/renova a sessão de 20min
   const executeValidation = useCallback(() => {
@@ -4745,6 +4778,15 @@ const PrescricaoPage = () => {
         }
         actionLabel="Validar"
         onConfirmed={executeValidation}
+      />
+
+      {/* Pre-Validation Clinical Alerts (alergia, interação grave, duplicidade) */}
+      <PreValidationAlertDialog
+        open={alertDialogOpen}
+        alerts={pendingAlerts}
+        scopeLabel={pendingValidationAction?.type === 'all' ? 'na prescrição' : 'neste item'}
+        onCancel={handleAlertCancelled}
+        onConfirm={handleAlertAcknowledged}
       />
       </div>
     </div>
