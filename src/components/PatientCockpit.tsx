@@ -85,6 +85,7 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
   const { namesHidden } = usePrivacy();
   const navigate = useNavigate();
   const { currentHospital } = useHospital();
+  const [showFullId, setShowFullId] = useState(false);
   const { prescription } = useActivePrescription(
     patient?.name || null,
     currentHospital?.id || null,
@@ -95,6 +96,11 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
     currentHospital?.id || null,
   );
   const { movements } = usePatientMovements(
+    patient?.id || null,
+    patient?.name || null,
+    currentHospital?.id || null,
+  );
+  const { prontuario, atendimento, registry } = usePatientIdentifiers(
     patient?.id || null,
     patient?.name || null,
     currentHospital?.id || null,
