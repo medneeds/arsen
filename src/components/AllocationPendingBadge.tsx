@@ -80,11 +80,18 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
 
   const Icon = config.icon;
 
-  // Check if this is a UTI sector allocation
+  // SAPS 3 é exclusivo para UTI e UCI.
   const isUtiAllocation = () => {
     if (!patientRequest) return false;
-    const utiSectors = ["UTI 1", "UTI 2", "red", "yellow"];
-    return utiSectors.includes(patientRequest.requested_sector) || patientRequest.department === "UTI";
+    const criticalSectors = ["UTI 1", "UTI 2", "UCI 1", "UCI 2", "red", "yellow", "blue", "outside"];
+    const sector = patientRequest.requested_sector || "";
+    return (
+      criticalSectors.includes(sector) ||
+      patientRequest.department === "UTI" ||
+      patientRequest.department === "UCI" ||
+      /^UTI\b/i.test(sector) ||
+      /^UCI\b/i.test(sector)
+    );
   };
 
   const handleApprove = async () => {
