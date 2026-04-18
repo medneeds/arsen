@@ -3821,8 +3821,8 @@ const PrescricaoPage = () => {
         </div>
       )}
 
-      {/* ===== ACTION TOOLBAR ===== */}
-      <div className="flex items-center gap-1 flex-wrap rounded-lg border border-border bg-card/80 px-2 py-1.5 print:hidden">
+      {/* ===== ACTION TOOLBAR — fixa na borda inferior do corpo da prescrição ===== */}
+      <div className="sticky bottom-0 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 flex items-center gap-1 flex-wrap border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 print:hidden shadow-[0_-2px_8px_-4px_hsl(var(--foreground)/0.08)]">
         <Button variant="ghost" size="sm" onClick={handleNewPrescription} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
           <Plus className="h-3 w-3" /> Nova
         </Button>
