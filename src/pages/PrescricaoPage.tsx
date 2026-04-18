@@ -654,7 +654,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
             value={freeText}
             onChange={(e) => setFreeText(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && freeText.trim()) { onAddNonStandard(freeText.trim()); setFreeText(''); } }}
-            placeholder="Ou adicionar item não padronizado..."
+            placeholder="Ou adicionar item não padrão..."
             className="bg-background/60 border-border/50 h-8 text-xs flex-1"
           />
           <Button variant="outline" size="sm" onClick={() => { if (freeText.trim()) { onAddNonStandard(freeText.trim()); setFreeText(''); } }} disabled={!freeText.trim()} className="h-8 px-2">
@@ -4084,7 +4084,7 @@ const PrescricaoPage = () => {
                             value={activeTab === 'nonstandard' ? nonStdName : ''}
                             onChange={(e) => { setActiveTab('nonstandard'); setNonStdName(e.target.value); }}
                             onKeyDown={(e) => { if (e.key === "Enter") addNonStandard(); }}
-                            placeholder="Adicionar item não padronizado..."
+                            placeholder="Adicionar item não padrão..."
                             className="bg-background/60 border-border/50 h-7 text-xs"
                           />
                           <Button variant="outline" size="sm" onClick={addNonStandard} disabled={!nonStdName.trim()} className="h-7 px-2">

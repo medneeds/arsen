@@ -40,7 +40,7 @@ export const CATEGORY_CONFIG: Record<PrescriptionCategory, {
   inhalation:    { label: 'Inalação',          icon: 'Wind',           color: 'text-cyan-500',     bgColor: 'bg-cyan-500/10' },
   hemotherapy:   { label: 'Hemoterapia',       icon: 'TestTube',       color: 'text-rose-500',     bgColor: 'bg-rose-500/10' },
   care:          { label: 'Cuidados',          icon: 'ClipboardList',  color: 'text-amber-500',    bgColor: 'bg-amber-500/10' },
-  nonstandard:   { label: 'Não Padronizado',   icon: 'FileText',       color: 'text-gray-500',     bgColor: 'bg-gray-500/10' },
+  nonstandard:   { label: 'Não Padrão',        icon: 'FileText',       color: 'text-gray-500',     bgColor: 'bg-gray-500/10' },
 };
 
 export const PRESCRIPTION_FLAGS = [
