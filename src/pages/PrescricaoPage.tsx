@@ -474,26 +474,30 @@ function MedicationAutocomplete({
       </div>
       {focused && filtered.length > 0 && (
         <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-border bg-popover shadow-lg max-h-64 overflow-y-auto">
-          {filtered.map((med) => (
-            <button
-              key={med.id}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => handleSelect(med)}
-              className="w-full px-3 py-2.5 text-left hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 border-b border-border/30 last:border-0"
-            >
-              <div className="min-w-0">
-                <span className="text-sm font-medium text-foreground block truncate">
-                  {med.name}
-                  {med.highAlert && <AlertTriangle className="inline h-3 w-3 ml-1 text-red-500" />}
-                </span>
-                <span className="text-xs text-muted-foreground block truncate">{med.presentation}</span>
-              </div>
-              {med.defaultRoute !== '-' && (
-                <Badge variant="outline" className="text-[10px] shrink-0">{med.defaultRoute}</Badge>
-              )}
-            </button>
-          ))}
+          {filtered.map((med) => {
+            const fav = favCount(med.id);
+            return (
+              <button
+                key={med.id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => handleSelect(med)}
+                className="w-full px-3 py-2.5 text-left hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 border-b border-border/30 last:border-0"
+              >
+                <div className="min-w-0">
+                  <span className="text-sm font-medium text-foreground block truncate">
+                    {fav > 0 && <Star className="inline h-3 w-3 mr-1 fill-amber-400 text-amber-400" />}
+                    {med.name}
+                    {med.highAlert && <AlertTriangle className="inline h-3 w-3 ml-1 text-red-500" />}
+                  </span>
+                  <span className="text-xs text-muted-foreground block truncate">{med.presentation}</span>
+                </div>
+                {med.defaultRoute !== '-' && (
+                  <Badge variant="outline" className="text-[10px] shrink-0">{med.defaultRoute}</Badge>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
