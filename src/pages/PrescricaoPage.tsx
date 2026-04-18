@@ -679,7 +679,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
       )}
     </div>
   );
-}
+});
 
 
 function FlagToggle({ flag, active, onToggle }: {
