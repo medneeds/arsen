@@ -2,16 +2,10 @@ import { Patient } from "@/types/patient";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  Activity, AlertTriangle, BedDouble, Calendar, ChevronRight,
+  Activity, AlertTriangle, ChevronRight,
   ClipboardList, FileText, Heart, LogOut, Pill, Plus,
   ShieldAlert, Stethoscope, TestTubes, TrendingUp, User2
 } from "lucide-react";
@@ -234,134 +228,74 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
           )}
         </div>
 
-        {/* ===== ZONA 4: ACORDEÕES ===== */}
-        <ScrollArea className="flex-1 min-h-0">
-          <Accordion type="multiple" defaultValue={["diagnoses"]} className="px-3 py-2">
-            <CockpitAccordion
-              value="diagnoses"
-              icon={Stethoscope}
-              title="Diagnósticos"
-              count={diagnoses.length}
-            >
-              {diagnoses.length > 0 ? (
-                <ul className="space-y-1.5">
-                  {diagnoses.map((d, i) => (
-                    <li key={i} className="text-xs text-foreground leading-snug flex gap-1.5">
-                      <ChevronRight className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
-                      <span className="preserve-case">{d}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <EmptyMsg>Sem diagnósticos registrados.</EmptyMsg>
-              )}
-            </CockpitAccordion>
+        {/* ===== ZONA 4: ABAS OTIMIZADAS ===== */}
+        <Tabs defaultValue="resumo" className="flex-1 min-h-0 flex flex-col">
+          <TabsList className="mx-3 mt-2 grid grid-cols-4 h-8 p-0.5">
+            <TabsTrigger value="resumo" className="text-[11px] h-7 px-1">Resumo</TabsTrigger>
+            <TabsTrigger value="exames" className="text-[11px] h-7 px-1">Exames</TabsTrigger>
+            <TabsTrigger value="condutas" className="text-[11px] h-7 px-1">Condutas</TabsTrigger>
+            <TabsTrigger value="alta" className="text-[11px] h-7 px-1">Alta</TabsTrigger>
+          </TabsList>
 
-            <CockpitAccordion
-              value="history"
-              icon={FileText}
-              title="Antecedentes"
-              count={medHistory.length}
-            >
-              {medHistory.length > 0 ? (
-                <ul className="space-y-1.5">
-                  {medHistory.map((d, i) => (
-                    <li key={i} className="text-xs text-foreground leading-snug flex gap-1.5">
-                      <ChevronRight className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
-                      <span className="preserve-case">{d}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <EmptyMsg>Nenhum antecedente registrado.</EmptyMsg>
-              )}
-            </CockpitAccordion>
+          <ScrollArea className="flex-1 min-h-0 mt-1">
+            {/* ABA RESUMO: diagnósticos + antecedentes + responsável */}
+            <TabsContent value="resumo" className="px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+              <CockpitSection icon={Stethoscope} title="Diagnósticos" count={diagnoses.length}>
+                <ItemList items={diagnoses} emptyMsg="Sem diagnósticos registrados." />
+              </CockpitSection>
+              <CockpitSection icon={FileText} title="Antecedentes" count={medHistory.length}>
+                <ItemList items={medHistory} emptyMsg="Nenhum antecedente registrado." />
+              </CockpitSection>
+              <CockpitSection icon={User2} title="Responsável médico">
+                <div className="text-xs text-foreground preserve-case">
+                  {patient.medicalResponsibility?.leaderNames || (
+                    <EmptyMsg>Sem responsável definido.</EmptyMsg>
+                  )}
+                </div>
+              </CockpitSection>
+            </TabsContent>
 
-            <CockpitAccordion
-              value="exams"
-              icon={TestTubes}
-              title="Exames relevantes"
-              count={exams.length}
-            >
-              {exams.length > 0 ? (
-                <ul className="space-y-1.5">
-                  {exams.map((e, i) => (
-                    <li key={i} className="text-xs text-foreground leading-snug flex gap-1.5">
-                      <ChevronRight className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
-                      <span className="preserve-case">{e}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <EmptyMsg>Sem exames destacados.</EmptyMsg>
-              )}
-            </CockpitAccordion>
+            {/* ABA EXAMES: exames relevantes + dispositivos */}
+            <TabsContent value="exames" className="px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+              <CockpitSection icon={TestTubes} title="Exames relevantes" count={exams.length}>
+                <ItemList items={exams} emptyMsg="Sem exames destacados." />
+              </CockpitSection>
+              <CockpitSection icon={Activity} title="Dispositivos" count={devices.length}>
+                <ItemList items={devices} emptyMsg="Sem dispositivos invasivos registrados." />
+              </CockpitSection>
+            </TabsContent>
 
-            <CockpitAccordion
-              value="conducts"
-              icon={Heart}
-              title="Condutas do dia"
-              count={conducts.length}
-            >
-              {conducts.length > 0 ? (
-                <ul className="space-y-1.5">
-                  {conducts.map((c, i) => (
-                    <li key={i} className="text-xs text-foreground leading-snug flex gap-1.5">
-                      <ChevronRight className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
-                      <span className="preserve-case">{c}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <EmptyMsg>Nenhuma conduta lançada.</EmptyMsg>
-              )}
-            </CockpitAccordion>
+            {/* ABA CONDUTAS: condutas do dia + pendências */}
+            <TabsContent value="condutas" className="px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+              <CockpitSection icon={Heart} title="Condutas do dia" count={conducts.length}>
+                <ItemList items={conducts} emptyMsg="Nenhuma conduta lançada." />
+              </CockpitSection>
+              <CockpitSection icon={ClipboardList} title="Pendências" count={pendencies.length}>
+                <ItemList items={pendencies} emptyMsg="Sem pendências." />
+              </CockpitSection>
+            </TabsContent>
 
-            <CockpitAccordion
-              value="devices"
-              icon={Activity}
-              title="Dispositivos"
-              count={devices.length}
-            >
-              {devices.length > 0 ? (
-                <ul className="space-y-1.5">
-                  {devices.map((d, i) => (
-                    <li key={i} className="text-xs text-foreground leading-snug flex gap-1.5">
-                      <ChevronRight className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
-                      <span className="preserve-case">{d}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <EmptyMsg>Sem dispositivos invasivos registrados.</EmptyMsg>
-              )}
-            </CockpitAccordion>
-
-            <CockpitAccordion
-              value="forecast"
-              icon={TrendingUp}
-              title="Previsão de alta"
-            >
-              <div className="text-xs text-foreground preserve-case">
-                {patient.utiDischargePrediction && patient.utiDischargePrediction.length > 0
-                  ? patient.utiDischargePrediction.join(" • ")
-                  : <EmptyMsg>Sem previsão definida.</EmptyMsg>}
-              </div>
-            </CockpitAccordion>
-
-            <CockpitAccordion
-              value="responsible"
-              icon={User2}
-              title="Responsável médico"
-            >
-              <div className="text-xs text-foreground preserve-case">
-                {patient.medicalResponsibility?.leaderNames || (
-                  <EmptyMsg>Sem responsável definido.</EmptyMsg>
-                )}
-              </div>
-            </CockpitAccordion>
-          </Accordion>
-        </ScrollArea>
+            {/* ABA ALTA: previsão de alta */}
+            <TabsContent value="alta" className="px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+              <CockpitSection icon={TrendingUp} title="Previsão de alta">
+                <div className="text-xs text-foreground preserve-case">
+                  {patient.utiDischargePrediction && patient.utiDischargePrediction.length > 0
+                    ? patient.utiDischargePrediction.join(" • ")
+                    : <EmptyMsg>Sem previsão definida.</EmptyMsg>}
+                </div>
+              </CockpitSection>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full h-8 text-xs gap-1.5"
+                onClick={() => goPatient("/alta-desfecho")}
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Abrir fluxo de alta
+              </Button>
+            </TabsContent>
+          </ScrollArea>
+        </Tabs>
       </aside>
     </TooltipProvider>
   );
@@ -401,32 +335,41 @@ function AlertChip({ icon: Icon, tone, label, value, count }: AlertChipProps) {
   );
 }
 
-interface CockpitAccordionProps {
-  value: string;
+interface CockpitSectionProps {
   icon: React.ComponentType<{ className?: string }>;
   title: string;
   count?: number;
   children: React.ReactNode;
 }
 
-function CockpitAccordion({ value, icon: Icon, title, count, children }: CockpitAccordionProps) {
+function CockpitSection({ icon: Icon, title, count, children }: CockpitSectionProps) {
   return (
-    <AccordionItem value={value} className="border-b border-border/60 last:border-b-0">
-      <AccordionTrigger className="py-2.5 hover:no-underline group">
-        <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
-          <Icon className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-          <span>{title}</span>
-          {count !== undefined && count > 0 && (
-            <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-medium">
-              {count}
-            </Badge>
-          )}
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="pb-3 pt-0.5">
-        {children}
-      </AccordionContent>
-    </AccordionItem>
+    <section className="space-y-1.5">
+      <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+        <span>{title}</span>
+        {count !== undefined && count > 0 && (
+          <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-medium">
+            {count}
+          </Badge>
+        )}
+      </div>
+      <div className="pl-1">{children}</div>
+    </section>
+  );
+}
+
+function ItemList({ items, emptyMsg }: { items: string[]; emptyMsg: string }) {
+  if (items.length === 0) return <EmptyMsg>{emptyMsg}</EmptyMsg>;
+  return (
+    <ul className="space-y-1.5">
+      {items.map((item, i) => (
+        <li key={i} className="text-xs text-foreground leading-snug flex gap-1.5">
+          <ChevronRight className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+          <span className="preserve-case">{item}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
