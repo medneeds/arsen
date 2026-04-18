@@ -973,6 +973,9 @@ const RequisicaoUnificadaPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </div>
+        {/* Patient Cockpit — fixed right sidebar */}
+        <PatientCockpit patient={cockpitPatient} className="print:hidden" />
       </div>
     </div>
   );
