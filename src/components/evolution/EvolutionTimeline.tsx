@@ -349,6 +349,12 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       <span className="text-xs font-semibold text-foreground">
                         {format(new Date(evo.created_at), "dd/MM/yyyy", { locale: ptBR })}
                       </span>
+                      {isCurrent && (
+                        <Badge className="text-[9px] px-1.5 py-0 h-4 bg-primary text-primary-foreground gap-0.5">
+                          <Star className="h-2.5 w-2.5 fill-current" />
+                          Atual
+                        </Badge>
+                      )}
                       {evo.status === "validated" && evo.validated_at && (
                         <span className="text-[10px] text-muted-foreground">
                           Validada em {format(new Date(evo.validated_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
