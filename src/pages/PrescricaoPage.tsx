@@ -3597,19 +3597,85 @@ const PrescricaoPage = () => {
         }
       ` }} />
 
-      {/* Page Title */}
-      <div className="print:hidden">
-        <div className="flex items-center gap-3 mb-1">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10">
+      {/* Page Title + Action toolbar */}
+      <div className="print:hidden flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="p-2 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10 shrink-0">
             <Pill className="h-4 w-4 text-primary" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-lg font-semibold text-foreground leading-tight">Prescrição médica diária</h1>
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {currentPrescriptionId && <Badge variant="outline" className="text-[9px] h-4 px-1.5 text-primary border-primary/30">Salva</Badge>}
               {patient.encounterCode && <span className="font-mono text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded"><Hash className="inline h-3 w-3 mr-0.5" />{patient.encounterCode}</span>}
             </div>
           </div>
+        </div>
+
+        {/* Action toolbar — moved from Prescrições card */}
+        <div className="flex items-center gap-1.5 flex-wrap justify-end ml-auto">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1 px-2">
+                <CalendarDays className="h-3 w-3" />
+                {historyDate ? format(historyDate, "dd/MM/yyyy") : "Calendário"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="single"
+                selected={historyDate}
+                onSelect={(d) => { setHistoryDate(d); }}
+                locale={ptBR}
+                initialFocus
+              />
+              {historyDate && (
+                <div className="p-2 border-t">
+                  <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setHistoryDate(undefined)}>
+                    Limpar filtro
+                  </Button>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+          <Button variant="outline" size="sm" onClick={openRepeatDialog} disabled={!patient.name.trim()} className="h-7 text-[10px] gap-1 px-2">
+            <CopyPlus className="h-3 w-3" /> Repetir de ontem
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => { setDoseCalcInitialMed(undefined); setDoseCalcOpen(true); }}
+            className="h-7 text-[10px] gap-1 px-2 border-blue-400/40 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+            title="Calculadora de dose por peso/superfície corporal"
+          >
+            <Calculator className="h-3 w-3 text-blue-500" /> Dose/kg
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setQuickTemplatesDialogOpen(true)}
+            className="h-7 text-[10px] gap-1 px-2 border-amber-400/40 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+            title="Templates clínicos prontos (Sepse, Pós-op, DPOC...)"
+          >
+            <Zap className="h-3 w-3 text-amber-500" /> Templates
+            {quickTemplates.length > 0 && (
+              <span className="ml-0.5 text-[9px] font-mono text-muted-foreground">
+                ({quickTemplates.length})
+              </span>
+            )}
+          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="sm" onClick={() => setShortcutsHelpOpen(true)} className="h-7 px-1.5 text-[10px] gap-1 text-muted-foreground hover:text-foreground">
+                <kbd className="px-1 py-0 rounded border border-border bg-muted text-[9px] font-mono">?</kbd>
+                <span className="hidden md:inline">Atalhos</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs">Atalhos de teclado (?)</TooltipContent>
+          </Tooltip>
+          <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-7 text-[10px] gap-1 px-2">
+            <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
+          </Button>
         </div>
       </div>
 
@@ -3619,70 +3685,7 @@ const PrescricaoPage = () => {
             <h2 className="text-xs font-semibold text-muted-foreground tracking-wider">
               Prescrições de {patient.name || 'paciente'}
             </h2>
-            <div className="flex items-center gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-6 text-[10px] gap-1">
-                    <CalendarDays className="h-3 w-3" />
-                    {historyDate ? format(historyDate, "dd/MM/yyyy") : "Calendário"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <Calendar
-                    mode="single"
-                    selected={historyDate}
-                    onSelect={(d) => { setHistoryDate(d); }}
-                    locale={ptBR}
-                    initialFocus
-                  />
-                  {historyDate && (
-                    <div className="p-2 border-t">
-                      <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setHistoryDate(undefined)}>
-                        Limpar filtro
-                      </Button>
-                    </div>
-                  )}
-                </PopoverContent>
-              </Popover>
-              <Button variant="outline" size="sm" onClick={openRepeatDialog} disabled={!patient.name.trim()} className="h-6 text-[10px] gap-1">
-                <CopyPlus className="h-3 w-3" /> Repetir de ontem
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => { setDoseCalcInitialMed(undefined); setDoseCalcOpen(true); }}
-                className="h-6 text-[10px] gap-1 border-blue-400/40 hover:bg-blue-50 dark:hover:bg-blue-950/20"
-                title="Calculadora de dose por peso/superfície corporal"
-              >
-                <Calculator className="h-3 w-3 text-blue-500" /> Dose/kg
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setQuickTemplatesDialogOpen(true)}
-                className="h-6 text-[10px] gap-1 border-amber-400/40 hover:bg-amber-50 dark:hover:bg-amber-950/20"
-                title="Templates clínicos prontos (Sepse, Pós-op, DPOC...)"
-              >
-                <Zap className="h-3 w-3 text-amber-500" /> Templates
-                {quickTemplates.length > 0 && (
-                  <span className="ml-0.5 text-[9px] font-mono text-muted-foreground">
-                    ({quickTemplates.length})
-                  </span>
-                )}
-              </Button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="sm" onClick={() => setShortcutsHelpOpen(true)} className="h-6 px-1.5 text-[10px] gap-1 text-muted-foreground hover:text-foreground">
-                    <kbd className="px-1 py-0 rounded border border-border bg-muted text-[9px] font-mono">?</kbd>
-                    <span className="hidden md:inline">Atalhos</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">Atalhos de teclado (?)</TooltipContent>
-              </Tooltip>
-              <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-6 text-[10px] gap-1">
-                <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
-              </Button>
-            </div>
+            <span className="text-[10px] text-muted-foreground">{savedPrescriptions.length} {savedPrescriptions.length === 1 ? 'prescrição' : 'prescrições'}</span>
           </div>
           {savedPrescriptions.length > 0 ? (
           <div className="flex gap-2 overflow-x-auto pb-1">
