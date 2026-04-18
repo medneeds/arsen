@@ -47,6 +47,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { useHospital } from "@/contexts/HospitalContext";
 import {
   DndContext,
@@ -681,6 +682,7 @@ function SortablePrescriptionItemRow({
   onReactivate,
   onToggleValidation,
   isPastRenewalTime,
+  prescriptionLocked,
 }: {
   item: PrescriptionItem;
   index: number;
@@ -696,6 +698,7 @@ function SortablePrescriptionItemRow({
   onReactivate: (id: string) => void;
   onToggleValidation: (id: string) => void;
   isPastRenewalTime: boolean;
+  prescriptionLocked: boolean;
 }) {
   const [individualExpanded, setIndividualExpanded] = useState(false);
   const {
@@ -748,14 +751,29 @@ function SortablePrescriptionItemRow({
     const renewalCutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
     const validatedAfterCutoff = !!(item.validatedAt && new Date(item.validatedAt) > renewalCutoff);
     const isValidated = !!item.validated && (!isPastRenewalTime || validatedAfterCutoff);
-    const isPending = !isValidated;
+
+    // Regras: prescrição ainda não validada como um todo → desabilita clique individual
+    // (validação só pode ocorrer em bloco). Item já validado → não pode ser desvalidado.
+    // Item novo (pendente) em prescrição já validada → pode validar individualmente (com senha).
+    const canClick = !isValidated && prescriptionLocked;
+    const tooltipMsg = isValidated
+      ? "Validado — para retirar, suspenda o item"
+      : prescriptionLocked
+      ? "Pendente — clique para validar com senha"
+      : "Use 'Validar prescrição' para validar todos os itens";
+
     return (
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             type="button"
-            onClick={() => onToggleValidation(item.id)}
-            className="shrink-0 transition-transform hover:scale-125"
+            onClick={() => canClick && onToggleValidation(item.id)}
+            disabled={!canClick}
+            className={cn(
+              "shrink-0 transition-transform",
+              canClick ? "hover:scale-125 cursor-pointer" : "cursor-not-allowed",
+              isValidated && "cursor-default"
+            )}
           >
             <Circle className={cn(
               "h-3 w-3 fill-current",
@@ -764,7 +782,7 @@ function SortablePrescriptionItemRow({
           </button>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
-          {isValidated ? "Validado — clique para desmarcar" : "Pendente validação — clique para validar"}
+          {tooltipMsg}
         </TooltipContent>
       </Tooltip>
     );
@@ -2298,32 +2316,74 @@ const PrescricaoPage = () => {
     return isAfter(now, renewalTime);
   }, []);
 
-  // All items validated check
+  // Helper: item considerado validado para o dia atual
+  const isItemValidatedToday = useCallback((item: PrescriptionItem) => {
+    if (!item.validated) return false;
+    if (!isPastRenewalTime) return true;
+    const cutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
+    return !!(item.validatedAt && new Date(item.validatedAt) > cutoff);
+  }, [isPastRenewalTime]);
+
+  // Prescrição está "travada" (já validada hoje) quando há ao menos 1 item ativo validado.
+  // Nesse estado, novos itens podem ser validados individualmente (com senha).
+  // Caso contrário, validação só pode ocorrer em bloco.
+  const prescriptionLocked = useMemo(() => {
+    return items.some(i => i.status === 'active' && isItemValidatedToday(i));
+  }, [items, isItemValidatedToday]);
+
+  // All items validated check (todos os ativos validados hoje)
   const allItemsValidated = useMemo(() => {
     const activeItems = items.filter(i => i.status === 'active');
-    return activeItems.length > 0 && activeItems.every(i => i.validated && !isPastRenewalTime || (i.validated && i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)));
-  }, [items, isPastRenewalTime]);
+    return activeItems.length > 0 && activeItems.every(isItemValidatedToday);
+  }, [items, isItemValidatedToday]);
 
-  // Toggle validation
-  const toggleValidation = useCallback((id: string) => {
-    setItems(prev => prev.map(item => {
-      if (item.id !== id) return item;
-      return {
-        ...item,
-        validated: !item.validated,
-        validatedAt: !item.validated ? new Date().toISOString() : undefined,
-      };
-    }));
+  // Password confirmation dialog state
+  const [passwordConfirmOpen, setPasswordConfirmOpen] = useState(false);
+  const [pendingValidationAction, setPendingValidationAction] = useState<
+    | { type: 'all' }
+    | { type: 'item'; itemId: string }
+    | null
+  >(null);
+
+  // Solicita validação em bloco (pede senha)
+  const requestValidateAll = useCallback(() => {
+    const activeItems = items.filter(i => i.status === 'active');
+    if (activeItems.length === 0) {
+      toast.error("Nenhum item ativo para validar");
+      return;
+    }
+    setPendingValidationAction({ type: 'all' });
+    setPasswordConfirmOpen(true);
+  }, [items]);
+
+  // Solicita validação individual (apenas para itens novos após prescrição já validada)
+  const requestValidateItem = useCallback((id: string) => {
+    setPendingValidationAction({ type: 'item', itemId: id });
+    setPasswordConfirmOpen(true);
   }, []);
 
-  // Validate all items at once
-  const validateAllItems = useCallback(() => {
+  // Executa a validação após confirmação de senha
+  const executeValidation = useCallback(() => {
+    const action = pendingValidationAction;
+    if (!action) return;
     const now = new Date().toISOString();
-    setItems(prev => prev.map(item =>
-      item.status === 'active' ? { ...item, validated: true, validatedAt: now } : item
-    ));
-    toast.success("Todos os itens validados");
-  }, []);
+    if (action.type === 'all') {
+      setItems(prev => prev.map(item =>
+        item.status === 'active' ? { ...item, validated: true, validatedAt: now } : item
+      ));
+      toast.success("Prescrição validada", { description: "Todos os itens ativos foram validados." });
+    } else {
+      setItems(prev => prev.map(item =>
+        item.id === action.itemId ? { ...item, validated: true, validatedAt: now } : item
+      ));
+      toast.success("Item validado");
+    }
+    setPendingValidationAction(null);
+  }, [pendingValidationAction]);
+
+  // Mantido por compatibilidade — não é mais chamado diretamente
+  const toggleValidation = requestValidateItem;
+  const validateAllItems = requestValidateAll;
 
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 
@@ -3278,7 +3338,7 @@ const PrescricaoPage = () => {
           size="sm"
           onClick={() => {
             if (!allItemsValidated) {
-              toast.error("Valide todos os itens antes de imprimir", { description: "Clique nos círculos à esquerda de cada item ou use 'Validar todos'." });
+              toast.error("Valide a prescrição antes de imprimir", { description: "Use o botão 'Validar prescrição' para validar com sua senha." });
               return;
             }
             handlePrint();
@@ -3287,8 +3347,20 @@ const PrescricaoPage = () => {
         >
           <Printer className="h-3 w-3" /> Imprimir
         </Button>
-        <Button variant="ghost" size="sm" onClick={validateAllItems} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
-          <Check className="h-3 w-3" /> Validar todos
+        <Button
+          variant={prescriptionLocked ? "ghost" : "default"}
+          size="sm"
+          onClick={requestValidateAll}
+          disabled={allItemsValidated}
+          className={cn(
+            "gap-1 text-xs h-7 px-2",
+            prescriptionLocked
+              ? "text-muted-foreground hover:text-foreground"
+              : "bg-emerald-600 hover:bg-emerald-700 text-white"
+          )}
+        >
+          <ShieldCheck className="h-3 w-3" />
+          {allItemsValidated ? "Prescrição validada" : prescriptionLocked ? "Validar pendentes" : "Validar prescrição"}
         </Button>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -3646,8 +3718,9 @@ const PrescricaoPage = () => {
                           onDuplicate={duplicateItem}
                           onRequestSuspend={requestSuspendItem}
                           onReactivate={reactivateItem}
-                          onToggleValidation={toggleValidation}
+                          onToggleValidation={requestValidateItem}
                           isPastRenewalTime={isPastRenewalTime}
+                          prescriptionLocked={prescriptionLocked}
                         />
                       ))}
                     </div>
@@ -3910,6 +3983,23 @@ const PrescricaoPage = () => {
         open={tevProtocolOpen}
         onOpenChange={setTevProtocolOpen}
         patient={patient ? { name: patient.name, age: patient.age, bed: patient.bed, weight: patient.weight } : null}
+      />
+
+      {/* Password Confirmation Dialog (validação) */}
+      <PasswordConfirmDialog
+        open={passwordConfirmOpen}
+        onOpenChange={(open) => {
+          setPasswordConfirmOpen(open);
+          if (!open) setPendingValidationAction(null);
+        }}
+        title={pendingValidationAction?.type === 'all' ? "Validar prescrição" : "Validar item"}
+        description={
+          pendingValidationAction?.type === 'all'
+            ? "Confirme sua senha para validar todos os itens ativos da prescrição."
+            : "Este item foi adicionado após a validação. Confirme sua senha para validá-lo."
+        }
+        actionLabel="Validar"
+        onConfirmed={executeValidation}
       />
       </div>
     </div>
