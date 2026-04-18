@@ -2357,6 +2357,10 @@ const PrescricaoPage = () => {
   const [versionHistory, setVersionHistory] = useState<Array<{ id: string; version: number; status: string; created_at: string; digital_signature: DigitalSignature | null }>>([]);
   const [showHistory, setShowHistory] = useState(false);
 
+  // Keyboard shortcuts
+  const globalSearchRef = useRef<GlobalPrescriptionSearchHandle | null>(null);
+  const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
+
   // Validation: check if past 05:00 renewal time
   const isPastRenewalTime = useMemo(() => {
     const now = new Date();
