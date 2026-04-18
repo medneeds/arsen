@@ -55,6 +55,46 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
   const [validateDialogId, setValidateDialogId] = useState<string | null>(null);
 
+  // Filters
+  const [filterStatus, setFilterStatus] = useState<"all" | "draft" | "validated" | "suspended">("all");
+  const [filterAuthor, setFilterAuthor] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Unique authors list
+  const authors = useMemo(() => {
+    const map = new Map<string, string>();
+    evolutions.forEach(e => {
+      if (e.created_by && e.created_by_name) map.set(e.created_by, e.created_by_name);
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [evolutions]);
+
+  // Apply filters
+  const filteredEvolutions = useMemo(() => {
+    return evolutions.filter(evo => {
+      if (filterStatus !== "all" && evo.status !== filterStatus) return false;
+      if (filterAuthor !== "all" && evo.created_by !== filterAuthor) return false;
+      if (searchTerm.trim()) {
+        const haystack = [
+          evo.soap_data.subjective, evo.soap_data.objective,
+          evo.soap_data.assessment, evo.soap_data.plan,
+          evo.created_by_name,
+        ].join(" ").toLowerCase();
+        if (!haystack.includes(searchTerm.toLowerCase())) return false;
+      }
+      return true;
+    });
+  }, [evolutions, filterStatus, filterAuthor, searchTerm]);
+
+  const activeFilterCount = (filterStatus !== "all" ? 1 : 0) + (filterAuthor !== "all" ? 1 : 0) + (searchTerm.trim() ? 1 : 0);
+
+  const clearFilters = () => {
+    setFilterStatus("all");
+    setFilterAuthor("all");
+    setSearchTerm("");
+  };
+
   const toggleExpand = (id: string) => {
     setExpandedIds(prev => {
       const n = new Set(prev);
