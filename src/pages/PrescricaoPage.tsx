@@ -744,8 +744,11 @@ function SortablePrescriptionItemRow({
   );
 
   const ValidationDot = () => {
-    const isValidated = item.validated && !isPastRenewalTime;
-    const isPending = !item.validated || isPastRenewalTime;
+    // Considera validado se: marcado E (ainda não passou da renovação OU foi validado após o corte de 05:00 de hoje)
+    const renewalCutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
+    const validatedAfterCutoff = !!(item.validatedAt && new Date(item.validatedAt) > renewalCutoff);
+    const isValidated = !!item.validated && (!isPastRenewalTime || validatedAfterCutoff);
+    const isPending = !isValidated;
     return (
       <Tooltip>
         <TooltipTrigger asChild>
