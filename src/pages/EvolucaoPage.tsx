@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PatientInfoHeader } from "@/components/PatientInfoHeader";
+import { PatientCockpit } from "@/components/PatientCockpit";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
@@ -15,6 +16,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useEvolutions, EvolutionRecord } from "@/hooks/useEvolutions";
 import { EvolutionForm } from "@/components/evolution/EvolutionForm";
 import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
+import type { Patient } from "@/types/patient";
 
 interface PatientHeader {
   name: string;
@@ -93,6 +95,24 @@ const EvolucaoPage = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Adapt PatientHeader → minimal Patient for cockpit (must run before any early return)
+  const cockpitPatient: Patient = useMemo(() => ({
+    id: initialPatientId || "evolucao-stub",
+    bedNumber: patient.bed,
+    name: patient.name,
+    age: typeof patient.age === "string" ? patient.age.replace(/\s*anos?$/i, "") : patient.age,
+    sector: (initialPatientSector as Patient["sector"]) || "outside",
+    diagnoses: [],
+    medicalHistory: [],
+    relevantExams: [],
+    pendencies: [],
+    schedule: [],
+    admissionHistory: "",
+    admissionDate: patient.admissionDate,
+    utiAllergies: patient.allergies && patient.allergies !== "NDAM" ? [patient.allergies] : [],
+    clinicalStatus: "regular",
+  }), [patient, initialPatientId, initialPatientSector]);
+
   if (!hasPatient) {
     return (
       <div className="p-6 space-y-6">
@@ -118,8 +138,9 @@ const EvolucaoPage = () => {
     <div className="print:p-2">
       <ClinicalHeader moduleLabel="Evolução Clínica" />
 
-      {/* Screen layout */}
-      <div className="p-4 space-y-4 max-w-5xl mx-auto print:hidden">
+      {/* Screen layout — 2 columns: main + cockpit */}
+      <div className="flex print:hidden">
+        <div className="flex-1 min-w-0 p-4 space-y-4">
         {/* Page Header */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -211,6 +232,10 @@ const EvolucaoPage = () => {
             <p className="text-xs text-muted-foreground/70 mt-1">Clique em "Nova Evolução" para criar a primeira</p>
           </div>
         )}
+        </div>
+
+        {/* Patient Cockpit — fixed right sidebar */}
+        <PatientCockpit patient={cockpitPatient} />
       </div>
 
       {/* Print layout */}
