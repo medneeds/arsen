@@ -84,6 +84,11 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
     patient?.name || null,
     currentHospital?.id || null,
   );
+  const { summary: pendingSummary, items: pendingItems } = usePatientPendingItems(
+    patient?.id || null,
+    patient?.name || null,
+    currentHospital?.id || null,
+  );
 
   if (!patient) {
     return (
