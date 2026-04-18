@@ -4144,10 +4144,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         </div>
       </div>
 
-      {/* Footer */}
-      <div style={{ marginTop: '10px', fontSize: '5.5pt', color: '#94a3b8', textAlign: 'center', borderTop: '0.5px solid #e2e8f0', paddingTop: '3px' }}>
-        Documento gerado pelo sistema BigHelp Map — {prescriptionDate} — Válido quando assinado
-      </div>
+      {/* Rodapé Norma Zero (MAN.05-001) */}
+      <NormaZeroPrintFooter width="186mm" />
     </div>
   );
 }
