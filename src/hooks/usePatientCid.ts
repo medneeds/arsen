@@ -83,7 +83,7 @@ export function usePatientCid(patientId: string | null) {
       } else {
         const { data, error } = await supabase
           .from("admission_histories")
-          .insert({ ...payload, created_by: user.id })
+          .insert([{ ...payload, created_by: user.id } as any])
           .select("id")
           .single();
         if (error) throw error;
