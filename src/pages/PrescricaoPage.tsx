@@ -3954,7 +3954,7 @@ const PrescricaoPage = () => {
       )}
 
       {/* ===== UNIFIED PRESCRIPTION WORKBENCH (itens + histórico + busca) ===== */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden print:hidden divide-y divide-border/40">
+      <div className="rounded-xl border border-border bg-card overflow-visible print:hidden divide-y divide-border/40">
 
         {/* Section 2 — Itens summary chips */}
         {items.length > 0 && (
@@ -3990,7 +3990,7 @@ const PrescricaoPage = () => {
         {/* Prescrições anteriores agora acessíveis via popup do Calendário no cabeçalho. */}
 
         {/* Section 4 — Busca global (sem rótulo redundante) */}
-        <div className="px-3 py-2">
+        <div className="px-3 py-2 relative z-20">
           <GlobalPrescriptionSearch
             ref={globalSearchRef}
             onAddItem={addItem}
