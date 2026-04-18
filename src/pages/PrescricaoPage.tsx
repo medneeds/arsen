@@ -4894,6 +4894,8 @@ const PrescricaoPage = () => {
         defaultRightId={currentPrescriptionId ?? undefined}
       />
       </div>
+        <PatientCockpit patient={cockpitPatient} className="print:hidden" />
+      </div>
     </div>
   );
 };
