@@ -94,6 +94,8 @@ import { runClinicalAlertChecks, type ClinicalAlert } from "@/lib/clinicalAlertC
 import { Star, Calculator } from "lucide-react";
 import { getProtocolsFor, type PosologyProtocol } from "@/lib/posologyProtocols";
 import { PosologySuggestionsBar } from "@/components/PosologySuggestionsBar";
+import { PatientCockpit } from "@/components/PatientCockpit";
+import type { Patient } from "@/types/patient";
 
 // --- Types ---
 interface DigitalSignature {
