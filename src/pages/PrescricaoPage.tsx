@@ -85,6 +85,7 @@ import {
 import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
 import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/PsychotropicFormDialog";
 import { TevProtocolDialog } from "@/components/TevProtocolDialog";
+import { HighAlertGuideDialog } from "@/components/HighAlertGuideDialog";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { useMedicationFavorites } from "@/hooks/useMedicationFavorites";
 import { useQuickPrescriptionTemplates, type QuickPrescriptionTemplate, type QuickTemplateItem } from "@/hooks/useQuickPrescriptionTemplates";
