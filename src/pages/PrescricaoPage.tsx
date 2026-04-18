@@ -2345,27 +2345,38 @@ const PrescricaoPage = () => {
     | null
   >(null);
 
-  // Solicita validação em bloco (pede senha)
-  const requestValidateAll = useCallback(() => {
-    const activeItems = items.filter(i => i.status === 'active');
-    if (activeItems.length === 0) {
-      toast.error("Nenhum item ativo para validar");
-      return;
-    }
-    setPendingValidationAction({ type: 'all' });
-    setPasswordConfirmOpen(true);
-  }, [items]);
+  // Janela de sessão validada (20min) — após validar com senha,
+  // novas validações nesse intervalo dispensam nova digitação de senha.
+  const VALIDATION_SESSION_MS = 20 * 60 * 1000; // 20 minutos
+  const [validationSessionExpiresAt, setValidationSessionExpiresAt] = useState<number | null>(null);
+  const [sessionTick, setSessionTick] = useState(0); // força re-render para countdown
 
-  // Solicita validação individual (apenas para itens novos após prescrição já validada)
-  const requestValidateItem = useCallback((id: string) => {
-    setPendingValidationAction({ type: 'item', itemId: id });
-    setPasswordConfirmOpen(true);
-  }, []);
+  // Tick a cada 30s enquanto a sessão estiver ativa (suficiente p/ countdown em min)
+  useEffect(() => {
+    if (!validationSessionExpiresAt) return;
+    const interval = setInterval(() => {
+      if (Date.now() >= validationSessionExpiresAt) {
+        setValidationSessionExpiresAt(null);
+      } else {
+        setSessionTick(t => t + 1);
+      }
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [validationSessionExpiresAt]);
 
-  // Executa a validação após confirmação de senha
-  const executeValidation = useCallback(() => {
-    const action = pendingValidationAction;
-    if (!action) return;
+  const isValidationSessionActive = useMemo(() => {
+    void sessionTick; // dependência implícita p/ recomputar a cada tick
+    return !!(validationSessionExpiresAt && Date.now() < validationSessionExpiresAt);
+  }, [validationSessionExpiresAt, sessionTick]);
+
+  const sessionMinutesLeft = useMemo(() => {
+    if (!isValidationSessionActive || !validationSessionExpiresAt) return 0;
+    return Math.max(1, Math.ceil((validationSessionExpiresAt - Date.now()) / 60_000));
+  }, [isValidationSessionActive, validationSessionExpiresAt, sessionTick]);
+
+  // Aplica a validação a um conjunto (sem pedir senha) — usado tanto pelo caminho rápido
+  // quanto pelo executeValidation (após senha).
+  const applyValidation = useCallback((action: { type: 'all' } | { type: 'item'; itemId: string }) => {
     const now = new Date().toISOString();
     if (action.type === 'all') {
       setItems(prev => prev.map(item =>
@@ -2378,8 +2389,44 @@ const PrescricaoPage = () => {
       ));
       toast.success("Item validado");
     }
+  }, []);
+
+  // Solicita validação em bloco — pula senha se sessão estiver ativa
+  const requestValidateAll = useCallback(() => {
+    const activeItems = items.filter(i => i.status === 'active');
+    if (activeItems.length === 0) {
+      toast.error("Nenhum item ativo para validar");
+      return;
+    }
+    if (isValidationSessionActive) {
+      applyValidation({ type: 'all' });
+      // Renova a janela de 20min a cada validação dentro da sessão
+      setValidationSessionExpiresAt(Date.now() + VALIDATION_SESSION_MS);
+      return;
+    }
+    setPendingValidationAction({ type: 'all' });
+    setPasswordConfirmOpen(true);
+  }, [items, isValidationSessionActive, applyValidation, VALIDATION_SESSION_MS]);
+
+  // Solicita validação individual — pula senha se sessão estiver ativa
+  const requestValidateItem = useCallback((id: string) => {
+    if (isValidationSessionActive) {
+      applyValidation({ type: 'item', itemId: id });
+      setValidationSessionExpiresAt(Date.now() + VALIDATION_SESSION_MS);
+      return;
+    }
+    setPendingValidationAction({ type: 'item', itemId: id });
+    setPasswordConfirmOpen(true);
+  }, [isValidationSessionActive, applyValidation, VALIDATION_SESSION_MS]);
+
+  // Executa a validação após confirmação de senha — abre/renova a sessão de 20min
+  const executeValidation = useCallback(() => {
+    const action = pendingValidationAction;
+    if (!action) return;
+    applyValidation(action);
+    setValidationSessionExpiresAt(Date.now() + VALIDATION_SESSION_MS);
     setPendingValidationAction(null);
-  }, [pendingValidationAction]);
+  }, [pendingValidationAction, applyValidation, VALIDATION_SESSION_MS]);
 
   // Mantido por compatibilidade — não é mais chamado diretamente
   const toggleValidation = requestValidateItem;
