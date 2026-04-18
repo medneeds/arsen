@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PatientInfoHeader } from "@/components/PatientInfoHeader";
+import { PatientCockpit } from "@/components/PatientCockpit";
+import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import {
   FolderOpen, ClipboardList, Droplet, FileCheck, Radar,
   DollarSign, Scissors, ScanLine, NotebookPen,
@@ -38,7 +40,7 @@ const DocumentosPacientePage = () => {
 
   const sectorLabel = getSectorDisplayLabel(patientSector);
 
-  const [selectedModule, setSelectedModule] = useState<string | null>(null);
+  const cockpitPatient = useCockpitPatient();
 
   if (!hasPatient) {
     return (
