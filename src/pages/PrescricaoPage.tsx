@@ -542,16 +542,11 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
   const allItems = useMemo(() => Object.values(ALL_ITEMS_BY_CATEGORY).flat(), []);
 
   const filtered = useMemo(() => {
-    let source: MedicationEntry[];
-    if (selectedCat === 'favorites') {
-      source = allItems.filter(m => favCount(m.id) > 0);
-    } else if (selectedCat === 'all') {
-      source = allItems;
-    } else {
-      source = ALL_ITEMS_BY_CATEGORY[selectedCat] || [];
-    }
-    return fuzzySearch(query, source, favCount, 15);
-  }, [query, selectedCat, allItems, favCount]);
+    // Busca SEMPRE global (todas as categorias) — os chips de categoria acima
+    // servem como atalho de contexto para o placeholder, mas não restringem
+    // os resultados. Assim qualquer item digitado é encontrado.
+    return fuzzySearch(query, allItems, favCount, 15);
+  }, [query, allItems, favCount]);
 
   const favTotal = useMemo(() => allItems.filter(m => favCount(m.id) > 0).length, [allItems, favCount]);
 
@@ -633,7 +628,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
                         {fav}×
                       </Badge>
                     )}
-                    {(selectedCat === 'all' || selectedCat === 'favorites') && catConfig && (
+                    {catConfig && (
                       <Badge variant="outline" className={cn("text-[9px] px-1.5", catConfig.color)}>{catConfig.label}</Badge>
                     )}
                     {med.defaultRoute !== '-' && (
