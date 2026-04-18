@@ -1,14 +1,16 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, ArrowRight, ArrowLeftRight, FileText, History, Loader2, BedDouble, Clock } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowLeftRight, History, Loader2, BedDouble, Clock } from "lucide-react";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PatientInfoHeader } from "@/components/PatientInfoHeader";
+import { PatientCockpit } from "@/components/PatientCockpit";
+import { useCockpitPatient } from "@/hooks/useCockpitPatient";
+import { usePatientMovements } from "@/hooks/usePatientMovements";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
