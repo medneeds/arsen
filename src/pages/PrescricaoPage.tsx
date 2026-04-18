@@ -3409,6 +3409,19 @@ const PrescricaoPage = () => {
           <ShieldCheck className="h-3 w-3" />
           {allItemsValidated ? "Prescrição validada" : prescriptionLocked ? "Validar pendentes" : "Validar prescrição"}
         </Button>
+        {isValidationSessionActive && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                <ShieldCheck className="h-3 w-3" />
+                Sessão validada · {sessionMinutesLeft}min
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs max-w-[240px]">
+              Sua senha já foi confirmada. Novas validações nos próximos {sessionMinutesLeft} minuto(s) não pedirão senha. A janela é renovada a cada validação.
+            </TooltipContent>
+          </Tooltip>
+        )}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
