@@ -3927,12 +3927,7 @@ const PrescricaoPage = () => {
         <Button variant="ghost" size="sm" onClick={handleDispense} disabled={!currentPrescriptionId} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
           <Package className="h-3 w-3" /> Dispensar
         </Button>
-        <div className="ml-auto">
-          <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1 h-7 px-3 text-xs">
-            {saving ? <span className="animate-spin h-3 w-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> : <Save className="h-3 w-3" />}
-            {saving ? 'Salvando...' : 'Salvar'}
-          </Button>
-        </div>
+        {/* Botão "Salvar" removido — salvamento é automático. */}
       </div>
 
       {/* ===== UNIFIED PRESCRIPTION WORKBENCH (itens + histórico + busca) ===== */}
@@ -4284,9 +4279,7 @@ const PrescricaoPage = () => {
           </span>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleRenew} className="gap-1.5 text-xs">
-            <RefreshCw className="h-3 w-3" /> Renovar
-          </Button>
+          {/* "Renovar" e "Salvar" removidos — renovação e salvamento são automáticos. */}
           <Button
             variant={digitalSignature ? "outline" : "default"}
             size="sm"
@@ -4294,10 +4287,6 @@ const PrescricaoPage = () => {
             className={cn("gap-1.5 text-xs", digitalSignature && "border-green-300 text-green-700 hover:text-green-800")}
           >
             {digitalSignature ? <><ShieldCheck className="h-3 w-3" /> Reassinar</> : <><Fingerprint className="h-3 w-3" /> Assinar</>}
-          </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5 text-xs">
-            {saving ? <span className="animate-spin h-3 w-3 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full inline-block" /> : <Save className="h-3 w-3" />}
-            {saving ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>
       </div>
