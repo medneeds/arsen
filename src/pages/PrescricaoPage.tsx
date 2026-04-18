@@ -3677,40 +3677,7 @@ const PrescricaoPage = () => {
         </div>
       </div>
 
-      {/* ===== SAVED PRESCRIPTIONS FOR THIS PATIENT ===== */}
-        <div className="rounded-xl border border-border bg-card p-3 print:hidden">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-semibold text-muted-foreground tracking-wider">
-              Prescrições de {patient.name || 'paciente'}
-            </h2>
-            <span className="text-[10px] text-muted-foreground">{savedPrescriptions.length} {savedPrescriptions.length === 1 ? 'prescrição' : 'prescrições'}</span>
-          </div>
-          {savedPrescriptions.length > 0 ? (
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {savedPrescriptions.map(p => (
-              <button
-                key={p.id}
-                onClick={() => loadPrescription(p.id)}
-                className={cn(
-                  "shrink-0 text-left p-2 rounded-lg border text-xs transition-colors hover:bg-accent/50",
-                  currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border"
-                )}
-              >
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
-                    {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
-                  </Badge>
-                  <span className="text-[9px] text-muted-foreground">v{p.version}</span>
-                  <span className="text-[9px] text-muted-foreground">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-          ) : (
-            <p className="text-xs text-muted-foreground italic py-2">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
-          )}
-        </div>
-
+      {/* "Prescrições anteriores" foi integrado ao workbench unificado abaixo. */}
       {/* ===== VERSION HISTORY ===== */}
       {versionHistory.length > 1 && currentPrescriptionId && (
         <div className="rounded-xl border border-border bg-card p-3 print:hidden">
