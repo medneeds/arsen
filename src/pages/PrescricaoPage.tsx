@@ -47,6 +47,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { useHospital } from "@/contexts/HospitalContext";
 import {
   DndContext,
