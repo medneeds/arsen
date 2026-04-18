@@ -3159,6 +3159,18 @@ const PrescricaoPage = () => {
     setRepeatSourceMeta(null);
   }, [repeatSelectedIds, repeatSourceItems]);
 
+  // Keep keyboard-shortcut handlers in sync with latest closures
+  useEffect(() => {
+    shortcutHandlersRef.current = {
+      duplicate: () => {
+        if (selectedIds.size > 0) duplicateSelected();
+        else toast.info("Selecione um ou mais itens para duplicar");
+      },
+      repeat: () => openRepeatDialog(),
+      validate: () => requestValidateAll(),
+    };
+  }, [selectedIds, duplicateSelected, openRepeatDialog, requestValidateAll]);
+
   // Save prescription to database
   const handleSave = async () => {
     if (!patient.name.trim()) { toast.error("Preencha o nome do paciente"); return; }
