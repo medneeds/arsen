@@ -86,7 +86,8 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 import { useMedicationFavorites } from "@/hooks/useMedicationFavorites";
 import { useQuickPrescriptionTemplates, type QuickPrescriptionTemplate, type QuickTemplateItem } from "@/hooks/useQuickPrescriptionTemplates";
 import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
-import { Star } from "lucide-react";
+import { DoseCalculatorDialog, type DoseCalculatorResult } from "@/components/DoseCalculatorDialog";
+import { Star, Calculator } from "lucide-react";
 
 // --- Types ---
 interface DigitalSignature {
@@ -2369,6 +2370,36 @@ const PrescricaoPage = () => {
   const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false);
   const [templateSearchQuery, setTemplateSearchQuery] = useState("");
   const [templateScopeFilter, setTemplateScopeFilter] = useState<"all" | "personal" | "shared">("all");
+  // Dose calculator (peso/SC)
+  const [doseCalcOpen, setDoseCalcOpen] = useState(false);
+  const [doseCalcInitialMed, setDoseCalcInitialMed] = useState<string | undefined>(undefined);
+
+  const applyDoseCalculatorResult = useCallback((r: DoseCalculatorResult) => {
+    const instructions = [
+      r.diluent && r.diluentVolume ? `Diluir em ${r.diluentVolume} mL ${r.diluent}` : null,
+      r.infusionTime ? `Infundir em ${r.infusionTime}` : null,
+      r.rate ? `Vazão: ${r.rate}` : null,
+      r.notes ? `Nota: ${r.notes}` : null,
+    ].filter(Boolean).join(" · ");
+    setItems(prev => [...prev, {
+      id: crypto.randomUUID(),
+      name: r.medication,
+      presentation: r.diluent && r.diluentVolume ? `${r.diluentVolume} mL ${r.diluent}` : "-",
+      dose: r.dose,
+      route: r.route || "EV",
+      posology: r.schedule,
+      schedule: r.schedule,
+      instructions,
+      category: "antimicrobial" as PrescriptionCategory,
+      flags: [],
+      highAlert: false,
+      status: "active",
+      diluent: r.diluent,
+      diluentVolume: r.diluentVolume,
+      infusionTime: r.infusionTime,
+    } as any]);
+    toast.success("Item adicionado pela calculadora", { description: `${r.medication} — ${r.dose} ${r.schedule}` });
+  }, []);
 
   // Validation: check if past 05:00 renewal time
   const isPastRenewalTime = useMemo(() => {
@@ -3521,6 +3552,15 @@ const PrescricaoPage = () => {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => { setDoseCalcInitialMed(undefined); setDoseCalcOpen(true); }}
+                className="h-6 text-[10px] gap-1 border-blue-400/40 hover:bg-blue-50 dark:hover:bg-blue-950/20"
+                title="Calculadora de dose por peso/superfície corporal"
+              >
+                <Calculator className="h-3 w-3 text-blue-500" /> Dose/kg
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setQuickTemplatesDialogOpen(true)}
                 className="h-6 text-[10px] gap-1 border-amber-400/40 hover:bg-amber-50 dark:hover:bg-amber-950/20"
                 title="Templates clínicos prontos (Sepse, Pós-op, DPOC...)"
@@ -4507,6 +4547,15 @@ const PrescricaoPage = () => {
           const ok = await saveQuickTemplate(input);
           if (ok) setSaveTemplateDialogOpen(false);
         }}
+      />
+
+      {/* Dose Calculator Dialog (peso/SC) */}
+      <DoseCalculatorDialog
+        open={doseCalcOpen}
+        onClose={() => setDoseCalcOpen(false)}
+        initialMedication={doseCalcInitialMed}
+        initialWeight={patient.weight}
+        onApply={applyDoseCalculatorResult}
       />
 
       {/* Keyboard Shortcuts Help Dialog */}
