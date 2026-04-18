@@ -505,19 +505,25 @@ function MedicationAutocomplete({
 }
 
 // --- Global Prescription Search with Category Filters ---
-function GlobalPrescriptionSearch({
-  onAddItem,
-  onAddNonStandard,
-  getFavoriteCount,
-}: {
+export interface GlobalPrescriptionSearchHandle {
+  focus: () => void;
+}
+const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle, {
   onAddItem: (med: MedicationEntry) => void;
   onAddNonStandard: (name: string) => void;
   getFavoriteCount?: (id: string) => number;
-}) {
+}>(function GlobalPrescriptionSearch({
+  onAddItem,
+  onAddNonStandard,
+  getFavoriteCount,
+}, ref) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [selectedCat, setSelectedCat] = useState<PrescriptionCategory | 'all' | 'favorites'>('all');
   const inputRef = useRef<HTMLInputElement>(null);
+  React.useImperativeHandle(ref, () => ({
+    focus: () => inputRef.current?.focus(),
+  }), []);
   const [freeText, setFreeText] = useState("");
   const favCount = getFavoriteCount ?? (() => 0);
 
@@ -673,7 +679,7 @@ function GlobalPrescriptionSearch({
       )}
     </div>
   );
-}
+});
 
 
 function FlagToggle({ flag, active, onToggle }: {
@@ -2351,6 +2357,10 @@ const PrescricaoPage = () => {
   const [versionHistory, setVersionHistory] = useState<Array<{ id: string; version: number; status: string; created_at: string; digital_signature: DigitalSignature | null }>>([]);
   const [showHistory, setShowHistory] = useState(false);
 
+  // Keyboard shortcuts
+  const globalSearchRef = useRef<GlobalPrescriptionSearchHandle | null>(null);
+  const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
+
   // Validation: check if past 05:00 renewal time
   const isPastRenewalTime = useMemo(() => {
     const now = new Date();
@@ -2894,6 +2904,74 @@ const PrescricaoPage = () => {
     setSelectedIds(new Set());
   }, [selectedIds]);
 
+  // ===== Keyboard shortcuts =====
+  // Ctrl/⌘+K or "/" → focus search · Ctrl/⌘+D → duplicate selected
+  // Ctrl/⌘+Enter → validate prescription · Ctrl/⌘+Y → repeat yesterday
+  // ? → show help
+  const shortcutHandlersRef = useRef<{
+    duplicate: () => void;
+    repeat: () => void;
+    validate: () => void;
+  }>({ duplicate: () => {}, repeat: () => {}, validate: () => {} });
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTyping =
+        !!target && (
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable
+        );
+      const mod = e.ctrlKey || e.metaKey;
+
+      // Focus search: Ctrl/⌘+K (works even while typing) or "/" (only when not typing)
+      if (mod && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        globalSearchRef.current?.focus();
+        return;
+      }
+      if (!isTyping && e.key === "/") {
+        e.preventDefault();
+        globalSearchRef.current?.focus();
+        return;
+      }
+
+      if (isTyping) return;
+
+      // Help: ?
+      if (e.key === "?" || (e.shiftKey && e.key === "/")) {
+        e.preventDefault();
+        setShortcutsHelpOpen(true);
+        return;
+      }
+
+      // Duplicate selected: Ctrl/⌘+D
+      if (mod && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        shortcutHandlersRef.current.duplicate();
+        return;
+      }
+
+      // Repeat yesterday: Ctrl/⌘+Y
+      if (mod && e.key.toLowerCase() === "y") {
+        e.preventDefault();
+        shortcutHandlersRef.current.repeat();
+        return;
+      }
+
+      // Validate all: Ctrl/⌘+Enter
+      if (mod && e.key === "Enter") {
+        e.preventDefault();
+        shortcutHandlersRef.current.validate();
+        return;
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   // Drag & drop
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
@@ -3080,6 +3158,18 @@ const PrescricaoPage = () => {
     setRepeatSelectedIds(new Set());
     setRepeatSourceMeta(null);
   }, [repeatSelectedIds, repeatSourceItems]);
+
+  // Keep keyboard-shortcut handlers in sync with latest closures
+  useEffect(() => {
+    shortcutHandlersRef.current = {
+      duplicate: () => {
+        if (selectedIds.size > 0) duplicateSelected();
+        else toast.info("Selecione um ou mais itens para duplicar");
+      },
+      repeat: () => openRepeatDialog(),
+      validate: () => requestValidateAll(),
+    };
+  }, [selectedIds, duplicateSelected, openRepeatDialog, requestValidateAll]);
 
   // Save prescription to database
   const handleSave = async () => {
@@ -3372,6 +3462,15 @@ const PrescricaoPage = () => {
               <Button variant="outline" size="sm" onClick={openRepeatDialog} disabled={!patient.name.trim()} className="h-6 text-[10px] gap-1">
                 <CopyPlus className="h-3 w-3" /> Repetir de ontem
               </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" onClick={() => setShortcutsHelpOpen(true)} className="h-6 px-1.5 text-[10px] gap-1 text-muted-foreground hover:text-foreground">
+                    <kbd className="px-1 py-0 rounded border border-border bg-muted text-[9px] font-mono">?</kbd>
+                    <span className="hidden md:inline">Atalhos</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Atalhos de teclado (?)</TooltipContent>
+              </Tooltip>
               <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-6 text-[10px] gap-1">
                 <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
               </Button>
@@ -3711,6 +3810,7 @@ const PrescricaoPage = () => {
             <span className="text-xs font-semibold text-foreground whitespace-nowrap">Adicionar item</span>
           </div>
           <GlobalPrescriptionSearch
+            ref={globalSearchRef}
             onAddItem={addItem}
             onAddNonStandard={(name: string) => { setNonStdName(name); addNonStandard(); }}
             getFavoriteCount={getFavoriteCount}
@@ -4168,6 +4268,49 @@ const PrescricaoPage = () => {
         onOpenChange={setTevProtocolOpen}
         patient={patient ? { name: patient.name, age: patient.age, bed: patient.bed, weight: patient.weight } : null}
       />
+
+      {/* Keyboard Shortcuts Help Dialog */}
+      <Dialog open={shortcutsHelpOpen} onOpenChange={setShortcutsHelpOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Zap className="h-4 w-4 text-primary" />
+              Atalhos de teclado · Prescrição
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Use atalhos para agilizar o fluxo. Funcionam em qualquer lugar da página.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1">
+            {[
+              { keys: ["Ctrl/⌘", "K"], desc: "Focar na busca de itens" },
+              { keys: ["/"], desc: "Focar na busca (alternativa)" },
+              { keys: ["Ctrl/⌘", "D"], desc: "Duplicar itens selecionados" },
+              { keys: ["Ctrl/⌘", "Y"], desc: "Repetir prescrição anterior" },
+              { keys: ["Ctrl/⌘", "Enter"], desc: "Validar prescrição" },
+              { keys: ["Esc"], desc: "Fechar diálogos" },
+              { keys: ["?"], desc: "Mostrar este painel" },
+            ].map((s) => (
+              <div key={s.desc} className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-accent/40 transition-colors">
+                <span className="text-sm text-foreground">{s.desc}</span>
+                <div className="flex items-center gap-1">
+                  {s.keys.map((k, i) => (
+                    <span key={i} className="flex items-center gap-1">
+                      <kbd className="inline-flex items-center justify-center min-w-[28px] h-6 px-1.5 rounded border border-border bg-muted text-[11px] font-mono font-medium text-muted-foreground shadow-sm">
+                        {k}
+                      </kbd>
+                      {i < s.keys.length - 1 && <span className="text-muted-foreground text-xs">+</span>}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground text-center mt-1">
+            Atalhos não disparam enquanto você digita em campos de texto (exceto <kbd className="px-1 py-0.5 rounded border border-border bg-muted text-[10px] font-mono">Ctrl/⌘+K</kbd>).
+          </p>
+        </DialogContent>
+      </Dialog>
 
       {/* Repeat Previous Prescription Dialog */}
       <Dialog open={repeatDialogOpen} onOpenChange={setRepeatDialogOpen}>
