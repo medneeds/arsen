@@ -84,6 +84,7 @@ import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/P
 import { TevProtocolDialog } from "@/components/TevProtocolDialog";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { useMedicationFavorites } from "@/hooks/useMedicationFavorites";
+import { useQuickPrescriptionTemplates, type QuickPrescriptionTemplate, type QuickTemplateItem } from "@/hooks/useQuickPrescriptionTemplates";
 import { Star } from "lucide-react";
 
 // --- Types ---
