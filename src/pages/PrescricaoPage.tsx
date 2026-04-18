@@ -2437,11 +2437,6 @@ const PrescricaoPage = () => {
     return activeItems.filter(i => !isItemValidatedToday(i)).length;
   }, [items, isItemValidatedToday]);
 
-  const activeItemsCount = useMemo(
-    () => items.filter(i => i.status === 'active').length,
-    [items]
-  );
-
   // Password confirmation dialog state
   const [passwordConfirmOpen, setPasswordConfirmOpen] = useState(false);
   const [pendingValidationAction, setPendingValidationAction] = useState<
