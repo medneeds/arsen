@@ -628,7 +628,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
                         {fav}×
                       </Badge>
                     )}
-                    {(selectedCat === 'all' || selectedCat === 'favorites') && catConfig && (
+                    {catConfig && (
                       <Badge variant="outline" className={cn("text-[9px] px-1.5", catConfig.color)}>{catConfig.label}</Badge>
                     )}
                     {med.defaultRoute !== '-' && (
