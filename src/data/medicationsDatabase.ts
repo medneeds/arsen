@@ -191,50 +191,133 @@ export const CARE_OPTIONS: MedicationEntry[] = [
 
 // ========== MEDICAMENTOS GERAIS ==========
 export const MEDICATIONS_DATABASE: MedicationEntry[] = [
-  // Analgésicos e Antipiréticos
-  { id: 'm1', name: 'Dipirona', presentation: '500mg/mL - Ampola 2mL', defaultDose: '1g (2mL)', defaultRoute: 'Intravenosa', defaultPosology: '6/6h', defaultSchedule: '06h', instructions: 'Diluir em 18mL de SF0,9%. Infundir lentamente.', category: 'medication', aliases: ['Metamizol'] },
-  { id: 'm2', name: 'Dipirona', presentation: '500mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '6/6h', defaultSchedule: '06h', category: 'medication' },
-  { id: 'm3', name: 'Paracetamol', presentation: '500mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '6/6h', defaultSchedule: '06h', category: 'medication' },
-  { id: 'm4', name: 'Paracetamol', presentation: '750mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '6/6h', defaultSchedule: '06h', category: 'medication' },
-  { id: 'm5', name: 'Tramadol', presentation: '50mg/mL - Ampola 2mL', defaultDose: '100mg (2mL)', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 30 min.', category: 'medication' },
+  // ===== Analgésicos e Antipiréticos =====
+  { id: 'm1', name: 'Dipirona', presentation: '500mg/mL - Ampola 2mL', defaultDose: '1g (2mL)', defaultRoute: 'Intravenosa', defaultPosology: '6/6h', defaultSchedule: '06h', instructions: 'Diluir em 18mL de SF0,9%. Infundir lentamente.', category: 'medication', aliases: ['Metamizol', 'Novalgina'] },
+  { id: 'm2', name: 'Dipirona', presentation: '500mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '6/6h', defaultSchedule: '06h', category: 'medication', aliases: ['Metamizol', 'Novalgina'] },
+  { id: 'm3', name: 'Paracetamol', presentation: '500mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '6/6h', defaultSchedule: '06h', category: 'medication', aliases: ['Tylenol', 'Acetaminofeno'] },
+  { id: 'm4', name: 'Paracetamol', presentation: '750mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '6/6h', defaultSchedule: '06h', category: 'medication', aliases: ['Tylenol', 'Acetaminofeno'] },
+  { id: 'm5', name: 'Tramadol', presentation: '50mg/mL - Ampola 2mL', defaultDose: '100mg (2mL)', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 30 min.', category: 'medication', aliases: ['Tramal'] },
+  { id: 'm6', name: 'Tramadol', presentation: '50mg cápsula', defaultDose: '1 cáps', defaultRoute: 'Oral', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication' },
+  { id: 'm7', name: 'Codeína', presentation: '30mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '6/6h', defaultSchedule: '06h', category: 'medication' },
+  { id: 'm8', name: 'Cetoprofeno', presentation: '100mg - Frasco-ampola', defaultDose: '100mg', defaultRoute: 'Intravenosa', defaultPosology: '12/12h', defaultSchedule: '08h', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 20 min.', category: 'medication', aliases: ['Profenid'] },
+  { id: 'm9', name: 'Ibuprofeno', presentation: '600mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Alivium', 'Advil'] },
+  { id: 'm10', name: 'Tenoxicam', presentation: '20mg/2mL - Ampola', defaultDose: '20mg', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '08h', category: 'medication', aliases: ['Tilatil'] },
+  { id: 'm11', name: 'Cetorolaco', presentation: '30mg/mL - Ampola', defaultDose: '30mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Toragesic'] },
+  { id: 'm12', name: 'Nimesulida', presentation: '100mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication' },
 
-  // Cardiovascular
-  { id: 'm20', name: 'AAS', presentation: '100mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '13h', category: 'medication' },
-  { id: 'm21', name: 'Clopidogrel', presentation: '75mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication' },
-  { id: 'm22', name: 'Sinvastatina', presentation: '40mg comprimido', defaultDose: '2 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '22h', category: 'medication' },
-  { id: 'm23', name: 'Enalapril', presentation: '10mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication' },
-  { id: 'm24', name: 'Losartana', presentation: '50mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication' },
-  { id: 'm25', name: 'Anlodipino', presentation: '5mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication' },
-  { id: 'm26', name: 'Enoxaparina (Clexane)', presentation: '40mg/0,4mL - Seringa', defaultDose: '40mg', defaultRoute: 'Subcutânea', defaultPosology: '24/24h', defaultSchedule: '22h', instructions: 'Administrar 1 seringa.', category: 'medication' },
-  { id: 'm27', name: 'Enoxaparina (Clexane)', presentation: '60mg/0,6mL - Seringa', defaultDose: '60mg', defaultRoute: 'Subcutânea', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication' },
-  { id: 'm28', name: 'Furosemida', presentation: '20mg/2mL - Ampola', defaultDose: '20mg', defaultRoute: 'Intravenosa', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication' },
-  { id: 'm29', name: 'Furosemida', presentation: '40mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication' },
+  // ===== Cardiovascular =====
+  { id: 'm20', name: 'AAS', presentation: '100mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '13h', category: 'medication', aliases: ['Aspirina', 'Ácido Acetilsalicílico'] },
+  { id: 'm20b', name: 'AAS', presentation: '300mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '13h', category: 'medication', aliases: ['Aspirina'] },
+  { id: 'm21', name: 'Clopidogrel', presentation: '75mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication', aliases: ['Plavix'] },
+  { id: 'm22', name: 'Sinvastatina', presentation: '40mg comprimido', defaultDose: '2 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '22h', category: 'medication', aliases: ['Zocor'] },
+  { id: 'm22b', name: 'Atorvastatina', presentation: '40mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '22h', category: 'medication', aliases: ['Lipitor', 'Citalor'] },
+  { id: 'm22c', name: 'Rosuvastatina', presentation: '20mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '22h', category: 'medication', aliases: ['Crestor'] },
+  { id: 'm23', name: 'Enalapril', presentation: '10mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Renitec'] },
+  { id: 'm23b', name: 'Captopril', presentation: '25mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication' },
+  { id: 'm24', name: 'Losartana', presentation: '50mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Cozaar', 'Losartan'] },
+  { id: 'm24b', name: 'Valsartana', presentation: '160mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication', aliases: ['Diovan'] },
+  { id: 'm25', name: 'Anlodipino', presentation: '5mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication', aliases: ['Norvasc', 'Amlodipino'] },
+  { id: 'm25b', name: 'Anlodipino', presentation: '10mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication' },
+  { id: 'm25c', name: 'Hidralazina', presentation: '20mg/mL - Ampola', defaultDose: '20mg', defaultRoute: 'Intravenosa', defaultPosology: '6/6h', defaultSchedule: '06h', instructions: 'Diluir em 10mL SF0,9%. Aplicar lentamente.', category: 'medication', aliases: ['Apresolina'] },
+  { id: 'm25d', name: 'Metoprolol', presentation: '5mg/5mL - Ampola', defaultDose: '5mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Seloken'] },
+  { id: 'm25e', name: 'Metoprolol', presentation: '50mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication' },
+  { id: 'm25f', name: 'Carvedilol', presentation: '6,25mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Coreg'] },
+  { id: 'm25g', name: 'Atenolol', presentation: '25mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication' },
+  { id: 'm25h', name: 'Propranolol', presentation: '40mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication' },
+  { id: 'm25i', name: 'Digoxina', presentation: '0,25mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication' },
+  { id: 'm25j', name: 'Espironolactona', presentation: '25mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication', aliases: ['Aldactone'] },
+  { id: 'm25k', name: 'Hidroclorotiazida', presentation: '25mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication', aliases: ['HCTZ'] },
+  { id: 'm25l', name: 'Isossorbida (Mononitrato)', presentation: '40mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Monocordil'] },
+  { id: 'm25m', name: 'Isossorbida (Dinitrato) Sublingual', presentation: '5mg comprimido', defaultDose: '1 comp', defaultRoute: 'Sublingual', defaultPosology: 'SOS', defaultSchedule: 'ACM', category: 'medication', aliases: ['Isordil'] },
 
-  // Gastrointestinal
-  { id: 'm30', name: 'Omeprazol', presentation: '40mg - Frasco-ampola', defaultDose: '1 frasco', defaultRoute: 'Intravenosa', defaultPosology: '1x/dia', defaultSchedule: '06h', instructions: 'Diluir 01 frasco em diluente próprio. Via Intravenosa.', category: 'medication' },
-  { id: 'm31', name: 'Omeprazol', presentation: '40mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '24/24h', defaultSchedule: '06h', instructions: 'NA AUSÊNCIA DO ITEM EV.', category: 'medication' },
-  { id: 'm32', name: 'Pantoprazol', presentation: '40mg - Frasco-ampola', defaultDose: '1 frasco', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '06h', category: 'medication' },
-  { id: 'm33', name: 'Metoclopramida (Plasil)', presentation: '10mg/2mL - Ampola', defaultDose: '10mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication' },
-  { id: 'm34', name: 'Ondansetrona', presentation: '4mg/2mL - Ampola', defaultDose: '4mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication' },
-  { id: 'm35', name: 'Bromoprida', presentation: '10mg/2mL - Ampola', defaultDose: '10mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication' },
-  { id: 'm36', name: 'Lactulose', presentation: '667mg/mL - Frasco', defaultDose: '15-30mL', defaultRoute: 'Oral', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication' },
+  // ===== Anticoagulantes =====
+  { id: 'm26', name: 'Enoxaparina (Clexane)', presentation: '40mg/0,4mL - Seringa', defaultDose: '40mg', defaultRoute: 'Subcutânea', defaultPosology: '24/24h', defaultSchedule: '22h', instructions: 'Profilaxia TEV.', category: 'medication', aliases: ['Clexane', 'Enoxa'] },
+  { id: 'm27', name: 'Enoxaparina (Clexane)', presentation: '60mg/0,6mL - Seringa', defaultDose: '60mg', defaultRoute: 'Subcutânea', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Clexane'] },
+  { id: 'm27b', name: 'Enoxaparina (Clexane)', presentation: '80mg/0,8mL - Seringa', defaultDose: '80mg', defaultRoute: 'Subcutânea', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Clexane'] },
+  { id: 'm27c', name: 'Varfarina', presentation: '5mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '18h', instructions: 'Monitorar INR.', category: 'medication', aliases: ['Marevan', 'Warfarin'] },
+  { id: 'm27d', name: 'Rivaroxabana', presentation: '20mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication', aliases: ['Xarelto'] },
+  { id: 'm27e', name: 'Apixabana', presentation: '5mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Eliquis'] },
 
-  // Corticosteróides
-  { id: 'm42', name: 'Hidrocortisona', presentation: '100mg - Frasco-ampola', defaultDose: '100mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication' },
-  { id: 'm43', name: 'Dexametasona', presentation: '4mg/mL - Ampola 2,5mL', defaultDose: '10mg', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '08h', category: 'medication' },
-  { id: 'm44', name: 'Prednisona', presentation: '20mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication' },
+  // ===== Diuréticos =====
+  { id: 'm28', name: 'Furosemida', presentation: '20mg/2mL - Ampola', defaultDose: '20mg', defaultRoute: 'Intravenosa', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Lasix'] },
+  { id: 'm29', name: 'Furosemida', presentation: '40mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication', aliases: ['Lasix'] },
+  { id: 'm29b', name: 'Manitol 20%', presentation: '250mL - Frasco', defaultDose: '125mL', defaultRoute: 'Intravenosa', defaultPosology: '6/6h', defaultSchedule: '06h', instructions: 'Infundir em 30 min. Filtro de linha recomendado.', category: 'medication' },
 
-  // Anticonvulsivantes
-  { id: 'm47', name: 'Fenitoína', presentation: '250mg/5mL - Ampola', defaultDose: '250mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', instructions: 'Diluir em 250mL de SF0,9%. Infundir lentamente (máx 50mg/min).', category: 'medication' },
-  { id: 'm48', name: 'Diazepam', presentation: '10mg/2mL - Ampola', defaultDose: '10mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: 'ACM', instructions: 'Aplicar lentamente. Não diluir.', category: 'medication' },
+  // ===== Gastrointestinal =====
+  { id: 'm30', name: 'Omeprazol', presentation: '40mg - Frasco-ampola', defaultDose: '1 frasco', defaultRoute: 'Intravenosa', defaultPosology: '1x/dia', defaultSchedule: '06h', instructions: 'Diluir 01 frasco em diluente próprio. Via Intravenosa.', category: 'medication', aliases: ['Losec'] },
+  { id: 'm31', name: 'Omeprazol', presentation: '40mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '24/24h', defaultSchedule: '06h', category: 'medication', aliases: ['Losec'] },
+  { id: 'm31b', name: 'Omeprazol', presentation: '20mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '24/24h', defaultSchedule: '06h', category: 'medication' },
+  { id: 'm32', name: 'Pantoprazol', presentation: '40mg - Frasco-ampola', defaultDose: '1 frasco', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '06h', category: 'medication', aliases: ['Pantozol'] },
+  { id: 'm32b', name: 'Esomeprazol', presentation: '40mg - Frasco-ampola', defaultDose: '1 frasco', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '06h', category: 'medication', aliases: ['Nexium'] },
+  { id: 'm32c', name: 'Ranitidina', presentation: '50mg/2mL - Ampola', defaultDose: '50mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication' },
+  { id: 'm33', name: 'Metoclopramida (Plasil)', presentation: '10mg/2mL - Ampola', defaultDose: '10mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Plasil'] },
+  { id: 'm34', name: 'Ondansetrona', presentation: '4mg/2mL - Ampola', defaultDose: '4mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Zofran', 'Vonau'] },
+  { id: 'm34b', name: 'Ondansetrona', presentation: '8mg/4mL - Ampola', defaultDose: '8mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Zofran'] },
+  { id: 'm35', name: 'Bromoprida', presentation: '10mg/2mL - Ampola', defaultDose: '10mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Digesan'] },
+  { id: 'm36', name: 'Lactulose', presentation: '667mg/mL - Frasco', defaultDose: '15-30mL', defaultRoute: 'Oral', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Lactopurga'] },
+  { id: 'm36b', name: 'Bisacodil', presentation: '5mg comprimido', defaultDose: '2 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '20h', category: 'medication', aliases: ['Dulcolax'] },
+  { id: 'm36c', name: 'Hioscina (Buscopan) Composto', presentation: '20mg/2,5g - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', instructions: 'Diluir em 100mL SF0,9%. Infundir em 30 min.', category: 'medication', aliases: ['Buscopan Composto', 'Buscofem'] },
+  { id: 'm36d', name: 'Hioscina (Buscopan) Simples', presentation: '20mg/mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Buscopan'] },
+  { id: 'm36e', name: 'Loperamida', presentation: '2mg comprimido', defaultDose: '2 comp', defaultRoute: 'Oral', defaultPosology: 'SOS', defaultSchedule: 'ACM', category: 'medication', aliases: ['Imosec'] },
+  { id: 'm36f', name: 'Simeticona', presentation: '40mg/mL - Frasco', defaultDose: '40 gotas', defaultRoute: 'Oral', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Luftal'] },
+  { id: 'm36g', name: 'Sulfato Ferroso', presentation: '40mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication' },
 
-  // Eletrólitos
+  // ===== Corticosteróides =====
+  { id: 'm42', name: 'Hidrocortisona', presentation: '100mg - Frasco-ampola', defaultDose: '100mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Solu-Cortef'] },
+  { id: 'm42b', name: 'Hidrocortisona', presentation: '500mg - Frasco-ampola', defaultDose: '500mg', defaultRoute: 'Intravenosa', defaultPosology: '6/6h', defaultSchedule: '06h', category: 'medication' },
+  { id: 'm43', name: 'Dexametasona', presentation: '4mg/mL - Ampola 2,5mL', defaultDose: '10mg', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '08h', category: 'medication', aliases: ['Decadron'] },
+  { id: 'm43b', name: 'Metilprednisolona', presentation: '500mg - Frasco-ampola', defaultDose: '500mg', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '08h', instructions: 'Pulsoterapia.', category: 'medication', aliases: ['Solu-Medrol'] },
+  { id: 'm44', name: 'Prednisona', presentation: '20mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication', aliases: ['Meticorten'] },
+  { id: 'm44b', name: 'Prednisona', presentation: '5mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication' },
+
+  // ===== Anticonvulsivantes / Neurológicos =====
+  { id: 'm47', name: 'Fenitoína', presentation: '250mg/5mL - Ampola', defaultDose: '250mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', instructions: 'Diluir em 250mL de SF0,9%. Infundir lentamente (máx 50mg/min).', category: 'medication', aliases: ['Hidantal'] },
+  { id: 'm48', name: 'Diazepam', presentation: '10mg/2mL - Ampola', defaultDose: '10mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: 'ACM', instructions: 'Aplicar lentamente. Não diluir.', category: 'medication', aliases: ['Valium'] },
+  { id: 'm48b', name: 'Clonazepam', presentation: '2mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Rivotril'] },
+  { id: 'm48c', name: 'Lorazepam', presentation: '2mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: 'SOS', defaultSchedule: 'ACM', category: 'medication', aliases: ['Lorax'] },
+  { id: 'm48d', name: 'Ácido Valproico', presentation: '500mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Depakene', 'Valpakine'] },
+  { id: 'm48e', name: 'Carbamazepina', presentation: '200mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Tegretol'] },
+  { id: 'm48f', name: 'Levetiracetam', presentation: '500mg/5mL - Frasco-ampola', defaultDose: '500mg', defaultRoute: 'Intravenosa', defaultPosology: '12/12h', defaultSchedule: '08h', instructions: 'Diluir em 100mL SF0,9%. Infundir em 15 min.', category: 'medication', aliases: ['Keppra'] },
+  { id: 'm48g', name: 'Haloperidol', presentation: '5mg/mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intramuscular', defaultPosology: 'SOS', defaultSchedule: 'ACM', category: 'medication', aliases: ['Haldol'] },
+  { id: 'm48h', name: 'Quetiapina', presentation: '25mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Seroquel'] },
+  { id: 'm48i', name: 'Risperidona', presentation: '2mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Risperdal'] },
+  { id: 'm48j', name: 'Sertralina', presentation: '50mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication', aliases: ['Zoloft'] },
+  { id: 'm48k', name: 'Amitriptilina', presentation: '25mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '22h', category: 'medication', aliases: ['Tryptanol'] },
+
+  // ===== Eletrólitos / Reposições adicionais =====
   { id: 'm50', name: 'Sulfato de Magnésio 50%', presentation: '10mL - Ampola', defaultDose: '2g', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: 'ACM', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 30 min.', category: 'medication' },
   { id: 'm51', name: 'Gluconato de Cálcio 10%', presentation: '10mL - Ampola', defaultDose: '10mL', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: 'ACM', instructions: 'Infundir lentamente em 10-20 min. Monitorar FC.', category: 'medication' },
 
-  // Outros
+  // ===== Antialérgicos =====
+  { id: 'm52', name: 'Prometazina', presentation: '50mg/2mL - Ampola', defaultDose: '25-50mg', defaultRoute: 'Intramuscular', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Fenergan'] },
+  { id: 'm53', name: 'Difenidramina', presentation: '50mg/mL - Ampola', defaultDose: '50mg', defaultRoute: 'Intravenosa', defaultPosology: '6/6h', defaultSchedule: '06h', category: 'medication', aliases: ['Difenidrin'] },
+  { id: 'm54', name: 'Loratadina', presentation: '10mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication', aliases: ['Claritin'] },
+  { id: 'm55', name: 'Dexclorfeniramina', presentation: '2mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Polaramine'] },
+
+  // ===== Endócrino =====
+  { id: 'm60', name: 'Levotiroxina', presentation: '50mcg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '06h', instructions: 'Em jejum, 30 min antes do desjejum.', category: 'medication', aliases: ['Puran T4', 'Synthroid'] },
+  { id: 'm61', name: 'Levotiroxina', presentation: '100mcg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '06h', category: 'medication', aliases: ['Puran T4'] },
+  { id: 'm62', name: 'Metformina', presentation: '850mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication', aliases: ['Glifage', 'Glucoformin'] },
+  { id: 'm63', name: 'Glibenclamida', presentation: '5mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Daonil'] },
+  { id: 'm64', name: 'Glimepirida', presentation: '2mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '1x/dia', defaultSchedule: '08h', category: 'medication', aliases: ['Amaryl'] },
+
+  // ===== Antimicrobianos extras (orais) =====
+  { id: 'm70', name: 'Amoxicilina', presentation: '500mg cápsula', defaultDose: '1 cáps', defaultRoute: 'Oral', defaultPosology: '8/8h', defaultSchedule: '08h', category: 'medication' },
+  { id: 'm71', name: 'Amoxicilina + Clavulanato', presentation: '875+125mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Clavulin'] },
+  { id: 'm72', name: 'Cefalexina', presentation: '500mg cápsula', defaultDose: '1 cáps', defaultRoute: 'Oral', defaultPosology: '6/6h', defaultSchedule: '06h', category: 'medication', aliases: ['Keflex'] },
+  { id: 'm73', name: 'Sulfametoxazol + Trimetoprima', presentation: '800+160mg comprimido', defaultDose: '1 comp', defaultRoute: 'Oral', defaultPosology: '12/12h', defaultSchedule: '08h', category: 'medication', aliases: ['Bactrim'] },
+
+  // ===== Outros =====
   { id: 'm56', name: 'Tiamina (Vitamina B1)', presentation: '100mg/mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '08h', category: 'medication' },
-  { id: 'm57', name: 'Ácido Tranexâmico', presentation: '250mg/5mL - Ampola', defaultDose: '1g', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 10 min.', category: 'medication' },
+  { id: 'm57', name: 'Ácido Tranexâmico', presentation: '250mg/5mL - Ampola', defaultDose: '1g', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: '08h', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 10 min.', category: 'medication', aliases: ['Transamin'] },
+  { id: 'm58', name: 'Vitamina K (Fitomenadiona)', presentation: '10mg/mL - Ampola', defaultDose: '10mg', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '08h', category: 'medication', aliases: ['Kanakion'] },
+  { id: 'm59', name: 'Naloxona', presentation: '0,4mg/mL - Ampola', defaultDose: '0,4mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: 'ACM', instructions: 'Antagonista opioide.', category: 'medication', aliases: ['Narcan'] },
+  { id: 'm65', name: 'Flumazenil', presentation: '0,5mg/5mL - Ampola', defaultDose: '0,2mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: 'ACM', instructions: 'Antagonista benzodiazepínico.', category: 'medication', aliases: ['Lanexat'] },
+  { id: 'm66', name: 'Adenosina', presentation: '6mg/2mL - Ampola', defaultDose: '6mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: 'ACM', instructions: 'Bolus rápido + flush 20mL SF0,9%.', category: 'medication' },
+  { id: 'm67', name: 'Atropina', presentation: '0,25mg/mL - Ampola', defaultDose: '0,5-1mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: 'ACM', category: 'medication' },
+  { id: 'm68', name: 'Adrenalina (Epinefrina)', presentation: '1mg/mL - Ampola', defaultDose: '1mg', defaultRoute: 'Intravenosa', defaultPosology: 'SOS', defaultSchedule: 'ACM', instructions: 'PCR conforme ACLS.', category: 'medication', aliases: ['Epinefrina'] },
+  { id: 'm69', name: 'Gluconato de Cálcio para Hipercalemia', presentation: '10mL - Ampola', defaultDose: '20mL', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: 'ACM', category: 'medication' },
+  { id: 'm75', name: 'Insulina Regular SOS Hipercalemia', presentation: '100UI/mL - Frasco', defaultDose: '10UI', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: 'ACM', instructions: 'Com 50mL de Glicose 50%. Hipercalemia.', category: 'medication' },
 ];
 
 // ========== TODOS OS ITENS POR CATEGORIA ==========
