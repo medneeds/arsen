@@ -3801,6 +3801,7 @@ const PrescricaoPage = () => {
             <span className="text-xs font-semibold text-foreground whitespace-nowrap">Adicionar item</span>
           </div>
           <GlobalPrescriptionSearch
+            ref={globalSearchRef}
             onAddItem={addItem}
             onAddNonStandard={(name: string) => { setNonStdName(name); addNonStandard(); }}
             getFavoriteCount={getFavoriteCount}
