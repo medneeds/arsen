@@ -49,6 +49,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { ShiftRenewalAlert } from "@/components/ShiftRenewalAlert";
+import { PrescriptionDiffDialog } from "@/components/PrescriptionDiffDialog";
 import { useHospital } from "@/contexts/HospitalContext";
 import {
   DndContext,
@@ -2362,6 +2363,7 @@ const PrescricaoPage = () => {
   const [loadingList, setLoadingList] = useState(false);
   const [versionHistory, setVersionHistory] = useState<Array<{ id: string; version: number; status: string; created_at: string; digital_signature: DigitalSignature | null }>>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [diffDialogOpen, setDiffDialogOpen] = useState(false);
 
   // Keyboard shortcuts
   const globalSearchRef = useRef<GlobalPrescriptionSearchHandle | null>(null);
