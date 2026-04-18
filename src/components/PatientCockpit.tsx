@@ -78,7 +78,12 @@ function formatDate(d?: string): string {
 
 export function PatientCockpit({ patient, className, variant = "fixed" }: PatientCockpitProps) {
   const { namesHidden } = usePrivacy();
-  const navigate = useNavigate();
+  const { currentHospital } = useHospital();
+  const { prescription } = useActivePrescription(
+    patient?.name || null,
+    currentHospital?.id || null,
+  );
+
 
   if (!patient) {
     return (
