@@ -2333,6 +2333,69 @@ export type Database = {
           },
         ]
       }
+      prescription_quick_templates: {
+        Row: {
+          clinical_category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          hospital_unit_id: string | null
+          id: string
+          items: Json
+          last_used_at: string | null
+          name: string
+          scope: string
+          state_id: string | null
+          updated_at: string
+          use_count: number
+        }
+        Insert: {
+          clinical_category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          hospital_unit_id?: string | null
+          id?: string
+          items?: Json
+          last_used_at?: string | null
+          name: string
+          scope?: string
+          state_id?: string | null
+          updated_at?: string
+          use_count?: number
+        }
+        Update: {
+          clinical_category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          hospital_unit_id?: string | null
+          id?: string
+          items?: Json
+          last_used_at?: string | null
+          name?: string
+          scope?: string
+          state_id?: string | null
+          updated_at?: string
+          use_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prescription_quick_templates_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prescription_quick_templates_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prescription_validations: {
         Row: {
           allergy_check_passed: boolean | null
@@ -3687,6 +3750,10 @@ export type Database = {
       admin_update_user_password: {
         Args: { p_email: string; p_new_password: string }
         Returns: Json
+      }
+      bump_quick_template_use: {
+        Args: { _template_id: string }
+        Returns: undefined
       }
       calc_dv_mod11: { Args: { p_base: string }; Returns: number }
       check_patient_duplicate: {
