@@ -2488,7 +2488,7 @@ const PrescricaoPage = () => {
   // === Pré-validação clínica: alertas (alergia / interações graves / duplicidade) ===
   // O médico é alertado mas NÃO bloqueado: pode confirmar ciência e prosseguir.
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
-  const [pendingAlerts, setPendingAlerts] = useState<Awaited<ReturnType<typeof import('@/lib/clinicalAlertChecks').runClinicalAlertChecks>>>([]);
+  const [pendingAlerts, setPendingAlerts] = useState<ClinicalAlert[]>([]);
 
   // Continua o fluxo de validação após (eventual) checagem de alertas:
   // se sessão ativa → aplica direto; senão → pede senha.
@@ -2503,13 +2503,12 @@ const PrescricaoPage = () => {
   }, [isValidationSessionActive, applyValidation, VALIDATION_SESSION_MS]);
 
   // Solicita validação em bloco — checa alertas antes; pode pular senha se sessão ativa
-  const requestValidateAll = useCallback(async () => {
+  const requestValidateAll = useCallback(() => {
     const activeItems = items.filter(i => i.status === 'active');
     if (activeItems.length === 0) {
       toast.error("Nenhum item ativo para validar");
       return;
     }
-    const { runClinicalAlertChecks } = await import('@/lib/clinicalAlertChecks');
     const alerts = runClinicalAlertChecks(items, patient.allergies);
     if (alerts.length > 0) {
       setPendingAlerts(alerts);
@@ -2521,8 +2520,7 @@ const PrescricaoPage = () => {
   }, [items, patient.allergies, proceedValidation]);
 
   // Solicita validação individual — checa alertas relativos ao item
-  const requestValidateItem = useCallback(async (id: string) => {
-    const { runClinicalAlertChecks } = await import('@/lib/clinicalAlertChecks');
+  const requestValidateItem = useCallback((id: string) => {
     const alerts = runClinicalAlertChecks(items, patient.allergies, { onlyItemId: id });
     if (alerts.length > 0) {
       setPendingAlerts(alerts);
