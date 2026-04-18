@@ -2359,6 +2359,7 @@ const PrescricaoPage = () => {
   const [psychotropicFormOpen, setPsychotropicFormOpen] = useState(false);
   const [tevProtocolOpen, setTevProtocolOpen] = useState(false);
   const [pendingAntimicrobialMed, setPendingAntimicrobialMed] = useState<MedicationEntry | null>(null);
+  const [highAlertGuideOpen, setHighAlertGuideOpen] = useState(false);
   const [compactView, setCompactView] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<PrescriptionCategory>>(new Set());
 
