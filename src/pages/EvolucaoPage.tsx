@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useEvolutions, EvolutionRecord } from "@/hooks/useEvolutions";
 import { usePatientCid } from "@/hooks/usePatientCid";
+import { usePatientLive } from "@/hooks/usePatientLive";
 import { EvolutionForm } from "@/components/evolution/EvolutionForm";
 import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import type { Patient } from "@/types/patient";
