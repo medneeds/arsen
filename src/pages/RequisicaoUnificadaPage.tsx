@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
-import { PatientInfoHeader } from "@/components/PatientInfoHeader";
+
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import { format } from "date-fns";
@@ -453,19 +453,8 @@ const RequisicaoUnificadaPage = () => {
         </div>
       </div>
 
-      {/* ── Patient Identification — shared component ── */}
-      {formPatientName && (
-        <PatientInfoHeader
-          name={formPatientName}
-          bed={formPatientBed}
-          unit={getSectorLabel(formPatientSector)}
-          age=""
-          sex=""
-          weight=""
-          allergies=""
-          record=""
-        />
-      )}
+      {/* Identificação do paciente fica integralmente no cockpit à direita
+          (com Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
 
       {/* ── Category Selector ── */}
       <div className="flex gap-2 overflow-x-auto pb-1 print:hidden">

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
-import { PatientInfoHeader } from "@/components/PatientInfoHeader";
+
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import {
@@ -83,17 +83,8 @@ const DocumentosPacientePage = () => {
             </div>
           </div>
 
-          {/* Patient Identification — shared component */}
-          <PatientInfoHeader
-            name={patientName}
-            bed={patientBed}
-            unit={sectorLabel}
-            age=""
-            sex=""
-            weight=""
-            allergies=""
-            record=""
-          />
+          {/* Identificação completa do paciente vive no cockpit à direita.
+              Prontuário e Atendimento aparecem direto, com "Ver mais" para o registro completo. */}
 
           {/* Document Modules Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArrowLeft, ArrowRight, ArrowLeftRight, History, Loader2, BedDouble, Clock } from "lucide-react";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
-import { PatientInfoHeader } from "@/components/PatientInfoHeader";
+
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import { usePatientMovements } from "@/hooks/usePatientMovements";
@@ -222,18 +222,8 @@ const MovimentacoesPage = () => {
           )}
         </div>
 
-        {/* Patient Identification */}
-        <PatientInfoHeader
-          name={patientName}
-          bed={patientBed}
-          unit={patientSector}
-          age=""
-          sex=""
-          weight=""
-          allergies=""
-          record=""
-          admissionDate=""
-        />
+        {/* Identificação completa do paciente está no cockpit à direita
+            (Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
 
         {/* Wizard Card */}
         <div className="rounded-xl border-2 border-primary/20 bg-card p-4 space-y-4">

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Patient } from "@/types/patient";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -5,19 +6,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
-  Activity, AlertTriangle, ArrowRight, ChevronRight,
-  ClipboardList, FileText, Heart, LogOut, Pill, Plus, Route,
+  Activity, AlertTriangle, ArrowRight, ChevronDown, ChevronRight,
+  ClipboardList, Copy, FileText, Heart, IdCard, LogOut, Pill, Plus, Route,
   ShieldAlert, Stethoscope, TestTubes, TrendingUp, User2
 } from "lucide-react";
 import { differenceInDays, parseISO, isValid, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { useNavigate } from "react-router-dom";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useActivePrescription } from "@/hooks/useActivePrescription";
 import { usePatientPendingItems } from "@/hooks/usePatientPendingItems";
 import { usePatientMovements } from "@/hooks/usePatientMovements";
+import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { formatDistanceToNow } from "date-fns";
 
 interface PatientCockpitProps {
@@ -82,6 +85,7 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
   const { namesHidden } = usePrivacy();
   const navigate = useNavigate();
   const { currentHospital } = useHospital();
+  const [showFullId, setShowFullId] = useState(false);
   const { prescription } = useActivePrescription(
     patient?.name || null,
     currentHospital?.id || null,
@@ -92,6 +96,11 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
     currentHospital?.id || null,
   );
   const { movements } = usePatientMovements(
+    patient?.id || null,
+    patient?.name || null,
+    currentHospital?.id || null,
+  );
+  const { prontuario, atendimento, registry } = usePatientIdentifiers(
     patient?.id || null,
     patient?.name || null,
     currentHospital?.id || null,
@@ -164,6 +173,12 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
             </div>
           </div>
 
+          {/* Identificadores oficiais — sempre visíveis */}
+          <div className="grid grid-cols-1 gap-1 mb-2">
+            <IdRow label="Prontuário" value={prontuario} mono />
+            <IdRow label="Atendimento" value={atendimento} mono />
+          </div>
+
           <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
             <div className="text-muted-foreground">
               Internação: <span className="text-foreground font-medium"><StayDays admissionDate={patient.admissionDate} /></span>
@@ -171,10 +186,51 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
             <div className="text-muted-foreground truncate">
               Adm: <span className="text-foreground font-medium">{formatDate(patient.admissionDate)}</span>
             </div>
-            <div className="text-muted-foreground col-span-2 truncate">
-              ID: <span className="text-foreground font-medium font-mono">{patient.id}</span>
-            </div>
           </div>
+
+          {/* Botão Ver mais — abre painel completo do prontuário */}
+          <button
+            type="button"
+            onClick={() => setShowFullId((v) => !v)}
+            className="mt-2 w-full inline-flex items-center justify-between gap-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border/50 hover:bg-muted/40"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <IdCard className="h-3 w-3" />
+              {showFullId ? "Ocultar dados completos" : "Ver dados do prontuário"}
+            </span>
+            <ChevronDown className={cn("h-3 w-3 transition-transform", showFullId && "rotate-180")} />
+          </button>
+
+          {showFullId && (
+            <div className="mt-2 rounded-md border border-border/60 bg-background/60 p-2.5 space-y-1.5 text-[11px]">
+              <FullIdRow label="Nome social" value={registry?.socialName} />
+              <FullIdRow label="CPF" value={registry?.cpf} mono />
+              <FullIdRow label="CNS" value={registry?.cns} mono />
+              <FullIdRow label="Nascimento" value={formatDate(registry?.birthDate || undefined)} />
+              <FullIdRow label="Sexo" value={registry?.sex} />
+              <FullIdRow label="Tipo sanguíneo" value={registry?.bloodType} />
+              <FullIdRow label="Mãe" value={registry?.motherName} />
+              <FullIdRow label="Telefone" value={registry?.phone} />
+              <FullIdRow
+                label="Endereço"
+                value={
+                  [registry?.address, registry?.neighborhood, registry?.city, registry?.state]
+                    .filter(Boolean)
+                    .join(", ") || null
+                }
+              />
+              <FullIdRow label="Alergias" value={registry?.allergies} />
+              <FullIdRow label="Comorbidades" value={registry?.comorbidities} />
+              {registry?.isUnidentified && (
+                <div className="text-[10px] uppercase font-semibold text-warning">
+                  Paciente não identificado · {registry.unidentifiedCode || "—"}
+                </div>
+              )}
+              <div className="pt-1 border-t border-border/40 text-[10px] text-muted-foreground/80 font-mono break-all">
+                ID interno: {patient.id}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ===== ZONA 2: AÇÕES PRIMÁRIAS ===== */}
@@ -540,6 +596,66 @@ function PendingStat({ label, value, tone }: { label: string; value: number; ton
     <div className={cn("rounded-md border px-2 py-1 flex items-center justify-between gap-1", toneClasses)}>
       <span className="text-[9.5px] font-medium leading-tight uppercase tracking-tight">{label}</span>
       <span className="text-sm font-bold tabular-nums">{value}</span>
+    </div>
+  );
+}
+
+/* ===== Identity rows ===== */
+
+function IdRow({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
+  const display = value || "—";
+  const handleCopy = () => {
+    if (!value) return;
+    navigator.clipboard.writeText(value).then(
+      () => toast.success(`${label} copiado`),
+      () => toast.error("Não foi possível copiar"),
+    );
+  };
+  return (
+    <div className="flex items-center justify-between gap-2 text-[11px] group">
+      <span className="text-muted-foreground uppercase tracking-wide text-[9.5px] font-semibold">
+        {label}
+      </span>
+      <div className="flex items-center gap-1 min-w-0">
+        <span
+          className={cn(
+            "text-foreground font-semibold truncate",
+            mono && "font-mono",
+            !value && "text-muted-foreground italic font-normal",
+          )}
+          title={display}
+        >
+          {display}
+        </span>
+        {value && (
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+            aria-label={`Copiar ${label}`}
+          >
+            <Copy className="h-2.5 w-2.5" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FullIdRow({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
+  return (
+    <div className="flex justify-between gap-2 text-[11px] preserve-case">
+      <span className="text-muted-foreground shrink-0">{label}:</span>
+      <span
+        className={cn(
+          "text-foreground text-right truncate",
+          mono && "font-mono",
+          !value && "text-muted-foreground italic",
+        )}
+        title={value || ""}
+      >
+        {value || "—"}
+      </span>
     </div>
   );
 }
