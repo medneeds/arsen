@@ -3713,6 +3713,7 @@ const PrescricaoPage = () => {
           <GlobalPrescriptionSearch
             onAddItem={addItem}
             onAddNonStandard={(name: string) => { setNonStdName(name); addNonStandard(); }}
+            getFavoriteCount={getFavoriteCount}
           />
         </div>
 
@@ -3808,6 +3809,7 @@ const PrescricaoPage = () => {
                           source={ALL_ITEMS_BY_CATEGORY[cat]}
                           onSelect={addItem}
                           placeholder={`Buscar ${config.label.toLowerCase()}...`}
+                          getFavoriteCount={getFavoriteCount}
                         />
                       )}
                     </div>
