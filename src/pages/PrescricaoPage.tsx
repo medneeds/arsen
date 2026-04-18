@@ -3823,11 +3823,12 @@ const PrescricaoPage = () => {
 
       {/* Spacer para evitar que a barra fixa cubra o conteúdo final */}
       <div aria-hidden className="h-14 print:hidden" />
-      {/* ===== ACTION TOOLBAR — fixa no rodapé da viewport ===== */}
-      <div className="fixed bottom-0 left-0 right-0 md:left-[20rem] z-40 px-3 py-2 flex items-center gap-1 flex-wrap border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 print:hidden shadow-[0_-2px_12px_-4px_hsl(var(--foreground)/0.12)]">
-        <Button variant="ghost" size="sm" onClick={handleNewPrescription} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
-          <Plus className="h-3 w-3" /> Nova
-        </Button>
+      {/* ===== ACTION TOOLBAR — fixa no rodapé via Portal (escapa de ancestrais com transform/overflow) ===== */}
+      {typeof document !== "undefined" && createPortal(
+        <div className="fixed bottom-0 left-0 right-0 md:left-[20rem] z-[60] px-3 py-2 flex items-center gap-1 flex-wrap border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 print:hidden shadow-[0_-2px_12px_-4px_hsl(var(--foreground)/0.12)]">
+          <Button variant="ghost" size="sm" onClick={handleNewPrescription} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
+            <Plus className="h-3 w-3" /> Nova
+          </Button>
         {/* Botão "Renovar" removido — renovação é automática. */}
         <span className="w-px h-4 bg-border/60" />
         <Button
