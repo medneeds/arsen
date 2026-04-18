@@ -55,8 +55,9 @@ export function useCockpitPatient(): Patient | null {
       pendencies: [],
       schedule: [],
       admissionHistory: "",
+      admissionDate: undefined,
       utiAllergies: [],
       clinicalStatus: "regular",
-    };
+    } as Patient;
   }, [livePatient, patientId, patientName, patientBed, patientSector, cidPrimary, cidSecondary]);
 }
