@@ -560,6 +560,21 @@ function GlobalPrescriptionSearch({
         >
           Todos
         </button>
+        {favTotal > 0 && (
+          <button
+            type="button"
+            onClick={() => setSelectedCat('favorites')}
+            className={cn(
+              "text-[10px] font-medium px-2.5 py-1 rounded-full border transition-all flex items-center gap-1",
+              selectedCat === 'favorites'
+                ? "bg-amber-400/20 text-amber-700 border-amber-400 dark:text-amber-300"
+                : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
+            )}
+          >
+            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+            Favoritos ({favTotal})
+          </button>
+        )}
         {TAB_ORDER.map(cat => {
           const config = CATEGORY_CONFIG[cat];
           const Icon = CATEGORY_ICONS[config.icon] || Pill;
@@ -592,7 +607,11 @@ function GlobalPrescriptionSearch({
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
             onBlur={() => setTimeout(() => setFocused(false), 200)}
-            placeholder={selectedCat === 'all' ? "Buscar em todas as categorias..." : `Buscar em ${CATEGORY_CONFIG[selectedCat]?.label.toLowerCase()}...`}
+            placeholder={
+              selectedCat === 'all' ? "Buscar em todas as categorias (tolera erros de digitação)..."
+              : selectedCat === 'favorites' ? "Buscar nos seus favoritos..."
+              : `Buscar em ${CATEGORY_CONFIG[selectedCat]?.label.toLowerCase()}...`
+            }
             className="pl-9 bg-background/60 border-border/50 h-9 text-sm focus:border-primary/50 transition-colors"
           />
         </div>
@@ -600,6 +619,7 @@ function GlobalPrescriptionSearch({
           <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-border bg-popover shadow-lg max-h-72 overflow-y-auto">
             {filtered.map((med) => {
               const catConfig = CATEGORY_CONFIG[med.category];
+              const fav = favCount(med.id);
               return (
                 <button
                   key={med.id}
@@ -610,13 +630,19 @@ function GlobalPrescriptionSearch({
                 >
                   <div className="min-w-0 flex-1">
                     <span className="text-sm font-medium text-foreground block truncate">
+                      {fav > 0 && <Star className="inline h-3 w-3 mr-1 fill-amber-400 text-amber-400" />}
                       {med.name}
                       {med.highAlert && <AlertTriangle className="inline h-3 w-3 ml-1 text-destructive" />}
                     </span>
                     <span className="text-xs text-muted-foreground block truncate">{med.presentation}</span>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {selectedCat === 'all' && catConfig && (
+                    {fav > 0 && (
+                      <Badge variant="outline" className="text-[9px] px-1.5 border-amber-400/50 text-amber-700 dark:text-amber-300">
+                        {fav}×
+                      </Badge>
+                    )}
+                    {(selectedCat === 'all' || selectedCat === 'favorites') && catConfig && (
                       <Badge variant="outline" className={cn("text-[9px] px-1.5", catConfig.color)}>{catConfig.label}</Badge>
                     )}
                     {med.defaultRoute !== '-' && (
