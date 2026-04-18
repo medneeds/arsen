@@ -48,6 +48,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
+import { ShiftRenewalAlert } from "@/components/ShiftRenewalAlert";
 import { useHospital } from "@/contexts/HospitalContext";
 import {
   DndContext,
@@ -3929,6 +3930,17 @@ const PrescricaoPage = () => {
           </div>
         )}
       </div>
+
+      {/* ===== SHIFT RENEWAL ALERT (05:00 turnover) ===== */}
+      {canPrescribe && (
+        <ShiftRenewalAlert
+          pendingCount={renewalPendingCount}
+          activeCount={activeItemsCount}
+          isPastRenewal={isPastRenewalTime}
+          onRenewAll={requestValidateAll}
+          disabled={!canPrescribe}
+        />
+      )}
 
       {/* ===== DISPENSATION HISTORY ===== */}
       {dispensations.length > 0 && (
