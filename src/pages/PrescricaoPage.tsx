@@ -2315,32 +2315,74 @@ const PrescricaoPage = () => {
     return isAfter(now, renewalTime);
   }, []);
 
-  // All items validated check
+  // Helper: item considerado validado para o dia atual
+  const isItemValidatedToday = useCallback((item: PrescriptionItem) => {
+    if (!item.validated) return false;
+    if (!isPastRenewalTime) return true;
+    const cutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
+    return !!(item.validatedAt && new Date(item.validatedAt) > cutoff);
+  }, [isPastRenewalTime]);
+
+  // Prescrição está "travada" (já validada hoje) quando há ao menos 1 item ativo validado.
+  // Nesse estado, novos itens podem ser validados individualmente (com senha).
+  // Caso contrário, validação só pode ocorrer em bloco.
+  const prescriptionLocked = useMemo(() => {
+    return items.some(i => i.status === 'active' && isItemValidatedToday(i));
+  }, [items, isItemValidatedToday]);
+
+  // All items validated check (todos os ativos validados hoje)
   const allItemsValidated = useMemo(() => {
     const activeItems = items.filter(i => i.status === 'active');
-    return activeItems.length > 0 && activeItems.every(i => i.validated && !isPastRenewalTime || (i.validated && i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)));
-  }, [items, isPastRenewalTime]);
+    return activeItems.length > 0 && activeItems.every(isItemValidatedToday);
+  }, [items, isItemValidatedToday]);
 
-  // Toggle validation
-  const toggleValidation = useCallback((id: string) => {
-    setItems(prev => prev.map(item => {
-      if (item.id !== id) return item;
-      return {
-        ...item,
-        validated: !item.validated,
-        validatedAt: !item.validated ? new Date().toISOString() : undefined,
-      };
-    }));
+  // Password confirmation dialog state
+  const [passwordConfirmOpen, setPasswordConfirmOpen] = useState(false);
+  const [pendingValidationAction, setPendingValidationAction] = useState<
+    | { type: 'all' }
+    | { type: 'item'; itemId: string }
+    | null
+  >(null);
+
+  // Solicita validação em bloco (pede senha)
+  const requestValidateAll = useCallback(() => {
+    const activeItems = items.filter(i => i.status === 'active');
+    if (activeItems.length === 0) {
+      toast.error("Nenhum item ativo para validar");
+      return;
+    }
+    setPendingValidationAction({ type: 'all' });
+    setPasswordConfirmOpen(true);
+  }, [items]);
+
+  // Solicita validação individual (apenas para itens novos após prescrição já validada)
+  const requestValidateItem = useCallback((id: string) => {
+    setPendingValidationAction({ type: 'item', itemId: id });
+    setPasswordConfirmOpen(true);
   }, []);
 
-  // Validate all items at once
-  const validateAllItems = useCallback(() => {
+  // Executa a validação após confirmação de senha
+  const executeValidation = useCallback(() => {
+    const action = pendingValidationAction;
+    if (!action) return;
     const now = new Date().toISOString();
-    setItems(prev => prev.map(item =>
-      item.status === 'active' ? { ...item, validated: true, validatedAt: now } : item
-    ));
-    toast.success("Todos os itens validados");
-  }, []);
+    if (action.type === 'all') {
+      setItems(prev => prev.map(item =>
+        item.status === 'active' ? { ...item, validated: true, validatedAt: now } : item
+      ));
+      toast.success("Prescrição validada", { description: "Todos os itens ativos foram validados." });
+    } else {
+      setItems(prev => prev.map(item =>
+        item.id === action.itemId ? { ...item, validated: true, validatedAt: now } : item
+      ));
+      toast.success("Item validado");
+    }
+    setPendingValidationAction(null);
+  }, [pendingValidationAction]);
+
+  // Mantido por compatibilidade — não é mais chamado diretamente
+  const toggleValidation = requestValidateItem;
+  const validateAllItems = requestValidateAll;
 
   const prescriptionDate = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 
