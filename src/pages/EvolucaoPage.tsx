@@ -181,8 +181,8 @@ const EvolucaoPage = () => {
           allergies={patient.allergies}
           cidPrimary={cidPrimary}
           cidSecondary={cidSecondary}
-          onCidPrimaryChange={setCidPrimary}
-          onCidSecondaryChange={setCidSecondary}
+          onCidPrimaryChange={updateCidPrimary}
+          onCidSecondaryChange={updateCidSecondary}
         />
 
         {/* New Evolution Form */}
