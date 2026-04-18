@@ -4338,6 +4338,176 @@ const PrescricaoPage = () => {
         patient={patient ? { name: patient.name, age: patient.age, bed: patient.bed, weight: patient.weight } : null}
       />
 
+      {/* Quick Templates Dialog */}
+      <Dialog open={quickTemplatesDialogOpen} onOpenChange={setQuickTemplatesDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Zap className="h-4 w-4 text-amber-500" />
+              Templates de Prescrição Rápida
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Aplique combinações clínicas pré-definidas com 1 clique. Templates compartilhados ficam disponíveis para todo o hospital.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Filters + actions */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={templateSearchQuery}
+                onChange={(e) => setTemplateSearchQuery(e.target.value)}
+                placeholder="Buscar template (sepse, pós-op, DPOC...)"
+                className="pl-8 h-8 text-xs"
+              />
+            </div>
+            <div className="flex items-center gap-1">
+              {(["all", "shared", "personal"] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setTemplateScopeFilter(s)}
+                  className={cn(
+                    "text-[10px] font-medium px-2.5 py-1 rounded-full border transition-all",
+                    templateScopeFilter === s
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted/30 text-muted-foreground border-border/50 hover:bg-muted/60"
+                  )}
+                >
+                  {s === "all" ? "Todos" : s === "shared" ? "Compartilhados" : "Meus"}
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="default"
+              size="sm"
+              className="h-8 text-xs gap-1"
+              onClick={() => {
+                if (items.length === 0) {
+                  toast.error("Adicione itens à prescrição antes de salvar como template");
+                  return;
+                }
+                setSaveTemplateDialogOpen(true);
+              }}
+            >
+              <Save className="h-3.5 w-3.5" />
+              Salvar atual como template
+            </Button>
+          </div>
+
+          {/* List */}
+          <div className="flex-1 overflow-y-auto space-y-2 mt-1">
+            {quickTemplatesLoading ? (
+              <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Carregando templates...
+              </div>
+            ) : (() => {
+              const q = templateSearchQuery.toLowerCase().trim();
+              const filtered = quickTemplates.filter((t) => {
+                if (templateScopeFilter !== "all" && t.scope !== templateScopeFilter) return false;
+                if (!q) return true;
+                return (
+                  t.name.toLowerCase().includes(q) ||
+                  (t.description || "").toLowerCase().includes(q) ||
+                  t.clinical_category.toLowerCase().includes(q) ||
+                  t.items.some((i) => (i.name || "").toLowerCase().includes(q))
+                );
+              });
+              if (filtered.length === 0) {
+                return (
+                  <div className="text-center py-8 text-sm text-muted-foreground">
+                    Nenhum template encontrado.
+                  </div>
+                );
+              }
+              return filtered.map((tpl) => (
+                <div
+                  key={tpl.id}
+                  className="rounded-lg border border-border bg-card p-3 hover:border-primary/40 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-sm font-semibold text-foreground">{tpl.name}</h4>
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4">
+                          {tpl.clinical_category}
+                        </Badge>
+                        <Badge
+                          variant={tpl.scope === "shared" ? "secondary" : "outline"}
+                          className="text-[9px] px-1.5 py-0 h-4"
+                        >
+                          {tpl.scope === "shared" ? "Hospital" : "Pessoal"}
+                        </Badge>
+                        {tpl.use_count > 0 && (
+                          <span className="text-[9px] text-muted-foreground">
+                            usado {tpl.use_count}x
+                          </span>
+                        )}
+                      </div>
+                      {tpl.description && (
+                        <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">
+                          {tpl.description}
+                        </p>
+                      )}
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {tpl.items.slice(0, 6).map((it, i) => (
+                          <span
+                            key={i}
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-muted/60 text-foreground border border-border/50"
+                          >
+                            {it.name}
+                            {it.dose ? ` · ${it.dose}` : ""}
+                          </span>
+                        ))}
+                        {tpl.items.length > 6 && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted/40 text-muted-foreground">
+                            +{tpl.items.length - 6}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <Button
+                        size="sm"
+                        className="h-7 text-[11px] gap-1"
+                        onClick={() => applyQuickTemplate(tpl)}
+                      >
+                        <Plus className="h-3 w-3" /> Aplicar
+                      </Button>
+                      {tpl.created_by === user?.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 text-[10px] text-destructive hover:text-destructive"
+                          onClick={() => deleteQuickTemplate(tpl.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save Current as Template Dialog */}
+      <SaveTemplateDialog
+        open={saveTemplateDialogOpen}
+        onOpenChange={setSaveTemplateDialogOpen}
+        currentItems={items}
+        hospitalUnitId={currentHospital?.id || null}
+        stateId={currentState?.id || null}
+        onSave={async (input) => {
+          const ok = await saveQuickTemplate(input);
+          if (ok) setSaveTemplateDialogOpen(false);
+        }}
+      />
+
       {/* Keyboard Shortcuts Help Dialog */}
       <Dialog open={shortcutsHelpOpen} onOpenChange={setShortcutsHelpOpen}>
         <DialogContent className="max-w-md">
