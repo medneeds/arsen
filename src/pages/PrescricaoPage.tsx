@@ -3638,9 +3638,7 @@ const PrescricaoPage = () => {
               )}
             </PopoverContent>
           </Popover>
-          <Button variant="outline" size="sm" onClick={openRepeatDialog} disabled={!patient.name.trim()} className="h-7 text-[10px] gap-1 px-2">
-            <CopyPlus className="h-3 w-3" /> Repetir de ontem
-          </Button>
+          {/* "Repetir de ontem" removido — agora ocorre automaticamente ao Renovar dia. */}
           <Button
             variant="outline"
             size="sm"
