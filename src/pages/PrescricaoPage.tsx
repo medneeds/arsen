@@ -4020,6 +4020,9 @@ const PrescricaoPage = () => {
               const simple = isSimpleCategory(cat);
               const IconComp = CATEGORY_ICONS[config.icon] || Pill;
 
+              // Hide empty categories — they appear automatically when items are added via the search bar above
+              if (catItems.length === 0) return null;
+
               return (
                 <div key={cat} className="rounded-xl border border-border bg-card">
                   {/* Category header with inline search */}
