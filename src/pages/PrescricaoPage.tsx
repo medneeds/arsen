@@ -85,6 +85,7 @@ import { TevProtocolDialog } from "@/components/TevProtocolDialog";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { useMedicationFavorites } from "@/hooks/useMedicationFavorites";
 import { useQuickPrescriptionTemplates, type QuickPrescriptionTemplate, type QuickTemplateItem } from "@/hooks/useQuickPrescriptionTemplates";
+import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
 import { Star } from "lucide-react";
 
 // --- Types ---
