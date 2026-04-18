@@ -2362,6 +2362,13 @@ const PrescricaoPage = () => {
   const globalSearchRef = useRef<GlobalPrescriptionSearchHandle | null>(null);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
 
+  // Quick templates (combos clínicos 1-clique)
+  const { templates: quickTemplates, loading: quickTemplatesLoading, saveTemplate: saveQuickTemplate, deleteTemplate: deleteQuickTemplate, bumpUseCount: bumpQuickTemplateUse } = useQuickPrescriptionTemplates();
+  const [quickTemplatesDialogOpen, setQuickTemplatesDialogOpen] = useState(false);
+  const [saveTemplateDialogOpen, setSaveTemplateDialogOpen] = useState(false);
+  const [templateSearchQuery, setTemplateSearchQuery] = useState("");
+  const [templateScopeFilter, setTemplateScopeFilter] = useState<"all" | "personal" | "shared">("all");
+
   // Validation: check if past 05:00 renewal time
   const isPastRenewalTime = useMemo(() => {
     const now = new Date();
