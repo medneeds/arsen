@@ -3180,6 +3180,20 @@ const PrescricaoPage = () => {
   }, [selectedIds, duplicateSelected, openRepeatDialog, requestValidateAll]);
 
   // ===== Quick templates: apply + save =====
+  const mapTemplateCategory = useCallback((cat: string): PrescriptionCategory => {
+    const c = (cat || "").toLowerCase().trim();
+    const valid: PrescriptionCategory[] = ['nutrition','hydration','medication','antimicrobial','high_alert','inhalation','hemotherapy','care','nonstandard'];
+    if (valid.includes(c as PrescriptionCategory)) return c as PrescriptionCategory;
+    // pt-BR aliases used in seed templates
+    if (c === 'antimicrobianos') return 'antimicrobial';
+    if (c === 'hidratacao' || c === 'hidratação') return 'hydration';
+    if (c === 'dieta' || c === 'dietas') return 'nutrition';
+    if (c === 'sintomaticos' || c === 'sintomáticos' || c === 'medicacoes' || c === 'medicações' || c === 'antiagregantes' || c === 'profilaxia') return 'medication';
+    if (c === 'cuidados') return 'care';
+    if (c === 'inalatorios' || c === 'inalatórios') return 'inhalation';
+    return 'medication';
+  }, []);
+
   const applyQuickTemplate = useCallback((tpl: QuickPrescriptionTemplate) => {
     if (!tpl.items?.length) {
       toast.error("Template vazio");
@@ -3194,7 +3208,7 @@ const PrescricaoPage = () => {
       posology: it.posology || "",
       schedule: it.schedule || "",
       instructions: it.instructions || "",
-      category: (it.category as PrescriptionCategory) || "medicacoes",
+      category: mapTemplateCategory(it.category),
       flags: (it.flags || []) as PrescriptionFlag[],
       highAlert: !!it.highAlert,
       status: "active" as const,
@@ -3211,7 +3225,7 @@ const PrescricaoPage = () => {
       description: `${cloned.length} item(ns) adicionado(s) à prescrição`,
     });
     setQuickTemplatesDialogOpen(false);
-  }, [bumpQuickTemplateUse]);
+  }, [bumpQuickTemplateUse, mapTemplateCategory]);
 
   const handleSave = async () => {
     if (!patient.name.trim()) { toast.error("Preencha o nome do paciente"); return; }
