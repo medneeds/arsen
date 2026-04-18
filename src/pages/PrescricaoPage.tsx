@@ -3836,8 +3836,10 @@ const PrescricaoPage = () => {
                 ? "var(--sidebar-width-icon)"
                 : "var(--sidebar-width)",
           }}
-          className="fixed bottom-0 right-0 z-[60] px-3 py-2 flex items-center justify-center gap-1 flex-wrap border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 print:hidden shadow-[0_-2px_12px_-4px_hsl(var(--foreground)/0.12)] transition-[left] duration-200 ease-linear"
+          className="fixed bottom-0 right-0 z-[60] print:hidden pointer-events-none transition-[left] duration-200 ease-linear"
         >
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 pointer-events-auto">
+            <div className="px-3 py-2 flex items-center justify-center gap-1 flex-wrap border-t border-x border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-[0_-2px_12px_-4px_hsl(var(--foreground)/0.12)] rounded-t-lg">
           <Button variant="ghost" size="sm" onClick={handleNewPrescription} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
             <Plus className="h-3 w-3" /> Nova
           </Button>
@@ -3941,6 +3943,8 @@ const PrescricaoPage = () => {
           <Package className="h-3 w-3" /> Dispensar
         </Button>
           {/* Botão "Salvar" removido — salvamento é automático. */}
+            </div>
+          </div>
         </div>,
         document.body
       )}
