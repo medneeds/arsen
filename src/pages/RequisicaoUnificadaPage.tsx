@@ -197,6 +197,9 @@ const RequisicaoUnificadaPage = () => {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
 
+  // Cockpit (right rail) — same pattern as Evolução / Prescrição
+  const cockpitPatient = useCockpitPatient();
+
   // ── New request form ──
   const [showNewRequest, setShowNewRequest] = useState(false);
   const [formPatientId, setFormPatientId] = useState<string | null>(null);
