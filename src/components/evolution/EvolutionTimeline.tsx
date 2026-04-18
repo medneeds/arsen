@@ -3,11 +3,13 @@ import { format, differenceInCalendarDays, parseISO, startOfDay } from "date-fns
 import { ptBR } from "date-fns/locale";
 import {
   ChevronDown, ChevronUp, Copy, Trash2, ShieldCheck, ShieldOff,
-  Clock, FileText, AlertTriangle, Loader2, Calendar,
+  Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { EvolutionRecord } from "@/hooks/useEvolutions";
 import { EvolutionForm } from "./EvolutionForm";
@@ -52,6 +54,46 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
   const [suspendReason, setSuspendReason] = useState("");
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
   const [validateDialogId, setValidateDialogId] = useState<string | null>(null);
+
+  // Filters
+  const [filterStatus, setFilterStatus] = useState<"all" | "draft" | "validated" | "suspended">("all");
+  const [filterAuthor, setFilterAuthor] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Unique authors list
+  const authors = useMemo(() => {
+    const map = new Map<string, string>();
+    evolutions.forEach(e => {
+      if (e.created_by && e.created_by_name) map.set(e.created_by, e.created_by_name);
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [evolutions]);
+
+  // Apply filters
+  const filteredEvolutions = useMemo(() => {
+    return evolutions.filter(evo => {
+      if (filterStatus !== "all" && evo.status !== filterStatus) return false;
+      if (filterAuthor !== "all" && evo.created_by !== filterAuthor) return false;
+      if (searchTerm.trim()) {
+        const haystack = [
+          evo.soap_data.subjective, evo.soap_data.objective,
+          evo.soap_data.assessment, evo.soap_data.plan,
+          evo.created_by_name,
+        ].join(" ").toLowerCase();
+        if (!haystack.includes(searchTerm.toLowerCase())) return false;
+      }
+      return true;
+    });
+  }, [evolutions, filterStatus, filterAuthor, searchTerm]);
+
+  const activeFilterCount = (filterStatus !== "all" ? 1 : 0) + (filterAuthor !== "all" ? 1 : 0) + (searchTerm.trim() ? 1 : 0);
+
+  const clearFilters = () => {
+    setFilterStatus("all");
+    setFilterAuthor("all");
+    setSearchTerm("");
+  };
 
   const toggleExpand = (id: string) => {
     setExpandedIds(prev => {
@@ -143,7 +185,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     const admDate = admissionDate ? startOfDay(parseISO(admissionDate)) : null;
     const groups = new Map<number, DayGroup>();
 
-    evolutions.forEach(evo => {
+    filteredEvolutions.forEach(evo => {
       const evoDate = startOfDay(new Date(evo.created_at));
       const dayNumber = admDate ? differenceInCalendarDays(evoDate, admDate) : 0;
       const dayNum = Math.max(0, dayNumber);
@@ -160,17 +202,78 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     });
 
     return Array.from(groups.values()).sort((a, b) => b.dayNumber - a.dayNumber);
-  }, [evolutions, admissionDate]);
+  }, [filteredEvolutions, admissionDate]);
 
   if (evolutions.length === 0) return null;
 
   return (
     <>
       <div className="space-y-3">
-        <div className="flex items-center gap-2 mb-1">
+        {/* Toolbar: title + filters */}
+        <div className="flex items-center gap-2 flex-wrap">
           <FileText className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-semibold text-foreground">Timeline de Evoluções ({evolutions.length})</span>
+          <span className="text-sm font-semibold text-foreground">
+            Timeline ({filteredEvolutions.length}{filteredEvolutions.length !== evolutions.length && ` de ${evolutions.length}`})
+          </span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <div className="relative">
+              <Search className="h-3 w-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Buscar..."
+                className="h-7 pl-7 pr-2 text-xs w-36"
+              />
+            </div>
+            <Button
+              variant={showFilters || activeFilterCount > 0 ? "default" : "outline"}
+              size="sm"
+              className="h-7 gap-1 text-xs"
+              onClick={() => setShowFilters(v => !v)}
+            >
+              <Filter className="h-3 w-3" />
+              Filtros
+              {activeFilterCount > 0 && (
+                <Badge variant="secondary" className="ml-0.5 h-4 px-1 text-[9px]">{activeFilterCount}</Badge>
+              )}
+            </Button>
+            {activeFilterCount > 0 && (
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={clearFilters}>
+                <X className="h-3 w-3" /> Limpar
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* Filter row */}
+        {showFilters && (
+          <div className="flex items-center gap-2 flex-wrap p-2 rounded-lg border border-border bg-muted/20">
+            <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>
+              <SelectTrigger className="h-7 w-36 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">Todos status</SelectItem>
+                <SelectItem value="draft" className="text-xs">Rascunhos</SelectItem>
+                <SelectItem value="validated" className="text-xs">Validadas</SelectItem>
+                <SelectItem value="suspended" className="text-xs">Suspensas</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterAuthor} onValueChange={setFilterAuthor}>
+              <SelectTrigger className="h-7 w-44 text-xs"><SelectValue placeholder="Autor" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">Todos autores</SelectItem>
+                {authors.map(a => (
+                  <SelectItem key={a.id} value={a.id} className="text-xs">{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {filteredEvolutions.length === 0 && (
+          <div className="rounded-lg border border-dashed border-border p-6 text-center">
+            <p className="text-xs text-muted-foreground">Nenhuma evolução encontrada com os filtros atuais.</p>
+          </div>
+        )}
 
         {dayGroups.map(group => {
           const isDayCollapsed = collapsedDays.has(group.dayNumber);
