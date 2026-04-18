@@ -3179,7 +3179,40 @@ const PrescricaoPage = () => {
     };
   }, [selectedIds, duplicateSelected, openRepeatDialog, requestValidateAll]);
 
-  // Save prescription to database
+  // ===== Quick templates: apply + save =====
+  const applyQuickTemplate = useCallback((tpl: QuickPrescriptionTemplate) => {
+    if (!tpl.items?.length) {
+      toast.error("Template vazio");
+      return;
+    }
+    const cloned: PrescriptionItem[] = tpl.items.map((it: QuickTemplateItem) => ({
+      id: crypto.randomUUID(),
+      name: it.name,
+      presentation: it.presentation || "",
+      dose: it.dose || "",
+      route: it.route || "",
+      posology: it.posology || "",
+      schedule: it.schedule || "",
+      instructions: it.instructions || "",
+      category: (it.category as PrescriptionCategory) || "medicacoes",
+      flags: (it.flags || []) as PrescriptionFlag[],
+      highAlert: !!it.highAlert,
+      status: "active" as const,
+      validated: false,
+      diluent: it.diluent,
+      diluentVolume: it.diluentVolume,
+      infusionTime: it.infusionTime,
+      quantity: it.quantity,
+      quantityUnit: it.quantityUnit,
+    }));
+    setItems((prev) => [...prev, ...cloned]);
+    bumpQuickTemplateUse(tpl.id);
+    toast.success(`Template aplicado: ${tpl.name}`, {
+      description: `${cloned.length} item(ns) adicionado(s) à prescrição`,
+    });
+    setQuickTemplatesDialogOpen(false);
+  }, [bumpQuickTemplateUse]);
+
   const handleSave = async () => {
     if (!patient.name.trim()) { toast.error("Preencha o nome do paciente"); return; }
     if (!currentHospital || !currentState) { toast.error("Hospital/Estado não selecionado"); return; }
