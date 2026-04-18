@@ -3663,8 +3663,9 @@ const PrescricaoPage = () => {
                           onDuplicate={duplicateItem}
                           onRequestSuspend={requestSuspendItem}
                           onReactivate={reactivateItem}
-                          onToggleValidation={toggleValidation}
+                          onToggleValidation={requestValidateItem}
                           isPastRenewalTime={isPastRenewalTime}
+                          prescriptionLocked={prescriptionLocked}
                         />
                       ))}
                     </div>
