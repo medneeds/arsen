@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { PatientInfoHeader } from "@/components/PatientInfoHeader";
+import { CompactPatientHeader } from "@/components/CompactPatientHeader";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -64,6 +65,9 @@ const EvolucaoPage = () => {
   const [newVitals, setNewVitals] = useState({ pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" });
   const [newExam, setNewExam] = useState({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
   const [creating, setCreating] = useState(false);
+  // CID state for compact header
+  const [cidPrimary, setCidPrimary] = useState<string>("");
+  const [cidSecondary, setCidSecondary] = useState<string[]>([]);
 
   const hasPatient = patient.name.trim() !== "";
 
@@ -162,8 +166,8 @@ const EvolucaoPage = () => {
           </Button>
         </div>
 
-        {/* Patient Identification — shared component */}
-        <PatientInfoHeader
+        {/* Compact patient strip with inline CID chips */}
+        <CompactPatientHeader
           name={patient.name}
           bed={patient.bed}
           unit={patient.unit}
@@ -171,8 +175,10 @@ const EvolucaoPage = () => {
           sex={patient.sex}
           weight={patient.weight}
           allergies={patient.allergies}
-          record={patient.record}
-          admissionDate={patient.admissionDate}
+          cidPrimary={cidPrimary}
+          cidSecondary={cidSecondary}
+          onCidPrimaryChange={setCidPrimary}
+          onCidSecondaryChange={setCidSecondary}
         />
 
         {/* New Evolution Form */}
