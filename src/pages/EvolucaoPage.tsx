@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useEvolutions, EvolutionRecord } from "@/hooks/useEvolutions";
+import { usePatientCid } from "@/hooks/usePatientCid";
 import { EvolutionForm } from "@/components/evolution/EvolutionForm";
 import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import type { Patient } from "@/types/patient";
@@ -65,9 +66,12 @@ const EvolucaoPage = () => {
   const [newVitals, setNewVitals] = useState({ pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" });
   const [newExam, setNewExam] = useState({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
   const [creating, setCreating] = useState(false);
-  // CID state for compact header
-  const [cidPrimary, setCidPrimary] = useState<string>("");
-  const [cidSecondary, setCidSecondary] = useState<string[]>([]);
+  // CID state — persisted to admission_histories via usePatientCid
+  const {
+    cidPrimary, cidSecondary,
+    updatePrimary: updateCidPrimary,
+    updateSecondary: updateCidSecondary,
+  } = usePatientCid(initialPatientId || null);
 
   const hasPatient = patient.name.trim() !== "";
 
@@ -100,22 +104,27 @@ const EvolucaoPage = () => {
   };
 
   // Adapt PatientHeader → minimal Patient for cockpit (must run before any early return)
-  const cockpitPatient: Patient = useMemo(() => ({
-    id: initialPatientId || "evolucao-stub",
-    bedNumber: patient.bed,
-    name: patient.name,
-    age: typeof patient.age === "string" ? patient.age.replace(/\s*anos?$/i, "") : patient.age,
-    sector: (initialPatientSector as Patient["sector"]) || "outside",
-    diagnoses: [],
-    medicalHistory: [],
-    relevantExams: [],
-    pendencies: [],
-    schedule: [],
-    admissionHistory: "",
-    admissionDate: patient.admissionDate,
-    utiAllergies: patient.allergies && patient.allergies !== "NDAM" ? [patient.allergies] : [],
-    clinicalStatus: "regular",
-  }), [patient, initialPatientId, initialPatientSector]);
+  const cockpitPatient: Patient = useMemo(() => {
+    const diagnoses: string[] = [];
+    if (cidPrimary) diagnoses.push(`[Primário] ${cidPrimary}`);
+    cidSecondary.forEach(c => c && diagnoses.push(c));
+    return {
+      id: initialPatientId || "evolucao-stub",
+      bedNumber: patient.bed,
+      name: patient.name,
+      age: typeof patient.age === "string" ? patient.age.replace(/\s*anos?$/i, "") : patient.age,
+      sector: (initialPatientSector as Patient["sector"]) || "outside",
+      diagnoses,
+      medicalHistory: [],
+      relevantExams: [],
+      pendencies: [],
+      schedule: [],
+      admissionHistory: "",
+      admissionDate: patient.admissionDate,
+      utiAllergies: patient.allergies && patient.allergies !== "NDAM" ? [patient.allergies] : [],
+      clinicalStatus: "regular",
+    };
+  }, [patient, initialPatientId, initialPatientSector, cidPrimary, cidSecondary]);
 
   if (!hasPatient) {
     return (
@@ -177,8 +186,8 @@ const EvolucaoPage = () => {
           allergies={patient.allergies}
           cidPrimary={cidPrimary}
           cidSecondary={cidSecondary}
-          onCidPrimaryChange={setCidPrimary}
-          onCidSecondaryChange={setCidSecondary}
+          onCidPrimaryChange={updateCidPrimary}
+          onCidSecondaryChange={updateCidSecondary}
         />
 
         {/* New Evolution Form */}
