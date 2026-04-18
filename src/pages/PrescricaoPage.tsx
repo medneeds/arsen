@@ -3462,6 +3462,15 @@ const PrescricaoPage = () => {
               <Button variant="outline" size="sm" onClick={openRepeatDialog} disabled={!patient.name.trim()} className="h-6 text-[10px] gap-1">
                 <CopyPlus className="h-3 w-3" /> Repetir de ontem
               </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" onClick={() => setShortcutsHelpOpen(true)} className="h-6 px-1.5 text-[10px] gap-1 text-muted-foreground hover:text-foreground">
+                    <kbd className="px-1 py-0 rounded border border-border bg-muted text-[9px] font-mono">?</kbd>
+                    <span className="hidden md:inline">Atalhos</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Atalhos de teclado (?)</TooltipContent>
+              </Tooltip>
               <Button variant="ghost" size="sm" onClick={fetchPrescriptions} disabled={loadingList} className="h-6 text-[10px] gap-1">
                 <RefreshCw className={cn("h-3 w-3", loadingList && "animate-spin")} /> Atualizar
               </Button>
