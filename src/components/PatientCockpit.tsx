@@ -236,6 +236,40 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
           )}
         </div>
 
+        {/* ===== ZONA 3.5: PRESCRIÇÃO ATIVA (realtime) ===== */}
+        {prescription && (
+          <button
+            onClick={() => goPatient("/prescricao")}
+            className="mx-3 mt-2 mb-1 flex items-center justify-between gap-2 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition px-2.5 py-1.5 text-left"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Pill className="h-3.5 w-3.5 text-primary shrink-0" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-foreground">
+                    Prescrição v{prescription.version}
+                  </span>
+                  <PrescriptionStatusBadge status={prescription.status} signed={prescription.signed} />
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-tight">
+                  {prescription.itemsCount} {prescription.itemsCount === 1 ? "item" : "itens"} •{" "}
+                  {(() => {
+                    try {
+                      return formatDistanceToNow(new Date(prescription.updatedAt), {
+                        addSuffix: true,
+                        locale: ptBR,
+                      });
+                    } catch {
+                      return "—";
+                    }
+                  })()}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          </button>
+        )}
+
         {/* ===== ZONA 4: ABAS OTIMIZADAS ===== */}
         <Tabs defaultValue="resumo" className="flex-1 min-h-0 flex flex-col">
           <TabsList className="mx-3 mt-2 grid grid-cols-4 h-8 p-0.5">
