@@ -3996,6 +3996,16 @@ const PrescricaoPage = () => {
             onAddItem={addItem}
             onAddNonStandard={(name: string) => { setNonStdName(name); addNonStandard(); }}
             getFavoriteCount={getFavoriteCount}
+            onCategoryPopup={(cat) => {
+              if (cat === 'antimicrobial') {
+                setPendingAntimicrobialMed(null);
+                setAntimicrobialGuideOpen(true);
+              } else if (cat === 'high_alert') {
+                setHighAlertGuideOpen(true);
+              } else if (cat === 'care') {
+                setQuickTemplatesDialogOpen(true);
+              }
+            }}
           />
         </div>
       </div>
