@@ -505,19 +505,25 @@ function MedicationAutocomplete({
 }
 
 // --- Global Prescription Search with Category Filters ---
-function GlobalPrescriptionSearch({
-  onAddItem,
-  onAddNonStandard,
-  getFavoriteCount,
-}: {
+export interface GlobalPrescriptionSearchHandle {
+  focus: () => void;
+}
+const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle, {
   onAddItem: (med: MedicationEntry) => void;
   onAddNonStandard: (name: string) => void;
   getFavoriteCount?: (id: string) => number;
-}) {
+}>(function GlobalPrescriptionSearch({
+  onAddItem,
+  onAddNonStandard,
+  getFavoriteCount,
+}, ref) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const [selectedCat, setSelectedCat] = useState<PrescriptionCategory | 'all' | 'favorites'>('all');
   const inputRef = useRef<HTMLInputElement>(null);
+  React.useImperativeHandle(ref, () => ({
+    focus: () => inputRef.current?.focus(),
+  }), []);
   const [freeText, setFreeText] = useState("");
   const favCount = getFavoriteCount ?? (() => 0);
 
