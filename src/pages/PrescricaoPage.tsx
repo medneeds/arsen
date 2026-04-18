@@ -3797,8 +3797,7 @@ const PrescricaoPage = () => {
         </div>
       )}
 
-      {/* Spacer para evitar que a barra fixa cubra o conteúdo final */}
-      <div aria-hidden className="h-14 print:hidden" />
+      {/* Spacer movido para o final da página (antes dos Dialogs) para evitar lacuna entre o cabeçalho e o workbench */}
       {/* ===== ACTION TOOLBAR — fixa no rodapé via Portal (escapa de ancestrais com transform/overflow) ===== */}
       {typeof document !== "undefined" && createPortal(
         <div
@@ -4285,6 +4284,9 @@ const PrescricaoPage = () => {
           </Button>
         </div>
       </div>
+
+      {/* Spacer para evitar que a barra de ações fixa do rodapé cubra o conteúdo final */}
+      <div aria-hidden className="h-14 print:hidden" />
 
       {/* ===== DIALOGS ===== */}
       <SuspensionDialog
