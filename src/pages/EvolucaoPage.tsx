@@ -188,19 +188,18 @@ const EvolucaoPage = () => {
           </Button>
         </div>
 
-        {/* Compact patient strip with inline CID chips */}
+        {/* CID inline editor — compacto, sem repetir identificação do paciente
+            (essa fica no cockpit à direita com Prontuário/Atendimento + Ver mais) */}
         <CompactPatientHeader
-          name={patient.name}
-          bed={patient.bed}
-          unit={patient.unit}
-          age={patient.age}
-          sex={patient.sex}
-          weight={patient.weight}
-          allergies={patient.allergies}
+          name=""
+          bed=""
+          unit=""
+          age=""
           cidPrimary={cidPrimary}
           cidSecondary={cidSecondary}
           onCidPrimaryChange={updateCidPrimary}
           onCidSecondaryChange={updateCidSecondary}
+          className="!flex-row-reverse"
         />
 
         {/* New Evolution Form */}

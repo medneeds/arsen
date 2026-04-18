@@ -453,19 +453,8 @@ const RequisicaoUnificadaPage = () => {
         </div>
       </div>
 
-      {/* ── Patient Identification — shared component ── */}
-      {formPatientName && (
-        <PatientInfoHeader
-          name={formPatientName}
-          bed={formPatientBed}
-          unit={getSectorLabel(formPatientSector)}
-          age=""
-          sex=""
-          weight=""
-          allergies=""
-          record=""
-        />
-      )}
+      {/* Identificação do paciente fica integralmente no cockpit à direita
+          (com Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
 
       {/* ── Category Selector ── */}
       <div className="flex gap-2 overflow-x-auto pb-1 print:hidden">

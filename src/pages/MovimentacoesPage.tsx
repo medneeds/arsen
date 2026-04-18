@@ -222,18 +222,8 @@ const MovimentacoesPage = () => {
           )}
         </div>
 
-        {/* Patient Identification */}
-        <PatientInfoHeader
-          name={patientName}
-          bed={patientBed}
-          unit={patientSector}
-          age=""
-          sex=""
-          weight=""
-          allergies=""
-          record=""
-          admissionDate=""
-        />
+        {/* Identificação completa do paciente está no cockpit à direita
+            (Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
 
         {/* Wizard Card */}
         <div className="rounded-xl border-2 border-primary/20 bg-card p-4 space-y-4">
