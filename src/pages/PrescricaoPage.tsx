@@ -2908,6 +2908,12 @@ const PrescricaoPage = () => {
   // Ctrl/⌘+K or "/" → focus search · Ctrl/⌘+D → duplicate selected
   // Ctrl/⌘+Enter → validate prescription · Ctrl/⌘+Y → repeat yesterday
   // ? → show help
+  const shortcutHandlersRef = useRef<{
+    duplicate: () => void;
+    repeat: () => void;
+    validate: () => void;
+  }>({ duplicate: () => {}, repeat: () => {}, validate: () => {} });
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -2943,30 +2949,28 @@ const PrescricaoPage = () => {
 
       // Duplicate selected: Ctrl/⌘+D
       if (mod && e.key.toLowerCase() === "d") {
-        if (selectedIds.size > 0) {
-          e.preventDefault();
-          duplicateSelected();
-        }
+        e.preventDefault();
+        shortcutHandlersRef.current.duplicate();
         return;
       }
 
       // Repeat yesterday: Ctrl/⌘+Y
       if (mod && e.key.toLowerCase() === "y") {
         e.preventDefault();
-        openRepeatDialog();
+        shortcutHandlersRef.current.repeat();
         return;
       }
 
       // Validate all: Ctrl/⌘+Enter
       if (mod && e.key === "Enter") {
         e.preventDefault();
-        requestValidateAll();
+        shortcutHandlersRef.current.validate();
         return;
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selectedIds, duplicateSelected, openRepeatDialog, requestValidateAll]);
+  }, []);
 
   // Drag & drop
   const handleDragEnd = useCallback((event: DragEndEvent) => {
