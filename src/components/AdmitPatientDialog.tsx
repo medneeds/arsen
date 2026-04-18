@@ -204,7 +204,12 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     return Math.floor((Date.now() - new Date(birthDate + 'T12:00:00').getTime()) / (365.25 * 24 * 60 * 60 * 1000));
   };
 
-  const isUtiAdmission = selectedSector === "red" || selectedSector === "yellow";
+  // SAPS 3 é exclusivo para UTI e UCI (todas as 4 opções do diálogo são críticas).
+  const isUtiAdmission =
+    selectedSector === "red" ||
+    selectedSector === "yellow" ||
+    selectedSector === "blue" ||
+    selectedSector === "outside";
 
   const handleAdmit = async () => {
     if (!selectedSector || !fullData || !currentHospital?.id || !currentState?.id) return;

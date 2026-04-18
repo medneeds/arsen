@@ -171,14 +171,14 @@ export function BedAllocationNotifications() {
   const pendingRequests = requests.filter(r => r.status === "pending");
   const discussingRequests = requests.filter(r => r.status === "discussing");
 
-  // Check if this is a UTI sector allocation
+  // SAPS 3 é exclusivo para UTI e UCI.
   const isUtiSector = (sector: string) => {
-    const utiSectors = ["UTI 1", "UTI 2", "red", "yellow"];
-    return utiSectors.includes(sector);
+    const criticalSectors = ["UTI 1", "UTI 2", "UCI 1", "UCI 2", "red", "yellow", "blue", "outside"];
+    return criticalSectors.includes(sector) || /^UTI\b/i.test(sector) || /^UCI\b/i.test(sector);
   };
 
   const handleApprove = async (request: BedAllocationRequest) => {
-    const isUti = isUtiSector(request.requested_sector) || request.department === "UTI";
+    const isUti = isUtiSector(request.requested_sector) || request.department === "UTI" || request.department === "UCI";
 
     if (isUti && request.patient) {
       const params = new URLSearchParams({
