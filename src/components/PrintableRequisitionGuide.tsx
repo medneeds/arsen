@@ -1,8 +1,17 @@
+/**
+ * Guia de Requisição de Exames — agora padronizada no timbrado Norma Zero (MAN.05-001).
+ *
+ * Apenas a função `printRequisitionGuide` é utilizada nas páginas de Requisição
+ * Unificada e nos painéis dos Setores de Imagem/Laboratório. O componente React
+ * `PrintableRequisitionGuide` permanece exportado para preview opcional, mas a
+ * impressão real é feita via popup com `buildNormaZeroDocument` para manter o
+ * mesmo padrão visual de Prescrição, Evolução, NIR, FAT etc.
+ */
+
 import React from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import socorraoLogo from "@/assets/socorrao1-logo.png";
-import { whitelabel } from "@/config/whitelabel";
+import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 
 interface PrintableRequisitionGuideProps {
   request: {
@@ -24,348 +33,171 @@ const CATEGORY_LABELS: Record<string, string> = {
   laboratorio: "Exames Laboratoriais",
   imagem: "Exames de Imagem",
   parecer: "Parecer Especializado",
+  apac: "APAC — Alta Complexidade",
+};
+
+const CATEGORY_PREFIX: Record<string, string> = {
+  laboratorio: "REQ-LAB",
+  imagem: "REQ-IMG",
+  parecer: "REQ-PAR",
+  apac: "REQ-APAC",
 };
 
 const PRIORITY_LABELS: Record<string, string> = {
-  urgente: "⚡ URGENTE",
-  rotina: "🔵 ROTINA",
-  programado: "📅 PROGRAMADO",
+  urgente: "URGENTE",
+  rotina: "ROTINA",
+  programado: "PROGRAMADO",
 };
 
+const PRIORITY_BADGE: Record<string, string> = {
+  urgente: "background:#fee2e2;color:#b91c1c;border:1pt solid #b91c1c;",
+  rotina: "background:#dbeafe;color:#1d4ed8;border:1pt solid #1d4ed8;",
+  programado: "background:#e0f2fe;color:#0369a1;border:1pt solid #0369a1;",
+};
+
+const escapeHtml = (s: unknown): string =>
+  String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+/**
+ * Componente React opcional (preview em tela). A impressão real usa Norma Zero
+ * via `printRequisitionGuide` abaixo. Mantido para compatibilidade.
+ */
 export function PrintableRequisitionGuide({ request, sectorLabel }: PrintableRequisitionGuideProps) {
-  const now = new Date();
   const items = Array.isArray(request.items) ? request.items : [];
   const categoryLabel = CATEGORY_LABELS[request.category] || request.category;
-  const priorityLabel = PRIORITY_LABELS[request.priority] || request.priority;
-
-  // Extract scheduled info from notes
-  const scheduledMatch = request.notes?.match(/\[PROGRAMADO: ([^\]]+)\]/);
-  const scheduledInfo = scheduledMatch?.[1] || null;
-  // Clean notes (remove [PROGRAMADO:...] tag)
-  const cleanNotes = request.notes?.replace(/\[PROGRAMADO: [^\]]+\]\n?/, "").trim() || null;
-
   const sectorName = sectorLabel ? sectorLabel(request.patient_sector || null) : (request.patient_sector || "");
-
   return (
-    <div className="print-guide" style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
-      <style>{`
-        @media print {
-          body * { visibility: hidden; }
-          .print-guide, .print-guide * { visibility: visible; }
-          .print-guide {
-            position: fixed;
-            left: 0; top: 0;
-            width: 100%;
-            background: white;
-            z-index: 99999;
-          }
-        }
-        .print-guide {
-          width: 210mm;
-          min-height: 148mm;
-          padding: 10mm 12mm;
-          background: white;
-          color: #000;
-          font-size: 11px;
-          line-height: 1.4;
-        }
-        .print-guide table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-        .print-guide td, .print-guide th {
-          border: 0.5px solid #333;
-          padding: 4px 6px;
-          text-align: left;
-          vertical-align: top;
-        }
-        .print-guide th {
-          background: #f0f0f0;
-          font-weight: bold;
-          font-size: 10px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        .print-guide .header-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          border-bottom: 2px solid #000;
-          padding-bottom: 6px;
-          margin-bottom: 8px;
-        }
-        .print-guide .logo-area {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .print-guide .logo-area img {
-          height: 44px;
-          object-fit: contain;
-        }
-        .print-guide .title-area {
-          text-align: center;
-          flex: 1;
-        }
-        .print-guide .title-area h1 {
-          font-size: 14px;
-          font-weight: bold;
-          margin: 0;
-          text-transform: uppercase;
-        }
-        .print-guide .title-area p {
-          font-size: 10px;
-          margin: 2px 0 0;
-          color: #555;
-        }
-        .print-guide .priority-badge {
-          display: inline-block;
-          padding: 3px 10px;
-          border-radius: 4px;
-          font-weight: bold;
-          font-size: 12px;
-          text-align: center;
-        }
-        .print-guide .priority-urgente {
-          background: #fee2e2;
-          color: #b91c1c;
-          border: 1.5px solid #b91c1c;
-        }
-        .print-guide .priority-rotina {
-          background: #dbeafe;
-          color: #1d4ed8;
-          border: 1.5px solid #1d4ed8;
-        }
-        .print-guide .priority-programado {
-          background: #e0f2fe;
-          color: #0369a1;
-          border: 1.5px solid #0369a1;
-        }
-        .print-guide .section-title {
-          font-size: 10px;
-          font-weight: bold;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin: 8px 0 4px;
-          color: #333;
-        }
-        .print-guide .items-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0;
-        }
-        .print-guide .item-cell {
-          border: 0.5px solid #333;
-          padding: 3px 6px;
-          font-size: 10px;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-        .print-guide .item-checkbox {
-          width: 10px;
-          height: 10px;
-          border: 1px solid #000;
-          display: inline-block;
-          flex-shrink: 0;
-        }
-        .print-guide .footer-area {
-          margin-top: 16px;
-          border-top: 1px solid #999;
-          padding-top: 8px;
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-end;
-        }
-        .print-guide .signature-line {
-          border-top: 1px solid #000;
-          width: 180px;
-          text-align: center;
-          padding-top: 3px;
-          font-size: 9px;
-          color: #555;
-        }
-        .print-guide .footer-note {
-          font-size: 8px;
-          color: #777;
-          text-align: center;
-          margin-top: 8px;
-        }
-      `}</style>
-
-      {/* Header */}
-      <div className="header-row">
-        <div className="logo-area">
-          <img src={socorraoLogo} alt="Socorrão I" />
-        </div>
-        <div className="title-area">
-          <h1>Guia de Requisição</h1>
-          <p>{categoryLabel}</p>
-        </div>
-        <div style={{ textAlign: "right" }}>
-          <span className={`priority-badge priority-${request.priority}`}>
-            {priorityLabel}
-          </span>
-        </div>
-      </div>
-
-      {/* Patient Info Table */}
-      <table>
-        <tbody>
-          <tr>
-            <th style={{ width: "20%" }}>Paciente</th>
-            <td colSpan={3} style={{ fontWeight: "bold", fontSize: "12px" }}>{request.patient_name}</td>
-          </tr>
-          <tr>
-            <th>Setor</th>
-            <td>{sectorName || "—"}</td>
-            <th style={{ width: "12%" }}>Leito</th>
-            <td style={{ width: "15%" }}>{request.patient_bed || "—"}</td>
-          </tr>
-          <tr>
-            <th>Solicitante</th>
-            <td>{request.requested_by_name || "—"}</td>
-            <th>Data/Hora</th>
-            <td>{format(new Date(request.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</td>
-          </tr>
-          <tr>
-            <th>Prioridade</th>
-            <td>{priorityLabel}</td>
-            <th>Categoria</th>
-            <td>{categoryLabel}</td>
-          </tr>
-          {scheduledInfo && (
-            <tr>
-              <th>Agendamento</th>
-              <td colSpan={3}>📅 {scheduledInfo}</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-
-      {/* Clinical Justification */}
-      {request.clinical_indication && (
-        <>
-          <div className="section-title">Justificativa Clínica</div>
-          <table>
-            <tbody>
-              <tr>
-                <td style={{ fontSize: "10px", minHeight: "30px" }}>{request.clinical_indication}</td>
-              </tr>
-            </tbody>
-          </table>
-        </>
-      )}
-
-      {/* Requested Items */}
-      <div className="section-title">Itens Solicitados ({items.length})</div>
-      <div className="items-grid">
-        {items.map((item: any, idx: number) => (
-          <div key={idx} className="item-cell">
-            <span className="item-checkbox" />
-            <span>{typeof item === "string" ? item : item.name || item}</span>
-          </div>
+    <div className="p-4 text-sm">
+      <h2 className="font-bold mb-2">Pré-visualização — {categoryLabel}</h2>
+      <p><strong>Paciente:</strong> {request.patient_name} · Leito {request.patient_bed || "—"} · {sectorName || "—"}</p>
+      <p><strong>Itens ({items.length}):</strong></p>
+      <ul className="list-disc pl-5">
+        {items.map((it, i) => (
+          <li key={i}>{typeof it === "string" ? it : (it as any).name || JSON.stringify(it)}</li>
         ))}
-        {items.length % 2 !== 0 && <div className="item-cell" style={{ borderColor: "transparent" }} />}
-      </div>
-
-      {/* Notes */}
-      {cleanNotes && (
-        <>
-          <div className="section-title">Observações</div>
-          <table>
-            <tbody>
-              <tr>
-                <td style={{ fontSize: "10px" }}>{cleanNotes}</td>
-              </tr>
-            </tbody>
-          </table>
-        </>
-      )}
-
-      {/* Footer with signatures */}
-      <div className="footer-area">
-        <div className="signature-line">Médico Solicitante</div>
-        <div className="signature-line">Setor Executor</div>
-      </div>
-
-      <div className="footer-note">
-        {whitelabel.print.documentFooter(
-          format(now, "dd/MM/yyyy", { locale: ptBR }),
-          format(now, "HH:mm", { locale: ptBR })
-        )} • {whitelabel.print.systemLabel}
-      </div>
+      </ul>
+      <p className="mt-2 text-xs text-muted-foreground">
+        A impressão segue o padrão Norma Zero (MAN.05-001).
+      </p>
     </div>
   );
 }
 
-export function printRequisitionGuide(request: any, sectorLabel?: (s: string | null) => string) {
-  const printWindow = window.open("", "_blank", "width=800,height=600");
-  if (!printWindow) {
-    alert("Permita pop-ups para imprimir a guia.");
-    return;
-  }
-
+export async function printRequisitionGuide(
+  request: any,
+  sectorLabel?: (s: string | null) => string,
+) {
   const items = Array.isArray(request.items) ? request.items : [];
   const categoryLabel = CATEGORY_LABELS[request.category] || request.category;
-  const priorityLabel = PRIORITY_LABELS[request.priority] || request.priority;
+  const priorityLabel = PRIORITY_LABELS[request.priority] || (request.priority || "").toUpperCase();
+  const priorityCss = PRIORITY_BADGE[request.priority] || PRIORITY_BADGE.rotina;
+  const docPrefix = CATEGORY_PREFIX[request.category] || "REQ";
+
   const scheduledMatch = request.notes?.match(/\[PROGRAMADO: ([^\]]+)\]/);
-  const scheduledInfo = scheduledMatch?.[1] || null;
-  const cleanNotes = request.notes?.replace(/\[PROGRAMADO: [^\]]+\]\n?/, "").trim() || null;
-  const sectorName = sectorLabel ? sectorLabel(request.patient_sector || null) : (request.patient_sector || "");
-  const now = new Date();
+  const scheduledInfo: string | null = scheduledMatch?.[1] || null;
+  const cleanNotes: string | null =
+    request.notes?.replace(/\[PROGRAMADO: [^\]]+\]\n?/, "").trim() || null;
 
-  const html = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Guia de Requisição - ${request.patient_name}</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; line-height: 1.4; color: #000; background: #fff; padding: 10mm 12mm; }
-  @page { size: A4 portrait; margin: 10mm 12mm; }
-  table { width: 100%; border-collapse: collapse; }
-  td, th { border: 0.5px solid #333; padding: 4px 6px; text-align: left; vertical-align: top; }
-  th { background: #f0f0f0; font-weight: bold; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .header-row { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px; }
-  .logo-area { display: flex; align-items: center; gap: 10px; }
-  .logo-area img { height: 44px; object-fit: contain; }
-  .title-area { text-align: center; flex: 1; }
-  .title-area h1 { font-size: 14px; font-weight: bold; margin: 0; text-transform: uppercase; }
-  .title-area p { font-size: 10px; margin: 2px 0 0; color: #555; }
-  .priority-badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-weight: bold; font-size: 12px; }
-  .priority-urgente { background: #fee2e2; color: #b91c1c; border: 1.5px solid #b91c1c; }
-  .priority-rotina { background: #dbeafe; color: #1d4ed8; border: 1.5px solid #1d4ed8; }
-  .priority-programado { background: #e0f2fe; color: #0369a1; border: 1.5px solid #0369a1; }
-  .section-title { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin: 8px 0 4px; color: #333; }
-  .items-grid { display: grid; grid-template-columns: 1fr 1fr; }
-  .item-cell { border: 0.5px solid #333; padding: 3px 6px; font-size: 10px; display: flex; align-items: center; gap: 4px; }
-  .item-checkbox { width: 10px; height: 10px; border: 1px solid #000; display: inline-block; flex-shrink: 0; }
-  .footer-area { margin-top: 20px; border-top: 1px solid #999; padding-top: 10px; display: flex; justify-content: space-between; }
-  .signature-line { border-top: 1px solid #000; width: 180px; text-align: center; padding-top: 3px; font-size: 9px; color: #555; margin-top: 40px; }
-  .footer-note { font-size: 8px; color: #777; text-align: center; margin-top: 12px; }
-</style></head><body>
-<div class="header-row">
-  <div class="logo-area"><img src="${window.location.origin}/assets/socorrao1-logo.png" alt="Socorrão I" onerror="this.style.display='none'" /></div>
-  <div class="title-area"><h1>Guia de Requisição</h1><p>${categoryLabel}</p></div>
-  <div style="text-align:right"><span class="priority-badge priority-${request.priority}">${priorityLabel}</span></div>
-</div>
-<table><tbody>
-  <tr><th style="width:20%">Paciente</th><td colspan="3" style="font-weight:bold;font-size:12px">${request.patient_name}</td></tr>
-  <tr><th>Setor</th><td>${sectorName || "—"}</td><th style="width:12%">Leito</th><td style="width:15%">${request.patient_bed || "—"}</td></tr>
-  <tr><th>Solicitante</th><td>${request.requested_by_name || "—"}</td><th>Data/Hora</th><td>${format(new Date(request.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</td></tr>
-  <tr><th>Prioridade</th><td>${priorityLabel}</td><th>Categoria</th><td>${categoryLabel}</td></tr>
-  ${scheduledInfo ? `<tr><th>Agendamento</th><td colspan="3">📅 ${scheduledInfo}</td></tr>` : ""}
-</tbody></table>
-${request.clinical_indication ? `<div class="section-title">Justificativa Clínica</div><table><tbody><tr><td style="font-size:10px;min-height:30px">${request.clinical_indication}</td></tr></tbody></table>` : ""}
-<div class="section-title">Itens Solicitados (${items.length})</div>
-<div class="items-grid">
-  ${items.map((item: any) => `<div class="item-cell"><span class="item-checkbox"></span><span>${typeof item === "string" ? item : item.name || item}</span></div>`).join("")}
-  ${items.length % 2 !== 0 ? '<div class="item-cell" style="border-color:transparent"></div>' : ""}
-</div>
-${cleanNotes ? `<div class="section-title">Observações</div><table><tbody><tr><td style="font-size:10px">${cleanNotes}</td></tr></tbody></table>` : ""}
-<div class="footer-area"><div class="signature-line">Médico Solicitante</div><div class="signature-line">Setor Executor</div></div>
-<div class="footer-note">Documento gerado automaticamente • ${format(now, "dd/MM/yyyy", { locale: ptBR })} às ${format(now, "HH:mm", { locale: ptBR })} • BigHelp Map - Mapa de Cuidados Intensivos</div>
-</body></html>`;
+  const sectorName = sectorLabel
+    ? sectorLabel(request.patient_sector || null)
+    : (request.patient_sector || "");
 
-  printWindow.document.write(html);
-  printWindow.document.close();
-  setTimeout(() => { printWindow.print(); }, 500);
+  const createdAt = new Date(request.created_at);
+  const createdStr = format(createdAt, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+
+  // === Corpo HTML (entre header e assinaturas) ===
+  const identificationRows = `
+    <table class="nz" style="margin-bottom:6pt">
+      <tbody>
+        <tr>
+          <th style="width:18%">Paciente</th>
+          <td colspan="3" style="font-weight:700;font-size:9.5pt">${escapeHtml(request.patient_name)}</td>
+        </tr>
+        <tr>
+          <th>Setor</th><td>${escapeHtml(sectorName || "—")}</td>
+          <th style="width:14%">Leito</th><td style="width:18%">${escapeHtml(request.patient_bed || "—")}</td>
+        </tr>
+        <tr>
+          <th>Solicitante</th><td>${escapeHtml(request.requested_by_name || "—")}</td>
+          <th>Solicitação</th><td>${escapeHtml(createdStr)}</td>
+        </tr>
+        <tr>
+          <th>Categoria</th><td>${escapeHtml(categoryLabel)}</td>
+          <th>Prioridade</th>
+          <td><span class="prio-badge" style="${priorityCss}">${escapeHtml(priorityLabel)}</span></td>
+        </tr>
+        ${
+          scheduledInfo
+            ? `<tr><th>Agendamento</th><td colspan="3">${escapeHtml(scheduledInfo)}</td></tr>`
+            : ""
+        }
+      </tbody>
+    </table>
+  `;
+
+  const justificationBlock = request.clinical_indication
+    ? `<h2 class="nz-section">Justificativa Clínica</h2>
+       <table class="nz"><tbody><tr><td style="min-height:30pt">${escapeHtml(request.clinical_indication)}</td></tr></tbody></table>`
+    : "";
+
+  const itemsCells =
+    items.length > 0
+      ? items
+          .map((item: any) => {
+            const name = typeof item === "string" ? item : item?.name || String(item ?? "");
+            return `<div class="req-item"><span class="req-check"></span><span>${escapeHtml(name)}</span></div>`;
+          })
+          .join("")
+      : `<div class="nz-empty">Nenhum item registrado.</div>`;
+
+  const itemsBlock = `
+    <h2 class="nz-section">Itens Solicitados (${items.length})</h2>
+    <div class="req-grid">${itemsCells}</div>
+  `;
+
+  const notesBlock = cleanNotes
+    ? `<h2 class="nz-section">Observações</h2>
+       <table class="nz"><tbody><tr><td>${escapeHtml(cleanNotes).replace(/\n/g, "<br/>")}</td></tr></tbody></table>`
+    : "";
+
+  const bodyHtml = `
+    <h2 class="nz-section">Identificação</h2>
+    ${identificationRows}
+    ${justificationBlock}
+    ${itemsBlock}
+    ${notesBlock}
+  `;
+
+  // CSS específico desta guia
+  const extraStyles = `
+    .prio-badge { display:inline-block; padding:1.5pt 8pt; border-radius:3pt; font-weight:700; font-size:8pt; letter-spacing:0.4pt; }
+    .req-grid { display:grid; grid-template-columns: 1fr 1fr; gap:0; border:0.5pt solid #cbd5e1; border-radius:3pt; overflow:hidden; }
+    .req-item { display:flex; align-items:center; gap:5pt; padding:4pt 7pt; font-size:8.5pt; border-bottom:0.5pt solid #e2e8f0; border-right:0.5pt solid #e2e8f0; }
+    .req-item:nth-child(2n) { border-right:none; }
+    .req-check { width:8pt; height:8pt; border:1pt solid #0a1628; border-radius:1pt; display:inline-block; flex-shrink:0; }
+  `;
+
+  const logoDataUrl = await prepareLogo();
+  const html = buildNormaZeroDocument({
+    title: `Guia de Requisição — ${categoryLabel}`,
+    subtitle: `Solicitada em ${createdStr}`,
+    sectorLabel: sectorName || "Assistência Hospitalar",
+    docCodePrefix: docPrefix,
+    bodyHtml,
+    signatures: [
+      { label: "Médico Solicitante", caption: "CRM · Carimbo e assinatura" },
+      { label: "Setor Executor", caption: "Recebimento e execução" },
+    ],
+    logoDataUrl,
+    extraStyles,
+  });
+
+  const w = openPrintWindow(html, "Preparando guia de requisição…");
+  if (!w) {
+    alert("Permita pop-ups para imprimir a guia.");
+  }
 }
