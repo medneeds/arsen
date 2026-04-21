@@ -90,6 +90,7 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 import { useMedicationFavorites } from "@/hooks/useMedicationFavorites";
 import { useQuickPrescriptionTemplates, type QuickPrescriptionTemplate, type QuickTemplateItem } from "@/hooks/useQuickPrescriptionTemplates";
 import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
+import { CareCatalogDialog } from "@/components/CareCatalogDialog";
 import { DoseCalculatorDialog, type DoseCalculatorResult } from "@/components/DoseCalculatorDialog";
 import { PreValidationAlertDialog } from "@/components/PreValidationAlertDialog";
 import { runClinicalAlertChecks, type ClinicalAlert } from "@/lib/clinicalAlertChecks";
@@ -2360,6 +2361,7 @@ const PrescricaoPage = () => {
   const [tevProtocolOpen, setTevProtocolOpen] = useState(false);
   const [pendingAntimicrobialMed, setPendingAntimicrobialMed] = useState<MedicationEntry | null>(null);
   const [highAlertGuideOpen, setHighAlertGuideOpen] = useState(false);
+  const [careCatalogOpen, setCareCatalogOpen] = useState(false);
   const [compactView, setCompactView] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<PrescriptionCategory>>(new Set());
 
@@ -4002,7 +4004,7 @@ const PrescricaoPage = () => {
               } else if (cat === 'high_alert') {
                 setHighAlertGuideOpen(true);
               } else if (cat === 'care') {
-                setQuickTemplatesDialogOpen(true);
+                setCareCatalogOpen(true);
               }
             }}
           />
@@ -4510,6 +4512,19 @@ const PrescricaoPage = () => {
         open={highAlertGuideOpen}
         onOpenChange={setHighAlertGuideOpen}
         onAddItem={(med) => { addItem(med); }}
+      />
+
+      {/* Care Catalog Dialog — só cuidados de suporte (sinais vitais, decúbito, fisio, fono, curativos) */}
+      <CareCatalogDialog
+        open={careCatalogOpen}
+        onOpenChange={setCareCatalogOpen}
+        onAddItem={(entry) => addItem(entry)}
+        onApplyProfile={(profile) => {
+          applyCareProfile(profile);
+          setCareCatalogOpen(false);
+        }}
+        appliedProfileIds={appliedCareProfiles}
+        patientName={patient?.name}
       />
 
       {/* Quick Templates Dialog */}
