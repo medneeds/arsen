@@ -87,6 +87,8 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   const [examinusOpen, setExaminusOpen] = useState(false);
   const [openSections, setOpenSections] = useState<string[]>(['vitals', 'subjective', 'objective', 'assessment', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
+  const { currentHospital } = useHospital();
+  const hospitalId = currentHospital?.id ?? null;
 
   // Calculate completion status for each section
   const completion = useMemo(() => {
