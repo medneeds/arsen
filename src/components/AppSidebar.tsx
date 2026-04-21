@@ -29,6 +29,7 @@ import {
   Ear,
   BedDouble,
   ArrowRight,
+  Terminal,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { whitelabel } from "@/config/whitelabel";
@@ -71,6 +72,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePendingPasswordResets } from "@/hooks/usePendingPasswordResets";
 import { useTheme } from "next-themes";
+import { useIsDev } from "@/hooks/useIsDev";
 
 function ThemeToggleInline() {
   const { theme, setTheme } = useTheme();
@@ -655,6 +657,7 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/50 p-3 bg-muted/30 space-y-2">
+        <DevConsoleLink isCollapsed={isCollapsed} onNavigate={() => navigate("/dev-console")} />
         {/* Theme toggle */}
         <div className={cn(
           "flex items-center rounded-lg p-1.5 transition-all duration-200",
