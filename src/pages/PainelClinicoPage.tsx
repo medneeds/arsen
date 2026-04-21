@@ -542,6 +542,18 @@ export default function PainelClinicoPage() {
     setSidebarTab("resumo");
   };
 
+  // Clique no nome → entra direto no painel clínico individual (prescrição com contexto)
+  const goToPatientPanel = (patient: Patient) => {
+    const params = new URLSearchParams({
+      patientId: patient.id,
+      patientName: patient.name,
+      patientBed: patient.bedNumber,
+      patientSector: patient.sector,
+    });
+    if (patient.age) params.set("patientAge", patient.age.toString());
+    navigate(`/prescricao?${params.toString()}`);
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header - matches Index.tsx height */}
@@ -622,7 +634,8 @@ export default function PainelClinicoPage() {
                     <TableRow
                       key={patient.id}
                       className="cursor-pointer group hover:bg-accent/50 transition-colors"
-                      onClick={() => openPatient(patient)}
+                      onClick={() => goToPatientPanel(patient)}
+                      title="Abrir painel clínico do paciente"
                     >
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -634,7 +647,7 @@ export default function PainelClinicoPage() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium text-foreground leading-tight">{patient.name}</p>
+                          <p className="font-medium text-foreground leading-tight hover:text-primary transition-colors">{patient.name}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {patient.age ? `${patient.age} anos` : "—"}
                           </p>
@@ -715,6 +728,7 @@ export default function PainelClinicoPage() {
                           size="sm"
                           className="opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={(e) => { e.stopPropagation(); openPatient(patient); }}
+                          title="Visualização rápida (preview)"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
