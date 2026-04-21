@@ -74,6 +74,26 @@ import { usePendingPasswordResets } from "@/hooks/usePendingPasswordResets";
 import { useTheme } from "next-themes";
 import { useIsDev } from "@/hooks/useIsDev";
 
+function DevConsoleLink({ isCollapsed, onNavigate }: { isCollapsed: boolean; onNavigate: () => void }) {
+  const { isDev } = useIsDev();
+  if (!isDev) return null;
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={onNavigate}
+      className={cn(
+        "w-full gap-2 text-xs font-medium border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary",
+        isCollapsed && "px-0 justify-center"
+      )}
+      title="Dev Console"
+    >
+      <Terminal className="h-4 w-4 flex-shrink-0" />
+      {!isCollapsed && <span>Dev Console</span>}
+    </Button>
+  );
+}
+
 function ThemeToggleInline() {
   const { theme, setTheme } = useTheme();
   return (
