@@ -72,10 +72,14 @@ export function usePatientCid(patientId: string | null) {
 
   const persist = useCallback(async (next: { primary?: string; secondary?: string[] }) => {
     if (!patientId || !currentHospital || !currentState || !user) return false;
+    if (!safePatientId) {
+      toast.error("Paciente sem registro permanente — CID não pode ser salvo");
+      return false;
+    }
     setSaving(true);
     try {
       const payload: Record<string, any> = {
-        patient_id: patientId,
+        patient_id: safePatientId,
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
         updated_by: user.id,
@@ -108,7 +112,7 @@ export function usePatientCid(patientId: string | null) {
     } finally {
       setSaving(false);
     }
-  }, [patientId, currentHospital, currentState, user]);
+  }, [patientId, safePatientId, currentHospital, currentState, user]);
 
   const updatePrimary = useCallback(async (value: string) => {
     setCidPrimary(value);
