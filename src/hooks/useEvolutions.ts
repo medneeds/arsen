@@ -55,31 +55,49 @@ const EMPTY_EXAM = { general: "", cardiovascular: "", respiratory: "", abdomen: 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const asUuid = (id: string | null): string | null => (id && UUID_RE.test(id) ? id : null);
 
-export function useEvolutions(patientId: string | null) {
+export function useEvolutions(
+  patientId: string | null,
+  fallback?: { patientName?: string; patientBed?: string; patientSector?: string }
+) {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
   const [evolutions, setEvolutions] = useState<EvolutionRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
   const safePatientId = asUuid(patientId);
+  const fbName = fallback?.patientName?.trim() || null;
+  const fbBed = fallback?.patientBed?.trim() || null;
+  const fbSector = fallback?.patientSector?.trim() || null;
 
   const fetchEvolutions = useCallback(async () => {
-    if (!patientId || !currentHospital || !currentState) return;
-    // Mock/non-UUID patient ids cannot be queried against uuid columns.
-    // Skip remote fetch and start with an empty list so the UI stays usable.
-    if (!safePatientId) {
-      setEvolutions([]);
-      return;
-    }
+    if (!currentHospital || !currentState) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("clinical_evolutions")
         .select("*")
-        .eq("patient_id", safePatientId)
         .eq("hospital_unit_id", currentHospital.id)
         .eq("state_id", currentState.id)
         .order("created_at", { ascending: false });
+
+      if (safePatientId) {
+        // Real DB patient — match by uuid (covers both patient_id set or null with same name+bed).
+        query = query.or(
+          `patient_id.eq.${safePatientId}` +
+          (fbName ? `,and(patient_id.is.null,patient_name.eq.${fbName}${fbBed ? `,patient_bed.eq.${fbBed}` : ""})` : "")
+        );
+      } else if (fbName) {
+        // Mock patient (non-UUID id) — match drafts by name + bed (+sector when present).
+        query = query.is("patient_id", null).eq("patient_name", fbName);
+        if (fbBed) query = query.eq("patient_bed", fbBed);
+        if (fbSector) query = query.eq("patient_sector", fbSector);
+      } else {
+        setEvolutions([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setEvolutions(
@@ -95,7 +113,7 @@ export function useEvolutions(patientId: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [patientId, safePatientId, currentHospital, currentState]);
+  }, [safePatientId, fbName, fbBed, fbSector, currentHospital, currentState]);
 
   useEffect(() => {
     fetchEvolutions();
