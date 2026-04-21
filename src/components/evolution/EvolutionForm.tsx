@@ -3,7 +3,7 @@ import {
   Heart, User, Stethoscope, ClipboardList, FileText,
   Save, Loader2, CheckCircle2,
   ShieldCheck, Printer, Sparkles,
-  AlertCircle, Eye, ChevronDown,
+  AlertCircle, Eye, ChevronDown, Stethoscope as DiagnosisIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,8 @@ interface EvolutionFormProps {
   autoSave?: boolean;
   /** Indicates a pending unsaved change (used to show "Não salvo" pill). */
   hasUnsaved?: boolean;
+  /** Render slot for the Diagnostics panel — placed as 1st collapsible section. */
+  diagnosticsSlot?: React.ReactNode;
 }
 
 type SectionKey = 'vitals' | 'subjective' | 'objective' | 'assessment' | 'plan' | 'review';
@@ -83,9 +85,10 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   onSOAPChange, onVitalsChange, onPhysicalExamChange,
   onSave, onValidate, saving, readOnly = false, isValidated = false,
   autoSave = false, hasUnsaved = false,
+  diagnosticsSlot,
 }) => {
   const [examinusOpen, setExaminusOpen] = useState(false);
-  const [openSections, setOpenSections] = useState<string[]>(['vitals', 'subjective', 'objective', 'assessment', 'plan']);
+  const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'vitals', 'subjective', 'objective', 'assessment', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
   const { currentHospital } = useHospital();
   const hospitalId = currentHospital?.id ?? null;
@@ -170,7 +173,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     );
   }
 
-  const expandAll = () => setOpenSections(['vitals', 'subjective', 'objective', 'assessment', 'plan', 'review']);
+  const expandAll = () => setOpenSections(['diagnostics', 'vitals', 'subjective', 'objective', 'assessment', 'plan', 'review']);
   const collapseAll = () => setOpenSections([]);
 
   return (
