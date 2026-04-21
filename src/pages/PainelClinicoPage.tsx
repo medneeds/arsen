@@ -728,6 +728,7 @@ export default function PainelClinicoPage() {
                           size="sm"
                           className="opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={(e) => { e.stopPropagation(); openPatient(patient); }}
+                          title="Visualização rápida (preview)"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
