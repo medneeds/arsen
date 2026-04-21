@@ -52,20 +52,31 @@ const EMPTY_SOAP = { subjective: "", objective: "", assessment: "", plan: "" };
 const EMPTY_VITALS = { pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" };
 const EMPTY_EXAM = { general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const asUuid = (id: string | null): string | null => (id && UUID_RE.test(id) ? id : null);
+
 export function useEvolutions(patientId: string | null) {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
   const [evolutions, setEvolutions] = useState<EvolutionRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const safePatientId = asUuid(patientId);
+
   const fetchEvolutions = useCallback(async () => {
     if (!patientId || !currentHospital || !currentState) return;
+    // Mock/non-UUID patient ids cannot be queried against uuid columns.
+    // Skip remote fetch and start with an empty list so the UI stays usable.
+    if (!safePatientId) {
+      setEvolutions([]);
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from("clinical_evolutions")
         .select("*")
-        .eq("patient_id", patientId)
+        .eq("patient_id", safePatientId)
         .eq("hospital_unit_id", currentHospital.id)
         .eq("state_id", currentState.id)
         .order("created_at", { ascending: false });
