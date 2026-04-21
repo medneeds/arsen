@@ -51,7 +51,7 @@ const handlePrint = async () => {
 - `src/pages/PrescricaoPage.tsx` → `PrintablePrescription` (cabeçalho/rodapé via `<NormaZeroPrintHeader />`)
 - `src/components/evolution/EvolutionForm.tsx` → botão Imprimir Evolução (popup `buildNormaZeroDocument`, prefixo EVOL)
 - `src/pages/FichaAtendimentoPage.tsx` (cabeçalho nativo Norma Zero, prefixo FAT)
-- `src/components/PrintableRequisitionGuide.tsx` → `printRequisitionGuide()` (popup Norma Zero; prefixos REQ-LAB / REQ-IMG / REQ-PAR / REQ-APAC). Usado em RequisicaoUnificadaPage, SetorImagemPage e SetorLaboratorioPage.
+- `src/components/PrintableRequisitionGuide.tsx` → `printRequisitionGuide()` (popup Norma Zero; prefixos REQ-LAB / REQ-IMG / REQ-PAR / REQ-APAC) **e** `<PrintableRequisitionGuide />` React preview (espelha header institucional, doc-bar, seções, tabelas, grid de itens com checkbox e assinaturas — usado no diálogo de visualização de RequisicaoUnificadaPage). Também usado em SetorImagemPage e SetorLaboratorioPage.
 
 ## Componente React reutilizável
 `src/components/NormaZeroPrintHeader.tsx` expõe:
