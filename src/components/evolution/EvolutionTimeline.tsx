@@ -430,21 +430,63 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                     </div>
                   )}
                   <div className="mt-2">
-                    <EvolutionForm
-                      soap={data.soap}
-                      vitals={data.vitals}
-                      physicalExam={data.exam}
-                      onSOAPChange={(k, v) => updateLocal(evo.id, "soap", k, v)}
-                      onVitalsChange={(k, v) => updateLocal(evo.id, "vitals", k, v)}
-                      onPhysicalExamChange={(k, v) => updateLocal(evo.id, "exam", k, v)}
-                      onSave={() => handleSave(evo.id)}
-                      onValidate={isEditable ? () => setValidateDialogId(evo.id) : undefined}
-                      saving={savingId === evo.id}
-                      readOnly={!isEditable}
-                      isValidated={evo.status === "validated"}
-                      autoSave={isEditable}
-                      hasUnsaved={hasUnsaved}
-                    />
+                    {isIntercurrence(evo) ? (
+                      <div className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-3.5 w-3.5 text-amber-600" />
+                          <span className="text-xs font-semibold text-foreground">Descritivo da Intercorrência</span>
+                        </div>
+                        <Textarea
+                          value={data.soap.subjective || ""}
+                          onChange={e => updateLocal(evo.id, "soap", "subjective", e.target.value)}
+                          placeholder="Descreva a intercorrência..."
+                          className="min-h-[120px] text-sm resize-y"
+                          readOnly={!isEditable}
+                          disabled={!isEditable}
+                        />
+                        {isEditable && (
+                          <div className="flex items-center justify-end gap-2">
+                            {hasUnsaved && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1.5"
+                                onClick={() => handleSave(evo.id)}
+                                disabled={savingId === evo.id}
+                              >
+                                {savingId === evo.id ? (
+                                  <><Loader2 className="h-3 w-3 animate-spin" /> Salvando...</>
+                                ) : "Salvar rascunho"}
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+                              onClick={() => setValidateDialogId(evo.id)}
+                              disabled={savingId === evo.id}
+                            >
+                              <ShieldCheck className="h-3 w-3" /> Validar e Assinar
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <EvolutionForm
+                        soap={data.soap}
+                        vitals={data.vitals}
+                        physicalExam={data.exam}
+                        onSOAPChange={(k, v) => updateLocal(evo.id, "soap", k, v)}
+                        onVitalsChange={(k, v) => updateLocal(evo.id, "vitals", k, v)}
+                        onPhysicalExamChange={(k, v) => updateLocal(evo.id, "exam", k, v)}
+                        onSave={() => handleSave(evo.id)}
+                        onValidate={isEditable ? () => setValidateDialogId(evo.id) : undefined}
+                        saving={savingId === evo.id}
+                        readOnly={!isEditable}
+                        isValidated={evo.status === "validated"}
+                        autoSave={isEditable}
+                        hasUnsaved={hasUnsaved}
+                      />
+                    )}
                   </div>
                 </div>
               )}
