@@ -30,7 +30,7 @@ import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { printRequisitionGuide } from "@/components/PrintableRequisitionGuide";
+import { printRequisitionGuide, PrintableRequisitionGuide } from "@/components/PrintableRequisitionGuide";
 import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
 
@@ -884,7 +884,7 @@ const RequisicaoUnificadaPage = () => {
 
       {/* ── Result Dialog (read-only for physicians) ── */}
       <Dialog open={!!viewingRequest} onOpenChange={() => { setViewingRequest(null); setResultText(""); setResultFiles([]); }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[88vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
@@ -896,49 +896,11 @@ const RequisicaoUnificadaPage = () => {
           </DialogHeader>
           {viewingRequest && (
             <div className="space-y-4">
-              {/* Request summary */}
-              <div className="bg-muted/30 rounded-lg p-3 space-y-1.5 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Paciente</span>
-                  <span className="font-semibold text-foreground">{viewingRequest.patient_name}</span>
-                </div>
-                {viewingRequest.patient_bed && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Leito/Setor</span>
-                    <span className="text-foreground">{getSectorLabel(viewingRequest.patient_sector)} · L{viewingRequest.patient_bed}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Solicitado por</span>
-                  <span className="text-foreground">{viewingRequest.requested_by_name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Data</span>
-                  <span className="text-foreground">{format(new Date(viewingRequest.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</span>
-                </div>
-                {viewingRequest.clinical_indication && (
-                  <div className="p-2 rounded-md bg-amber-50/50 border border-amber-200 dark:bg-amber-500/5 dark:border-amber-500/20">
-                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Justificativa Clínica:</span>
-                    <p className="text-xs text-foreground mt-0.5">{viewingRequest.clinical_indication}</p>
-                  </div>
-                )}
-                {viewingRequest.notes && viewingRequest.notes.includes("[PROGRAMADO:") && (
-                  <div className="p-2 rounded-md bg-blue-50/50 border border-blue-200 dark:bg-blue-500/5 dark:border-blue-500/20">
-                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">📅 Agendamento:</span>
-                    <p className="text-xs text-foreground mt-0.5">
-                      {viewingRequest.notes.match(/\[PROGRAMADO: ([^\]]+)\]/)?.[1] || ""}
-                    </p>
-                  </div>
-                )}
-                <div className="pt-1.5 border-t border-border/50">
-                  <p className="text-muted-foreground mb-1">Itens solicitados:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {(viewingRequest.items as any[]).map((item: any, i: number) => (
-                      <Badge key={i} variant="outline" className="text-[10px]">{item.name || item}</Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              {/* Pré-visualização Norma Zero — espelha exatamente o documento impresso */}
+              <PrintableRequisitionGuide
+                request={viewingRequest as any}
+                sectorLabel={(s) => getSectorLabel(s)}
+              />
 
               {/* Result display (read-only — physicians only view results) */}
               {viewingRequest.status === "completed" ? (
