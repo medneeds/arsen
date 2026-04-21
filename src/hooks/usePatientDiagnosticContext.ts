@@ -3,16 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 /**
- * Loads & persists discharge prediction, palliative flag, and
- * isolation/precautions for a patient — keeping these in sync
- * with the admission row in `patients`. Exposed inside the
- * Diagnósticos block of the Evolution screen.
+ * Loads & persists discharge prediction (UTI + Hospitalar), palliative flag, and
+ * isolation/precautions for a patient — keeping these in sync with the admission
+ * row in `patients`. Exposed inside the Diagnósticos block of the Evolution screen.
  */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const asUuid = (id: string | null): string | null => (id && UUID_RE.test(id) ? id : null);
 
 export interface PatientDiagnosticContext {
-  dischargePrediction: string;
+  /** Previsão de alta da UTI/UCI (ISO yyyy-MM-dd ou string livre legada) */
+  utiDischargePrediction: string;
+  /** Previsão de alta hospitalar (ISO yyyy-MM-dd) */
+  hospitalDischargePrediction: string;
   isPalliative: boolean;
   isolationPrecautions: string;
 }
@@ -20,7 +22,8 @@ export interface PatientDiagnosticContext {
 export function usePatientDiagnosticContext(patientId: string | null) {
   const safeId = asUuid(patientId);
   const [data, setData] = useState<PatientDiagnosticContext>({
-    dischargePrediction: "",
+    utiDischargePrediction: "",
+    hospitalDischargePrediction: "",
     isPalliative: false,
     isolationPrecautions: "",
   });
@@ -34,13 +37,14 @@ export function usePatientDiagnosticContext(patientId: string | null) {
     try {
       const { data: row, error } = await supabase
         .from("patients")
-        .select("uti_discharge_prediction, is_palliative, isolation_precautions")
+        .select("uti_discharge_prediction, hospital_discharge_prediction, is_palliative, isolation_precautions")
         .eq("id", safeId)
         .maybeSingle();
       if (error) throw error;
       if (row) {
         setData({
-          dischargePrediction: row.uti_discharge_prediction || "",
+          utiDischargePrediction: row.uti_discharge_prediction || "",
+          hospitalDischargePrediction: (row as any).hospital_discharge_prediction || "",
           isPalliative: !!row.is_palliative,
           isolationPrecautions: row.isolation_precautions || "",
         });
@@ -65,7 +69,8 @@ export function usePatientDiagnosticContext(patientId: string | null) {
         (payload: any) => {
           if (!payload.new) return;
           setData(prev => ({
-            dischargePrediction: payload.new.uti_discharge_prediction ?? prev.dischargePrediction,
+            utiDischargePrediction: payload.new.uti_discharge_prediction ?? prev.utiDischargePrediction,
+            hospitalDischargePrediction: payload.new.hospital_discharge_prediction ?? prev.hospitalDischargePrediction,
             isPalliative: payload.new.is_palliative ?? prev.isPalliative,
             isolationPrecautions: payload.new.isolation_precautions ?? prev.isolationPrecautions,
           }));
@@ -83,7 +88,8 @@ export function usePatientDiagnosticContext(patientId: string | null) {
     setSaving(true);
     try {
       const payload: Record<string, any> = {};
-      if (patch.dischargePrediction !== undefined) payload.uti_discharge_prediction = patch.dischargePrediction || null;
+      if (patch.utiDischargePrediction !== undefined) payload.uti_discharge_prediction = patch.utiDischargePrediction || null;
+      if (patch.hospitalDischargePrediction !== undefined) payload.hospital_discharge_prediction = patch.hospitalDischargePrediction || null;
       if (patch.isPalliative !== undefined) payload.is_palliative = patch.isPalliative;
       if (patch.isolationPrecautions !== undefined) payload.isolation_precautions = patch.isolationPrecautions || null;
       const { error } = await supabase.from("patients").update(payload).eq("id", safeId);
@@ -98,13 +104,22 @@ export function usePatientDiagnosticContext(patientId: string | null) {
     }
   }, [safeId]);
 
-  const updateDischargePrediction = useCallback((value: string) => {
-    setData(prev => ({ ...prev, dischargePrediction: value }));
+  const updateUtiDischargePrediction = useCallback((value: string) => {
+    setData(prev => ({ ...prev, utiDischargePrediction: value }));
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      const ok = await persist({ dischargePrediction: value }, { silent: true });
-      if (ok) toast.success("Previsão de alta atualizada");
-    }, 600);
+      const ok = await persist({ utiDischargePrediction: value }, { silent: true });
+      if (ok) toast.success("Previsão de alta da UTI atualizada");
+    }, 400);
+  }, [persist]);
+
+  const updateHospitalDischargePrediction = useCallback((value: string) => {
+    setData(prev => ({ ...prev, hospitalDischargePrediction: value }));
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      const ok = await persist({ hospitalDischargePrediction: value }, { silent: true });
+      if (ok) toast.success("Previsão de alta hospitalar atualizada");
+    }, 400);
   }, [persist]);
 
   const updateIsPalliative = useCallback(async (value: boolean) => {
@@ -125,7 +140,8 @@ export function usePatientDiagnosticContext(patientId: string | null) {
   return {
     ...data,
     loading, saving,
-    updateDischargePrediction,
+    updateUtiDischargePrediction,
+    updateHospitalDischargePrediction,
     updateIsPalliative,
     updateIsolationPrecautions,
     refresh: fetch,
