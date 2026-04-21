@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Activity, Database, Users, AlertTriangle, Bot, Send, RefreshCw, ShieldAlert, Terminal } from "lucide-react";
 import { toast } from "sonner";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -58,6 +59,7 @@ export default function DevConsolePage() {
       <header className="border-b border-border bg-card">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <SidebarTrigger className="h-9 w-9" />
             <div className="h-9 w-9 rounded-md bg-primary/10 grid place-items-center">
               <Terminal className="h-5 w-5 text-primary" />
             </div>
