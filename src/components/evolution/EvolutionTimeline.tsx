@@ -3,8 +3,9 @@ import { format, differenceInCalendarDays, parseISO, startOfDay } from "date-fns
 import { ptBR } from "date-fns/locale";
 import {
   ChevronDown, ChevronUp, Copy, Trash2, ShieldCheck, ShieldOff,
-  Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X, Star, Zap,
+  Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X, Star, Zap, Printer,
 } from "lucide-react";
+import { printEvolution } from "@/lib/printEvolution";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -398,6 +399,22 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                   >
                     <Copy className="h-3 w-3" />
                   </Button>
+                  {evo.status === "validated" && (
+                    <Button
+                      variant="ghost" size="icon" className="h-6 w-6"
+                      onClick={e => {
+                        e.stopPropagation();
+                        printEvolution(evo, {
+                          patientName: evo.patient_name,
+                          patientBed: evo.patient_bed || undefined,
+                          patientSector: evo.patient_sector || undefined,
+                        });
+                      }}
+                      title="Imprimir (timbrado Norma Zero)"
+                    >
+                      <Printer className="h-3 w-3" />
+                    </Button>
+                  )}
                   {isEditable && (
                     <Button
                       variant="ghost" size="icon" className="h-6 w-6 text-destructive"
