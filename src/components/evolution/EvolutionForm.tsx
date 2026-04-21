@@ -15,6 +15,8 @@ import { ExaminusAIDialog } from "@/components/ExaminusAIDialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { FieldTemplates } from "@/components/FieldTemplates";
+import { useHospital } from "@/contexts/HospitalContext";
 
 interface SOAPData {
   subjective: string;
@@ -85,6 +87,8 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   const [examinusOpen, setExaminusOpen] = useState(false);
   const [openSections, setOpenSections] = useState<string[]>(['vitals', 'subjective', 'objective', 'assessment', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
+  const { currentHospital } = useHospital();
+  const hospitalId = currentHospital?.id ?? null;
 
   // Calculate completion status for each section
   const completion = useMemo(() => {
@@ -249,15 +253,23 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           complete={completion.subjective}
           required
         >
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-muted-foreground">
+              {soap.subjective.trim().length}/10+ caracteres
+            </span>
+            <FieldTemplates
+              scope="evolution.subjective"
+              currentValue={soap.subjective}
+              onApply={(v) => onSOAPChange('subjective', v)}
+              hospitalUnitId={hospitalId}
+            />
+          </div>
           <Textarea
             value={soap.subjective}
             onChange={e => onSOAPChange('subjective', e.target.value)}
             placeholder="Queixas do paciente, relato do acompanhante, evolução percebida desde último plantão..."
             className="min-h-[120px] text-xs"
           />
-          <p className="mt-1 text-[10px] text-muted-foreground">
-            {soap.subjective.trim().length}/10+ caracteres
-          </p>
         </SectionItem>
 
         <SectionItem
@@ -275,7 +287,15 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {EXAM_FIELDS.map(exam => (
                   <div key={exam.key}>
-                    <Label className="text-[10px] text-muted-foreground">{exam.label}</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-[10px] text-muted-foreground">{exam.label}</Label>
+                      <FieldTemplates
+                        scope={`evolution.objective.exam.${exam.key}`}
+                        currentValue={physicalExam[exam.key]}
+                        onApply={(v) => onPhysicalExamChange(exam.key, v)}
+                        hospitalUnitId={hospitalId}
+                      />
+                    </div>
                     <Input
                       value={physicalExam[exam.key]}
                       onChange={e => onPhysicalExamChange(exam.key, e.target.value)}
@@ -292,15 +312,23 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                 <Label className="text-[10px] text-muted-foreground font-semibold tracking-wider">
                   EXAMES COMPLEMENTARES (laboratoriais e de imagem)
                 </Label>
-                <Button
-                  type="button" size="sm" variant="outline"
-                  onClick={() => setExaminusOpen(true)}
-                  className="h-6 gap-1 text-[10px] border-primary/40 text-primary hover:bg-primary/10"
-                  title="Importar exames com Examinus AI"
-                >
-                  <Sparkles className="h-3 w-3" />
-                  Examinus AI
-                </Button>
+                <div className="flex items-center gap-1">
+                  <FieldTemplates
+                    scope="evolution.objective.complementares"
+                    currentValue={soap.objective}
+                    onApply={(v) => onSOAPChange('objective', v)}
+                    hospitalUnitId={hospitalId}
+                  />
+                  <Button
+                    type="button" size="sm" variant="outline"
+                    onClick={() => setExaminusOpen(true)}
+                    className="h-6 gap-1 text-[10px] border-primary/40 text-primary hover:bg-primary/10"
+                    title="Importar exames com Examinus AI"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    Examinus AI
+                  </Button>
+                </div>
               </div>
               <Textarea
                 value={soap.objective}
@@ -321,15 +349,23 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           complete={completion.assessment}
           required
         >
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-muted-foreground">
+              {soap.assessment.trim().length}/10+ caracteres
+            </span>
+            <FieldTemplates
+              scope="evolution.assessment"
+              currentValue={soap.assessment}
+              onApply={(v) => onSOAPChange('assessment', v)}
+              hospitalUnitId={hospitalId}
+            />
+          </div>
           <Textarea
             value={soap.assessment}
             onChange={e => onSOAPChange('assessment', e.target.value)}
             placeholder="Diagnóstico diferencial, avaliação clínica do caso, hipóteses ativas..."
             className="min-h-[120px] text-xs"
           />
-          <p className="mt-1 text-[10px] text-muted-foreground">
-            {soap.assessment.trim().length}/10+ caracteres
-          </p>
         </SectionItem>
 
         <SectionItem
@@ -341,15 +377,23 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           complete={completion.plan}
           required
         >
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-muted-foreground">
+              {soap.plan.trim().length}/10+ caracteres
+            </span>
+            <FieldTemplates
+              scope="evolution.plan"
+              currentValue={soap.plan}
+              onApply={(v) => onSOAPChange('plan', v)}
+              hospitalUnitId={hospitalId}
+            />
+          </div>
           <Textarea
             value={soap.plan}
             onChange={e => onSOAPChange('plan', e.target.value)}
             placeholder="Condutas, solicitações, ajustes terapêuticos, metas para próximas 24h..."
             className="min-h-[120px] text-xs"
           />
-          <p className="mt-1 text-[10px] text-muted-foreground">
-            {soap.plan.trim().length}/10+ caracteres
-          </p>
         </SectionItem>
 
         <SectionItem
