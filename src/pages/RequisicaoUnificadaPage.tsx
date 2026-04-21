@@ -27,7 +27,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { printRequisitionGuide } from "@/components/PrintableRequisitionGuide";
@@ -253,9 +253,13 @@ const RequisicaoUnificadaPage = () => {
         .order("created_at", { ascending: false })
         .limit(200);
 
-      // When patient context is present, filter by patient
-      if (formPatientId) {
-        query = query.eq("patient_id", formPatientId);
+      // When patient context is present AND id is a real UUID, filter by patient
+      const validPatientId = asUuidOrNull(formPatientId);
+      if (validPatientId) {
+        query = query.eq("patient_id", validPatientId);
+      } else if (formPatientName) {
+        // Fallback para mocks (sem UUID real): filtra por nome
+        query = query.eq("patient_name", formPatientName);
       }
 
       const { data, error } = await query;
@@ -363,7 +367,8 @@ const RequisicaoUnificadaPage = () => {
 
       const payload = {
         category: activeCategory,
-        patient_id: formPatientId || null,
+        // Somente persiste vínculo quando o ID for UUID real (evita mocks "uti2-01")
+        patient_id: asUuidOrNull(formPatientId),
         patient_name: formPatientName.trim(),
         patient_bed: formPatientBed.trim() || null,
         patient_sector: formPatientSector.trim() || null,
@@ -1116,13 +1121,14 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   };
 
   const importAdmission = async () => {
-    if (!patientId) { toast.error("Paciente não vinculado ao mapa"); return; }
+    const validPid = asUuidOrNull(patientId);
+    if (!validPid) { toast.error("Paciente não vinculado ao mapa (sem ID válido)"); return; }
     setImportingAdmission(true);
     try {
       const { data } = await supabase
         .from("admission_histories")
         .select("chief_complaint, clinical_history, diagnostic_hypothesis, initial_conduct")
-        .eq("patient_id", patientId)
+        .eq("patient_id", validPid)
         .maybeSingle();
       if (!data) { toast.error("Nenhuma admissão encontrada para este paciente"); return; }
       const parts: string[] = [];
@@ -1138,13 +1144,14 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   };
 
   const importEvolution = async () => {
-    if (!patientId) { toast.error("Paciente não vinculado ao mapa"); return; }
+    const validPid = asUuidOrNull(patientId);
+    if (!validPid) { toast.error("Paciente não vinculado ao mapa (sem ID válido)"); return; }
     setImportingEvolution(true);
     try {
       const { data: patient } = await supabase
         .from("patients")
         .select("diagnoses, medical_history, pendencies")
-        .eq("id", patientId)
+        .eq("id", validPid)
         .maybeSingle();
       if (!patient) { toast.error("Dados do paciente não encontrados"); return; }
       const parts: string[] = [];

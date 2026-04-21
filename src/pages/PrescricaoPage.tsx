@@ -45,7 +45,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
@@ -2614,7 +2614,7 @@ const PrescricaoPage = () => {
         .from('patient_encounters')
         .insert({
           patient_name: patient.name.trim(),
-          patient_id: patientId || undefined,
+          patient_id: asUuidOrNull(patientId) ?? undefined,
           hospital_unit_id: currentHospital.id,
           state_id: currentState.id,
           created_by: user?.id || undefined,
