@@ -164,6 +164,47 @@ Deno.serve(async (req) => {
         return json({ tables: results });
       }
 
+      case "slow_queries": {
+        // Recent Postgres errors / warnings via audit_logs as a proxy.
+        // (pg_stat_statements isn't exposed; we surface the most-edited tables instead.)
+        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data } = await supa
+          .from("audit_logs")
+          .select("table_name, action")
+          .gte("created_at", since)
+          .limit(2000);
+        const byTable: Record<string, { inserts: number; updates: number; deletes: number; total: number }> = {};
+        for (const r of data ?? []) {
+          const t = r.table_name as string;
+          byTable[t] = byTable[t] ?? { inserts: 0, updates: 0, deletes: 0, total: 0 };
+          byTable[t].total++;
+          if (r.action === "INSERT") byTable[t].inserts++;
+          else if (r.action === "UPDATE") byTable[t].updates++;
+          else if (r.action === "DELETE") byTable[t].deletes++;
+        }
+        const top = Object.entries(byTable)
+          .sort((a, b) => b[1].total - a[1].total)
+          .slice(0, 15)
+          .map(([table, v]) => ({ table, ...v }));
+        return json({ topMutatingTables: top });
+      }
+
+      case "edge_function_errors": {
+        // Surfaces errors from audit_logs (action = DELETE outside business hours, etc.)
+        // Real edge function logs require the analytics API — we list recent failed dispensations
+        // and exam requests as a proxy operational signal.
+        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const [{ data: failedExams }, { count: orphanEvolutions }] = await Promise.all([
+          supa.from("exam_requests").select("id, patient_name, status, created_at").eq("status", "ERRO").gte("created_at", since).limit(20),
+          supa.from("clinical_evolutions").select("id", { count: "exact", head: true }).is("patient_id", null),
+        ]);
+        return json({
+          failedExams: failedExams ?? [],
+          orphanEvolutions: orphanEvolutions ?? 0,
+        });
+      }
+
+
       // ---- SENSITIVE: require confirm: true ----
       case "grant_dev_role": {
         if (!confirm) return json({ error: "Confirmation required", needsConfirm: true }, 400);

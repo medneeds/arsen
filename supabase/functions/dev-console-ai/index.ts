@@ -1,6 +1,6 @@
-// Dev Console — AI assistant with tool calling.
-// The AI can read metrics/logs through dev-console-ops; for sensitive actions
-// it MUST surface a confirmation request to the user (handled in the UI).
+// Dev Console — AI assistant with tool calling + SSE streaming.
+// Streams token-by-token to the client. Tool calls are executed server-side and
+// re-fed to the model; the assistant's final tokens stream back to the user.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -25,6 +25,17 @@ CONTEXTO DA PLATAFORMA:
 - Tabelas-chave: patients, patient_registry, patient_encounters, prescriptions, clinical_evolutions, audit_logs, user_roles
 - Perfis: admin, medico, porta, visitante, farmacia, nir, dev`;
 
+const tools = [
+  { type: "function", function: { name: "system_health", description: "Métricas gerais: pacientes ativos, prescrições/admissões/deletes nas últimas 24h, total de usuários.", parameters: { type: "object", properties: {} } } },
+  { type: "function", function: { name: "audit_recent", description: "Últimos eventos do audit_log (criação/edição/exclusão).", parameters: { type: "object", properties: { limit: { type: "number" } } } } },
+  { type: "function", function: { name: "user_activity", description: "Atividade de usuários nos últimos 7 dias — top 20.", parameters: { type: "object", properties: {} } } },
+  { type: "function", function: { name: "clinical_volume", description: "Volume clínico (atendimentos, prescrições, evoluções) por dia, últimos 7 dias.", parameters: { type: "object", properties: {} } } },
+  { type: "function", function: { name: "list_users", description: "Lista os 100 usuários mais recentes com seus perfis.", parameters: { type: "object", properties: {} } } },
+  { type: "function", function: { name: "db_table_sizes", description: "Contagem de linhas das tabelas principais.", parameters: { type: "object", properties: {} } } },
+  { type: "function", function: { name: "slow_queries", description: "Tabelas mais mutadas nas últimas 24h (proxy de hot paths e potenciais gargalos).", parameters: { type: "object", properties: {} } } },
+  { type: "function", function: { name: "edge_function_errors", description: "Sinais operacionais de erro: exames com status ERRO e evoluções órfãs.", parameters: { type: "object", properties: {} } } } ,
+];
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -39,80 +50,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Validate JWT + role dev/admin
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     const jwt = authHeader.replace("Bearer ", "");
     const supaAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const { data: userData, error: userErr } = await supaAuth.auth.getUser(jwt);
-    if (userErr || !userData?.user) return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    if (userErr || !userData?.user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const supa = createClient(SUPABASE_URL, SERVICE_ROLE);
     const { data: roles } = await supa.from("user_roles").select("role").eq("user_id", userData.user.id);
     const allowed = (roles ?? []).some((r) => ["dev", "admin"].includes(r.role as string));
-    if (!allowed) return new Response(JSON.stringify({ error: "Forbidden — dev role required" }), {
-      status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    if (!allowed) return new Response(JSON.stringify({ error: "Forbidden — dev role required" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const { messages = [] } = await req.json();
-
-    const tools = [
-      {
-        type: "function",
-        function: {
-          name: "system_health",
-          description: "Métricas gerais: pacientes ativos, prescrições/admissões/deletes nas últimas 24h, total de usuários.",
-          parameters: { type: "object", properties: {} },
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "audit_recent",
-          description: "Últimos eventos do audit_log (criação/edição/exclusão de registros).",
-          parameters: {
-            type: "object",
-            properties: { limit: { type: "number", description: "Máximo de eventos (1-200)" } },
-          },
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "user_activity",
-          description: "Atividade dos usuários nos últimos 7 dias — top 20 por número de eventos.",
-          parameters: { type: "object", properties: {} },
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "clinical_volume",
-          description: "Volume clínico (atendimentos, prescrições, evoluções) por dia nos últimos 7 dias.",
-          parameters: { type: "object", properties: {} },
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "list_users",
-          description: "Lista os 100 usuários mais recentes com seus perfis (roles).",
-          parameters: { type: "object", properties: {} },
-        },
-      },
-      {
-        type: "function",
-        function: {
-          name: "db_table_sizes",
-          description: "Contagem de linhas das tabelas principais.",
-          parameters: { type: "object", properties: {} },
-        },
-      },
-    ];
 
     const callOps = async (action: string, params: Record<string, unknown> = {}) => {
       const r = await fetch(`${SUPABASE_URL}/functions/v1/dev-console-ops`, {
@@ -127,22 +77,14 @@ Deno.serve(async (req) => {
       return await r.json();
     };
 
-    // Loop with tool calling (max 5 iterations to avoid runaway)
-    const convo = [{ role: "system", content: SYSTEM_PROMPT }, ...messages];
+    // Phase 1: resolve any tool calls non-streamed (to keep loop simple).
+    const convo: any[] = [{ role: "system", content: SYSTEM_PROMPT }, ...messages];
     let iterations = 0;
     while (iterations++ < 5) {
       const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: convo,
-          tools,
-          tool_choice: "auto",
-        }),
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "google/gemini-2.5-flash", messages: convo, tools, tool_choice: "auto" }),
       });
       if (resp.status === 429) return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em alguns segundos." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       if (resp.status === 402) return new Response(JSON.stringify({ error: "Créditos esgotados. Adicione fundos em Configurações → Workspace → Uso." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -151,32 +93,58 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: `Gateway error: ${t}` }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       const data = await resp.json();
-      const choice = data.choices?.[0];
-      const msg = choice?.message;
+      const msg = data.choices?.[0]?.message;
       if (!msg) return new Response(JSON.stringify({ error: "Empty response" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
       const toolCalls = msg.tool_calls;
       if (!toolCalls || toolCalls.length === 0) {
-        return new Response(JSON.stringify({ reply: msg.content ?? "" }), {
-          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        // Phase 2: stream the final answer token-by-token.
+        // Replace final assistant turn with a fresh streamed call (so client gets SSE).
+        const streamResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [...convo, { role: "user", content: "(Reformule sua última resposta de forma clara e final em markdown. Não chame mais ferramentas.)" }],
+            stream: true,
+          }),
         });
+        if (!streamResp.ok || !streamResp.body) {
+          // Fallback: send the non-streamed content as a single SSE event.
+          const stream = new ReadableStream({
+            start(controller) {
+              const enc = new TextEncoder();
+              const payload = { choices: [{ delta: { content: msg.content ?? "" } }] };
+              controller.enqueue(enc.encode(`data: ${JSON.stringify(payload)}\n\n`));
+              controller.enqueue(enc.encode("data: [DONE]\n\n"));
+              controller.close();
+            },
+          });
+          return new Response(stream, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+        }
+        return new Response(streamResp.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
       }
-      // Push assistant turn + execute each tool
+
       convo.push(msg);
       for (const tc of toolCalls) {
         let parsedArgs: Record<string, unknown> = {};
         try { parsedArgs = JSON.parse(tc.function.arguments || "{}"); } catch (_) {}
         const result = await callOps(tc.function.name, parsedArgs);
-        convo.push({
-          role: "tool",
-          tool_call_id: tc.id,
-          content: JSON.stringify(result),
-        });
+        convo.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(result) });
       }
     }
-    return new Response(JSON.stringify({ reply: "Limite de iterações atingido — refaça a pergunta de forma mais específica." }), {
-      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+
+    // Iteration cap reached — stream a polite fallback.
+    const enc = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        const payload = { choices: [{ delta: { content: "Limite de iterações atingido — refaça a pergunta de forma mais específica." } }] };
+        controller.enqueue(enc.encode(`data: ${JSON.stringify(payload)}\n\n`));
+        controller.enqueue(enc.encode("data: [DONE]\n\n"));
+        controller.close();
+      },
     });
+    return new Response(stream, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
   } catch (e) {
     console.error("[dev-console-ai]", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
