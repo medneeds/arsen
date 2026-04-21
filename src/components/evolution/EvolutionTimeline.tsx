@@ -373,6 +373,12 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         <StatusIcon className="h-2.5 w-2.5 mr-0.5" />
                         {config.label}
                       </Badge>
+                      {isIntercurrence(evo) && (
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40 gap-0.5">
+                          <Zap className="h-2.5 w-2.5" />
+                          Intercorrência
+                        </Badge>
+                      )}
                       {hasUnsaved && (
                         <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">
                           Não salvo
