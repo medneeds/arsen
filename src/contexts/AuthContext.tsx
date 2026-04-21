@@ -192,6 +192,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole(null);
     setStatus(null);
     setAllowedDepartments([]);
+    // Clear all PHI/access-control data from local storage to prevent leakage after logout (LGPD)
+    try {
+      const SENSITIVE_KEYS = [
+        "patients",
+        "patientHistory",
+        "patientRedoHistory",
+        "clinicalNotes",
+        "clinicalChecklist",
+        "access_profile",
+        "gestor_sector_filter",
+        "customTemplates",
+      ];
+      SENSITIVE_KEYS.forEach((k) => localStorage.removeItem(k));
+      // Defensive sweep: any cached patient/clinical keys
+      Object.keys(localStorage).forEach((k) => {
+        if (/^(patient|clinical|prescription|evolution|exam|culture|note|checklist)/i.test(k)) {
+          localStorage.removeItem(k);
+        }
+      });
+    } catch {
+      // ignore storage errors
+    }
     navigate("/auth");
   };
 
