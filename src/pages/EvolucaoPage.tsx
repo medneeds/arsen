@@ -148,6 +148,23 @@ const EvolucaoPage = () => {
     }
   };
 
+  const handleCreateIntercurrence = async () => {
+    const text = intercurrenceText.trim();
+    if (!text) return;
+    setSavingIntercurrence(true);
+    const result = await createEvolution(
+      patient.name, patient.bed, patient.unit,
+      { subjective: text, objective: "", assessment: "", plan: "", type: "intercurrence" } as any,
+      undefined,
+      undefined
+    );
+    setSavingIntercurrence(false);
+    if (result) {
+      setIntercurrenceText("");
+      setShowIntercurrenceForm(false);
+    }
+  };
+
   const handleDuplicate = async (source: EvolutionRecord) => {
     setNewSoap({ ...source.soap_data });
     setNewVitals({ ...source.vital_signs });
