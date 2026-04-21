@@ -595,7 +595,7 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName }: Ai
 
               {/* JUSTIFICATIVA */}
               <tr><td colSpan={6} className="sec">Justificativa da Internação</td></tr>
-              <tr><td colSpan={6}><span className="lbl">17 — Principais Sinais e Sintomas Clínicos</span><div className="just-cell">{signsSymptoms}</div></td></tr>
+              <tr><td colSpan={6}><span className="lbl">17 — Principais Sinais e Sintomas Clínicos</span><div className="just-cell-lg">{signsSymptoms}</div></td></tr>
               <tr><td colSpan={6}><span className="lbl">18 — Condições que Justificam a Internação</span><div className="just-cell">{conditions}</div></td></tr>
               <tr><td colSpan={6}><span className="lbl">19 — Principais Resultados de Provas Diagnósticas (Resultados de Exames Realizados)</span><div className="just-cell">{examResults}</div></td></tr>
               <tr>
