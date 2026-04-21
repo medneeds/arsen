@@ -3,7 +3,7 @@ import { format, differenceInCalendarDays, parseISO, startOfDay } from "date-fns
 import { ptBR } from "date-fns/locale";
 import {
   ChevronDown, ChevronUp, Copy, Trash2, ShieldCheck, ShieldOff,
-  Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X, Star,
+  Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X, Star, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -163,8 +163,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     setDeleteDialogId(null);
   };
 
+  const isIntercurrence = (evo: EvolutionRecord) =>
+    (evo.soap_data as any)?.type === "intercurrence";
+
   const buildSummary = (evo: EvolutionRecord) => {
     const s = evo.soap_data;
+    if (isIntercurrence(evo)) {
+      return s.subjective ? `Intercorrência: ${s.subjective.slice(0, 120)}` : "Intercorrência sem descrição";
+    }
     const parts: string[] = [];
     if (s.subjective) parts.push(`S: ${s.subjective.slice(0, 60)}`);
     if (s.assessment) parts.push(`A: ${s.assessment.slice(0, 60)}`);
@@ -367,6 +373,12 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         <StatusIcon className="h-2.5 w-2.5 mr-0.5" />
                         {config.label}
                       </Badge>
+                      {isIntercurrence(evo) && (
+                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40 gap-0.5">
+                          <Zap className="h-2.5 w-2.5" />
+                          Intercorrência
+                        </Badge>
+                      )}
                       {hasUnsaved && (
                         <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">
                           Não salvo
