@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
-  Heart, User, Stethoscope, ClipboardList, FileText,
+  Heart, NotebookPen, Stethoscope, FileText,
   Save, Loader2, CheckCircle2,
   ShieldCheck, Printer, Sparkles,
   AlertCircle, Eye, ChevronDown, Stethoscope as DiagnosisIcon,
@@ -56,7 +56,7 @@ interface EvolutionFormProps {
   diagnosticsSlot?: React.ReactNode;
 }
 
-type SectionKey = 'vitals' | 'subjective' | 'objective' | 'assessment' | 'plan' | 'review';
+type SectionKey = 'vitals' | 'evolucao' | 'objective' | 'plan' | 'review';
 
 const VITAL_FIELDS = [
   { key: 'pa' as const, label: 'PA', placeholder: '120/80', unit: 'mmHg' },
@@ -88,10 +88,26 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   diagnosticsSlot,
 }) => {
   const [examinusOpen, setExaminusOpen] = useState(false);
-  const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'vitals', 'subjective', 'objective', 'assessment', 'plan']);
+  const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'vitals', 'evolucao', 'objective', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
   const { currentHospital } = useHospital();
   const hospitalId = currentHospital?.id ?? null;
+
+  // Texto unificado da Evolução = Subjetivo + Avaliação (concatenados para registros antigos).
+  // Tudo passa a ser persistido em `subjective`; `assessment` fica vazio nos novos registros
+  // mas é preservado se já existir em registros antigos (legacy display).
+  const evolucaoText = useMemo(() => {
+    const s = (soap.subjective || "").trim();
+    const a = (soap.assessment || "").trim();
+    if (s && a) return `${s}\n\n${a}`;
+    return s || a;
+  }, [soap.subjective, soap.assessment]);
+
+  const handleEvolucaoChange = (value: string) => {
+    // Ao editar, gravamos tudo em `subjective` e zeramos `assessment`
+    onSOAPChange('subjective', value);
+    if (soap.assessment) onSOAPChange('assessment', '');
+  };
 
   // Calculate completion status for each section
   const completion = useMemo(() => {
@@ -99,14 +115,13 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     const examCount = Object.values(physicalExam).filter(v => v.trim()).length;
     return {
       vitals: vitalsCount >= 3,
-      subjective: soap.subjective.trim().length >= 10,
+      evolucao: evolucaoText.trim().length >= 10,
       objective: soap.objective.trim().length >= 10 || examCount >= 1,
-      assessment: soap.assessment.trim().length >= 10,
       plan: soap.plan.trim().length >= 10,
     };
-  }, [soap, vitals, physicalExam]);
+  }, [soap, vitals, physicalExam, evolucaoText]);
 
-  const requiredComplete = completion.subjective && completion.objective && completion.assessment && completion.plan;
+  const requiredComplete = completion.evolucao && completion.objective && completion.plan;
 
   const handleImportExams = (newExams: string[]) => {
     const current = soap.objective?.trim() || "";
