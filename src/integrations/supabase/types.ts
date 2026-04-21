@@ -3821,6 +3821,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_dev_user: { Args: { _user_id: string }; Returns: boolean }
       merge_unidentified_patient: {
         Args: { p_ni_id: string; p_target_id: string }
         Returns: string
@@ -3890,7 +3891,14 @@ export type Database = {
       unaccent_immutable: { Args: { input: string }; Returns: string }
     }
     Enums: {
-      app_role: "admin" | "medico" | "porta" | "visitante" | "farmacia" | "nir"
+      app_role:
+        | "admin"
+        | "medico"
+        | "porta"
+        | "visitante"
+        | "farmacia"
+        | "nir"
+        | "dev"
       audit_action:
         | "INSERT"
         | "UPDATE"
@@ -4025,7 +4033,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "medico", "porta", "visitante", "farmacia", "nir"],
+      app_role: [
+        "admin",
+        "medico",
+        "porta",
+        "visitante",
+        "farmacia",
+        "nir",
+        "dev",
+      ],
       audit_action: ["INSERT", "UPDATE", "DELETE", "SELECT", "LOGIN", "LOGOUT"],
     },
   },
