@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 
@@ -73,6 +73,8 @@ const EvolucaoPage = () => {
   const [newVitals, setNewVitals] = useState({ pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" });
   const [newExam, setNewExam] = useState({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
   const [creating, setCreating] = useState(false);
+  const [diagnosticsReplicated, setDiagnosticsReplicated] = useState(false);
+
   // CID state — persisted to admission_histories via usePatientCid
   const {
     cidPrimary, cidSecondary,
@@ -80,10 +82,12 @@ const EvolucaoPage = () => {
     updateSecondary: updateCidSecondary,
   } = usePatientCid(initialPatientId || null);
 
-  // Discharge prediction + palliative flag + isolation precautions — synced with admission
+  // Discharge prediction (UTI + Hospitalar) + palliative + isolation — synced with admission
   const {
-    dischargePrediction, isPalliative, isolationPrecautions,
-    updateDischargePrediction, updateIsPalliative, updateIsolationPrecautions,
+    utiDischargePrediction, hospitalDischargePrediction,
+    isPalliative, isolationPrecautions,
+    updateUtiDischargePrediction, updateHospitalDischargePrediction,
+    updateIsPalliative, updateIsolationPrecautions,
   } = usePatientDiagnosticContext(initialPatientId || null);
 
   // Live patient row (realtime sync with Painel Clínico)
@@ -91,10 +95,40 @@ const EvolucaoPage = () => {
 
   const hasPatient = patient.name.trim() !== "";
 
+  // Setor é UTI/UCI? Mostra previsão de alta da UTI também.
+  const isUtiSector = useMemo(() => {
+    const u = (patient.unit || "").toUpperCase();
+    return u.includes("UTI") || u.includes("UCI");
+  }, [patient.unit]);
+
   const resetNewForm = () => {
     setNewSoap({ subjective: "", objective: "", assessment: "", plan: "" });
     setNewVitals({ pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" });
     setNewExam({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
+    setDiagnosticsReplicated(false);
+  };
+
+  // Replicação automática: ao abrir Nova Evolução, se houver evolução anterior,
+  // assume-se que CIDs/previsões/paliativo/isolamento já estão preservados na admissão
+  // (foi assim que foram persistidos por evolução anterior). Marcamos o banner de replicado.
+  const handleOpenNewEvolution = () => {
+    resetNewForm();
+    setShowNewForm(true);
+    // Considera replicado se há ao menos um diagnóstico/contexto preenchido vindo da última evolução
+    const hasContext = !!(cidPrimary || cidSecondary?.length || utiDischargePrediction || hospitalDischargePrediction || isPalliative || isolationPrecautions);
+    if (hasContext && evolutions.length > 0) {
+      setDiagnosticsReplicated(true);
+    }
+  };
+
+  const handleClearDiagnostics = () => {
+    if (cidPrimary) updateCidPrimary("");
+    if (cidSecondary?.length) updateCidSecondary([]);
+    if (utiDischargePrediction) updateUtiDischargePrediction("");
+    if (hospitalDischargePrediction) updateHospitalDischargePrediction("");
+    if (isPalliative) updateIsPalliative(false);
+    if (isolationPrecautions) updateIsolationPrecautions("");
+    setDiagnosticsReplicated(false);
   };
 
   const handleCreateEvolution = async () => {
@@ -115,19 +149,17 @@ const EvolucaoPage = () => {
     setNewVitals({ ...source.vital_signs });
     setNewExam({ ...source.physical_exam });
     setShowNewForm(true);
-    // Scroll to top
+    setDiagnosticsReplicated(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // Adapt PatientHeader → minimal Patient for cockpit (must run before any early return)
-  // When live patient row is loaded, prefer it; otherwise fall back to URL stub.
   const cockpitPatient: Patient = useMemo(() => {
     const cidDiagnoses: string[] = [];
     if (cidPrimary) cidDiagnoses.push(`[Primário] ${cidPrimary}`);
     cidSecondary.forEach(c => c && cidDiagnoses.push(c));
 
     if (livePatient) {
-      // Merge CID-derived diagnoses on top of stored ones, deduped.
       const stored = livePatient.diagnoses || [];
       const merged = [...cidDiagnoses, ...stored.filter(d => !cidDiagnoses.includes(d))];
       return { ...livePatient, diagnoses: merged };
@@ -172,11 +204,31 @@ const EvolucaoPage = () => {
     );
   }
 
+  // Slot do painel Diagnósticos — injetado como 1ª seção colapsável dentro do form
+  const diagnosticsSlot = (
+    <DiagnosticsPanel
+      cidPrimary={cidPrimary}
+      cidSecondary={cidSecondary}
+      onCidPrimaryChange={updateCidPrimary}
+      onCidSecondaryChange={updateCidSecondary}
+      utiDischargePrediction={utiDischargePrediction}
+      onUtiDischargePredictionChange={updateUtiDischargePrediction}
+      hospitalDischargePrediction={hospitalDischargePrediction}
+      onHospitalDischargePredictionChange={updateHospitalDischargePrediction}
+      isPalliative={isPalliative}
+      onPalliativeChange={updateIsPalliative}
+      isolationPrecautions={isolationPrecautions}
+      onIsolationChange={updateIsolationPrecautions}
+      showUtiPrediction={isUtiSector}
+      replicated={diagnosticsReplicated}
+      onClearAll={handleClearDiagnostics}
+    />
+  );
+
   return (
     <div className="print:p-2">
       <ClinicalHeader moduleLabel="Evolução Clínica" />
 
-      {/* Screen layout — 2 columns: main + cockpit */}
       <div className="flex print:hidden">
         <div className="flex-1 min-w-0 p-4 space-y-4">
         {/* Page Header */}
@@ -193,29 +245,14 @@ const EvolucaoPage = () => {
           <Button
             size="sm"
             className="gap-1.5 text-xs"
-            onClick={() => { setShowNewForm(true); resetNewForm(); }}
+            onClick={handleOpenNewEvolution}
             disabled={showNewForm}
           >
             <Plus className="h-3.5 w-3.5" /> Nova Evolução
           </Button>
         </div>
 
-        {/* Diagnósticos — CID + Previsão de Alta + Paliativo + Precaução
-            (sincronizado em tempo real com Admissão / Painel Clínico) */}
-        <DiagnosticsPanel
-          cidPrimary={cidPrimary}
-          cidSecondary={cidSecondary}
-          onCidPrimaryChange={updateCidPrimary}
-          onCidSecondaryChange={updateCidSecondary}
-          dischargePrediction={dischargePrediction}
-          onDischargePredictionChange={updateDischargePrediction}
-          isPalliative={isPalliative}
-          onPalliativeChange={updateIsPalliative}
-          isolationPrecautions={isolationPrecautions}
-          onIsolationChange={updateIsolationPrecautions}
-        />
-
-        {/* New Evolution Form */}
+        {/* New Evolution Form (with Diagnósticos as 1st collapsible section) */}
         {showNewForm && (
           <div className="rounded-xl border-2 border-primary/30 bg-card p-4 space-y-3">
             <div className="flex items-center justify-between">
@@ -239,6 +276,7 @@ const EvolucaoPage = () => {
               onPhysicalExamChange={(k, v) => setNewExam(prev => ({ ...prev, [k]: v }))}
               onSave={handleCreateEvolution}
               saving={creating}
+              diagnosticsSlot={diagnosticsSlot}
             />
           </div>
         )}
