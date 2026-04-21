@@ -8,9 +8,10 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
 import {
-  NotebookPen, Plus, Loader2,
+  NotebookPen, Plus, Loader2, AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
