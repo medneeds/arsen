@@ -4514,6 +4514,19 @@ const PrescricaoPage = () => {
         onAddItem={(med) => { addItem(med); }}
       />
 
+      {/* Care Catalog Dialog — só cuidados de suporte (sinais vitais, decúbito, fisio, fono, curativos) */}
+      <CareCatalogDialog
+        open={careCatalogOpen}
+        onOpenChange={setCareCatalogOpen}
+        onAddItem={(entry) => addItem(entry)}
+        onApplyProfile={(profile) => {
+          applyCareProfile(profile);
+          setCareCatalogOpen(false);
+        }}
+        appliedProfileIds={appliedCareProfiles}
+        patientName={patientName}
+      />
+
       {/* Quick Templates Dialog */}
       <Dialog open={quickTemplatesDialogOpen} onOpenChange={setQuickTemplatesDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
