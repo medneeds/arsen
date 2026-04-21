@@ -95,7 +95,7 @@ export function useEvolutions(patientId: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [patientId, currentHospital, currentState]);
+  }, [patientId, safePatientId, currentHospital, currentState]);
 
   useEffect(() => {
     fetchEvolutions();
