@@ -59,7 +59,11 @@ const EvolucaoPage = () => {
     evolutions, loading,
     createEvolution, updateEvolution, validateEvolution,
     suspendEvolution, deleteEvolution, duplicateEvolution,
-  } = useEvolutions(initialPatientId || null);
+  } = useEvolutions(initialPatientId || null, {
+    patientName: patient.name,
+    patientBed: patient.bed,
+    patientSector: patient.unit,
+  });
 
   // New evolution form state
   const [showNewForm, setShowNewForm] = useState(false);

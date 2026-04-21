@@ -113,7 +113,7 @@ export function useEvolutions(
     } finally {
       setLoading(false);
     }
-  }, [patientId, safePatientId, currentHospital, currentState]);
+  }, [safePatientId, fbName, fbBed, fbSector, currentHospital, currentState]);
 
   useEffect(() => {
     fetchEvolutions();
