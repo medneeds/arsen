@@ -1055,6 +1055,48 @@ export type Database = {
           },
         ]
       }
+      field_text_templates: {
+        Row: {
+          body: string
+          created_at: string
+          hospital_unit_id: string | null
+          id: string
+          is_shared: boolean
+          last_used_at: string | null
+          name: string
+          scope: string
+          updated_at: string
+          use_count: number
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          hospital_unit_id?: string | null
+          id?: string
+          is_shared?: boolean
+          last_used_at?: string | null
+          name: string
+          scope: string
+          updated_at?: string
+          use_count?: number
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          hospital_unit_id?: string | null
+          id?: string
+          is_shared?: boolean
+          last_used_at?: string | null
+          name?: string
+          scope?: string
+          updated_at?: string
+          use_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       hospital_units: {
         Row: {
           address: string | null
