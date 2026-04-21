@@ -172,10 +172,10 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     if (isIntercurrence(evo)) {
       return s.subjective ? `Intercorrência: ${s.subjective.slice(0, 120)}` : "Intercorrência sem descrição";
     }
+    const evolucao = [s.subjective, s.assessment].map(t => (t || "").trim()).filter(Boolean).join(" — ");
     const parts: string[] = [];
-    if (s.subjective) parts.push(`S: ${s.subjective.slice(0, 60)}`);
-    if (s.assessment) parts.push(`A: ${s.assessment.slice(0, 60)}`);
-    if (s.plan) parts.push(`P: ${s.plan.slice(0, 60)}`);
+    if (evolucao) parts.push(`Evolução: ${evolucao.slice(0, 100)}`);
+    if (s.plan) parts.push(`Plano: ${s.plan.slice(0, 60)}`);
     return parts.length > 0 ? parts.join(" | ") : "Evolução sem conteúdo";
   };
 

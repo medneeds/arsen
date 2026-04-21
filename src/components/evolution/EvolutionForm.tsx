@@ -162,19 +162,18 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               ].filter(Boolean).join(" • ");
               const examRows = EXAM_FIELDS.filter(f => physicalExam[f.key])
                 .map(f => `<tr><th style="width:130px">${f.label}</th><td>${escape(physicalExam[f.key])}</td></tr>`).join("");
+              const evolucaoTxt = [soap.subjective, soap.assessment].map(t => (t || "").trim()).filter(Boolean).join("\n\n");
               const bodyHtml = `
-                <h2 class="nz-section">SOAP</h2>
-                <table class="nz">
-                  <tr><th style="width:60px">S</th><td>${escape(soap.subjective) || "<em>—</em>"}</td></tr>
-                  <tr><th>O</th><td>${escape(soap.objective) || "<em>—</em>"}</td></tr>
-                  <tr><th>A</th><td>${escape(soap.assessment) || "<em>—</em>"}</td></tr>
-                  <tr><th>P</th><td>${escape(soap.plan) || "<em>—</em>"}</td></tr>
-                </table>
                 ${vitalsRow ? `<h2 class="nz-section">Sinais Vitais</h2><div style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:9pt">${vitalsRow}</div>` : ""}
+                <h2 class="nz-section">Evolução</h2>
+                <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(evolucaoTxt) || "<em>—</em>"}</div>
                 ${examRows ? `<h2 class="nz-section">Exame Físico</h2><table class="nz"><tbody>${examRows}</tbody></table>` : ""}
+                ${soap.objective?.trim() ? `<h2 class="nz-section">Exames Complementares</h2><div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(soap.objective)}</div>` : ""}
+                <h2 class="nz-section">Plano</h2>
+                <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(soap.plan) || "<em>—</em>"}</div>
               `;
               const html = buildNormaZeroDocument({
-                title: "Evolução Clínica", subtitle: "Registro SOAP",
+                title: "Evolução Clínica", subtitle: "Registro de evolução",
                 sectorLabel: "Assistência Médica", docCodePrefix: "EVOL", bodyHtml,
                 logoDataUrl: logo, signatures: [{ label: "Médico Assistente", caption: "CRM e assinatura" }],
               });
@@ -188,7 +187,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     );
   }
 
-  const expandAll = () => setOpenSections(['diagnostics', 'vitals', 'subjective', 'objective', 'assessment', 'plan', 'review']);
+  const expandAll = () => setOpenSections(['diagnostics', 'vitals', 'evolucao', 'objective', 'plan', 'review']);
   const collapseAll = () => setOpenSections([]);
 
   return (
