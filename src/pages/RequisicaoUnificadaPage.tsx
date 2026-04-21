@@ -30,7 +30,7 @@ import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { printRequisitionGuide } from "@/components/PrintableRequisitionGuide";
+import { printRequisitionGuide, PrintableRequisitionGuide } from "@/components/PrintableRequisitionGuide";
 import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
 
