@@ -69,6 +69,7 @@ import FichaAtendimentoPage from "./pages/FichaAtendimentoPage";
 import NirDashboardPage from "./pages/NirDashboardPage";
 import UeVerticalPage from "./pages/UeVerticalPage";
 import UeHorizontalPage from "./pages/UeHorizontalPage";
+import DevConsolePage from "./pages/DevConsolePage";
 import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { FloatingThemeToggle } from "@/components/FloatingThemeToggle";
@@ -672,6 +673,14 @@ const App = () => {
               <Suspense fallback={<HistoricoFallback />}>
                 <HistoricoPacientePage />
               </Suspense>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dev-console"
+          element={
+            <ProtectedRoute>
+              <DevConsolePage />
             </ProtectedRoute>
           }
         />
