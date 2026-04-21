@@ -276,30 +276,30 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
         </SectionItem>
 
         <SectionItem
-          id="subjective"
-          icon={User}
+          id="evolucao"
+          icon={NotebookPen}
           iconColor="text-blue-500"
-          label="Subjetivo"
-          hint="Queixas do paciente, relato do acompanhante"
-          complete={completion.subjective}
+          label="Evolução"
+          hint="Relato clínico, queixas, hipóteses e avaliação"
+          complete={completion.evolucao}
           required
         >
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] text-muted-foreground">
-              {soap.subjective.trim().length}/10+ caracteres
+              {evolucaoText.trim().length}/10+ caracteres
             </span>
             <FieldTemplates
               scope="evolution.subjective"
-              currentValue={soap.subjective}
-              onApply={(v) => onSOAPChange('subjective', v)}
+              currentValue={evolucaoText}
+              onApply={(v) => handleEvolucaoChange(v)}
               hospitalUnitId={hospitalId}
             />
           </div>
           <Textarea
-            value={soap.subjective}
-            onChange={e => onSOAPChange('subjective', e.target.value)}
-            placeholder="Queixas do paciente, relato do acompanhante, evolução percebida desde último plantão..."
-            className="min-h-[120px] text-xs"
+            value={evolucaoText}
+            onChange={e => handleEvolucaoChange(e.target.value)}
+            placeholder="Relato clínico do plantão: queixas, evolução percebida, achados, hipóteses diagnósticas, raciocínio clínico..."
+            className="min-h-[180px] text-xs"
           />
         </SectionItem>
 
@@ -371,33 +371,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           </div>
         </SectionItem>
 
-        <SectionItem
-          id="assessment"
-          icon={ClipboardList}
-          iconColor="text-amber-500"
-          label="Avaliação"
-          hint="Diagnóstico diferencial, hipóteses ativas"
-          complete={completion.assessment}
-          required
-        >
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-muted-foreground">
-              {soap.assessment.trim().length}/10+ caracteres
-            </span>
-            <FieldTemplates
-              scope="evolution.assessment"
-              currentValue={soap.assessment}
-              onApply={(v) => onSOAPChange('assessment', v)}
-              hospitalUnitId={hospitalId}
-            />
-          </div>
-          <Textarea
-            value={soap.assessment}
-            onChange={e => onSOAPChange('assessment', e.target.value)}
-            placeholder="Diagnóstico diferencial, avaliação clínica do caso, hipóteses ativas..."
-            className="min-h-[120px] text-xs"
-          />
-        </SectionItem>
+        {/* Avaliação foi unificada à Evolução (acima) */}
 
         <SectionItem
           id="plan"
