@@ -93,9 +93,9 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
         >
           <Bookmark className="h-3 w-3" />
           {!compact && <span>{label}</span>}
-          {ordered.length > 0 && (
+          {totalCount > 0 && (
             <Badge variant="secondary" className="h-3.5 px-1 text-[9px] leading-none">
-              {ordered.length}
+              {totalCount}
             </Badge>
           )}
           <ChevronDown className="h-3 w-3 opacity-60" />
@@ -106,7 +106,7 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
           <div className="flex items-center justify-between border-b px-2 py-1.5">
             <TabsList className="h-7 bg-transparent p-0 gap-1">
               <TabsTrigger value="insert" className="h-6 px-2 text-[11px] data-[state=active]:bg-muted">
-                Inserir ({ordered.length})
+                Inserir ({totalCount})
               </TabsTrigger>
               <TabsTrigger value="create" className="h-6 px-2 text-[11px] data-[state=active]:bg-muted">
                 <Plus className="h-3 w-3 mr-0.5" /> Novo
