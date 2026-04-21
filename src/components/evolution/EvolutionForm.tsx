@@ -544,12 +544,17 @@ const ReadOnlyView: React.FC<{ soap: SOAPData; vitals: VitalSigns; physicalExam:
           </p>
         </div>
       )}
-      {soap.subjective && (
-        <div><strong className="text-blue-500">S — Subjetivo:</strong> <span className="text-foreground whitespace-pre-wrap">{soap.subjective}</span></div>
+      {(soap.subjective || soap.assessment) && (
+        <div>
+          <strong className="text-blue-500">Evolução:</strong>{" "}
+          <span className="text-foreground whitespace-pre-wrap">
+            {[soap.subjective, soap.assessment].map(t => (t || "").trim()).filter(Boolean).join("\n\n")}
+          </span>
+        </div>
       )}
       {(hasExam || soap.objective) && (
         <div>
-          <strong className="text-emerald-500">O — Objetivo:</strong>
+          <strong className="text-emerald-500">Objetivo:</strong>
           {hasExam && (
             <ul className="ml-4 mt-0.5 text-foreground/90 list-disc">
               {EXAM_FIELDS.filter(f => physicalExam[f.key]).map(f => (
@@ -560,11 +565,8 @@ const ReadOnlyView: React.FC<{ soap: SOAPData; vitals: VitalSigns; physicalExam:
           {soap.objective && <p className="mt-1 text-foreground whitespace-pre-wrap">{soap.objective}</p>}
         </div>
       )}
-      {soap.assessment && (
-        <div><strong className="text-amber-500">A — Avaliação:</strong> <span className="text-foreground whitespace-pre-wrap">{soap.assessment}</span></div>
-      )}
       {soap.plan && (
-        <div><strong className="text-purple-500">P — Plano:</strong> <span className="text-foreground whitespace-pre-wrap">{soap.plan}</span></div>
+        <div><strong className="text-purple-500">Plano:</strong> <span className="text-foreground whitespace-pre-wrap">{soap.plan}</span></div>
       )}
     </div>
   );
