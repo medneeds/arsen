@@ -70,6 +70,9 @@ const EvolucaoPage = () => {
 
   // New evolution form state
   const [showNewForm, setShowNewForm] = useState(false);
+  const [showIntercurrenceForm, setShowIntercurrenceForm] = useState(false);
+  const [intercurrenceText, setIntercurrenceText] = useState("");
+  const [savingIntercurrence, setSavingIntercurrence] = useState(false);
   const [newSoap, setNewSoap] = useState({ subjective: "", objective: "", assessment: "", plan: "" });
   const [newVitals, setNewVitals] = useState({ pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" });
   const [newExam, setNewExam] = useState({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
