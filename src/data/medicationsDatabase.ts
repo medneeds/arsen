@@ -166,27 +166,21 @@ export const HEMOTHERAPY_OPTIONS: MedicationEntry[] = [
 ];
 
 // ========== CUIDADOS ==========
+// CUIDADOS = SUPORTE ASSISTENCIAL (sinais vitais, decúbito, fisio, fono, curativos,
+// prevenção de LPP, comunicação). NÃO inclui medicação, ATB, exames laboratoriais
+// ou de imagem — esses pertencem às suas próprias categorias.
+// Lista enxuta (10 itens) para uso rápido. Perfis especializados abaixo.
 export const CARE_OPTIONS: MedicationEntry[] = [
-  { id: 'c1', name: 'Cabeceira elevada 30-45°', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
-  { id: 'c2', name: 'Oximetria de pulso contínua', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
-  { id: 'c3', name: 'Monitorização cardíaca contínua', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
-  { id: 'c4', name: 'Fisioterapia motora e respiratória', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '3x/dia', defaultSchedule: '-', category: 'care' },
-  { id: 'c5', name: 'Mudança de decúbito', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '2/2h', defaultSchedule: '-', category: 'care' },
-  { id: 'c6', name: 'Aspiração traqueal', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'SOS', defaultSchedule: '-', category: 'care' },
-  { id: 'c7', name: 'Controle glicêmico', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '6/6h', defaultSchedule: '06h', category: 'care' },
-  { id: 'c8', name: 'Balanço hídrico', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '6/6h', defaultSchedule: '-', category: 'care' },
-  { id: 'c9', name: 'Sinais vitais e neurocheck', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '2/2h', defaultSchedule: '-', category: 'care' },
-  { id: 'c10', name: 'Compressor pneumático intermitente MMII', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
-  { id: 'c11', name: 'Ventilação Mecânica', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
-  { id: 'c12', name: 'Cuidados com acessos venosos centrais', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
-  { id: 'c13', name: 'Cuidados com SVD', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
-  { id: 'c14', name: 'Cuidados com SNE', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
-  { id: 'c15', name: 'Profilaxia de TVP conforme protocolo', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-', defaultSchedule: '-', category: 'care' },
-  { id: 'c16', name: 'Acompanhamento com fonoaudiologia', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-', defaultSchedule: '-', category: 'care' },
-  { id: 'c17', name: 'Acompanhamento com psicologia', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-', defaultSchedule: '-', category: 'care' },
-  { id: 'c18', name: 'Comunicar plantonista se instabilidade', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-', defaultSchedule: '-', category: 'care' },
-  { id: 'c19', name: 'Manter PAM > 65mmHg', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
-  { id: 'c20', name: 'Restrição hídrica', presentation: '-', defaultDose: '____mL/dia', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'c1',  name: 'Sinais vitais',                          presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '4/4h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c2',  name: 'Cabeceira elevada 30-45°',                presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'c3',  name: 'Mudança de decúbito',                     presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '2/2h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c4',  name: 'Fisioterapia motora e respiratória',      presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '3x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c5',  name: 'Avaliação fonoaudiológica',               presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c6',  name: 'Curativo de prevenção de LPP',            presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c7',  name: 'Higiene oral com clorexidina 0,12%',      presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '3x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c8',  name: 'Aspiração de vias aéreas',                presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'SOS',      defaultSchedule: '-', category: 'care' },
+  { id: 'c9',  name: 'Balanço hídrico',                         presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '6/6h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c10', name: 'Comunicar plantonista se instabilidade',  presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-',         defaultSchedule: '-', category: 'care' },
 ];
 
 // ========== MEDICAMENTOS GERAIS ==========
