@@ -163,8 +163,14 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     setDeleteDialogId(null);
   };
 
+  const isIntercurrence = (evo: EvolutionRecord) =>
+    (evo.soap_data as any)?.type === "intercurrence";
+
   const buildSummary = (evo: EvolutionRecord) => {
     const s = evo.soap_data;
+    if (isIntercurrence(evo)) {
+      return s.subjective ? `Intercorrência: ${s.subjective.slice(0, 120)}` : "Intercorrência sem descrição";
+    }
     const parts: string[] = [];
     if (s.subjective) parts.push(`S: ${s.subjective.slice(0, 60)}`);
     if (s.assessment) parts.push(`A: ${s.assessment.slice(0, 60)}`);
