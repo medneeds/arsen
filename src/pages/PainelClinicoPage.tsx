@@ -634,7 +634,8 @@ export default function PainelClinicoPage() {
                     <TableRow
                       key={patient.id}
                       className="cursor-pointer group hover:bg-accent/50 transition-colors"
-                      onClick={() => openPatient(patient)}
+                      onClick={() => goToPatientPanel(patient)}
+                      title="Abrir painel clínico do paciente"
                     >
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -646,7 +647,7 @@ export default function PainelClinicoPage() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <p className="font-medium text-foreground leading-tight">{patient.name}</p>
+                          <p className="font-medium text-foreground leading-tight hover:text-primary transition-colors">{patient.name}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {patient.age ? `${patient.age} anos` : "—"}
                           </p>
