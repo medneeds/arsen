@@ -12,6 +12,9 @@ import { toast } from "sonner";
  * as a JSON-encoded array in the single `cid_secondary` text
  * column to avoid a schema migration.
  */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const asUuid = (id: string | null): string | null => (id && UUID_RE.test(id) ? id : null);
+
 export function usePatientCid(patientId: string | null) {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
@@ -20,6 +23,7 @@ export function usePatientCid(patientId: string | null) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const recordIdRef = useRef<string | null>(null);
+  const safePatientId = asUuid(patientId);
 
   const decodeSecondary = (raw: string | null): string[] => {
     if (!raw) return [];
