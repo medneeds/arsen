@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useFieldTemplates, type FieldTemplate } from "@/hooks/useFieldTemplates";
+import { getSeedsForScope, type SeedTemplate } from "@/data/fieldTemplateSeeds";
+import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FieldTemplatesProps {
@@ -40,6 +42,8 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
   const [isShared, setIsShared] = useState(false);
 
   const ordered = useMemo(() => templates, [templates]);
+  const seeds = useMemo(() => getSeedsForScope(scope), [scope]);
+  const totalCount = ordered.length + seeds.length;
 
   const apply = (t: FieldTemplate, mode: "replace" | "append") => {
     const next = mode === "append" && currentValue.trim()
@@ -47,6 +51,14 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
       : t.body;
     onApply(next);
     touch.mutate(t);
+    setOpen(false);
+  };
+
+  const applySeed = (s: SeedTemplate, mode: "replace" | "append") => {
+    const next = mode === "append" && currentValue.trim()
+      ? `${currentValue.trim()}\n${s.body}`
+      : s.body;
+    onApply(next);
     setOpen(false);
   };
 
