@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 
-import { CompactPatientHeader } from "@/components/CompactPatientHeader";
+
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -200,18 +200,19 @@ const EvolucaoPage = () => {
           </Button>
         </div>
 
-        {/* CID inline editor — compacto, sem repetir identificação do paciente
-            (essa fica no cockpit à direita com Prontuário/Atendimento + Ver mais) */}
-        <CompactPatientHeader
-          name=""
-          bed=""
-          unit=""
-          age=""
+        {/* Diagnósticos — CID + Previsão de Alta + Paliativo + Precaução
+            (sincronizado em tempo real com Admissão / Painel Clínico) */}
+        <DiagnosticsPanel
           cidPrimary={cidPrimary}
           cidSecondary={cidSecondary}
           onCidPrimaryChange={updateCidPrimary}
           onCidSecondaryChange={updateCidSecondary}
-          className="!flex-row-reverse"
+          dischargePrediction={dischargePrediction}
+          onDischargePredictionChange={updateDischargePrediction}
+          isPalliative={isPalliative}
+          onPalliativeChange={updateIsPalliative}
+          isolationPrecautions={isolationPrecautions}
+          onIsolationChange={updateIsolationPrecautions}
         />
 
         {/* New Evolution Form */}
