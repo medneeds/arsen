@@ -27,7 +27,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { printRequisitionGuide } from "@/components/PrintableRequisitionGuide";
@@ -363,7 +363,8 @@ const RequisicaoUnificadaPage = () => {
 
       const payload = {
         category: activeCategory,
-        patient_id: formPatientId || null,
+        // Somente persiste vínculo quando o ID for UUID real (evita mocks "uti2-01")
+        patient_id: asUuidOrNull(formPatientId),
         patient_name: formPatientName.trim(),
         patient_bed: formPatientBed.trim() || null,
         patient_sector: formPatientSector.trim() || null,
