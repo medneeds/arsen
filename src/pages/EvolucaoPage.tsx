@@ -80,6 +80,12 @@ const EvolucaoPage = () => {
     updateSecondary: updateCidSecondary,
   } = usePatientCid(initialPatientId || null);
 
+  // Discharge prediction + palliative flag + isolation precautions — synced with admission
+  const {
+    dischargePrediction, isPalliative, isolationPrecautions,
+    updateDischargePrediction, updateIsPalliative, updateIsolationPrecautions,
+  } = usePatientDiagnosticContext(initialPatientId || null);
+
   // Live patient row (realtime sync with Painel Clínico)
   const { patient: livePatient } = usePatientLive(initialPatientId || null);
 
