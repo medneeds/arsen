@@ -285,10 +285,10 @@ function LogsTab() {
   );
 }
 
-// ─────────── AI CONSOLE ───────────
+// ─────────── AI CONSOLE (streaming) ───────────
 function AiTab() {
   const [messages, setMessages] = useState<ChatMsg[]>([
-    { role: "assistant", content: "Olá! Sou o assistente do Dev Console. Posso buscar métricas, logs, atividade de usuários e analisar o que está acontecendo. O que você quer investigar?" },
+    { role: "assistant", content: "Olá! Sou o assistente do Dev Console. Posso buscar métricas, logs, atividade de usuários, hot tables e diagnosticar a plataforma. O que você quer investigar?" },
   ]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -300,16 +300,74 @@ function AiTab() {
     setMessages(next);
     setInput("");
     setBusy(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("dev-console-ai", {
-        body: { messages: next },
+
+    let assistantSoFar = "";
+    const upsert = (chunk: string) => {
+      assistantSoFar += chunk;
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant" && prev.length > next.length) {
+          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
+        }
+        return [...prev, { role: "assistant", content: assistantSoFar }];
       });
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
-      setMessages([...next, { role: "assistant", content: data.reply || "(sem resposta)" }]);
+    };
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dev-console-ai`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+        },
+        body: JSON.stringify({ messages: next }),
+      });
+
+      if (resp.status === 429) throw new Error("Limite de requisições atingido. Aguarde alguns segundos.");
+      if (resp.status === 402) throw new Error("Créditos esgotados. Adicione fundos em Configurações → Workspace → Uso.");
+      if (!resp.ok || !resp.body) {
+        const t = await resp.text();
+        throw new Error(t || "Falha no stream");
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = "";
+      let streamDone = false;
+
+      while (!streamDone) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") { streamDone = true; break; }
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (content) upsert(content);
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
+        }
+      }
     } catch (e) {
-      setMessages([...next, { role: "assistant", content: `❌ Erro: ${e instanceof Error ? e.message : "desconhecido"}` }]);
-    } finally { setBusy(false); }
+      setMessages((prev) => [...prev, { role: "assistant", content: `❌ Erro: ${e instanceof Error ? e.message : "desconhecido"}` }]);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -324,7 +382,7 @@ function AiTab() {
                 </div>
               </div>
             ))}
-            {busy && (
+            {busy && messages[messages.length - 1]?.role === "user" && (
               <div className="flex justify-start">
                 <div className="bg-muted rounded-lg px-3 py-2 text-sm">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -338,7 +396,7 @@ function AiTab() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())}
-            placeholder="Ex: quantos pacientes ativos? quem mais editou hoje? volume da última semana?"
+            placeholder="Ex: quantos pacientes ativos? hot tables hoje? quem mais editou?"
             disabled={busy}
           />
           <Button onClick={send} disabled={busy || !input.trim()}>
