@@ -3944,9 +3944,7 @@ const PrescricaoPage = () => {
             {compactView ? 'Alternar para visualização expandida' : 'Alternar para visualização compacta'}
           </TooltipContent>
         </Tooltip>
-        <Button variant="ghost" size="sm" onClick={handleDispense} disabled={!currentPrescriptionId} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
-          <Package className="h-3 w-3" /> Dispensar
-        </Button>
+          {/* Botão "Dispensar" removido — não pertence ao fluxo de prescrição médica. */}
           {/* Botão "Salvar" removido — salvamento é automático. */}
             </div>
           </div>
