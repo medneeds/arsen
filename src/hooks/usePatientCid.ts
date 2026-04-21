@@ -35,12 +35,19 @@ export function usePatientCid(patientId: string | null) {
 
   const fetchCid = useCallback(async () => {
     if (!patientId || !currentHospital || !currentState) return;
+    if (!safePatientId) {
+      // Mock/non-UUID id — no remote record possible.
+      recordIdRef.current = null;
+      setCidPrimary("");
+      setCidSecondary([]);
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from("admission_histories")
         .select("id, cid_primary, cid_secondary")
-        .eq("patient_id", patientId)
+        .eq("patient_id", safePatientId)
         .eq("hospital_unit_id", currentHospital.id)
         .eq("state_id", currentState.id)
         .maybeSingle();
@@ -59,7 +66,7 @@ export function usePatientCid(patientId: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [patientId, currentHospital, currentState]);
+  }, [patientId, safePatientId, currentHospital, currentState]);
 
   useEffect(() => { fetchCid(); }, [fetchCid]);
 
