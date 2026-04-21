@@ -253,9 +253,13 @@ const RequisicaoUnificadaPage = () => {
         .order("created_at", { ascending: false })
         .limit(200);
 
-      // When patient context is present, filter by patient
-      if (formPatientId) {
-        query = query.eq("patient_id", formPatientId);
+      // When patient context is present AND id is a real UUID, filter by patient
+      const validPatientId = asUuidOrNull(formPatientId);
+      if (validPatientId) {
+        query = query.eq("patient_id", validPatientId);
+      } else if (formPatientName) {
+        // Fallback para mocks (sem UUID real): filtra por nome
+        query = query.eq("patient_name", formPatientName);
       }
 
       const { data, error } = await query;
