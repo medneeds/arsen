@@ -2860,6 +2860,153 @@ export type Database = {
           },
         ]
       }
+      regulatory_guides: {
+        Row: {
+          ccih_notes: string | null
+          ccih_reviewed_at: string | null
+          ccih_reviewed_by: string | null
+          ccih_status: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          culture_collected: boolean | null
+          culture_data: Json | null
+          department: string
+          doctor_crm: string | null
+          doctor_name: string | null
+          doctor_specialty: string | null
+          entries: Json
+          guide_type: string
+          hospital_unit_id: string
+          id: string
+          infection_focus: string | null
+          infection_origin: string | null
+          patient_age: string | null
+          patient_allergies: string | null
+          patient_bed: string | null
+          patient_id: string | null
+          patient_name: string
+          patient_record: string | null
+          patient_registry_id: string | null
+          patient_sex: string | null
+          patient_weight: string | null
+          prescription_id: string | null
+          print_count: number
+          printed_at: string | null
+          request_type: string | null
+          state_id: string
+          updated_at: string
+        }
+        Insert: {
+          ccih_notes?: string | null
+          ccih_reviewed_at?: string | null
+          ccih_reviewed_by?: string | null
+          ccih_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          culture_collected?: boolean | null
+          culture_data?: Json | null
+          department?: string
+          doctor_crm?: string | null
+          doctor_name?: string | null
+          doctor_specialty?: string | null
+          entries?: Json
+          guide_type: string
+          hospital_unit_id: string
+          id?: string
+          infection_focus?: string | null
+          infection_origin?: string | null
+          patient_age?: string | null
+          patient_allergies?: string | null
+          patient_bed?: string | null
+          patient_id?: string | null
+          patient_name: string
+          patient_record?: string | null
+          patient_registry_id?: string | null
+          patient_sex?: string | null
+          patient_weight?: string | null
+          prescription_id?: string | null
+          print_count?: number
+          printed_at?: string | null
+          request_type?: string | null
+          state_id: string
+          updated_at?: string
+        }
+        Update: {
+          ccih_notes?: string | null
+          ccih_reviewed_at?: string | null
+          ccih_reviewed_by?: string | null
+          ccih_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          culture_collected?: boolean | null
+          culture_data?: Json | null
+          department?: string
+          doctor_crm?: string | null
+          doctor_name?: string | null
+          doctor_specialty?: string | null
+          entries?: Json
+          guide_type?: string
+          hospital_unit_id?: string
+          id?: string
+          infection_focus?: string | null
+          infection_origin?: string | null
+          patient_age?: string | null
+          patient_allergies?: string | null
+          patient_bed?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          patient_record?: string | null
+          patient_registry_id?: string | null
+          patient_sex?: string | null
+          patient_weight?: string | null
+          prescription_id?: string | null
+          print_count?: number
+          printed_at?: string | null
+          request_type?: string | null
+          state_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_guides_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_guides_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_guides_patient_registry_id_fkey"
+            columns: ["patient_registry_id"]
+            isOneToOne: false
+            referencedRelation: "patient_registry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_guides_prescription_id_fkey"
+            columns: ["prescription_id"]
+            isOneToOne: false
+            referencedRelation: "prescriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_guides_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       round_responses: {
         Row: {
           created_at: string
