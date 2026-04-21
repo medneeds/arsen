@@ -346,7 +346,11 @@ const RequisicaoUnificadaPage = () => {
     if (formSelectedItems.length === 0) { toast.error("Selecione ao menos um item"); return; }
     if (!formIndication.trim()) { toast.error("Informe a justificativa clínica"); return; }
     if (formPriority === "programado" && !formScheduledDate) { toast.error("Informe a data programada"); return; }
-    if (!unitId || !stateId || !user) return;
+
+    // Validações de contexto com mensagens claras (antes só fazia return silencioso)
+    if (!user) { toast.error("Sessão inválida — refaça login"); return; }
+    if (!unitId) { toast.error("Unidade hospitalar não selecionada"); return; }
+    if (!stateId) { toast.error("Estado não selecionado"); return; }
 
     setSubmitting(true);
     try {
@@ -357,7 +361,7 @@ const RequisicaoUnificadaPage = () => {
         notesContent = scheduledInfo + (notesContent ? "\n" + notesContent : "");
       }
 
-      const { error } = await supabase.from("exam_requests").insert({
+      const payload = {
         category: activeCategory,
         patient_id: formPatientId || null,
         patient_name: formPatientName.trim(),
@@ -372,15 +376,23 @@ const RequisicaoUnificadaPage = () => {
         hospital_unit_id: unitId,
         state_id: stateId,
         status: "pending",
-      } as any);
-      if (error) throw error;
+      };
+
+      console.log("[Requisicoes] Inserindo exam_request:", payload);
+
+      const { error } = await supabase.from("exam_requests").insert(payload as any);
+      if (error) {
+        console.error("[Requisicoes] Erro Supabase:", error);
+        throw error;
+      }
       toast.success(`${CATEGORIES[activeCategory].shortLabel}: ${formSelectedItems.length} item(ns) solicitado(s)`);
       resetForm();
       setActiveSubTab("solicitados");
       fetchRequests();
-    } catch (err) {
-      console.error(err);
-      toast.error("Erro ao criar requisição");
+    } catch (err: any) {
+      console.error("[Requisicoes] handleSubmitRequest falhou:", err);
+      const msg = err?.message || err?.error_description || err?.details || "Erro desconhecido";
+      toast.error(`Erro ao criar requisição: ${msg}`);
     } finally {
       setSubmitting(false);
     }
