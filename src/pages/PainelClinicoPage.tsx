@@ -743,336 +743,40 @@ export default function PainelClinicoPage() {
         </div>
       </ScrollArea>
 
-      {/* Patient Sidebar Sheet */}
+      {/* Patient Sidebar Sheet — usa o PatientCockpit padronizado dos demais módulos clínicos */}
       <Sheet open={!!selectedPatient} onOpenChange={(open) => !open && setSelectedPatient(null)}>
-        <SheetContent className="w-full sm:max-w-xl p-0 flex flex-col" side="right">
+        <SheetContent className="w-full sm:max-w-md p-0 flex flex-col gap-0" side="right">
           {selectedPatient && (
             <>
-              {/* Sidebar Header */}
-              <div className="px-4 py-3 border-b bg-card">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="patient-id font-bold text-lg text-foreground leading-tight truncate">{selectedPatient.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Leito {selectedPatient.bedNumber} • {selectedPatient.age ? `${selectedPatient.age} anos` : ""} • {getSectorLabel(selectedPatient.sector)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      size="sm"
-                      className="h-8 gap-1.5 text-xs font-semibold"
-                      onClick={() => goToPatientPanel(selectedPatient)}
-                    >
-                      <Stethoscope className="h-3.5 w-3.5" />
-                      Abrir atendimento
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 gap-1.5 text-xs"
-                      onClick={() => navigate(`/historico-paciente?patientId=${selectedPatient.id}&patientName=${encodeURIComponent(selectedPatient.name)}&patientBed=${encodeURIComponent(selectedPatient.bedNumber)}&patientSector=${encodeURIComponent(selectedPatient.sector)}`)}
-                    >
-                      <History className="h-3.5 w-3.5" />
-                      Histórico
-                    </Button>
-                    <Badge variant="outline" className={cn("text-xs", getSectorColor(selectedPatient.sector))}>
-                      {getSectorLabel(selectedPatient.sector)}
-                    </Badge>
-                  </div>
-                </div>
-                {selectedPatient.clinicalStatus && clinicalStatusLabels[selectedPatient.clinicalStatus] && (
-                  <Badge className={cn("mt-2 text-xs", clinicalStatusLabels[selectedPatient.clinicalStatus].color)}>
-                    {clinicalStatusLabels[selectedPatient.clinicalStatus].label}
-                  </Badge>
-                )}
+              {/* Barra de ação primária — abrir atendimento completo */}
+              <div className="px-3 py-2 border-b border-border bg-card flex items-center gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  className="flex-1 h-8 gap-1.5 text-xs font-semibold"
+                  onClick={() => goToPatientPanel(selectedPatient)}
+                >
+                  <Stethoscope className="h-3.5 w-3.5" />
+                  Abrir atendimento
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs"
+                  onClick={() =>
+                    navigate(
+                      `/historico-paciente?patientId=${selectedPatient.id}&patientName=${encodeURIComponent(selectedPatient.name)}&patientBed=${encodeURIComponent(selectedPatient.bedNumber)}&patientSector=${encodeURIComponent(selectedPatient.sector)}`
+                    )
+                  }
+                >
+                  <History className="h-3.5 w-3.5" />
+                  Histórico
+                </Button>
               </div>
 
-              {/* Tabs */}
-              <Tabs value={sidebarTab} onValueChange={setSidebarTab} className="flex-1 flex flex-col min-h-0">
-                <div className="px-4 pt-2 border-b bg-card">
-                  <TabsList className="w-full grid grid-cols-5 h-9">
-                    <TabsTrigger value="resumo" className="text-xs px-1">
-                      <Activity className="h-3 w-3 mr-1" /> Resumo
-                    </TabsTrigger>
-                    <TabsTrigger value="prescricao" className="text-xs px-1">
-                      <Pill className="h-3 w-3 mr-1" /> Prescrição
-                    </TabsTrigger>
-                    <TabsTrigger value="evolucao" className="text-xs px-1">
-                      <FileText className="h-3 w-3 mr-1" /> Evolução
-                    </TabsTrigger>
-                    <TabsTrigger value="requisicoes" className="text-xs px-1">
-                      <ClipboardList className="h-3 w-3 mr-1" /> Requisições
-                    </TabsTrigger>
-                    <TabsTrigger value="documentos" className="text-xs px-1">
-                      <FolderOpen className="h-3 w-3 mr-1" /> Docs
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-
-                <ScrollArea className="flex-1">
-                  {/* RESUMO */}
-                  <TabsContent value="resumo" className="p-4 space-y-4 mt-0">
-                     {/* Quick Stats */}
-                    <div className="grid grid-cols-4 gap-2">
-                      <div className="bg-muted/50 rounded-lg p-2 text-center border border-border/30">
-                        <User className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
-                        <p className="text-[10px] text-muted-foreground">Idade</p>
-                        <p className="text-xs font-semibold">{selectedPatient.age ? `${selectedPatient.age} anos` : "—"}</p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-2 text-center border border-border/30">
-                        <Calendar className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
-                        <p className="text-[10px] text-muted-foreground">Admissão</p>
-                        <p className="text-xs font-semibold">
-                          {selectedPatient.admissionDate
-                            ? new Date(selectedPatient.admissionDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-                            : "—"}
-                        </p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-2 text-center border border-border/30">
-                        <Clock className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
-                        <p className="text-[10px] text-muted-foreground">Internação</p>
-                        <p className="text-xs font-semibold">{formatStayDuration(selectedPatient.admissionDate)}</p>
-                      </div>
-                      <div className="bg-muted/50 rounded-lg p-2 text-center border border-border/30">
-                        <LogOut className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
-                        <p className="text-[10px] text-muted-foreground">Prev. Alta</p>
-                        <p className="text-xs font-semibold">{getDischargeText(selectedPatient)}</p>
-                      </div>
-                    </div>
-
-                    <EditableInfoSection
-                      icon={Stethoscope} title="Hipóteses / Diagnósticos"
-                      items={parseTextArray(selectedPatient.diagnoses)}
-                      onSave={(items) => handleInlineSave(selectedPatient.id, 'diagnoses', items)}
-                    />
-                    <EditableInfoSection
-                      icon={Heart} title="Antecedentes / Comorbidades"
-                      items={parseTextArray(selectedPatient.medicalHistory)}
-                      onSave={(items) => handleInlineSave(selectedPatient.id, 'medicalHistory', items)}
-                    />
-                    <EditableInfoSection
-                      icon={TrendingUp} title="Exames Relevantes"
-                      items={parseTextArray(selectedPatient.relevantExams)}
-                      onSave={(items) => handleInlineSave(selectedPatient.id, 'relevantExams', items)}
-                    />
-                    <EditableInfoSection
-                      icon={ClipboardList} title="Plano Terapêutico / Condutas"
-                      items={parseTextArray(selectedPatient.schedule)}
-                      onSave={(items) => handleInlineSave(selectedPatient.id, 'schedule', items)}
-                    />
-                    <EditableInfoSection
-                      icon={AlertTriangle} title="Programações / Pendências"
-                      items={parseTextArray(selectedPatient.pendencies)}
-                      onSave={(items) => handleInlineSave(selectedPatient.id, 'pendencies', items)}
-                    />
-
-                    {/* UTI-specific fields */}
-                    {parseTextArray(selectedPatient.utiAdmissionReason).length > 0 && (
-                      <EditableInfoSection icon={Thermometer} title="Motivo da Admissão UTI" items={parseTextArray(selectedPatient.utiAdmissionReason)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiAdmissionReason', items)} />
-                    )}
-                    {parseTextArray(selectedPatient.utiCurrentStatus).length > 0 && (
-                      <EditableInfoSection icon={Activity} title="Status Atual UTI" items={parseTextArray(selectedPatient.utiCurrentStatus)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiCurrentStatus', items)} />
-                    )}
-                    {parseTextArray(selectedPatient.utiDevices).length > 0 && (
-                      <EditableInfoSection icon={Syringe} title="Dispositivos" items={parseTextArray(selectedPatient.utiDevices)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiDevices', items)} />
-                    )}
-                    {parseTextArray(selectedPatient.utiCulturesAntibiotics).length > 0 && (
-                      <EditableInfoSection icon={Shield} title="Culturas / Antibióticos" items={parseTextArray(selectedPatient.utiCulturesAntibiotics)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiCulturesAntibiotics', items)} />
-                    )}
-                    {parseTextArray(selectedPatient.utiAllergies).length > 0 && (
-                      <EditableInfoSection icon={AlertTriangle} title="Alergias" items={parseTextArray(selectedPatient.utiAllergies)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiAllergies', items)} />
-                    )}
-                    {parseTextArray(selectedPatient.utiDailyConducts).length > 0 && (
-                      <EditableInfoSection icon={ClipboardList} title="Condutas do Dia" items={parseTextArray(selectedPatient.utiDailyConducts)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiDailyConducts', items)} />
-                    )}
-                    <EditableInfoSection icon={Calendar} title="Previsão de Alta" items={parseTextArray(selectedPatient.utiDischargePrediction)} onSave={(items) => handleInlineSave(selectedPatient.id, 'utiDischargePrediction', items)} />
-
-                    <EditableTextBlock
-                      icon={FileText}
-                      title="História Admissional"
-                      value={selectedPatient.admissionHistory || ""}
-                      onSave={async (val) => {
-                        const fieldMap: Record<string, string> = { admissionHistory: "admission_history" };
-                        const { error } = await supabase.from("patients").update({ admission_history: val }).eq("id", selectedPatient.id);
-                        if (error) { toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" }); throw error; }
-                        toast({ title: "Salvo", description: "História admissional atualizada" });
-                      }}
-                    />
-                  </TabsContent>
-
-                  {/* PRESCRIÇÃO */}
-                  <TabsContent value="prescricao" className="p-4 mt-0">
-                    <div className="space-y-4">
-                      {(() => {
-                        const mockPresc = MOCK_PRESCRIPTIONS[selectedPatient.id];
-                        if (!mockPresc) return (
-                          <p className="text-sm text-muted-foreground italic">Nenhuma prescrição registrada para este paciente.</p>
-                        );
-                        return mockPresc.map((cat, ci) => (
-                          <div key={ci} className="space-y-2">
-                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{cat.category}</h4>
-                            <div className="space-y-1.5">
-                              {cat.items.map((item, ii) => (
-                                <div key={ii} className="bg-muted/40 border border-border/30 rounded-lg px-3 py-2">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium text-foreground">{item.name}</span>
-                                    <div className="flex gap-1.5">
-                                      <Badge variant="outline" className="text-[10px]">{item.route}</Badge>
-                                      <Badge variant="secondary" className="text-[10px]">{item.frequency}</Badge>
-                                    </div>
-                                  </div>
-                                  {item.notes && (
-                                    <p className="text-xs text-muted-foreground italic mt-1">{item.notes}</p>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                            {ci < mockPresc.length - 1 && <Separator />}
-                          </div>
-                        ));
-                      })()}
-                      <Separator />
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => navigate(`/prescricao?patientId=${selectedPatient.id}&patientName=${encodeURIComponent(selectedPatient.name)}&patientBed=${encodeURIComponent(selectedPatient.bedNumber)}&patientSector=${encodeURIComponent(selectedPatient.sector)}`)}
-                      >
-                        <Pill className="h-4 w-4 mr-2" />
-                        Abrir módulo completo
-                      </Button>
-                    </div>
-                  </TabsContent>
-
-                  {/* EVOLUÇÃO */}
-                  <TabsContent value="evolucao" className="p-4 mt-0">
-                    <div className="space-y-4">
-                      {(() => {
-                        const mockEvol = MOCK_EVOLUTIONS[selectedPatient.id];
-                        if (!mockEvol) return (
-                          <p className="text-sm text-muted-foreground italic">Nenhuma evolução registrada para este paciente.</p>
-                        );
-                        return mockEvol.map((evol, ei) => (
-                          <div key={ei} className="bg-muted/40 border border-border/30 rounded-lg p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Badge variant="outline" className="text-[10px]">{evol.type}</Badge>
-                              <span className="text-[10px] text-muted-foreground">{evol.date}</span>
-                            </div>
-                            <p className="text-xs font-medium text-primary">{evol.author}</p>
-                            <p className="text-sm text-foreground leading-relaxed">{evol.content}</p>
-                          </div>
-                        ));
-                      })()}
-                      <Separator />
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => navigate(`/evolucao?patientId=${selectedPatient.id}&patientName=${encodeURIComponent(selectedPatient.name)}&patientBed=${encodeURIComponent(selectedPatient.bedNumber)}&patientSector=${encodeURIComponent(selectedPatient.sector)}`)}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Abrir módulo completo
-                      </Button>
-                    </div>
-                  </TabsContent>
-
-                  {/* REQUISIÇÕES */}
-                  <TabsContent value="requisicoes" className="p-4 mt-0">
-                    <div className="space-y-4">
-                      {(() => {
-                        const mockReqs = MOCK_REQUISITIONS[selectedPatient.id];
-                        if (!mockReqs) return (
-                          <p className="text-sm text-muted-foreground italic">Nenhuma requisição registrada para este paciente.</p>
-                        );
-                        return mockReqs.map((req, ri) => {
-                          const statusColors: Record<string, string> = {
-                            "Resultado disponível": "bg-green-500/10 text-green-700 dark:text-green-400 border-green-200",
-                            "Solicitado": "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200",
-                            "Em processamento": "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200",
-                            "Aguardando": "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-200",
-                            "Respondido": "bg-green-500/10 text-green-700 dark:text-green-400 border-green-200",
-                          };
-                          return (
-                            <div key={ri} className="bg-muted/40 border border-border/30 rounded-lg p-3 space-y-2">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-[10px]">{req.category}</Badge>
-                                  <Badge variant="outline" className={cn("text-[10px]", statusColors[req.status] || "")}>{req.status}</Badge>
-                                </div>
-                                <span className="text-[10px] text-muted-foreground">{req.date}</span>
-                              </div>
-                              <p className="text-xs text-muted-foreground">Solicitado por: {req.requestedBy}</p>
-                              <ul className="list-disc list-inside space-y-0.5">
-                                {req.items.map((item, ii) => (
-                                  <li key={ii} className="text-sm text-foreground">{item}</li>
-                                ))}
-                              </ul>
-                              {req.results && (
-                                <div className="bg-background/50 rounded p-2 mt-1">
-                                  <p className="text-xs font-medium text-muted-foreground mb-0.5">Resultado:</p>
-                                  <p className="text-sm text-foreground">{req.results}</p>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        });
-                      })()}
-                      <Separator />
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => navigate(`/requisicoes?patientId=${selectedPatient.id}&patientName=${encodeURIComponent(selectedPatient.name)}&patientBed=${encodeURIComponent(selectedPatient.bedNumber)}&patientSector=${encodeURIComponent(selectedPatient.sector)}`)}
-                      >
-                        <ClipboardList className="h-4 w-4 mr-2" />
-                        Abrir módulo completo
-                      </Button>
-                    </div>
-                  </TabsContent>
-
-                  {/* DOCUMENTOS */}
-                  <TabsContent value="documentos" className="p-4 mt-0">
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Documentos institucionais disponíveis para <strong>{selectedPatient.name}</strong> — Leito {selectedPatient.bedNumber}.
-                    </p>
-                    <div className="space-y-4">
-                      {/* Round do Paciente */}
-                      <div>
-                        <p className="text-xs font-semibold text-muted-foreground tracking-wider mb-2">Round Multiprofissional</p>
-                        <div className="space-y-1">
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-start gap-2 px-3 py-2 h-auto text-sm text-foreground hover:bg-accent/50"
-                            onClick={() => navigate(`/round?patientId=${selectedPatient.id}&patientName=${encodeURIComponent(selectedPatient.name)}&patientBed=${encodeURIComponent(selectedPatient.bedNumber)}&patientSector=${encodeURIComponent(selectedPatient.sector)}&patientAge=${encodeURIComponent(selectedPatient.age?.toString() || '')}`)}
-                          >
-                            <ClipboardCheck className="h-3.5 w-3.5 text-primary shrink-0" />
-                            Abrir Round — {selectedPatient.name}
-                          </Button>
-                        </div>
-                        <Separator className="mt-3" />
-                      </div>
-
-                      {DOCUMENTS.map((group) => (
-                        <div key={group.group}>
-                          <p className="text-xs font-semibold text-muted-foreground tracking-wider mb-2">{group.group}</p>
-                          <div className="space-y-1">
-                            {group.items.map((doc) => (
-                              <a
-                                key={doc.path}
-                                href={doc.path}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent/50 text-sm text-foreground transition-colors"
-                              >
-                                <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                {doc.name}
-                              </a>
-                            ))}
-                          </div>
-                          <Separator className="mt-3" />
-                        </div>
-                      ))}
-                    </div>
-                  </TabsContent>
-                </ScrollArea>
-              </Tabs>
+              {/* Cockpit padronizado (mesmo dos módulos clínicos) */}
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <PatientCockpit patient={selectedPatient} variant="inline" className="h-full border-0 rounded-none" />
+              </div>
             </>
           )}
         </SheetContent>
