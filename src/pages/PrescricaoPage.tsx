@@ -5026,20 +5026,20 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
           const slots = parseScheduleSlots(item.schedule);
           return (
             <tr key={item.id} style={{ pageBreakInside: 'avoid' }}>
-              <td style={{ ...cellStyle, width: '22px', textAlign: 'center', backgroundColor: rowBg, verticalAlign: 'top', color: '#64748b', fontSize: '7pt', fontWeight: 700 }}>
+              <td style={{ ...cellStyle, width: '22px', textAlign: 'center', backgroundColor: rowBg, verticalAlign: 'top', color: '#0f172a', fontSize: '7.5pt', fontWeight: 800 }}>
                 {displayIndex}
               </td>
               <td style={{ ...cellStyle, backgroundColor: rowBg }}>
-                <div style={{ fontSize: '7.5pt', lineHeight: 1.4, color: '#1e293b' }}>
+                <div style={{ fontSize: '8pt', lineHeight: 1.4, color: '#0f172a' }}>
                   <span style={{ fontWeight: 800 }}>{item.name}</span>
                   {item.presentation && item.presentation !== '-' && (
-                    <span style={{ fontWeight: 400, color: '#94a3b8', fontSize: '7pt' }}> ({item.presentation})</span>
+                    <span style={{ fontWeight: 500, color: '#334155', fontSize: '7.5pt' }}> ({item.presentation})</span>
                   )}
                   {item.quantity && item.quantityUnit && (
-                    <span style={{ fontWeight: 600, color: '#475569', fontSize: '7pt' }}> — {item.quantity} {item.quantityUnit}</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '7.5pt' }}> — {item.quantity} {item.quantityUnit}</span>
                   )}
                 </div>
-                <div style={{ fontSize: '7pt', color: '#475569', lineHeight: 1.3, marginTop: '1px' }}>
+                <div style={{ fontSize: '7.5pt', color: '#1e293b', lineHeight: 1.35, marginTop: '2px', fontWeight: 600 }}>
                   {[
                     item.dose && item.dose !== '-' ? item.dose : null,
                     item.route && item.route !== '-' ? item.route : null,
@@ -5049,14 +5049,14 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#334155', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
                   )}
                   {item.isExtra && (
-                    <span style={{ fontSize: '5.5pt', fontWeight: 700, marginLeft: '3px', color: '#ea580c', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fed7aa' }}>EXTRA</span>
+                    <span style={{ fontSize: '5.5pt', fontWeight: 700, marginLeft: '3px', color: '#9a3412', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fdba74' }}>EXTRA</span>
                   )}
                   {item.status === 'suspended' && (
                     <span style={{ fontSize: '6pt', fontWeight: 700, color: '#fff', backgroundColor: '#dc2626', padding: '0.5px 4px', borderRadius: '2px', marginLeft: '3px' }}>SUSPENSO</span>
                   )}
                 </div>
                 {hasPreparo && (
-                  <div style={{ fontSize: '6.5pt', color: '#94a3b8', lineHeight: 1.2, marginTop: '2px', paddingLeft: '8px', borderLeft: '1.5px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
                     {[
                       item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'Sem diluição' : null,
                       item.accessType && item.accessType !== '-' ? item.accessType : null,
@@ -5068,12 +5068,12 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   </div>
                 )}
                 {item.instructions && !hasPreparo && (
-                  <div style={{ fontSize: '6.5pt', color: '#94a3b8', lineHeight: 1.2, marginTop: '2px', paddingLeft: '8px', borderLeft: '1.5px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
                     {item.instructions}
                   </div>
                 )}
               </td>
-              <td style={{ ...cellStyle, width: '140px', textAlign: 'center', verticalAlign: 'middle', fontFamily: 'monospace', fontSize: '7pt', fontWeight: 700, color: '#0c4a6e', backgroundColor: rowBg, whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>
+              <td style={{ ...cellStyle, width: '140px', textAlign: 'center', verticalAlign: 'middle', fontFamily: 'monospace', fontSize: '7.5pt', fontWeight: 800, color: '#0c4a6e', backgroundColor: rowBg, whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>
                 {slots.length > 0 ? slots.join('  ') : '—'}
               </td>
             </tr>
@@ -5114,15 +5114,15 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                       const rowBg = i % 2 === 0 ? '#ffffff' : '#fafbfc';
                       return (
                         <tr key={item.id} style={{ pageBreakInside: 'avoid' }}>
-                          <td style={{ ...cellStyle, width: '22px', textAlign: 'center', backgroundColor: rowBg, color: '#64748b', fontSize: '7pt', fontWeight: 700 }}>
+                          <td style={{ ...cellStyle, width: '22px', textAlign: 'center', backgroundColor: rowBg, color: '#0f172a', fontSize: '7.5pt', fontWeight: 800 }}>
                             {i + 1}
                           </td>
                           <td style={{ ...cellStyle, backgroundColor: rowBg }}>
-                            <span style={{ fontWeight: 700, fontSize: '7.5pt' }}>{item.name}</span>
-                            {item.dose && item.dose !== '-' && <span style={{ color: '#475569', fontWeight: 500, fontSize: '7pt' }}> — {item.dose}</span>}
-                            {item.posology && item.posology !== '-' && <span style={{ color: '#94a3b8', fontWeight: 500, fontSize: '7pt' }}> — {item.posology}</span>}
+                            <span style={{ fontWeight: 800, fontSize: '8pt', color: '#0f172a' }}>{item.name}</span>
+                            {item.dose && item.dose !== '-' && <span style={{ color: '#0f172a', fontWeight: 700, fontSize: '7.5pt' }}> — {item.dose}</span>}
+                            {item.posology && item.posology !== '-' && <span style={{ color: '#1e293b', fontWeight: 600, fontSize: '7.5pt' }}> — {item.posology}</span>}
                             {item.instructions && (
-                              <div style={{ fontSize: '6.5pt', color: '#94a3b8', lineHeight: 1.2, marginTop: '2px', paddingLeft: '8px', borderLeft: '1.5px solid #e2e8f0' }}>
+                              <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
                                 {item.instructions}
                               </div>
                             )}
