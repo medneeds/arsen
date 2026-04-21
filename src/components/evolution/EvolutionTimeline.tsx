@@ -3,8 +3,9 @@ import { format, differenceInCalendarDays, parseISO, startOfDay } from "date-fns
 import { ptBR } from "date-fns/locale";
 import {
   ChevronDown, ChevronUp, Copy, Trash2, ShieldCheck, ShieldOff,
-  Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X, Star, Zap,
+  Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X, Star, Zap, Printer,
 } from "lucide-react";
+import { printEvolution } from "@/lib/printEvolution";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
