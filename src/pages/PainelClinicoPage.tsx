@@ -542,6 +542,18 @@ export default function PainelClinicoPage() {
     setSidebarTab("resumo");
   };
 
+  // Clique no nome → entra direto no painel clínico individual (prescrição com contexto)
+  const goToPatientPanel = (patient: Patient) => {
+    const params = new URLSearchParams({
+      patientId: patient.id,
+      patientName: patient.name,
+      patientBed: patient.bedNumber,
+      patientSector: patient.sector,
+    });
+    if (patient.age) params.set("patientAge", patient.age.toString());
+    navigate(`/prescricao?${params.toString()}`);
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header - matches Index.tsx height */}
