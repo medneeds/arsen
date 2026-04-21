@@ -1144,13 +1144,14 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   };
 
   const importEvolution = async () => {
-    if (!patientId) { toast.error("Paciente não vinculado ao mapa"); return; }
+    const validPid = asUuidOrNull(patientId);
+    if (!validPid) { toast.error("Paciente não vinculado ao mapa (sem ID válido)"); return; }
     setImportingEvolution(true);
     try {
       const { data: patient } = await supabase
         .from("patients")
         .select("diagnoses, medical_history, pendencies")
-        .eq("id", patientId)
+        .eq("id", validPid)
         .maybeSingle();
       if (!patient) { toast.error("Dados do paciente não encontrados"); return; }
       const parts: string[] = [];
