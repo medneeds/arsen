@@ -4524,7 +4524,7 @@ const PrescricaoPage = () => {
           setCareCatalogOpen(false);
         }}
         appliedProfileIds={appliedCareProfiles}
-        patientName={patientName}
+        patientName={patient?.name}
       />
 
       {/* Quick Templates Dialog */}
