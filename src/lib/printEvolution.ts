@@ -1,6 +1,9 @@
 /**
- * Geração de PDF Norma Zero para uma evolução clínica (SOAP) ou intercorrência.
+ * Geração de PDF Norma Zero para uma evolução clínica ou intercorrência.
  * Reutilizável a partir do EvolutionForm e da Timeline.
+ *
+ * Layout unificado: Subjetivo + Avaliação aparecem como uma única seção "Evolução".
+ * Para registros antigos, concatenamos os dois campos com um separador suave.
  */
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -104,20 +107,32 @@ export const printEvolution = async (
       )
       .join("");
 
+    // Unifica Subjetivo + Avaliação em "Evolução"
+    const evolucaoTexto = [s.subjective, s.assessment]
+      .map(t => (t || "").trim())
+      .filter(Boolean)
+      .join("\n\n");
+
     bodyHtml += `
-      <h2 class="nz-section">SOAP</h2>
-      <table class="nz">
-        <tr><th style="width:60px">S</th><td>${escape(s.subjective) || "<em>—</em>"}</td></tr>
-        <tr><th>O</th><td>${escape(s.objective) || "<em>—</em>"}</td></tr>
-        <tr><th>A</th><td>${escape(s.assessment) || "<em>—</em>"}</td></tr>
-        <tr><th>P</th><td>${escape(s.plan) || "<em>—</em>"}</td></tr>
-      </table>
       ${
         vitalsRow
           ? `<h2 class="nz-section">Sinais Vitais</h2><div style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:9pt">${vitalsRow}</div>`
           : ""
       }
+      <h2 class="nz-section">Evolução</h2>
+      <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">
+        ${escape(evolucaoTexto) || "<em>—</em>"}
+      </div>
       ${examRows ? `<h2 class="nz-section">Exame Físico</h2><table class="nz"><tbody>${examRows}</tbody></table>` : ""}
+      ${
+        s.objective?.trim()
+          ? `<h2 class="nz-section">Exames Complementares</h2><div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(s.objective)}</div>`
+          : ""
+      }
+      <h2 class="nz-section">Plano</h2>
+      <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">
+        ${escape(s.plan) || "<em>—</em>"}
+      </div>
     `;
   }
 
@@ -125,7 +140,7 @@ export const printEvolution = async (
 
   const html = buildNormaZeroDocument({
     title: intercurrence ? "Intercorrência Clínica" : "Evolução Clínica",
-    subtitle: intercurrence ? "Registro de intercorrência" : "Registro SOAP",
+    subtitle: intercurrence ? "Registro de intercorrência" : "Registro de evolução",
     sectorLabel: ctx?.patientSector || evo.patient_sector || "Assistência Médica",
     docCodePrefix: intercurrence ? "INTC" : "EVOL",
     bodyHtml,

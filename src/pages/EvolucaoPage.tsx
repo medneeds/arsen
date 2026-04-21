@@ -259,7 +259,7 @@ const EvolucaoPage = () => {
               <NotebookPen className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground">Evolução Clínica — SOAP</h1>
+              <h1 className="text-lg font-bold text-foreground">Evolução Clínica</h1>
               <p className="text-xs text-muted-foreground">Timeline de evoluções do paciente</p>
             </div>
           </div>
@@ -399,7 +399,7 @@ const EvolucaoPage = () => {
       <div className="hidden print:block p-4 text-black text-[10px] leading-tight">
         <div className="flex items-center justify-between border-b border-black pb-1 mb-2">
           <div>
-            <p className="font-bold text-sm">EVOLUÇÃO CLÍNICA — SOAP</p>
+            <p className="font-bold text-sm">EVOLUÇÃO CLÍNICA</p>
             <p>{format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
           </div>
           <img src={bighelpLogo} className="h-6" alt="Logo" />

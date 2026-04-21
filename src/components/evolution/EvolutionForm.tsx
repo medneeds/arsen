@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
-  Heart, User, Stethoscope, ClipboardList, FileText,
+  Heart, NotebookPen, Stethoscope, FileText,
   Save, Loader2, CheckCircle2,
   ShieldCheck, Printer, Sparkles,
   AlertCircle, Eye, ChevronDown, Stethoscope as DiagnosisIcon,
@@ -56,7 +56,7 @@ interface EvolutionFormProps {
   diagnosticsSlot?: React.ReactNode;
 }
 
-type SectionKey = 'vitals' | 'subjective' | 'objective' | 'assessment' | 'plan' | 'review';
+type SectionKey = 'vitals' | 'evolucao' | 'objective' | 'plan' | 'review';
 
 const VITAL_FIELDS = [
   { key: 'pa' as const, label: 'PA', placeholder: '120/80', unit: 'mmHg' },
@@ -88,10 +88,26 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   diagnosticsSlot,
 }) => {
   const [examinusOpen, setExaminusOpen] = useState(false);
-  const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'vitals', 'subjective', 'objective', 'assessment', 'plan']);
+  const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'vitals', 'evolucao', 'objective', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
   const { currentHospital } = useHospital();
   const hospitalId = currentHospital?.id ?? null;
+
+  // Texto unificado da Evolução = Subjetivo + Avaliação (concatenados para registros antigos).
+  // Tudo passa a ser persistido em `subjective`; `assessment` fica vazio nos novos registros
+  // mas é preservado se já existir em registros antigos (legacy display).
+  const evolucaoText = useMemo(() => {
+    const s = (soap.subjective || "").trim();
+    const a = (soap.assessment || "").trim();
+    if (s && a) return `${s}\n\n${a}`;
+    return s || a;
+  }, [soap.subjective, soap.assessment]);
+
+  const handleEvolucaoChange = (value: string) => {
+    // Ao editar, gravamos tudo em `subjective` e zeramos `assessment`
+    onSOAPChange('subjective', value);
+    if (soap.assessment) onSOAPChange('assessment', '');
+  };
 
   // Calculate completion status for each section
   const completion = useMemo(() => {
@@ -99,14 +115,13 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     const examCount = Object.values(physicalExam).filter(v => v.trim()).length;
     return {
       vitals: vitalsCount >= 3,
-      subjective: soap.subjective.trim().length >= 10,
+      evolucao: evolucaoText.trim().length >= 10,
       objective: soap.objective.trim().length >= 10 || examCount >= 1,
-      assessment: soap.assessment.trim().length >= 10,
       plan: soap.plan.trim().length >= 10,
     };
-  }, [soap, vitals, physicalExam]);
+  }, [soap, vitals, physicalExam, evolucaoText]);
 
-  const requiredComplete = completion.subjective && completion.objective && completion.assessment && completion.plan;
+  const requiredComplete = completion.evolucao && completion.objective && completion.plan;
 
   const handleImportExams = (newExams: string[]) => {
     const current = soap.objective?.trim() || "";
@@ -147,19 +162,18 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               ].filter(Boolean).join(" • ");
               const examRows = EXAM_FIELDS.filter(f => physicalExam[f.key])
                 .map(f => `<tr><th style="width:130px">${f.label}</th><td>${escape(physicalExam[f.key])}</td></tr>`).join("");
+              const evolucaoTxt = [soap.subjective, soap.assessment].map(t => (t || "").trim()).filter(Boolean).join("\n\n");
               const bodyHtml = `
-                <h2 class="nz-section">SOAP</h2>
-                <table class="nz">
-                  <tr><th style="width:60px">S</th><td>${escape(soap.subjective) || "<em>—</em>"}</td></tr>
-                  <tr><th>O</th><td>${escape(soap.objective) || "<em>—</em>"}</td></tr>
-                  <tr><th>A</th><td>${escape(soap.assessment) || "<em>—</em>"}</td></tr>
-                  <tr><th>P</th><td>${escape(soap.plan) || "<em>—</em>"}</td></tr>
-                </table>
                 ${vitalsRow ? `<h2 class="nz-section">Sinais Vitais</h2><div style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:9pt">${vitalsRow}</div>` : ""}
+                <h2 class="nz-section">Evolução</h2>
+                <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(evolucaoTxt) || "<em>—</em>"}</div>
                 ${examRows ? `<h2 class="nz-section">Exame Físico</h2><table class="nz"><tbody>${examRows}</tbody></table>` : ""}
+                ${soap.objective?.trim() ? `<h2 class="nz-section">Exames Complementares</h2><div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(soap.objective)}</div>` : ""}
+                <h2 class="nz-section">Plano</h2>
+                <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(soap.plan) || "<em>—</em>"}</div>
               `;
               const html = buildNormaZeroDocument({
-                title: "Evolução Clínica", subtitle: "Registro SOAP",
+                title: "Evolução Clínica", subtitle: "Registro de evolução",
                 sectorLabel: "Assistência Médica", docCodePrefix: "EVOL", bodyHtml,
                 logoDataUrl: logo, signatures: [{ label: "Médico Assistente", caption: "CRM e assinatura" }],
               });
@@ -173,7 +187,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     );
   }
 
-  const expandAll = () => setOpenSections(['diagnostics', 'vitals', 'subjective', 'objective', 'assessment', 'plan', 'review']);
+  const expandAll = () => setOpenSections(['diagnostics', 'vitals', 'evolucao', 'objective', 'plan', 'review']);
   const collapseAll = () => setOpenSections([]);
 
   return (
@@ -261,30 +275,30 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
         </SectionItem>
 
         <SectionItem
-          id="subjective"
-          icon={User}
+          id="evolucao"
+          icon={NotebookPen}
           iconColor="text-blue-500"
-          label="Subjetivo"
-          hint="Queixas do paciente, relato do acompanhante"
-          complete={completion.subjective}
+          label="Evolução"
+          hint="Relato clínico, queixas, hipóteses e avaliação"
+          complete={completion.evolucao}
           required
         >
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] text-muted-foreground">
-              {soap.subjective.trim().length}/10+ caracteres
+              {evolucaoText.trim().length}/10+ caracteres
             </span>
             <FieldTemplates
               scope="evolution.subjective"
-              currentValue={soap.subjective}
-              onApply={(v) => onSOAPChange('subjective', v)}
+              currentValue={evolucaoText}
+              onApply={(v) => handleEvolucaoChange(v)}
               hospitalUnitId={hospitalId}
             />
           </div>
           <Textarea
-            value={soap.subjective}
-            onChange={e => onSOAPChange('subjective', e.target.value)}
-            placeholder="Queixas do paciente, relato do acompanhante, evolução percebida desde último plantão..."
-            className="min-h-[120px] text-xs"
+            value={evolucaoText}
+            onChange={e => handleEvolucaoChange(e.target.value)}
+            placeholder="Relato clínico do plantão: queixas, evolução percebida, achados, hipóteses diagnósticas, raciocínio clínico..."
+            className="min-h-[180px] text-xs"
           />
         </SectionItem>
 
@@ -356,33 +370,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           </div>
         </SectionItem>
 
-        <SectionItem
-          id="assessment"
-          icon={ClipboardList}
-          iconColor="text-amber-500"
-          label="Avaliação"
-          hint="Diagnóstico diferencial, hipóteses ativas"
-          complete={completion.assessment}
-          required
-        >
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-muted-foreground">
-              {soap.assessment.trim().length}/10+ caracteres
-            </span>
-            <FieldTemplates
-              scope="evolution.assessment"
-              currentValue={soap.assessment}
-              onApply={(v) => onSOAPChange('assessment', v)}
-              hospitalUnitId={hospitalId}
-            />
-          </div>
-          <Textarea
-            value={soap.assessment}
-            onChange={e => onSOAPChange('assessment', e.target.value)}
-            placeholder="Diagnóstico diferencial, avaliação clínica do caso, hipóteses ativas..."
-            className="min-h-[120px] text-xs"
-          />
-        </SectionItem>
+        {/* Avaliação foi unificada à Evolução (acima) */}
 
         <SectionItem
           id="plan"
@@ -436,9 +424,8 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                 <AlertCircle className="h-3.5 w-3.5" /> Pendências para validação
               </p>
               <ul className="text-[11px] text-amber-700/80 dark:text-amber-400/80 space-y-0.5 ml-5 list-disc">
-                {!completion.subjective && <li>Preencher <strong>Subjetivo</strong> (mín. 10 caracteres)</li>}
+                {!completion.evolucao && <li>Preencher <strong>Evolução</strong> (mín. 10 caracteres)</li>}
                 {!completion.objective && <li>Preencher <strong>Objetivo</strong> — exame físico ou complementares</li>}
-                {!completion.assessment && <li>Preencher <strong>Avaliação</strong> (mín. 10 caracteres)</li>}
                 {!completion.plan && <li>Preencher <strong>Plano</strong> (mín. 10 caracteres)</li>}
               </ul>
             </div>
@@ -556,12 +543,17 @@ const ReadOnlyView: React.FC<{ soap: SOAPData; vitals: VitalSigns; physicalExam:
           </p>
         </div>
       )}
-      {soap.subjective && (
-        <div><strong className="text-blue-500">S — Subjetivo:</strong> <span className="text-foreground whitespace-pre-wrap">{soap.subjective}</span></div>
+      {(soap.subjective || soap.assessment) && (
+        <div>
+          <strong className="text-blue-500">Evolução:</strong>{" "}
+          <span className="text-foreground whitespace-pre-wrap">
+            {[soap.subjective, soap.assessment].map(t => (t || "").trim()).filter(Boolean).join("\n\n")}
+          </span>
+        </div>
       )}
       {(hasExam || soap.objective) && (
         <div>
-          <strong className="text-emerald-500">O — Objetivo:</strong>
+          <strong className="text-emerald-500">Objetivo:</strong>
           {hasExam && (
             <ul className="ml-4 mt-0.5 text-foreground/90 list-disc">
               {EXAM_FIELDS.filter(f => physicalExam[f.key]).map(f => (
@@ -572,11 +564,8 @@ const ReadOnlyView: React.FC<{ soap: SOAPData; vitals: VitalSigns; physicalExam:
           {soap.objective && <p className="mt-1 text-foreground whitespace-pre-wrap">{soap.objective}</p>}
         </div>
       )}
-      {soap.assessment && (
-        <div><strong className="text-amber-500">A — Avaliação:</strong> <span className="text-foreground whitespace-pre-wrap">{soap.assessment}</span></div>
-      )}
       {soap.plan && (
-        <div><strong className="text-purple-500">P — Plano:</strong> <span className="text-foreground whitespace-pre-wrap">{soap.plan}</span></div>
+        <div><strong className="text-purple-500">Plano:</strong> <span className="text-foreground whitespace-pre-wrap">{soap.plan}</span></div>
       )}
     </div>
   );
