@@ -430,6 +430,8 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       saving={savingId === evo.id}
                       readOnly={!isEditable}
                       isValidated={evo.status === "validated"}
+                      autoSave={isEditable}
+                      hasUnsaved={hasUnsaved}
                     />
                   </div>
                 </div>
