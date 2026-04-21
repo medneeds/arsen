@@ -452,17 +452,18 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName }: Ai
         </ScrollArea>
       </DialogContent>
 
-      {/* ── AIH Print Layout ── */}
+      {/* ── AIH Print Layout (padrão APAC: A4 retrato, página única) ── */}
       <div ref={printRef} className="hidden print:block">
         <style>{`
           @media print {
-            @page { size: A4 portrait; margin: 10mm; }
+            @page { size: A4 portrait; margin: 12mm; }
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
             .print\\:block { display: block !important; }
             .print\\:hidden { display: none !important; }
           }
           .aih-root {
-            width: 190mm;
+            width: 186mm;
+            height: 273mm;
             font-family: Arial, Helvetica, sans-serif;
             color: #000;
             box-sizing: border-box;
@@ -473,46 +474,43 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName }: Ai
           .aih-root * { box-sizing: border-box; }
           .aih-doc-header {
             text-align: center;
-            border: 1.5px solid #000;
-            padding: 4px 8px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 3px;
             margin-bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
           }
-          .aih-doc-header .aih-sus { font-size: 7pt; text-align: left; line-height: 1.2; }
-          .aih-doc-header .aih-title { font-size: 10pt; font-weight: 700; letter-spacing: 0.3px; text-align: center; }
+          .aih-doc-header .aih-sus { font-size: 6.5pt; margin: 0; color: #333; }
+          .aih-doc-header .aih-title { font-size: 9pt; font-weight: 700; margin: 2px 0 0 0; letter-spacing: 0.3px; }
           .aih-form {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
+            flex: 1;
           }
-          .aih-form col.c1 { width: 16%; }
-          .aih-form col.c2 { width: 18%; }
-          .aih-form col.c3 { width: 18%; }
-          .aih-form col.c4 { width: 16%; }
-          .aih-form col.c5 { width: 16%; }
-          .aih-form col.c6 { width: 16%; }
+          .aih-form col.c1 { width: 16.66%; }
+          .aih-form col.c2 { width: 16.66%; }
+          .aih-form col.c3 { width: 16.66%; }
+          .aih-form col.c4 { width: 16.66%; }
+          .aih-form col.c5 { width: 16.66%; }
+          .aih-form col.c6 { width: 16.7%; }
           .aih-form td, .aih-form th {
             border: 0.5pt solid #000;
-            padding: 2px 3px;
+            padding: 2px 4px;
             vertical-align: top;
-            font-size: 7.5pt;
+            font-size: 8pt;
             line-height: 1.2;
           }
           .aih-form .sec {
             background: #1e293b;
             color: #fff;
             font-weight: 700;
-            font-size: 7pt;
+            font-size: 7.5pt;
             padding: 2.5px 4px;
             text-transform: uppercase;
             letter-spacing: 0.3px;
             text-align: center;
           }
           .aih-form .lbl {
-            font-size: 6pt;
+            font-size: 6.5pt;
             color: #555;
             display: block;
             line-height: 1.1;
@@ -520,34 +518,40 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName }: Ai
             white-space: nowrap;
           }
           .aih-form .val {
-            font-size: 8pt;
+            font-size: 8.5pt;
             font-weight: 500;
-            min-height: 10px;
+            min-height: 11px;
             line-height: 1.2;
           }
           .aih-form .val-mono {
             font-family: 'Courier New', monospace;
-            font-size: 8pt;
+            font-size: 8.5pt;
             font-weight: 600;
-            min-height: 10px;
+            min-height: 11px;
             line-height: 1.2;
           }
           .aih-form .just-cell {
-            min-height: 36px;
+            min-height: 42px;
             white-space: pre-wrap;
-            font-size: 7pt;
+            font-size: 8pt;
             font-weight: 400;
-            line-height: 1.25;
+            line-height: 1.3;
+          }
+          .aih-form .just-cell-lg {
+            min-height: 60px;
+            white-space: pre-wrap;
+            font-size: 8pt;
+            font-weight: 400;
+            line-height: 1.3;
           }
           .aih-form .sig-space { height: 14px; }
-          .aih-form .chk { font-size: 7pt; }
+          .aih-form .sig-space-sm { height: 10px; }
+          .aih-form .chk { font-size: 7.5pt; }
         `}</style>
         <div className="aih-root">
           <div className="aih-doc-header">
-            <div className="aih-sus">
-              <strong>SUS</strong><br/>Sistema Único de Saúde<br/>Ministério da Saúde
-            </div>
-            <div className="aih-title">LAUDO PARA SOLICITAÇÃO DE AUTORIZAÇÃO<br/>DE INTERNAÇÃO HOSPITALAR</div>
+            <p className="aih-sus">SISTEMA ÚNICO DE SAÚDE — SUS &nbsp;·&nbsp; MINISTÉRIO DA SAÚDE</p>
+            <p className="aih-title">LAUDO PARA SOLICITAÇÃO DE AUTORIZAÇÃO DE INTERNAÇÃO HOSPITALAR</p>
           </div>
 
           <table className="aih-form">
