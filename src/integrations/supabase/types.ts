@@ -3821,6 +3821,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_dev_user: { Args: { _user_id: string }; Returns: boolean }
       merge_unidentified_patient: {
         Args: { p_ni_id: string; p_target_id: string }
         Returns: string
