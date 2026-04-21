@@ -431,7 +431,8 @@ const RequisicaoUnificadaPage = () => {
   };
 
   const catConfig = CATEGORIES[activeCategory];
-  const CatIcon = catConfig.icon;
+  if (!catConfig) console.error("[Requisicoes] catConfig undefined; activeCategory =", activeCategory);
+  const CatIcon = catConfig?.icon ?? ClipboardList;
 
   return (
     <div>
