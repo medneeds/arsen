@@ -1121,13 +1121,14 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   };
 
   const importAdmission = async () => {
-    if (!patientId) { toast.error("Paciente não vinculado ao mapa"); return; }
+    const validPid = asUuidOrNull(patientId);
+    if (!validPid) { toast.error("Paciente não vinculado ao mapa (sem ID válido)"); return; }
     setImportingAdmission(true);
     try {
       const { data } = await supabase
         .from("admission_histories")
         .select("chief_complaint, clinical_history, diagnostic_hypothesis, initial_conduct")
-        .eq("patient_id", patientId)
+        .eq("patient_id", validPid)
         .maybeSingle();
       if (!data) { toast.error("Nenhuma admissão encontrada para este paciente"); return; }
       const parts: string[] = [];
