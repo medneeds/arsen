@@ -263,15 +263,73 @@ const EvolucaoPage = () => {
               <p className="text-xs text-muted-foreground">Timeline de evoluções do paciente</p>
             </div>
           </div>
-          <Button
-            size="sm"
-            className="gap-1.5 text-xs"
-            onClick={handleOpenNewEvolution}
-            disabled={showNewForm}
-          >
-            <Plus className="h-3.5 w-3.5" /> Nova Evolução
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs border-amber-500/40 text-amber-700 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400"
+              onClick={() => { setShowIntercurrenceForm(true); setIntercurrenceText(""); }}
+              disabled={showIntercurrenceForm || showNewForm}
+            >
+              <AlertTriangle className="h-3.5 w-3.5" /> Intercorrência
+            </Button>
+            <Button
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={handleOpenNewEvolution}
+              disabled={showNewForm || showIntercurrenceForm}
+            >
+              <Plus className="h-3.5 w-3.5" /> Nova Evolução
+            </Button>
+          </div>
         </div>
+
+        {/* Intercurrence Form (compact, single field) */}
+        {showIntercurrenceForm && (
+          <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/5 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <span className="text-sm font-semibold text-foreground">Intercorrência</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => { setShowIntercurrenceForm(false); setIntercurrenceText(""); }}
+              >
+                Cancelar
+              </Button>
+            </div>
+            <Textarea
+              value={intercurrenceText}
+              onChange={e => setIntercurrenceText(e.target.value)}
+              placeholder="Descreva a intercorrência (ex.: queda da própria altura às 14h, sem perda de consciência; novo episódio de hipotensão, PA 80x40 às 03h; dessaturação após mobilização...)"
+              className="min-h-[140px] text-sm resize-y"
+              autoFocus
+            />
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] text-muted-foreground">
+                Registro rápido — fica no prontuário como rascunho até validação.
+              </p>
+              <Button
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={handleCreateIntercurrence}
+                disabled={savingIntercurrence || !intercurrenceText.trim()}
+              >
+                {savingIntercurrence ? (
+                  <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando...</>
+                ) : (
+                  <><AlertTriangle className="h-3.5 w-3.5" /> Registrar Intercorrência</>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* New Evolution Form (with Diagnósticos as 1st collapsible section) */}
         {showNewForm && (
