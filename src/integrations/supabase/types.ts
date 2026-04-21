@@ -2063,6 +2063,7 @@ export type Database = {
           highlighted_diagnoses: number[] | null
           highlighted_medical_history: number[] | null
           highlighted_pendencies: number[] | null
+          hospital_discharge_prediction: string | null
           hospital_unit_id: string
           id: string
           internment_notes: string | null
@@ -2110,6 +2111,7 @@ export type Database = {
           highlighted_diagnoses?: number[] | null
           highlighted_medical_history?: number[] | null
           highlighted_pendencies?: number[] | null
+          hospital_discharge_prediction?: string | null
           hospital_unit_id: string
           id?: string
           internment_notes?: string | null
@@ -2157,6 +2159,7 @@ export type Database = {
           highlighted_diagnoses?: number[] | null
           highlighted_medical_history?: number[] | null
           highlighted_pendencies?: number[] | null
+          hospital_discharge_prediction?: string | null
           hospital_unit_id?: string
           id?: string
           internment_notes?: string | null
