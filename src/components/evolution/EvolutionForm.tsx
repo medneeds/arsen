@@ -425,9 +425,8 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                 <AlertCircle className="h-3.5 w-3.5" /> Pendências para validação
               </p>
               <ul className="text-[11px] text-amber-700/80 dark:text-amber-400/80 space-y-0.5 ml-5 list-disc">
-                {!completion.subjective && <li>Preencher <strong>Subjetivo</strong> (mín. 10 caracteres)</li>}
+                {!completion.evolucao && <li>Preencher <strong>Evolução</strong> (mín. 10 caracteres)</li>}
                 {!completion.objective && <li>Preencher <strong>Objetivo</strong> — exame físico ou complementares</li>}
-                {!completion.assessment && <li>Preencher <strong>Avaliação</strong> (mín. 10 caracteres)</li>}
                 {!completion.plan && <li>Preencher <strong>Plano</strong> (mín. 10 caracteres)</li>}
               </ul>
             </div>
