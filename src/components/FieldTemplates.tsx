@@ -125,7 +125,7 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
           </div>
 
           <TabsContent value="insert" className="m-0">
-            {ordered.length === 0 ? (
+            {totalCount === 0 ? (
               <div className="px-3 py-6 text-center">
                 <FilePlus2 className="h-6 w-6 mx-auto text-muted-foreground/40 mb-1.5" />
                 <p className="text-[11px] text-muted-foreground">Nenhum modelo neste campo.</p>
@@ -140,6 +140,56 @@ export const FieldTemplates: React.FC<FieldTemplatesProps> = ({
             ) : (
               <ScrollArea className="max-h-[280px]">
                 <div className="divide-y">
+                  {seeds.length > 0 && (
+                    <div className="px-2 py-1 bg-muted/30">
+                      <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1">
+                        <Sparkles className="h-2.5 w-2.5" /> Modelos da plataforma
+                      </span>
+                    </div>
+                  )}
+                  {seeds.map((s, i) => (
+                    <div key={`seed-${i}`} className="px-2 py-1.5 hover:bg-muted/40 group">
+                      <div className="flex items-start gap-1.5">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-medium text-foreground truncate">{s.name}</span>
+                            <Badge variant="outline" className="h-3.5 px-1 text-[8px] border-primary/40 text-primary">
+                              padrão
+                            </Badge>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5 whitespace-pre-wrap">
+                            {s.body}
+                          </p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Button
+                              size="sm" variant="secondary"
+                              className="h-5 px-1.5 text-[10px] gap-1"
+                              onClick={() => applySeed(s, "replace")}
+                              title="Substituir conteúdo do campo"
+                            >
+                              <Replace className="h-2.5 w-2.5" /> Substituir
+                            </Button>
+                            <Button
+                              size="sm" variant="ghost"
+                              className="h-5 px-1.5 text-[10px] gap-1"
+                              onClick={() => applySeed(s, "append")}
+                              title="Anexar ao texto atual"
+                              disabled={!currentValue.trim()}
+                            >
+                              <Plus className="h-2.5 w-2.5" /> Anexar
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {ordered.length > 0 && seeds.length > 0 && (
+                    <div className="px-2 py-1 bg-muted/30">
+                      <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        Meus modelos
+                      </span>
+                    </div>
+                  )}
                   {ordered.map(t => (
                     <div key={t.id} className="px-2 py-1.5 hover:bg-muted/40 group">
                       <div className="flex items-start gap-1.5">
