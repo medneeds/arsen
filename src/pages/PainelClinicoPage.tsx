@@ -634,8 +634,9 @@ export default function PainelClinicoPage() {
                     <TableRow
                       key={patient.id}
                       className="cursor-pointer group hover:bg-accent/50 transition-colors"
-                      onClick={() => goToPatientPanel(patient)}
-                      title="Abrir painel clínico do paciente"
+                      onClick={() => openPatient(patient)}
+                      onDoubleClick={() => goToPatientPanel(patient)}
+                      title="Clique para pré-visualizar • Duplo clique para abrir atendimento"
                     >
                       <TableCell>
                         <div className="flex items-center gap-2">
