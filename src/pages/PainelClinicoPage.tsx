@@ -759,6 +759,14 @@ export default function PainelClinicoPage() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Button
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs font-semibold"
+                      onClick={() => goToPatientPanel(selectedPatient)}
+                    >
+                      <Stethoscope className="h-3.5 w-3.5" />
+                      Abrir atendimento
+                    </Button>
+                    <Button
                       variant="outline"
                       size="sm"
                       className="h-8 gap-1.5 text-xs"
