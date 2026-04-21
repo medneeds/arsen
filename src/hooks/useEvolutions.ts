@@ -118,7 +118,7 @@ export function useEvolutions(patientId: string | null) {
       const { data, error } = await supabase
         .from("clinical_evolutions")
         .insert({
-          patient_id: patientId,
+          patient_id: safePatientId,
           patient_name: patientName,
           patient_bed: patientBed,
           patient_sector: patientSector,
