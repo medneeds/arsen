@@ -634,8 +634,9 @@ export default function PainelClinicoPage() {
                     <TableRow
                       key={patient.id}
                       className="cursor-pointer group hover:bg-accent/50 transition-colors"
-                      onClick={() => goToPatientPanel(patient)}
-                      title="Abrir painel clínico do paciente"
+                      onClick={() => openPatient(patient)}
+                      onDoubleClick={() => goToPatientPanel(patient)}
+                      title="Clique para pré-visualizar • Duplo clique para abrir atendimento"
                     >
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -757,6 +758,14 @@ export default function PainelClinicoPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs font-semibold"
+                      onClick={() => goToPatientPanel(selectedPatient)}
+                    >
+                      <Stethoscope className="h-3.5 w-3.5" />
+                      Abrir atendimento
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
