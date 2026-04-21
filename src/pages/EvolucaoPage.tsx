@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 
-import { CompactPatientHeader } from "@/components/CompactPatientHeader";
+
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -17,8 +17,10 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useEvolutions, EvolutionRecord } from "@/hooks/useEvolutions";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { usePatientLive } from "@/hooks/usePatientLive";
+import { usePatientDiagnosticContext } from "@/hooks/usePatientDiagnosticContext";
 import { EvolutionForm } from "@/components/evolution/EvolutionForm";
 import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
+import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
 import type { Patient } from "@/types/patient";
 
 interface PatientHeader {
@@ -77,6 +79,12 @@ const EvolucaoPage = () => {
     updatePrimary: updateCidPrimary,
     updateSecondary: updateCidSecondary,
   } = usePatientCid(initialPatientId || null);
+
+  // Discharge prediction + palliative flag + isolation precautions — synced with admission
+  const {
+    dischargePrediction, isPalliative, isolationPrecautions,
+    updateDischargePrediction, updateIsPalliative, updateIsolationPrecautions,
+  } = usePatientDiagnosticContext(initialPatientId || null);
 
   // Live patient row (realtime sync with Painel Clínico)
   const { patient: livePatient } = usePatientLive(initialPatientId || null);
@@ -192,18 +200,19 @@ const EvolucaoPage = () => {
           </Button>
         </div>
 
-        {/* CID inline editor — compacto, sem repetir identificação do paciente
-            (essa fica no cockpit à direita com Prontuário/Atendimento + Ver mais) */}
-        <CompactPatientHeader
-          name=""
-          bed=""
-          unit=""
-          age=""
+        {/* Diagnósticos — CID + Previsão de Alta + Paliativo + Precaução
+            (sincronizado em tempo real com Admissão / Painel Clínico) */}
+        <DiagnosticsPanel
           cidPrimary={cidPrimary}
           cidSecondary={cidSecondary}
           onCidPrimaryChange={updateCidPrimary}
           onCidSecondaryChange={updateCidSecondary}
-          className="!flex-row-reverse"
+          dischargePrediction={dischargePrediction}
+          onDischargePredictionChange={updateDischargePrediction}
+          isPalliative={isPalliative}
+          onPalliativeChange={updateIsPalliative}
+          isolationPrecautions={isolationPrecautions}
+          onIsolationChange={updateIsolationPrecautions}
         />
 
         {/* New Evolution Form */}

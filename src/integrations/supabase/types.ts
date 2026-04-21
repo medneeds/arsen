@@ -2068,7 +2068,9 @@ export type Database = {
           internment_notes: string | null
           internment_status: string | null
           is_door_patient: boolean | null
+          is_palliative: boolean | null
           is_vacant: boolean | null
+          isolation_precautions: string | null
           medical_history: string | null
           medical_record: string | null
           medical_responsibility: Json | null
@@ -2113,7 +2115,9 @@ export type Database = {
           internment_notes?: string | null
           internment_status?: string | null
           is_door_patient?: boolean | null
+          is_palliative?: boolean | null
           is_vacant?: boolean | null
+          isolation_precautions?: string | null
           medical_history?: string | null
           medical_record?: string | null
           medical_responsibility?: Json | null
@@ -2158,7 +2162,9 @@ export type Database = {
           internment_notes?: string | null
           internment_status?: string | null
           is_door_patient?: boolean | null
+          is_palliative?: boolean | null
           is_vacant?: boolean | null
+          isolation_precautions?: string | null
           medical_history?: string | null
           medical_record?: string | null
           medical_responsibility?: Json | null
