@@ -218,6 +218,19 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
         onValueChange={setOpenSections}
         className="rounded-xl border border-border bg-card divide-y divide-border"
       >
+        {diagnosticsSlot && (
+          <SectionItem
+            id="diagnostics"
+            icon={DiagnosisIcon}
+            iconColor="text-primary"
+            label="Diagnósticos"
+            hint="CID-10, previsão de alta, paliativo, isolamento"
+            complete={false}
+            required={false}
+          >
+            {diagnosticsSlot}
+          </SectionItem>
+        )}
         <SectionItem
           id="vitals"
           icon={Heart}
