@@ -1,16 +1,20 @@
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 /**
  * Botão flutuante global de alternância de tema (claro/escuro).
  * Fica fixo no canto inferior direito em todas as telas, oculto na impressão.
+ * Em /prescricao sobe para não colidir com a toolbar fixa do rodapé.
  */
 export function FloatingThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const { pathname } = useLocation();
+  const isPrescription = pathname.startsWith("/prescricao");
 
   useEffect(() => setMounted(true), []);
 
@@ -24,7 +28,8 @@ export function FloatingThemeToggle() {
       title={isDark ? "Modo claro" : "Modo escuro"}
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className={cn(
-        "fixed bottom-4 right-4 z-[60] h-10 w-10 rounded-full shadow-lg",
+        "fixed right-4 z-[80] h-10 w-10 rounded-full shadow-lg",
+        isPrescription ? "bottom-3" : "bottom-4",
         "bg-background/90 backdrop-blur border-border",
         "hover:bg-accent hover:text-accent-foreground",
         "print:hidden"

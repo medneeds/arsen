@@ -1935,7 +1935,7 @@ function BatchActionBar({
   if (selectedCount === 0 || typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="fixed bottom-5 right-5 z-[999] flex items-center gap-2 px-3 py-2.5 rounded-xl bg-background/95 backdrop-blur-sm border border-border shadow-lg animate-in fade-in slide-in-from-bottom-3 duration-300">
+    <div className="fixed bottom-20 right-5 z-[70] flex items-center gap-2 px-3 py-2.5 rounded-xl bg-background/95 backdrop-blur-sm border border-border shadow-lg animate-in fade-in slide-in-from-bottom-3 duration-300">
       <Checkbox
         checked={allSelected}
         onCheckedChange={() => allSelected ? onDeselectAll() : onSelectAll()}
@@ -3833,6 +3833,7 @@ const PrescricaoPage = () => {
       {/* ===== ACTION TOOLBAR — fixa no rodapé via Portal (escapa de ancestrais com transform/overflow) ===== */}
       {typeof document !== "undefined" && createPortal(
         <div
+          data-prescription-toolbar=""
           style={{
             paddingLeft: sidebarIsMobile
               ? 0
@@ -3840,9 +3841,9 @@ const PrescricaoPage = () => {
                 ? "var(--sidebar-width-icon)"
                 : "var(--sidebar-width)",
           }}
-          className="fixed bottom-0 left-0 right-0 z-[60] print:hidden pointer-events-none transition-[padding] duration-200 ease-linear"
+          className="fixed bottom-0 left-0 right-0 z-[55] print:hidden pointer-events-none transition-[padding] duration-200 ease-linear"
         >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 pointer-events-auto">
+          <div className="max-w-6xl mx-auto pl-4 pr-16 sm:pl-6 sm:pr-20 pointer-events-auto">
             <div className="px-3 py-2 flex items-center justify-center gap-1 flex-wrap border-t border-x border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-[0_-2px_12px_-4px_hsl(var(--foreground)/0.12)] rounded-t-lg">
           <Button variant="ghost" size="sm" onClick={handleNewPrescription} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
             <Plus className="h-3 w-3" /> Nova
@@ -3922,7 +3923,7 @@ const PrescricaoPage = () => {
                 Sessão validada · {sessionMinutesLeft}min
               </span>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs max-w-[240px]">
+            <TooltipContent side="top" className="text-xs max-w-[240px]">
               Sua senha já foi confirmada. Novas validações nos próximos {sessionMinutesLeft} minuto(s) não pedirão senha. A janela é renovada a cada validação.
             </TooltipContent>
           </Tooltip>
@@ -3939,7 +3940,7 @@ const PrescricaoPage = () => {
               {compactView ? 'Expandido' : 'Compacto'}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">
+          <TooltipContent side="top" className="text-xs">
             {compactView ? 'Alternar para visualização expandida' : 'Alternar para visualização compacta'}
           </TooltipContent>
         </Tooltip>
