@@ -15,43 +15,43 @@ export const FIELD_TEMPLATE_SEEDS: Record<string, SeedTemplate[]> = {
   "evolution.objective.exam.general": [
     {
       name: "Normal — bom estado geral",
-      body: "BEG, lúcido, orientado em tempo e espaço, corado, hidratado, anictérico, acianótico, afebril, eupneico em ar ambiente, cooperativo.",
+      body: "Bom estado geral, lúcido, orientado em tempo e espaço, corado, hidratado, anictérico, acianótico, afebril, eupneico em ar ambiente, cooperativo.",
     },
     {
       name: "Normal — internado estável",
-      body: "REG, lúcido e orientado, corado, hidratado, afebril, eupneico, hemodinamicamente estável, sem sinais de toxemia.",
+      body: "Regular estado geral, lúcido e orientado, corado, hidratado, afebril, eupneico, hemodinamicamente estável, sem sinais de toxemia.",
     },
   ],
   "evolution.objective.exam.cardiovascular": [
     {
       name: "Normal",
-      body: "Ritmo cardíaco regular em 2 tempos, bulhas normofonéticas, sem sopros, sem turgência jugular, pulsos periféricos cheios e simétricos, perfusão periférica preservada (TEC < 3s).",
+      body: "Ritmo cardíaco regular em 2 tempos, bulhas normofonéticas, sem sopros, sem turgência jugular, pulsos periféricos cheios e simétricos, perfusão periférica preservada (tempo de enchimento capilar menor que 3 segundos).",
     },
   ],
   "evolution.objective.exam.respiratory": [
     {
       name: "Normal",
-      body: "Tórax simétrico, expansibilidade preservada, MV fisiológico bilateralmente, sem ruídos adventícios, eupneico em ar ambiente, SpO₂ adequada.",
+      body: "Tórax simétrico, expansibilidade preservada, murmúrio vesicular fisiológico bilateralmente, sem ruídos adventícios, eupneico em ar ambiente, saturação periférica de oxigênio adequada.",
     },
     {
-      name: "Normal — em O₂ suplementar",
-      body: "MV fisiológico bilateralmente, sem ruídos adventícios, eupneico sob O₂ suplementar (cateter nasal), SpO₂ adequada, sem sinais de desconforto respiratório.",
+      name: "Normal — em oxigênio suplementar",
+      body: "Murmúrio vesicular fisiológico bilateralmente, sem ruídos adventícios, eupneico sob oxigênio suplementar (cateter nasal), saturação periférica de oxigênio adequada, sem sinais de desconforto respiratório.",
     },
   ],
   "evolution.objective.exam.abdomen": [
     {
       name: "Normal",
-      body: "Abdome plano, flácido, indolor à palpação superficial e profunda, sem visceromegalias, RHA presentes e normoativos, Murphy e Blumberg negativos.",
+      body: "Abdome plano, flácido, indolor à palpação superficial e profunda, sem visceromegalias, ruídos hidroaéreos presentes e normoativos, sinais de Murphy e Blumberg negativos.",
     },
   ],
   "evolution.objective.exam.neurological": [
     {
       name: "Normal",
-      body: "Lúcido e orientado em tempo, espaço e pessoa, Glasgow 15, pupilas isocóricas e fotorreagentes, sem déficits motores ou sensitivos focais, marcha não avaliada (paciente acamado).",
+      body: "Lúcido e orientado em tempo, espaço e pessoa, escala de coma de Glasgow 15, pupilas isocóricas e fotorreagentes, sem déficits motores ou sensitivos focais, marcha não avaliada (paciente acamado).",
     },
     {
       name: "Normal — deambulando",
-      body: "Lúcido e orientado, Glasgow 15, pupilas isocóricas e fotorreagentes, força muscular grau V em 4 membros, sensibilidade preservada, marcha atípica, equilíbrio preservado.",
+      body: "Lúcido e orientado, escala de coma de Glasgow 15, pupilas isocóricas e fotorreagentes, força muscular grau V em quatro membros, sensibilidade preservada, marcha atípica, equilíbrio preservado.",
     },
   ],
   "evolution.objective.exam.extremities": [
@@ -69,7 +69,7 @@ export const FIELD_TEMPLATE_SEEDS: Record<string, SeedTemplate[]> = {
   "evolution.objective.exam.other": [
     {
       name: "Acessos / dispositivos sem intercorrências",
-      body: "AVP em MSE pérvio, sem sinais flogísticos. Sondagens e drenos sem intercorrências.",
+      body: "Acesso venoso periférico em membro superior esquerdo pérvio, sem sinais flogísticos. Sondagens e drenos sem intercorrências.",
     },
   ],
 
