@@ -287,9 +287,14 @@ export function HemocomponentRequestDialog({ open, onOpenChange, patientId }: Pr
               <Eye className="h-4 w-4 mr-1" /> Pré-visualizar
             </Button>
           </div>
-          <Button onClick={handlePrint} size="sm" className="bg-rose-500 hover:bg-rose-600">
-            <Printer className="h-4 w-4 mr-1" /> Imprimir
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleSaveOnly} size="sm" variant="outline">
+              Salvar no Cockpit
+            </Button>
+            <Button onClick={handlePrint} size="sm" className="bg-rose-500 hover:bg-rose-600">
+              <Printer className="h-4 w-4 mr-1" /> Salvar e Imprimir
+            </Button>
+          </div>
         </div>
 
         <ScrollArea className="flex-1 px-6 py-4">
