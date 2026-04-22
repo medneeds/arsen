@@ -942,13 +942,9 @@ export function UtiPatientCard({
     });
   };
 
-  // Toggle bed vacancy status
-  const handleToggleVacancy = (isVacant: boolean) => {
-    onUpdate({
-      ...patient,
-      isVacant
-    });
-  };
+  // Vacancy is governed automatically by the auto_vacate_on_discharge DB trigger
+  // (clearing patient.name => is_vacant=true; setting name => is_vacant=false).
+  // Manual toggling is intentionally disabled here.
 
   // Combined update for items + highlights to prevent race conditions on delete/drag
   const handleUpdateBothFields = (
@@ -1009,22 +1005,8 @@ export function UtiPatientCard({
                 <span className="text-sm font-medium italic">Leito Vago</span>
               </div>
             </div>
-            {/* Actions for vacant bed */}
+            {/* Actions for vacant bed: only deletion (governance). Admission flows through Recepção. */}
             <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleToggleVacancy(false)}
-                className={cn(
-                  "h-7 text-xs gap-1.5",
-                  colorVariant === 'blue' 
-                    ? "border-primary/40 text-primary hover:bg-primary/10" 
-                    : "border-amber-500/40 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                )}
-              >
-                <UserPlus className="h-3.5 w-3.5" />
-                Liberar para Preenchimento
-              </Button>
               {onDelete && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -1033,7 +1015,7 @@ export function UtiPatientCard({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-popover border shadow-lg z-50 w-40">
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={() => onDelete(patient.id)}
                       className="text-destructive"
                     >

@@ -2,7 +2,7 @@ import { Patient, SectorType } from "@/types/patient";
 import { ReactNode } from "react";
 import { UtiPatientCard } from "./UtiPatientCard";
 import { EmptySectorState } from "@/components/EmptySectorState";
-import { Printer, Plus, ChevronDown, ChevronsDownUp, ChevronsUpDown, DoorOpen, UserPlus } from "lucide-react";
+import { Printer, Plus, ChevronDown, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -72,37 +72,8 @@ interface UtiRowProps {
 }
 
 function UtiRow(props: UtiRowProps) {
-  // Toggle vacancy handler
-  const handleToggleVacancy = () => {
-    props.onUpdate({
-      ...props.patient,
-      isVacant: !props.patient.isVacant
-    });
-  };
-
-  // Vacancy toggle button styles based on color variant
-  const vacancyButtonStyles: Record<ColorVariant, { vacant: string; occupied: string }> = {
-    blue: {
-      vacant: "border-primary/40 text-primary hover:bg-primary/10",
-      occupied: "border-muted-foreground/30 text-muted-foreground hover:bg-muted/30"
-    },
-    yellow: {
-      vacant: "border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20",
-      occupied: "border-muted-foreground/30 text-muted-foreground hover:bg-muted/30"
-    },
-    red: {
-      vacant: "border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20",
-      occupied: "border-muted-foreground/30 text-muted-foreground hover:bg-muted/30"
-    },
-    green: {
-      vacant: "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20",
-      occupied: "border-muted-foreground/30 text-muted-foreground hover:bg-muted/30"
-    }
-  };
-  const variantStyles = vacancyButtonStyles[props.colorVariant || 'blue'];
-
   return (
-    <div 
+    <div
       className="flex items-center gap-1 md:gap-2"
       data-patient-id={props.patient.id}
     >
@@ -113,23 +84,6 @@ function UtiRow(props: UtiRowProps) {
           className="flex-shrink-0"
         />
       )}
-      {/* Vacancy Toggle Button - replaces drag handle */}
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={handleToggleVacancy}
-        className={cn(
-          "h-8 w-8 flex-shrink-0 print:hidden hidden md:flex transition-all",
-          props.patient.isVacant ? variantStyles.vacant : variantStyles.occupied
-        )}
-        title={props.patient.isVacant ? "Liberar para preenchimento" : "Marcar como vago"}
-      >
-        {props.patient.isVacant ? (
-          <UserPlus className="h-4 w-4" />
-        ) : (
-          <DoorOpen className="h-4 w-4" />
-        )}
-      </Button>
       <div className="flex-1 min-w-0">
         <UtiPatientCard
           patient={props.patient}
