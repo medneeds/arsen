@@ -459,8 +459,7 @@ const Index = () => {
     const { data: allSectorPatients } = await supabase
       .from('patients')
       .select('bed_number')
-      .eq('sector', sector)
-      .eq('department', currentDepartment);
+      .eq('sector', sector);
     
     const existingBedNumbers = (allSectorPatients || []).map(p => p.bed_number);
     const newBedNumber = getNextBedNumber(sector, existingBedNumbers, currentDepartment);
