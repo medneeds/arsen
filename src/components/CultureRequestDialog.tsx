@@ -27,6 +27,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
+import { asUuidOrNull } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   PrintableCultureRequest,
@@ -38,6 +39,10 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   patientId?: string | null;
+  /** Fallback: nome/leito/setor quando o paciente é mock (sem UUID real). */
+  patientName?: string;
+  patientBed?: string;
+  patientSector?: string;
 }
 
 interface CultureItem {
