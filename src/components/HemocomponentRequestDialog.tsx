@@ -225,7 +225,7 @@ export function HemocomponentRequestDialog({
       }));
       const payload: any = {
         category: "hemocomponente",
-        patient_id: patientId || null,
+        patient_id: asUuidOrNull(patientId),
         patient_name: data.patient_name,
         patient_bed: data.patient_bed || null,
         patient_sector: data.patient_unit || null,
