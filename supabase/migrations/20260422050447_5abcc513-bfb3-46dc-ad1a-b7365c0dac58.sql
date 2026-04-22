@@ -1,0 +1,1 @@
+ALTER TABLE public.vital_signs REPLICA IDENTITY FULL;
