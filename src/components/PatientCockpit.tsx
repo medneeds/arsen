@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Patient } from "@/types/patient";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ import { usePatientMovements } from "@/hooks/usePatientMovements";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { useLatestEvolution } from "@/hooks/useLatestEvolution";
 import { usePatientBedWatcher } from "@/hooks/usePatientBedWatcher";
+import { useLatestVitalSigns } from "@/hooks/useLatestVitalSigns";
+import { usePatientLive } from "@/hooks/usePatientLive";
 import { formatDistanceToNow } from "date-fns";
 
 interface PatientCockpitProps {
