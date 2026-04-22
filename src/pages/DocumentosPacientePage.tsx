@@ -202,6 +202,9 @@ const DocumentosPacientePage = () => {
         open={hemoOpen}
         onOpenChange={setHemoOpen}
         patientId={patientId || null}
+        patientName={patientName}
+        patientBed={patientBed}
+        patientSector={patientSector}
       />
 
       {/* Dialog: Solicitação de SAT / IGHAT */}
@@ -219,6 +222,9 @@ const DocumentosPacientePage = () => {
         open={cultureOpen}
         onOpenChange={setCultureOpen}
         patientId={patientId || null}
+        patientName={patientName}
+        patientBed={patientBed}
+        patientSector={patientSector}
       />
     </div>
   );
