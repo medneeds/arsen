@@ -22,6 +22,22 @@ import {
   NormaZeroPrintHeader,
   NormaZeroPrintFooter,
 } from "@/components/NormaZeroPrintHeader";
+import {
+  PrintableCultureRequest,
+  printCultureRequest,
+  type CultureRequestData,
+} from "@/components/PrintableCultureRequest";
+
+/** Verifica se a requisição é predominantemente de cultura microbiológica. */
+const CULTURE_KEYWORDS = ["cultura", "hemocultura", "urocultura", "antibiograma", "swab", "secre"];
+function isCultureRequest(items: any[]): boolean {
+  if (!Array.isArray(items) || items.length === 0) return false;
+  const cultureCount = items.filter((it) => {
+    const name = (typeof it === "string" ? it : it?.name || "").toLowerCase();
+    return CULTURE_KEYWORDS.some((kw) => name.includes(kw));
+  }).length;
+  return cultureCount / items.length >= 0.6; // ≥60% culturas → usar layout dedicado
+}
 
 interface PrintableRequisitionGuideProps {
   request: {
@@ -131,13 +147,30 @@ export function PrintableRequisitionGuide({
   sectorLabel,
 }: PrintableRequisitionGuideProps) {
   const items = Array.isArray(request.items) ? request.items : [];
+  const docPrefix = CATEGORY_PREFIX[request.category] || "REQ";
+  const docCode = React.useMemo(() => generateDocCode(docPrefix), [docPrefix]);
+
+  // Roteamento: se a requisição é predominantemente de cultura microbiológica,
+  // usa o layout hospitalar dedicado (estrutura tabular tipo formulário).
+  if (isCultureRequest(items)) {
+    const cultureData: CultureRequestData = {
+      patient_name: request.patient_name,
+      patient_sector: request.patient_sector,
+      patient_bed: request.patient_bed,
+      items,
+      clinical_indication: request.clinical_indication,
+      notes: request.notes,
+      requested_by_name: request.requested_by_name,
+      created_at: request.created_at,
+    };
+    return <PrintableCultureRequest request={cultureData} sectorLabel={sectorLabel} />;
+  }
+
   const categoryLabel = CATEGORY_LABELS[request.category] || request.category;
   const priorityLabel =
     PRIORITY_LABELS[request.priority] || (request.priority || "").toUpperCase();
   const priorityStyle =
     PRIORITY_BADGE_STYLE[request.priority] || PRIORITY_BADGE_STYLE.rotina;
-  const docPrefix = CATEGORY_PREFIX[request.category] || "REQ";
-  const docCode = React.useMemo(() => generateDocCode(docPrefix), [docPrefix]);
 
   const scheduledMatch = request.notes?.match(/\[PROGRAMADO: ([^\]]+)\]/);
   const scheduledInfo = scheduledMatch?.[1] || null;
@@ -418,6 +451,24 @@ export async function printRequisitionGuide(
   sectorLabel?: (s: string | null) => string,
 ) {
   const items = Array.isArray(request.items) ? request.items : [];
+
+  // Roteamento para layout dedicado de cultura microbiológica (padrão hospitalar)
+  if (isCultureRequest(items)) {
+    return printCultureRequest(
+      {
+        patient_name: request.patient_name,
+        patient_sector: request.patient_sector,
+        patient_bed: request.patient_bed,
+        items,
+        clinical_indication: request.clinical_indication,
+        notes: request.notes,
+        requested_by_name: request.requested_by_name,
+        created_at: request.created_at,
+      },
+      sectorLabel,
+    );
+  }
+
   const categoryLabel = CATEGORY_LABELS[request.category] || request.category;
   const priorityLabel = PRIORITY_LABELS[request.priority] || (request.priority || "").toUpperCase();
   const priorityCss = PRIORITY_BADGE_CSS[request.priority] || PRIORITY_BADGE_CSS.rotina;
