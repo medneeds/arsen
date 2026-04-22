@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Activity, AlertTriangle, ArrowRight, ChevronDown, ChevronRight,
-  ClipboardList, Copy, FileText, Heart, IdCard, LogOut, Pill, Plus, Route,
+  ClipboardList, Copy, FileText, Heart, IdCard, LogOut, NotebookPen, Pill, Plus, Route,
   ShieldAlert, Stethoscope, TestTubes, TrendingUp, User2
 } from "lucide-react";
 import { differenceInDays, parseISO, isValid, format } from "date-fns";
@@ -21,6 +21,8 @@ import { useActivePrescription } from "@/hooks/useActivePrescription";
 import { usePatientPendingItems } from "@/hooks/usePatientPendingItems";
 import { usePatientMovements } from "@/hooks/usePatientMovements";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
+import { useLatestEvolution } from "@/hooks/useLatestEvolution";
+import { usePatientBedWatcher } from "@/hooks/usePatientBedWatcher";
 import { formatDistanceToNow } from "date-fns";
 
 interface PatientCockpitProps {
