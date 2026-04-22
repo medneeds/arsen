@@ -748,37 +748,9 @@ export default function PainelClinicoPage() {
       <Sheet open={!!selectedPatient} onOpenChange={(open) => !open && setSelectedPatient(null)}>
         <SheetContent className="w-full sm:max-w-md p-0 flex flex-col gap-0" side="right">
           {selectedPatient && (
-            <>
-              {/* Barra de ação primária — abrir atendimento completo */}
-              <div className="px-3 py-2 border-b border-border bg-card flex items-center gap-2 shrink-0">
-                <Button
-                  size="sm"
-                  className="flex-1 h-8 gap-1.5 text-xs font-semibold"
-                  onClick={() => goToPatientPanel(selectedPatient)}
-                >
-                  <Stethoscope className="h-3.5 w-3.5" />
-                  Abrir atendimento
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1.5 text-xs"
-                  onClick={() =>
-                    navigate(
-                      `/historico-paciente?patientId=${selectedPatient.id}&patientName=${encodeURIComponent(selectedPatient.name)}&patientBed=${encodeURIComponent(selectedPatient.bedNumber)}&patientSector=${encodeURIComponent(selectedPatient.sector)}`
-                    )
-                  }
-                >
-                  <History className="h-3.5 w-3.5" />
-                  Histórico
-                </Button>
-              </div>
-
-              {/* Cockpit padronizado (mesmo dos módulos clínicos) */}
-              <div className="flex-1 min-h-0 overflow-hidden">
-                <PatientCockpit patient={selectedPatient} variant="inline" className="h-full border-0 rounded-none" />
-              </div>
-            </>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <PatientCockpit patient={selectedPatient} variant="inline" className="h-full border-0 rounded-none" />
+            </div>
           )}
         </SheetContent>
       </Sheet>
