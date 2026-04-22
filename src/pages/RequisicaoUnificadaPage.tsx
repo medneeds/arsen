@@ -232,6 +232,7 @@ const RequisicaoUnificadaPage = () => {
   const [formCustomItem, setFormCustomItem] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [expandedCombo, setExpandedCombo] = useState<string | null>(null);
+  const [hemoDialogOpen, setHemoDialogOpen] = useState(false);
 
   // ── Result dialog ──
   const [viewingRequest, setViewingRequest] = useState<any | null>(null);
