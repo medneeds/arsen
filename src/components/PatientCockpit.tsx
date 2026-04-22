@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Activity, AlertTriangle, ArrowRight, ChevronDown, ChevronRight,
-  ClipboardList, Copy, FileText, Heart, IdCard, LogOut, Pill, Plus, Route,
+  ClipboardList, Copy, FileText, Heart, IdCard, LogOut, NotebookPen, Pill, Plus, Route,
   ShieldAlert, Stethoscope, TestTubes, TrendingUp, User2
 } from "lucide-react";
 import { differenceInDays, parseISO, isValid, format } from "date-fns";
@@ -21,6 +21,8 @@ import { useActivePrescription } from "@/hooks/useActivePrescription";
 import { usePatientPendingItems } from "@/hooks/usePatientPendingItems";
 import { usePatientMovements } from "@/hooks/usePatientMovements";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
+import { useLatestEvolution } from "@/hooks/useLatestEvolution";
+import { usePatientBedWatcher } from "@/hooks/usePatientBedWatcher";
 import { formatDistanceToNow } from "date-fns";
 
 interface PatientCockpitProps {
@@ -105,6 +107,12 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
     patient?.name || null,
     currentHospital?.id || null,
   );
+  const { evolution } = useLatestEvolution(
+    patient?.id || null,
+    patient?.name || null,
+    currentHospital?.id || null,
+  );
+  usePatientBedWatcher(patient?.id || null, patient?.bedNumber || null, patient?.sector || null);
 
   if (!patient) {
     return (
@@ -340,7 +348,44 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
           </button>
         )}
 
-        {/* ===== ZONA 4: ABAS OTIMIZADAS ===== */}
+        {/* ===== ZONA 3.6: ÚLTIMA EVOLUÇÃO (realtime) ===== */}
+        {evolution && (
+          <button
+            onClick={() => goPatient("/evolucao")}
+            className="mx-3 mt-1 mb-1 flex items-start justify-between gap-2 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition px-2.5 py-1.5 text-left"
+          >
+            <div className="flex items-start gap-2 min-w-0">
+              <NotebookPen className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-semibold text-foreground">Última evolução</span>
+                  <EvolutionStatusBadge status={evolution.status} validatedAt={evolution.validatedAt} />
+                </div>
+                {evolution.preview && (
+                  <p className="text-[10px] text-foreground/80 leading-tight line-clamp-2 preserve-case mt-0.5">
+                    {evolution.preview}
+                  </p>
+                )}
+                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 preserve-case">
+                  {evolution.createdByName ? `${evolution.createdByName} • ` : ""}
+                  {(() => {
+                    try {
+                      return formatDistanceToNow(new Date(evolution.createdAt), {
+                        addSuffix: true,
+                        locale: ptBR,
+                      });
+                    } catch {
+                      return "—";
+                    }
+                  })()}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+          </button>
+        )}
+
+
         <Tabs defaultValue="resumo" className="flex-1 min-h-0 flex flex-col">
           <TabsList className="mx-3 mt-2 grid grid-cols-4 h-8 p-0.5">
             <TabsTrigger value="resumo" className="text-[11px] h-7 px-1">Resumo</TabsTrigger>
@@ -584,6 +629,21 @@ function PrescriptionStatusBadge({ status, signed }: { status: string; signed: b
     <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
       {cfg.label}
       {signed && <span className="opacity-80">• assinada</span>}
+    </span>
+  );
+}
+
+function EvolutionStatusBadge({ status, validatedAt }: { status: string; validatedAt: string | null }) {
+  const isValidated = !!validatedAt || status === "validated";
+  const isSuspended = status === "suspended";
+  const cfg = isSuspended
+    ? { label: "Suspensa", className: "bg-destructive/10 text-destructive" }
+    : isValidated
+      ? { label: "Validada", className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" }
+      : { label: "Em andamento", className: "bg-warning/15 text-warning" };
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
+      {cfg.label}
     </span>
   );
 }
