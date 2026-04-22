@@ -253,6 +253,24 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
             <FileText className="h-3.5 w-3.5" />
             Histórico
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs gap-1.5"
+            onClick={() => goPatient("/monitoramento")}
+          >
+            <Activity className="h-3.5 w-3.5" />
+            Sinais Vitais
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs gap-1.5"
+            onClick={() => goPatient("/alta-desfecho")}
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            Alta
+          </Button>
         </div>
 
         {/* ===== ZONA 3: ALERTAS CLÍNICOS ===== */}
