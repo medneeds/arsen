@@ -112,12 +112,9 @@ export function SectorSelector({ variant = "light" }: SectorSelectorProps) {
       }
     }
     setCurrentDepartment(department);
-    // Gestor permanece no Painel do Gestor; demais perfis vão ao mapa do setor.
-    if (isGestor) {
-      navigate("/painel-gestor");
-    } else {
-      navigate(link || "/mapa");
-    }
+    // Todos os perfis (inclusive Gestor) vão ao mapa de leitos do setor selecionado.
+    // Gestor mantém o filtro persistido e pode voltar ao Painel do Gestor pelo menu.
+    navigate(link || "/mapa");
     setOpen(false);
   };
 
