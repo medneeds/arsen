@@ -144,7 +144,7 @@ const DocumentosPacientePage = () => {
           </div>
 
           {/* Quick CTAs */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             <QuickCta
               icon={Droplet}
               label="Hemocomponentes"
@@ -167,11 +167,18 @@ const DocumentosPacientePage = () => {
               onClick={() => handleNewByType("apac")}
             />
             <QuickCta
+              icon={Syringe}
+              label="SAT"
+              tone="text-amber-600 dark:text-amber-400"
+              bg="bg-amber-500/10"
+              onClick={() => setSatOpen(true)}
+            />
+            <QuickCta
               icon={FileText}
               label="AIH"
               tone="text-indigo-600 dark:text-indigo-400"
               bg="bg-indigo-500/10"
-              badge="Em breve"
+              badge="via internação"
               onClick={() => handleNewByType("aih")}
             />
           </div>
@@ -194,6 +201,16 @@ const DocumentosPacientePage = () => {
         open={hemoOpen}
         onOpenChange={setHemoOpen}
         patientId={patientId || null}
+      />
+
+      {/* Dialog: Solicitação de SAT / IGHAT */}
+      <SatRequestDialog
+        open={satOpen}
+        onOpenChange={setSatOpen}
+        patientId={patientId || null}
+        patientName={patientName}
+        patientBed={patientBed}
+        patientSector={patientSector}
       />
     </div>
   );
