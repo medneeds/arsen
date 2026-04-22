@@ -1557,8 +1557,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               "patient-id font-semibold text-base md:text-sm text-foreground leading-tight break-words rounded px-1 -mx-1",
                               canEdit && "cursor-pointer hover:bg-accent/50"
                             )}
-                            onClick={() => canEdit && startEditing("name", patient.name)}
-                            title={canEdit ? "Clique para editar" : undefined}
+                            onClick={() => canEdit && setIsEditDialogOpen(true)}
+                            title={canEdit ? "Editar dados do paciente" : undefined}
                           >
                             {namesHidden ? (
                               <span className="tracking-widest opacity-70 transition-all duration-300">{displayName}</span>
@@ -1610,8 +1610,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             "text-sm md:text-[11px] text-muted-foreground mt-0.5 rounded px-1 -mx-1 whitespace-normal break-words",
                             canEdit && "cursor-pointer hover:bg-accent/50"
                           )}
-                          onClick={() => canEdit && startEditing("age", typeof patient.age === 'number' ? patient.age.toString() : patient.age)}
-                          title={canEdit ? "Clique para editar" : undefined}
+                          onClick={() => canEdit && setIsEditDialogOpen(true)}
+                          title={canEdit ? "Editar dados do paciente" : undefined}
                         >
                           {patient.age ? formatAgeDisplay(patient.age) : <span className="italic">Clique para adicionar idade</span>}
                         </p>
@@ -4006,16 +4006,9 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                 </div>
               ) : (
                 <span
-                  className={cn("cursor-pointer hover:underline", canEdit && "hover:text-foreground")}
-                  onClick={() => {
-                    if (!canEdit) return;
-                    const d = patient.admissionDate ? new Date(patient.admissionDate) : null;
-                    const formatted = d
-                      ? `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
-                      : '';
-                    startEditing("admissionDate", formatted);
-                  }}
-                  title={canEdit ? "Clique para editar" : undefined}
+                  className={cn(canEdit && "cursor-pointer hover:underline hover:text-foreground")}
+                  onClick={() => canEdit && setIsEditDialogOpen(true)}
+                  title={canEdit ? "Editar dados do paciente" : undefined}
                 >
                   Admissão: {patient.admissionDate ? new Date(patient.admissionDate).toLocaleString('pt-BR') : '—'}
                 </span>
