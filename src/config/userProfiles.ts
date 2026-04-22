@@ -39,7 +39,8 @@ export type AccessProfile =
   | "imagem"
   | "laboratorio"
   | "administrativo"
-  | "multi";
+  | "multi"
+  | "classificacao_risco";
 
 /** Roles do sistema (enum app_role no Postgres). Controla RLS. */
 export interface RoleConfig {
@@ -177,9 +178,18 @@ export const ACCESS_PROFILES: AccessProfileConfig[] = [
     value: "multi",
     label: "Equipe Multiprofissional",
     shortLabel: "Multi",
-    description: "Triagem, fila e fluxos da equipe multidisciplinar",
-    defaultRoute: "/triagem-fila",
+    description: "Fluxos da equipe multidisciplinar (enfermagem, nutrição, fisio, etc.)",
+    defaultRoute: "/mapa",
     icon: UsersIcon,
+    skipSectorSelection: true,
+  },
+  {
+    value: "classificacao_risco",
+    label: "Classificação de Risco",
+    shortLabel: "Classif. Risco",
+    description: "Acesso exclusivo à fila de triagem e Protocolo de Manchester",
+    defaultRoute: "/triagem-fila",
+    icon: Activity,
     skipSectorSelection: true,
   },
 ];
@@ -195,6 +205,7 @@ export const PROFILE_TO_ROLE_HINT: Record<AccessProfile, AppRole> = {
   laboratorio: "medico",
   administrativo: "medico",
   multi: "medico",
+  classificacao_risco: "medico",
 };
 
 /** Agrupamento de setores em blocos hierárquicos para seleção em massa */

@@ -29,7 +29,8 @@ function getRedirectRoute(accessProfile: string | null, role: string | null): st
     case "nir": return "/nir";
     case "ccih": return "/ccih";
     case "administrativo": return "/recepcao";
-    case "multi": return "/triagem-fila";
+    case "multi": return "/mapa";
+    case "classificacao_risco": return "/triagem-fila";
     case "farmacia": return "/validacao-farmaceutica";
     default: return "/";
   }
@@ -290,6 +291,7 @@ export default function AuthPage() {
                           <option value="laboratorio">SETOR LABORATORIAL</option>
                           <option value="nir">NIR — REGULAÇÃO INTERNA</option>
                           <option value="multi">EQUIPE MULTIPROFISSIONAL</option>
+                          <option value="classificacao_risco">CLASSIFICAÇÃO DE RISCO</option>
                           <option value="administrativo">ADMINISTRATIVO / RECEPÇÃO</option>
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
