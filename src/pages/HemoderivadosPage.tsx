@@ -137,6 +137,8 @@ export default function HemoderivadosPage() {
           </p>
         )}
       </div>
+
+      <HemocomponentRequestDialog open={requestOpen} onOpenChange={setRequestOpen} />
     </div>
   );
 }
