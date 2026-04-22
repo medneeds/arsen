@@ -676,11 +676,13 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route
+         <Route
           path="/dev-console"
           element={
             <ProtectedRoute>
-              <DevConsolePage />
+              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
+                <DevConsolePage />
+              </MainLayout>
             </ProtectedRoute>
           }
         />
