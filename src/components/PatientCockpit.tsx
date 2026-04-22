@@ -139,9 +139,11 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
   const goPatient = (path: string) => {
     const params = new URLSearchParams({
       patientId: patient.id,
-      patient: patient.name,
-      bed: patient.bedNumber,
+      patientName: patient.name,
+      patientBed: patient.bedNumber,
+      patientSector: patient.sector,
     });
+    if (patient.age) params.set("patientAge", patient.age.toString());
     navigate(`${path}?${params.toString()}`);
   };
 
