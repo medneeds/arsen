@@ -768,6 +768,20 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
 
 /* ===== Subcomponentes ===== */
 
+function FileCheckIcon() {
+  return <ClipboardList className="h-3.5 w-3.5 text-primary shrink-0" />;
+}
+
+function SpecialKindDot({ kind }: { kind: "hemocomponente" | "sat" | "apac" | "cultura" }) {
+  const map: Record<string, string> = {
+    hemocomponente: "bg-rose-500",
+    sat: "bg-amber-500",
+    apac: "bg-indigo-500",
+    cultura: "bg-emerald-500",
+  };
+  return <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", map[kind])} />;
+}
+
 interface AlertChipProps {
   icon: React.ComponentType<{ className?: string }>;
   tone: "danger" | "warning" | "success" | "muted";
