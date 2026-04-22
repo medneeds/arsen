@@ -209,7 +209,7 @@ export function HemocomponentRequestDialog({ open, onOpenChange, patientId }: Pr
         patient_sector: data.patient_unit || null,
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
-        priority: data.transfusion_type === "urgencia" || data.transfusion_type === "extrema_urgencia"
+        priority: data.transfusion_type === "emergencia" || data.transfusion_type === "programada"
           ? "urgente"
           : "rotina",
         clinical_indication: [
