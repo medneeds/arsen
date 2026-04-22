@@ -144,6 +144,11 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const { vitals } = useLatestVitalSigns(patient?.id || null);
   const { round } = useLatestRoundSession(patient?.id || null);
   const { request: nirRequest } = usePatientNirRequest(patient?.id || null);
+  const { items: specialItems, summary: specialSummary } = usePatientSpecialRequests(
+    patient?.id || null,
+    patient?.name || null,
+    currentHospital?.id || null,
+  );
   usePatientBedWatcher(patient?.id || null, patient?.bedNumber || null, patient?.sector || null);
 
   if (!patient) {
