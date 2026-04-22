@@ -239,7 +239,7 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
             size="sm"
             variant="default"
             className="h-8 text-xs gap-1.5"
-            onClick={() => goPatient("/painel-clinico")}
+            onClick={() => goPatient("/prescricao")}
           >
             <Stethoscope className="h-3.5 w-3.5" />
             Abrir Atendimento
