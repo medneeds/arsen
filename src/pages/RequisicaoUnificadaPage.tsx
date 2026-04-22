@@ -10,9 +10,10 @@ import {
   TestTubes, ScanLine, UserCheck, Plus, Search, Clock, CheckCircle2,
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
   ChevronDown, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
-  CalendarIcon, Printer, RotateCcw, FileCheck, Microscope, Droplet,
+  CalendarIcon, Printer, RotateCcw, FileCheck, Microscope, Droplet, Syringe,
 } from "lucide-react";
 import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDialog";
+import { SatRequestDialog } from "@/components/SatRequestDialog";
 
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
