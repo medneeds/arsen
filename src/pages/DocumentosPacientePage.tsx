@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDialog";
+import { SatRequestDialog } from "@/components/SatRequestDialog";
 import {
   PatientDocumentsPanel,
 } from "@/components/PatientDocumentsPanel";
@@ -42,6 +43,7 @@ const DocumentosPacientePage = () => {
   });
 
   const [hemoOpen, setHemoOpen] = useState(false);
+  const [satOpen, setSatOpen] = useState(false);
 
   const handleNewByType = useCallback(
     (type: DocumentType) => {
@@ -49,6 +51,9 @@ const DocumentosPacientePage = () => {
       switch (type) {
         case "hemoderivado":
           setHemoOpen(true);
+          break;
+        case "sat":
+          setSatOpen(true);
           break;
         case "cultura":
           // Cultura: redireciona para /requisicoes (sub-aba Especiais será adicionada)
@@ -69,8 +74,8 @@ const DocumentosPacientePage = () => {
           navigate(`/round?${params.toString()}`);
           break;
         case "aih":
-        case "sat":
-          toast.info(`Formulário ${type === "aih" ? "AIH" : "SAT"} dedicado será habilitado em breve`);
+          // AIH é gerada no fluxo de internação, não como requisição avulsa
+          toast.info("Laudo de AIH é gerado no fluxo de internação — abra o status da admissão do paciente");
           break;
       }
     },
@@ -139,7 +144,7 @@ const DocumentosPacientePage = () => {
           </div>
 
           {/* Quick CTAs */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             <QuickCta
               icon={Droplet}
               label="Hemocomponentes"
@@ -162,11 +167,18 @@ const DocumentosPacientePage = () => {
               onClick={() => handleNewByType("apac")}
             />
             <QuickCta
+              icon={Syringe}
+              label="SAT"
+              tone="text-amber-600 dark:text-amber-400"
+              bg="bg-amber-500/10"
+              onClick={() => setSatOpen(true)}
+            />
+            <QuickCta
               icon={FileText}
               label="AIH"
               tone="text-indigo-600 dark:text-indigo-400"
               bg="bg-indigo-500/10"
-              badge="Em breve"
+              badge="via internação"
               onClick={() => handleNewByType("aih")}
             />
           </div>
@@ -189,6 +201,16 @@ const DocumentosPacientePage = () => {
         open={hemoOpen}
         onOpenChange={setHemoOpen}
         patientId={patientId || null}
+      />
+
+      {/* Dialog: Solicitação de SAT / IGHAT */}
+      <SatRequestDialog
+        open={satOpen}
+        onOpenChange={setSatOpen}
+        patientId={patientId || null}
+        patientName={patientName}
+        patientBed={patientBed}
+        patientSector={patientSector}
       />
     </div>
   );

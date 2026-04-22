@@ -10,9 +10,10 @@ import {
   TestTubes, ScanLine, UserCheck, Plus, Search, Clock, CheckCircle2,
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
   ChevronDown, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
-  CalendarIcon, Printer, RotateCcw, FileCheck, Microscope, Droplet,
+  CalendarIcon, Printer, RotateCcw, FileCheck, Microscope, Droplet, Syringe,
 } from "lucide-react";
 import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDialog";
+import { SatRequestDialog } from "@/components/SatRequestDialog";
 
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
@@ -233,6 +234,7 @@ const RequisicaoUnificadaPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [expandedCombo, setExpandedCombo] = useState<string | null>(null);
   const [hemoDialogOpen, setHemoDialogOpen] = useState(false);
+  const [satDialogOpen, setSatDialogOpen] = useState(false);
 
   // ── Result dialog ──
   const [viewingRequest, setViewingRequest] = useState<any | null>(null);
@@ -620,13 +622,29 @@ const RequisicaoUnificadaPage = () => {
                 <p className="text-[9px] text-muted-foreground">Solicitação Socorrão I</p>
               </div>
             </button>
-            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-dashed border-border min-w-fit opacity-70">
+            <button
+              type="button"
+              onClick={() => setSatDialogOpen(true)}
+              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
+            >
+              <div className="p-1.5 rounded-lg bg-amber-500/10">
+                <Syringe className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-semibold text-foreground">SAT</p>
+                <p className="text-[9px] text-muted-foreground">Soro antitetânico / IGHAT</p>
+              </div>
+            </button>
+            <div
+              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-dashed border-border min-w-fit opacity-80"
+              title="O Laudo de AIH é gerado no fluxo de internação (Reavaliar admissão / Status de internação)"
+            >
               <div className="p-1.5 rounded-lg bg-indigo-500/10">
                 <FileText className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div className="text-left">
-                <p className="text-xs font-semibold text-muted-foreground">SAT / AIH</p>
-                <p className="text-[9px] text-muted-foreground">Em breve</p>
+                <p className="text-xs font-semibold text-muted-foreground">AIH</p>
+                <p className="text-[9px] text-muted-foreground">no fluxo de internação</p>
               </div>
             </div>
           </>
@@ -1077,6 +1095,16 @@ const RequisicaoUnificadaPage = () => {
         open={hemoDialogOpen}
         onOpenChange={setHemoDialogOpen}
         patientId={asUuidOrNull(formPatientId)}
+      />
+
+      {/* SAT — Soro Antitetânico / IGHAT */}
+      <SatRequestDialog
+        open={satDialogOpen}
+        onOpenChange={setSatDialogOpen}
+        patientId={formPatientId}
+        patientName={formPatientName}
+        patientBed={formPatientBed}
+        patientSector={formPatientSector}
       />
         </div>
         {/* Patient Cockpit — fixed right sidebar */}
