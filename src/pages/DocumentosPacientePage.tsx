@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDialog";
 import { SatRequestDialog } from "@/components/SatRequestDialog";
+import { CultureRequestDialog } from "@/components/CultureRequestDialog";
 import {
   PatientDocumentsPanel,
 } from "@/components/PatientDocumentsPanel";
@@ -44,6 +45,7 @@ const DocumentosPacientePage = () => {
 
   const [hemoOpen, setHemoOpen] = useState(false);
   const [satOpen, setSatOpen] = useState(false);
+  const [cultureOpen, setCultureOpen] = useState(false);
 
   const handleNewByType = useCallback(
     (type: DocumentType) => {
@@ -56,8 +58,7 @@ const DocumentosPacientePage = () => {
           setSatOpen(true);
           break;
         case "cultura":
-          // Cultura: redireciona para /requisicoes (sub-aba Especiais será adicionada)
-          navigate(`/requisicoes?${params.toString()}&especial=cultura`);
+          setCultureOpen(true);
           break;
         case "apac":
           navigate(`/requisicoes?${params.toString()}&especial=apac`);
