@@ -85,11 +85,35 @@ function formatDate(d?: string): string {
   }
 }
 
-export function PatientCockpit({ patient, className, variant = "fixed" }: PatientCockpitProps) {
+export function PatientCockpit({ patient: patientProp, className, variant = "fixed" }: PatientCockpitProps) {
   const { namesHidden } = usePrivacy();
   const navigate = useNavigate();
   const { currentHospital } = useHospital();
   const [showFullId, setShowFullId] = useState(false);
+
+  // Live patient data — sync sector, bed, allergies, medical responsibility, etc.
+  const { patient: livePatient } = usePatientLive(patientProp?.id || null);
+  const patient = livePatient || patientProp;
+
+  // Watch for medical responsibility changes from other users
+  const lastResponsibilityRef = useRef<string | null>(
+    patientProp?.medicalResponsibility?.leaderNames || null,
+  );
+  useEffect(() => {
+    const newResp = livePatient?.medicalResponsibility?.leaderNames || null;
+    if (
+      newResp &&
+      lastResponsibilityRef.current &&
+      newResp !== lastResponsibilityRef.current
+    ) {
+      toast.info("Responsável médico atualizado", {
+        description: `Novo responsável: ${newResp}`,
+        duration: 6000,
+      });
+    }
+    if (newResp) lastResponsibilityRef.current = newResp;
+  }, [livePatient?.medicalResponsibility?.leaderNames]);
+
   const { prescription } = useActivePrescription(
     patient?.name || null,
     currentHospital?.id || null,
@@ -114,6 +138,7 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
     patient?.name || null,
     currentHospital?.id || null,
   );
+  const { vitals } = useLatestVitalSigns(patient?.id || null);
   usePatientBedWatcher(patient?.id || null, patient?.bedNumber || null, patient?.sector || null);
 
   if (!patient) {
