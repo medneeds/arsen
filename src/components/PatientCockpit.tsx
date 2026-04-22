@@ -6,9 +6,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
-  Activity, AlertTriangle, ArrowRight, ChevronDown, ChevronRight,
+  Activity, AlertTriangle, ArrowRight, BedDouble, ChevronDown, ChevronRight,
   ClipboardList, Copy, FileText, Heart, IdCard, LogOut, NotebookPen, Pill, Plus, Route,
-  ShieldAlert, Stethoscope, TestTubes, TrendingUp, User2
+  ShieldAlert, Stethoscope, TestTubes, TrendingUp, User2, Users
 } from "lucide-react";
 import { differenceInDays, parseISO, isValid, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -24,6 +24,8 @@ import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { useLatestEvolution } from "@/hooks/useLatestEvolution";
 import { usePatientBedWatcher } from "@/hooks/usePatientBedWatcher";
 import { useLatestVitalSigns } from "@/hooks/useLatestVitalSigns";
+import { useLatestRoundSession } from "@/hooks/useLatestRoundSession";
+import { usePatientNirRequest } from "@/hooks/usePatientNirRequest";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { formatDistanceToNow } from "date-fns";
 
@@ -139,6 +141,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
     currentHospital?.id || null,
   );
   const { vitals } = useLatestVitalSigns(patient?.id || null);
+  const { round } = useLatestRoundSession(patient?.id || null);
+  const { request: nirRequest } = usePatientNirRequest(patient?.id || null);
   usePatientBedWatcher(patient?.id || null, patient?.bedNumber || null, patient?.sector || null);
 
   if (!patient) {
