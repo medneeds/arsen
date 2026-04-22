@@ -633,6 +633,21 @@ function PrescriptionStatusBadge({ status, signed }: { status: string; signed: b
   );
 }
 
+function EvolutionStatusBadge({ status, validatedAt }: { status: string; validatedAt: string | null }) {
+  const isValidated = !!validatedAt || status === "validated";
+  const isSuspended = status === "suspended";
+  const cfg = isSuspended
+    ? { label: "Suspensa", className: "bg-destructive/10 text-destructive" }
+    : isValidated
+      ? { label: "Validada", className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" }
+      : { label: "Em andamento", className: "bg-warning/15 text-warning" };
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
+      {cfg.label}
+    </span>
+  );
+}
+
 function PendingStat({ label, value, tone }: { label: string; value: number; tone: "warning" | "success" | "danger" }) {
   const toneClasses = {
     warning: "bg-warning/10 text-warning border-warning/20",
