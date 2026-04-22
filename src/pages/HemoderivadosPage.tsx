@@ -1,11 +1,14 @@
-import { Download, Search, ChevronRight } from "lucide-react";
+import { Download, Search, ChevronRight, FileText, Droplet } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDialog";
 
 export default function HemoderivadosPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [requestOpen, setRequestOpen] = useState(false);
 
   const documents = [
     { title: "HEMOC ATO - SADT", file: "hemoc-ato-sadt.pdf", type: "SADT" },
