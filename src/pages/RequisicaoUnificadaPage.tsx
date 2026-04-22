@@ -584,24 +584,48 @@ const RequisicaoUnificadaPage = () => {
             </button>
           );
         })}
-        {/* Especiais: cards extras "Em breve" para SAT e Cultura */}
+        {/* Especiais: atalhos diretos para Cultura, Hemocomponentes, SAT */}
         {activeScope === "especial" && (
           <>
-            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-dashed border-border min-w-fit opacity-70">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveScope("comum");
+                setActiveCategory("laboratorio");
+                setActiveSubTab("solicitar");
+                const culturas = ["Hemocultura (2 pares)", "Urocultura", "Cultura de Secreção"];
+                setFormSelectedItems(prev => Array.from(new Set([...prev, ...culturas])));
+                toast.success("Pacote de culturas adicionado ao formulário");
+              }}
+              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
+            >
               <div className="p-1.5 rounded-lg bg-emerald-500/10">
-                <TestTubes className="h-4 w-4 text-emerald-600" />
+                <Microscope className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="text-left">
-                <p className="text-xs font-semibold text-muted-foreground">Cultura</p>
-                <p className="text-[9px] text-muted-foreground">via Lab → grupo Culturas</p>
+                <p className="text-xs font-semibold text-foreground">Cultura</p>
+                <p className="text-[9px] text-muted-foreground">Hemo / Uro / Secreção</p>
               </div>
-            </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setHemoDialogOpen(true)}
+              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
+            >
+              <div className="p-1.5 rounded-lg bg-rose-500/10">
+                <Droplet className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-semibold text-foreground">Hemocomponentes</p>
+                <p className="text-[9px] text-muted-foreground">Solicitação Socorrão I</p>
+              </div>
+            </button>
             <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-dashed border-border min-w-fit opacity-70">
               <div className="p-1.5 rounded-lg bg-indigo-500/10">
-                <FileText className="h-4 w-4 text-indigo-600" />
+                <FileText className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div className="text-left">
-                <p className="text-xs font-semibold text-muted-foreground">SAT</p>
+                <p className="text-xs font-semibold text-muted-foreground">SAT / AIH</p>
                 <p className="text-[9px] text-muted-foreground">Em breve</p>
               </div>
             </div>
