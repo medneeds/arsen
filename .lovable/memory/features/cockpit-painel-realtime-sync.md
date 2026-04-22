@@ -1,9 +1,12 @@
 ---
 name: cockpit-painel-realtime-sync
-description: Cockpit clínico (sidebar) sincroniza em tempo real com a tabela patients e admission_histories via Supabase Realtime, refletindo edições do Painel Clínico
+description: Cockpit clínico (sidebar) sincroniza em tempo real com patients, admission_histories, prescriptions, exam_requests, culture_results, patient_movements e clinical_evolutions via Supabase Realtime
 type: feature
 ---
-- Hook `usePatientLive(patientId)` busca o registro do paciente em `patients` e ouve `postgres_changes` filtrado por id, atualizando o estado local em qualquer INSERT/UPDATE/DELETE.
-- `EvolucaoPage` alimenta o `PatientCockpit` com o livePatient quando disponível; CIDs vindos de `usePatientCid` são mesclados na lista de diagnósticos.
-- Tabelas `patients` e `admission_histories` foram adicionadas à publication `supabase_realtime` com REPLICA IDENTITY FULL.
-- Edições feitas em `/painel-clinico` aparecem imediatamente no cockpit aberto em `/evolucao` ou `/prescricao` sem reload.
+- `usePatientLive(patientId)` ouve `patients` (INSERT/UPDATE/DELETE) — leito, setor, dados clínicos editados em /painel-clinico aparecem instantâneo.
+- `usePatientBedWatcher(id, bed, sector)` dispara toast "Paciente transferido" quando outro usuário muda leito/setor (evita prescrição em leito errado).
+- `useActivePrescription(name, hospital)` ouve `prescriptions` — exclui draft, mostra v{n} + status + assinatura no Cockpit.
+- `useLatestEvolution(id, name, hospital)` ouve `clinical_evolutions` — card com preview SOAP, autor, status; toast em INSERT por outro médico.
+- `usePatientPendingItems(id, name, hospital)` ouve `exam_requests` + `culture_results` — KPIs de pendentes/concluídos/positivos.
+- `usePatientMovements(id, name, hospital)` ouve `patient_movements` — aba Trajeto com últimas 5 movimentações.
+- Tabelas com REPLICA IDENTITY FULL na publication `supabase_realtime`: patients, admission_histories, clinical_evolutions, prescriptions, exam_requests, culture_results, patient_movements.
