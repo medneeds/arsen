@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDialog";
+import { SatRequestDialog } from "@/components/SatRequestDialog";
 import {
   PatientDocumentsPanel,
 } from "@/components/PatientDocumentsPanel";
