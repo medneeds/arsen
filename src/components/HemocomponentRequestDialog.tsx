@@ -39,6 +39,10 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   /** Pré-carrega dados a partir de um paciente já registrado (opcional). */
   patientId?: string | null;
+  /** Fallback: nome/leito/setor quando o paciente é mock (sem UUID real). */
+  patientName?: string;
+  patientBed?: string;
+  patientSector?: string;
 }
 
 const SECTOR_GROUPS: Array<{ title: string; items: Array<{ key: SectorKey; label: string }> }> = [
