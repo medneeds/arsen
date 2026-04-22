@@ -252,6 +252,27 @@ const RequisicaoUnificadaPage = () => {
     if (patientId || patientName) setActiveSubTab("solicitar");
   }, [searchParams.get("patientId"), searchParams.get("patientName")]);
 
+  // ── Sync category/scope from URL (?categoria=, ?especial=) ──
+  useEffect(() => {
+    const cat = searchParams.get("categoria");
+    const esp = searchParams.get("especial");
+    if (esp === "apac") {
+      setActiveScope("especial");
+      setActiveCategory("apac");
+    } else if (esp === "cultura") {
+      setActiveScope("especial");
+      setActiveCategory("apac");
+      // Cultura ainda não tem aba dedicada; usuário verá APAC + aviso
+    } else if (cat === "laboratorio" || cat === "imagem" || cat === "parecer") {
+      setActiveScope("comum");
+      setActiveCategory(cat as CategoryKey);
+    } else if (cat === "apac") {
+      setActiveScope("especial");
+      setActiveCategory("apac");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.get("categoria"), searchParams.get("especial")]);
+
   useEffect(() => {
     if (unitId && stateId) fetchRequests();
   }, [unitId, stateId, activeCategory, formPatientId]);
