@@ -1096,6 +1096,16 @@ const RequisicaoUnificadaPage = () => {
         onOpenChange={setHemoDialogOpen}
         patientId={asUuidOrNull(formPatientId)}
       />
+
+      {/* SAT — Soro Antitetânico / IGHAT */}
+      <SatRequestDialog
+        open={satDialogOpen}
+        onOpenChange={setSatDialogOpen}
+        patientId={formPatientId}
+        patientName={formPatientName}
+        patientBed={formPatientBed}
+        patientSector={formPatientSector}
+      />
         </div>
         {/* Patient Cockpit — fixed right sidebar */}
         <PatientCockpit patient={cockpitPatient} className="print:hidden" />
