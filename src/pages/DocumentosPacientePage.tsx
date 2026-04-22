@@ -213,6 +213,13 @@ const DocumentosPacientePage = () => {
         patientBed={patientBed}
         patientSector={patientSector}
       />
+
+      {/* Dialog: Solicitação de Cultura (microbiológica) */}
+      <CultureRequestDialog
+        open={cultureOpen}
+        onOpenChange={setCultureOpen}
+        patientId={patientId || null}
+      />
     </div>
   );
 };
