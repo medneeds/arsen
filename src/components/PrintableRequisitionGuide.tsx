@@ -147,6 +147,8 @@ export function PrintableRequisitionGuide({
   sectorLabel,
 }: PrintableRequisitionGuideProps) {
   const items = Array.isArray(request.items) ? request.items : [];
+  const docPrefix = CATEGORY_PREFIX[request.category] || "REQ";
+  const docCode = React.useMemo(() => generateDocCode(docPrefix), [docPrefix]);
 
   // Roteamento: se a requisição é predominantemente de cultura microbiológica,
   // usa o layout hospitalar dedicado (estrutura tabular tipo formulário).
@@ -169,8 +171,6 @@ export function PrintableRequisitionGuide({
     PRIORITY_LABELS[request.priority] || (request.priority || "").toUpperCase();
   const priorityStyle =
     PRIORITY_BADGE_STYLE[request.priority] || PRIORITY_BADGE_STYLE.rotina;
-  const docPrefix = CATEGORY_PREFIX[request.category] || "REQ";
-  const docCode = React.useMemo(() => generateDocCode(docPrefix), [docPrefix]);
 
   const scheduledMatch = request.notes?.match(/\[PROGRAMADO: ([^\]]+)\]/);
   const scheduledInfo = scheduledMatch?.[1] || null;
