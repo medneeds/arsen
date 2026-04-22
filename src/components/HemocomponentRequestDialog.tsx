@@ -24,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
+import { asUuidOrNull } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   PrintableHemocomponentRequest,
