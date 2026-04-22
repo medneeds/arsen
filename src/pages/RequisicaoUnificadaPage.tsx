@@ -191,7 +191,23 @@ const RequisicaoUnificadaPage = () => {
   const unitId = currentHospital?.id;
   const stateId = currentState?.id;
 
-  const [activeCategory, setActiveCategory] = useState<CategoryKey>("laboratorio");
+  // Initial category from URL: ?categoria=laboratorio|imagem|parecer  OR  ?especial=apac|cultura
+  const initialCategory: CategoryKey = (() => {
+    const cat = searchParams.get("categoria");
+    const esp = searchParams.get("especial");
+    if (esp === "apac") return "apac";
+    if (esp === "cultura") return "laboratorio"; // cultura é um grupo dentro de laboratório
+    if (cat === "laboratorio" || cat === "imagem" || cat === "parecer" || cat === "apac") return cat;
+    return "laboratorio";
+  })();
+  const initialScope: "comum" | "especial" = (() => {
+    const esp = searchParams.get("especial");
+    if (esp) return "especial";
+    if (initialCategory === "apac") return "especial";
+    return "comum";
+  })();
+  const [activeScope, setActiveScope] = useState<"comum" | "especial">(initialScope);
+  const [activeCategory, setActiveCategory] = useState<CategoryKey>(initialCategory);
   const [activeSubTab, setActiveSubTab] = useState("solicitar");
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
