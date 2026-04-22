@@ -291,7 +291,7 @@ export function EditPatientDialog({
                       onClick={() => openMovement("TRANSFERÊNCIA")}
                       className="h-9 text-xs gap-1.5 justify-start"
                     >
-                      <ArrowRightLeft className="h-3.5 w-3.5 text-blue-600" />
+                      <ArrowRightLeft className="h-3.5 w-3.5 text-primary" />
                       Transferir
                     </Button>
                     <Button
@@ -301,7 +301,7 @@ export function EditPatientDialog({
                       onClick={() => openMovement("ALTA")}
                       className="h-9 text-xs gap-1.5 justify-start"
                     >
-                      <LogOut className="h-3.5 w-3.5 text-emerald-600" />
+                      <LogOut className="h-3.5 w-3.5 text-primary" />
                       Alta / Desfecho
                     </Button>
                     <Button
@@ -311,7 +311,7 @@ export function EditPatientDialog({
                       onClick={() => openMovement("ÓBITO")}
                       className="h-9 text-xs gap-1.5 justify-start"
                     >
-                      <Skull className="h-3.5 w-3.5 text-red-600" />
+                      <Skull className="h-3.5 w-3.5 text-destructive" />
                       Óbito
                     </Button>
                     <Button
@@ -321,7 +321,7 @@ export function EditPatientDialog({
                       onClick={() => setStatusOpen(true)}
                       className="h-9 text-xs gap-1.5 justify-start"
                     >
-                      <RefreshCw className="h-3.5 w-3.5 text-amber-600" />
+                      <RefreshCw className="h-3.5 w-3.5 text-primary" />
                       Reavaliar Internação
                     </Button>
                   </div>
@@ -347,11 +347,12 @@ export function EditPatientDialog({
 
       {/* Sub-dialogs */}
       <MedicalResponsibilityDialog
-        patient={formData}
         open={responsibilityOpen}
         onOpenChange={setResponsibilityOpen}
-        onSave={(updated) => {
-          setFormData(updated);
+        currentResponsibility={formData.medicalResponsibility}
+        sectorColor="primary"
+        onSave={(responsibility) => {
+          setFormData({ ...formData, medicalResponsibility: responsibility });
           setResponsibilityOpen(false);
         }}
       />
