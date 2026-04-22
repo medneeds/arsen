@@ -43,6 +43,7 @@ const DocumentosPacientePage = () => {
   });
 
   const [hemoOpen, setHemoOpen] = useState(false);
+  const [satOpen, setSatOpen] = useState(false);
 
   const handleNewByType = useCallback(
     (type: DocumentType) => {
@@ -50,6 +51,9 @@ const DocumentosPacientePage = () => {
       switch (type) {
         case "hemoderivado":
           setHemoOpen(true);
+          break;
+        case "sat":
+          setSatOpen(true);
           break;
         case "cultura":
           // Cultura: redireciona para /requisicoes (sub-aba Especiais será adicionada)
@@ -70,8 +74,8 @@ const DocumentosPacientePage = () => {
           navigate(`/round?${params.toString()}`);
           break;
         case "aih":
-        case "sat":
-          toast.info(`Formulário ${type === "aih" ? "AIH" : "SAT"} dedicado será habilitado em breve`);
+          // AIH é gerada no fluxo de internação, não como requisição avulsa
+          toast.info("Laudo de AIH é gerado no fluxo de internação — abra o status da admissão do paciente");
           break;
       }
     },
