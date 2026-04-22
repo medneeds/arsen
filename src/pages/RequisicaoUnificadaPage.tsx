@@ -1090,6 +1090,9 @@ const RequisicaoUnificadaPage = () => {
         open={hemoDialogOpen}
         onOpenChange={setHemoDialogOpen}
         patientId={asUuidOrNull(formPatientId)}
+        patientName={formPatientName}
+        patientBed={formPatientBed}
+        patientSector={formPatientSector}
       />
 
       {/* Cultura — diálogo otimizado microbiológico */}
@@ -1097,6 +1100,9 @@ const RequisicaoUnificadaPage = () => {
         open={cultureDialogOpen}
         onOpenChange={setCultureDialogOpen}
         patientId={asUuidOrNull(formPatientId)}
+        patientName={formPatientName}
+        patientBed={formPatientBed}
+        patientSector={formPatientSector}
       />
 
       {/* SAT — Soro Antitetânico / IGHAT */}

@@ -8,5 +8,5 @@ type: feature
 - `summary` retorna contadores por tipo (`hemocomponente`, `sat`, `apac`, `cultura`) + `pending` + `total`.
 - `PatientCockpit` exibe um card "Requisições especiais" entre a Solicitação NIR e os Tabs, com chips por tipo, badge de pendentes e preview dos 3 últimos itens. Card só aparece se `summary.total > 0`.
 - Click no card navega para `/requisicoes?especial=apac&patientId=…` mantendo o contexto do paciente.
-- `HemocomponentRequestDialog` agora persiste em `exam_requests` (category=`hemocomponente`) ao clicar em "Salvar no Cockpit" ou "Salvar e Imprimir", garantindo que apareça automaticamente no Cockpit, em /requisicoes (Especiais) e em /documentos sem refresh.
-- `SatRequestDialog` já persistia em `exam_requests` (category=`sat`); agora aparece automaticamente no card.
+- `HemocomponentRequestDialog`, `CultureRequestDialog` e `SatRequestDialog` recebem `patientId`, `patientName`, `patientBed` e `patientSector` para preencher imediatamente o formulário (mock + UUID real). `patient_id` é persistido com `asUuidOrNull()` para evitar erros de FK em mocks; `patient_name`/`bed`/`sector` sempre vão para o payload de `exam_requests`/`culture_results`.
+- Resultado: ao clicar em "Salvar no Cockpit" ou "Salvar e Imprimir" em qualquer um dos diálogos especiais (Hemo, Cultura, SAT, APAC), a solicitação aparece automaticamente no Cockpit do paciente aberto, em /requisicoes (Especiais) e em /documentos via realtime, mesmo para pacientes mock.

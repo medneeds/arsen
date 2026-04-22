@@ -24,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
+import { asUuidOrNull } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   PrintableHemocomponentRequest,
@@ -39,6 +40,10 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   /** Pré-carrega dados a partir de um paciente já registrado (opcional). */
   patientId?: string | null;
+  /** Fallback: nome/leito/setor quando o paciente é mock (sem UUID real). */
+  patientName?: string;
+  patientBed?: string;
+  patientSector?: string;
 }
 
 const SECTOR_GROUPS: Array<{ title: string; items: Array<{ key: SectorKey; label: string }> }> = [
@@ -76,7 +81,14 @@ const COMPONENT_LABELS: Record<ComponentKey, string> = {
   crio: "Crioprecipitado",
 };
 
-export function HemocomponentRequestDialog({ open, onOpenChange, patientId }: Props) {
+export function HemocomponentRequestDialog({
+  open,
+  onOpenChange,
+  patientId,
+  patientName,
+  patientBed,
+  patientSector,
+}: Props) {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
   const [previewMode, setPreviewMode] = useState(false);
@@ -89,7 +101,18 @@ export function HemocomponentRequestDialog({ open, onOpenChange, patientId }: Pr
     created_at: new Date().toISOString(),
   });
 
-  // Pré-carrega dados do paciente quando fornecido
+  // Pré-preenche com props (mock ou contexto da URL) imediatamente
+  useEffect(() => {
+    if (!open) return;
+    setData((d) => ({
+      ...d,
+      patient_name: d.patient_name || patientName || "",
+      patient_unit: d.patient_unit || patientSector || null,
+      patient_bed: d.patient_bed || patientBed || null,
+    }));
+  }, [open, patientName, patientBed, patientSector]);
+
+  // Pré-carrega dados do paciente quando fornecido (UUID real)
   useEffect(() => {
     if (!open || !patientId) return;
     (async () => {
@@ -112,14 +135,14 @@ export function HemocomponentRequestDialog({ open, onOpenChange, patientId }: Pr
 
       setData((d) => ({
         ...d,
-        patient_name: registry?.full_name || p.name || "",
+        patient_name: registry?.full_name || p.name || d.patient_name,
         patient_social_name: registry?.social_name || null,
         patient_birth_date: registry?.birth_date || null,
         patient_sex: registry?.sex || null,
         patient_blood_group: registry?.blood_type || null,
         patient_record: registry?.medical_record || p.medical_record || null,
-        patient_unit: p.sector || null,
-        patient_bed: p.bed_number || null,
+        patient_unit: p.sector || d.patient_unit,
+        patient_bed: p.bed_number || d.patient_bed,
         patient_diagnosis: p.diagnoses || null,
       }));
     })();
@@ -203,7 +226,7 @@ export function HemocomponentRequestDialog({ open, onOpenChange, patientId }: Pr
       }));
       const payload: any = {
         category: "hemocomponente",
-        patient_id: patientId || null,
+        patient_id: asUuidOrNull(patientId),
         patient_name: data.patient_name,
         patient_bed: data.patient_bed || null,
         patient_sector: data.patient_unit || null,
