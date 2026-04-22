@@ -48,6 +48,29 @@ export default function HemoderivadosPage() {
           </Badge>
         </div>
 
+        {/* CTA — Nova Solicitação Padrão Socorrão I */}
+        <Card className="border-rose-300/40 bg-gradient-to-br from-rose-500/5 via-rose-500/3 to-transparent shadow-lg">
+          <CardContent className="p-5 flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-rose-500/15 ring-1 ring-rose-500/30">
+              <Droplet className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base font-semibold text-foreground">Nova Solicitação de Hemocomponentes</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Formulário oficial padrão Socorrão I — preenchimento digital com impressão A4
+              </p>
+            </div>
+            <Button
+              size="lg"
+              className="gap-2 bg-rose-600 hover:bg-rose-700 text-white shadow-md"
+              onClick={() => setRequestOpen(true)}
+            >
+              <FileText className="h-4 w-4" />
+              Nova solicitação
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Search Bar */}
         <Card className="border-primary/20 shadow-lg">
           <CardContent className="p-6">
