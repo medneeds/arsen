@@ -721,6 +721,18 @@ function EvolutionStatusBadge({ status, validatedAt }: { status: string; validat
   );
 }
 
+function News2Badge({ risk, score }: { risk: string; score: number | null }) {
+  const cfg =
+    risk === "high"
+      ? { label: `NEWS2 ${score ?? "?"}`, className: "bg-destructive/15 text-destructive" }
+      : risk === "medium"
+        ? { label: `NEWS2 ${score ?? "?"}`, className: "bg-warning/15 text-warning" }
+        : { label: `NEWS2 ${score ?? "?"}`, className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" };
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
+      {cfg.label}
+    </span>
+
 function PendingStat({ label, value, tone }: { label: string; value: number; tone: "warning" | "success" | "danger" }) {
   const toneClasses = {
     warning: "bg-warning/10 text-warning border-warning/20",
