@@ -50,7 +50,7 @@ export function usePatientSpecialRequests(
       .from("exam_requests")
       .select("id, category, status, items, created_at, requested_by_name, patient_id, patient_name, clinical_indication")
       .eq("hospital_unit_id", hospitalUnitId)
-      .in("category", ["hemocomponente", "sat", "apac"])
+      .in("category", ["hemocomponente", "sat", "apac", "cultura"])
       .order("created_at", { ascending: false })
       .limit(20);
     if (patientId) examQ = examQ.eq("patient_id", patientId);
@@ -76,6 +76,7 @@ export function usePatientSpecialRequests(
         if (row.category === "hemocomponente") label = first || "Hemocomponentes";
         if (row.category === "sat") label = "Profilaxia antitetânica";
         if (row.category === "apac") label = first || "APAC";
+        if (row.category === "cultura") label = first || "Solicitação de cultura";
         merged.push({
           id: row.id,
           kind: row.category as SpecialKind,
@@ -119,7 +120,7 @@ export function usePatientSpecialRequests(
         (payload) => {
           const row: any = payload.new || payload.old;
           if (!row) return;
-          if (!["hemocomponente", "sat", "apac"].includes(row.category)) return;
+          if (!["hemocomponente", "sat", "apac", "cultura"].includes(row.category)) return;
           if (
             (patientId && row.patient_id === patientId) ||
             (patientName && row.patient_name?.trim() === patientName.trim())
