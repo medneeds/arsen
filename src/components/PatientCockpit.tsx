@@ -7,8 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Activity, AlertTriangle, ArrowRight, BedDouble, ChevronDown, ChevronRight,
-  ClipboardList, Copy, FileText, Heart, IdCard, LogOut, NotebookPen, Pill, Plus, Route,
-  ShieldAlert, Stethoscope, TestTubes, TrendingUp, User2, Users
+  ClipboardList, Copy, Droplet, FileText, Heart, IdCard, LogOut, NotebookPen, Pill, Plus, Route,
+  ShieldAlert, Stethoscope, Syringe, TestTubes, TrendingUp, User2, Users
 } from "lucide-react";
 import { differenceInDays, parseISO, isValid, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
