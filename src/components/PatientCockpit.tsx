@@ -806,6 +806,21 @@ function News2Badge({ risk, score }: { risk: string; score: number | null }) {
   );
 }
 
+function NirStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; className: string }> = {
+    pending: { label: "Pendente", className: "bg-warning/15 text-warning" },
+    discussing: { label: "Em discussão", className: "bg-primary/10 text-primary" },
+    approved: { label: "Aprovada", className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+    rejected: { label: "Rejeitada", className: "bg-destructive/10 text-destructive" },
+  };
+  const cfg = map[status] || map.pending;
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
+      {cfg.label}
+    </span>
+  );
+}
+
 function PendingStat({ label, value, tone }: { label: string; value: number; tone: "warning" | "success" | "danger" }) {
   const toneClasses = {
     warning: "bg-warning/10 text-warning border-warning/20",
