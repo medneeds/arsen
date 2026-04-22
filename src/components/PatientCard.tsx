@@ -1557,7 +1557,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                               "patient-id font-semibold text-base md:text-sm text-foreground leading-tight break-words rounded px-1 -mx-1",
                               canEdit && "cursor-pointer hover:bg-accent/50"
                             )}
-                            onClick={() => canEdit && setEditDialogOpen(true)}
+                            onClick={() => canEdit && setIsEditDialogOpen(true)}
                             title={canEdit ? "Editar dados do paciente" : undefined}
                           >
                             {namesHidden ? (
@@ -1610,7 +1610,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                             "text-sm md:text-[11px] text-muted-foreground mt-0.5 rounded px-1 -mx-1 whitespace-normal break-words",
                             canEdit && "cursor-pointer hover:bg-accent/50"
                           )}
-                          onClick={() => canEdit && setEditDialogOpen(true)}
+                          onClick={() => canEdit && setIsEditDialogOpen(true)}
                           title={canEdit ? "Editar dados do paciente" : undefined}
                         >
                           {patient.age ? formatAgeDisplay(patient.age) : <span className="italic">Clique para adicionar idade</span>}
@@ -4007,7 +4007,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
               ) : (
                 <span
                   className={cn(canEdit && "cursor-pointer hover:underline hover:text-foreground")}
-                  onClick={() => canEdit && setEditDialogOpen(true)}
+                  onClick={() => canEdit && setIsEditDialogOpen(true)}
                   title={canEdit ? "Editar dados do paciente" : undefined}
                 >
                   Admissão: {patient.admissionDate ? new Date(patient.admissionDate).toLocaleString('pt-BR') : '—'}
