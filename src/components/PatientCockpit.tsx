@@ -732,6 +732,8 @@ function News2Badge({ risk, score }: { risk: string; score: number | null }) {
     <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
       {cfg.label}
     </span>
+  );
+}
 
 function PendingStat({ label, value, tone }: { label: string; value: number; tone: "warning" | "success" | "danger" }) {
   const toneClasses = {
