@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Activity, Database, Users, AlertTriangle, Bot, Send, RefreshCw, ShieldAlert, Terminal } from "lucide-react";
+import { Loader2, Activity, Database, Users, AlertTriangle, Bot, Send, RefreshCw, ShieldAlert, Terminal, Sliders } from "lucide-react";
+import { CustomizationTab } from "@/components/dev/CustomizationTab";
 import { toast } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
@@ -81,12 +82,14 @@ export default function DevConsolePage() {
             <TabsTrigger value="logs" className="gap-1.5"><Database className="h-4 w-4" /> Logs</TabsTrigger>
             <TabsTrigger value="ai" className="gap-1.5"><Bot className="h-4 w-4" /> Console IA</TabsTrigger>
             <TabsTrigger value="actions" className="gap-1.5"><Users className="h-4 w-4" /> Ações</TabsTrigger>
+            <TabsTrigger value="customization" className="gap-1.5"><Sliders className="h-4 w-4" /> Personalização</TabsTrigger>
           </TabsList>
 
           <TabsContent value="health"><HealthTab /></TabsContent>
           <TabsContent value="logs"><LogsTab /></TabsContent>
           <TabsContent value="ai"><AiTab /></TabsContent>
           <TabsContent value="actions"><ActionsTab /></TabsContent>
+          <TabsContent value="customization"><CustomizationTab /></TabsContent>
         </Tabs>
       </main>
     </div>
