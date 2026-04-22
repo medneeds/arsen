@@ -107,6 +107,12 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
     patient?.name || null,
     currentHospital?.id || null,
   );
+  const { evolution } = useLatestEvolution(
+    patient?.id || null,
+    patient?.name || null,
+    currentHospital?.id || null,
+  );
+  usePatientBedWatcher(patient?.id || null, patient?.bedNumber || null, patient?.sector || null);
 
   if (!patient) {
     return (
