@@ -535,6 +535,82 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           </button>
         )}
 
+        {/* ===== ZONA 3.10: REQUISIÇÕES ESPECIAIS (realtime) ===== */}
+        {specialSummary.total > 0 && (
+          <div className="mx-3 mt-1 mb-1 rounded-md border border-border bg-muted/40">
+            <button
+              onClick={() => {
+                const params = new URLSearchParams({
+                  patientId: patient.id,
+                  patientName: patient.name,
+                  patientBed: patient.bedNumber,
+                  patientSector: patient.sector,
+                });
+                navigate(`/requisicoes?${params.toString()}&especial=apac`);
+              }}
+              className="w-full flex items-center justify-between gap-2 hover:bg-muted/70 transition px-2.5 py-1.5 text-left rounded-md"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <FileCheckIcon />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-semibold text-foreground">
+                      Requisições especiais
+                    </span>
+                    {specialSummary.pending > 0 && (
+                      <span className="inline-flex items-center rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide bg-warning/15 text-warning">
+                        {specialSummary.pending} pendente{specialSummary.pending > 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground mt-0.5">
+                    {specialSummary.hemocomponente > 0 && (
+                      <span className="inline-flex items-center gap-1">
+                        <Droplet className="h-2.5 w-2.5 text-rose-500" />
+                        Hemo <strong className="text-foreground">{specialSummary.hemocomponente}</strong>
+                      </span>
+                    )}
+                    {specialSummary.sat > 0 && (
+                      <span className="inline-flex items-center gap-1">
+                        <Syringe className="h-2.5 w-2.5 text-amber-500" />
+                        SAT <strong className="text-foreground">{specialSummary.sat}</strong>
+                      </span>
+                    )}
+                    {specialSummary.apac > 0 && (
+                      <span>APAC <strong className="text-foreground">{specialSummary.apac}</strong></span>
+                    )}
+                    {specialSummary.cultura > 0 && (
+                      <span>Cult. <strong className="text-foreground">{specialSummary.cultura}</strong></span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            </button>
+            {specialItems.length > 0 && (
+              <ul className="border-t border-border/60 px-2.5 py-1.5 space-y-1">
+                {specialItems.slice(0, 3).map((it) => (
+                  <li
+                    key={`${it.kind}-${it.id}`}
+                    className="flex items-center justify-between gap-2 text-[10px]"
+                  >
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      <SpecialKindDot kind={it.kind} />
+                      <span className="truncate text-foreground preserve-case">{it.label}</span>
+                    </span>
+                    <span className={cn(
+                      "text-[9px] uppercase font-semibold px-1 rounded shrink-0",
+                      it.status === "completed" && "text-emerald-700 dark:text-emerald-400",
+                      it.status === "pending" && "text-warning",
+                    )}>
+                      {it.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         <Tabs defaultValue="resumo" className="flex-1 min-h-0 flex flex-col">
           <TabsList className="mx-3 mt-2 grid grid-cols-4 h-8 p-0.5">
