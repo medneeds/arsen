@@ -6,9 +6,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
-  Activity, AlertTriangle, ArrowRight, ChevronDown, ChevronRight,
+  Activity, AlertTriangle, ArrowRight, BedDouble, ChevronDown, ChevronRight,
   ClipboardList, Copy, FileText, Heart, IdCard, LogOut, NotebookPen, Pill, Plus, Route,
-  ShieldAlert, Stethoscope, TestTubes, TrendingUp, User2
+  ShieldAlert, Stethoscope, TestTubes, TrendingUp, User2, Users
 } from "lucide-react";
 import { differenceInDays, parseISO, isValid, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -24,6 +24,8 @@ import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { useLatestEvolution } from "@/hooks/useLatestEvolution";
 import { usePatientBedWatcher } from "@/hooks/usePatientBedWatcher";
 import { useLatestVitalSigns } from "@/hooks/useLatestVitalSigns";
+import { useLatestRoundSession } from "@/hooks/useLatestRoundSession";
+import { usePatientNirRequest } from "@/hooks/usePatientNirRequest";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { formatDistanceToNow } from "date-fns";
 
@@ -139,6 +141,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
     currentHospital?.id || null,
   );
   const { vitals } = useLatestVitalSigns(patient?.id || null);
+  const { round } = useLatestRoundSession(patient?.id || null);
+  const { request: nirRequest } = usePatientNirRequest(patient?.id || null);
   usePatientBedWatcher(patient?.id || null, patient?.bedNumber || null, patient?.sector || null);
 
   if (!patient) {
@@ -458,6 +462,73 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           </button>
         )}
 
+        {/* ===== ZONA 3.8: ROUND MULTIPROFISSIONAL (realtime) ===== */}
+        {round && (
+          <button
+            onClick={() => goPatient("/round")}
+            className="mx-3 mt-1 mb-1 flex items-start justify-between gap-2 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition px-2.5 py-1.5 text-left"
+          >
+            <div className="flex items-start gap-2 min-w-0 flex-1">
+              <Users className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-semibold text-foreground">Round multiprofissional</span>
+                  <span className="inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide bg-primary/10 text-primary">
+                    {formatDate(round.roundDate)}
+                  </span>
+                </div>
+                <p className="text-[10px] text-foreground/80 leading-tight mt-0.5 tabular-nums">
+                  {round.responsesCount} {round.responsesCount === 1 ? "resposta" : "respostas"} • {round.goalsCount} {round.goalsCount === 1 ? "meta" : "metas"}
+                </p>
+                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                  {(() => {
+                    try {
+                      return `Atualizado ${formatDistanceToNow(new Date(round.updatedAt), { addSuffix: true, locale: ptBR })}`;
+                    } catch { return "—"; }
+                  })()}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+          </button>
+        )}
+
+        {/* ===== ZONA 3.9: SOLICITAÇÃO NIR (realtime) ===== */}
+        {nirRequest && (
+          <button
+            onClick={() => goPatient("/nir")}
+            className="mx-3 mt-1 mb-1 flex items-start justify-between gap-2 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition px-2.5 py-1.5 text-left"
+          >
+            <div className="flex items-start gap-2 min-w-0 flex-1">
+              <BedDouble className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-semibold text-foreground">Solicitação NIR</span>
+                  <NirStatusBadge status={nirRequest.status} />
+                </div>
+                <p className="text-[10px] text-foreground/80 leading-tight mt-0.5 preserve-case">
+                  Setor <strong>{nirRequest.requestedSector}</strong>
+                  {nirRequest.requestedBed ? ` • Leito ${nirRequest.requestedBed}` : ""}
+                </p>
+                {nirRequest.status === "rejected" && nirRequest.rejectionReason && (
+                  <p className="text-[10px] text-destructive leading-tight mt-0.5 preserve-case line-clamp-2">
+                    {nirRequest.rejectionReason}
+                  </p>
+                )}
+                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 preserve-case">
+                  {nirRequest.requestingDoctorName ? `${nirRequest.requestingDoctorName} • ` : ""}
+                  {(() => {
+                    try {
+                      return formatDistanceToNow(new Date(nirRequest.createdAt), { addSuffix: true, locale: ptBR });
+                    } catch { return "—"; }
+                  })()}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+          </button>
+        )}
+
 
         <Tabs defaultValue="resumo" className="flex-1 min-h-0 flex flex-col">
           <TabsList className="mx-3 mt-2 grid grid-cols-4 h-8 p-0.5">
@@ -728,6 +799,21 @@ function News2Badge({ risk, score }: { risk: string; score: number | null }) {
       : risk === "medium"
         ? { label: `NEWS2 ${score ?? "?"}`, className: "bg-warning/15 text-warning" }
         : { label: `NEWS2 ${score ?? "?"}`, className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" };
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
+      {cfg.label}
+    </span>
+  );
+}
+
+function NirStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; className: string }> = {
+    pending: { label: "Pendente", className: "bg-warning/15 text-warning" },
+    discussing: { label: "Em discussão", className: "bg-primary/10 text-primary" },
+    approved: { label: "Aprovada", className: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" },
+    rejected: { label: "Rejeitada", className: "bg-destructive/10 text-destructive" },
+  };
+  const cfg = map[status] || map.pending;
   return (
     <span className={cn("inline-flex items-center gap-1 rounded px-1.5 py-0 text-[9px] font-semibold uppercase tracking-wide", cfg.className)}>
       {cfg.label}
