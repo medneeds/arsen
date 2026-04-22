@@ -239,37 +239,19 @@ export function PatientCockpit({ patient, className, variant = "fixed" }: Patien
             size="sm"
             variant="default"
             className="h-8 text-xs gap-1.5"
-            onClick={() => goPatient("/evolucao")}
+            onClick={() => goPatient("/painel-clinico")}
           >
-            <Plus className="h-3.5 w-3.5" />
-            Evolução
+            <Stethoscope className="h-3.5 w-3.5" />
+            Abrir Atendimento
           </Button>
           <Button
             size="sm"
             variant="outline"
             className="h-8 text-xs gap-1.5"
-            onClick={() => goPatient("/prescricao")}
+            onClick={() => goPatient("/historico-paciente")}
           >
-            <Pill className="h-3.5 w-3.5" />
-            Prescrever
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 text-xs gap-1.5"
-            onClick={() => goPatient("/monitoramento")}
-          >
-            <Activity className="h-3.5 w-3.5" />
-            Sinais Vitais
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 text-xs gap-1.5"
-            onClick={() => goPatient("/alta-desfecho")}
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Alta
+            <FileText className="h-3.5 w-3.5" />
+            Histórico
           </Button>
         </div>
 
