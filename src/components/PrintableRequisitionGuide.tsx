@@ -22,6 +22,22 @@ import {
   NormaZeroPrintHeader,
   NormaZeroPrintFooter,
 } from "@/components/NormaZeroPrintHeader";
+import {
+  PrintableCultureRequest,
+  printCultureRequest,
+  type CultureRequestData,
+} from "@/components/PrintableCultureRequest";
+
+/** Verifica se a requisição é predominantemente de cultura microbiológica. */
+const CULTURE_KEYWORDS = ["cultura", "hemocultura", "urocultura", "antibiograma", "swab", "secre"];
+function isCultureRequest(items: any[]): boolean {
+  if (!Array.isArray(items) || items.length === 0) return false;
+  const cultureCount = items.filter((it) => {
+    const name = (typeof it === "string" ? it : it?.name || "").toLowerCase();
+    return CULTURE_KEYWORDS.some((kw) => name.includes(kw));
+  }).length;
+  return cultureCount / items.length >= 0.6; // ≥60% culturas → usar layout dedicado
+}
 
 interface PrintableRequisitionGuideProps {
   request: {
