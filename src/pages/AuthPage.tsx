@@ -291,6 +291,7 @@ export default function AuthPage() {
                           <option value="laboratorio">SETOR LABORATORIAL</option>
                           <option value="nir">NIR — REGULAÇÃO INTERNA</option>
                           <option value="multi">EQUIPE MULTIPROFISSIONAL</option>
+                          <option value="classificacao_risco">CLASSIFICAÇÃO DE RISCO</option>
                           <option value="administrativo">ADMINISTRATIVO / RECEPÇÃO</option>
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
