@@ -29,7 +29,8 @@ function getRedirectRoute(accessProfile: string | null, role: string | null): st
     case "nir": return "/nir";
     case "ccih": return "/ccih";
     case "administrativo": return "/recepcao";
-    case "multi": return "/triagem-fila";
+    case "multi": return "/mapa";
+    case "classificacao_risco": return "/triagem-fila";
     case "farmacia": return "/validacao-farmaceutica";
     default: return "/";
   }
