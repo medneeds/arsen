@@ -78,7 +78,9 @@ const COMPONENT_LABELS: Record<ComponentKey, string> = {
 
 export function HemocomponentRequestDialog({ open, onOpenChange, patientId }: Props) {
   const { user } = useAuth();
+  const { currentHospital, currentState } = useHospital();
   const [previewMode, setPreviewMode] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
   const [data, setData] = useState<HemocomponentRequestData>({
     patient_name: "",
     components: [],
