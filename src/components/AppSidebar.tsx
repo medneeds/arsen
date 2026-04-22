@@ -356,19 +356,26 @@ export function AppSidebar({
         ]},
       ];
     }
-    // Equipe Multi: dedicated sidebar with all specialties
+    // Classificação de Risco: acesso exclusivo à fila de triagem
+    if (accessProfile === "classificacao_risco") {
+      return [
+        { title: "Fila de Triagem", icon: Users, link: "/triagem-fila", profiles: ["classificacao_risco"] },
+        { title: "Painel TV", icon: LayoutDashboard, link: "/triagem-tv", profiles: ["classificacao_risco"] },
+      ];
+    }
+    // Equipe Multi: sidebar multiprofissional (sem triagem — agora perfil próprio)
     if (accessProfile === "multi") {
       return [
-        { title: "Fila de Triagem", icon: Users, link: "/triagem-fila", profiles: ["multi"] },
+        { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: ["multi"] },
         { title: "Equipe Multi", icon: HeartPulse, profiles: ["multi"], items: [
-          { name: "Enfermagem", link: "/triagem-fila", profiles: ["multi"], badge: "Ativo" },
-          { name: "Nutrição", link: "/triagem-fila", profiles: ["multi"], badge: "Em breve" },
-          { name: "Fisioterapia", link: "/triagem-fila", profiles: ["multi"], badge: "Em breve" },
-          { name: "Serviço Social", link: "/triagem-fila", profiles: ["multi"], badge: "Em breve" },
-          { name: "Psicologia", link: "/triagem-fila", profiles: ["multi"], badge: "Em breve" },
-          { name: "Fonoaudiologia", link: "/triagem-fila", profiles: ["multi"], badge: "Em breve" },
+          { name: "Enfermagem", link: "/mapa", profiles: ["multi"], badge: "Ativo" },
+          { name: "Nutrição", link: "/mapa", profiles: ["multi"], badge: "Em breve" },
+          { name: "Fisioterapia", link: "/mapa", profiles: ["multi"], badge: "Em breve" },
+          { name: "Serviço Social", link: "/mapa", profiles: ["multi"], badge: "Em breve" },
+          { name: "Psicologia", link: "/mapa", profiles: ["multi"], badge: "Em breve" },
+          { name: "Fonoaudiologia", link: "/mapa", profiles: ["multi"], badge: "Em breve" },
         ]},
-        { title: "Leitos", icon: BedDouble, link: "/mapa", profiles: ["multi"], badge: "Em breve" },
+        { title: "Round Multiprofissional", icon: ClipboardCheck, link: "/round", profiles: ["multi"] },
       ];
     }
     // Filter sections by profile, then filter sub-items within each section
