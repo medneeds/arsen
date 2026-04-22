@@ -191,11 +191,16 @@ const RequisicaoUnificadaPage = () => {
   const unitId = currentHospital?.id;
   const stateId = currentState?.id;
 
+  const [scope, setScope] = useState<"comum" | "especial">("comum");
   const [activeCategory, setActiveCategory] = useState<CategoryKey>("laboratorio");
   const [activeSubTab, setActiveSubTab] = useState("solicitar");
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+
+  // ── Especiais (Hemo / Cultura / APAC / SAT / AIH) ──
+  const [hemoDialogOpen, setHemoDialogOpen] = useState(false);
+  const [activeEspecial, setActiveEspecial] = useState<"hemo" | "cultura" | "apac" | "sat" | "aih" | null>(null);
 
   // Cockpit (right rail) — same pattern as Evolução / Prescrição
   const cockpitPatient = useCockpitPatient();
