@@ -180,7 +180,80 @@ export function HemocomponentRequestDialog({ open, onOpenChange, patientId }: Pr
   const getComponent = (key: ComponentKey) => (data.components || []).find((c) => c.key === key);
   const isComponentActive = (key: ComponentKey) => Boolean(getComponent(key));
 
-  const handlePrint = () => {
+  const persistRequest = async (): Promise<string | null> => {
+    if (!currentHospital?.id || !currentState?.id) {
+      toast.error("Selecione hospital/estado para salvar");
+      return null;
+    }
+    if (!data.patient_name?.trim()) {
+      toast.error("Informe o nome do paciente");
+      return null;
+    }
+    if (!data.components || data.components.length === 0) {
+      toast.error("Selecione ao menos um hemocomponente");
+      return null;
+    }
+    try {
+      const items = (data.components || []).map((c) => ({
+        name: COMPONENT_LABELS[c.key],
+        key: c.key,
+        quantity: (c as any).quantity || null,
+        attributes: (c as any).attributes || null,
+        lab_justification: (c as any).lab_justification || null,
+      }));
+      const payload: any = {
+        category: "hemocomponente",
+        patient_id: patientId || null,
+        patient_name: data.patient_name,
+        patient_bed: data.patient_bed || null,
+        patient_sector: data.patient_unit || null,
+        hospital_unit_id: currentHospital.id,
+        state_id: currentState.id,
+        priority: data.transfusion_type === "urgencia" || data.transfusion_type === "extrema_urgencia"
+          ? "urgente"
+          : "rotina",
+        clinical_indication: [
+          data.transfusion_type ? `Tipo: ${data.transfusion_type}` : null,
+          data.patient_diagnosis ? `Dx: ${data.patient_diagnosis}` : null,
+        ].filter(Boolean).join(" | "),
+        items,
+        notes: [
+          data.requested_by_name ? `Médico: ${data.requested_by_name}${data.requested_by_crm ? " — CRM " + data.requested_by_crm : ""}` : null,
+          data.transfusion_sectors && data.transfusion_sectors.length > 0
+            ? `Setores: ${data.transfusion_sectors.join(", ")}`
+            : null,
+        ].filter(Boolean).join("\n"),
+        requested_by: user?.id || null,
+        requested_by_name: data.requested_by_name || null,
+        status: "pending",
+      };
+      if (savedId) {
+        const { error } = await supabase.from("exam_requests").update(payload).eq("id", savedId);
+        if (error) throw error;
+        return savedId;
+      }
+      const { data: inserted, error } = await supabase
+        .from("exam_requests")
+        .insert(payload)
+        .select("id")
+        .single();
+      if (error) throw error;
+      setSavedId(inserted.id);
+      return inserted.id;
+    } catch (e: any) {
+      console.error("[HemocomponentRequestDialog] persist error", e);
+      toast.error(e?.message || "Erro ao salvar solicitação");
+      return null;
+    }
+  };
+
+  const handleSaveOnly = async () => {
+    const id = await persistRequest();
+    if (id) toast.success("Solicitação registrada — visível no Cockpit");
+  };
+
+  const handlePrint = async () => {
+    await persistRequest();
     printHemocomponentRequest({ ...data, created_at: new Date().toISOString() });
   };
 
