@@ -635,7 +635,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const ageInputRef = useRef<HTMLInputElement>(null);
-  const config = sectorConfig[patient.sector];
+  const config = sectorConfig[patient.sector as keyof typeof sectorConfig] ?? sectorConfig.outside;
   const { toast: toastHook } = useToast();
   const { currentDepartment } = useDepartment();
   const isPediatric = currentDepartment === "URGÊNCIA E EMERGÊNCIA PEDIÁTRICA";
