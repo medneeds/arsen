@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDialog";
 import { SatRequestDialog } from "@/components/SatRequestDialog";
+import { CultureRequestDialog } from "@/components/CultureRequestDialog";
 
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
@@ -235,6 +236,7 @@ const RequisicaoUnificadaPage = () => {
   const [expandedCombo, setExpandedCombo] = useState<string | null>(null);
   const [hemoDialogOpen, setHemoDialogOpen] = useState(false);
   const [satDialogOpen, setSatDialogOpen] = useState(false);
+  const [cultureDialogOpen, setCultureDialogOpen] = useState(false);
 
   // ── Result dialog ──
   const [viewingRequest, setViewingRequest] = useState<any | null>(null);
@@ -265,8 +267,8 @@ const RequisicaoUnificadaPage = () => {
       setActiveCategory("apac");
     } else if (esp === "cultura") {
       setActiveScope("especial");
-      setActiveCategory("apac");
-      // Cultura ainda não tem aba dedicada; usuário verá APAC + aviso
+      setActiveCategory("laboratorio");
+      setCultureDialogOpen(true);
     } else if (cat === "laboratorio" || cat === "imagem" || cat === "parecer") {
       setActiveScope("comum");
       setActiveCategory(cat as CategoryKey);
@@ -591,14 +593,7 @@ const RequisicaoUnificadaPage = () => {
           <>
             <button
               type="button"
-              onClick={() => {
-                setActiveScope("comum");
-                setActiveCategory("laboratorio");
-                setActiveSubTab("solicitar");
-                const culturas = ["Hemocultura (2 pares)", "Urocultura", "Cultura de Secreção"];
-                setFormSelectedItems(prev => Array.from(new Set([...prev, ...culturas])));
-                toast.success("Pacote de culturas adicionado ao formulário");
-              }}
+              onClick={() => setCultureDialogOpen(true)}
               className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
             >
               <div className="p-1.5 rounded-lg bg-emerald-500/10">
@@ -606,7 +601,7 @@ const RequisicaoUnificadaPage = () => {
               </div>
               <div className="text-left">
                 <p className="text-xs font-semibold text-foreground">Cultura</p>
-                <p className="text-[9px] text-muted-foreground">Hemo / Uro / Secreção</p>
+                <p className="text-[9px] text-muted-foreground">Formulário microbiológico</p>
               </div>
             </button>
             <button
@@ -1094,6 +1089,13 @@ const RequisicaoUnificadaPage = () => {
       <HemocomponentRequestDialog
         open={hemoDialogOpen}
         onOpenChange={setHemoDialogOpen}
+        patientId={asUuidOrNull(formPatientId)}
+      />
+
+      {/* Cultura — diálogo otimizado microbiológico */}
+      <CultureRequestDialog
+        open={cultureDialogOpen}
+        onOpenChange={setCultureDialogOpen}
         patientId={asUuidOrNull(formPatientId)}
       />
 
