@@ -622,13 +622,29 @@ const RequisicaoUnificadaPage = () => {
                 <p className="text-[9px] text-muted-foreground">Solicitação Socorrão I</p>
               </div>
             </button>
-            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-dashed border-border min-w-fit opacity-70">
+            <button
+              type="button"
+              onClick={() => setSatDialogOpen(true)}
+              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
+            >
+              <div className="p-1.5 rounded-lg bg-amber-500/10">
+                <Syringe className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-semibold text-foreground">SAT</p>
+                <p className="text-[9px] text-muted-foreground">Soro antitetânico / IGHAT</p>
+              </div>
+            </button>
+            <div
+              className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-dashed border-border min-w-fit opacity-80"
+              title="O Laudo de AIH é gerado no fluxo de internação (Reavaliar admissão / Status de internação)"
+            >
               <div className="p-1.5 rounded-lg bg-indigo-500/10">
                 <FileText className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div className="text-left">
-                <p className="text-xs font-semibold text-muted-foreground">SAT / AIH</p>
-                <p className="text-[9px] text-muted-foreground">Em breve</p>
+                <p className="text-xs font-semibold text-muted-foreground">AIH</p>
+                <p className="text-[9px] text-muted-foreground">no fluxo de internação</p>
               </div>
             </div>
           </>
