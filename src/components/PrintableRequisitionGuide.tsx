@@ -147,6 +147,23 @@ export function PrintableRequisitionGuide({
   sectorLabel,
 }: PrintableRequisitionGuideProps) {
   const items = Array.isArray(request.items) ? request.items : [];
+
+  // Roteamento: se a requisição é predominantemente de cultura microbiológica,
+  // usa o layout hospitalar dedicado (estrutura tabular tipo formulário).
+  if (isCultureRequest(items)) {
+    const cultureData: CultureRequestData = {
+      patient_name: request.patient_name,
+      patient_sector: request.patient_sector,
+      patient_bed: request.patient_bed,
+      items,
+      clinical_indication: request.clinical_indication,
+      notes: request.notes,
+      requested_by_name: request.requested_by_name,
+      created_at: request.created_at,
+    };
+    return <PrintableCultureRequest request={cultureData} sectorLabel={sectorLabel} />;
+  }
+
   const categoryLabel = CATEGORY_LABELS[request.category] || request.category;
   const priorityLabel =
     PRIORITY_LABELS[request.priority] || (request.priority || "").toUpperCase();
