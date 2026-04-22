@@ -1071,6 +1071,13 @@ const RequisicaoUnificadaPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Hemocomponentes — diálogo padrão Socorrão I */}
+      <HemocomponentRequestDialog
+        open={hemoDialogOpen}
+        onOpenChange={setHemoDialogOpen}
+        patientId={asUuidOrNull(formPatientId)}
+      />
         </div>
         {/* Patient Cockpit — fixed right sidebar */}
         <PatientCockpit patient={cockpitPatient} className="print:hidden" />
