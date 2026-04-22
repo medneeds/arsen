@@ -78,7 +78,14 @@ interface SelectionState {
   [key: string]: { checked: boolean; samples?: string; detail?: string };
 }
 
-export function CultureRequestDialog({ open, onOpenChange, patientId }: Props) {
+export function CultureRequestDialog({
+  open,
+  onOpenChange,
+  patientId,
+  patientName,
+  patientBed,
+  patientSector,
+}: Props) {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
   const [previewMode, setPreviewMode] = useState(false);
@@ -90,7 +97,18 @@ export function CultureRequestDialog({ open, onOpenChange, patientId }: Props) {
     created_at: new Date().toISOString(),
   });
 
-  // Pré-carrega dados do paciente
+  // Pré-preenche com props (mock ou contexto da URL) imediatamente
+  useEffect(() => {
+    if (!open) return;
+    setData((d) => ({
+      ...d,
+      patient_name: d.patient_name || patientName || "",
+      patient_sector: d.patient_sector || patientSector || null,
+      patient_bed: d.patient_bed || patientBed || null,
+    }));
+  }, [open, patientName, patientBed, patientSector]);
+
+  // Pré-carrega dados do paciente (UUID real)
   useEffect(() => {
     if (!open || !patientId) return;
     (async () => {
@@ -113,14 +131,14 @@ export function CultureRequestDialog({ open, onOpenChange, patientId }: Props) {
 
       setData((d) => ({
         ...d,
-        patient_name: registry?.full_name || p.name || "",
+        patient_name: registry?.full_name || p.name || d.patient_name,
         patient_social_name: registry?.social_name || null,
         patient_birth_date: registry?.birth_date || null,
         patient_cpf: registry?.cpf || null,
         patient_cns: registry?.cns || null,
         patient_record: registry?.medical_record || p.medical_record || null,
-        patient_sector: p.sector || null,
-        patient_bed: p.bed_number || null,
+        patient_sector: p.sector || d.patient_sector,
+        patient_bed: p.bed_number || d.patient_bed,
         mother_name: registry?.mother_name || null,
       }));
     })();
@@ -198,7 +216,7 @@ export function CultureRequestDialog({ open, onOpenChange, patientId }: Props) {
     try {
       const payload: any = {
         category: "cultura",
-        patient_id: patientId || null,
+        patient_id: asUuidOrNull(patientId),
         patient_name: data.patient_name,
         patient_bed: data.patient_bed || null,
         patient_sector: data.patient_sector || null,
