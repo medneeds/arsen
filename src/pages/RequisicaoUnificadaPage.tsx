@@ -490,9 +490,52 @@ const RequisicaoUnificadaPage = () => {
       {/* Identificação do paciente fica integralmente no cockpit à direita
           (com Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
 
+      {/* ── Scope Selector: Comuns vs Especiais ── */}
+      <div className="flex flex-wrap items-center gap-2 print:hidden">
+        <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
+          <button
+            onClick={() => {
+              setActiveScope("comum");
+              if (activeCategory === "apac") setActiveCategory("laboratorio");
+              setActiveSubTab("solicitar");
+            }}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-xs font-semibold transition-all",
+              activeScope === "comum"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Comuns (Norma Zero)
+          </button>
+          <button
+            onClick={() => {
+              setActiveScope("especial");
+              setActiveCategory("apac");
+              setActiveSubTab("solicitar");
+            }}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-xs font-semibold transition-all",
+              activeScope === "especial"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Especiais (APAC, SAT, Cultura)
+          </button>
+        </div>
+        <span className="text-[10px] text-muted-foreground hidden sm:inline">
+          {activeScope === "comum"
+            ? "Lab, Imagem, Pareceres — fluxo padrão Norma Zero"
+            : "Alta complexidade e exames específicos"}
+        </span>
+      </div>
+
       {/* ── Category Selector ── */}
       <div className="flex gap-2 overflow-x-auto pb-1 print:hidden">
-        {(Object.keys(CATEGORIES) as CategoryKey[]).map(key => {
+        {(Object.keys(CATEGORIES) as CategoryKey[])
+          .filter(key => activeScope === "comum" ? key !== "apac" : key === "apac")
+          .map(key => {
           const cat = CATEGORIES[key];
           const Icon = cat.icon;
           const isActive = activeCategory === key;
@@ -518,6 +561,29 @@ const RequisicaoUnificadaPage = () => {
             </button>
           );
         })}
+        {/* Especiais: cards extras "Em breve" para SAT e Cultura */}
+        {activeScope === "especial" && (
+          <>
+            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-dashed border-border min-w-fit opacity-70">
+              <div className="p-1.5 rounded-lg bg-emerald-500/10">
+                <TestTubes className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-semibold text-muted-foreground">Cultura</p>
+                <p className="text-[9px] text-muted-foreground">via Lab → grupo Culturas</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-dashed border-border min-w-fit opacity-70">
+              <div className="p-1.5 rounded-lg bg-indigo-500/10">
+                <FileText className="h-4 w-4 text-indigo-600" />
+              </div>
+              <div className="text-left">
+                <p className="text-xs font-semibold text-muted-foreground">SAT</p>
+                <p className="text-[9px] text-muted-foreground">Em breve</p>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── APAC mode: show embedded APAC form ── */}
