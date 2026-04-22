@@ -33,6 +33,7 @@ export function useActivePrescription(
       .select("id, status, version, items, digital_signature, updated_at, created_at")
       .eq("hospital_unit_id", hospitalUnitId)
       .eq("patient_name", patientName.trim())
+      .neq("status", "draft")
       .order("created_at", { ascending: false })
       .limit(1);
     if (!error && rows && rows.length > 0) {
