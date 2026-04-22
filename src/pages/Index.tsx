@@ -231,8 +231,8 @@ const Index = () => {
     cc_rpa: { title: "CC RPA", color: "from-slate-500/20 to-slate-600/10", dotClass: "bg-slate-500/80 border-slate-400/40", colorVariant: "blue" },
   };
   
-  // Use real database patients filtered by department
-  const { patients: dbPatients, isLoading: patientsLoading, updatePatient: dbUpdatePatient, createPatient: dbCreatePatient, deletePatient: dbDeletePatient, reorderPatients: dbReorderPatients, refetch } = usePatients(currentDepartment);
+  // Use real database patients filtered by active sector on bed map
+  const { patients: dbPatients, isLoading: patientsLoading, updatePatient: dbUpdatePatient, createPatient: dbCreatePatient, deletePatient: dbDeletePatient, reorderPatients: dbReorderPatients, refetch } = usePatients(undefined, activeSector);
   const [patients, setPatients] = useState<Patient[]>(dbPatients);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [history, setHistory] = useState<Patient[][]>(() => {
@@ -309,9 +309,7 @@ const Index = () => {
 
   // Sync database patients to local state
   useEffect(() => {
-    if (dbPatients.length > 0) {
-      setPatients(dbPatients);
-    }
+    setPatients(dbPatients);
   }, [dbPatients]);
 
   // Persist history to localStorage
@@ -461,8 +459,7 @@ const Index = () => {
     const { data: allSectorPatients } = await supabase
       .from('patients')
       .select('bed_number')
-      .eq('sector', sector)
-      .eq('department', currentDepartment);
+      .eq('sector', sector);
     
     const existingBedNumbers = (allSectorPatients || []).map(p => p.bed_number);
     const newBedNumber = getNextBedNumber(sector, existingBedNumbers, currentDepartment);

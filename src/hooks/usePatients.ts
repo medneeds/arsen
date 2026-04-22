@@ -6,7 +6,7 @@ import { Department } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
 
-export function usePatients(department?: Department) {
+export function usePatients(department?: Department, sector?: string) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -26,8 +26,9 @@ export function usePatients(department?: Department) {
         .eq('hospital_unit_id', currentHospital.id)
         .eq('state_id', currentState.id);
       
-      // Filter by department if provided
-      if (department) {
+      if (sector) {
+        query = query.eq('sector', sector);
+      } else if (department) {
         query = query.eq('department', department);
       }
       
@@ -304,6 +305,7 @@ export function usePatients(department?: Department) {
         utiOriginSector: data.uti_origin_sector ? data.uti_origin_sector.split('\n').filter(Boolean) : [],
         utiDailyConducts: (data as any).uti_daily_conducts ? (data as any).uti_daily_conducts.split('\n').filter(Boolean) : [],
         createdBy: data.created_by || undefined,
+        isVacant: (data as any).is_vacant ?? false,
       };
 
       // Add to local state immediately for instant UI update
@@ -451,6 +453,7 @@ export function usePatients(department?: Department) {
     createdBy: record.created_by || undefined,
     psmStatus: record.psm_status as Patient['psmStatus'],
     clinicalStatus: record.clinical_status as Patient['clinicalStatus'],
+    isVacant: record.is_vacant ?? false,
   });
 
   useEffect(() => {
@@ -459,7 +462,7 @@ export function usePatients(department?: Department) {
     fetchPatients();
 
     // Subscribe to realtime changes with simplified filter
-    const channelName = `patients-changes-${currentHospital.id}-${department || 'all'}`;
+    const channelName = `patients-changes-${currentHospital.id}-${sector || department || 'all'}`;
     const channel = supabase
       .channel(channelName)
       .on(
@@ -477,8 +480,8 @@ export function usePatients(department?: Department) {
           
           if (eventType === 'INSERT') {
             const newRecord = payload.new as any;
-            // Filter by department if needed
-            if (department && newRecord.department !== department) return;
+            if (sector && newRecord.sector !== sector) return;
+            if (!sector && department && newRecord.department !== department) return;
             
             const newPatient = mapRecordToPatient(newRecord);
             setPatients(prev => {
@@ -492,9 +495,11 @@ export function usePatients(department?: Department) {
             });
           } else if (eventType === 'UPDATE') {
             const updatedRecord = payload.new as any;
-            // Filter by department if needed
-            if (department && updatedRecord.department !== department) {
-              // Patient was moved to another department, remove from list
+            if (sector && updatedRecord.sector !== sector) {
+              setPatients(prev => prev.filter(p => p.id !== updatedRecord.id));
+              return;
+            }
+            if (!sector && department && updatedRecord.department !== department) {
               setPatients(prev => prev.filter(p => p.id !== updatedRecord.id));
               return;
             }
@@ -530,7 +535,7 @@ export function usePatients(department?: Department) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [department, currentHospital, currentState]);
+  }, [department, sector, currentHospital, currentState]);
 
   return {
     patients,
