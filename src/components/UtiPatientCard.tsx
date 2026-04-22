@@ -1296,13 +1296,8 @@ export function UtiPatientCard({
                     </DropdownMenuItem>
                   )}
 
-                  {/* Mark as vacant - always visible for occupied beds */}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleToggleVacancy(true)}>
-                    <DoorOpen className="h-4 w-4 mr-2 text-muted-foreground" />
-                    Marcar como Vago
-                  </DropdownMenuItem>
-                  
+                  {/* Vacancy is automated by the auto_vacate_on_discharge trigger — no manual toggle here. */}
+
                   {/* Only show movement options if patient has data */}
                   {patient.name && (
                     <>
