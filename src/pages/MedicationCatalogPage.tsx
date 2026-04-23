@@ -359,6 +359,15 @@ export default function MedicationCatalogPage() {
                       <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
                         <Syringe className="h-4 w-4" />
                         Apresentações ({med.presentations.length})
+                        {isAdmin ? (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-2 gap-1">
+                            <Pencil className="h-3 w-3" /> Edição liberada
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-2 gap-1 text-muted-foreground">
+                            <Lock className="h-3 w-3" /> Somente leitura
+                          </Badge>
+                        )}
                       </h4>
                       <div className="rounded-lg border border-border overflow-hidden">
                         <div className="overflow-x-auto">
@@ -371,27 +380,104 @@ export default function MedicationCatalogPage() {
                                 <th className="px-3 py-2 text-left font-medium">Diluição</th>
                                 <th className="px-3 py-2 text-left font-medium">Dose Máx.</th>
                                 <th className="px-3 py-2 text-left font-medium">Tempo Infusão</th>
+                                {isAdmin && <th className="px-3 py-2 text-left font-medium w-[80px]">Ações</th>}
                               </tr>
                             </thead>
                             <tbody>
-                              {med.presentations.map((p) => (
-                                <tr key={p.id} className="border-t border-border hover:bg-muted/30">
-                                  <td className="px-3 py-2 text-foreground">{p.form}</td>
-                                  <td className="px-3 py-2 text-foreground font-mono text-xs">{p.concentration}</td>
-                                  <td className="px-3 py-2">
-                                    <Badge className={`text-[10px] px-1.5 py-0 ${routeColors[p.route] || 'bg-muted text-muted-foreground'}`}>
-                                      {p.route}
-                                    </Badge>
-                                  </td>
-                                  <td className="px-3 py-2 text-foreground text-xs max-w-[200px]">{p.standard_dilution || "—"}</td>
-                                  <td className="px-3 py-2 text-foreground text-xs">{p.max_daily_dose || "—"}</td>
-                                  <td className="px-3 py-2 text-foreground text-xs">{p.infusion_time || "—"}</td>
-                                </tr>
-                              ))}
+                              {med.presentations.map((p) => {
+                                const isEditing = editingId === p.id;
+                                const isSaving = savingId === p.id;
+                                return (
+                                  <tr key={p.id} className="border-t border-border hover:bg-muted/30 align-top">
+                                    <td className="px-3 py-2 text-foreground">{p.form}</td>
+                                    <td className="px-3 py-2 text-foreground font-mono text-xs">{p.concentration}</td>
+                                    <td className="px-3 py-2">
+                                      <Badge className={`text-[10px] px-1.5 py-0 ${routeColors[p.route] || 'bg-muted text-muted-foreground'}`}>
+                                        {p.route}
+                                      </Badge>
+                                    </td>
+                                    {isEditing ? (
+                                      <>
+                                        <td className="px-2 py-2 max-w-[240px]">
+                                          <Textarea
+                                            value={editDraft.standard_dilution}
+                                            onChange={(e) => setEditDraft((d) => ({ ...d, standard_dilution: e.target.value }))}
+                                            placeholder="Ex.: Diluir em 100 mL SF 0,9%"
+                                            className="text-xs min-h-[60px]"
+                                          />
+                                        </td>
+                                        <td className="px-2 py-2 max-w-[160px]">
+                                          <Input
+                                            value={editDraft.max_daily_dose}
+                                            onChange={(e) => setEditDraft((d) => ({ ...d, max_daily_dose: e.target.value }))}
+                                            placeholder="Ex.: 4 g/dia"
+                                            className="text-xs h-8"
+                                          />
+                                        </td>
+                                        <td className="px-2 py-2 max-w-[160px]">
+                                          <Input
+                                            value={editDraft.infusion_time}
+                                            onChange={(e) => setEditDraft((d) => ({ ...d, infusion_time: e.target.value }))}
+                                            placeholder="Ex.: Infusão lenta ≥60 min"
+                                            className="text-xs h-8"
+                                          />
+                                        </td>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <td className="px-3 py-2 text-foreground text-xs max-w-[200px]">{p.standard_dilution || "—"}</td>
+                                        <td className="px-3 py-2 text-foreground text-xs">{p.max_daily_dose || "—"}</td>
+                                        <td className="px-3 py-2 text-foreground text-xs">{p.infusion_time || "—"}</td>
+                                      </>
+                                    )}
+                                    {isAdmin && (
+                                      <td className="px-2 py-2">
+                                        {isEditing ? (
+                                          <div className="flex gap-1">
+                                            <Button
+                                              size="icon"
+                                              variant="default"
+                                              className="h-7 w-7"
+                                              disabled={isSaving}
+                                              onClick={() => saveEdit(p.id, med.id)}
+                                            >
+                                              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                                            </Button>
+                                            <Button
+                                              size="icon"
+                                              variant="ghost"
+                                              className="h-7 w-7"
+                                              disabled={isSaving}
+                                              onClick={cancelEdit}
+                                            >
+                                              <X className="h-3.5 w-3.5" />
+                                            </Button>
+                                          </div>
+                                        ) : (
+                                          <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-7 w-7"
+                                            onClick={() => startEdit(p)}
+                                            title="Editar evidência"
+                                          >
+                                            <Pencil className="h-3.5 w-3.5" />
+                                          </Button>
+                                        )}
+                                      </td>
+                                    )}
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
                       </div>
+                      {isAdmin && (
+                        <p className="text-[11px] text-muted-foreground mt-2">
+                          Diluição padrão, dose máxima e tempo de infusão alimentam as sugestões "Padrão HMDM" da prescrição.
+                        </p>
+                      )}
                     </div>
 
                     {/* Aliases */}
