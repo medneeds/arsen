@@ -52,12 +52,68 @@ const routeColors: Record<string, string> = {
 };
 
 export default function MedicationCatalogPage() {
+  const { isAdmin } = useIsAdmin();
   const [medications, setMedications] = useState<MedicationCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [classFilter, setClassFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<{ standard_dilution: string; max_daily_dose: string; infusion_time: string }>({
+    standard_dilution: "",
+    max_daily_dose: "",
+    infusion_time: "",
+  });
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  const startEdit = (p: MedicationPresentation) => {
+    setEditingId(p.id);
+    setEditDraft({
+      standard_dilution: p.standard_dilution ?? "",
+      max_daily_dose: p.max_daily_dose ?? "",
+      infusion_time: p.infusion_time ?? "",
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+  };
+
+  const saveEdit = async (presentationId: string, medicationId: string) => {
+    setSavingId(presentationId);
+    try {
+      const payload = {
+        standard_dilution: editDraft.standard_dilution.trim() || null,
+        max_daily_dose: editDraft.max_daily_dose.trim() || null,
+        infusion_time: editDraft.infusion_time.trim() || null,
+      };
+      const { error } = await supabase
+        .from("medication_presentations")
+        .update(payload)
+        .eq("id", presentationId);
+      if (error) throw error;
+      // atualização otimista local
+      setMedications((prev) =>
+        prev.map((m) =>
+          m.id !== medicationId
+            ? m
+            : {
+                ...m,
+                presentations: m.presentations.map((pr) =>
+                  pr.id === presentationId ? { ...pr, ...payload } : pr,
+                ),
+              },
+        ),
+      );
+      setEditingId(null);
+      toast.success("Evidência atualizada");
+    } catch (err: any) {
+      toast.error("Erro ao salvar: " + (err.message || "permissão negada"));
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   useEffect(() => {
     fetchCatalog();
