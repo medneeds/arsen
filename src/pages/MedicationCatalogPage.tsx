@@ -7,9 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Pill, AlertTriangle, Shield, Beaker, ChevronDown, ChevronRight, Syringe, Info, Download, Loader2 } from "lucide-react";
+import { Search, Pill, AlertTriangle, Shield, Beaker, ChevronDown, ChevronRight, Syringe, Info, Download, Loader2, Pencil, Check, X, Lock } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 interface MedicationAlias {
   id: string;
@@ -50,12 +52,68 @@ const routeColors: Record<string, string> = {
 };
 
 export default function MedicationCatalogPage() {
+  const { isAdmin } = useIsAdmin();
   const [medications, setMedications] = useState<MedicationCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [classFilter, setClassFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<{ standard_dilution: string; max_daily_dose: string; infusion_time: string }>({
+    standard_dilution: "",
+    max_daily_dose: "",
+    infusion_time: "",
+  });
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  const startEdit = (p: MedicationPresentation) => {
+    setEditingId(p.id);
+    setEditDraft({
+      standard_dilution: p.standard_dilution ?? "",
+      max_daily_dose: p.max_daily_dose ?? "",
+      infusion_time: p.infusion_time ?? "",
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+  };
+
+  const saveEdit = async (presentationId: string, medicationId: string) => {
+    setSavingId(presentationId);
+    try {
+      const payload = {
+        standard_dilution: editDraft.standard_dilution.trim() || null,
+        max_daily_dose: editDraft.max_daily_dose.trim() || null,
+        infusion_time: editDraft.infusion_time.trim() || null,
+      };
+      const { error } = await supabase
+        .from("medication_presentations")
+        .update(payload)
+        .eq("id", presentationId);
+      if (error) throw error;
+      // atualização otimista local
+      setMedications((prev) =>
+        prev.map((m) =>
+          m.id !== medicationId
+            ? m
+            : {
+                ...m,
+                presentations: m.presentations.map((pr) =>
+                  pr.id === presentationId ? { ...pr, ...payload } : pr,
+                ),
+              },
+        ),
+      );
+      setEditingId(null);
+      toast.success("Evidência atualizada");
+    } catch (err: any) {
+      toast.error("Erro ao salvar: " + (err.message || "permissão negada"));
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   useEffect(() => {
     fetchCatalog();
@@ -301,6 +359,15 @@ export default function MedicationCatalogPage() {
                       <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
                         <Syringe className="h-4 w-4" />
                         Apresentações ({med.presentations.length})
+                        {isAdmin ? (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-2 gap-1">
+                            <Pencil className="h-3 w-3" /> Edição liberada
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-2 gap-1 text-muted-foreground">
+                            <Lock className="h-3 w-3" /> Somente leitura
+                          </Badge>
+                        )}
                       </h4>
                       <div className="rounded-lg border border-border overflow-hidden">
                         <div className="overflow-x-auto">
@@ -313,27 +380,104 @@ export default function MedicationCatalogPage() {
                                 <th className="px-3 py-2 text-left font-medium">Diluição</th>
                                 <th className="px-3 py-2 text-left font-medium">Dose Máx.</th>
                                 <th className="px-3 py-2 text-left font-medium">Tempo Infusão</th>
+                                {isAdmin && <th className="px-3 py-2 text-left font-medium w-[80px]">Ações</th>}
                               </tr>
                             </thead>
                             <tbody>
-                              {med.presentations.map((p) => (
-                                <tr key={p.id} className="border-t border-border hover:bg-muted/30">
-                                  <td className="px-3 py-2 text-foreground">{p.form}</td>
-                                  <td className="px-3 py-2 text-foreground font-mono text-xs">{p.concentration}</td>
-                                  <td className="px-3 py-2">
-                                    <Badge className={`text-[10px] px-1.5 py-0 ${routeColors[p.route] || 'bg-muted text-muted-foreground'}`}>
-                                      {p.route}
-                                    </Badge>
-                                  </td>
-                                  <td className="px-3 py-2 text-foreground text-xs max-w-[200px]">{p.standard_dilution || "—"}</td>
-                                  <td className="px-3 py-2 text-foreground text-xs">{p.max_daily_dose || "—"}</td>
-                                  <td className="px-3 py-2 text-foreground text-xs">{p.infusion_time || "—"}</td>
-                                </tr>
-                              ))}
+                              {med.presentations.map((p) => {
+                                const isEditing = editingId === p.id;
+                                const isSaving = savingId === p.id;
+                                return (
+                                  <tr key={p.id} className="border-t border-border hover:bg-muted/30 align-top">
+                                    <td className="px-3 py-2 text-foreground">{p.form}</td>
+                                    <td className="px-3 py-2 text-foreground font-mono text-xs">{p.concentration}</td>
+                                    <td className="px-3 py-2">
+                                      <Badge className={`text-[10px] px-1.5 py-0 ${routeColors[p.route] || 'bg-muted text-muted-foreground'}`}>
+                                        {p.route}
+                                      </Badge>
+                                    </td>
+                                    {isEditing ? (
+                                      <>
+                                        <td className="px-2 py-2 max-w-[240px]">
+                                          <Textarea
+                                            value={editDraft.standard_dilution}
+                                            onChange={(e) => setEditDraft((d) => ({ ...d, standard_dilution: e.target.value }))}
+                                            placeholder="Ex.: Diluir em 100 mL SF 0,9%"
+                                            className="text-xs min-h-[60px]"
+                                          />
+                                        </td>
+                                        <td className="px-2 py-2 max-w-[160px]">
+                                          <Input
+                                            value={editDraft.max_daily_dose}
+                                            onChange={(e) => setEditDraft((d) => ({ ...d, max_daily_dose: e.target.value }))}
+                                            placeholder="Ex.: 4 g/dia"
+                                            className="text-xs h-8"
+                                          />
+                                        </td>
+                                        <td className="px-2 py-2 max-w-[160px]">
+                                          <Input
+                                            value={editDraft.infusion_time}
+                                            onChange={(e) => setEditDraft((d) => ({ ...d, infusion_time: e.target.value }))}
+                                            placeholder="Ex.: Infusão lenta ≥60 min"
+                                            className="text-xs h-8"
+                                          />
+                                        </td>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <td className="px-3 py-2 text-foreground text-xs max-w-[200px]">{p.standard_dilution || "—"}</td>
+                                        <td className="px-3 py-2 text-foreground text-xs">{p.max_daily_dose || "—"}</td>
+                                        <td className="px-3 py-2 text-foreground text-xs">{p.infusion_time || "—"}</td>
+                                      </>
+                                    )}
+                                    {isAdmin && (
+                                      <td className="px-2 py-2">
+                                        {isEditing ? (
+                                          <div className="flex gap-1">
+                                            <Button
+                                              size="icon"
+                                              variant="default"
+                                              className="h-7 w-7"
+                                              disabled={isSaving}
+                                              onClick={() => saveEdit(p.id, med.id)}
+                                            >
+                                              {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                                            </Button>
+                                            <Button
+                                              size="icon"
+                                              variant="ghost"
+                                              className="h-7 w-7"
+                                              disabled={isSaving}
+                                              onClick={cancelEdit}
+                                            >
+                                              <X className="h-3.5 w-3.5" />
+                                            </Button>
+                                          </div>
+                                        ) : (
+                                          <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-7 w-7"
+                                            onClick={() => startEdit(p)}
+                                            title="Editar evidência"
+                                          >
+                                            <Pencil className="h-3.5 w-3.5" />
+                                          </Button>
+                                        )}
+                                      </td>
+                                    )}
+                                  </tr>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
                       </div>
+                      {isAdmin && (
+                        <p className="text-[11px] text-muted-foreground mt-2">
+                          Diluição padrão, dose máxima e tempo de infusão alimentam as sugestões "Padrão HMDM" da prescrição.
+                        </p>
+                      )}
                     </div>
 
                     {/* Aliases */}
