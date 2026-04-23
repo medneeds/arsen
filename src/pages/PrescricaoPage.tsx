@@ -2302,6 +2302,7 @@ const PrescricaoPage = () => {
   const { currentHospital, currentState } = useHospital();
   const [searchParams] = useSearchParams();
   const { getCount: getFavoriteCount, trackUse: trackMedicationUse } = useMedicationFavorites();
+  const { getDbProtocols } = useMedicationProtocols();
   const { state: sidebarState, isMobile: sidebarIsMobile } = useSidebar();
   const sidebarCollapsed = sidebarState === "collapsed";
 
@@ -2792,10 +2793,15 @@ const PrescricaoPage = () => {
     }
     const newItem = createItem(med);
     setItems((prev) => [...prev, newItem]);
-    // Sugerir protocolos de posologia, se houver
-    const protocols = getProtocolsFor(med.name);
-    if (protocols.length > 0) {
-      setPosologySuggestion({ itemId: newItem.id, name: med.name, protocols });
+    // Sugestões: combina protocolos clínicos manuais (sepse, TEV, etc.) com
+    // protocolos de evidência farmacêutica do catálogo HMDM 2026 (diluição,
+    // dose máx, tempo de infusão). Manuais aparecem primeiro pois costumam
+    // ser mais acionáveis no contexto clínico.
+    const manualProtocols = getProtocolsFor(med.name);
+    const dbProtocols = getDbProtocols(med.name);
+    const allProtocols = [...manualProtocols, ...dbProtocols];
+    if (allProtocols.length > 0) {
+      setPosologySuggestion({ itemId: newItem.id, name: med.name, protocols: allProtocols });
     } else {
       setPosologySuggestion(null);
     }
