@@ -7,9 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Pill, AlertTriangle, Shield, Beaker, ChevronDown, ChevronRight, Syringe, Info, Download, Loader2 } from "lucide-react";
+import { Search, Pill, AlertTriangle, Shield, Beaker, ChevronDown, ChevronRight, Syringe, Info, Download, Loader2, Pencil, Check, X, Lock } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 interface MedicationAlias {
   id: string;
