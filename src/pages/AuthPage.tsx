@@ -133,10 +133,10 @@ export default function AuthPage() {
         const { data: profileRow } = userId
           ? await supabase
               .from("profiles")
-              .select("id, access_profile")
+              .select("id, full_name, access_profile, access_profiles")
               .eq("id", userId)
               .maybeSingle()
-          : { data: null as { id?: string; access_profile?: string } | null };
+          : { data: null as { id?: string; full_name?: string; access_profile?: string; access_profiles?: string[] } | null };
 
         let appRole: string | null = null;
         if (profileRow?.id) {
@@ -149,11 +149,32 @@ export default function AuthPage() {
         }
 
         const accessProfile = (profileRow as { access_profile?: string } | null)?.access_profile ?? null;
-        const route = resolveLandingRoute(accessProfile, appRole);
-        setRedirectRoute(route);
-        if (accessProfile) localStorage.setItem("access_profile", accessProfile);
+        const accessProfilesList = (profileRow as { access_profiles?: string[] } | null)?.access_profiles ?? [];
+        // Lista efetiva: usa access_profiles se preenchida; senão cai no singular.
+        const effectiveProfiles = (accessProfilesList && accessProfilesList.length > 0)
+          ? accessProfilesList
+          : (accessProfile ? [accessProfile] : []);
 
         setCurrentDepartment("UTI");
+
+        if (effectiveProfiles.length > 1) {
+          // Múltiplos perfis → mostra seletor antes de redirecionar.
+          toast.success("Login realizado — escolha o ambiente");
+          setChooserProfiles(effectiveProfiles as AccessProfile[]);
+          setChooserAppRole(appRole);
+          setChooserUserName((profileRow as { full_name?: string } | null)?.full_name ?? null);
+          setLoading(false);
+          return;
+        }
+
+        // Caminho único: redireciona direto.
+        const chosen = effectiveProfiles[0] ?? accessProfile ?? null;
+        const route = resolveLandingRoute(chosen, appRole);
+        setRedirectRoute(route);
+        if (chosen) {
+          localStorage.setItem("access_profile", chosen);
+          sessionStorage.setItem("active_access_profile", chosen);
+        }
         toast.success("Login realizado com sucesso");
         setShowLoadingScreen(true);
       }
