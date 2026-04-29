@@ -3668,6 +3668,69 @@ export type Database = {
         }
         Relationships: []
       }
+      user_admin_audit: {
+        Row: {
+          access_profile: string | null
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          actor_name: string | null
+          app_role: string | null
+          created_at: string
+          departments: string[] | null
+          hospital_unit_id: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          new_data: Json | null
+          old_data: Json | null
+          target_email: string | null
+          target_name: string | null
+          target_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          access_profile?: string | null
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_name?: string | null
+          app_role?: string | null
+          created_at?: string
+          departments?: string[] | null
+          hospital_unit_id?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          new_data?: Json | null
+          old_data?: Json | null
+          target_email?: string | null
+          target_name?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          access_profile?: string | null
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_name?: string | null
+          app_role?: string | null
+          created_at?: string
+          departments?: string[] | null
+          hospital_unit_id?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          new_data?: Json | null
+          old_data?: Json | null
+          target_email?: string | null
+          target_name?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       user_consents: {
         Row: {
           accepted_at: string
