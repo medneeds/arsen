@@ -63,16 +63,23 @@ export function ResetUserPasswordDialog({
 
     try {
       const validated = passwordSchema.parse(formData);
-      
-      // Use Supabase Admin API to update user password
-      // Note: This requires admin privileges - in production, this should be done via an edge function
-      const { error } = await supabase.auth.admin.updateUserById(userId, {
-        password: validated.newPassword,
+
+      // Call edge function (uses service_role on the server side)
+      const { data, error } = await supabase.functions.invoke("reset-user-password", {
+        body: {
+          userId,
+          newPassword: validated.newPassword,
+        },
       });
 
       if (error) {
-        // If admin API fails, try alternative approach
-        toast.error("ERRO AO REDEFINIR SENHA: " + error.message);
+        toast.error("ERRO AO REDEFINIR SENHA: " + (error.message || "Falha na requisição"));
+        setLoading(false);
+        return;
+      }
+
+      if (data?.error) {
+        toast.error("ERRO AO REDEFINIR SENHA: " + data.error);
         setLoading(false);
         return;
       }
