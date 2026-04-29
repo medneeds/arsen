@@ -93,11 +93,8 @@ export function PasswordResetRequestsPanel() {
   };
 
   const validatePassword = (password: string): string | null => {
-    if (password.length !== 6) {
-      return "Senha deve ter exatamente 6 caracteres";
-    }
-    if (!/^[A-Z0-9]+$/.test(password)) {
-      return "Senha deve conter apenas letras maiúsculas e números";
+    if (password.length < 6 || password.length > 12) {
+      return "Senha deve ter entre 6 e 12 caracteres";
     }
     return null;
   };
