@@ -24,6 +24,7 @@ import AltoCustoPage from "./pages/AltoCustoPage";
 import SadtPage from "./pages/SadtPage";
 import MovementsPage from "./pages/MovementsPage";
 import AuthPage from "./pages/AuthPage";
+import SignupRedirectPage from "./pages/SignupRedirectPage";
 import LandingPage from "./pages/LandingPage";
 import IAPage from "./pages/IAPage";
 import InternmentHistoryPage from "./pages/InternmentHistoryPage";
