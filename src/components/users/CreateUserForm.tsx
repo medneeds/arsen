@@ -396,7 +396,7 @@ export function CreateUserForm({ onCreated }: Props) {
         </div>
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={reset} disabled={submitting}>Limpar</Button>
-          <Button type="button" onClick={handleSubmit} disabled={submitting}>
+          <Button type="button" onClick={handleSubmit} disabled={submitting || !!cpfError || cpfChecking}>
             {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Criando…</> : <><UserPlus className="h-4 w-4 mr-2" /> Cadastrar usuário</>}
           </Button>
         </div>
