@@ -186,14 +186,14 @@ export function ResetUserPasswordDialog({
                   <Input
                     type={showConfirmPassword ? "text" : "password"}
                     value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      confirmPassword: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) 
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      confirmPassword: e.target.value.slice(0, 12)
                     })}
                     placeholder="REPITA A SENHA"
                     className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono tracking-widest"
                     disabled={loading}
-                    maxLength={6}
+                    maxLength={12}
                   />
                   <Button
                     type="button"
