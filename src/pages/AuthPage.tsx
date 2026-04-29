@@ -323,21 +323,17 @@ export default function AuthPage() {
                   </div>
                 </motion.div>
 
-                {/* Signup link */}
+                {/* Acesso restrito — cadastros são gerados internamente */}
                 <motion.div
                   className="text-center mt-6"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
                 >
-                  <button
-                    onClick={() => setScreen("signup")}
-                    className="preserve-case inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <User className="h-3.5 w-3.5" />
-                    Não tem conta?
-                    <span className="text-primary font-medium">Cadastre-se</span>
-                  </button>
+                  <p className="preserve-case inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/80">
+                    <Shield className="h-3 w-3" />
+                    Acesso restrito • Solicite seu cadastro à coordenação da unidade
+                  </p>
                 </motion.div>
               </motion.div>
             ) : (
