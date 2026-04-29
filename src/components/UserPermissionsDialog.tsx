@@ -87,14 +87,23 @@ export function UserPermissionsDialog({
         if (cancelled) return;
 
         if (unitsRes.data) setHospitalUnits(unitsRes.data);
-        setSelectedDepartments(new Set(deptRes.data?.map((d) => d.department) || []));
-        setSelectedUnits(new Set(assignRes.data?.map((a) => a.hospital_unit_id) || []));
-        setRole((currentRole as AppRole) || "medico");
-        setAccessProfile(
+        const loadedDeps = deptRes.data?.map((d) => d.department) || [];
+        const loadedUnits = assignRes.data?.map((a) => a.hospital_unit_id) || [];
+        setSelectedDepartments(new Set(loadedDeps));
+        setSelectedUnits(new Set(loadedUnits));
+        const loadedRole = (currentRole as AppRole) || "medico";
+        const loadedProfile =
           ((profileRes.data as { access_profile?: string } | null)?.access_profile as AccessProfile) ||
-            (currentAccessProfile as AccessProfile) ||
-            "medico",
-        );
+          (currentAccessProfile as AccessProfile) ||
+          "medico";
+        setRole(loadedRole);
+        setAccessProfile(loadedProfile);
+        initialSnapshotRef.current = {
+          role: loadedRole,
+          accessProfile: loadedProfile,
+          departments: [...loadedDeps].sort(),
+          units: [...loadedUnits].sort(),
+        };
       } catch (err) {
         console.error("[UserPermissionsDialog] load error", err);
         toast.error("Erro ao carregar permissões");
