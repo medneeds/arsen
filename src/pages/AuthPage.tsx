@@ -274,36 +274,9 @@ export default function AuthPage() {
                       </div>
                     </div>
 
-                    {/* Tipo de Acesso */}
-                    <div>
-                      <Label htmlFor="access-profile" className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]">
-                        TIPO DE ACESSO
-                      </Label>
-                      <div className="relative">
-                        <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 z-10 pointer-events-none" />
-                        <select
-                          id="access-profile"
-                          value={selectedAccessProfile}
-                          onChange={(e) => setSelectedAccessProfile(e.target.value)}
-                          className="w-full h-12 md:h-11 pl-10 pr-9 bg-muted/40 border border-border rounded-xl text-base md:text-sm font-medium text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all appearance-none cursor-pointer uppercase tracking-wide"
-                          disabled={loading}
-                        >
-                          <option value="medico">MÉDICO ASSISTENTE</option>
-                          <option value="gestor">GESTOR HOSPITALAR</option>
-                          <option value="farmacia">FARMÁCIA CLÍNICA</option>
-                          <option value="ccih">CCIH — CONTROLE DE INFECÇÃO</option>
-                          <option value="imagem">SETOR DE IMAGEM</option>
-                          <option value="laboratorio">SETOR LABORATORIAL</option>
-                          <option value="nir">NIR — REGULAÇÃO INTERNA</option>
-                          <option value="multi">EQUIPE MULTIPROFISSIONAL</option>
-                          <option value="classificacao_risco">CLASSIFICAÇÃO DE RISCO</option>
-                          <option value="administrativo">ADMINISTRATIVO / RECEPÇÃO</option>
-                        </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                          <svg className="h-4 w-4 text-muted-foreground/60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                        </div>
-                      </div>
-                    </div>
+                    {/* Tipo de Acesso REMOVIDO — login generalista.
+                        O perfil é definido pelo gestor/admin no cadastro
+                        e o redirecionamento acontece automaticamente. */}
 
                     <Button
                       type="submit"
