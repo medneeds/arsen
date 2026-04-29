@@ -95,6 +95,8 @@ export function CreateUserForm({ onCreated }: Props) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
+  const [cpfError, setCpfError] = useState<string | null>(null);
+  const [cpfChecking, setCpfChecking] = useState(false);
   const [phone, setPhone] = useState("");
   const [crm, setCrm] = useState("");
   const [hospitalUnitId, setHospitalUnitId] = useState("");
