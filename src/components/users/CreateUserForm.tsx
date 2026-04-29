@@ -34,7 +34,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { ACCESS_PROFILES, SYSTEM_ROLES, PROFILE_TO_ROLE_HINT, type AccessProfile, type AppRole } from "@/config/userProfiles";
+import { ACCESS_PROFILES, SYSTEM_ROLES, type AccessProfile, type AppRole } from "@/config/userProfiles";
+import { PROFILE_DEFAULTS } from "@/config/profileDefaults";
 import { SectorPermissionsPicker } from "@/components/permissions/SectorPermissionsPicker";
 
 interface HospitalUnit {
@@ -227,11 +228,31 @@ export function CreateUserForm({ onCreated }: Props) {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-sugere role ao mudar accessProfile
+  // Auto-aplica permissões padrão (role + setores sugeridos) ao mudar perfil.
+  // Não bloqueia edição: gestor/admin pode ajustar manualmente depois.
+  // Roda só após hidratação para não sobrescrever um rascunho restaurado.
+  const lastAutoAppliedProfileRef = useRef<AccessProfile | null>(null);
   useEffect(() => {
-    const hint = PROFILE_TO_ROLE_HINT[accessProfile];
-    if (hint) setRole(hint);
-  }, [accessProfile]);
+    if (!hydratedRef.current) return;
+    if (lastAutoAppliedProfileRef.current === accessProfile) return;
+    const defaults = PROFILE_DEFAULTS[accessProfile];
+    if (!defaults) return;
+    setRole(defaults.role);
+    // Aplica setores sugeridos somente se o usuário ainda não personalizou
+    // (lista vazia OU primeira aplicação para este perfil).
+    const isFirstApplication = lastAutoAppliedProfileRef.current === null;
+    if (isFirstApplication || departments.size === 0) {
+      setDepartments(new Set(defaults.departments));
+    } else {
+      // Trocou de perfil manualmente → reaplica defaults do novo perfil
+      setDepartments(new Set(defaults.departments));
+    }
+    if (lastAutoAppliedProfileRef.current !== null) {
+      // Evita toast no primeiro mount/hidratação
+      toast.info("Permissões padrão aplicadas", { description: defaults.hint });
+    }
+    lastAutoAppliedProfileRef.current = accessProfile;
+  }, [accessProfile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---- Autosave debounced ----
   useEffect(() => {

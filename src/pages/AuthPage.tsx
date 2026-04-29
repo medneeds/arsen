@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   LogIn, User, Lock, Eye, EyeOff, ArrowRight, ArrowLeft,
-  Briefcase, ShieldCheck,
+  ShieldCheck,
 } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { cn } from "@/lib/utils";
@@ -15,27 +15,11 @@ import { motion, AnimatePresence } from "framer-motion";
 // IndividualSignUpForm removed — signup público desativado; cadastros agora ficam em /gestao-usuarios.
 import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { useDepartment, Department } from "@/contexts/DepartmentContext";
+import { useDepartment } from "@/contexts/DepartmentContext";
 import { HospitalSelector } from "@/components/HospitalSelector";
 import { useHospital } from "@/contexts/HospitalContext";
 import { AuthBackgroundFx } from "@/components/auth/AuthBackgroundFx";
-
-// Map access_profile to redirect routes
-function getRedirectRoute(accessProfile: string | null, role: string | null): string {
-  const profile = accessProfile || role || "medico";
-  switch (profile) {
-    case "gestor": return "/painel-gestor";
-    case "imagem": return "/setor-imagem";
-    case "laboratorio": return "/setor-laboratorio";
-    case "nir": return "/nir";
-    case "ccih": return "/ccih";
-    case "administrativo": return "/recepcao";
-    case "multi": return "/mapa";
-    case "classificacao_risco": return "/triagem-fila";
-    case "farmacia": return "/validacao-farmaceutica";
-    default: return "/";
-  }
-}
+import { resolveLandingRoute } from "@/config/profileDefaults";
 
 /* ─── Shared chrome ─────────────────────────────────────────────── */
 function PageHeader() {
@@ -89,7 +73,6 @@ export default function AuthPage() {
   const [redirectRoute, setRedirectRoute] = useState("/");
   const [screen] = useState<"login">("login");
   const [selectedHospitalId, setSelectedHospitalId] = useState<string | null>(null);
-  const [selectedAccessProfile, setSelectedAccessProfile] = useState("medico");
   const [forgotOpen, setForgotOpen] = useState(false);
 
   const [loginData, setLoginData] = useState({
@@ -133,16 +116,29 @@ export default function AuthPage() {
         }
         setLoading(false);
       } else {
+        // Login generalista: descobre o perfil/role definidos pelo gestor/admin
+        // e direciona o usuário automaticamente para o painel correspondente.
         const internalEmail = `${loginData.username.toLowerCase()}@sistema.local`;
-        await supabase
+        const { data: profileRow } = await supabase
           .from("profiles")
-          .select("access_profile")
+          .select("id, access_profile")
           .eq("email", internalEmail)
           .maybeSingle();
 
-        const route = getRedirectRoute(selectedAccessProfile, null);
+        let appRole: string | null = null;
+        if (profileRow?.id) {
+          const { data: roleRow } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", profileRow.id)
+            .maybeSingle();
+          appRole = (roleRow as { role?: string } | null)?.role ?? null;
+        }
+
+        const accessProfile = (profileRow as { access_profile?: string } | null)?.access_profile ?? null;
+        const route = resolveLandingRoute(accessProfile, appRole);
         setRedirectRoute(route);
-        localStorage.setItem("access_profile", selectedAccessProfile);
+        if (accessProfile) localStorage.setItem("access_profile", accessProfile);
 
         setCurrentDepartment("UTI");
         toast.success("Login realizado com sucesso");
@@ -278,36 +274,9 @@ export default function AuthPage() {
                       </div>
                     </div>
 
-                    {/* Tipo de Acesso */}
-                    <div>
-                      <Label htmlFor="access-profile" className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]">
-                        TIPO DE ACESSO
-                      </Label>
-                      <div className="relative">
-                        <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 z-10 pointer-events-none" />
-                        <select
-                          id="access-profile"
-                          value={selectedAccessProfile}
-                          onChange={(e) => setSelectedAccessProfile(e.target.value)}
-                          className="w-full h-12 md:h-11 pl-10 pr-9 bg-muted/40 border border-border rounded-xl text-base md:text-sm font-medium text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all appearance-none cursor-pointer uppercase tracking-wide"
-                          disabled={loading}
-                        >
-                          <option value="medico">MÉDICO ASSISTENTE</option>
-                          <option value="gestor">GESTOR HOSPITALAR</option>
-                          <option value="farmacia">FARMÁCIA CLÍNICA</option>
-                          <option value="ccih">CCIH — CONTROLE DE INFECÇÃO</option>
-                          <option value="imagem">SETOR DE IMAGEM</option>
-                          <option value="laboratorio">SETOR LABORATORIAL</option>
-                          <option value="nir">NIR — REGULAÇÃO INTERNA</option>
-                          <option value="multi">EQUIPE MULTIPROFISSIONAL</option>
-                          <option value="classificacao_risco">CLASSIFICAÇÃO DE RISCO</option>
-                          <option value="administrativo">ADMINISTRATIVO / RECEPÇÃO</option>
-                        </select>
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                          <svg className="h-4 w-4 text-muted-foreground/60" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                        </div>
-                      </div>
-                    </div>
+                    {/* Tipo de Acesso REMOVIDO — login generalista.
+                        O perfil é definido pelo gestor/admin no cadastro
+                        e o redirecionamento acontece automaticamente. */}
 
                     <Button
                       type="submit"
