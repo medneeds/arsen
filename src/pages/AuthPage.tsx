@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   LogIn, User, Lock, Eye, EyeOff, ArrowRight, ArrowLeft,
-  Briefcase, ShieldCheck,
+  ShieldCheck,
 } from "lucide-react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { cn } from "@/lib/utils";
@@ -15,27 +15,11 @@ import { motion, AnimatePresence } from "framer-motion";
 // IndividualSignUpForm removed — signup público desativado; cadastros agora ficam em /gestao-usuarios.
 import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { useDepartment, Department } from "@/contexts/DepartmentContext";
+import { useDepartment } from "@/contexts/DepartmentContext";
 import { HospitalSelector } from "@/components/HospitalSelector";
 import { useHospital } from "@/contexts/HospitalContext";
 import { AuthBackgroundFx } from "@/components/auth/AuthBackgroundFx";
-
-// Map access_profile to redirect routes
-function getRedirectRoute(accessProfile: string | null, role: string | null): string {
-  const profile = accessProfile || role || "medico";
-  switch (profile) {
-    case "gestor": return "/painel-gestor";
-    case "imagem": return "/setor-imagem";
-    case "laboratorio": return "/setor-laboratorio";
-    case "nir": return "/nir";
-    case "ccih": return "/ccih";
-    case "administrativo": return "/recepcao";
-    case "multi": return "/mapa";
-    case "classificacao_risco": return "/triagem-fila";
-    case "farmacia": return "/validacao-farmaceutica";
-    default: return "/";
-  }
-}
+import { resolveLandingRoute } from "@/config/profileDefaults";
 
 /* ─── Shared chrome ─────────────────────────────────────────────── */
 function PageHeader() {
