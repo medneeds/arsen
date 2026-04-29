@@ -125,6 +125,18 @@ export function AppSidebar({
   const isCollapsed = state === "collapsed";
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [password, setPassword] = useState("");
+  const [showProfileSwitcher, setShowProfileSwitcher] = useState(false);
+
+  // Mostra o atalho "Trocar perfil" se o usuário tem 2+ perfis disponíveis na sessão.
+  let availableProfilesCount = 0;
+  try {
+    const raw = sessionStorage.getItem("available_access_profiles");
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) availableProfilesCount = arr.length;
+    }
+  } catch { /* ignore */ }
+  const hasMultipleProfiles = availableProfilesCount >= 2;
   
   // Hook for pending password reset requests
   const { pendingCount: pendingResets } = usePendingPasswordResets();
