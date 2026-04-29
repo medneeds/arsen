@@ -222,7 +222,7 @@ export default function AuthPage() {
                   <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
                     <div>
                       <Label htmlFor="username" className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]">
-                        USUÁRIO
+                        USUÁRIO, CPF OU E-MAIL
                       </Label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
@@ -230,14 +230,13 @@ export default function AuthPage() {
                           id="username"
                           type="text"
                           value={loginData.username}
-                          onChange={(e) => setLoginData({ ...loginData, username: e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, '') })}
-                          placeholder="Digite seu usuário"
-                          className="pl-10 h-12 md:h-11 text-base md:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
+                          onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                          placeholder="Usuário, CPF ou e-mail"
+                          className="preserve-case pl-10 h-12 md:h-11 text-base md:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
                           disabled={loading}
                           autoComplete="username"
                           autoFocus
                           inputMode="text"
-                          autoCapitalize="characters"
                         />
                       </div>
                     </div>
