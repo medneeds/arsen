@@ -184,6 +184,22 @@ export default function AuthPage() {
     }
   };
 
+  // Tela de escolha de perfil (multi-perfil) — toma a tela inteira após login bem-sucedido
+  if (chooserProfiles && chooserProfiles.length > 1 && !showLoadingScreen) {
+    return (
+      <ProfileChooser
+        userName={chooserUserName}
+        profiles={chooserProfiles}
+        appRole={chooserAppRole}
+        onChosen={(_p, route) => {
+          setRedirectRoute(route);
+          setChooserProfiles(null);
+          setShowLoadingScreen(true);
+        }}
+      />
+    );
+  }
+
   return (
     <>
       {showLoadingScreen && (
