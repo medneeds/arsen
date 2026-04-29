@@ -109,21 +109,27 @@ export default function AuthPage() {
       const { error } = await signIn(loginData.username, loginData.password);
 
       if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          toast.error("Login ou senha incorretos");
+        const msg = (error as { message?: string })?.message ?? "";
+        if (msg.includes("Invalid login credentials")) {
+          toast.error("Usuário, CPF ou senha incorretos");
+        } else if (msg.includes("CPF não encontrado")) {
+          toast.error("CPF não encontrado");
         } else {
-          toast.error("Erro ao fazer login: " + error.message);
+          toast.error("Erro ao fazer login: " + msg);
         }
         setLoading(false);
       } else {
         // Login generalista: descobre o perfil/role definidos pelo gestor/admin
-        // e direciona o usuário automaticamente para o painel correspondente.
-        const internalEmail = `${loginData.username.toLowerCase()}@sistema.local`;
-        const { data: profileRow } = await supabase
-          .from("profiles")
-          .select("id, access_profile")
-          .eq("email", internalEmail)
-          .maybeSingle();
+        // a partir do usuário autenticado (suporta login por email, CPF ou usuário).
+        const { data: authData } = await supabase.auth.getUser();
+        const userId = authData?.user?.id ?? null;
+        const { data: profileRow } = userId
+          ? await supabase
+              .from("profiles")
+              .select("id, access_profile")
+              .eq("id", userId)
+              .maybeSingle()
+          : { data: null as { id?: string; access_profile?: string } | null };
 
         let appRole: string | null = null;
         if (profileRow?.id) {
