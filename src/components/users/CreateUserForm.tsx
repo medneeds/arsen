@@ -59,6 +59,24 @@ function maskCpf(v: string) {
     .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
 }
 
+/** Valida CPF pelos dígitos verificadores (algoritmo da Receita Federal). */
+function isValidCpf(raw: string): boolean {
+  const cpf = raw.replace(/\D/g, "");
+  if (cpf.length !== 11) return false;
+  // Rejeita sequências repetidas (000.000.000-00, 111…, etc.)
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+
+  const calc = (sliceLen: number) => {
+    let sum = 0;
+    for (let i = 0; i < sliceLen; i++) {
+      sum += parseInt(cpf[i], 10) * (sliceLen + 1 - i);
+    }
+    const rest = (sum * 10) % 11;
+    return rest === 10 ? 0 : rest;
+  };
+  return calc(9) === parseInt(cpf[9], 10) && calc(10) === parseInt(cpf[10], 10);
+}
+
 function maskPhone(v: string) {
   const d = v.replace(/\D/g, "").slice(0, 11);
   if (d.length <= 10) return d.replace(/(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3").trim();
