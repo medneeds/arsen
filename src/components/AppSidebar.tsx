@@ -729,6 +729,20 @@ export function AppSidebar({
               </div>
             </>
           )}
+          {hasMultipleProfiles && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowProfileSwitcher(true)}
+              className="h-9 w-9 hover:bg-primary/10 hover:text-primary transition-all duration-200 flex-shrink-0 relative"
+              title="Trocar perfil de acesso"
+            >
+              <Repeat2 className="h-4 w-4" />
+              <span className="absolute -top-0.5 -right-0.5 h-3.5 min-w-3.5 px-0.5 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center">
+                {availableProfilesCount}
+              </span>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -740,6 +754,7 @@ export function AppSidebar({
           </Button>
         </div>
       </SidebarFooter>
+      <ProfileSwitcherDialog open={showProfileSwitcher} onOpenChange={setShowProfileSwitcher} />
     </>
   );
 
