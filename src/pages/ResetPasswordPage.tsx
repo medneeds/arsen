@@ -105,9 +105,10 @@ export default function ResetPasswordPage() {
                 <Input
                   type={show ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value.slice(0, 12))}
                   className="pl-10 pr-11 h-11"
-                  placeholder="Mínimo 8 caracteres"
+                  placeholder="6 a 12 caracteres"
+                  maxLength={12}
                   autoFocus
                 />
                 <button
