@@ -409,17 +409,118 @@ export default function UserManagementPage() {
                     <TableHead className="font-bold text-xs text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
-{/* ORIGINAL_TABLEBODY_START */}
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <RefreshCw className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                        <p className="mt-2 text-sm text-muted-foreground">Carregando usuários...</p>
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        <Users className="h-6 w-6 mx-auto text-muted-foreground" />
+                        <p className="mt-2 text-sm text-muted-foreground">Nenhum usuário encontrado</p>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredUsers.map((u) => {
+                      const statusConfig = STATUS_CONFIG[u.status] || STATUS_CONFIG.pending;
+                      const roleConfig = u.role ? ROLE_CONFIG[u.role] : null;
+
+                      return (
+                        <TableRow key={u.id} className="hover:bg-muted/30">
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-foreground">
+                                {u.full_name || "—"}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {u.email?.replace("@sistema.local", "") || "—"}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm font-mono">{u.crm || "—"}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={`${statusConfig.color} gap-1`}>
+                              {statusConfig.icon}
+                              {statusConfig.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {roleConfig ? (
+                              <Badge variant="outline" className={roleConfig.color}>
+                                {roleConfig.label}
+                              </Badge>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">
+                              {format(new Date(u.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Ver detalhes"
+                                onClick={() => {
+                                  setSelectedUser(u);
+                                  setDetailsOpen(true);
+                                }}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Gerenciar setores e permissões"
+                                onClick={() => {
+                                  setUserToManagePermissions(u);
+                                  setPermissionsOpen(true);
+                                }}
+                              >
+                                <Settings2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            <UserMonitoringPanel />
+            <PasswordResetRequestsPanel />
+          </TabsContent>
+
+          {(currentUserRole === "admin" || isGestor) && (
+            <TabsContent value="create">
+              <div className="rounded-xl border bg-card shadow-sm p-6">
+                <CreateUserForm onCreated={fetchUsers} />
+              </div>
+            </TabsContent>
+          )}
+        </Tabs>
 
         {/* LGPD Notice */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg p-3">
           <Shield className="h-4 w-4" />
           <span>
-            Todos os dados de usuários são tratados conforme a Lei 13.709/2018 (LGPD). 
+            Todos os dados de usuários são tratados conforme a Lei 13.709/2018 (LGPD).
             Alterações de status são registradas na trilha de auditoria.
           </span>
         </div>
       </div>
+
 
       {/* User Details Dialog */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
