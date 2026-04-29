@@ -79,24 +79,18 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, navigate, hasShownLoading]);
 
-  // Perfis globais (gestor/admin e painéis dedicados) não devem ver a tela
-  // de "Tipo de Acesso / seleção de setor" — eles vão direto para a landing
-  // definida pelo perfil. Lê do localStorage (gravado no login).
+  // Regra única: a tela "Tipo de Acesso / seleção de setor médico" SÓ faz
+  // sentido para o perfil clínico assistencial ("medico"). Qualquer outro
+  // perfil — gestor, farmácia, NIR, CCIH, imagem, lab, administrativo,
+  // classificação de risco, multi — tem painel próprio e vai direto.
+  //
+  // A fonte de verdade é a sessão atual (escolha do ProfileChooser); cai no
+  // localStorage só como fallback para sessões antigas.
   const activeAccessProfile = typeof window !== "undefined"
     ? (sessionStorage.getItem("active_access_profile") || localStorage.getItem("access_profile") || "")
     : "";
-  const GLOBAL_ACCESS_PROFILES = new Set([
-    "gestor",
-    "farmacia",
-    "ccih",
-    "nir",
-    "imagem",
-    "laboratorio",
-    "administrativo",
-    "multi",
-    "classificacao_risco",
-  ]);
-  const skipAccessLimits = GLOBAL_ACCESS_PROFILES.has(activeAccessProfile);
+  const SECTOR_PICKER_PROFILES = new Set(["medico"]);
+  const skipAccessLimits = !SECTOR_PICKER_PROFILES.has(activeAccessProfile);
 
   if (loading || checkingTerms) {
     return null;
