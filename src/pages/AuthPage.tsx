@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -87,11 +87,15 @@ export default function AuthPage() {
     password: "",
   });
 
+  // Flag síncrona: enquanto o handleLogin está orquestrando o pós-login
+  // (buscando perfis, decidindo chooser vs. redirect direto), o auto-redirect
+  // do useEffect abaixo NÃO pode disparar — senão "engole" o ProfileChooser.
+  const postLoginInFlight = useRef(false);
+
   useEffect(() => {
-    // Só redireciona automaticamente se NÃO estamos no fluxo de pós-login
-    // (chooser de perfil ou loading screen). Isso evita pular a escolha
-    // quando o usuário tem múltiplos perfis.
-    if (user && !chooserProfiles && !showLoadingScreen) {
+    // Auto-redirect só para quem JÁ chegou autenticado (sessão restaurada
+    // de outra aba/refresh). Nunca durante o fluxo de login ativo.
+    if (user && !postLoginInFlight.current && !chooserProfiles && !showLoadingScreen) {
       navigate("/");
     }
   }, [user, navigate, chooserProfiles, showLoadingScreen]);
@@ -114,6 +118,7 @@ export default function AuthPage() {
     }
 
     setLoading(true);
+    postLoginInFlight.current = true;
 
     try {
       const { error } = await signIn(loginData.username, loginData.password);
@@ -128,6 +133,7 @@ export default function AuthPage() {
           toast.error("Erro ao fazer login: " + msg);
         }
         setLoading(false);
+        postLoginInFlight.current = false;
       } else {
         // Login generalista: descobre o perfil/role definidos pelo gestor/admin
         // a partir do usuário autenticado (suporta login por email, CPF ou usuário).
@@ -184,6 +190,7 @@ export default function AuthPage() {
     } catch (err) {
       toast.error("Erro ao validar dados");
       setLoading(false);
+      postLoginInFlight.current = false;
     }
   };
 
