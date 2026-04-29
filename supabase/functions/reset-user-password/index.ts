@@ -73,12 +73,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Validate password format (6 chars, alphanumeric, uppercase only)
-    const passwordRegex = /^[A-Z0-9]{6}$/;
-    if (!passwordRegex.test(newPassword)) {
-      console.error("Invalid password format");
+    // Validate password length (6 to 12 chars, any printable character)
+    if (typeof newPassword !== "string" || newPassword.length < 6 || newPassword.length > 12) {
+      console.error("Invalid password length");
       return new Response(
-        JSON.stringify({ error: "Senha deve ter exatamente 6 caracteres alfanuméricos maiúsculos" }),
+        JSON.stringify({ error: "Senha deve ter de 6 a 12 caracteres" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
