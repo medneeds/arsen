@@ -59,6 +59,10 @@ export function UserPermissionsDialog({
   const [selectedDepartments, setSelectedDepartments] = useState<Set<string>>(new Set());
   const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set());
   const [hospitalUnits, setHospitalUnits] = useState<HospitalUnit[]>([]);
+  // Snapshot inicial para diff de auditoria
+  const initialSnapshotRef = useRef<{
+    role: string; accessProfile: string; departments: string[]; units: string[];
+  } | null>(null);
 
   const profileMeta = ACCESS_PROFILES.find((p) => p.value === accessProfile);
 
