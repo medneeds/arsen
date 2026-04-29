@@ -59,6 +59,24 @@ function maskCpf(v: string) {
     .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
 }
 
+/** Valida CPF pelos dígitos verificadores (algoritmo da Receita Federal). */
+function isValidCpf(raw: string): boolean {
+  const cpf = raw.replace(/\D/g, "");
+  if (cpf.length !== 11) return false;
+  // Rejeita sequências repetidas (000.000.000-00, 111…, etc.)
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+
+  const calc = (sliceLen: number) => {
+    let sum = 0;
+    for (let i = 0; i < sliceLen; i++) {
+      sum += parseInt(cpf[i], 10) * (sliceLen + 1 - i);
+    }
+    const rest = (sum * 10) % 11;
+    return rest === 10 ? 0 : rest;
+  };
+  return calc(9) === parseInt(cpf[9], 10) && calc(10) === parseInt(cpf[10], 10);
+}
+
 function maskPhone(v: string) {
   const d = v.replace(/\D/g, "").slice(0, 11);
   if (d.length <= 10) return d.replace(/(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3").trim();
@@ -77,6 +95,8 @@ export function CreateUserForm({ onCreated }: Props) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
+  const [cpfError, setCpfError] = useState<string | null>(null);
+  const [cpfChecking, setCpfChecking] = useState(false);
   const [phone, setPhone] = useState("");
   const [crm, setCrm] = useState("");
   const [hospitalUnitId, setHospitalUnitId] = useState("");
@@ -109,16 +129,53 @@ export function CreateUserForm({ onCreated }: Props) {
     if (hint) setRole(hint);
   }, [accessProfile]);
 
+  // Validação de CPF (formato + dígitos verificadores + duplicidade) com debounce
+  useEffect(() => {
+    const digits = cpf.replace(/\D/g, "");
+    setCpfChecking(false);
+    if (digits.length === 0) {
+      setCpfError(null);
+      return;
+    }
+    if (digits.length < 11) {
+      setCpfError("CPF incompleto");
+      return;
+    }
+    if (!isValidCpf(digits)) {
+      setCpfError("CPF inválido (dígito verificador não confere)");
+      return;
+    }
+    setCpfError(null);
+    setCpfChecking(true);
+    const t = setTimeout(async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("cpf", digits)
+        .maybeSingle();
+      setCpfChecking(false);
+      if (error) return; // silencioso; o submit revalida no servidor
+      if (data) {
+        setCpfError(`CPF já cadastrado${data.full_name ? ` para ${data.full_name}` : ""}`);
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [cpf]);
+
   const reset = () => {
     setFullName(""); setEmail(""); setCpf(""); setPhone(""); setCrm("");
     setDepartments(new Set()); setPassword(genTempPassword());
+    setCpfError(null);
   };
 
   const handleSubmit = async () => {
     // Validações
     if (!fullName.trim()) return toast.error("Informe o nome completo");
     if (!email.trim() || !/.+@.+\..+/.test(email)) return toast.error("E-mail inválido");
-    if (cpf.replace(/\D/g, "").length !== 11) return toast.error("CPF inválido");
+    const cpfDigits = cpf.replace(/\D/g, "");
+    if (cpfDigits.length !== 11) return toast.error("Informe o CPF completo");
+    if (!isValidCpf(cpfDigits)) return toast.error("CPF inválido — verifique os dígitos");
+    if (cpfError) return toast.error(cpfError);
     if (phone.replace(/\D/g, "").length < 10) return toast.error("Telefone inválido");
     if (!hospitalUnitId) return toast.error("Selecione a unidade hospitalar");
     if (mode === "password" && password.length < 8) return toast.error("Senha precisa ter ao menos 8 caracteres");
@@ -234,7 +291,29 @@ export function CreateUserForm({ onCreated }: Props) {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-bold uppercase flex items-center gap-1.5"><IdCard className="h-3.5 w-3.5" /> CPF *</Label>
-          <Input value={cpf} onChange={(e) => setCpf(maskCpf(e.target.value))} placeholder="000.000.000-00" inputMode="numeric" />
+          <div className="relative">
+            <Input
+              value={cpf}
+              onChange={(e) => setCpf(maskCpf(e.target.value))}
+              placeholder="000.000.000-00"
+              inputMode="numeric"
+              aria-invalid={!!cpfError}
+              aria-describedby="cpf-help"
+              className={cpfError ? "border-destructive focus-visible:ring-destructive pr-9" : "pr-9"}
+            />
+            {cpfChecking && (
+              <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+            )}
+            {!cpfChecking && cpf && !cpfError && cpf.replace(/\D/g, "").length === 11 && (
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
+            )}
+          </div>
+          <p
+            id="cpf-help"
+            className={`text-[11px] min-h-[14px] ${cpfError ? "text-destructive font-medium" : "text-muted-foreground"}`}
+          >
+            {cpfError ?? (cpfChecking ? "Verificando disponibilidade…" : "Informe um CPF válido (não cadastrado).")}
+          </p>
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-bold uppercase flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> Telefone *</Label>
@@ -317,7 +396,7 @@ export function CreateUserForm({ onCreated }: Props) {
         </div>
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={reset} disabled={submitting}>Limpar</Button>
-          <Button type="button" onClick={handleSubmit} disabled={submitting}>
+          <Button type="button" onClick={handleSubmit} disabled={submitting || !!cpfError || cpfChecking}>
             {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Criando…</> : <><UserPlus className="h-4 w-4 mr-2" /> Cadastrar usuário</>}
           </Button>
         </div>
