@@ -73,8 +73,25 @@ Deno.serve(async (req) => {
     const profile = accessProfile ?? "medico";
     const appRole = role ?? "medico";
     const isGlobal = GLOBAL_PROFILES.has(profile) || GLOBAL_ROLES.has(appRole);
-    if (!isGlobal && (!Array.isArray(departments) || departments.length === 0)) {
+
+    // Perfis globais NUNCA recebem setores específicos — limpa silenciosamente
+    const effectiveDepartments: string[] = isGlobal ? [] : (Array.isArray(departments) ? departments : []);
+
+    if (!isGlobal && effectiveDepartments.length === 0) {
       return json(400, { error: "Selecione ao menos um setor (perfis não-globais)." });
+    }
+
+    // Se o caller é gestor (não admin), validar escopo: hospitalUnitId precisa
+    // estar entre as unidades do gestor.
+    if (!isAdmin && isGestor) {
+      const { data: callerUnits } = await admin
+        .from("user_hospital_assignments")
+        .select("hospital_unit_id")
+        .eq("user_id", caller.id);
+      const allowedUnits = new Set((callerUnits ?? []).map((u: { hospital_unit_id: string }) => u.hospital_unit_id));
+      if (!allowedUnits.has(hospitalUnitId)) {
+        return json(403, { error: "Você não tem permissão para cadastrar usuários nesta unidade hospitalar." });
+      }
     }
 
     // CPF unique check
@@ -133,8 +150,8 @@ Deno.serve(async (req) => {
 
     // 5) Setores (apenas se não-global)
     await admin.from("user_departments").delete().eq("user_id", userId);
-    if (!isGlobal && departments.length > 0) {
-      const rows = departments.map((d: string) => ({ user_id: userId, department: d }));
+    if (!isGlobal && effectiveDepartments.length > 0) {
+      const rows = effectiveDepartments.map((d: string) => ({ user_id: userId, department: d }));
       const { error: depErr } = await admin.from("user_departments").insert(rows);
       if (depErr) console.error("departments insert", depErr);
     }
@@ -157,7 +174,7 @@ Deno.serve(async (req) => {
         hospital_unit_id: hospitalUnitId,
         access_profile: profile,
         app_role: appRole,
-        departments: isGlobal ? [] : departments,
+        departments: effectiveDepartments,
         new_data: {
           mode,
           fullName,
@@ -168,7 +185,7 @@ Deno.serve(async (req) => {
           accessProfile: profile,
           role: appRole,
           hospitalUnitId,
-          departments: isGlobal ? [] : departments,
+          departments: effectiveDepartments,
           isGlobal,
         },
         metadata: { source: "admin-create-user" },
