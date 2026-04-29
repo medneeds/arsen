@@ -109,9 +109,11 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (showLoadingScreen) {
     return <LoadingScreen onComplete={() => {
       setShowLoadingScreen(false);
-      // Após loading, mostrar tela de limites de acesso (exceto genéricos)
-      if (!isLegacyGenericUser && !accessLimitsShown) {
+      // Perfis globais (gestor/admin/painéis dedicados) pulam a tela de seleção de setor.
+      if (!isLegacyGenericUser && !accessLimitsShown && !skipAccessLimits) {
         setShowAccessLimits(true);
+      } else if (skipAccessLimits) {
+        setAccessLimitsShown(true);
       }
     }} />;
   }
