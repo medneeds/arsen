@@ -56,6 +56,9 @@ import { ptBR } from "date-fns/locale";
 import { ResetUserPasswordDialog } from "@/components/ResetUserPasswordDialog";
 import { UserPermissionsDialog } from "@/components/UserPermissionsDialog";
 import { useIsGestor } from "@/hooks/useIsGestor";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { CreateUserForm } from "@/components/users/CreateUserForm";
+import { UserPlus } from "lucide-react";
 
 interface UserProfile {
   id: string;
