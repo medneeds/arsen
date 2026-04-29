@@ -34,7 +34,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { ACCESS_PROFILES, SYSTEM_ROLES, PROFILE_TO_ROLE_HINT, type AccessProfile, type AppRole } from "@/config/userProfiles";
+import { ACCESS_PROFILES, SYSTEM_ROLES, type AccessProfile, type AppRole } from "@/config/userProfiles";
+import { PROFILE_DEFAULTS } from "@/config/profileDefaults";
 import { SectorPermissionsPicker } from "@/components/permissions/SectorPermissionsPicker";
 
 interface HospitalUnit {
