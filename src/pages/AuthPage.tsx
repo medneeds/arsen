@@ -20,6 +20,8 @@ import { HospitalSelector } from "@/components/HospitalSelector";
 import { useHospital } from "@/contexts/HospitalContext";
 import { AuthBackgroundFx } from "@/components/auth/AuthBackgroundFx";
 import { resolveLandingRoute } from "@/config/profileDefaults";
+import { ProfileChooser } from "@/components/auth/ProfileChooser";
+import type { AccessProfile } from "@/config/userProfiles";
 
 /* ─── Shared chrome ─────────────────────────────────────────────── */
 function PageHeader() {
@@ -75,16 +77,24 @@ export default function AuthPage() {
   const [selectedHospitalId, setSelectedHospitalId] = useState<string | null>(null);
   const [forgotOpen, setForgotOpen] = useState(false);
 
+  // Multi-perfil: estado para a tela de escolha após login
+  const [chooserProfiles, setChooserProfiles] = useState<AccessProfile[] | null>(null);
+  const [chooserAppRole, setChooserAppRole] = useState<string | null>(null);
+  const [chooserUserName, setChooserUserName] = useState<string | null>(null);
+
   const [loginData, setLoginData] = useState({
     username: "",
     password: "",
   });
 
   useEffect(() => {
-    if (user) {
+    // Só redireciona automaticamente se NÃO estamos no fluxo de pós-login
+    // (chooser de perfil ou loading screen). Isso evita pular a escolha
+    // quando o usuário tem múltiplos perfis.
+    if (user && !chooserProfiles && !showLoadingScreen) {
       navigate("/");
     }
-  }, [user, navigate]);
+  }, [user, navigate, chooserProfiles, showLoadingScreen]);
 
   const handleHospitalSelect = (hospital: any) => {
     setSelectedHospitalId(hospital.id);
@@ -126,10 +136,10 @@ export default function AuthPage() {
         const { data: profileRow } = userId
           ? await supabase
               .from("profiles")
-              .select("id, access_profile")
+              .select("id, full_name, access_profile, access_profiles")
               .eq("id", userId)
               .maybeSingle()
-          : { data: null as { id?: string; access_profile?: string } | null };
+          : { data: null as { id?: string; full_name?: string; access_profile?: string; access_profiles?: string[] } | null };
 
         let appRole: string | null = null;
         if (profileRow?.id) {
@@ -142,11 +152,32 @@ export default function AuthPage() {
         }
 
         const accessProfile = (profileRow as { access_profile?: string } | null)?.access_profile ?? null;
-        const route = resolveLandingRoute(accessProfile, appRole);
-        setRedirectRoute(route);
-        if (accessProfile) localStorage.setItem("access_profile", accessProfile);
+        const accessProfilesList = (profileRow as { access_profiles?: string[] } | null)?.access_profiles ?? [];
+        // Lista efetiva: usa access_profiles se preenchida; senão cai no singular.
+        const effectiveProfiles = (accessProfilesList && accessProfilesList.length > 0)
+          ? accessProfilesList
+          : (accessProfile ? [accessProfile] : []);
 
         setCurrentDepartment("UTI");
+
+        if (effectiveProfiles.length > 1) {
+          // Múltiplos perfis → mostra seletor antes de redirecionar.
+          toast.success("Login realizado — escolha o ambiente");
+          setChooserProfiles(effectiveProfiles as AccessProfile[]);
+          setChooserAppRole(appRole);
+          setChooserUserName((profileRow as { full_name?: string } | null)?.full_name ?? null);
+          setLoading(false);
+          return;
+        }
+
+        // Caminho único: redireciona direto.
+        const chosen = effectiveProfiles[0] ?? accessProfile ?? null;
+        const route = resolveLandingRoute(chosen, appRole);
+        setRedirectRoute(route);
+        if (chosen) {
+          localStorage.setItem("access_profile", chosen);
+          sessionStorage.setItem("active_access_profile", chosen);
+        }
         toast.success("Login realizado com sucesso");
         setShowLoadingScreen(true);
       }
@@ -155,6 +186,22 @@ export default function AuthPage() {
       setLoading(false);
     }
   };
+
+  // Tela de escolha de perfil (multi-perfil) — toma a tela inteira após login bem-sucedido
+  if (chooserProfiles && chooserProfiles.length > 1 && !showLoadingScreen) {
+    return (
+      <ProfileChooser
+        userName={chooserUserName}
+        profiles={chooserProfiles}
+        appRole={chooserAppRole}
+        onChosen={(_p, route) => {
+          setRedirectRoute(route);
+          setChooserProfiles(null);
+          setShowLoadingScreen(true);
+        }}
+      />
+    );
+  }
 
   return (
     <>

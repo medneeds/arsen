@@ -63,6 +63,7 @@ type DraftShape = {
   crm: string;
   hospitalUnitId: string;
   accessProfile: AccessProfile;
+  accessProfiles: AccessProfile[];
   role: AppRole;
   departments: string[];
 };
@@ -153,6 +154,8 @@ export function CreateUserForm({ onCreated }: Props) {
   const [crm, setCrm] = useState("");
   const [hospitalUnitId, setHospitalUnitId] = useState("");
   const [accessProfile, setAccessProfile] = useState<AccessProfile>("medico");
+  // Múltiplos perfis acumulados (ex.: gestor + nir + médico). O primeiro é o "principal".
+  const [accessProfiles, setAccessProfiles] = useState<AccessProfile[]>(["medico"]);
   const [role, setRole] = useState<AppRole>("medico");
   const [departments, setDepartments] = useState<Set<string>>(new Set());
   const [password, setPassword] = useState(genTempPassword());
@@ -174,8 +177,8 @@ export function CreateUserForm({ onCreated }: Props) {
   const unitTriggerRef = useRef<HTMLButtonElement>(null);
 
   const isGlobal = useMemo(
-    () => GLOBAL_PROFILES.includes(accessProfile) || GLOBAL_ROLES.includes(role),
-    [accessProfile, role],
+    () => accessProfiles.some((p) => GLOBAL_PROFILES.includes(p)) || GLOBAL_ROLES.includes(role),
+    [accessProfiles, role],
   );
 
   // ---- Hidratação do rascunho (uma única vez) ----
@@ -193,6 +196,11 @@ export function CreateUserForm({ onCreated }: Props) {
           if (d.crm) setCrm(d.crm);
           if (d.hospitalUnitId) setHospitalUnitId(d.hospitalUnitId);
           if (d.accessProfile) setAccessProfile(d.accessProfile);
+          if (Array.isArray(d.accessProfiles) && d.accessProfiles.length > 0) {
+            setAccessProfiles(d.accessProfiles);
+          } else if (d.accessProfile) {
+            setAccessProfiles([d.accessProfile]);
+          }
           if (d.role) setRole(d.role);
           if (Array.isArray(d.departments)) setDepartments(new Set(d.departments));
           setDraftStatus("restored");
@@ -228,7 +236,16 @@ export function CreateUserForm({ onCreated }: Props) {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-aplica permissões padrão (role + setores sugeridos) ao mudar perfil.
+  // Mantém accessProfile (singular, "principal") sempre sincronizado com o
+  // primeiro item de accessProfiles. accessProfiles é a fonte de verdade.
+  useEffect(() => {
+    if (accessProfiles.length === 0) return;
+    if (accessProfiles[0] !== accessProfile) {
+      setAccessProfile(accessProfiles[0]);
+    }
+  }, [accessProfiles, accessProfile]);
+
+  // Auto-aplica permissões padrão (role + setores sugeridos) ao mudar perfil PRINCIPAL.
   // Não bloqueia edição: gestor/admin pode ajustar manualmente depois.
   // Roda só após hidratação para não sobrescrever um rascunho restaurado.
   const lastAutoAppliedProfileRef = useRef<AccessProfile | null>(null);
@@ -238,17 +255,8 @@ export function CreateUserForm({ onCreated }: Props) {
     const defaults = PROFILE_DEFAULTS[accessProfile];
     if (!defaults) return;
     setRole(defaults.role);
-    // Aplica setores sugeridos somente se o usuário ainda não personalizou
-    // (lista vazia OU primeira aplicação para este perfil).
-    const isFirstApplication = lastAutoAppliedProfileRef.current === null;
-    if (isFirstApplication || departments.size === 0) {
-      setDepartments(new Set(defaults.departments));
-    } else {
-      // Trocou de perfil manualmente → reaplica defaults do novo perfil
-      setDepartments(new Set(defaults.departments));
-    }
+    setDepartments(new Set(defaults.departments));
     if (lastAutoAppliedProfileRef.current !== null) {
-      // Evita toast no primeiro mount/hidratação
       toast.info("Permissões padrão aplicadas", { description: defaults.hint });
     }
     lastAutoAppliedProfileRef.current = accessProfile;
@@ -269,6 +277,7 @@ export function CreateUserForm({ onCreated }: Props) {
           crm,
           hospitalUnitId,
           accessProfile,
+          accessProfiles,
           role,
           departments: Array.from(departments),
         };
@@ -287,7 +296,7 @@ export function CreateUserForm({ onCreated }: Props) {
       }
     }, AUTOSAVE_DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [mode, fullName, email, cpf, phone, crm, hospitalUnitId, accessProfile, role, departments]);
+  }, [mode, fullName, email, cpf, phone, crm, hospitalUnitId, accessProfile, accessProfiles, role, departments]);
 
   // Validação de CPF (formato + dígitos verificadores + duplicidade) com debounce
   useEffect(() => {
@@ -471,6 +480,7 @@ export function CreateUserForm({ onCreated }: Props) {
           phone,
           crm: crm.trim() || null,
           accessProfile,
+          accessProfiles,
           role,
           hospitalUnitId,
           departments: isGlobal ? [] : Array.from(departments),
@@ -702,18 +712,59 @@ export function CreateUserForm({ onCreated }: Props) {
 
       {/* Perfil + Role */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label className="text-xs font-bold uppercase flex items-center gap-1.5"><Shield className="h-3.5 w-3.5" /> Perfil de Acesso *</Label>
-          <Select value={accessProfile} onValueChange={(v) => setAccessProfile(v as AccessProfile)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {ACCESS_PROFILES.map((p) => (
-                <SelectItem key={p.value} value={p.value}>
-                  {p.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="space-y-1.5 md:col-span-2">
+          <Label className="text-xs font-bold uppercase flex items-center gap-1.5">
+            <Shield className="h-3.5 w-3.5" /> Perfis de Acesso *
+          </Label>
+          <p className="preserve-case text-[11px] text-muted-foreground -mt-0.5">
+            Selecione um ou mais perfis. O <strong>primeiro</strong> é o principal — define a tela de pouso padrão e os setores sugeridos. Quando há mais de um, o usuário escolherá no login qual usar.
+          </p>
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {ACCESS_PROFILES.map((p) => {
+              const checked = accessProfiles.includes(p.value);
+              const isPrimary = checked && accessProfiles[0] === p.value;
+              return (
+                <button
+                  type="button"
+                  key={p.value}
+                  onClick={() => {
+                    setAccessProfiles((prev) => {
+                      if (prev.includes(p.value)) {
+                        // Não permite remover o último
+                        if (prev.length === 1) return prev;
+                        return prev.filter((x) => x !== p.value);
+                      }
+                      return [...prev, p.value];
+                    });
+                  }}
+                  onDoubleClick={() => {
+                    // Duplo clique = promover a principal
+                    setAccessProfiles((prev) => {
+                      if (!prev.includes(p.value)) return [p.value, ...prev];
+                      return [p.value, ...prev.filter((x) => x !== p.value)];
+                    });
+                  }}
+                  className={`preserve-case text-xs px-2.5 py-1 rounded-full border transition-all ${
+                    isPrimary
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : checked
+                        ? "bg-primary/10 text-primary border-primary/40"
+                        : "bg-background text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+                  }`}
+                  title={isPrimary ? "Perfil principal (duplo clique para mudar)" : checked ? "Duplo clique para definir como principal" : "Clique para adicionar"}
+                >
+                  {isPrimary && "★ "}{p.shortLabel ?? p.label}
+                </button>
+              );
+            })}
+          </div>
+          <p className="preserve-case text-[10px] text-muted-foreground/80">
+            Clique para adicionar/remover • Duplo clique para definir como principal (★)
+          </p>
+        </div>
+        <div className="hidden" aria-hidden="true">
+          {/* compat: alguns rascunhos antigos ainda referenciam accessProfile singular */}
+          <input type="hidden" value={accessProfile} readOnly />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-bold uppercase">Role do Sistema *</Label>
