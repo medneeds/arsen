@@ -277,6 +277,7 @@ export function CreateUserForm({ onCreated }: Props) {
           crm,
           hospitalUnitId,
           accessProfile,
+          accessProfiles,
           role,
           departments: Array.from(departments),
         };
@@ -295,7 +296,7 @@ export function CreateUserForm({ onCreated }: Props) {
       }
     }, AUTOSAVE_DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [mode, fullName, email, cpf, phone, crm, hospitalUnitId, accessProfile, role, departments]);
+  }, [mode, fullName, email, cpf, phone, crm, hospitalUnitId, accessProfile, accessProfiles, role, departments]);
 
   // Validação de CPF (formato + dígitos verificadores + duplicidade) com debounce
   useEffect(() => {
