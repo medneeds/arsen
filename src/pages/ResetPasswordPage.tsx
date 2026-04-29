@@ -22,9 +22,24 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
+  const [linkError, setLinkError] = useState<string | null>(null);
+
   useEffect(() => {
-    // Aceita o token do link de recuperação
+    let cancelled = false;
+
+    // Detect URL errors (expired/invalid link) — Supabase puts them in the hash
+    const hash = window.location.hash || "";
+    const search = window.location.search || "";
+    const combined = hash + search;
+    if (combined.includes("error=") || combined.includes("error_code=")) {
+      const params = new URLSearchParams(hash.replace(/^#/, "") + "&" + search.replace(/^\?/, ""));
+      const desc = params.get("error_description") || params.get("error") || "Link inválido ou expirado";
+      setLinkError(decodeURIComponent(desc.replace(/\+/g, " ")));
+      return;
+    }
+
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (cancelled) return;
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
         setReady(true);
       }
@@ -32,10 +47,24 @@ export default function ResetPasswordPage() {
 
     // Caso a navegação chegue já com sessão ativa de recovery
     supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
       if (data.session) setReady(true);
     });
 
-    return () => sub.subscription.unsubscribe();
+    // Fallback: se em 4s não detectou recovery, mostra erro
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      setReady((r) => {
+        if (!r) setLinkError("Link de recuperação inválido ou expirado. Solicite um novo na tela de login.");
+        return r;
+      });
+    }, 4000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
