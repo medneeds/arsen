@@ -239,12 +239,22 @@ export default function UserManagementPage() {
   const handleSuspend = async (userId: string) => {
     setActionLoading(true);
     try {
+      const target = users.find((u) => u.id === userId);
       const { error } = await supabase
         .from("profiles")
         .update({ status: "suspended" })
         .eq("id", userId);
 
       if (error) throw error;
+
+      await logUserAdminAction({
+        action: "user.status.suspended",
+        targetUserId: userId,
+        targetEmail: target?.email ?? null,
+        targetName: target?.full_name ?? null,
+        oldData: { status: target?.status },
+        newData: { status: "suspended" },
+      });
 
       toast.success("Usuário suspenso");
       fetchUsers();
@@ -260,12 +270,22 @@ export default function UserManagementPage() {
   const handleReactivate = async (userId: string) => {
     setActionLoading(true);
     try {
+      const target = users.find((u) => u.id === userId);
       const { error } = await supabase
         .from("profiles")
         .update({ status: "approved" })
         .eq("id", userId);
 
       if (error) throw error;
+
+      await logUserAdminAction({
+        action: "user.status.reactivated",
+        targetUserId: userId,
+        targetEmail: target?.email ?? null,
+        targetName: target?.full_name ?? null,
+        oldData: { status: target?.status },
+        newData: { status: "approved" },
+      });
 
       toast.success("Usuário reativado");
       fetchUsers();
@@ -281,6 +301,8 @@ export default function UserManagementPage() {
   const handleUpdateRole = async (userId: string, newRole: string) => {
     setActionLoading(true);
     try {
+      const target = users.find((u) => u.id === userId);
+      const previousRole = target?.role ?? null;
       // Check if user has a role already
       const { data: existingRole } = await supabase
         .from("user_roles")
@@ -303,6 +325,16 @@ export default function UserManagementPage() {
         if (error) throw error;
       }
 
+      await logUserAdminAction({
+        action: "user.role.updated",
+        targetUserId: userId,
+        targetEmail: target?.email ?? null,
+        targetName: target?.full_name ?? null,
+        appRole: newRole,
+        oldData: { role: previousRole },
+        newData: { role: newRole },
+      });
+
       toast.success("Papel atualizado com sucesso");
       fetchUsers();
     } catch (error) {
@@ -312,8 +344,6 @@ export default function UserManagementPage() {
       setActionLoading(false);
     }
   };
-
-  const filteredUsers = users.filter(u => {
     const matchesSearch = 
       (u.full_name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
       (u.email?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
