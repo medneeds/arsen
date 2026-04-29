@@ -416,6 +416,9 @@ export default function UserManagementPage() {
                 <UserPlus className="h-4 w-4" /> Cadastrar Usuário
               </TabsTrigger>
             )}
+            <TabsTrigger value="audit" className="gap-2">
+              <History className="h-4 w-4" /> Histórico
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="list" className="space-y-6">
