@@ -266,6 +266,16 @@ export default function AuthPage() {
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
+                      <div className="mt-1.5 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setForgotOpen(true)}
+                          className="preserve-case text-[11px] text-primary hover:text-primary/80 hover:underline transition-colors"
+                          disabled={loading}
+                        >
+                          Esqueceu a senha?
+                        </button>
+                      </div>
                     </div>
 
                     {/* Tipo de Acesso */}
