@@ -63,7 +63,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Repeat2 } from "lucide-react";
+import { ProfileSwitcherDialog } from "@/components/auth/ProfileSwitcherDialog";
+import { useState as useReactState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDepartment, type Department } from "@/contexts/DepartmentContext";
