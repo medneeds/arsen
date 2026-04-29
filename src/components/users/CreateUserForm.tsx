@@ -404,7 +404,7 @@ export function CreateUserForm({ onCreated }: Props) {
     if (cpfError) return focusInvalid(cpfRef, cpfError);
     if (phone.replace(/\D/g, "").length < 10) return focusInvalid(phoneRef, "Telefone inválido");
     if (!hospitalUnitId) return focusInvalid(unitTriggerRef as unknown as RefObject<HTMLElement>, "Selecione a unidade hospitalar");
-    if (mode === "password" && password.length < 8) return toast.error("Senha precisa ter ao menos 8 caracteres");
+    if (mode === "password" && (password.length < 6 || password.length > 12)) return toast.error("Senha precisa ter de 6 a 12 caracteres");
     if (!isGlobal && departments.size === 0) {
       return toast.error("Selecione ao menos um setor (ou mude para perfil global)");
     }
@@ -602,8 +602,10 @@ export function CreateUserForm({ onCreated }: Props) {
             <Label className="text-xs font-bold uppercase shrink-0">Senha</Label>
             <Input
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value.slice(0, 12))}
               className="font-mono"
+              maxLength={12}
+              placeholder="6 a 12 caracteres"
             />
             <Button type="button" size="sm" variant="outline" onClick={() => setPassword(genTempPassword())} title="Gerar nova">
               <RefreshCw className="h-4 w-4" />
@@ -613,7 +615,7 @@ export function CreateUserForm({ onCreated }: Props) {
             </Button>
           </div>
           <p className="text-[11px] text-muted-foreground mt-1">
-            O usuário deverá trocar a senha no primeiro login.
+            De 6 a 12 caracteres — letras maiúsculas/minúsculas, números e especiais permitidos. O usuário deverá trocar a senha no primeiro login.
           </p>
         </TabsContent>
 

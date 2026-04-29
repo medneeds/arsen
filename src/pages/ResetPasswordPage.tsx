@@ -40,8 +40,8 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 8) {
-      toast.error("A nova senha deve ter ao menos 8 caracteres");
+    if (password.length < 6 || password.length > 12) {
+      toast.error("A nova senha deve ter de 6 a 12 caracteres");
       return;
     }
     if (password !== confirm) {
@@ -105,9 +105,10 @@ export default function ResetPasswordPage() {
                 <Input
                   type={show ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value.slice(0, 12))}
                   className="pl-10 pr-11 h-11"
-                  placeholder="Mínimo 8 caracteres"
+                  placeholder="6 a 12 caracteres"
+                  maxLength={12}
                   autoFocus
                 />
                 <button
@@ -129,9 +130,10 @@ export default function ResetPasswordPage() {
                 <Input
                   type={show ? "text" : "password"}
                   value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
+                  onChange={(e) => setConfirm(e.target.value.slice(0, 12))}
                   className="pl-10 h-11"
                   placeholder="Repita a nova senha"
+                  maxLength={12}
                 />
               </div>
             </div>

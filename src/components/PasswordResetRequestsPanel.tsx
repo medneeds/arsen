@@ -93,11 +93,8 @@ export function PasswordResetRequestsPanel() {
   };
 
   const validatePassword = (password: string): string | null => {
-    if (password.length !== 6) {
-      return "Senha deve ter exatamente 6 caracteres";
-    }
-    if (!/^[A-Z0-9]+$/.test(password)) {
-      return "Senha deve conter apenas letras maiúsculas e números";
+    if (password.length < 6 || password.length > 12) {
+      return "Senha deve ter entre 6 e 12 caracteres";
     }
     return null;
   };
@@ -342,8 +339,8 @@ export function PasswordResetRequestsPanel() {
             <div className="space-y-4 py-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-xs text-blue-800">
-                  <strong>Política de Senha:</strong> Exatamente 6 caracteres, 
-                  apenas letras maiúsculas e números.
+                  <strong>Política de Senha:</strong> de 6 a 12 caracteres. Permitidas
+                  letras maiúsculas e minúsculas, números e caracteres especiais.
                 </p>
               </div>
               <div className="space-y-2">
@@ -351,12 +348,10 @@ export function PasswordResetRequestsPanel() {
                 <Input
                   type="text"
                   value={newPassword}
-                  onChange={(e) =>
-                    setNewPassword(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))
-                  }
-                  placeholder="EX: ABC123"
-                  maxLength={6}
-                   className=""
+                  onChange={(e) => setNewPassword(e.target.value.slice(0, 12))}
+                  placeholder="6 a 12 caracteres"
+                  maxLength={12}
+                  className=""
                 />
               </div>
               <div className="space-y-2">
@@ -364,11 +359,9 @@ export function PasswordResetRequestsPanel() {
                 <Input
                   type="text"
                   value={confirmPassword}
-                  onChange={(e) =>
-                    setConfirmPassword(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))
-                  }
+                  onChange={(e) => setConfirmPassword(e.target.value.slice(0, 12))}
                   placeholder="REPITA A SENHA"
-                  maxLength={6}
+                  maxLength={12}
                   className=""
                 />
               </div>
