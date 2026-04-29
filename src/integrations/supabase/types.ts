@@ -2625,6 +2625,7 @@ export type Database = {
       profiles: {
         Row: {
           access_profile: string | null
+          access_profiles: string[]
           approved_at: string | null
           approved_by: string | null
           cargo: string | null
@@ -2647,6 +2648,7 @@ export type Database = {
         }
         Insert: {
           access_profile?: string | null
+          access_profiles?: string[]
           approved_at?: string | null
           approved_by?: string | null
           cargo?: string | null
@@ -2669,6 +2671,7 @@ export type Database = {
         }
         Update: {
           access_profile?: string | null
+          access_profiles?: string[]
           approved_at?: string | null
           approved_by?: string | null
           cargo?: string | null
