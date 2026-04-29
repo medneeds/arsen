@@ -63,6 +63,7 @@ type DraftShape = {
   crm: string;
   hospitalUnitId: string;
   accessProfile: AccessProfile;
+  accessProfiles: AccessProfile[];
   role: AppRole;
   departments: string[];
 };
@@ -153,6 +154,8 @@ export function CreateUserForm({ onCreated }: Props) {
   const [crm, setCrm] = useState("");
   const [hospitalUnitId, setHospitalUnitId] = useState("");
   const [accessProfile, setAccessProfile] = useState<AccessProfile>("medico");
+  // Múltiplos perfis acumulados (ex.: gestor + nir + médico). O primeiro é o "principal".
+  const [accessProfiles, setAccessProfiles] = useState<AccessProfile[]>(["medico"]);
   const [role, setRole] = useState<AppRole>("medico");
   const [departments, setDepartments] = useState<Set<string>>(new Set());
   const [password, setPassword] = useState(genTempPassword());
@@ -174,8 +177,8 @@ export function CreateUserForm({ onCreated }: Props) {
   const unitTriggerRef = useRef<HTMLButtonElement>(null);
 
   const isGlobal = useMemo(
-    () => GLOBAL_PROFILES.includes(accessProfile) || GLOBAL_ROLES.includes(role),
-    [accessProfile, role],
+    () => accessProfiles.some((p) => GLOBAL_PROFILES.includes(p)) || GLOBAL_ROLES.includes(role),
+    [accessProfiles, role],
   );
 
   // ---- Hidratação do rascunho (uma única vez) ----
@@ -193,6 +196,11 @@ export function CreateUserForm({ onCreated }: Props) {
           if (d.crm) setCrm(d.crm);
           if (d.hospitalUnitId) setHospitalUnitId(d.hospitalUnitId);
           if (d.accessProfile) setAccessProfile(d.accessProfile);
+          if (Array.isArray(d.accessProfiles) && d.accessProfiles.length > 0) {
+            setAccessProfiles(d.accessProfiles);
+          } else if (d.accessProfile) {
+            setAccessProfiles([d.accessProfile]);
+          }
           if (d.role) setRole(d.role);
           if (Array.isArray(d.departments)) setDepartments(new Set(d.departments));
           setDraftStatus("restored");
