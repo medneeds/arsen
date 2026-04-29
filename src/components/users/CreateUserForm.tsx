@@ -103,6 +103,37 @@ function maskPhone(v: string) {
   return d.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3").trim();
 }
 
+type SubmitStepKey =
+  | "validate"
+  | "cpf"
+  | "auth"
+  | "profile"
+  | "role"
+  | "hospital"
+  | "departments"
+  | "audit"
+  | "done";
+
+type StepStatus = "pending" | "running" | "done" | "error" | "skipped";
+
+interface SubmitStep {
+  key: SubmitStepKey;
+  label: string;
+  status: StepStatus;
+  detail?: string;
+}
+
+const BASE_STEPS: { key: SubmitStepKey; label: string }[] = [
+  { key: "validate", label: "Validando formulário" },
+  { key: "cpf", label: "Verificando CPF no banco" },
+  { key: "auth", label: "Criando credencial de acesso" },
+  { key: "profile", label: "Sincronizando perfil" },
+  { key: "role", label: "Atribuindo role do sistema" },
+  { key: "hospital", label: "Vinculando unidade hospitalar" },
+  { key: "departments", label: "Aplicando setores permitidos" },
+  { key: "audit", label: "Registrando auditoria" },
+];
+
 export function CreateUserForm({ onCreated }: Props) {
   const [units, setUnits] = useState<HospitalUnit[]>([]);
   const [loadingUnits, setLoadingUnits] = useState(true);
@@ -124,6 +155,10 @@ export function CreateUserForm({ onCreated }: Props) {
   const [role, setRole] = useState<AppRole>("medico");
   const [departments, setDepartments] = useState<Set<string>>(new Set());
   const [password, setPassword] = useState(genTempPassword());
+
+  // Progresso de submit
+  const [submitSteps, setSubmitSteps] = useState<SubmitStep[]>([]);
+  const submitStepsRef = useRef<SubmitStep[]>([]);
 
   // Autosave state
   const [draftStatus, setDraftStatus] = useState<"idle" | "saving" | "saved" | "restored">("idle");
