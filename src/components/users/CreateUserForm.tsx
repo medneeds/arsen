@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -12,7 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   UserPlus,
@@ -26,6 +26,10 @@ import {
   Loader2,
   Copy,
   RefreshCw,
+  CloudOff,
+  CloudUpload,
+  CheckCircle2,
+  Trash2,
 } from "lucide-react";
 import { ACCESS_PROFILES, SYSTEM_ROLES, PROFILE_TO_ROLE_HINT, type AccessProfile, type AppRole } from "@/config/userProfiles";
 import { SectorPermissionsPicker } from "@/components/permissions/SectorPermissionsPicker";
@@ -43,6 +47,21 @@ interface Props {
 
 const GLOBAL_PROFILES: AccessProfile[] = ["gestor"];
 const GLOBAL_ROLES: AppRole[] = ["admin"];
+const DRAFT_KEY = "createUserForm:draft:v1";
+const AUTOSAVE_DEBOUNCE_MS = 800;
+
+type DraftShape = {
+  mode: "password" | "invite";
+  fullName: string;
+  email: string;
+  cpf: string;
+  phone: string;
+  crm: string;
+  hospitalUnitId: string;
+  accessProfile: AccessProfile;
+  role: AppRole;
+  departments: string[];
+};
 
 function genTempPassword() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -63,9 +82,7 @@ function maskCpf(v: string) {
 function isValidCpf(raw: string): boolean {
   const cpf = raw.replace(/\D/g, "");
   if (cpf.length !== 11) return false;
-  // Rejeita sequências repetidas (000.000.000-00, 111…, etc.)
   if (/^(\d)\1{10}$/.test(cpf)) return false;
-
   const calc = (sliceLen: number) => {
     let sum = 0;
     for (let i = 0; i < sliceLen; i++) {
@@ -105,11 +122,52 @@ export function CreateUserForm({ onCreated }: Props) {
   const [departments, setDepartments] = useState<Set<string>>(new Set());
   const [password, setPassword] = useState(genTempPassword());
 
+  // Autosave state
+  const [draftStatus, setDraftStatus] = useState<"idle" | "saving" | "saved" | "restored">("idle");
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
+  const hydratedRef = useRef(false);
+
+  // Refs para foco automático
+  const fullNameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const cpfRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const unitTriggerRef = useRef<HTMLButtonElement>(null);
+
   const isGlobal = useMemo(
     () => GLOBAL_PROFILES.includes(accessProfile) || GLOBAL_ROLES.includes(role),
     [accessProfile, role],
   );
 
+  // ---- Hidratação do rascunho (uma única vez) ----
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw) as Partial<DraftShape>;
+        if (d) {
+          if (d.mode) setMode(d.mode);
+          if (d.fullName) setFullName(d.fullName);
+          if (d.email) setEmail(d.email);
+          if (d.cpf) setCpf(d.cpf);
+          if (d.phone) setPhone(d.phone);
+          if (d.crm) setCrm(d.crm);
+          if (d.hospitalUnitId) setHospitalUnitId(d.hospitalUnitId);
+          if (d.accessProfile) setAccessProfile(d.accessProfile);
+          if (d.role) setRole(d.role);
+          if (Array.isArray(d.departments)) setDepartments(new Set(d.departments));
+          setDraftStatus("restored");
+          toast.info("Rascunho restaurado", { description: "Continuando de onde parou." });
+        }
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      hydratedRef.current = true;
+    }
+  }, []);
+
+  // ---- Carrega unidades ----
   useEffect(() => {
     (async () => {
       setLoadingUnits(true);
@@ -123,11 +181,54 @@ export function CreateUserForm({ onCreated }: Props) {
     })();
   }, []);
 
+  // ---- Foco inicial no primeiro campo obrigatório ----
+  useEffect(() => {
+    if (!fullName) {
+      const t = setTimeout(() => fullNameRef.current?.focus(), 80);
+      return () => clearTimeout(t);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Auto-sugere role ao mudar accessProfile
   useEffect(() => {
     const hint = PROFILE_TO_ROLE_HINT[accessProfile];
     if (hint) setRole(hint);
   }, [accessProfile]);
+
+  // ---- Autosave debounced ----
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    setDraftStatus("saving");
+    const t = setTimeout(() => {
+      try {
+        const draft: DraftShape = {
+          mode,
+          fullName,
+          email,
+          cpf,
+          phone,
+          crm,
+          hospitalUnitId,
+          accessProfile,
+          role,
+          departments: Array.from(departments),
+        };
+        const hasContent =
+          fullName || email || cpf || phone || crm || hospitalUnitId || departments.size > 0;
+        if (hasContent) {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+          setDraftSavedAt(Date.now());
+          setDraftStatus("saved");
+        } else {
+          localStorage.removeItem(DRAFT_KEY);
+          setDraftStatus("idle");
+        }
+      } catch {
+        setDraftStatus("idle");
+      }
+    }, AUTOSAVE_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [mode, fullName, email, cpf, phone, crm, hospitalUnitId, accessProfile, role, departments]);
 
   // Validação de CPF (formato + dígitos verificadores + duplicidade) com debounce
   useEffect(() => {
@@ -154,7 +255,7 @@ export function CreateUserForm({ onCreated }: Props) {
         .eq("cpf", digits)
         .maybeSingle();
       setCpfChecking(false);
-      if (error) return; // silencioso; o submit revalida no servidor
+      if (error) return;
       if (data) {
         setCpfError(`CPF já cadastrado${data.full_name ? ` para ${data.full_name}` : ""}`);
       }
@@ -162,22 +263,39 @@ export function CreateUserForm({ onCreated }: Props) {
     return () => clearTimeout(t);
   }, [cpf]);
 
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setDraftSavedAt(null);
+    setDraftStatus("idle");
+  };
+
   const reset = () => {
     setFullName(""); setEmail(""); setCpf(""); setPhone(""); setCrm("");
     setDepartments(new Set()); setPassword(genTempPassword());
     setCpfError(null);
+    clearDraft();
+    setTimeout(() => fullNameRef.current?.focus(), 60);
+  };
+
+  /** Foca o ref e mostra um toast de erro. Retorna true para encadear `return`. */
+  const focusInvalid = (ref: RefObject<HTMLElement>, msg: string) => {
+    toast.error(msg);
+    setTimeout(() => {
+      ref.current?.focus();
+      ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+    return true;
   };
 
   const handleSubmit = async () => {
-    // Validações
-    if (!fullName.trim()) return toast.error("Informe o nome completo");
-    if (!email.trim() || !/.+@.+\..+/.test(email)) return toast.error("E-mail inválido");
+    if (!fullName.trim()) return focusInvalid(fullNameRef, "Informe o nome completo");
+    if (!email.trim() || !/.+@.+\..+/.test(email)) return focusInvalid(emailRef, "E-mail inválido");
     const cpfDigits = cpf.replace(/\D/g, "");
-    if (cpfDigits.length !== 11) return toast.error("Informe o CPF completo");
-    if (!isValidCpf(cpfDigits)) return toast.error("CPF inválido — verifique os dígitos");
-    if (cpfError) return toast.error(cpfError);
-    if (phone.replace(/\D/g, "").length < 10) return toast.error("Telefone inválido");
-    if (!hospitalUnitId) return toast.error("Selecione a unidade hospitalar");
+    if (cpfDigits.length !== 11) return focusInvalid(cpfRef, "Informe o CPF completo");
+    if (!isValidCpf(cpfDigits)) return focusInvalid(cpfRef, "CPF inválido — verifique os dígitos");
+    if (cpfError) return focusInvalid(cpfRef, cpfError);
+    if (phone.replace(/\D/g, "").length < 10) return focusInvalid(phoneRef, "Telefone inválido");
+    if (!hospitalUnitId) return focusInvalid(unitTriggerRef as unknown as RefObject<HTMLElement>, "Selecione a unidade hospitalar");
     if (mode === "password" && password.length < 8) return toast.error("Senha precisa ter ao menos 8 caracteres");
     if (!isGlobal && departments.size === 0) {
       return toast.error("Selecione ao menos um setor (ou mude para perfil global)");
@@ -226,18 +344,63 @@ export function CreateUserForm({ onCreated }: Props) {
     }
   };
 
+  // ---- Renderização do indicador de autosave ----
+  const draftIndicator = (() => {
+    if (submitting) return null;
+    if (draftStatus === "saving") {
+      return (
+        <span className="preserve-case inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <CloudUpload className="h-3 w-3 animate-pulse" /> Salvando rascunho…
+        </span>
+      );
+    }
+    if (draftStatus === "saved" || draftStatus === "restored") {
+      const when = draftSavedAt ? new Date(draftSavedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
+      return (
+        <span className="preserve-case inline-flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400">
+          <CheckCircle2 className="h-3 w-3" /> Rascunho salvo{when ? ` às ${when}` : ""}
+        </span>
+      );
+    }
+    return (
+      <span className="preserve-case inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
+        <CloudOff className="h-3 w-3" /> Sem rascunho
+      </span>
+    );
+  })();
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow">
-          <UserPlus className="h-5 w-5 text-white" />
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow">
+            <UserPlus className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold">Cadastrar novo usuário</h2>
+            <p className="text-xs text-muted-foreground">
+              Cria o acesso de um colaborador segmentado por unidade, perfil e setores.
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-lg font-bold">Cadastrar novo usuário</h2>
-          <p className="text-xs text-muted-foreground">
-            Cria o acesso de um colaborador segmentado por unidade, perfil e setores.
-          </p>
+        <div className="flex items-center gap-3">
+          {draftIndicator}
+          {(draftStatus === "saved" || draftStatus === "restored") && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-[11px] gap-1"
+              onClick={() => {
+                clearDraft();
+                toast.success("Rascunho descartado");
+              }}
+              title="Descartar rascunho salvo"
+            >
+              <Trash2 className="h-3 w-3" /> Descartar
+            </Button>
+          )}
         </div>
       </div>
 
@@ -283,16 +446,30 @@ export function CreateUserForm({ onCreated }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className="text-xs font-bold uppercase">Nome completo *</Label>
-          <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Ex.: MARIA SILVA" />
+          <Input
+            ref={fullNameRef}
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Ex.: MARIA SILVA"
+            autoComplete="name"
+          />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-bold uppercase">E-mail *</Label>
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="usuario@hospital.com" />
+          <Input
+            ref={emailRef}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="usuario@hospital.com"
+            autoComplete="email"
+          />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-bold uppercase flex items-center gap-1.5"><IdCard className="h-3.5 w-3.5" /> CPF *</Label>
           <div className="relative">
             <Input
+              ref={cpfRef}
               value={cpf}
               onChange={(e) => setCpf(maskCpf(e.target.value))}
               placeholder="000.000.000-00"
@@ -317,7 +494,14 @@ export function CreateUserForm({ onCreated }: Props) {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-bold uppercase flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> Telefone *</Label>
-          <Input value={phone} onChange={(e) => setPhone(maskPhone(e.target.value))} placeholder="(00) 00000-0000" inputMode="tel" />
+          <Input
+            ref={phoneRef}
+            value={phone}
+            onChange={(e) => setPhone(maskPhone(e.target.value))}
+            placeholder="(00) 00000-0000"
+            inputMode="tel"
+            autoComplete="tel"
+          />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-bold uppercase flex items-center gap-1.5"><Stethoscope className="h-3.5 w-3.5" /> CRM / Registro</Label>
@@ -325,16 +509,22 @@ export function CreateUserForm({ onCreated }: Props) {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-bold uppercase flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5" /> Unidade Hospitalar *</Label>
-          <Select value={hospitalUnitId} onValueChange={setHospitalUnitId} disabled={loadingUnits}>
-            <SelectTrigger><SelectValue placeholder={loadingUnits ? "Carregando…" : "Selecione a unidade"} /></SelectTrigger>
-            <SelectContent>
-              {units.map((u) => (
-                <SelectItem key={u.id} value={u.id}>
-                  {u.name}{u.unit_code ? ` (${u.unit_code})` : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {loadingUnits ? (
+            <Skeleton className="h-10 w-full" />
+          ) : (
+            <Select value={hospitalUnitId} onValueChange={setHospitalUnitId}>
+              <SelectTrigger ref={unitTriggerRef}>
+                <SelectValue placeholder="Selecione a unidade" />
+              </SelectTrigger>
+              <SelectContent>
+                {units.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.name}{u.unit_code ? ` (${u.unit_code})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </div>
 
@@ -396,7 +586,7 @@ export function CreateUserForm({ onCreated }: Props) {
         </div>
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={reset} disabled={submitting}>Limpar</Button>
-          <Button type="button" onClick={handleSubmit} disabled={submitting || !!cpfError || cpfChecking}>
+          <Button type="button" onClick={handleSubmit} disabled={submitting || !!cpfError || cpfChecking || loadingUnits}>
             {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Criando…</> : <><UserPlus className="h-4 w-4 mr-2" /> Cadastrar usuário</>}
           </Button>
         </div>
