@@ -79,6 +79,25 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, navigate, hasShownLoading]);
 
+  // Perfis globais (gestor/admin e painéis dedicados) não devem ver a tela
+  // de "Tipo de Acesso / seleção de setor" — eles vão direto para a landing
+  // definida pelo perfil. Lê do localStorage (gravado no login).
+  const activeAccessProfile = typeof window !== "undefined"
+    ? (sessionStorage.getItem("active_access_profile") || localStorage.getItem("access_profile") || "")
+    : "";
+  const GLOBAL_ACCESS_PROFILES = new Set([
+    "gestor",
+    "farmacia",
+    "ccih",
+    "nir",
+    "imagem",
+    "laboratorio",
+    "administrativo",
+    "multi",
+    "classificacao_risco",
+  ]);
+  const skipAccessLimits = GLOBAL_ACCESS_PROFILES.has(activeAccessProfile);
+
   if (loading || checkingTerms) {
     return null;
   }
@@ -90,9 +109,11 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (showLoadingScreen) {
     return <LoadingScreen onComplete={() => {
       setShowLoadingScreen(false);
-      // Após loading, mostrar tela de limites de acesso (exceto genéricos)
-      if (!isLegacyGenericUser && !accessLimitsShown) {
+      // Perfis globais (gestor/admin/painéis dedicados) pulam a tela de seleção de setor.
+      if (!isLegacyGenericUser && !accessLimitsShown && !skipAccessLimits) {
         setShowAccessLimits(true);
+      } else if (skipAccessLimits) {
+        setAccessLimitsShown(true);
       }
     }} />;
   }
