@@ -407,7 +407,7 @@ export default function UserManagementPage() {
           )}
         </div>
 
-        <Tabs defaultValue="list" className="space-y-4">
+        <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") || "list"} className="space-y-4">
           <TabsList>
             <TabsTrigger value="list" className="gap-2">
               <Users className="h-4 w-4" /> Lista de Usuários

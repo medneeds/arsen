@@ -24,6 +24,7 @@ import AltoCustoPage from "./pages/AltoCustoPage";
 import SadtPage from "./pages/SadtPage";
 import MovementsPage from "./pages/MovementsPage";
 import AuthPage from "./pages/AuthPage";
+import SignupRedirectPage from "./pages/SignupRedirectPage";
 import LandingPage from "./pages/LandingPage";
 import IAPage from "./pages/IAPage";
 import InternmentHistoryPage from "./pages/InternmentHistoryPage";
@@ -112,6 +113,9 @@ const App = () => {
         <Routes>
           <Route path="/welcome" element={<LandingPage />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/signup" element={<SignupRedirectPage />} />
+          <Route path="/sign-up" element={<SignupRedirectPage />} />
+          <Route path="/cadastro" element={<SignupRedirectPage />} />
           <Route
             path="/"
             element={

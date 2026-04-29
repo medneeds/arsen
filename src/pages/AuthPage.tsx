@@ -12,7 +12,7 @@ import {
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { IndividualSignUpForm } from "@/components/IndividualSignUpForm";
+// IndividualSignUpForm removed — signup público desativado; cadastros agora ficam em /gestao-usuarios.
 import { supabase } from "@/integrations/supabase/client";
 import { useDepartment, Department } from "@/contexts/DepartmentContext";
 import { HospitalSelector } from "@/components/HospitalSelector";
@@ -86,10 +86,7 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [redirectRoute, setRedirectRoute] = useState("/");
-  const [screen, setScreen] = useState<"login" | "signup">("login");
-  const [signupState, setSignupState] = useState("");
-  const [signupHospital, setSignupHospital] = useState("");
-  const [signupDepartment, setSignupDepartment] = useState<Department>("URGÊNCIA E EMERGÊNCIA ADULTO");
+  const [screen] = useState<"login">("login");
   const [selectedHospitalId, setSelectedHospitalId] = useState<string | null>(null);
   const [selectedAccessProfile, setSelectedAccessProfile] = useState("medico");
 
@@ -336,31 +333,7 @@ export default function AuthPage() {
                   </p>
                 </motion.div>
               </motion.div>
-            ) : (
-              /* ─── SIGNUP SCREEN ─────────────────────────────── */
-              <motion.div
-                key="signup"
-                initial={{ opacity: 0, x: 24 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -24 }}
-                transition={{ duration: 0.4 }}
-                className="w-full max-w-lg relative"
-              >
-                <div className="relative bg-card rounded-2xl border border-border/70 p-4 sm:p-6 max-h-[85vh] sm:max-h-[80vh] overflow-y-auto shadow-[0_20px_60px_-20px_hsl(var(--primary)/0.18),0_8px_24px_-12px_hsl(215_25%_12%/0.08)]">
-                  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-                  <IndividualSignUpForm
-                    onBack={() => setScreen("login")}
-                    onSuccess={() => setScreen("login")}
-                    selectedState={signupState}
-                    selectedHospitalId={signupHospital}
-                    selectedDepartment={signupDepartment}
-                    onStateChange={setSignupState}
-                    onHospitalChange={setSignupHospital}
-                    onDepartmentChange={setSignupDepartment}
-                  />
-                </div>
-              </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
         </main>
 
