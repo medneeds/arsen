@@ -139,6 +139,46 @@ Deno.serve(async (req) => {
       if (depErr) console.error("departments insert", depErr);
     }
 
+    // 6) Auditoria — registra ação administrativa (não bloqueante)
+    try {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+        || req.headers.get("cf-connecting-ip")
+        || null;
+      const ua = req.headers.get("user-agent") ?? null;
+      const callerName = (callerProfile as { full_name?: string } | null)?.full_name ?? null;
+      await admin.from("user_admin_audit").insert({
+        actor_id: caller.id,
+        actor_email: caller.email ?? null,
+        actor_name: callerName,
+        target_user_id: userId,
+        target_email: email,
+        target_name: fullName,
+        action: mode === "password" ? "user.created.password" : "user.created.invite",
+        hospital_unit_id: hospitalUnitId,
+        access_profile: profile,
+        app_role: appRole,
+        departments: isGlobal ? [] : departments,
+        new_data: {
+          mode,
+          fullName,
+          email,
+          cpf: cpfDigits,
+          phone,
+          crm: crm || null,
+          accessProfile: profile,
+          role: appRole,
+          hospitalUnitId,
+          departments: isGlobal ? [] : departments,
+          isGlobal,
+        },
+        metadata: { source: "admin-create-user" },
+        ip_address: ip,
+        user_agent: ua,
+      });
+    } catch (auditErr) {
+      console.error("audit insert failed (non-blocking)", auditErr);
+    }
+
     return json(200, { success: true, userId, mode });
   } catch (err) {
     console.error("admin-create-user error", err);
