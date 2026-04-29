@@ -118,6 +118,20 @@ export default function ResetPasswordPage() {
             <CheckCircle2 className="h-5 w-5" />
             <span className="preserve-case text-sm">Tudo certo!</span>
           </div>
+        ) : linkError ? (
+          <div className="mt-6 space-y-3">
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-center">
+              <p className="preserve-case text-xs text-destructive">{linkError}</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full preserve-case"
+              onClick={() => navigate("/auth")}
+            >
+              Voltar ao login
+            </Button>
+          </div>
         ) : !ready ? (
           <div className="mt-6 flex items-center justify-center gap-2 text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
