@@ -4,10 +4,10 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -16,27 +16,20 @@ Deno.serve(async (req) => {
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
+      { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Verify the requesting user is authenticated
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      console.error("No authorization header provided");
       return new Response(
         JSON.stringify({ error: "Não autorizado" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get the JWT token and verify the user
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user: requestingUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    const { data: { user: requestingUser }, error: authError } =
+      await supabaseAdmin.auth.getUser(token);
 
     if (authError || !requestingUser) {
       console.error("Auth error:", authError);
@@ -46,62 +39,79 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if requesting user is admin
-    const { data: roleData, error: roleError } = await supabaseAdmin
+    // Allow admin OR gestor to reset passwords
+    const { data: roles } = await supabaseAdmin
       .from("user_roles")
       .select("role")
-      .eq("user_id", requestingUser.id)
-      .eq("role", "admin")
-      .single();
+      .eq("user_id", requestingUser.id);
 
-    if (roleError || !roleData) {
-      console.error("Role check failed:", roleError);
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("access_profile, access_profiles")
+      .eq("id", requestingUser.id)
+      .maybeSingle();
+
+    const roleSet = new Set((roles || []).map((r: any) => r.role));
+    const profileSet = new Set<string>([
+      ...(profile?.access_profile ? [profile.access_profile] : []),
+      ...((profile?.access_profiles as string[] | null) || []),
+    ]);
+
+    const isAuthorized =
+      roleSet.has("admin") ||
+      profileSet.has("gestor") ||
+      profileSet.has("admin");
+
+    if (!isAuthorized) {
+      console.error("Not authorized:", requestingUser.id);
       return new Response(
-        JSON.stringify({ error: "Acesso negado. Apenas coordenadores podem redefinir senhas." }),
+        JSON.stringify({ error: "Acesso negado. Apenas administradores ou gestores podem redefinir senhas." }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Parse request body
-    const { userId, newPassword, requestId } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { userId, newPassword, requestId } = body as {
+      userId?: string;
+      newPassword?: string;
+      requestId?: string | null;
+    };
 
-    if (!userId || !newPassword || !requestId) {
-      console.error("Missing required fields:", { userId: !!userId, newPassword: !!newPassword, requestId: !!requestId });
+    if (!userId || !newPassword) {
       return new Response(
-        JSON.stringify({ error: "userId, newPassword e requestId são obrigatórios" }),
+        JSON.stringify({ error: "userId e newPassword são obrigatórios" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Validate password length (6 to 12 chars, any printable character)
     if (typeof newPassword !== "string" || newPassword.length < 6 || newPassword.length > 12) {
-      console.error("Invalid password length");
       return new Response(
         JSON.stringify({ error: "Senha deve ter de 6 a 12 caracteres" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Verify the reset request exists and is pending
-    const { data: resetRequest, error: requestError } = await supabaseAdmin
-      .from("password_reset_requests")
-      .select("*")
-      .eq("id", requestId)
-      .eq("user_id", userId)
-      .eq("status", "approved")
-      .single();
+    // If requestId provided, validate it (approved request flow)
+    if (requestId) {
+      const { data: resetRequest, error: requestError } = await supabaseAdmin
+        .from("password_reset_requests")
+        .select("*")
+        .eq("id", requestId)
+        .eq("user_id", userId)
+        .eq("status", "approved")
+        .maybeSingle();
 
-    if (requestError || !resetRequest) {
-      console.error("Reset request not found or not approved:", requestError);
-      return new Response(
-        JSON.stringify({ error: "Solicitação de reset não encontrada ou não aprovada" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      if (requestError || !resetRequest) {
+        console.error("Reset request not found/approved:", requestError);
+        return new Response(
+          JSON.stringify({ error: "Solicitação de reset não encontrada ou não aprovada" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
-    console.log(`Resetting password for user ${userId} by admin ${requestingUser.id}`);
+    console.log(`Resetting password for ${userId} by ${requestingUser.id} (mode: ${requestId ? "approved-request" : "admin-direct"})`);
 
-    // Update the user's password using admin API
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       userId,
       { password: newPassword }
@@ -115,30 +125,32 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Update the reset request status to completed
-    const { error: statusError } = await supabaseAdmin
-      .from("password_reset_requests")
-      .update({
-        status: "completed",
-        new_password_set_at: new Date().toISOString(),
-      })
-      .eq("id", requestId);
-
-    if (statusError) {
-      console.error("Failed to update request status:", statusError);
-      // Password was changed, but status update failed - not critical
+    if (requestId) {
+      await supabaseAdmin
+        .from("password_reset_requests")
+        .update({
+          status: "completed",
+          new_password_set_at: new Date().toISOString(),
+        })
+        .eq("id", requestId);
     }
 
-    console.log(`Password reset completed successfully for user ${userId}`);
+    // Audit
+    try {
+      await supabaseAdmin.from("user_admin_audit").insert({
+        actor_id: requestingUser.id,
+        target_user_id: userId,
+        action: "password_reset",
+        details: { mode: requestId ? "approved-request" : "admin-direct" },
+      });
+    } catch (auditErr) {
+      console.warn("Audit insert failed (non-critical):", auditErr);
+    }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Senha redefinida com sucesso" 
-      }),
+      JSON.stringify({ success: true, message: "Senha redefinida com sucesso" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
   } catch (error) {
     console.error("Unexpected error:", error);
     return new Response(
