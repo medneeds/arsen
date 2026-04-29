@@ -727,6 +727,80 @@ export function CreateUserForm({ onCreated }: Props) {
         </div>
       )}
 
+      {/* Indicador de progresso do submit (etapas reais do backend) */}
+      {submitSteps.length > 0 && (
+        <div className="rounded-lg border bg-card p-4 space-y-3 animate-in fade-in slide-in-from-bottom-1">
+          {(() => {
+            const total = submitSteps.filter((s) => s.status !== "skipped").length;
+            const done = submitSteps.filter((s) => s.status === "done").length;
+            const hasError = submitSteps.some((s) => s.status === "error");
+            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+            const current = submitSteps.find((s) => s.status === "running");
+            return (
+              <>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider">
+                    {hasError ? (
+                      <XCircle className="h-4 w-4 text-destructive" />
+                    ) : pct === 100 ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    ) : (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    )}
+                    <span className="preserve-case">
+                      {hasError
+                        ? "Falha durante o cadastro"
+                        : pct === 100
+                          ? "Cadastro concluído"
+                          : current
+                            ? current.label
+                            : "Processando…"}
+                    </span>
+                  </div>
+                  <span className="preserve-case text-xs text-muted-foreground tabular-nums">
+                    {done}/{total} · {pct}%
+                  </span>
+                </div>
+                <Progress value={pct} className="h-1.5" />
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 pt-1">
+                  {submitSteps.map((s) => (
+                    <li key={s.key} className="flex items-start gap-2 text-[12px]">
+                      <span className="mt-0.5 shrink-0">
+                        {s.status === "done" && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
+                        {s.status === "running" && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />}
+                        {s.status === "pending" && <Circle className="h-3.5 w-3.5 text-muted-foreground/40" />}
+                        {s.status === "error" && <XCircle className="h-3.5 w-3.5 text-destructive" />}
+                        {s.status === "skipped" && <Circle className="h-3.5 w-3.5 text-muted-foreground/30" />}
+                      </span>
+                      <span className="preserve-case leading-tight">
+                        <span
+                          className={
+                            s.status === "done"
+                              ? "text-foreground"
+                              : s.status === "running"
+                                ? "text-foreground font-medium"
+                                : s.status === "error"
+                                  ? "text-destructive font-medium"
+                                  : s.status === "skipped"
+                                    ? "text-muted-foreground/60 line-through"
+                                    : "text-muted-foreground"
+                          }
+                        >
+                          {s.label}
+                        </span>
+                        {s.detail && (
+                          <span className="block text-[10.5px] text-muted-foreground">{s.detail}</span>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Resumo + ação */}
       <div className="flex items-center justify-between gap-4 pt-2 border-t">
         <div className="flex flex-wrap gap-2 text-[11px]">
