@@ -480,6 +480,7 @@ export function CreateUserForm({ onCreated }: Props) {
           phone,
           crm: crm.trim() || null,
           accessProfile,
+          accessProfiles,
           role,
           hospitalUnitId,
           departments: isGlobal ? [] : Array.from(departments),
