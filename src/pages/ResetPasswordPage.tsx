@@ -40,8 +40,8 @@ export default function ResetPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 8) {
-      toast.error("A nova senha deve ter ao menos 8 caracteres");
+    if (password.length < 6 || password.length > 12) {
+      toast.error("A nova senha deve ter de 6 a 12 caracteres");
       return;
     }
     if (password !== confirm) {
