@@ -176,7 +176,7 @@ export function UserApprovalsPanel() {
         targetName: decisionTarget.full_name,
         oldData: { status: decisionTarget.status },
         newData: { status: newStatus },
-        notes: decisionNote.trim() || null,
+        metadata: decisionNote.trim() ? { note: decisionNote.trim() } : undefined,
       });
 
       toast.success(decisionType === "approve" ? "Cadastro aprovado" : "Cadastro recusado");
