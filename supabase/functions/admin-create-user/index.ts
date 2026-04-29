@@ -68,8 +68,8 @@ Deno.serve(async (req) => {
     if (!email || !fullName || !cpf || !phone || !hospitalUnitId) {
       return json(400, { error: "Campos obrigatórios: email, fullName, cpf, phone, hospitalUnitId" });
     }
-    if (mode === "password" && (!password || String(password).length < 8)) {
-      return json(400, { error: "Senha provisória deve ter ao menos 8 caracteres" });
+    if (mode === "password" && (!password || String(password).length < 6 || String(password).length > 12)) {
+      return json(400, { error: "Senha provisória deve ter de 6 a 12 caracteres" });
     }
     // Normaliza lista de perfis (deduplicada). Primeiro item = principal.
     const profilesArr: string[] = Array.isArray(accessProfiles) && accessProfiles.length > 0
