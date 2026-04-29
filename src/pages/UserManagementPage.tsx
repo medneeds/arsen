@@ -412,6 +412,14 @@ export default function UserManagementPage() {
             <TabsTrigger value="list" className="gap-2">
               <Users className="h-4 w-4" /> Lista de Usuários
             </TabsTrigger>
+            <TabsTrigger value="approvals" className="gap-2">
+              <ShieldCheck className="h-4 w-4" /> Aprovações
+              {pendingCount > 0 && (
+                <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-[10px]">
+                  {pendingCount}
+                </Badge>
+              )}
+            </TabsTrigger>
             {(currentUserRole === "admin" || isGestor) && (
               <TabsTrigger value="create" className="gap-2">
                 <UserPlus className="h-4 w-4" /> Cadastrar Usuário
@@ -421,6 +429,10 @@ export default function UserManagementPage() {
               <History className="h-4 w-4" /> Histórico
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="approvals">
+            <UserApprovalsPanel />
+          </TabsContent>
 
           <TabsContent value="list" className="space-y-6">
             {/* Filters */}
