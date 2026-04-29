@@ -56,6 +56,7 @@ Deno.serve(async (req) => {
       phone,
       crm,
       accessProfile,
+      accessProfiles, // array<string> opcional — múltiplos perfis acumulados
       role,
       hospitalUnitId,
       departments = [], // array<string>
@@ -70,9 +71,14 @@ Deno.serve(async (req) => {
     if (mode === "password" && (!password || String(password).length < 8)) {
       return json(400, { error: "Senha provisória deve ter ao menos 8 caracteres" });
     }
-    const profile = accessProfile ?? "medico";
+    // Normaliza lista de perfis (deduplicada). Primeiro item = principal.
+    const profilesArr: string[] = Array.isArray(accessProfiles) && accessProfiles.length > 0
+      ? Array.from(new Set(accessProfiles.filter((p: unknown) => typeof p === "string" && p.length > 0)))
+      : [accessProfile ?? "medico"];
+    const profile = profilesArr[0];
     const appRole = role ?? "medico";
-    const isGlobal = GLOBAL_PROFILES.has(profile) || GLOBAL_ROLES.has(appRole);
+    // Considera global se QUALQUER perfil da lista for global, ou se a role for global.
+    const isGlobal = profilesArr.some((p) => GLOBAL_PROFILES.has(p)) || GLOBAL_ROLES.has(appRole);
 
     // Perfis globais NUNCA recebem setores específicos — limpa silenciosamente
     const effectiveDepartments: string[] = isGlobal ? [] : (Array.isArray(departments) ? departments : []);
@@ -133,6 +139,7 @@ Deno.serve(async (req) => {
       phone,
       crm: crm || null,
       access_profile: profile,
+      access_profiles: profilesArr,
       status: "approved",
       approved_at: new Date().toISOString(),
       approved_by: caller.id,
