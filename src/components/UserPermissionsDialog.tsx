@@ -176,6 +176,37 @@ export function UserPermissionsDialog({
         if (unitError) throw unitError;
       }
 
+      // Auditoria de mudanças
+      const before = initialSnapshotRef.current;
+      const afterDeps = Array.from(selectedDepartments).sort();
+      const afterUnits = Array.from(selectedUnits).sort();
+      const after = {
+        role,
+        accessProfile,
+        departments: afterDeps,
+        units: afterUnits,
+      };
+      if (before) {
+        const changed =
+          before.role !== after.role ||
+          before.accessProfile !== after.accessProfile ||
+          JSON.stringify(before.departments) !== JSON.stringify(after.departments) ||
+          JSON.stringify(before.units) !== JSON.stringify(after.units);
+        if (changed) {
+          await logUserAdminAction({
+            action: "user.permissions.updated",
+            targetUserId: userId,
+            targetEmail: userEmail,
+            targetName: userName,
+            accessProfile,
+            appRole: role,
+            departments: afterDeps,
+            oldData: before,
+            newData: after,
+          });
+        }
+      }
+
       toast.success("Permissões atualizadas com sucesso");
       onSaved?.();
       onOpenChange(false);
