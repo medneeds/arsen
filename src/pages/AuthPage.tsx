@@ -86,10 +86,7 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
   const [redirectRoute, setRedirectRoute] = useState("/");
-  const [screen, setScreen] = useState<"login" | "signup">("login");
-  const [signupState, setSignupState] = useState("");
-  const [signupHospital, setSignupHospital] = useState("");
-  const [signupDepartment, setSignupDepartment] = useState<Department>("URGÊNCIA E EMERGÊNCIA ADULTO");
+  const [screen] = useState<"login">("login");
   const [selectedHospitalId, setSelectedHospitalId] = useState<string | null>(null);
   const [selectedAccessProfile, setSelectedAccessProfile] = useState("medico");
 
