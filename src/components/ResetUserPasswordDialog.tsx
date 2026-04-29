@@ -142,8 +142,8 @@ export function ResetUserPasswordDialog({
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
                 <p className="text-xs text-amber-800">
-                  A nova senha deve ter <strong>exatamente 6 caracteres</strong> contendo 
-                  <strong> letras maiúsculas</strong> e <strong>números</strong>.
+                  A nova senha deve ter <strong>de 6 a 12 caracteres</strong>. São permitidas
+                  <strong> letras maiúsculas e minúsculas</strong>, <strong>números</strong> e <strong>caracteres especiais</strong>.
                 </p>
               </div>
             </div>
@@ -156,14 +156,14 @@ export function ResetUserPasswordDialog({
                   <Input
                     type={showPassword ? "text" : "password"}
                     value={formData.newPassword}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      newPassword: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) 
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      newPassword: e.target.value.slice(0, 12)
                     })}
-                    placeholder="EX: ABC123"
+                    placeholder="6 a 12 caracteres"
                     className="h-10 pr-10 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono tracking-widest"
                     disabled={loading}
-                    maxLength={6}
+                    maxLength={12}
                   />
                   <Button
                     type="button"
@@ -176,7 +176,7 @@ export function ResetUserPasswordDialog({
                   </Button>
                 </div>
                 <p className="text-[9px] text-gray-400">
-                  {formData.newPassword.length}/6 caracteres
+                  {formData.newPassword.length}/12 caracteres (mínimo 6)
                 </p>
               </div>
 
