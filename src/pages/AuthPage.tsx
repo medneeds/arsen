@@ -13,6 +13,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 // IndividualSignUpForm removed — signup público desativado; cadastros agora ficam em /gestao-usuarios.
+import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useDepartment, Department } from "@/contexts/DepartmentContext";
 import { HospitalSelector } from "@/components/HospitalSelector";
