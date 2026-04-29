@@ -20,6 +20,8 @@ import { HospitalSelector } from "@/components/HospitalSelector";
 import { useHospital } from "@/contexts/HospitalContext";
 import { AuthBackgroundFx } from "@/components/auth/AuthBackgroundFx";
 import { resolveLandingRoute } from "@/config/profileDefaults";
+import { ProfileChooser } from "@/components/auth/ProfileChooser";
+import type { AccessProfile } from "@/config/userProfiles";
 
 /* ─── Shared chrome ─────────────────────────────────────────────── */
 function PageHeader() {
@@ -74,6 +76,11 @@ export default function AuthPage() {
   const [screen] = useState<"login">("login");
   const [selectedHospitalId, setSelectedHospitalId] = useState<string | null>(null);
   const [forgotOpen, setForgotOpen] = useState(false);
+
+  // Multi-perfil: estado para a tela de escolha após login
+  const [chooserProfiles, setChooserProfiles] = useState<AccessProfile[] | null>(null);
+  const [chooserAppRole, setChooserAppRole] = useState<string | null>(null);
+  const [chooserUserName, setChooserUserName] = useState<string | null>(null);
 
   const [loginData, setLoginData] = useState({
     username: "",
