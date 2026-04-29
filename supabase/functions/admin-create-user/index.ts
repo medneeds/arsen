@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
           accessProfile: profile,
           role: appRole,
           hospitalUnitId,
-          departments: isGlobal ? [] : departments,
+          departments: effectiveDepartments,
           isGlobal,
         },
         metadata: { source: "admin-create-user" },
