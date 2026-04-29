@@ -74,6 +74,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { usePendingPasswordResets } from "@/hooks/usePendingPasswordResets";
 import { useTheme } from "next-themes";
 import { useIsDev } from "@/hooks/useIsDev";
+import { supabase } from "@/integrations/supabase/client";
+import type { AccessProfile } from "@/config/userProfiles";
 
 function DevConsoleLink({ isCollapsed, onNavigate }: { isCollapsed: boolean; onNavigate: () => void }) {
   const { isDev } = useIsDev();
@@ -126,16 +128,38 @@ export function AppSidebar({
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [password, setPassword] = useState("");
   const [showProfileSwitcher, setShowProfileSwitcher] = useState(false);
+  const [availableProfiles, setAvailableProfiles] = useState<AccessProfile[]>([]);
 
-  // Mostra o atalho "Trocar perfil" se o usuário tem 2+ perfis disponíveis na sessão.
-  let availableProfilesCount = 0;
-  try {
-    const raw = sessionStorage.getItem("available_access_profiles");
-    if (raw) {
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr)) availableProfilesCount = arr.length;
-    }
-  } catch { /* ignore */ }
+  useState(() => {
+    try {
+      const raw = sessionStorage.getItem("available_access_profiles");
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) setAvailableProfiles(parsed.filter(Boolean) as AccessProfile[]);
+    } catch { /* ignore */ }
+  });
+
+  // Mostra o atalho "Trocar perfil" também quando a tela pós-login foi pulada por sessão restaurada.
+  useState(() => {
+    if (!user?.id) return;
+    supabase
+      .from("profiles")
+      .select("access_profile, access_profiles")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        const row = data as { access_profile?: string | null; access_profiles?: string[] | null } | null;
+        const profiles = row?.access_profiles?.length ? row.access_profiles : (row?.access_profile ? [row.access_profile] : []);
+        setAvailableProfiles(profiles.filter(Boolean) as AccessProfile[]);
+        if (profiles.length > 0) {
+          sessionStorage.setItem("available_access_profiles", JSON.stringify(profiles));
+          if (!sessionStorage.getItem("active_access_profile")) {
+            sessionStorage.setItem("active_access_profile", profiles[0]);
+            localStorage.setItem("access_profile", profiles[0]);
+          }
+        }
+      });
+  });
+  const availableProfilesCount = availableProfiles.length;
   const hasMultipleProfiles = availableProfilesCount >= 2;
   
   // Hook for pending password reset requests
