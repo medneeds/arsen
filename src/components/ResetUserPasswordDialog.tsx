@@ -221,7 +221,7 @@ export function ResetUserPasswordDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={loading || formData.newPassword.length !== 6}
+                disabled={loading || formData.newPassword.length < 6 || formData.newPassword.length > 12}
                 className="flex-1 bg-amber-600 hover:bg-amber-700"
               >
                 {loading ? (
