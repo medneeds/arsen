@@ -404,7 +404,7 @@ export function CreateUserForm({ onCreated }: Props) {
     if (cpfError) return focusInvalid(cpfRef, cpfError);
     if (phone.replace(/\D/g, "").length < 10) return focusInvalid(phoneRef, "Telefone inválido");
     if (!hospitalUnitId) return focusInvalid(unitTriggerRef as unknown as RefObject<HTMLElement>, "Selecione a unidade hospitalar");
-    if (mode === "password" && password.length < 8) return toast.error("Senha precisa ter ao menos 8 caracteres");
+    if (mode === "password" && (password.length < 6 || password.length > 12)) return toast.error("Senha precisa ter de 6 a 12 caracteres");
     if (!isGlobal && departments.size === 0) {
       return toast.error("Selecione ao menos um setor (ou mude para perfil global)");
     }
