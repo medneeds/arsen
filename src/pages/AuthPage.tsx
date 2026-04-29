@@ -351,6 +351,12 @@ export default function AuthPage() {
 
         <PageFooter />
       </div>
+
+      <ForgotPasswordDialog
+        open={forgotOpen}
+        onOpenChange={setForgotOpen}
+        defaultUsername={loginData.username}
+      />
     </>
   );
 }
