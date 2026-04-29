@@ -63,7 +63,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Repeat2 } from "lucide-react";
+import { ProfileSwitcherDialog } from "@/components/auth/ProfileSwitcherDialog";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDepartment, type Department } from "@/contexts/DepartmentContext";
@@ -124,6 +125,18 @@ export function AppSidebar({
   const isCollapsed = state === "collapsed";
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [password, setPassword] = useState("");
+  const [showProfileSwitcher, setShowProfileSwitcher] = useState(false);
+
+  // Mostra o atalho "Trocar perfil" se o usuário tem 2+ perfis disponíveis na sessão.
+  let availableProfilesCount = 0;
+  try {
+    const raw = sessionStorage.getItem("available_access_profiles");
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) availableProfilesCount = arr.length;
+    }
+  } catch { /* ignore */ }
+  const hasMultipleProfiles = availableProfilesCount >= 2;
   
   // Hook for pending password reset requests
   const { pendingCount: pendingResets } = usePendingPasswordResets();
@@ -716,6 +729,20 @@ export function AppSidebar({
               </div>
             </>
           )}
+          {hasMultipleProfiles && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowProfileSwitcher(true)}
+              className="h-9 w-9 hover:bg-primary/10 hover:text-primary transition-all duration-200 flex-shrink-0 relative"
+              title="Trocar perfil de acesso"
+            >
+              <Repeat2 className="h-4 w-4" />
+              <span className="absolute -top-0.5 -right-0.5 h-3.5 min-w-3.5 px-0.5 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center">
+                {availableProfilesCount}
+              </span>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -727,6 +754,7 @@ export function AppSidebar({
           </Button>
         </div>
       </SidebarFooter>
+      <ProfileSwitcherDialog open={showProfileSwitcher} onOpenChange={setShowProfileSwitcher} />
     </>
   );
 
