@@ -196,7 +196,7 @@ export function UserApprovalsPanel() {
     try {
       const { data, error } = await supabase
         .from("user_admin_audit")
-        .select("id, action, actor_email, actor_name, old_data, new_data, created_at, notes")
+        .select("id, action, actor_email, actor_name, old_data, new_data, created_at, metadata")
         .eq("target_user_id", profile.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
