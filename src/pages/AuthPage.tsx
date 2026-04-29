@@ -88,10 +88,13 @@ export default function AuthPage() {
   });
 
   useEffect(() => {
-    if (user) {
+    // Só redireciona automaticamente se NÃO estamos no fluxo de pós-login
+    // (chooser de perfil ou loading screen). Isso evita pular a escolha
+    // quando o usuário tem múltiplos perfis.
+    if (user && !chooserProfiles && !showLoadingScreen) {
       navigate("/");
     }
-  }, [user, navigate]);
+  }, [user, navigate, chooserProfiles, showLoadingScreen]);
 
   const handleHospitalSelect = (hospital: any) => {
     setSelectedHospitalId(hospital.id);
