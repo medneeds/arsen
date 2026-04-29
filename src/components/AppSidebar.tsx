@@ -566,6 +566,26 @@ export function AppSidebar({
             </Button>
           )}
         </div>
+        {hasMultipleProfiles && (
+          <div className={cn("mt-2 flex", isCollapsed ? "justify-center" : "justify-end")}>
+            <Button
+              variant="ghost"
+              size={isCollapsed ? "icon" : "sm"}
+              onClick={() => setShowProfileSwitcher(true)}
+              className={cn(
+                "relative h-8 border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary",
+                isCollapsed ? "w-8" : "gap-2 px-2 text-[10px] font-semibold"
+              )}
+              title="Trocar perfil de acesso"
+            >
+              <Repeat2 className="h-3.5 w-3.5" />
+              {!isCollapsed && <span>Trocar perfil</span>}
+              <span className="absolute -top-1 -right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center">
+                {availableProfilesCount}
+              </span>
+            </Button>
+          </div>
+        )}
       </SidebarHeader>
 
       <SidebarContent className="gap-0 py-2">
@@ -752,20 +772,6 @@ export function AppSidebar({
                 </p>
               </div>
             </>
-          )}
-          {hasMultipleProfiles && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowProfileSwitcher(true)}
-              className="h-9 w-9 hover:bg-primary/10 hover:text-primary transition-all duration-200 flex-shrink-0 relative"
-              title="Trocar perfil de acesso"
-            >
-              <Repeat2 className="h-4 w-4" />
-              <span className="absolute -top-0.5 -right-0.5 h-3.5 min-w-3.5 px-0.5 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center">
-                {availableProfilesCount}
-              </span>
-            </Button>
           )}
           <Button
             variant="ghost"
