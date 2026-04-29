@@ -204,6 +204,7 @@ export default function UserManagementPage() {
   const handleReject = async (userId: string) => {
     setActionLoading(true);
     try {
+      const target = users.find((u) => u.id === userId);
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -214,6 +215,15 @@ export default function UserManagementPage() {
         .eq("id", userId);
 
       if (error) throw error;
+
+      await logUserAdminAction({
+        action: "user.status.rejected",
+        targetUserId: userId,
+        targetEmail: target?.email ?? null,
+        targetName: target?.full_name ?? null,
+        oldData: { status: target?.status },
+        newData: { status: "rejected" },
+      });
 
       toast.success("Usuário rejeitado");
       fetchUsers();
