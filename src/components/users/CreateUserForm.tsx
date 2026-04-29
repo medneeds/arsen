@@ -236,7 +236,16 @@ export function CreateUserForm({ onCreated }: Props) {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-aplica permissões padrão (role + setores sugeridos) ao mudar perfil.
+  // Mantém accessProfile (singular, "principal") sempre sincronizado com o
+  // primeiro item de accessProfiles. accessProfiles é a fonte de verdade.
+  useEffect(() => {
+    if (accessProfiles.length === 0) return;
+    if (accessProfiles[0] !== accessProfile) {
+      setAccessProfile(accessProfiles[0]);
+    }
+  }, [accessProfiles, accessProfile]);
+
+  // Auto-aplica permissões padrão (role + setores sugeridos) ao mudar perfil PRINCIPAL.
   // Não bloqueia edição: gestor/admin pode ajustar manualmente depois.
   // Roda só após hidratação para não sobrescrever um rascunho restaurado.
   const lastAutoAppliedProfileRef = useRef<AccessProfile | null>(null);
@@ -246,17 +255,8 @@ export function CreateUserForm({ onCreated }: Props) {
     const defaults = PROFILE_DEFAULTS[accessProfile];
     if (!defaults) return;
     setRole(defaults.role);
-    // Aplica setores sugeridos somente se o usuário ainda não personalizou
-    // (lista vazia OU primeira aplicação para este perfil).
-    const isFirstApplication = lastAutoAppliedProfileRef.current === null;
-    if (isFirstApplication || departments.size === 0) {
-      setDepartments(new Set(defaults.departments));
-    } else {
-      // Trocou de perfil manualmente → reaplica defaults do novo perfil
-      setDepartments(new Set(defaults.departments));
-    }
+    setDepartments(new Set(defaults.departments));
     if (lastAutoAppliedProfileRef.current !== null) {
-      // Evita toast no primeiro mount/hidratação
       toast.info("Permissões padrão aplicadas", { description: defaults.hint });
     }
     lastAutoAppliedProfileRef.current = accessProfile;
