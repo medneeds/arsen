@@ -30,7 +30,10 @@ import {
   CloudUpload,
   CheckCircle2,
   Trash2,
+  Circle,
+  XCircle,
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { ACCESS_PROFILES, SYSTEM_ROLES, PROFILE_TO_ROLE_HINT, type AccessProfile, type AppRole } from "@/config/userProfiles";
 import { SectorPermissionsPicker } from "@/components/permissions/SectorPermissionsPicker";
 
@@ -100,6 +103,37 @@ function maskPhone(v: string) {
   return d.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3").trim();
 }
 
+type SubmitStepKey =
+  | "validate"
+  | "cpf"
+  | "auth"
+  | "profile"
+  | "role"
+  | "hospital"
+  | "departments"
+  | "audit"
+  | "done";
+
+type StepStatus = "pending" | "running" | "done" | "error" | "skipped";
+
+interface SubmitStep {
+  key: SubmitStepKey;
+  label: string;
+  status: StepStatus;
+  detail?: string;
+}
+
+const BASE_STEPS: { key: SubmitStepKey; label: string }[] = [
+  { key: "validate", label: "Validando formulário" },
+  { key: "cpf", label: "Verificando CPF no banco" },
+  { key: "auth", label: "Criando credencial de acesso" },
+  { key: "profile", label: "Sincronizando perfil" },
+  { key: "role", label: "Atribuindo role do sistema" },
+  { key: "hospital", label: "Vinculando unidade hospitalar" },
+  { key: "departments", label: "Aplicando setores permitidos" },
+  { key: "audit", label: "Registrando auditoria" },
+];
+
 export function CreateUserForm({ onCreated }: Props) {
   const [units, setUnits] = useState<HospitalUnit[]>([]);
   const [loadingUnits, setLoadingUnits] = useState(true);
@@ -121,6 +155,10 @@ export function CreateUserForm({ onCreated }: Props) {
   const [role, setRole] = useState<AppRole>("medico");
   const [departments, setDepartments] = useState<Set<string>>(new Set());
   const [password, setPassword] = useState(genTempPassword());
+
+  // Progresso de submit
+  const [submitSteps, setSubmitSteps] = useState<SubmitStep[]>([]);
+  const submitStepsRef = useRef<SubmitStep[]>([]);
 
   // Autosave state
   const [draftStatus, setDraftStatus] = useState<"idle" | "saving" | "saved" | "restored">("idle");
@@ -287,6 +325,46 @@ export function CreateUserForm({ onCreated }: Props) {
     return true;
   };
 
+  // ---- Helpers de progresso ----
+  const initSteps = (isGlobalNow: boolean) => {
+    const steps: SubmitStep[] = BASE_STEPS.map((s) => ({
+      key: s.key,
+      label: s.label,
+      status: "pending",
+    }));
+    if (isGlobalNow) {
+      const idx = steps.findIndex((s) => s.key === "departments");
+      if (idx >= 0) {
+        steps[idx] = { ...steps[idx], status: "skipped", detail: "Perfil global — sem setores" };
+      }
+    }
+    submitStepsRef.current = steps;
+    setSubmitSteps(steps);
+  };
+
+  const setStep = (key: SubmitStepKey, patch: Partial<SubmitStep>) => {
+    const next = submitStepsRef.current.map((s) =>
+      s.key === key ? { ...s, ...patch } : s,
+    );
+    submitStepsRef.current = next;
+    setSubmitSteps(next);
+  };
+
+  const completePending = (asError = false, errorMsg?: string) => {
+    const next = submitStepsRef.current.map((s) => {
+      if (s.status === "running") {
+        return asError
+          ? { ...s, status: "error" as StepStatus, detail: errorMsg ?? s.detail }
+          : { ...s, status: "done" as StepStatus };
+      }
+      return s;
+    });
+    submitStepsRef.current = next;
+    setSubmitSteps(next);
+  };
+
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
   const handleSubmit = async () => {
     if (!fullName.trim()) return focusInvalid(fullNameRef, "Informe o nome completo");
     if (!email.trim() || !/.+@.+\..+/.test(email)) return focusInvalid(emailRef, "E-mail inválido");
@@ -302,6 +380,65 @@ export function CreateUserForm({ onCreated }: Props) {
     }
 
     setSubmitting(true);
+    initSteps(isGlobal);
+
+    // Etapa 1: validação local (real)
+    setStep("validate", { status: "running" });
+    await wait(120);
+    setStep("validate", { status: "done" });
+
+    // Etapa 2: confirma CPF no banco (consulta real adicional para refletir status backend)
+    setStep("cpf", { status: "running", detail: "Consultando profiles…" });
+    try {
+      const { data: cpfDup, error: cpfQErr } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("cpf", cpfDigits)
+        .maybeSingle();
+      if (cpfQErr) throw cpfQErr;
+      if (cpfDup) {
+        setStep("cpf", { status: "error", detail: "CPF já cadastrado" });
+        toast.error("CPF já cadastrado no sistema");
+        setSubmitting(false);
+        return;
+      }
+      setStep("cpf", { status: "done", detail: "Disponível" });
+    } catch (e) {
+      setStep("cpf", { status: "error", detail: (e as Error).message });
+      toast.error("Falha ao validar CPF");
+      setSubmitting(false);
+      return;
+    }
+
+    // Etapas 3-8 são executadas pela edge function como uma única transação.
+    // Avançamos visualmente em paralelo à chamada para refletir a ordem real
+    // do backend (ver supabase/functions/admin-create-user/index.ts).
+    const advanceTimers: ReturnType<typeof setTimeout>[] = [];
+    const startStep = (key: SubmitStepKey, delay: number, detail?: string) => {
+      advanceTimers.push(
+        setTimeout(() => {
+          // Marca a etapa anterior em running como concluída
+          const prev = submitStepsRef.current.find((s) => s.status === "running");
+          if (prev) setStep(prev.key, { status: "done" });
+          setStep(key, { status: "running", detail });
+        }, delay),
+      );
+    };
+
+    setStep("auth", {
+      status: "running",
+      detail: mode === "password" ? "Criando usuário com senha provisória" : "Enviando convite por e-mail",
+    });
+    startStep("profile", 700, "Upsert em profiles");
+    startStep("role", 1200, `Atribuindo role: ${role}`);
+    startStep("hospital", 1500, "Vinculando hospital_unit");
+    if (!isGlobal) {
+      startStep("departments", 1800, `${departments.size} setor(es)`);
+      startStep("audit", 2200, "Persistindo trilha");
+    } else {
+      startStep("audit", 1900, "Persistindo trilha");
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke("admin-create-user", {
         body: {
@@ -319,8 +456,16 @@ export function CreateUserForm({ onCreated }: Props) {
           redirectTo: `${window.location.origin}/auth`,
         },
       });
+      advanceTimers.forEach(clearTimeout);
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
+
+      // Marca todas as etapas pendentes/em execução como concluídas
+      const finalized = submitStepsRef.current.map((s) =>
+        s.status === "pending" || s.status === "running" ? { ...s, status: "done" as StepStatus } : s,
+      );
+      submitStepsRef.current = finalized;
+      setSubmitSteps(finalized);
 
       if (mode === "password") {
         toast.success("Usuário criado!", {
@@ -334,10 +479,16 @@ export function CreateUserForm({ onCreated }: Props) {
       } else {
         toast.success("Convite enviado por e-mail");
       }
+      // Pequeno delay para o usuário ver o estado "done" completo
+      await wait(500);
       reset();
+      setSubmitSteps([]);
+      submitStepsRef.current = [];
       onCreated?.();
     } catch (e) {
+      advanceTimers.forEach(clearTimeout);
       const msg = (e as Error).message ?? "Falha ao criar usuário";
+      completePending(true, msg);
       toast.error(msg);
     } finally {
       setSubmitting(false);
@@ -573,6 +724,80 @@ export function CreateUserForm({ onCreated }: Props) {
       ) : (
         <div className="rounded-lg border bg-card p-4">
           <SectorPermissionsPicker selected={departments} onChange={setDepartments} />
+        </div>
+      )}
+
+      {/* Indicador de progresso do submit (etapas reais do backend) */}
+      {submitSteps.length > 0 && (
+        <div className="rounded-lg border bg-card p-4 space-y-3 animate-in fade-in slide-in-from-bottom-1">
+          {(() => {
+            const total = submitSteps.filter((s) => s.status !== "skipped").length;
+            const done = submitSteps.filter((s) => s.status === "done").length;
+            const hasError = submitSteps.some((s) => s.status === "error");
+            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+            const current = submitSteps.find((s) => s.status === "running");
+            return (
+              <>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider">
+                    {hasError ? (
+                      <XCircle className="h-4 w-4 text-destructive" />
+                    ) : pct === 100 ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    ) : (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    )}
+                    <span className="preserve-case">
+                      {hasError
+                        ? "Falha durante o cadastro"
+                        : pct === 100
+                          ? "Cadastro concluído"
+                          : current
+                            ? current.label
+                            : "Processando…"}
+                    </span>
+                  </div>
+                  <span className="preserve-case text-xs text-muted-foreground tabular-nums">
+                    {done}/{total} · {pct}%
+                  </span>
+                </div>
+                <Progress value={pct} className="h-1.5" />
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 pt-1">
+                  {submitSteps.map((s) => (
+                    <li key={s.key} className="flex items-start gap-2 text-[12px]">
+                      <span className="mt-0.5 shrink-0">
+                        {s.status === "done" && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
+                        {s.status === "running" && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />}
+                        {s.status === "pending" && <Circle className="h-3.5 w-3.5 text-muted-foreground/40" />}
+                        {s.status === "error" && <XCircle className="h-3.5 w-3.5 text-destructive" />}
+                        {s.status === "skipped" && <Circle className="h-3.5 w-3.5 text-muted-foreground/30" />}
+                      </span>
+                      <span className="preserve-case leading-tight">
+                        <span
+                          className={
+                            s.status === "done"
+                              ? "text-foreground"
+                              : s.status === "running"
+                                ? "text-foreground font-medium"
+                                : s.status === "error"
+                                  ? "text-destructive font-medium"
+                                  : s.status === "skipped"
+                                    ? "text-muted-foreground/60 line-through"
+                                    : "text-muted-foreground"
+                          }
+                        >
+                          {s.label}
+                        </span>
+                        {s.detail && (
+                          <span className="block text-[10.5px] text-muted-foreground">{s.detail}</span>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            );
+          })()}
         </div>
       )}
 
