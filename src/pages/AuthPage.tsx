@@ -336,31 +336,7 @@ export default function AuthPage() {
                   </p>
                 </motion.div>
               </motion.div>
-            ) : (
-              /* ─── SIGNUP SCREEN ─────────────────────────────── */
-              <motion.div
-                key="signup"
-                initial={{ opacity: 0, x: 24 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -24 }}
-                transition={{ duration: 0.4 }}
-                className="w-full max-w-lg relative"
-              >
-                <div className="relative bg-card rounded-2xl border border-border/70 p-4 sm:p-6 max-h-[85vh] sm:max-h-[80vh] overflow-y-auto shadow-[0_20px_60px_-20px_hsl(var(--primary)/0.18),0_8px_24px_-12px_hsl(215_25%_12%/0.08)]">
-                  <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-                  <IndividualSignUpForm
-                    onBack={() => setScreen("login")}
-                    onSuccess={() => setScreen("login")}
-                    selectedState={signupState}
-                    selectedHospitalId={signupHospital}
-                    selectedDepartment={signupDepartment}
-                    onStateChange={setSignupState}
-                    onHospitalChange={setSignupHospital}
-                    onDepartmentChange={setSignupDepartment}
-                  />
-                </div>
-              </motion.div>
-            )}
+            ) : null}
           </AnimatePresence>
         </main>
 
