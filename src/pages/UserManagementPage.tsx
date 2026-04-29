@@ -566,6 +566,12 @@ export default function UserManagementPage() {
               </div>
             </TabsContent>
           )}
+
+          <TabsContent value="audit">
+            <div className="rounded-xl border bg-card shadow-sm p-6">
+              <UserAuditHistoryPanel />
+            </div>
+          </TabsContent>
         </Tabs>
 
         {/* LGPD Notice */}
