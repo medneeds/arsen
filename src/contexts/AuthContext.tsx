@@ -177,10 +177,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
     });
 
-    if (!error) {
-      navigate("/");
-    }
-
     return { error };
   };
 
@@ -228,6 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         "customTemplates",
       ];
       SENSITIVE_KEYS.forEach((k) => localStorage.removeItem(k));
+      ["active_access_profile", "available_access_profiles"].forEach((k) => sessionStorage.removeItem(k));
       // Defensive sweep: any cached patient/clinical keys
       Object.keys(localStorage).forEach((k) => {
         if (/^(patient|clinical|prescription|evolution|exam|culture|note|checklist)/i.test(k)) {
