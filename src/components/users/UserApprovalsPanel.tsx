@@ -72,7 +72,7 @@ interface AuditEntry {
   old_data: any;
   new_data: any;
   created_at: string;
-  notes: string | null;
+  metadata: any;
 }
 
 const STATUS_META: Record<string, { label: string; cls: string; icon: any }> = {
