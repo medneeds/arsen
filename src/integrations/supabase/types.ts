@@ -4020,6 +4020,10 @@ export type Database = {
         Returns: undefined
       }
       calc_dv_mod11: { Args: { p_base: string }; Returns: number }
+      can_assign_department: {
+        Args: { _caller: string; _target: string }
+        Returns: boolean
+      }
       check_patient_duplicate: {
         Args: { p_cns?: string; p_cpf?: string }
         Returns: {
@@ -4078,6 +4082,7 @@ export type Database = {
           summary: string
         }[]
       }
+      get_user_app_role: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -4086,6 +4091,10 @@ export type Database = {
         Returns: boolean
       }
       is_dev_user: { Args: { _user_id: string }; Returns: boolean }
+      is_global_profile: {
+        Args: { _access_profile: string; _app_role: string }
+        Returns: boolean
+      }
       merge_unidentified_patient: {
         Args: { p_ni_id: string; p_target_id: string }
         Returns: string
@@ -4153,6 +4162,7 @@ export type Database = {
         Returns: undefined
       }
       unaccent_immutable: { Args: { input: string }; Returns: string }
+      user_is_global: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role:
