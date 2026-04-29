@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
         hospital_unit_id: hospitalUnitId,
         access_profile: profile,
         app_role: appRole,
-        departments: isGlobal ? [] : departments,
+        departments: effectiveDepartments,
         new_data: {
           mode,
           fullName,
