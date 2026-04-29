@@ -325,6 +325,46 @@ export function CreateUserForm({ onCreated }: Props) {
     return true;
   };
 
+  // ---- Helpers de progresso ----
+  const initSteps = (isGlobalNow: boolean) => {
+    const steps: SubmitStep[] = BASE_STEPS.map((s) => ({
+      key: s.key,
+      label: s.label,
+      status: "pending",
+    }));
+    if (isGlobalNow) {
+      const idx = steps.findIndex((s) => s.key === "departments");
+      if (idx >= 0) {
+        steps[idx] = { ...steps[idx], status: "skipped", detail: "Perfil global — sem setores" };
+      }
+    }
+    submitStepsRef.current = steps;
+    setSubmitSteps(steps);
+  };
+
+  const setStep = (key: SubmitStepKey, patch: Partial<SubmitStep>) => {
+    const next = submitStepsRef.current.map((s) =>
+      s.key === key ? { ...s, ...patch } : s,
+    );
+    submitStepsRef.current = next;
+    setSubmitSteps(next);
+  };
+
+  const completePending = (asError = false, errorMsg?: string) => {
+    const next = submitStepsRef.current.map((s) => {
+      if (s.status === "running") {
+        return asError
+          ? { ...s, status: "error" as StepStatus, detail: errorMsg ?? s.detail }
+          : { ...s, status: "done" as StepStatus };
+      }
+      return s;
+    });
+    submitStepsRef.current = next;
+    setSubmitSteps(next);
+  };
+
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
   const handleSubmit = async () => {
     if (!fullName.trim()) return focusInvalid(fullNameRef, "Informe o nome completo");
     if (!email.trim() || !/.+@.+\..+/.test(email)) return focusInvalid(emailRef, "E-mail inválido");
@@ -340,6 +380,65 @@ export function CreateUserForm({ onCreated }: Props) {
     }
 
     setSubmitting(true);
+    initSteps(isGlobal);
+
+    // Etapa 1: validação local (real)
+    setStep("validate", { status: "running" });
+    await wait(120);
+    setStep("validate", { status: "done" });
+
+    // Etapa 2: confirma CPF no banco (consulta real adicional para refletir status backend)
+    setStep("cpf", { status: "running", detail: "Consultando profiles…" });
+    try {
+      const { data: cpfDup, error: cpfQErr } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("cpf", cpfDigits)
+        .maybeSingle();
+      if (cpfQErr) throw cpfQErr;
+      if (cpfDup) {
+        setStep("cpf", { status: "error", detail: "CPF já cadastrado" });
+        toast.error("CPF já cadastrado no sistema");
+        setSubmitting(false);
+        return;
+      }
+      setStep("cpf", { status: "done", detail: "Disponível" });
+    } catch (e) {
+      setStep("cpf", { status: "error", detail: (e as Error).message });
+      toast.error("Falha ao validar CPF");
+      setSubmitting(false);
+      return;
+    }
+
+    // Etapas 3-8 são executadas pela edge function como uma única transação.
+    // Avançamos visualmente em paralelo à chamada para refletir a ordem real
+    // do backend (ver supabase/functions/admin-create-user/index.ts).
+    const advanceTimers: ReturnType<typeof setTimeout>[] = [];
+    const startStep = (key: SubmitStepKey, delay: number, detail?: string) => {
+      advanceTimers.push(
+        setTimeout(() => {
+          // Marca a etapa anterior em running como concluída
+          const prev = submitStepsRef.current.find((s) => s.status === "running");
+          if (prev) setStep(prev.key, { status: "done" });
+          setStep(key, { status: "running", detail });
+        }, delay),
+      );
+    };
+
+    setStep("auth", {
+      status: "running",
+      detail: mode === "password" ? "Criando usuário com senha provisória" : "Enviando convite por e-mail",
+    });
+    startStep("profile", 700, "Upsert em profiles");
+    startStep("role", 1200, `Atribuindo role: ${role}`);
+    startStep("hospital", 1500, "Vinculando hospital_unit");
+    if (!isGlobal) {
+      startStep("departments", 1800, `${departments.size} setor(es)`);
+      startStep("audit", 2200, "Persistindo trilha");
+    } else {
+      startStep("audit", 1900, "Persistindo trilha");
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke("admin-create-user", {
         body: {
@@ -357,8 +456,16 @@ export function CreateUserForm({ onCreated }: Props) {
           redirectTo: `${window.location.origin}/auth`,
         },
       });
+      advanceTimers.forEach(clearTimeout);
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
+
+      // Marca todas as etapas pendentes/em execução como concluídas
+      const finalized = submitStepsRef.current.map((s) =>
+        s.status === "pending" || s.status === "running" ? { ...s, status: "done" as StepStatus } : s,
+      );
+      submitStepsRef.current = finalized;
+      setSubmitSteps(finalized);
 
       if (mode === "password") {
         toast.success("Usuário criado!", {
@@ -372,10 +479,16 @@ export function CreateUserForm({ onCreated }: Props) {
       } else {
         toast.success("Convite enviado por e-mail");
       }
+      // Pequeno delay para o usuário ver o estado "done" completo
+      await wait(500);
       reset();
+      setSubmitSteps([]);
+      submitStepsRef.current = [];
       onCreated?.();
     } catch (e) {
+      advanceTimers.forEach(clearTimeout);
       const msg = (e as Error).message ?? "Falha ao criar usuário";
+      completePending(true, msg);
       toast.error(msg);
     } finally {
       setSubmitting(false);
