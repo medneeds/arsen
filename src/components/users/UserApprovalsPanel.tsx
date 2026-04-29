@@ -530,8 +530,8 @@ export function UserApprovalsPanel() {
                         {h.actor_name || h.actor_email || "Sistema"}
                       </span>
                     </p>
-                    {h.notes && (
-                      <p className="text-xs mt-1 italic text-foreground/80">"{h.notes}"</p>
+                    {h.metadata?.note && (
+                      <p className="text-xs mt-1 italic text-foreground/80">"{h.metadata.note}"</p>
                     )}
                     {(h.old_data || h.new_data) && (
                       <details className="mt-2">
