@@ -344,6 +344,8 @@ export default function UserManagementPage() {
       setActionLoading(false);
     }
   };
+
+  const filteredUsers = users.filter(u => {
     const matchesSearch = 
       (u.full_name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
       (u.email?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
