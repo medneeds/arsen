@@ -130,9 +130,10 @@ export default function ResetPasswordPage() {
                 <Input
                   type={show ? "text" : "password"}
                   value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
+                  onChange={(e) => setConfirm(e.target.value.slice(0, 12))}
                   className="pl-10 h-11"
                   placeholder="Repita a nova senha"
+                  maxLength={12}
                 />
               </div>
             </div>
