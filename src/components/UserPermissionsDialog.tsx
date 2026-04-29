@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logUserAdminAction } from "@/lib/userAdminAudit";
 import {
   Dialog,
   DialogContent,
