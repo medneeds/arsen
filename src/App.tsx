@@ -113,6 +113,9 @@ const App = () => {
         <Routes>
           <Route path="/welcome" element={<LandingPage />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/signup" element={<SignupRedirectPage />} />
+          <Route path="/sign-up" element={<SignupRedirectPage />} />
+          <Route path="/cadastro" element={<SignupRedirectPage />} />
           <Route
             path="/"
             element={
