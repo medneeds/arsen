@@ -116,16 +116,29 @@ export default function AuthPage() {
         }
         setLoading(false);
       } else {
+        // Login generalista: descobre o perfil/role definidos pelo gestor/admin
+        // e direciona o usuário automaticamente para o painel correspondente.
         const internalEmail = `${loginData.username.toLowerCase()}@sistema.local`;
-        await supabase
+        const { data: profileRow } = await supabase
           .from("profiles")
-          .select("access_profile")
+          .select("id, access_profile")
           .eq("email", internalEmail)
           .maybeSingle();
 
-        const route = getRedirectRoute(selectedAccessProfile, null);
+        let appRole: string | null = null;
+        if (profileRow?.id) {
+          const { data: roleRow } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", profileRow.id)
+            .maybeSingle();
+          appRole = (roleRow as { role?: string } | null)?.role ?? null;
+        }
+
+        const accessProfile = (profileRow as { access_profile?: string } | null)?.access_profile ?? null;
+        const route = resolveLandingRoute(accessProfile, appRole);
         setRedirectRoute(route);
-        localStorage.setItem("access_profile", selectedAccessProfile);
+        if (accessProfile) localStorage.setItem("access_profile", accessProfile);
 
         setCurrentDepartment("UTI");
         toast.success("Login realizado com sucesso");
