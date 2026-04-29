@@ -13,6 +13,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 // IndividualSignUpForm removed — signup público desativado; cadastros agora ficam em /gestao-usuarios.
+import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useDepartment, Department } from "@/contexts/DepartmentContext";
 import { HospitalSelector } from "@/components/HospitalSelector";
@@ -89,6 +90,7 @@ export default function AuthPage() {
   const [screen] = useState<"login">("login");
   const [selectedHospitalId, setSelectedHospitalId] = useState<string | null>(null);
   const [selectedAccessProfile, setSelectedAccessProfile] = useState("medico");
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   const [loginData, setLoginData] = useState({
     username: "",
@@ -264,6 +266,16 @@ export default function AuthPage() {
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
+                      <div className="mt-1.5 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setForgotOpen(true)}
+                          className="preserve-case text-[11px] text-primary hover:text-primary/80 hover:underline transition-colors"
+                          disabled={loading}
+                        >
+                          Esqueceu a senha?
+                        </button>
+                      </div>
                     </div>
 
                     {/* Tipo de Acesso */}
@@ -339,6 +351,12 @@ export default function AuthPage() {
 
         <PageFooter />
       </div>
+
+      <ForgotPasswordDialog
+        open={forgotOpen}
+        onOpenChange={setForgotOpen}
+        defaultUsername={loginData.username}
+      />
     </>
   );
 }
