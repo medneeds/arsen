@@ -602,8 +602,10 @@ export function CreateUserForm({ onCreated }: Props) {
             <Label className="text-xs font-bold uppercase shrink-0">Senha</Label>
             <Input
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value.slice(0, 12))}
               className="font-mono"
+              maxLength={12}
+              placeholder="6 a 12 caracteres"
             />
             <Button type="button" size="sm" variant="outline" onClick={() => setPassword(genTempPassword())} title="Gerar nova">
               <RefreshCw className="h-4 w-4" />
@@ -613,7 +615,7 @@ export function CreateUserForm({ onCreated }: Props) {
             </Button>
           </div>
           <p className="text-[11px] text-muted-foreground mt-1">
-            O usuário deverá trocar a senha no primeiro login.
+            De 6 a 12 caracteres — letras maiúsculas/minúsculas, números e especiais permitidos. O usuário deverá trocar a senha no primeiro login.
           </p>
         </TabsContent>
 
