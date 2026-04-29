@@ -150,8 +150,8 @@ Deno.serve(async (req) => {
 
     // 5) Setores (apenas se não-global)
     await admin.from("user_departments").delete().eq("user_id", userId);
-    if (!isGlobal && departments.length > 0) {
-      const rows = departments.map((d: string) => ({ user_id: userId, department: d }));
+    if (!isGlobal && effectiveDepartments.length > 0) {
+      const rows = effectiveDepartments.map((d: string) => ({ user_id: userId, department: d }));
       const { error: depErr } = await admin.from("user_departments").insert(rows);
       if (depErr) console.error("departments insert", depErr);
     }
