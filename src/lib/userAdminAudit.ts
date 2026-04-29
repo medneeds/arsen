@@ -38,9 +38,9 @@ export async function logUserAdminAction(params: {
       access_profile: params.accessProfile ?? null,
       app_role: params.appRole ?? null,
       departments: params.departments ?? null,
-      old_data: params.oldData ?? null,
-      new_data: params.newData ?? null,
-      metadata: { ...(params.metadata ?? {}), source: "client" },
+      old_data: (params.oldData ?? null) as any,
+      new_data: (params.newData ?? null) as any,
+      metadata: { ...(params.metadata ?? {}), source: "client" } as any,
       user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
     }]);
   } catch (e) {
