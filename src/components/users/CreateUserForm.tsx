@@ -291,7 +291,29 @@ export function CreateUserForm({ onCreated }: Props) {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-bold uppercase flex items-center gap-1.5"><IdCard className="h-3.5 w-3.5" /> CPF *</Label>
-          <Input value={cpf} onChange={(e) => setCpf(maskCpf(e.target.value))} placeholder="000.000.000-00" inputMode="numeric" />
+          <div className="relative">
+            <Input
+              value={cpf}
+              onChange={(e) => setCpf(maskCpf(e.target.value))}
+              placeholder="000.000.000-00"
+              inputMode="numeric"
+              aria-invalid={!!cpfError}
+              aria-describedby="cpf-help"
+              className={cpfError ? "border-destructive focus-visible:ring-destructive pr-9" : "pr-9"}
+            />
+            {cpfChecking && (
+              <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+            )}
+            {!cpfChecking && cpf && !cpfError && cpf.replace(/\D/g, "").length === 11 && (
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
+            )}
+          </div>
+          <p
+            id="cpf-help"
+            className={`text-[11px] min-h-[14px] ${cpfError ? "text-destructive font-medium" : "text-muted-foreground"}`}
+          >
+            {cpfError ?? (cpfChecking ? "Verificando disponibilidade…" : "Informe um CPF válido (não cadastrado).")}
+          </p>
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-bold uppercase flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" /> Telefone *</Label>
