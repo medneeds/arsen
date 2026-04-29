@@ -129,16 +129,53 @@ export function CreateUserForm({ onCreated }: Props) {
     if (hint) setRole(hint);
   }, [accessProfile]);
 
+  // Validação de CPF (formato + dígitos verificadores + duplicidade) com debounce
+  useEffect(() => {
+    const digits = cpf.replace(/\D/g, "");
+    setCpfChecking(false);
+    if (digits.length === 0) {
+      setCpfError(null);
+      return;
+    }
+    if (digits.length < 11) {
+      setCpfError("CPF incompleto");
+      return;
+    }
+    if (!isValidCpf(digits)) {
+      setCpfError("CPF inválido (dígito verificador não confere)");
+      return;
+    }
+    setCpfError(null);
+    setCpfChecking(true);
+    const t = setTimeout(async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("cpf", digits)
+        .maybeSingle();
+      setCpfChecking(false);
+      if (error) return; // silencioso; o submit revalida no servidor
+      if (data) {
+        setCpfError(`CPF já cadastrado${data.full_name ? ` para ${data.full_name}` : ""}`);
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [cpf]);
+
   const reset = () => {
     setFullName(""); setEmail(""); setCpf(""); setPhone(""); setCrm("");
     setDepartments(new Set()); setPassword(genTempPassword());
+    setCpfError(null);
   };
 
   const handleSubmit = async () => {
     // Validações
     if (!fullName.trim()) return toast.error("Informe o nome completo");
     if (!email.trim() || !/.+@.+\..+/.test(email)) return toast.error("E-mail inválido");
-    if (cpf.replace(/\D/g, "").length !== 11) return toast.error("CPF inválido");
+    const cpfDigits = cpf.replace(/\D/g, "");
+    if (cpfDigits.length !== 11) return toast.error("Informe o CPF completo");
+    if (!isValidCpf(cpfDigits)) return toast.error("CPF inválido — verifique os dígitos");
+    if (cpfError) return toast.error(cpfError);
     if (phone.replace(/\D/g, "").length < 10) return toast.error("Telefone inválido");
     if (!hospitalUnitId) return toast.error("Selecione a unidade hospitalar");
     if (mode === "password" && password.length < 8) return toast.error("Senha precisa ter ao menos 8 caracteres");
