@@ -109,21 +109,27 @@ export default function AuthPage() {
       const { error } = await signIn(loginData.username, loginData.password);
 
       if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          toast.error("Login ou senha incorretos");
+        const msg = (error as { message?: string })?.message ?? "";
+        if (msg.includes("Invalid login credentials")) {
+          toast.error("Usuário, CPF ou senha incorretos");
+        } else if (msg.includes("CPF não encontrado")) {
+          toast.error("CPF não encontrado");
         } else {
-          toast.error("Erro ao fazer login: " + error.message);
+          toast.error("Erro ao fazer login: " + msg);
         }
         setLoading(false);
       } else {
         // Login generalista: descobre o perfil/role definidos pelo gestor/admin
-        // e direciona o usuário automaticamente para o painel correspondente.
-        const internalEmail = `${loginData.username.toLowerCase()}@sistema.local`;
-        const { data: profileRow } = await supabase
-          .from("profiles")
-          .select("id, access_profile")
-          .eq("email", internalEmail)
-          .maybeSingle();
+        // a partir do usuário autenticado (suporta login por email, CPF ou usuário).
+        const { data: authData } = await supabase.auth.getUser();
+        const userId = authData?.user?.id ?? null;
+        const { data: profileRow } = userId
+          ? await supabase
+              .from("profiles")
+              .select("id, access_profile")
+              .eq("id", userId)
+              .maybeSingle()
+          : { data: null as { id?: string; access_profile?: string } | null };
 
         let appRole: string | null = null;
         if (profileRow?.id) {
@@ -216,7 +222,7 @@ export default function AuthPage() {
                   <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
                     <div>
                       <Label htmlFor="username" className="text-[10px] font-medium text-muted-foreground mb-1.5 block tracking-[0.15em]">
-                        USUÁRIO
+                        USUÁRIO, CPF OU E-MAIL
                       </Label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
@@ -224,14 +230,13 @@ export default function AuthPage() {
                           id="username"
                           type="text"
                           value={loginData.username}
-                          onChange={(e) => setLoginData({ ...loginData, username: e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, '') })}
-                          placeholder="Digite seu usuário"
-                          className="pl-10 h-12 md:h-11 text-base md:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
+                          onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                          placeholder="Usuário, CPF ou e-mail"
+                          className="preserve-case pl-10 h-12 md:h-11 text-base md:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
                           disabled={loading}
                           autoComplete="username"
                           autoFocus
                           inputMode="text"
-                          autoCapitalize="characters"
                         />
                       </div>
                     </div>

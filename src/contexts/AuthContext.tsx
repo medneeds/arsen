@@ -145,19 +145,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signIn = async (username: string, password: string) => {
-    // Converter username para formato de email interno para Supabase
-    const internalEmail = `${username.toLowerCase()}@sistema.local`;
-    
+  const signIn = async (identifier: string, password: string) => {
+    // Aceita email, CPF (somente dígitos) ou usuário interno.
+    const raw = identifier.trim();
+    const digits = raw.replace(/\D+/g, "");
+    const isEmail = raw.includes("@");
+    const isCpf = !isEmail && digits.length === 11;
+
+    let emailToUse = raw.toLowerCase();
+
+    if (isCpf) {
+      // Resolve CPF -> email real via edge function (service role).
+      try {
+        const { data, error } = await supabase.functions.invoke("resolve-login", {
+          body: { identifier: digits },
+        });
+        if (error || !data?.email) {
+          return { error: error ?? new Error("CPF não encontrado") };
+        }
+        emailToUse = data.email;
+      } catch (e) {
+        return { error: e };
+      }
+    } else if (!isEmail) {
+      // Compat retroativa: usuário interno -> email @sistema.local
+      emailToUse = `${raw.toLowerCase()}@sistema.local`;
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
-      email: internalEmail,
+      email: emailToUse,
       password,
     });
-    
+
     if (!error) {
       navigate("/");
     }
-    
+
     return { error };
   };
 
