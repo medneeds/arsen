@@ -59,8 +59,9 @@ import { useIsGestor } from "@/hooks/useIsGestor";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CreateUserForm } from "@/components/users/CreateUserForm";
 import { UserAuditHistoryPanel } from "@/components/users/UserAuditHistoryPanel";
+import { UserApprovalsPanel } from "@/components/users/UserApprovalsPanel";
 import { logUserAdminAction } from "@/lib/userAdminAudit";
-import { UserPlus, History } from "lucide-react";
+import { UserPlus, History, ShieldCheck } from "lucide-react";
 
 interface UserProfile {
   id: string;
