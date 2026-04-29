@@ -2628,6 +2628,7 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           cargo: string | null
+          cpf: string | null
           created_at: string
           crm: string | null
           data_deletion_requested_at: string | null
@@ -2649,6 +2650,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           cargo?: string | null
+          cpf?: string | null
           created_at?: string
           crm?: string | null
           data_deletion_requested_at?: string | null
@@ -2670,6 +2672,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           cargo?: string | null
+          cpf?: string | null
           created_at?: string
           crm?: string | null
           data_deletion_requested_at?: string | null
