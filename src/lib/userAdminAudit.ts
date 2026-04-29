@@ -26,7 +26,7 @@ export async function logUserAdminAction(params: {
         .maybeSingle();
       actorName = (prof as { full_name?: string } | null)?.full_name ?? null;
     }
-    await supabase.from("user_admin_audit").insert({
+    await supabase.from("user_admin_audit").insert([{
       actor_id: actor?.id ?? null,
       actor_email: actor?.email ?? null,
       actor_name: actorName,
@@ -42,7 +42,7 @@ export async function logUserAdminAction(params: {
       new_data: params.newData ?? null,
       metadata: { ...(params.metadata ?? {}), source: "client" },
       user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
-    });
+    }]);
   } catch (e) {
     // Auditoria não deve quebrar fluxo do usuário
     console.warn("userAdminAudit: falha ao registrar", e);
