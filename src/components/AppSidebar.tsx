@@ -35,7 +35,7 @@ import { useNavigate } from "react-router-dom";
 import { whitelabel } from "@/config/whitelabel";
 import { BigHelpLogo } from "./BigHelpLogo";
 import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -130,16 +130,16 @@ export function AppSidebar({
   const [showProfileSwitcher, setShowProfileSwitcher] = useState(false);
   const [availableProfiles, setAvailableProfiles] = useState<AccessProfile[]>([]);
 
-  useState(() => {
+  useEffect(() => {
     try {
       const raw = sessionStorage.getItem("available_access_profiles");
       const parsed = raw ? JSON.parse(raw) : [];
       if (Array.isArray(parsed)) setAvailableProfiles(parsed.filter(Boolean) as AccessProfile[]);
     } catch { /* ignore */ }
-  });
+  }, []);
 
   // Mostra o atalho "Trocar perfil" também quando a tela pós-login foi pulada por sessão restaurada.
-  useState(() => {
+  useEffect(() => {
     if (!user?.id) return;
     supabase
       .from("profiles")
@@ -158,7 +158,7 @@ export function AppSidebar({
           }
         }
       });
-  });
+  }, [user?.id]);
   const availableProfilesCount = availableProfiles.length;
   const hasMultipleProfiles = availableProfilesCount >= 2;
   
