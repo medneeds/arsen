@@ -331,7 +331,7 @@ export default function AuthPage() {
                   transition={{ delay: 0.5 }}
                 >
                   <p className="preserve-case inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/80">
-                    <Shield className="h-3 w-3" />
+                    <ShieldCheck className="h-3 w-3" />
                     Acesso restrito • Solicite seu cadastro à coordenação da unidade
                   </p>
                 </motion.div>
