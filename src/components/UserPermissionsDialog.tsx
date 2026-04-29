@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logUserAdminAction } from "@/lib/userAdminAudit";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,10 @@ export function UserPermissionsDialog({
   const [selectedDepartments, setSelectedDepartments] = useState<Set<string>>(new Set());
   const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set());
   const [hospitalUnits, setHospitalUnits] = useState<HospitalUnit[]>([]);
+  // Snapshot inicial para diff de auditoria
+  const initialSnapshotRef = useRef<{
+    role: string; accessProfile: string; departments: string[]; units: string[];
+  } | null>(null);
 
   const profileMeta = ACCESS_PROFILES.find((p) => p.value === accessProfile);
 
@@ -82,14 +87,23 @@ export function UserPermissionsDialog({
         if (cancelled) return;
 
         if (unitsRes.data) setHospitalUnits(unitsRes.data);
-        setSelectedDepartments(new Set(deptRes.data?.map((d) => d.department) || []));
-        setSelectedUnits(new Set(assignRes.data?.map((a) => a.hospital_unit_id) || []));
-        setRole((currentRole as AppRole) || "medico");
-        setAccessProfile(
+        const loadedDeps = deptRes.data?.map((d) => d.department) || [];
+        const loadedUnits = assignRes.data?.map((a) => a.hospital_unit_id) || [];
+        setSelectedDepartments(new Set(loadedDeps));
+        setSelectedUnits(new Set(loadedUnits));
+        const loadedRole = (currentRole as AppRole) || "medico";
+        const loadedProfile =
           ((profileRes.data as { access_profile?: string } | null)?.access_profile as AccessProfile) ||
-            (currentAccessProfile as AccessProfile) ||
-            "medico",
-        );
+          (currentAccessProfile as AccessProfile) ||
+          "medico";
+        setRole(loadedRole);
+        setAccessProfile(loadedProfile);
+        initialSnapshotRef.current = {
+          role: loadedRole,
+          accessProfile: loadedProfile,
+          departments: [...loadedDeps].sort(),
+          units: [...loadedUnits].sort(),
+        };
       } catch (err) {
         console.error("[UserPermissionsDialog] load error", err);
         toast.error("Erro ao carregar permissões");
@@ -160,6 +174,37 @@ export function UserPermissionsDialog({
           .from("user_hospital_assignments")
           .insert(rows);
         if (unitError) throw unitError;
+      }
+
+      // Auditoria de mudanças
+      const before = initialSnapshotRef.current;
+      const afterDeps = Array.from(selectedDepartments).sort();
+      const afterUnits = Array.from(selectedUnits).sort();
+      const after = {
+        role,
+        accessProfile,
+        departments: afterDeps,
+        units: afterUnits,
+      };
+      if (before) {
+        const changed =
+          before.role !== after.role ||
+          before.accessProfile !== after.accessProfile ||
+          JSON.stringify(before.departments) !== JSON.stringify(after.departments) ||
+          JSON.stringify(before.units) !== JSON.stringify(after.units);
+        if (changed) {
+          await logUserAdminAction({
+            action: "user.permissions.updated",
+            targetUserId: userId,
+            targetEmail: userEmail,
+            targetName: userName,
+            accessProfile,
+            appRole: role,
+            departments: afterDeps,
+            oldData: before,
+            newData: after,
+          });
+        }
       }
 
       toast.success("Permissões atualizadas com sucesso");

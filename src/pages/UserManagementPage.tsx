@@ -58,7 +58,9 @@ import { UserPermissionsDialog } from "@/components/UserPermissionsDialog";
 import { useIsGestor } from "@/hooks/useIsGestor";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CreateUserForm } from "@/components/users/CreateUserForm";
-import { UserPlus } from "lucide-react";
+import { UserAuditHistoryPanel } from "@/components/users/UserAuditHistoryPanel";
+import { logUserAdminAction } from "@/lib/userAdminAudit";
+import { UserPlus, History } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -167,6 +169,7 @@ export default function UserManagementPage() {
   const handleApprove = async (userId: string) => {
     setActionLoading(true);
     try {
+      const target = users.find((u) => u.id === userId);
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -177,6 +180,15 @@ export default function UserManagementPage() {
         .eq("id", userId);
 
       if (error) throw error;
+
+      await logUserAdminAction({
+        action: "user.status.approved",
+        targetUserId: userId,
+        targetEmail: target?.email ?? null,
+        targetName: target?.full_name ?? null,
+        oldData: { status: target?.status },
+        newData: { status: "approved" },
+      });
 
       toast.success("Usuário aprovado com sucesso");
       fetchUsers();
@@ -192,6 +204,7 @@ export default function UserManagementPage() {
   const handleReject = async (userId: string) => {
     setActionLoading(true);
     try {
+      const target = users.find((u) => u.id === userId);
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -202,6 +215,15 @@ export default function UserManagementPage() {
         .eq("id", userId);
 
       if (error) throw error;
+
+      await logUserAdminAction({
+        action: "user.status.rejected",
+        targetUserId: userId,
+        targetEmail: target?.email ?? null,
+        targetName: target?.full_name ?? null,
+        oldData: { status: target?.status },
+        newData: { status: "rejected" },
+      });
 
       toast.success("Usuário rejeitado");
       fetchUsers();
@@ -217,12 +239,22 @@ export default function UserManagementPage() {
   const handleSuspend = async (userId: string) => {
     setActionLoading(true);
     try {
+      const target = users.find((u) => u.id === userId);
       const { error } = await supabase
         .from("profiles")
         .update({ status: "suspended" })
         .eq("id", userId);
 
       if (error) throw error;
+
+      await logUserAdminAction({
+        action: "user.status.suspended",
+        targetUserId: userId,
+        targetEmail: target?.email ?? null,
+        targetName: target?.full_name ?? null,
+        oldData: { status: target?.status },
+        newData: { status: "suspended" },
+      });
 
       toast.success("Usuário suspenso");
       fetchUsers();
@@ -238,12 +270,22 @@ export default function UserManagementPage() {
   const handleReactivate = async (userId: string) => {
     setActionLoading(true);
     try {
+      const target = users.find((u) => u.id === userId);
       const { error } = await supabase
         .from("profiles")
         .update({ status: "approved" })
         .eq("id", userId);
 
       if (error) throw error;
+
+      await logUserAdminAction({
+        action: "user.status.reactivated",
+        targetUserId: userId,
+        targetEmail: target?.email ?? null,
+        targetName: target?.full_name ?? null,
+        oldData: { status: target?.status },
+        newData: { status: "approved" },
+      });
 
       toast.success("Usuário reativado");
       fetchUsers();
@@ -259,6 +301,8 @@ export default function UserManagementPage() {
   const handleUpdateRole = async (userId: string, newRole: string) => {
     setActionLoading(true);
     try {
+      const target = users.find((u) => u.id === userId);
+      const previousRole = target?.role ?? null;
       // Check if user has a role already
       const { data: existingRole } = await supabase
         .from("user_roles")
@@ -280,6 +324,16 @@ export default function UserManagementPage() {
           .insert({ user_id: userId, role: newRole as any });
         if (error) throw error;
       }
+
+      await logUserAdminAction({
+        action: "user.role.updated",
+        targetUserId: userId,
+        targetEmail: target?.email ?? null,
+        targetName: target?.full_name ?? null,
+        appRole: newRole,
+        oldData: { role: previousRole },
+        newData: { role: newRole },
+      });
 
       toast.success("Papel atualizado com sucesso");
       fetchUsers();
@@ -362,6 +416,9 @@ export default function UserManagementPage() {
                 <UserPlus className="h-4 w-4" /> Cadastrar Usuário
               </TabsTrigger>
             )}
+            <TabsTrigger value="audit" className="gap-2">
+              <History className="h-4 w-4" /> Histórico
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="list" className="space-y-6">
@@ -509,6 +566,12 @@ export default function UserManagementPage() {
               </div>
             </TabsContent>
           )}
+
+          <TabsContent value="audit">
+            <div className="rounded-xl border bg-card shadow-sm p-6">
+              <UserAuditHistoryPanel />
+            </div>
+          </TabsContent>
         </Tabs>
 
         {/* LGPD Notice */}
