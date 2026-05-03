@@ -5236,8 +5236,12 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   </div>
                 )}
               </td>
-              <td style={{ ...cellStyle, width: '140px', textAlign: 'center', verticalAlign: 'middle', fontFamily: 'monospace', fontSize: '7.5pt', fontWeight: 800, color: '#0c4a6e', backgroundColor: rowBg, whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>
-                {slots.length > 0 ? slots.join('  ') : '—'}
+              <td style={{ ...cellStyle, width: '230px', textAlign: 'left', verticalAlign: 'top', backgroundColor: '#fff', padding: '4px 6px' }}>
+                {/* Coluna de aprazamento manual — preenchida pela enfermagem */}
+                <div style={{ minHeight: '38px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '4px' }}>
+                  <div style={{ borderBottom: '1px dotted #94a3b8', height: '14px' }} />
+                  <div style={{ borderBottom: '1px dotted #94a3b8', height: '14px' }} />
+                </div>
               </td>
             </tr>
           );
