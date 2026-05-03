@@ -402,7 +402,7 @@ const AdminDashboardPage = () => {
       );
       setShowRegisterDialog(false);
       setRegisterForm({
-        full_name: "", social_name: "", cpf: "", cns: "", birth_date: "",
+        full_name: "", social_name: "", cpf: "", cns: "", medical_record: "", birth_date: "",
         sex: "", mother_name: "", phone: "", address: "", neighborhood: "",
         city: "", blood_type: "", allergies: "", comorbidities: "",
         is_unidentified: false, ni_estimated_age: "", ni_apparent_sex: "",
