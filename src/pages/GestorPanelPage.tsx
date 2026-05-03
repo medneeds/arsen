@@ -370,11 +370,11 @@ export default function GestorPanelPage() {
               data={{ occupancyRate, bedStats, criticalAlerts, pendingRequests, prescriptionStats }}
             />
             <span className="hidden md:block w-px h-6 bg-white/20 mx-1" />
-            <Button variant="ghost" size="sm" onClick={handleExport} disabled={exporting} className="gap-1.5 h-9 text-primary-foreground hover:bg-white/10 hover:text-primary-foreground">
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="gap-1.5 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground">
               {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               <span className="hidden md:inline">Exportar</span>
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => { fetchData(); toast.success("Dados atualizados"); }} disabled={loading} className="gap-1.5 h-9 text-primary-foreground hover:bg-white/10 hover:text-primary-foreground">
+            <Button variant="outline" size="sm" onClick={() => { fetchData(); toast.success("Dados atualizados"); }} disabled={loading} className="gap-1.5 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground">
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
               <span className="hidden md:inline">Atualizar</span>
             </Button>
