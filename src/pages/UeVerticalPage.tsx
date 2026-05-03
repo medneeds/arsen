@@ -388,15 +388,16 @@ export default function UeVerticalPage() {
     } catch { toast.error("Erro ao puxar paciente"); }
   };
 
+  const activePatients = useMemo(() => patients.filter(p => !p.is_vacant), [patients]);
   const { c1Patients, c2Patients, unassigned } = useMemo(() => {
     const q = search.toLowerCase();
-    const filtered = patients.filter(p => !p.is_vacant && (!q || p.name.toLowerCase().includes(q) || p.bed_number.toLowerCase().includes(q)));
+    const filtered = activePatients.filter(p => !q || p.name.toLowerCase().includes(q) || p.bed_number.toLowerCase().includes(q));
     return {
       c1Patients: filtered.filter(p => getConsultorio(p.bed_number) === 1),
       c2Patients: filtered.filter(p => getConsultorio(p.bed_number) === 2),
       unassigned: filtered.filter(p => getConsultorio(p.bed_number) === 0),
     };
-  }, [patients, search]);
+  }, [activePatients, search]);
   const canPull = role === "medico" || role === "admin" || role === "porta";
 
   const handleApplyPreset = (preset: AttendancePreset, items: PresetItem[], destination: string) => {
