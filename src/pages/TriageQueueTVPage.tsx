@@ -337,6 +337,13 @@ const TriageQueueTVPage = () => {
       {/* ─── Footer institucional ─── */}
       <footer className="px-8 py-3 bg-black/40 border-t border-white/10 flex items-center justify-between text-xs text-white/50 uppercase tracking-wider">
         <span>{whitelabel.institution.hospitalAbbreviation} · {whitelabel.platform.fullName}</span>
+        <span className="flex items-center gap-2">
+          {online ? (
+            <><Wifi className="h-3 w-3 text-emerald-400" /> Online</>
+          ) : (
+            <><WifiOff className="h-3 w-3 text-red-400" /> Offline</>
+          )}
+        </span>
         <span>Norma Zero · {whitelabel.compliance.normaZeroCode} v{whitelabel.compliance.normaZeroVersion}</span>
       </footer>
     </div>
