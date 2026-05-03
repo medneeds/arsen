@@ -46,8 +46,15 @@ const ExamResultInput: React.FC<ExamResultInputProps> = ({
 
     setUploading(true);
     try {
+      const { data: authData, error: authErr } = await supabase.auth.getUser();
+      if (authErr || !authData.user) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        return;
+      }
+      const userId = authData.user.id;
       const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
-      const filePath = `${requestId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      // RLS exige primeiro segmento da pasta == auth.uid()
+      const filePath = `${userId}/${requestId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("exam-results")
@@ -55,13 +62,16 @@ const ExamResultInput: React.FC<ExamResultInputProps> = ({
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
+      // Bucket privado: usa URL assinada (válida por 7 dias)
+      const { data: urlData, error: urlErr } = await supabase.storage
         .from("exam-results")
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 60 * 60 * 24 * 7);
+
+      if (urlErr || !urlData) throw urlErr ?? new Error("Falha ao gerar URL");
 
       const newFile: ResultFile = {
         name: file.name,
-        url: urlData.publicUrl,
+        url: urlData.signedUrl,
         type: fileType,
         size: file.size,
       };
