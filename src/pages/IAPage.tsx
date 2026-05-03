@@ -573,7 +573,8 @@ export default function IAPage() {
             </p>
           </form>
         </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
