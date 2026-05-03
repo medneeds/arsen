@@ -469,11 +469,15 @@ export default function PainelClinicoPage() {
 
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState<string>(() => {
-    return localStorage.getItem("selected_sector") || "all";
+    return currentSectorCode || localStorage.getItem("selected_sector") || "all";
   });
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [sidebarTab, setSidebarTab] = useState("resumo");
   const [sapsScores, setSapsScores] = useState<Record<string, { score: number; mortality: number; status: string; pending_since: string | null }>>({});
+
+  useEffect(() => {
+    if (currentSectorCode) setSectorFilter(currentSectorCode);
+  }, [currentSectorCode]);
 
   // Fetch SAPS 3 scores for all patients
   useEffect(() => {
