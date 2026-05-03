@@ -296,6 +296,14 @@ const AdminDashboardPage = () => {
       return;
     }
 
+    // Modo legacy: prontuário do sistema antigo é obrigatório
+    if (mrMode === "legacy" && !registerForm.is_unidentified && !registerForm.medical_record.trim()) {
+      toast.error("Prontuário obrigatório", {
+        description: "Unidade em modo legado: informe o número do sistema antigo.",
+      });
+      return;
+    }
+
     setIsRegistering(true);
     try {
       const stateId = localStorage.getItem("selected_state_id");
