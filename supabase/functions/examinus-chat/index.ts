@@ -11,6 +11,7 @@ function buildSystemPrompt(opts: {
   includeTime: boolean;
   onlyAltered: boolean;
   clinicalImpression: boolean;
+  compactMode: boolean;
 }) {
   const sep = opts.usePipeSeparator ? ' | ' : ' ';
   const sepLabel = opts.usePipeSeparator ? '" | " (espaço barra espaço)' : 'espaço simples';
