@@ -94,9 +94,9 @@ export function BreadcrumbBar({
 
         <span
           className={cn(
-            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border",
+            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-semibold",
             isInstitutional
-              ? "bg-white/10 text-primary-foreground border-white/20 backdrop-blur"
+              ? "bg-white/20 text-white border-white/30 backdrop-blur shadow-sm"
               : "bg-muted/60 text-muted-foreground border-border/50",
           )}
         >
