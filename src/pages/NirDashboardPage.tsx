@@ -54,6 +54,8 @@ export default function NirDashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeAlert, setActiveAlert] = useState<AlertKind>(null);
   const [filters, setFilters] = useState<NirFilters>({ period: "today", sectorScope: "all", priority: "all" });
+  const [selectedBed, setSelectedBed] = useState<any | null>(null);
+  const [censusGroup, setCensusGroup] = useState<string>("Todos");
 
   const { isLoading, refetch, beds, requests, metrics, historical, heatmap, flow } = useNirMetrics(currentHospital?.id, filters);
   const { data: predictions = [] } = useDischargePredictions(currentHospital?.id);
