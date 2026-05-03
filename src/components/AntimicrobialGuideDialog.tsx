@@ -180,9 +180,13 @@ function AntimicrobialCombobox({
 
 export function AntimicrobialGuideDialog({
   open, onOpenChange, patient, antimicrobialItems = [],
-  doctorName = "", doctorCrm = "", hospitalName = "",
+  doctorName: doctorNameProp = "", doctorCrm: doctorCrmProp = "", hospitalName = "",
   onConfirm, mode = 'review', patientId,
 }: Props) {
+  const currentDoctor = useCurrentDoctor();
+  // Sincroniza com o usuário logado quando a prescrição não estiver assinada digitalmente
+  const doctorName = doctorNameProp || currentDoctor.fullName;
+  const doctorCrm = doctorCrmProp || currentDoctor.crm;
   const [entries, setEntries] = useState<AntimicrobialEntry[]>([]);
   const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | 'cultures' | null>>({});
   const [availableCultures, setAvailableCultures] = useState<Array<{ id: string; culture_type: string; collection_date: string | null; status: string; microorganism: string | null; antibiogram: string | null; sensitivity_profile: string | null; result_text: string | null; created_at: string }>>([]);
