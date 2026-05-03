@@ -6,6 +6,7 @@ import {
   Filter, RefreshCw, ImageIcon, Zap, MonitorSpeaker, Heart,
   Bone, Baby, AlertTriangle, FileText, CalendarIcon, Printer,
 } from "lucide-react";
+import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import ExamResultInput, { ResultFile } from "@/components/ExamResultInput";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -272,22 +273,26 @@ const SetorImagemPage = () => {
   };
 
   return (
+    <>
+      <PlatformHeader
+        variant="institutional"
+        eyebrow="Diagnóstico · Imagem"
+        title="Setor de Imagem"
+        icon={ScanLine}
+        subtitle={<span className="truncate">Recepção e execução de exames de imagem</span>}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchRequests}
+            className="gap-2 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground"
+          >
+            <RefreshCw className="h-3.5 w-3.5" /> Atualizar
+          </Button>
+        }
+      />
+
     <div className="p-4 sm:p-6 space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20">
-            <ScanLine className="h-6 w-6 text-rose-500" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Setor de Imagem</h1>
-            <p className="text-xs text-muted-foreground">Recepção e Execução de Exames de Imagem</p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" onClick={fetchRequests} className="gap-2">
-          <RefreshCw className="h-3.5 w-3.5" /> Atualizar
-        </Button>
-      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
