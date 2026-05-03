@@ -4,6 +4,7 @@
 export type PrescriptionCategory =
   | 'nutrition'       // Dietas e suplementos nutricionais
   | 'hydration'       // Soluções de hidratação
+  | 'replacement'     // Reposição / correção eletrolítica
   | 'medication'      // Medicamentos gerais
   | 'antimicrobial'   // Antimicrobianos (antibióticos, antifúngicos, antivirais)
   | 'high_alert'      // Medicamentos de alta vigilância
