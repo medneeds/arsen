@@ -125,6 +125,12 @@ export const PROFILE_DEFAULTS: Record<AccessProfile, ProfileDefaults> = {
     landingRoute: "/triagem-fila",
     hint: "Classificação de risco • fila Manchester e PA adulto",
   },
+  desenvolvedor: {
+    role: "admin",
+    departments: [],
+    landingRoute: "/dev-console",
+    hint: "Desenvolvedor • console técnico e radar de pendências",
+  },
 };
 
 /** Resolve a rota inicial a partir do perfil (com fallback por role). */
