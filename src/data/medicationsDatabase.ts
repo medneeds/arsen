@@ -319,7 +319,8 @@ export const MEDICATIONS_DATABASE: MedicationEntry[] = [
 // ========== TODOS OS ITENS POR CATEGORIA ==========
 export const ALL_ITEMS_BY_CATEGORY: Record<PrescriptionCategory, MedicationEntry[]> = {
   nutrition: DIET_OPTIONS,
-  hydration: SOLUTION_OPTIONS,
+  hydration: SOLUTION_OPTIONS.filter(s => s.category === 'hydration'),
+  replacement: SOLUTION_OPTIONS.filter(s => s.category === 'replacement'),
   medication: MEDICATIONS_DATABASE,
   antimicrobial: ANTIMICROBIAL_OPTIONS,
   high_alert: HIGH_ALERT_OPTIONS,
