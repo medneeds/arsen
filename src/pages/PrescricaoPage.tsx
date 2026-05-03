@@ -100,6 +100,8 @@ import { PosologySuggestionsBar } from "@/components/PosologySuggestionsBar";
 import { useMedicationProtocols } from "@/hooks/useMedicationProtocols";
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { NutritionWizard } from "@/components/NutritionWizard";
+import { HydrationWizard } from "@/components/HydrationWizard";
+import { ReplacementWizard } from "@/components/ReplacementWizard";
 import type { Patient } from "@/types/patient";
 
 // --- Types ---
@@ -2514,6 +2516,8 @@ const PrescricaoPage = () => {
   const [highAlertGuideOpen, setHighAlertGuideOpen] = useState(false);
   const [careCatalogOpen, setCareCatalogOpen] = useState(false);
   const [nutritionWizardOpen, setNutritionWizardOpen] = useState(false);
+  const [hydrationWizardOpen, setHydrationWizardOpen] = useState(false);
+  const [replacementWizardOpen, setReplacementWizardOpen] = useState(false);
   const [compactView, setCompactView] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<PrescriptionCategory>>(new Set());
 
