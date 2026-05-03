@@ -19,6 +19,7 @@ import { NirAlertBar } from "@/components/nir/NirAlertBar";
 import { NirAnalyticsPanel } from "@/components/nir/NirAnalyticsPanel";
 import { NirDischargeForecast } from "@/components/nir/NirDischargeForecast";
 import { NirPdfExport } from "@/components/nir/NirPdfExport";
+import { NirNotificationCenter } from "@/components/nir/NirNotificationCenter";
 import { useDischargePredictions } from "@/hooks/useDischargePredictions";
 import { BedDetailDialog } from "@/components/nir/BedDetailDialog";
 import { sectorLabelFromCode, HOSPITAL_SECTOR_GROUPS } from "@/lib/hospitalSectors";
@@ -315,7 +316,10 @@ export default function NirDashboardPage() {
             Gestão centralizada de leitos, regulações e fluxo de pacientes
           </p>
         </div>
-        <NirPdfExport metrics={metrics} predictions={predictions} />
+        <div className="flex items-center gap-2">
+          <NirNotificationCenter metrics={metrics} />
+          <NirPdfExport metrics={metrics} predictions={predictions} />
+        </div>
       </div>
 
       {/* Filtros globais */}

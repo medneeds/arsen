@@ -367,10 +367,25 @@ export function AppSidebar({
         { title: "Painel CCIH", icon: LayoutDashboard, link: "/ccih", profiles: ["ccih"] },
       ];
     }
-    // NIR
+    // NIR — agrupado em módulos para que a sidebar expanda
     if (accessProfile === "nir") {
       return [
         { title: "Painel NIR", icon: LayoutDashboard, link: "/nir", profiles: ["nir"] },
+        { title: "Regulação", icon: Repeat2, profiles: ["nir"], items: [
+          { name: "Regulação Interna", link: "/nir?modulo=regulacao_interna", profiles: ["nir"] },
+          { name: "Regulação Externa", link: "/nir?modulo=regulacao_externa", profiles: ["nir"] },
+          { name: "Solicitação de Vaga", link: "/nir?modulo=solicitacao_vaga", profiles: ["nir"] },
+          { name: "Transferência Interunidade", link: "/nir?modulo=transferencia_interunidade", profiles: ["nir"] },
+          { name: "Parecer Regulatório", link: "/nir?modulo=parecer_regulatorio", profiles: ["nir"] },
+        ]},
+        { title: "Leitos", icon: BedDouble, profiles: ["nir"], items: [
+          { name: "Censo de Leitos", link: "/nir?modulo=censo_leitos", profiles: ["nir"] },
+          { name: "Bloqueio / Interdição", link: "/nir?modulo=bloqueio_interdicao", profiles: ["nir"] },
+          { name: "Alta Administrativa", link: "/nir?modulo=alta_administrativa", profiles: ["nir"] },
+        ]},
+        { title: "Indicadores", icon: BarChart3, profiles: ["nir"], items: [
+          { name: "Relatórios NIR", link: "/nir?modulo=relatorios_nir", profiles: ["nir"] },
+        ]},
       ];
     }
     // Administrativo — Recepção em 3 grupos: Atendimento, Fluxos, Documentos
