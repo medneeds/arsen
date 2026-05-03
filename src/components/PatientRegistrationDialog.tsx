@@ -105,6 +105,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [duplicateMatch, setDuplicateMatch] = useState<{ id: string; full_name: string; medical_record: string | null } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pisInputRef = useRef<HTMLInputElement>(null);
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
   const { mode: mrMode } = useMedicalRecordMode(currentHospital?.id);
