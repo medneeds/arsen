@@ -11,9 +11,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Shield, FileText, Database, Lock } from "lucide-react";
+import { Shield, FileText, Database, Lock, CheckCircle2, AlertTriangle } from "lucide-react";
 
 const CURRENT_TERMS_VERSION = "1.0.0";
 
@@ -28,21 +30,20 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [dataProcessingAccepted, setDataProcessingAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState("terms");
 
   const allAccepted = termsAccepted && privacyAccepted && dataProcessingAccepted;
+  const acceptedCount = [termsAccepted, privacyAccepted, dataProcessingAccepted].filter(Boolean).length;
 
   const handleAcceptTerms = async () => {
     if (!allAccepted) return;
-
     setIsSubmitting(true);
     try {
-      // Registrar consentimentos individualmente
       const consents = [
         { consent_type: "terms_of_use", consent_version: CURRENT_TERMS_VERSION },
         { consent_type: "privacy_policy", consent_version: CURRENT_TERMS_VERSION },
         { consent_type: "data_processing", consent_version: CURRENT_TERMS_VERSION },
       ];
-
       for (const consent of consents) {
         const { error } = await supabase.from("user_consents").insert({
           user_id: userId,
@@ -50,13 +51,8 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
           consent_version: consent.consent_version,
           user_agent: navigator.userAgent,
         });
-
-        if (error && !error.message.includes("duplicate")) {
-          throw error;
-        }
+        if (error && !error.message.includes("duplicate")) throw error;
       }
-
-      // Atualizar perfil com data de aceite
       await supabase
         .from("profiles")
         .update({
@@ -64,7 +60,6 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
           terms_version: CURRENT_TERMS_VERSION,
         })
         .eq("id", userId);
-
       toast.success("Termos aceitos com sucesso!");
       onAccept();
     } catch (error) {
@@ -77,159 +72,202 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden" onPointerDownOutside={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Shield className="h-6 w-6 text-primary" />
-            Termos de Uso e Política de Privacidade
-          </DialogTitle>
-          <DialogDescription>
-            Em conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei 13.709/2018) e 
-            Resolução CFM 1.821/2007, você deve ler e aceitar os termos abaixo para continuar.
-          </DialogDescription>
+      <DialogContent
+        className="max-w-3xl max-h-[92vh] p-0 overflow-hidden gap-0"
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
+        {/* Header colorido compacto */}
+        <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1.5">
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <Shield className="h-5 w-5 text-primary" />
+                TERMOS DE USO E POLÍTICA DE PRIVACIDADE
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                Em conformidade com a LGPD (Lei 13.709/2018) e Resolução CFM 1.821/2007.
+              </DialogDescription>
+            </div>
+            <Badge variant="outline" className="shrink-0 font-mono text-[10px]">
+              v{CURRENT_TERMS_VERSION}
+            </Badge>
+          </div>
         </DialogHeader>
 
-        <ScrollArea className="h-[400px] pr-4">
-          <div className="space-y-6">
-            {/* Termos de Uso */}
-            <section className="space-y-3">
-              <h3 className="flex items-center gap-2 font-semibold text-lg">
-                <FileText className="h-5 w-5 text-blue-600" />
-                1. Termos de Uso do Sistema
-              </h3>
-              <div className="text-sm text-muted-foreground space-y-2 pl-7">
-                <p>
-                  Este sistema de gestão hospitalar ("{whitelabel.platform.fullName}") é destinado exclusivamente ao uso por 
-                  profissionais de saúde devidamente credenciados e autorizados pela instituição.
-                </p>
-                <p><strong>1.1. Responsabilidades do Usuário:</strong></p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Manter suas credenciais de acesso em sigilo absoluto</li>
-                  <li>Não compartilhar login e senha com terceiros</li>
-                  <li>Utilizar o sistema apenas para fins profissionais legítimos</li>
-                  <li>Reportar imediatamente qualquer uso não autorizado</li>
-                  <li>Fazer logoff ao se afastar do dispositivo</li>
-                </ul>
-                <p><strong>1.2. Rastreabilidade:</strong></p>
-                <p>
-                  Todas as ações realizadas no sistema são registradas em log de auditoria imutável, 
-                  associadas ao seu usuário, conforme exigência do CFM e LGPD.
-                </p>
-              </div>
-            </section>
+        {/* Tabs de conteúdo */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <TabsList className="grid grid-cols-3 mx-6 mt-4 h-auto">
+            <TabsTrigger value="terms" className="flex items-center gap-1.5 py-2 text-xs">
+              <FileText className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">TERMOS DE USO</span>
+              <span className="sm:hidden">TERMOS</span>
+              {termsAccepted && <CheckCircle2 className="h-3 w-3 text-emerald-600" />}
+            </TabsTrigger>
+            <TabsTrigger value="privacy" className="flex items-center gap-1.5 py-2 text-xs">
+              <Lock className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">PRIVACIDADE</span>
+              <span className="sm:hidden">LGPD</span>
+              {privacyAccepted && <CheckCircle2 className="h-3 w-3 text-emerald-600" />}
+            </TabsTrigger>
+            <TabsTrigger value="data" className="flex items-center gap-1.5 py-2 text-xs">
+              <Database className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">DADOS DE PACIENTES</span>
+              <span className="sm:hidden">DADOS</span>
+              {dataProcessingAccepted && <CheckCircle2 className="h-3 w-3 text-emerald-600" />}
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Política de Privacidade */}
-            <section className="space-y-3">
-              <h3 className="flex items-center gap-2 font-semibold text-lg">
-                <Lock className="h-5 w-5 text-green-600" />
-                2. Política de Privacidade (LGPD)
-              </h3>
-              <div className="text-sm text-muted-foreground space-y-2 pl-7">
-                <p><strong>2.1. Dados Coletados:</strong></p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Dados de identificação profissional (nome, CRM, especialidade)</li>
-                  <li>Dados de contato (telefone, e-mail)</li>
-                  <li>Registros de acesso e ações no sistema</li>
-                  <li>Endereço IP e informações do dispositivo</li>
-                </ul>
-                <p><strong>2.2. Finalidade do Tratamento:</strong></p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Controle de acesso e autenticação</li>
-                  <li>Rastreabilidade de ações (auditoria)</li>
-                  <li>Cumprimento de obrigações legais (CFM, LGPD)</li>
-                  <li>Segurança do sistema e dos dados de pacientes</li>
-                </ul>
-                <p><strong>2.3. Seus Direitos (Art. 18 LGPD):</strong></p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Confirmação da existência de tratamento</li>
-                  <li>Acesso aos seus dados pessoais</li>
-                  <li>Correção de dados incompletos ou inexatos</li>
-                  <li>Portabilidade dos dados (exportação)</li>
-                  <li>Informação sobre compartilhamento de dados</li>
-                </ul>
-              </div>
-            </section>
-
-            {/* Tratamento de Dados */}
-            <section className="space-y-3">
-              <h3 className="flex items-center gap-2 font-semibold text-lg">
-                <Database className="h-5 w-5 text-orange-600" />
-                3. Tratamento de Dados de Pacientes
-              </h3>
-              <div className="text-sm text-muted-foreground space-y-2 pl-7">
-                <p><strong>3.1. Base Legal:</strong></p>
-                <p>
-                  O tratamento de dados de pacientes é realizado com base no Art. 7º, VIII da LGPD 
-                  (tutela da saúde) e Art. 11, II, "f" (dados sensíveis para tutela da saúde).
-                </p>
-                <p><strong>3.2. Retenção de Dados:</strong></p>
-                <p>
-                  Conforme Resolução CFM 1.821/2007, os dados de prontuários e registros médicos 
-                  são mantidos por no mínimo 20 (vinte) anos após o último atendimento.
-                </p>
-                <p><strong>3.3. Sigilo Profissional:</strong></p>
-                <p>
-                  O acesso aos dados de pacientes está sujeito ao sigilo médico previsto no 
-                  Código de Ética Médica. Violações serão reportadas ao CRM competente.
-                </p>
-              </div>
-            </section>
-
-            {/* Avisos Finais */}
-            <section className="bg-muted/50 p-4 rounded-lg">
-              <p className="text-sm font-medium">
-                ⚠️ IMPORTANTE: O não cumprimento destes termos pode resultar em:
+          <ScrollArea className="flex-1 max-h-[42vh] px-6 py-4">
+            <TabsContent value="terms" className="mt-0 space-y-3 text-sm">
+              <p className="text-muted-foreground leading-relaxed">
+                O sistema <strong className="text-foreground">{whitelabel.platform.fullName}</strong> é destinado
+                exclusivamente a profissionais de saúde devidamente credenciados e autorizados pela instituição.
               </p>
-              <ul className="text-sm text-muted-foreground list-disc pl-5 mt-2">
-                <li>Suspensão imediata do acesso ao sistema</li>
-                <li>Notificação ao CRM e órgãos competentes</li>
-                <li>Responsabilização civil e criminal conforme legislação vigente</li>
-              </ul>
-            </section>
-          </div>
-        </ScrollArea>
+              <div className="rounded-lg border bg-card p-3 space-y-2">
+                <p className="font-semibold text-xs uppercase tracking-wide text-foreground">
+                  Responsabilidades do usuário
+                </p>
+                <ul className="space-y-1.5 text-xs text-muted-foreground">
+                  <li className="flex gap-2"><span className="text-primary">•</span> Manter credenciais em sigilo absoluto</li>
+                  <li className="flex gap-2"><span className="text-primary">•</span> Não compartilhar login e senha com terceiros</li>
+                  <li className="flex gap-2"><span className="text-primary">•</span> Utilizar o sistema apenas para fins profissionais legítimos</li>
+                  <li className="flex gap-2"><span className="text-primary">•</span> Reportar imediatamente qualquer uso não autorizado</li>
+                  <li className="flex gap-2"><span className="text-primary">•</span> Fazer logoff ao se afastar do dispositivo</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border bg-card p-3 space-y-1.5">
+                <p className="font-semibold text-xs uppercase tracking-wide">Rastreabilidade</p>
+                <p className="text-xs text-muted-foreground">
+                  Todas as ações são registradas em log de auditoria imutável, associadas ao seu usuário,
+                  conforme exigência do CFM e LGPD.
+                </p>
+              </div>
+            </TabsContent>
 
-        <div className="space-y-4 pt-4 border-t">
-          <div className="space-y-3">
-            <div className="flex items-start space-x-3">
+            <TabsContent value="privacy" className="mt-0 space-y-3 text-sm">
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="rounded-lg border bg-card p-3 space-y-2">
+                  <p className="font-semibold text-xs uppercase tracking-wide">Dados coletados</p>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    <li>• Identificação profissional (nome, CRM, especialidade)</li>
+                    <li>• Contato (telefone, e-mail)</li>
+                    <li>• Logs de acesso e ações</li>
+                    <li>• IP e dispositivo</li>
+                  </ul>
+                </div>
+                <div className="rounded-lg border bg-card p-3 space-y-2">
+                  <p className="font-semibold text-xs uppercase tracking-wide">Finalidade</p>
+                  <ul className="text-xs text-muted-foreground space-y-1">
+                    <li>• Controle de acesso e autenticação</li>
+                    <li>• Auditoria de ações</li>
+                    <li>• Cumprimento de CFM e LGPD</li>
+                    <li>• Segurança do sistema e dos pacientes</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="rounded-lg border-l-4 border-l-primary bg-card p-3 space-y-1.5">
+                <p className="font-semibold text-xs uppercase tracking-wide">Seus direitos (Art. 18 LGPD)</p>
+                <p className="text-xs text-muted-foreground">
+                  Confirmação de tratamento, acesso, correção, portabilidade e informação sobre compartilhamento
+                  dos seus dados pessoais.
+                </p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="data" className="mt-0 space-y-3 text-sm">
+              <div className="rounded-lg border bg-card p-3 space-y-1.5">
+                <p className="font-semibold text-xs uppercase tracking-wide">Base legal</p>
+                <p className="text-xs text-muted-foreground">
+                  Tratamento baseado no Art. 7º, VIII (tutela da saúde) e Art. 11, II, "f" (dados sensíveis para
+                  tutela da saúde) da LGPD.
+                </p>
+              </div>
+              <div className="rounded-lg border bg-card p-3 space-y-1.5">
+                <p className="font-semibold text-xs uppercase tracking-wide">Retenção</p>
+                <p className="text-xs text-muted-foreground">
+                  Conforme Resolução CFM 1.821/2007, prontuários e registros médicos são mantidos por no mínimo
+                  <strong className="text-foreground"> 20 anos</strong> após o último atendimento.
+                </p>
+              </div>
+              <div className="rounded-lg border bg-card p-3 space-y-1.5">
+                <p className="font-semibold text-xs uppercase tracking-wide">Sigilo profissional</p>
+                <p className="text-xs text-muted-foreground">
+                  O acesso é regido pelo sigilo médico do Código de Ética Médica. Violações serão reportadas ao CRM.
+                </p>
+              </div>
+              <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-900 p-3">
+                <div className="flex gap-2 items-start">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">Consequências do descumprimento</p>
+                    <p className="text-xs text-amber-800 dark:text-amber-300">
+                      Suspensão de acesso, notificação ao CRM e responsabilização civil/criminal conforme legislação.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </ScrollArea>
+        </Tabs>
+
+        {/* Footer fixo de aceite */}
+        <div className="border-t bg-muted/30 px-6 py-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              <strong className="text-foreground">{acceptedCount}/3</strong> seções aceitas
+            </p>
+            <div className="h-1.5 w-32 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${(acceptedCount / 3) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-2">
+            <label
+              htmlFor="terms-cb"
+              className="flex items-center gap-2 rounded-lg border bg-card p-2.5 cursor-pointer hover:border-primary/50 transition-colors"
+            >
               <Checkbox
-                id="terms"
+                id="terms-cb"
                 checked={termsAccepted}
-                onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                onCheckedChange={(c) => setTermsAccepted(c === true)}
               />
-              <label htmlFor="terms" className="text-sm leading-none cursor-pointer">
-                Li e aceito os <strong>Termos de Uso</strong> do sistema
-              </label>
-            </div>
-            <div className="flex items-start space-x-3">
+              <span className="text-xs leading-tight">Aceito os <strong>Termos de Uso</strong></span>
+            </label>
+            <label
+              htmlFor="privacy-cb"
+              className="flex items-center gap-2 rounded-lg border bg-card p-2.5 cursor-pointer hover:border-primary/50 transition-colors"
+            >
               <Checkbox
-                id="privacy"
+                id="privacy-cb"
                 checked={privacyAccepted}
-                onCheckedChange={(checked) => setPrivacyAccepted(checked === true)}
+                onCheckedChange={(c) => setPrivacyAccepted(c === true)}
               />
-              <label htmlFor="privacy" className="text-sm leading-none cursor-pointer">
-                Li e aceito a <strong>Política de Privacidade</strong> conforme LGPD
-              </label>
-            </div>
-            <div className="flex items-start space-x-3">
+              <span className="text-xs leading-tight">Aceito a <strong>Política LGPD</strong></span>
+            </label>
+            <label
+              htmlFor="data-cb"
+              className="flex items-center gap-2 rounded-lg border bg-card p-2.5 cursor-pointer hover:border-primary/50 transition-colors"
+            >
               <Checkbox
-                id="dataProcessing"
+                id="data-cb"
                 checked={dataProcessingAccepted}
-                onCheckedChange={(checked) => setDataProcessingAccepted(checked === true)}
+                onCheckedChange={(c) => setDataProcessingAccepted(c === true)}
               />
-              <label htmlFor="dataProcessing" className="text-sm leading-none cursor-pointer">
-                Autorizo o <strong>tratamento dos meus dados</strong> conforme descrito acima
-              </label>
-            </div>
+              <span className="text-xs leading-tight">Autorizo <strong>tratamento de dados</strong></span>
+            </label>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="sm:justify-end">
             <Button
               onClick={handleAcceptTerms}
               disabled={!allAccepted || isSubmitting}
               className="w-full sm:w-auto"
+              size="sm"
             >
-              {isSubmitting ? "Registrando..." : "Aceitar e Continuar"}
+              {isSubmitting ? "Registrando..." : allAccepted ? "Aceitar e continuar" : `Aceitar todas (${acceptedCount}/3)`}
             </Button>
           </DialogFooter>
         </div>

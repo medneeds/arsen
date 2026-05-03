@@ -93,7 +93,7 @@ function presentationToProtocol(
   }
 
   return {
-    label: `Padrão HMDM (${p.form})`,
+    label: `Padrão (${p.form})`,
     indication: `${catalogName} — ${p.concentration}`,
     dose: "", // mantém dose atual (médico ajusta)
     route,

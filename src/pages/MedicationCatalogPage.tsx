@@ -475,7 +475,7 @@ export default function MedicationCatalogPage() {
                       </div>
                       {isAdmin && (
                         <p className="text-[11px] text-muted-foreground mt-2">
-                          Diluição padrão, dose máxima e tempo de infusão alimentam as sugestões "Padrão HMDM" da prescrição.
+                          Diluição padrão, dose máxima e tempo de infusão alimentam as sugestões "Padrão" da prescrição.
                         </p>
                       )}
                     </div>
