@@ -407,6 +407,31 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
           </CardContent>
         </Card>
 
+        {/* Botão discreto sempre visível: importar do sistema legado PIS */}
+        {!form.is_unidentified && (
+          <div className="flex items-center justify-end">
+            <input
+              ref={pisInputRef}
+              type="file"
+              accept="application/pdf,image/*"
+              className="hidden"
+              onChange={handleImageUpload}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => pisInputRef.current?.click()}
+              disabled={isExtracting}
+              className="h-7 px-2.5 text-[11px] gap-1.5 border-dashed text-muted-foreground hover:text-foreground"
+              title="Importar PDF do sistema PIS — IA preenche os campos automaticamente"
+            >
+              {isExtracting ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileUp className="h-3 w-3" />}
+              Importar do PIS
+            </Button>
+          </div>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="ai" className="text-xs gap-1" disabled={form.is_unidentified}>
