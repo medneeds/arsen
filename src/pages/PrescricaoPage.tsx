@@ -4424,7 +4424,8 @@ const PrescricaoPage = () => {
                             cat === 'nutrition' ? () => setNutritionWizardOpen(true) :
                             cat === 'hydration' ? () => setHydrationWizardOpen(true) :
                             cat === 'replacement' ? () => setReplacementWizardOpen(true) :
-                            ['medication','antimicrobial','high_alert','inhalation','hemotherapy','care'].includes(cat)
+                            cat === 'care' ? () => setCareCatalogOpen(true) :
+                            ['medication','antimicrobial','high_alert','inhalation','hemotherapy'].includes(cat)
                               ? () => toast.info('Assistente desta categoria em construção.')
                               : undefined
                           }
@@ -4432,6 +4433,7 @@ const PrescricaoPage = () => {
                             cat === 'nutrition' ? 'Assistente de Terapia Nutricional' :
                             cat === 'hydration' ? 'Assistente de Hidratação' :
                             cat === 'replacement' ? 'Assistente de Reposição / Correção Eletrolítica' :
+                            cat === 'care' ? 'Assistente de Cuidados (perfis clínicos)' :
                             'Assistente — em breve'
                           }
                         />
@@ -4968,9 +4970,34 @@ const PrescricaoPage = () => {
         open={careCatalogOpen}
         onOpenChange={setCareCatalogOpen}
         onAddItem={(entry) => addItem(entry)}
-        onApplyProfile={(profile) => {
-          applyCareProfile(profile);
-          setCareCatalogOpen(false);
+        onAddBulk={(structured, extras, profile) => {
+          const existingNames = new Set(items.filter(i => i.category === 'care').map(i => i.name));
+          const newItems: PrescriptionItem[] = [];
+          for (const careMed of structured) {
+            if (!existingNames.has(careMed.name)) {
+              newItems.push(createItem(careMed));
+              existingNames.add(careMed.name);
+            }
+          }
+          for (const extraText of extras) {
+            if (!existingNames.has(extraText)) {
+              newItems.push({
+                id: crypto.randomUUID(),
+                name: extraText,
+                presentation: '-', dose: '-', route: '-',
+                posology: '-', schedule: '-', instructions: '',
+                category: 'care', flags: [], highAlert: false, status: 'active',
+              });
+              existingNames.add(extraText);
+            }
+          }
+          if (newItems.length > 0) {
+            setItems(prev => [...prev, ...newItems]);
+            toast.success(`${newItems.length} cuidado(s) adicionado(s)${profile ? ` — ${profile.label}` : ''}`);
+          } else {
+            toast.info('Todos os cuidados selecionados já constam na prescrição');
+          }
+          if (profile) setAppliedCareProfiles(prev => new Set(prev).add(profile.id));
         }}
         appliedProfileIds={appliedCareProfiles}
         patientName={patient?.name}
