@@ -4139,17 +4139,37 @@ const PrescricaoPage = () => {
             items={items.map(i => i.id)}
             strategy={verticalListSortingStrategy}
           >
-            {TAB_ORDER.map(cat => {
+            {(() => {
+              // Agrupamento clínico em 3 blocos para legibilidade visual:
+              //  - Suporte (dieta + hidratação)
+              //  - Medicações (meds, ATB, alto alerta, inalatórios, hemo)
+              //  - Cuidados e orientações (care + não padrão)
+              const GROUPS: { id: string; label: string; cats: PrescriptionCategory[] }[] = [
+                { id: 'suporte', label: 'Suporte clínico', cats: ['nutrition', 'hydration'] },
+                { id: 'medicacoes', label: 'Medicações', cats: ['medication', 'antimicrobial', 'high_alert', 'inhalation', 'hemotherapy'] },
+                { id: 'cuidados', label: 'Cuidados e orientações', cats: ['care', 'nonstandard'] },
+              ];
+              return GROUPS.map(group => {
+                const visibleCats = group.cats.filter(c => itemsByCategory[c].length > 0);
+                if (visibleCats.length === 0) return null;
+                return (
+                  <div key={group.id} className="space-y-3">
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                        {group.label}
+                      </span>
+                      <div className="flex-1 h-px bg-border/60" />
+                    </div>
+                    {visibleCats.map(cat => {
               const config = CATEGORY_CONFIG[cat];
               const catItems = itemsByCategory[cat];
               const simple = isSimpleCategory(cat);
               const IconComp = CATEGORY_ICONS[config.icon] || Pill;
 
-              // Hide empty categories — they appear automatically when items are added via the search bar above
               if (catItems.length === 0) return null;
 
               return (
-                <div key={cat} className="rounded-xl border border-border bg-card">
+                <div key={cat} id={`prescription-cat-${cat}`} className="rounded-xl border border-border bg-card scroll-mt-24">
                   {/* Category header with inline search */}
                   <div className={cn("flex items-center gap-2 px-3 py-2 border-b border-border/50", config.bgColor)}>
                     {catItems.length > 0 && (
