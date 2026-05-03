@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
-import { format, subDays, startOfDay, differenceInHours } from "date-fns";
+import { format, subDays, startOfDay, differenceInHours, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { GestorNotificationCenter } from "@/components/gestor/GestorNotificationCenter";
+import { KpiDrillDownDialog, type DrillDownRow } from "@/components/gestor/KpiDrillDownDialog";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
@@ -110,6 +111,13 @@ export default function GestorPanelPage() {
   const [movementTrend, setMovementTrend] = useState<{ day: string; altas: number; admissoes: number; transferencias: number; obitos: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  // ── Drill-down datasets (D-5) ──
+  const [occupiedPatientsList, setOccupiedPatientsList] = useState<any[]>([]);
+  const [vacantBedsList, setVacantBedsList] = useState<any[]>([]);
+  const [doorPatientsList, setDoorPatientsList] = useState<any[]>([]);
+  const [pendingRequestsList, setPendingRequestsList] = useState<any[]>([]);
+  const [prescriptionsList, setPrescriptionsList] = useState<any[]>([]);
+  const [drillDown, setDrillDown] = useState<string | null>(null);
   const [sectorFilter, setSectorFilter] = useState<string>(() => {
     if (typeof window === "undefined") return "ALL";
     return localStorage.getItem("gestor_sector_filter") || "ALL";
@@ -188,6 +196,9 @@ export default function GestorPanelPage() {
         });
 
         setBedStats({ total: patients.length, occupied: occupied.length, vacant: vacant.length, doorPatients: doorPatients.length, bySector });
+        setOccupiedPatientsList(occupied);
+        setVacantBedsList(vacant);
+        setDoorPatientsList(doorPatients);
 
         // Critical alerts
         const alerts: CriticalAlert[] = [];
@@ -239,27 +250,32 @@ export default function GestorPanelPage() {
       const { count } = await supabase.from("medication_catalog").select("id", { count: "exact", head: true });
       setMedicationCount(count || 0);
 
-      // ── 4. Pending bed allocation requests ──
+      // ── 4. Pending bed allocation requests (with detail for drill-down) ──
       let pendingQuery = supabase
         .from("bed_allocation_requests")
-        .select("id", { count: "exact", head: true })
+        .select("id, requested_sector, requested_bed, requesting_doctor_name, created_at, patient:patients(name, bed_number, sector)")
         .eq("hospital_unit_id", selectedUnit.id)
-        .eq("status", "pending");
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
       if (filteredDepartments && filteredDepartments.length > 0) {
         pendingQuery = pendingQuery.in("requested_sector", filteredDepartments);
       }
-      const { count: pendCount } = await pendingQuery;
-      setPendingRequests(pendCount || 0);
+      const { data: pendData } = await pendingQuery;
+      setPendingRequests(pendData?.length || 0);
+      setPendingRequestsList(pendData || []);
 
       // ── 5. Prescription & validation stats ──
       let prescriptionQuery = supabase
         .from("prescriptions")
-        .select("id", { count: "exact", head: true })
-        .eq("hospital_unit_id", selectedUnit.id);
+        .select("id, patient_name, patient_bed, department, created_at, status")
+        .eq("hospital_unit_id", selectedUnit.id)
+        .order("created_at", { ascending: false })
+        .limit(200);
       if (filteredDepartments && filteredDepartments.length > 0) {
         prescriptionQuery = prescriptionQuery.in("department", filteredDepartments);
       }
-      const { count: totalPrescriptions } = await prescriptionQuery;
+      const { data: prescData } = await prescriptionQuery;
+      setPrescriptionsList(prescData || []);
 
       let validationsQuery = supabase
         .from("prescription_validations")
@@ -276,7 +292,7 @@ export default function GestorPanelPage() {
         else if (v.status === "pending") valCounts.pending++;
         else valCounts.rejected++;
       });
-      setPrescriptionStats({ total: totalPrescriptions || 0, ...valCounts });
+      setPrescriptionStats({ total: prescData?.length || 0, ...valCounts });
 
     } catch (err) {
       console.error("Error fetching gestor data:", err);
@@ -339,15 +355,59 @@ export default function GestorPanelPage() {
     Vagos: s.total - s.occupied,
   }));
 
-  // ── KPIs ──
+  // ── KPIs (key habilita drill-down) ──
   const kpiCards = [
-    { title: "Taxa de Ocupação", value: `${occupancyRate}%`, sub: `${bedStats.occupied}/${bedStats.total} leitos`, icon: Bed, color: occupancyRate > 85 ? "text-destructive" : occupancyRate > 70 ? "text-amber-600" : "text-emerald-600", bg: occupancyRate > 85 ? "bg-destructive/10" : occupancyRate > 70 ? "bg-amber-500/10" : "bg-emerald-500/10" },
-    { title: "Leitos Vagos", value: bedStats.vacant.toString(), sub: "Disponíveis", icon: ArrowUpDown, color: "text-primary", bg: "bg-primary/10" },
-    { title: "Pacientes Porta", value: bedStats.doorPatients.toString(), sub: "Aguardando leito", icon: Users, color: bedStats.doorPatients > 0 ? "text-amber-600" : "text-muted-foreground", bg: bedStats.doorPatients > 0 ? "bg-amber-500/10" : "bg-muted/30" },
-    { title: "Alertas Críticos", value: criticalAlerts.filter(a => a.severity === "critical").length.toString(), sub: `${criticalAlerts.length} totais`, icon: AlertTriangle, color: criticalAlerts.length > 0 ? "text-destructive" : "text-muted-foreground", bg: criticalAlerts.length > 0 ? "bg-destructive/10" : "bg-muted/30" },
-    { title: "Prescrições", value: prescriptionStats.total.toString(), sub: `${prescriptionStats.validated} validadas`, icon: FileText, color: "text-primary", bg: "bg-primary/10" },
-    { title: "Solicitações", value: pendingRequests.toString(), sub: "Alocação pendente", icon: Clock, color: pendingRequests > 0 ? "text-amber-600" : "text-muted-foreground", bg: pendingRequests > 0 ? "bg-amber-500/10" : "bg-muted/30" },
+    { key: "occupancy", title: "Taxa de Ocupação", value: `${occupancyRate}%`, sub: `${bedStats.occupied}/${bedStats.total} leitos`, icon: Bed, color: occupancyRate > 85 ? "text-destructive" : occupancyRate > 70 ? "text-amber-600" : "text-emerald-600", bg: occupancyRate > 85 ? "bg-destructive/10" : occupancyRate > 70 ? "bg-amber-500/10" : "bg-emerald-500/10" },
+    { key: "vacant", title: "Leitos Vagos", value: bedStats.vacant.toString(), sub: "Disponíveis", icon: ArrowUpDown, color: "text-primary", bg: "bg-primary/10" },
+    { key: "door", title: "Pacientes Porta", value: bedStats.doorPatients.toString(), sub: "Aguardando leito", icon: Users, color: bedStats.doorPatients > 0 ? "text-amber-600" : "text-muted-foreground", bg: bedStats.doorPatients > 0 ? "bg-amber-500/10" : "bg-muted/30" },
+    { key: "alerts", title: "Alertas Críticos", value: criticalAlerts.filter(a => a.severity === "critical").length.toString(), sub: `${criticalAlerts.length} totais`, icon: AlertTriangle, color: criticalAlerts.length > 0 ? "text-destructive" : "text-muted-foreground", bg: criticalAlerts.length > 0 ? "bg-destructive/10" : "bg-muted/30" },
+    { key: "prescriptions", title: "Prescrições", value: prescriptionStats.total.toString(), sub: `${prescriptionStats.validated} validadas`, icon: FileText, color: "text-primary", bg: "bg-primary/10" },
+    { key: "requests", title: "Solicitações", value: pendingRequests.toString(), sub: "Alocação pendente", icon: Clock, color: pendingRequests > 0 ? "text-amber-600" : "text-muted-foreground", bg: pendingRequests > 0 ? "bg-amber-500/10" : "bg-muted/30" },
   ];
+
+  // ── Datasets para drill-down (D-5) ──
+  const drillRows: Record<string, DrillDownRow[]> = {
+    occupancy: occupiedPatientsList.map(p => ({
+      id: p.id,
+      primary: p.name || "(SEM NOME)",
+      secondary: `LEITO ${p.bed_number} • ${getSectorDisplayLabel(p.sector)}`,
+      badge: p.clinical_status ? { label: String(p.clinical_status).toUpperCase(), variant: ["gravíssimo", "grave", "crítico"].includes(p.clinical_status) ? "destructive" : "secondary" } : undefined,
+    })),
+    vacant: vacantBedsList.map(p => ({
+      id: p.id,
+      primary: `LEITO ${p.bed_number}`,
+      secondary: getSectorDisplayLabel(p.sector),
+      badge: { label: "VAGO", variant: "outline" },
+    })),
+    door: doorPatientsList.map(p => ({
+      id: p.id,
+      primary: p.name || "(SEM NOME)",
+      secondary: `LEITO PORTA ${p.bed_number} • ${getSectorDisplayLabel(p.sector)}`,
+      badge: { label: "AGUARDANDO", variant: "secondary" },
+    })),
+    alerts: criticalAlerts.map(a => ({
+      id: a.id,
+      primary: a.patientName,
+      secondary: `LEITO ${a.bed} • ${a.sector}`,
+      tertiary: a.detail,
+      badge: { label: a.type.toUpperCase(), variant: a.severity === "critical" ? "destructive" : "outline" },
+    })),
+    prescriptions: prescriptionsList.slice(0, 100).map((p: any) => ({
+      id: p.id,
+      primary: p.patient_name || "—",
+      secondary: `${p.patient_bed ? `LEITO ${p.patient_bed} • ` : ""}${p.department || ""}`,
+      tertiary: format(new Date(p.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }),
+      badge: { label: String(p.status || "ATIVA").toUpperCase(), variant: "outline" },
+    })),
+    requests: pendingRequestsList.map((r: any) => ({
+      id: r.id,
+      primary: r.patient?.name || "(PACIENTE)",
+      secondary: `${r.patient?.bed_number ? `LEITO ${r.patient.bed_number} → ` : ""}${r.requested_sector}${r.requested_bed ? ` (${r.requested_bed})` : ""}`,
+      tertiary: `${r.requesting_doctor_name ? r.requesting_doctor_name + " • " : ""}${formatDistanceToNow(new Date(r.created_at), { addSuffix: true, locale: ptBR })}`,
+      badge: { label: "PENDENTE", variant: "secondary" },
+    })),
+  };
+  const activeDrill = drillDown ? kpiCards.find(k => k.key === drillDown) : null;
 
   return (
     <MainLayout>
@@ -468,20 +528,26 @@ export default function GestorPanelPage() {
             </Popover>
         </div>
 
-        {/* KPI Cards */}
+        {/* KPI Cards (clicáveis para drill-down) */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {kpiCards.map((kpi, i) => (
             <motion.div key={kpi.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-              <Card className="border-border/50 hover:shadow-md transition-shadow">
-                <CardContent className="p-3.5">
-                  <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center mb-2", kpi.bg)}>
-                    <kpi.icon className={cn("h-4 w-4", kpi.color)} />
-                  </div>
-                  <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-0.5">{kpi.title}</p>
-                  <p className="text-[9px] text-muted-foreground/70">{kpi.sub}</p>
-                </CardContent>
-              </Card>
+              <button
+                type="button"
+                onClick={() => setDrillDown(kpi.key)}
+                className="w-full text-left"
+              >
+                <Card className="border-border/50 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer">
+                  <CardContent className="p-3.5">
+                    <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center mb-2", kpi.bg)}>
+                      <kpi.icon className={cn("h-4 w-4", kpi.color)} />
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-0.5">{kpi.title}</p>
+                    <p className="text-[9px] text-muted-foreground/70">{kpi.sub}</p>
+                  </CardContent>
+                </Card>
+              </button>
             </motion.div>
           ))}
         </div>
@@ -676,6 +742,17 @@ export default function GestorPanelPage() {
           </CardContent>
         </Card>
       </div>
+      {/* D-5: Drill-down dos KPIs */}
+      <KpiDrillDownDialog
+        open={!!drillDown}
+        onOpenChange={(v) => !v && setDrillDown(null)}
+        title={activeDrill?.title || ""}
+        description={activeDrill?.sub}
+        icon={activeDrill?.icon}
+        iconColor={activeDrill?.color}
+        iconBg={activeDrill?.bg}
+        rows={drillDown ? drillRows[drillDown] || [] : []}
+      />
     </MainLayout>
   );
 }
