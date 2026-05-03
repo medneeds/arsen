@@ -659,6 +659,7 @@ const SetorLaboratorioPage = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 
