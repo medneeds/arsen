@@ -25,6 +25,7 @@ import { NirNotificationCenter } from "@/components/nir/NirNotificationCenter";
 import { useDischargePredictions } from "@/hooks/useDischargePredictions";
 import { BedDetailDialog } from "@/components/nir/BedDetailDialog";
 import { sectorLabelFromCode, HOSPITAL_SECTOR_GROUPS } from "@/lib/hospitalSectors";
+import { SlaBadge } from "@/components/sla/SlaBadge";
 
 const NIR_MODULES = [
   { key: "regulacao_interna", label: "Regulação Interna", subtitle: "Transferências entre setores", icon: ArrowLeftRight, color: "text-blue-500", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/20" },
@@ -451,20 +452,17 @@ export default function NirDashboardPage() {
               </ul>
             ) : (
               <ul className="divide-y">
-                {(alertList.items as any[]).map((r) => {
-                  const hours = Math.round((Date.now() - new Date(r.created_at).getTime()) / 3_600_000);
-                  return (
-                    <li key={r.id} className="py-2 flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="patient-id text-sm font-semibold truncate">{r.patient_name}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {r.origin_sector || "—"} → {r.destination_sector || "—"} · {r.priority || "s/ prioridade"}
-                        </p>
-                      </div>
-                      <Badge variant={hours > 48 ? "destructive" : "outline"} className="text-[10px] shrink-0">{hours}h</Badge>
-                    </li>
-                  );
-                })}
+                {(alertList.items as any[]).map((r) => (
+                  <li key={r.id} className="py-2 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="patient-id text-sm font-semibold truncate">{r.patient_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {r.origin_sector || "—"} → {r.destination_sector || "—"} · {r.priority || "s/ prioridade"}
+                      </p>
+                    </div>
+                    <SlaBadge startAt={r.created_at} thresholds={[60, 120, 180]} compact />
+                  </li>
+                ))}
               </ul>
             )}
           </ScrollArea>
