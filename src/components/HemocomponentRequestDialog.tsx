@@ -119,18 +119,27 @@ export function HemocomponentRequestDialog({
         registry = r.data;
       }
 
-      setData((d) => ({
-        ...d,
-        patient_name: registry?.full_name || p.name || d.patient_name,
-        patient_social_name: registry?.social_name || null,
-        patient_birth_date: registry?.birth_date || null,
-        patient_sex: registry?.sex || null,
-        patient_blood_group: registry?.blood_type || null,
-        patient_record: registry?.medical_record || p.medical_record || null,
-        patient_unit: (p.sector ? (SECTOR_DISPLAY[p.sector] || p.sector) : d.patient_unit),
-        patient_bed: p.bed_number || d.patient_bed,
-        patient_diagnosis: p.diagnoses || null,
-      }));
+      setData((d) => {
+        const sectorCode = p.sector && isKnownSectorCode(p.sector) ? p.sector : null;
+        return {
+          ...d,
+          patient_name: registry?.full_name || p.name || d.patient_name,
+          patient_social_name: registry?.social_name || null,
+          patient_birth_date: registry?.birth_date || null,
+          patient_sex: registry?.sex || null,
+          patient_blood_group: registry?.blood_type || null,
+          patient_record: registry?.medical_record || p.medical_record || null,
+          patient_unit: (p.sector ? (SECTOR_DISPLAY[p.sector] || p.sector) : d.patient_unit),
+          patient_bed: p.bed_number || d.patient_bed,
+          patient_diagnosis: p.diagnoses || null,
+          transfusion_sectors:
+            d.transfusion_sectors && d.transfusion_sectors.length > 0
+              ? d.transfusion_sectors
+              : sectorCode
+                ? [sectorCode]
+                : d.transfusion_sectors || [],
+        };
+      });
     })();
   }, [open, patientId]);
 
