@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useMedicalRecordMode } from "@/hooks/useMedicalRecordMode";
-import { Camera, Upload, User, MapPin, Loader2, Sparkles, AlertCircle, ShieldAlert, UserX } from "lucide-react";
+import { Camera, Upload, User, MapPin, Loader2, Sparkles, AlertCircle, ShieldAlert, UserX, FileUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -105,6 +105,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [duplicateMatch, setDuplicateMatch] = useState<{ id: string; full_name: string; medical_record: string | null } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pisInputRef = useRef<HTMLInputElement>(null);
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
   const { mode: mrMode } = useMedicalRecordMode(currentHospital?.id);
@@ -490,6 +491,27 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 flex items-center justify-end -mb-1">
+                  <input
+                    ref={pisInputRef}
+                    type="file"
+                    accept="application/pdf,image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => pisInputRef.current?.click()}
+                    disabled={isExtracting}
+                    className="h-7 px-2 text-[11px] gap-1.5 border-dashed text-muted-foreground hover:text-foreground"
+                    title="Importar PDF do sistema PIS — IA preenche os campos automaticamente"
+                  >
+                    {isExtracting ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileUp className="h-3 w-3" />}
+                    Importar do PIS
+                  </Button>
+                </div>
                 <div className="col-span-2">
                   <Label className="text-xs font-semibold">Nome Completo *</Label>
                   <Input
