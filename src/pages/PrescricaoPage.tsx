@@ -141,6 +141,33 @@ interface PrescriptionItem {
   infusionRate?: string;      // Vazão editável (mL/h ou gts/min)
   volumeTotal?: string;       // Volume total (mL)
   concentration?: string;     // Concentração calculada ou manual
+  // Nutrition-specific optional fields
+  nutritionType?: 'diet_enteral' | 'diet_oral' | 'water' | 'npt' | 'zero';
+  nutVolDay?: string;         // Volume total / dia (mL)
+  nutMode?: string;           // Contínua BIC / Gravitacional intermitente / Bolus / Bomba ciclada / VO fracionada
+  nutFraction?: string;       // Fracionamento / horários
+  nutNightPause?: string;     // Pausa noturna / repouso digestivo
+  nutProgression?: string;    // Esquema de progressão
+  nutBedHead?: string;        // Cabeceira (graus)
+  nutResidualCheck?: string;  // Checagem de resíduo gástrico
+  nutConsistency?: string;    // IDDSI / textura (oral)
+  nutAccess?: string;         // NPT: CVC / PICC / Periférico
+  nutComposition?: string;    // NPT: composição resumida
+  nutMonitoring?: string;     // NPT: monitorização
+  nutWaterVolPerAdmin?: string; // Água: mL por administração
+  nutWaterFreq?: string;      // Água: frequência
+  nutZeroReason?: string;     // Motivo do jejum
+}
+
+// Detect nutrition subtype from wizard-generated item name
+function detectNutritionType(name: string): PrescriptionItem['nutritionType'] | undefined {
+  const n = name.toLowerCase();
+  if (n.includes('zero') || n.includes('npo') || n.includes('jejum')) return 'zero';
+  if (n.includes('npt') || n.includes('parenteral')) return 'npt';
+  if (n.includes('água') || n.includes('agua') || n.includes('flush') || n.includes('hidratação enteral') || n.includes('hidratacao enteral')) return 'water';
+  if (n.includes('enteral') || n.includes('sne') || n.includes('sng') || n.includes('gastrostomia') || n.includes('jejunostomia')) return 'diet_enteral';
+  if (n.includes('oral') || n.includes(' vo')) return 'diet_oral';
+  return undefined;
 }
 
 // Normalize text for accent-insensitive search
@@ -701,6 +728,216 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
 });
 
 
+// --- Nutrition fields (specific structured controls per nutrition subtype) ---
+// Renderizado no modo expandido para itens da categoria 'nutrition' no lugar
+// dos campos de medicação. Todos os campos são OPCIONAIS.
+function NutritionFields({
+  item,
+  onUpdate,
+}: {
+  item: PrescriptionItem;
+  onUpdate: (id: string, field: keyof PrescriptionItem, value: string) => void;
+}) {
+  const subtype: NonNullable<PrescriptionItem['nutritionType']> =
+    item.nutritionType ?? detectNutritionType(item.name) ?? 'diet_enteral';
+
+  const FieldLabel = ({ children }: { children: React.ReactNode }) => (
+    <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">{children}</span>
+  );
+  const TinyInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+    <Input {...props} className={cn("h-6 text-[11px] bg-muted/10 border-border/30", props.className)} />
+  );
+
+  const setSubtype = (v: string) => onUpdate(item.id, 'nutritionType', v);
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <FieldLabel>Tipo:</FieldLabel>
+        <Select value={subtype} onValueChange={setSubtype}>
+          <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="diet_enteral" className="text-xs">Dieta enteral</SelectItem>
+            <SelectItem value="diet_oral" className="text-xs">Dieta oral</SelectItem>
+            <SelectItem value="water" className="text-xs">Água / Hidratação</SelectItem>
+            <SelectItem value="npt" className="text-xs">NPT (Parenteral)</SelectItem>
+            <SelectItem value="zero" className="text-xs">Dieta zero (NPO)</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="text-[10px] text-muted-foreground/70 italic ml-1">campos opcionais — preencha o que desejar detalhar</span>
+      </div>
+
+      {(subtype === 'diet_enteral' || subtype === 'diet_oral') && (
+        <>
+          <div className="flex items-center gap-1.5 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
+            <UtensilsCrossed className="h-3 w-3 text-primary shrink-0" />
+            <FieldLabel>Vol/dia:</FieldLabel>
+            <TinyInput value={item.nutVolDay || ''} onChange={(e) => onUpdate(item.id, 'nutVolDay', e.target.value)} className="w-16 text-center" placeholder="mL" />
+            {subtype === 'diet_enteral' && (
+              <>
+                <span className="text-muted-foreground/40">·</span>
+                <FieldLabel>Vazão:</FieldLabel>
+                <TinyInput value={item.infusionRate || ''} onChange={(e) => onUpdate(item.id, 'infusionRate', e.target.value)} className="w-14 text-center" placeholder="mL/h" />
+              </>
+            )}
+            <span className="text-muted-foreground/40">·</span>
+            <FieldLabel>Modo:</FieldLabel>
+            <Select value={item.nutMode || ''} onValueChange={(v) => onUpdate(item.id, 'nutMode', v)}>
+              <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-44"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>
+                {subtype === 'diet_enteral' ? (
+                  <>
+                    <SelectItem value="Contínua BIC" className="text-xs">Contínua (BIC)</SelectItem>
+                    <SelectItem value="Gravitacional intermitente" className="text-xs">Gravitacional intermitente</SelectItem>
+                    <SelectItem value="Bolus" className="text-xs">Bolus</SelectItem>
+                    <SelectItem value="Bomba ciclada" className="text-xs">Bomba ciclada</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="VO livre demanda" className="text-xs">VO — livre demanda</SelectItem>
+                    <SelectItem value="VO fracionada" className="text-xs">VO — fracionada</SelectItem>
+                    <SelectItem value="VO assistida" className="text-xs">VO — assistida (fono)</SelectItem>
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+            <div className="flex items-center gap-1">
+              <FieldLabel>Fracionamento:</FieldLabel>
+              <TinyInput value={item.nutFraction || ''} onChange={(e) => onUpdate(item.id, 'nutFraction', e.target.value)} className="flex-1" placeholder="6x/dia, 4/4h..." />
+            </div>
+            <div className="flex items-center gap-1">
+              <FieldLabel>Pausa noturna:</FieldLabel>
+              <TinyInput value={item.nutNightPause || ''} onChange={(e) => onUpdate(item.id, 'nutNightPause', e.target.value)} className="flex-1" placeholder="23h-6h" />
+            </div>
+            <div className="flex items-center gap-1">
+              <FieldLabel>Progressão:</FieldLabel>
+              <TinyInput value={item.nutProgression || ''} onChange={(e) => onUpdate(item.id, 'nutProgression', e.target.value)} className="flex-1" placeholder="↑20mL/h a cada 6h" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            <div className="flex items-center gap-1">
+              <FieldLabel>Cabeceira:</FieldLabel>
+              <Select value={item.nutBedHead || ''} onValueChange={(v) => onUpdate(item.id, 'nutBedHead', v)}>
+                <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 flex-1"><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="≥30°" className="text-xs">≥30°</SelectItem>
+                  <SelectItem value="≥45°" className="text-xs">≥45°</SelectItem>
+                  <SelectItem value="Decúbito livre" className="text-xs">Decúbito livre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-1">
+              <FieldLabel>Resíduo gástrico:</FieldLabel>
+              <TinyInput value={item.nutResidualCheck || ''} onChange={(e) => onUpdate(item.id, 'nutResidualCheck', e.target.value)} className="flex-1" placeholder="aspirar 6/6h, suspender se >250mL" />
+            </div>
+          </div>
+
+          {subtype === 'diet_oral' && (
+            <div className="flex items-center gap-1">
+              <FieldLabel>Consistência (IDDSI):</FieldLabel>
+              <Select value={item.nutConsistency || ''} onValueChange={(v) => onUpdate(item.id, 'nutConsistency', v)}>
+                <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-56"><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Líquida fina (IDDSI 0)" className="text-xs">Líquida fina (IDDSI 0)</SelectItem>
+                  <SelectItem value="Levemente espessa (IDDSI 1)" className="text-xs">Levemente espessa (1)</SelectItem>
+                  <SelectItem value="Néctar (IDDSI 2)" className="text-xs">Néctar (2)</SelectItem>
+                  <SelectItem value="Mel (IDDSI 3)" className="text-xs">Mel (3)</SelectItem>
+                  <SelectItem value="Pudim/pastosa (IDDSI 4)" className="text-xs">Pudim/pastosa (4)</SelectItem>
+                  <SelectItem value="Branda (IDDSI 5/6)" className="text-xs">Branda (5/6)</SelectItem>
+                  <SelectItem value="Livre (IDDSI 7)" className="text-xs">Livre (7)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </>
+      )}
+
+      {subtype === 'water' && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
+          <div className="flex items-center gap-1">
+            <Droplets className="h-3 w-3 text-primary shrink-0" />
+            <FieldLabel>Vol/adm:</FieldLabel>
+            <TinyInput value={item.nutWaterVolPerAdmin || ''} onChange={(e) => onUpdate(item.id, 'nutWaterVolPerAdmin', e.target.value)} className="flex-1 text-center" placeholder="50 mL" />
+          </div>
+          <div className="flex items-center gap-1">
+            <FieldLabel>Frequência:</FieldLabel>
+            <TinyInput value={item.nutWaterFreq || ''} onChange={(e) => onUpdate(item.id, 'nutWaterFreq', e.target.value)} className="flex-1" placeholder="antes/após dieta e meds" />
+          </div>
+          <div className="flex items-center gap-1">
+            <FieldLabel>Meta hídrica/dia:</FieldLabel>
+            <TinyInput value={item.nutVolDay || ''} onChange={(e) => onUpdate(item.id, 'nutVolDay', e.target.value)} className="flex-1 text-center" placeholder="800 mL" />
+          </div>
+        </div>
+      )}
+
+      {subtype === 'npt' && (
+        <>
+          <div className="flex items-center gap-1.5 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
+            <Droplets className="h-3 w-3 text-primary shrink-0" />
+            <FieldLabel>Vol total:</FieldLabel>
+            <TinyInput value={item.volumeTotal || ''} onChange={(e) => onUpdate(item.id, 'volumeTotal', e.target.value)} className="w-16 text-center" placeholder="mL" />
+            <span className="text-muted-foreground/40">·</span>
+            <FieldLabel>Vazão:</FieldLabel>
+            <TinyInput value={item.infusionRate || ''} onChange={(e) => onUpdate(item.id, 'infusionRate', e.target.value)} className="w-14 text-center" placeholder="mL/h" />
+            <span className="text-muted-foreground/40">·</span>
+            <FieldLabel>Correr em:</FieldLabel>
+            <TinyInput value={item.infusionTime || ''} onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)} className="w-14 text-center" placeholder="18" />
+            <Select value={item.infusionTimeUnit || 'h'} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
+              <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-16"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="h" className="text-xs">horas</SelectItem>
+                <SelectItem value="min" className="text-xs">min</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-muted-foreground/40">·</span>
+            <FieldLabel>Acesso:</FieldLabel>
+            <Select value={item.nutAccess || ''} onValueChange={(v) => onUpdate(item.id, 'nutAccess', v)}>
+              <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-28"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CVC" className="text-xs">CVC</SelectItem>
+                <SelectItem value="PICC" className="text-xs">PICC</SelectItem>
+                <SelectItem value="Periférico" className="text-xs">Periférico</SelectItem>
+                <SelectItem value="Port-a-cath" className="text-xs">Port-a-cath</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            <div className="flex items-start gap-1">
+              <FieldLabel>Composição:</FieldLabel>
+              <Textarea value={item.nutComposition || ''} onChange={(e) => onUpdate(item.id, 'nutComposition', e.target.value)} className="min-h-[36px] text-[11px] bg-muted/10 border-border/30 flex-1 py-1" placeholder="Glic 4 g/kg/dia · AA 1,5 g/kg/dia · Lip 1 g/kg/dia · eletrólitos" />
+            </div>
+            <div className="flex items-start gap-1">
+              <FieldLabel>Monitorização:</FieldLabel>
+              <Textarea value={item.nutMonitoring || ''} onChange={(e) => onUpdate(item.id, 'nutMonitoring', e.target.value)} className="min-h-[36px] text-[11px] bg-muted/10 border-border/30 flex-1 py-1" placeholder="Glicemia 6/6h · ionograma · TG 2x/sem · função hepática" />
+            </div>
+          </div>
+        </>
+      )}
+
+      {subtype === 'zero' && (
+        <div className="flex items-center gap-1 px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
+          <FieldLabel>Motivo do jejum:</FieldLabel>
+          <TinyInput value={item.nutZeroReason || ''} onChange={(e) => onUpdate(item.id, 'nutZeroReason', e.target.value)} className="flex-1" placeholder="pré-operatório, broncoaspiração, íleo..." />
+        </div>
+      )}
+
+      {/* Observações livres — sempre disponível */}
+      <Textarea
+        value={item.instructions}
+        onChange={(e) => onUpdate(item.id, 'instructions', e.target.value)}
+        className="min-h-[44px] text-[11px] bg-muted/10 border-border/20 italic focus:not-italic"
+        placeholder="Observações nutricionais livres (orientações à equipe, restrições, alergias, metas calóricas, conduta em caso de intolerância...)"
+      />
+    </div>
+  );
+}
+
 function FlagToggle({ flag, active, onToggle }: {
   flag: typeof PRESCRIPTION_FLAGS[number];
   active: boolean;
@@ -1086,7 +1323,10 @@ function SortablePrescriptionItemRow({
               </p>
             </div>
           )}
-          {item.status === 'active' && (
+          {item.status === 'active' && item.category === 'nutrition' && (
+            <NutritionFields item={item} onUpdate={onUpdate} />
+          )}
+          {item.status === 'active' && item.category !== 'nutrition' && (
             <>
               {/* Row 1: Dose + Via + Intervalo */}
               <div className="flex items-center gap-1.5 flex-wrap">
