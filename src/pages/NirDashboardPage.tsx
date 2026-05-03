@@ -98,16 +98,45 @@ export default function NirDashboardPage() {
     if (!activeModule) return null;
 
     switch (activeModule) {
-      case "censo_leitos":
+      case "censo_leitos": {
+        // Agrupa setores conforme HOSPITAL_SECTOR_GROUPS para reduzir o ruído
+        // de filtros e dar uma visão hierárquica institucional.
+        const SECTOR_GROUPS = [
+          { title: "Todos", codes: null as string[] | null },
+          ...HOSPITAL_SECTOR_GROUPS.map((g) => ({ title: g.title, codes: g.items.map((i) => i.key) })),
+        ];
+        const activeGroup = SECTOR_GROUPS.find((g) => g.title === censusGroup) ?? SECTOR_GROUPS[0];
+        const visibleBedsBySector = Object.fromEntries(
+          Object.entries(bedsBySector).filter(([sector]) =>
+            !activeGroup.codes || activeGroup.codes.includes(sector),
+          ),
+        );
+
         return (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-lg font-semibold text-foreground">Censo de Leitos — Tempo Real</h3>
               <Button variant="outline" size="sm" onClick={refetch}>
                 <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
               </Button>
             </div>
 
+            {/* Tabs de grupo de setores (substitui filtro plano) */}
+            <div className="flex flex-wrap gap-1.5">
+              {SECTOR_GROUPS.map((g) => (
+                <Button
+                  key={g.title}
+                  variant={censusGroup === g.title ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setCensusGroup(g.title)}
+                >
+                  {g.title}
+                </Button>
+              ))}
+            </div>
+
+            {/* Legenda de status */}
             <div className="flex flex-wrap gap-2">
               {Object.entries(BED_STATUS_LABELS).map(([key, { label, color }]) => {
                 const count = beds.filter((b: any) => b.status === key).length;
@@ -120,54 +149,65 @@ export default function NirDashboardPage() {
               })}
             </div>
 
-            {Object.keys(bedsBySector).length === 0 ? (
+            {Object.keys(visibleBedsBySector).length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <BedDouble className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">Nenhum leito cadastrado no censo</p>
-                  <p className="text-sm mt-1">Os leitos serão exibidos aqui conforme forem registrados no sistema.</p>
+                  <p className="font-medium">Nenhum leito neste grupo</p>
+                  <p className="text-sm mt-1">Selecione outro grupo de setores acima.</p>
                 </CardContent>
               </Card>
             ) : (
-              Object.entries(bedsBySector).map(([sector, sectorBeds]) => (
-                <Card key={sector}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-primary" />
-                      {sector}
-                      <Badge variant="secondary" className="text-[10px]">{sectorBeds.length} leitos</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-                      {sectorBeds.map((bed: any) => {
-                        const statusInfo = BED_STATUS_LABELS[bed.status] || { label: bed.status, color: "bg-muted" };
-                        return (
-                          <div
-                            key={bed.id}
-                            className={cn(
-                              "rounded-lg border p-2 text-center cursor-pointer hover:shadow-md transition-shadow",
-                              bed.status === "vago" ? "border-emerald-500/30 bg-emerald-500/5" :
-                              bed.status === "ocupado" ? "border-blue-500/30 bg-blue-500/5" :
-                              "border-red-500/30 bg-red-500/5"
-                            )}
-                            title={`${bed.bed_number} — ${statusInfo.label}${bed.patient_name ? ` — ${bed.patient_name}` : ""}`}
-                          >
-                            <span className="text-xs font-bold block">{bed.bed_number}</span>
-                            <span className={cn("h-2 w-2 rounded-full inline-block mt-1", statusInfo.color)} />
-                            {bed.patient_name && (
-                              <p className="patient-id text-[9px] text-muted-foreground truncate mt-0.5">{bed.patient_name}</p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+              Object.entries(visibleBedsBySector).map(([sector, sectorBeds]) => {
+                const occupiedCount = sectorBeds.filter((b: any) => b.status === "ocupado").length;
+                const sectorLabel = sectorLabelFromCode(sector);
+                return (
+                  <Card key={sector}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-primary" />
+                        {sectorLabel}
+                        <Badge variant="secondary" className="text-[10px]">{occupiedCount}/{sectorBeds.length} ocupados</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                        {sectorBeds.map((bed: any) => {
+                          const statusInfo = BED_STATUS_LABELS[bed.status] || { label: bed.status, color: "bg-muted" };
+                          return (
+                            <button
+                              key={bed.id}
+                              type="button"
+                              onClick={() => setSelectedBed(bed)}
+                              className={cn(
+                                "rounded-lg border p-2 text-center cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all focus:outline-none focus:ring-2 focus:ring-primary/40",
+                                bed.status === "vago" && "border-emerald-500/30 bg-emerald-500/5",
+                                bed.status === "ocupado" && "border-blue-500/30 bg-blue-500/5",
+                                bed.status === "higienizacao" && "border-amber-500/30 bg-amber-500/5",
+                                bed.status === "alta_medica_dada" && "border-cyan-500/30 bg-cyan-500/5",
+                                ["bloqueado","interditado","manutencao"].includes(bed.status) && "border-red-500/30 bg-red-500/5",
+                                bed.status === "reservado" && "border-purple-500/30 bg-purple-500/5",
+                              )}
+                              title={`${bed.bed_number} — ${statusInfo.label}${bed.patient_name ? ` — ${bed.patient_name}` : ""}`}
+                            >
+                              <span className="text-xs font-bold block">{bed.bed_number}</span>
+                              <span className={cn("h-2 w-2 rounded-full inline-block mt-1", statusInfo.color)} />
+                              {bed.patient_name && (
+                                <p className="patient-id text-[9px] text-muted-foreground truncate mt-0.5">{bed.patient_name}</p>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </div>
         );
+      }
+
 
       case "relatorios_nir":
         return (
