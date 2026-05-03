@@ -200,35 +200,30 @@ const Index = () => {
     localStorage.setItem("selected_sector", sector);
   };
 
-  // Sector visual config
+  // Sector visual config — padronizado em azul institucional para integridade visual
+  const BLUE_DOT = "bg-primary/80 border-primary/40";
+  const BLUE_GRAD = "from-primary/20 to-primary/10";
   const SECTOR_VISUAL: Record<string, { title: string; color: string; dotClass: string; colorVariant: string; isUti?: boolean }> = {
-    // UTIs
-    red: { title: "UTI 1", color: "from-red-500/20 to-red-600/10", dotClass: "bg-red-500/80 border-red-400/40", colorVariant: "red", isUti: true },
-    yellow: { title: "UTI 2", color: "from-yellow-500/20 to-yellow-600/10", dotClass: "bg-yellow-500/80 border-yellow-400/40", colorVariant: "yellow", isUti: true },
-    // UCIs
-    blue: { title: "UCI 1", color: "from-blue-500/20 to-blue-600/10", dotClass: "bg-blue-500/80 border-blue-400/40", colorVariant: "blue", isUti: true },
-    outside: { title: "UCI 2", color: "from-emerald-500/20 to-emerald-600/10", dotClass: "bg-emerald-500/80 border-emerald-400/40", colorVariant: "green", isUti: true },
-    // UCC
-    ucc: { title: "UCC", color: "from-violet-500/20 to-violet-600/10", dotClass: "bg-violet-500/80 border-violet-400/40", colorVariant: "purple", isUti: true },
-    // Enfermarias
-    neuro_01: { title: "Neuro 01", color: "from-cyan-500/20 to-cyan-600/10", dotClass: "bg-cyan-500/80 border-cyan-400/40", colorVariant: "blue", isUti: true },
-    neuro_02: { title: "Neuro 02", color: "from-cyan-500/20 to-cyan-600/10", dotClass: "bg-cyan-500/80 border-cyan-400/40", colorVariant: "blue", isUti: true },
-    clinica_cirurgica: { title: "Clínica Cirúrgica", color: "from-teal-500/20 to-teal-600/10", dotClass: "bg-teal-500/80 border-teal-400/40", colorVariant: "green", isUti: true },
-    enfermaria_transicao: { title: "Enf. Transição", color: "from-amber-500/20 to-amber-600/10", dotClass: "bg-amber-500/80 border-amber-400/40", colorVariant: "yellow", isUti: true },
-    enfermaria_vascular: { title: "Enf. Vascular", color: "from-pink-500/20 to-pink-600/10", dotClass: "bg-pink-500/80 border-pink-400/40", colorVariant: "red", isUti: true },
-    // Urgência e Emergência
-    sala_vermelha: { title: "Sala Vermelha", color: "from-red-500/20 to-red-600/10", dotClass: "bg-red-500/80 border-red-400/40", colorVariant: "red", isUti: true },
-    sala_laranja: { title: "Sala Laranja", color: "from-orange-500/20 to-orange-600/10", dotClass: "bg-orange-500/80 border-orange-400/40", colorVariant: "orange", isUti: true },
-    observacao_clinica: { title: "Obs. Clínica", color: "from-sky-500/20 to-sky-600/10", dotClass: "bg-sky-500/80 border-sky-400/40", colorVariant: "blue", isUti: true },
-    internacao_ue: { title: "Internação UE", color: "from-indigo-500/20 to-indigo-600/10", dotClass: "bg-indigo-500/80 border-indigo-400/40", colorVariant: "indigo", isUti: true },
-    ue_vertical: { title: "UE Vertical", color: "from-purple-500/20 to-purple-600/10", dotClass: "bg-purple-500/80 border-purple-400/40", colorVariant: "purple", isUti: true },
-    ue_horizontal: { title: "UE Horizontal", color: "from-indigo-500/20 to-indigo-600/10", dotClass: "bg-indigo-500/80 border-indigo-400/40", colorVariant: "indigo", isUti: true },
-    // RIV
-    riv: { title: "RIV", color: "from-rose-500/20 to-rose-600/10", dotClass: "bg-rose-500/80 border-rose-400/40", colorVariant: "red", isUti: true },
-    // Centro Cirúrgico
-    cc_preparo: { title: "CC Preparo", color: "from-slate-500/20 to-slate-600/10", dotClass: "bg-slate-500/80 border-slate-400/40", colorVariant: "blue", isUti: true },
-    cc_bloco: { title: "CC Bloco Cirúrgico", color: "from-slate-500/20 to-slate-600/10", dotClass: "bg-slate-500/80 border-slate-400/40", colorVariant: "blue", isUti: true },
-    cc_rpa: { title: "CC RPA", color: "from-slate-500/20 to-slate-600/10", dotClass: "bg-slate-500/80 border-slate-400/40", colorVariant: "blue", isUti: true },
+    red: { title: "UTI 1", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    yellow: { title: "UTI 2", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    blue: { title: "UCI 1", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    outside: { title: "UCI 2", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    ucc: { title: "UCC", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    neuro_01: { title: "Neuro 01", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    neuro_02: { title: "Neuro 02", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    clinica_cirurgica: { title: "Clínica Cirúrgica", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    enfermaria_transicao: { title: "Enf. Transição", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    enfermaria_vascular: { title: "Enf. Vascular", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    sala_vermelha: { title: "Sala Vermelha", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    sala_laranja: { title: "Sala Laranja", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    observacao_clinica: { title: "Obs. Clínica", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    internacao_ue: { title: "Internação UE", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    ue_vertical: { title: "UE Vertical", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    ue_horizontal: { title: "UE Horizontal", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    riv: { title: "RIV", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    cc_preparo: { title: "CC Preparo", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    cc_bloco: { title: "CC Bloco Cirúrgico", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
+    cc_rpa: { title: "CC RPA", color: BLUE_GRAD, dotClass: BLUE_DOT, colorVariant: "blue", isUti: true },
   };
   
   // Use real database patients filtered by active sector on bed map
@@ -909,174 +904,74 @@ const Index = () => {
         )}
         
         <div className={printMode ? 'print-hide' : ''}>
-          {/* Header */}
-          <DynamicHeader>
-            <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent print:hidden"></div>
-            <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3 print:py-0.5 print:px-1">
-              <div className="flex items-center justify-between gap-2">
-                {/* Left side: Sidebar trigger only (sector hierarchy moved to body) */}
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 print:hidden">
-                  <SidebarTrigger className="flex-shrink-0 text-white hover:text-white hover:bg-white/25 border-white/30 hover:border-white/50 data-[state=open]:bg-white/25 transition-all duration-200" />
-                  <div className="flex items-center gap-2 min-w-0">
-                    <LayoutDashboard className="h-4 w-4 text-white/70 flex-shrink-0" />
-                    <span className="text-[12px] sm:text-sm font-semibold text-white/95 tracking-wide truncate">
-                      Mapa de leitos
-                    </span>
-                  </div>
-                </div>
+          {/* Main Content — sem cabeçalho duplicado; ações ficam no BreadcrumbBar */}
+          <main className="container mx-auto px-2 sm:px-4 py-3 sm:py-6 print:py-0 print:px-1 print:pt-3">
+            <div className="space-y-3 sm:space-y-4 print:space-y-1">
+              {/* Unified breadcrumb bar com ações integradas */}
+              <BreadcrumbBar
+                variant="institutional"
+                actions={
+                  <TooltipProvider delayDuration={300}>
+                    <div className="flex items-center gap-1 print:hidden">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="icon" onClick={handleRefreshMap} disabled={isRefreshing}
+                            className="h-8 w-8 bg-white/95 text-foreground border-white/40 hover:bg-white hover:text-primary shadow-sm">
+                            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Atualizar mapa</p></TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="icon" onClick={handlePrintCompact}
+                            className="h-8 w-8 bg-white/95 text-foreground border-white/40 hover:bg-white hover:text-primary shadow-sm">
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Imprimir mapa</p></TooltipContent>
+                      </Tooltip>
 
-                {/* Right side: Action buttons */}
-                <div className="flex gap-1.5 sm:gap-2 print:gap-2 items-center flex-shrink-0">
-                  {isMobile ? (
-                    <>
-                      <Button
-                        variant={selectionMode ? "default" : "outline"}
-                        size="icon"
-                        onClick={handleToggleSelectionMode}
-                        className={`print:hidden h-11 w-11 transition-all duration-200 ${selectionMode ? 'bg-white text-[#013ba6] shadow-md' : 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40'}`}
-                        title="Modo de seleção"
-                      >
-                        <CheckSquare className="h-5 w-5" />
-                      </Button>
+                      <div className="h-6 w-px bg-white/30" />
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={handleToggleSelectionMode}
+                            className={`h-8 w-8 transition-all duration-200 shadow-sm ${selectionMode ? 'bg-primary text-white border-white/40 ring-2 ring-white/40' : 'bg-white/95 text-foreground border-white/40 hover:bg-white hover:text-primary'}`}>
+                            <CheckSquare className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>{selectionMode ? "Sair do modo seleção" : "Modo de seleção"}</p></TooltipContent>
+                      </Tooltip>
                       {selectionMode && selectedPatients.size > 0 && (
                         <>
-                          <Button variant="outline" size="icon" onClick={handlePrintSelected}
-                            className="print:hidden h-11 w-11 bg-gradient-to-br from-critical via-warning to-stable text-white border-0">
-                            <Printer className="h-5 w-5" />
-                          </Button>
-                          <Button variant="destructive" size="icon" onClick={handleDeleteSelected}
-                            className="print:hidden h-11 w-11 bg-red-600 text-white hover:bg-red-700 border-0">
-                            <Trash2 className="h-5 w-5" />
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="outline" size="icon" onClick={handlePrintSelected}
+                                className="h-8 w-8 bg-gradient-to-br from-critical via-warning to-stable text-white border-0 hover:shadow-lg hover:scale-105 transition-all">
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Imprimir {selectedPatients.size} selecionado(s)</p></TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="destructive" size="icon" onClick={handleDeleteSelected}
+                                className="h-8 w-8 bg-red-600 text-white hover:bg-red-700 border-0">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Deletar {selectedPatients.size} selecionado(s)</p></TooltipContent>
+                          </Tooltip>
                         </>
                       )}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="icon"
-                            className="print:hidden h-11 w-11 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200">
-                            <MoreVertical className="h-5 w-5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48 bg-background z-50">
-                          <DropdownMenuItem onClick={handleRefreshMap} disabled={isRefreshing}>
-                            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                            Atualizar mapa
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={handlePrintCompact}>
-                            <Printer className="mr-2 h-4 w-4" />
-                            Imprimir mapa
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setShowOnlyOccupied(!showOnlyOccupied)}>
-                            {showOnlyOccupied ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
-                            {showOnlyOccupied ? "Mostrar vazios" : "Ocultar vazios"}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={toggleNamesHidden}>
-                            {namesHidden ? <Eye className="mr-2 h-4 w-4" /> : <EyeOff className="mr-2 h-4 w-4" />}
-                            {namesHidden ? "Mostrar nomes" : "Ocultar nomes (LGPD)"}
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={toggleFullscreen}>
-                            {isFullscreen ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}
-                            {isFullscreen ? "Sair tela cheia" : "Tela cheia"}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </>
-                  ) : (
-                    <>
-                      <TooltipProvider delayDuration={300}>
-                      <div className="flex items-center gap-1 print:hidden">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={handleRefreshMap} disabled={isRefreshing}
-                              className="h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200">
-                              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Atualizar mapa</p></TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={handlePrintCompact}
-                              className="h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200">
-                              <Printer className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Imprimir mapa</p></TooltipContent>
-                        </Tooltip>
-
-                        <div className="h-6 w-px bg-white/20" />
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant={selectionMode ? "default" : "outline"}
-                              size="icon"
-                              onClick={handleToggleSelectionMode}
-                              className={`h-8 w-8 transition-all duration-200 ${selectionMode ? 'bg-white text-[#013ba6] shadow-md' : 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40'}`}>
-                              <CheckSquare className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Modo de seleção</p></TooltipContent>
-                        </Tooltip>
-                        {selectionMode && selectedPatients.size > 0 && (
-                          <>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="outline" size="icon" onClick={handlePrintSelected}
-                                  className="h-8 w-8 bg-gradient-to-br from-critical via-warning to-stable text-white border-0 hover:shadow-lg hover:scale-105 transition-all">
-                                  <Printer className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent><p>Imprimir {selectedPatients.size} selecionado(s)</p></TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant="destructive" size="icon" onClick={handleDeleteSelected}
-                                  className="h-8 w-8 bg-red-600 text-white hover:bg-red-700 border-0">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent><p>Deletar {selectedPatients.size} selecionado(s)</p></TooltipContent>
-                            </Tooltip>
-                          </>
-                        )}
-
-                        <div className="h-6 w-px bg-white/20" />
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={toggleNamesHidden}
-                              className={`h-8 w-8 transition-all duration-200 ${namesHidden ? 'bg-white text-[#013ba6] shadow-md' : 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40'}`}>
-                              {namesHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>{namesHidden ? "Mostrar nomes" : "Ocultar nomes (LGPD)"}</p></TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" onClick={toggleFullscreen}
-                              className="h-8 w-8 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white hover:border-white/40 transition-all duration-200">
-                              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>{isFullscreen ? "Sair da tela cheia" : "Tela cheia"}</p></TooltipContent>
-                        </Tooltip>
-                      </div>
-                      </TooltipProvider>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </DynamicHeader>
-
-          {/* Main Content */}
-          <main className="container mx-auto px-2 sm:px-4 py-3 sm:py-6 print:py-0 print:px-1 pt-[120px] sm:pt-[110px] print:pt-3">
-            <div className="space-y-3 sm:space-y-4 print:space-y-1">
-              {/* Unified breadcrumb bar */}
-              <BreadcrumbBar variant="institutional" />
+                    </div>
+                  </TooltipProvider>
+                }
+              />
 
 
               {/* Pre-admission section — filtra por setor ativo (exceto UE Vertical/Horizontal que mostram todos) */}
@@ -1159,6 +1054,31 @@ const Index = () => {
               </Collapsible>
             </div>
           </main>
+
+          {/* Floating bottom controls — Tela cheia + Ocultar nomes (LGPD) */}
+          <div className="fixed bottom-5 right-5 z-40 flex items-center gap-1.5 rounded-full border border-border/60 bg-card/95 backdrop-blur-md shadow-lg p-1 print:hidden">
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={toggleNamesHidden}
+                    className={`h-9 w-9 rounded-full transition-all ${namesHidden ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'text-foreground hover:bg-muted'}`}>
+                    {namesHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left"><p>{namesHidden ? "Mostrar nomes" : "Ocultar nomes (LGPD)"}</p></TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={toggleFullscreen}
+                    className="h-9 w-9 rounded-full text-foreground hover:bg-muted">
+                    {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left"><p>{isFullscreen ? "Sair da tela cheia" : "Tela cheia"}</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
 
           {/* Footer */}
           <footer className="border-t border-border mt-8 print:hidden">
