@@ -137,6 +137,7 @@ const AdminDashboardPage = () => {
   const selectedHospitalId = currentHospital?.id;
   const { currentDepartment } = useDepartment();
   const { point: receptionPoint } = useReceptionPost();
+  const { mode: mrMode } = useMedicalRecordMode(selectedHospitalId);
 
   // Tab state synced with URL (?tab=inicio|dia|aguardando|prontuarios) — sincroniza com sidebar
   const [searchParams, setSearchParams] = useSearchParams();
