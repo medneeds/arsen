@@ -12,7 +12,7 @@ import { ptBR } from "date-fns/locale";
 import {
   Pill, Plus, Trash2, Copy, Printer, Save, RefreshCw,
   Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe, History,
-  ClipboardList, X, Check, Shield, Wind, TestTube, FileText,
+  ClipboardList, X, Check, Shield, Wind, TestTube, FileText, FlaskConical,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal,
   Play, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
   Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, Heart, List, AlignJustify, ChevronUp,
@@ -464,12 +464,12 @@ interface PatientHeader {
 }
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  UtensilsCrossed, Droplets, Pill, Shield, AlertTriangle,
+  UtensilsCrossed, Droplets, FlaskConical, Pill, Shield, AlertTriangle,
   Wind, TestTube, ClipboardList, FileText, Syringe, Zap,
 };
 
 const TAB_ORDER: PrescriptionCategory[] = [
-  'nutrition', 'hydration', 'medication', 'antimicrobial',
+  'nutrition', 'hydration', 'replacement', 'medication', 'antimicrobial',
   'high_alert', 'inhalation', 'hemotherapy', 'care', 'nonstandard',
 ];
 
@@ -479,11 +479,15 @@ function MedicationAutocomplete({
   onSelect,
   placeholder,
   getFavoriteCount,
+  onAssistantClick,
+  assistantTooltip,
 }: {
   source: MedicationEntry[];
   onSelect: (med: MedicationEntry) => void;
   placeholder: string;
   getFavoriteCount?: (id: string) => number;
+  onAssistantClick?: () => void;
+  assistantTooltip?: string;
 }) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
@@ -503,17 +507,39 @@ function MedicationAutocomplete({
 
   return (
     <div className="relative">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          ref={inputRef}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setTimeout(() => setFocused(false), 200)}
-          placeholder={placeholder}
-          className="pl-9 bg-background/60 border-border/50 h-7 text-xs focus:border-primary/50 transition-colors"
-        />
+      <div className="relative flex items-center gap-1">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setTimeout(() => setFocused(false), 200)}
+            placeholder={placeholder}
+            className={cn(
+              "pl-9 bg-background/60 border-border/50 h-7 text-xs focus:border-primary/50 transition-colors",
+              onAssistantClick && "pr-9"
+            )}
+          />
+          {onAssistantClick && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={onAssistantClick}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 rounded-md flex items-center justify-center bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/30 text-primary hover:from-primary/25 hover:to-primary/10 transition-all"
+                  aria-label={assistantTooltip || "Abrir assistente"}
+                >
+                  <Sparkles className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="text-xs">
+                {assistantTooltip || "Abrir assistente"}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
       </div>
       {focused && filtered.length > 0 && (
         <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-border bg-popover shadow-lg max-h-64 overflow-y-auto">
@@ -3248,7 +3274,7 @@ const PrescricaoPage = () => {
 
   const itemsByCategory = useMemo(() => {
     const map: Record<PrescriptionCategory, PrescriptionItem[]> = {
-      nutrition: [], hydration: [], medication: [], antimicrobial: [],
+      nutrition: [], hydration: [], replacement: [], medication: [], antimicrobial: [],
       high_alert: [], inhalation: [], hemotherapy: [], care: [], nonstandard: [],
     };
     items.forEach(item => {
@@ -3435,11 +3461,12 @@ const PrescricaoPage = () => {
   // ===== Quick templates: apply + save =====
   const mapTemplateCategory = useCallback((cat: string): PrescriptionCategory => {
     const c = (cat || "").toLowerCase().trim();
-    const valid: PrescriptionCategory[] = ['nutrition','hydration','medication','antimicrobial','high_alert','inhalation','hemotherapy','care','nonstandard'];
+    const valid: PrescriptionCategory[] = ['nutrition','hydration','replacement','medication','antimicrobial','high_alert','inhalation','hemotherapy','care','nonstandard'];
     if (valid.includes(c as PrescriptionCategory)) return c as PrescriptionCategory;
     // pt-BR aliases used in seed templates
     if (c === 'antimicrobianos') return 'antimicrobial';
     if (c === 'hidratacao' || c === 'hidratação') return 'hydration';
+    if (c === 'reposicao' || c === 'reposição' || c === 'eletroliticos' || c === 'eletrolíticos') return 'replacement';
     if (c === 'dieta' || c === 'dietas') return 'nutrition';
     if (c === 'sintomaticos' || c === 'sintomáticos' || c === 'medicacoes' || c === 'medicações' || c === 'antiagregantes' || c === 'profilaxia') return 'medication';
     if (c === 'cuidados') return 'care';

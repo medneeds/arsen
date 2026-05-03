@@ -4,6 +4,7 @@
 export type PrescriptionCategory =
   | 'nutrition'       // Dietas e suplementos nutricionais
   | 'hydration'       // Soluções de hidratação
+  | 'replacement'     // Reposição / correção eletrolítica
   | 'medication'      // Medicamentos gerais
   | 'antimicrobial'   // Antimicrobianos (antibióticos, antifúngicos, antivirais)
   | 'high_alert'      // Medicamentos de alta vigilância
@@ -33,7 +34,8 @@ export const CATEGORY_CONFIG: Record<PrescriptionCategory, {
   bgColor: string;
 }> = {
   nutrition:     { label: 'Nutrição',          icon: 'UtensilsCrossed', color: 'text-emerald-500',  bgColor: 'bg-emerald-500/10' },
-  hydration:     { label: 'Hidratação / Reposição', icon: 'Droplets', color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+  hydration:     { label: 'Hidratação',         icon: 'Droplets',       color: 'text-blue-500',     bgColor: 'bg-blue-500/10' },
+  replacement:   { label: 'Reposição',          icon: 'FlaskConical',   color: 'text-sky-500',      bgColor: 'bg-sky-500/10' },
   medication:    { label: 'Medicamentos',      icon: 'Pill',           color: 'text-primary',      bgColor: 'bg-primary/10' },
   antimicrobial: { label: 'Antimicrobianos',   icon: 'Shield',         color: 'text-orange-500',   bgColor: 'bg-orange-500/10' },
   high_alert:    { label: 'Alta Vigilância',   icon: 'AlertTriangle',  color: 'text-red-500',      bgColor: 'bg-red-500/10' },
@@ -96,17 +98,17 @@ export const SOLUTION_OPTIONS: MedicationEntry[] = [
   { id: 's6', name: 'Ringer Lactato', presentation: '500mL', defaultDose: '500mL', defaultRoute: 'Intravenosa', defaultPosology: 'Contínuo', defaultSchedule: 'ACM', category: 'hydration' },
   { id: 's7', name: 'Soro Glicofisiológico', presentation: '500mL', defaultDose: '500mL', defaultRoute: 'Intravenosa', defaultPosology: 'Contínuo', defaultSchedule: 'ACM', category: 'hydration' },
   // Reposições eletrolíticas
-  { id: 'rep1', name: 'Cloreto de Potássio (KCl) 19,1%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: 'ACM', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 1-2h. NUNCA em bolus.', category: 'hydration' },
-  { id: 'rep2', name: 'Cloreto de Potássio (KCl) 10%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: 'ACM', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 1-2h. NUNCA em bolus.', category: 'hydration' },
-  { id: 'rep3', name: 'Sulfato de Magnésio 50%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: 'ACM', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 1h.', category: 'hydration' },
-  { id: 'rep4', name: 'Sulfato de Magnésio 10%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: 'ACM', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 1h.', category: 'hydration' },
-  { id: 'rep5', name: 'Gluconato de Cálcio 10%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: 'ACM', instructions: 'Diluir em 100mL de SG5%. Infundir em 30-60 min. Incompatível com bicarbonato.', category: 'hydration' },
-  { id: 'rep6', name: 'Cloreto de Cálcio 10%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: 'ACM', instructions: 'Acesso central preferencial. Infundir lentamente. Vesicante.', category: 'hydration' },
-  { id: 'rep7', name: 'Fosfato de Potássio 2mEq/mL', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '12/12h', defaultSchedule: 'ACM', instructions: 'Diluir em 250mL de SF0,9%. Infundir em 4-6h.', category: 'hydration' },
-  { id: 'rep8', name: 'Cloreto de Sódio 20%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: 'ACM', instructions: 'Diluir em solução de hidratação. Acesso central para concentrações >3%.', category: 'hydration' },
-  { id: 'rep9', name: 'Bicarbonato de Sódio 8,4%', presentation: '250mL - Frasco', defaultDose: '250mL', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: 'ACM', instructions: 'Infundir conforme gasometria. Incompatível com cálcio.', category: 'hydration' },
-  { id: 'rep10', name: 'Bicarbonato de Sódio 8,4%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: 'ACM', instructions: 'Diluir em SF0,9% ou SG5%. Incompatível com cálcio.', category: 'hydration' },
-  { id: 'rep11', name: 'Glicose 50%', presentation: '10mL - Ampola', defaultDose: '4 amp', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: 'ACM', instructions: 'Aplicação lenta (3-5 min). Para hipoglicemia.', category: 'hydration' },
+  { id: 'rep1', name: 'Cloreto de Potássio (KCl) 19,1%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: 'ACM', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 1-2h. NUNCA em bolus.', category: 'replacement' },
+  { id: 'rep2', name: 'Cloreto de Potássio (KCl) 10%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: 'ACM', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 1-2h. NUNCA em bolus.', category: 'replacement' },
+  { id: 'rep3', name: 'Sulfato de Magnésio 50%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: 'ACM', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 1h.', category: 'replacement' },
+  { id: 'rep4', name: 'Sulfato de Magnésio 10%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: 'ACM', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 1h.', category: 'replacement' },
+  { id: 'rep5', name: 'Gluconato de Cálcio 10%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: 'ACM', instructions: 'Diluir em 100mL de SG5%. Infundir em 30-60 min. Incompatível com bicarbonato.', category: 'replacement' },
+  { id: 'rep6', name: 'Cloreto de Cálcio 10%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: 'ACM', instructions: 'Acesso central preferencial. Infundir lentamente. Vesicante.', category: 'replacement' },
+  { id: 'rep7', name: 'Fosfato de Potássio 2mEq/mL', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '12/12h', defaultSchedule: 'ACM', instructions: 'Diluir em 250mL de SF0,9%. Infundir em 4-6h.', category: 'replacement' },
+  { id: 'rep8', name: 'Cloreto de Sódio 20%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: '8/8h', defaultSchedule: 'ACM', instructions: 'Diluir em solução de hidratação. Acesso central para concentrações >3%.', category: 'replacement' },
+  { id: 'rep9', name: 'Bicarbonato de Sódio 8,4%', presentation: '250mL - Frasco', defaultDose: '250mL', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: 'ACM', instructions: 'Infundir conforme gasometria. Incompatível com cálcio.', category: 'replacement' },
+  { id: 'rep10', name: 'Bicarbonato de Sódio 8,4%', presentation: '10mL - Ampola', defaultDose: '1 amp', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: 'ACM', instructions: 'Diluir em SF0,9% ou SG5%. Incompatível com cálcio.', category: 'replacement' },
+  { id: 'rep11', name: 'Glicose 50%', presentation: '10mL - Ampola', defaultDose: '4 amp', defaultRoute: 'Intravenosa', defaultPosology: 'ACM', defaultSchedule: 'ACM', instructions: 'Aplicação lenta (3-5 min). Para hipoglicemia.', category: 'replacement' },
 ];
 
 // ========== ANTIMICROBIANOS ==========
@@ -317,7 +319,8 @@ export const MEDICATIONS_DATABASE: MedicationEntry[] = [
 // ========== TODOS OS ITENS POR CATEGORIA ==========
 export const ALL_ITEMS_BY_CATEGORY: Record<PrescriptionCategory, MedicationEntry[]> = {
   nutrition: DIET_OPTIONS,
-  hydration: SOLUTION_OPTIONS,
+  hydration: SOLUTION_OPTIONS.filter(s => s.category === 'hydration'),
+  replacement: SOLUTION_OPTIONS.filter(s => s.category === 'replacement'),
   medication: MEDICATIONS_DATABASE,
   antimicrobial: ANTIMICROBIAL_OPTIONS,
   high_alert: HIGH_ALERT_OPTIONS,
