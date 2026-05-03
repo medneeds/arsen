@@ -1175,14 +1175,14 @@ const APAC_PROCEDURES = [
 ];
 
 const APAC_QUICK_ACCESS = [
-  { code: "02.06.01.007-9", label: "TC Crânio", color: "bg-blue-600 hover:bg-blue-700 text-white" },
-  { code: "02.06.03.001-0", label: "TC Tórax", color: "bg-emerald-600 hover:bg-emerald-700 text-white" },
-  { code: "02.06.03.002-9", label: "TC Abdome Sup", color: "bg-amber-600 hover:bg-amber-700 text-white" },
-  { code: "02.06.03.003-7", label: "TC Abdome Inf", color: "bg-orange-600 hover:bg-orange-700 text-white" },
-  { code: "02.06.03.004-5", label: "TC Abdome Total", color: "bg-red-600 hover:bg-red-700 text-white" },
-  { code: "02.06.01.005-2", label: "AngioTC Pulmonar", color: "bg-purple-600 hover:bg-purple-700 text-white" },
-  { code: "02.06.01.001-0", label: "AngioTC Cervical", color: "bg-indigo-600 hover:bg-indigo-700 text-white" },
-  { code: "02.06.03.005-3", label: "TC Pelve", color: "bg-pink-600 hover:bg-pink-700 text-white" },
+  { code: "02.06.01.007-9", label: "TC Crânio" },
+  { code: "02.06.03.001-0", label: "TC Tórax" },
+  { code: "02.06.03.002-9", label: "TC Abdome Sup" },
+  { code: "02.06.03.003-7", label: "TC Abdome Inf" },
+  { code: "02.06.03.004-5", label: "TC Abdome Total" },
+  { code: "02.06.01.005-2", label: "AngioTC Pulmonar" },
+  { code: "02.06.01.001-0", label: "AngioTC Cervical" },
+  { code: "02.06.03.005-3", label: "TC Pelve" },
 ];
 
 const APAC_INSTITUTION = {
