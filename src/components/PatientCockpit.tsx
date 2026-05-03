@@ -543,41 +543,89 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           </button>
         )}
 
-        {/* ===== ZONA 3.9: SOLICITAÇÃO NIR (realtime) ===== */}
-        {nirRequest && (
-          <button
-            onClick={() => goPatient("/nir")}
-            className="mx-3 mt-1 mb-1 flex items-start justify-between gap-2 rounded-md border border-border bg-muted/40 hover:bg-muted/70 transition px-2.5 py-1.5 text-left"
-          >
-            <div className="flex items-start gap-2 min-w-0 flex-1">
-              <BedDouble className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[11px] font-semibold text-foreground">Solicitação NIR</span>
-                  <NirStatusBadge status={nirRequest.status} />
+        {/* ===== ZONA 3.9: SOLICITAÇÃO NIR (realtime, com tracking + autonomia médica) ===== */}
+        {nirRequest && (() => {
+          const elapsedMin = Math.max(0, Math.floor((Date.now() - new Date(nirRequest.createdAt).getTime()) / 60000));
+          const isPending = nirRequest.status === "pending";
+          const trackingTone =
+            elapsedMin > 180 ? "bg-destructive/10 text-destructive border-destructive/30" :
+            elapsedMin > 120 ? "bg-amber-500/10 text-amber-700 border-amber-500/30" :
+            elapsedMin > 60  ? "bg-yellow-400/10 text-yellow-700 border-yellow-400/30" :
+                               "bg-emerald-500/10 text-emerald-700 border-emerald-500/30";
+          const fmtElapsed = elapsedMin < 60
+            ? `${elapsedMin}min`
+            : `${Math.floor(elapsedMin / 60)}h${String(elapsedMin % 60).padStart(2, "0")}`;
+
+          const handleApproveBed = async (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (approvingBed) return;
+            setApprovingBed(true);
+            const ok = await approveRequest(nirRequest.id);
+            setApprovingBed(false);
+            if (ok) toast.success("Leito alocado com autonomia médica");
+          };
+
+          return (
+            <div className="mx-3 mt-1 mb-1 rounded-md border border-border bg-muted/40">
+              <button
+                onClick={() => goPatient("/nir")}
+                className="w-full flex items-start justify-between gap-2 hover:bg-muted/70 transition px-2.5 py-1.5 text-left rounded-t-md"
+              >
+                <div className="flex items-start gap-2 min-w-0 flex-1">
+                  <BedDouble className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[11px] font-semibold text-foreground">Solicitação NIR</span>
+                      <NirStatusBadge status={nirRequest.status} />
+                      {isPending && (
+                        <span className={cn("inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wide", trackingTone)}>
+                          <ClockIcon className="h-2.5 w-2.5" />
+                          {fmtElapsed} aguardando
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-foreground/80 leading-tight mt-0.5 preserve-case">
+                      Setor <strong>{nirRequest.requestedSector}</strong>
+                      {nirRequest.requestedBed ? ` • Leito ${nirRequest.requestedBed}` : ""}
+                    </p>
+                    {nirRequest.status === "rejected" && nirRequest.rejectionReason && (
+                      <p className="text-[10px] text-destructive leading-tight mt-0.5 preserve-case line-clamp-2">
+                        {nirRequest.rejectionReason}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 preserve-case">
+                      {nirRequest.requestingDoctorName ? `${nirRequest.requestingDoctorName} • ` : ""}
+                      {(() => {
+                        try {
+                          return formatDistanceToNow(new Date(nirRequest.createdAt), { addSuffix: true, locale: ptBR });
+                        } catch { return "—"; }
+                      })()}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-[10px] text-foreground/80 leading-tight mt-0.5 preserve-case">
-                  Setor <strong>{nirRequest.requestedSector}</strong>
-                  {nirRequest.requestedBed ? ` • Leito ${nirRequest.requestedBed}` : ""}
-                </p>
-                {nirRequest.status === "rejected" && nirRequest.rejectionReason && (
-                  <p className="text-[10px] text-destructive leading-tight mt-0.5 preserve-case line-clamp-2">
-                    {nirRequest.rejectionReason}
-                  </p>
-                )}
-                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 preserve-case">
-                  {nirRequest.requestingDoctorName ? `${nirRequest.requestingDoctorName} • ` : ""}
-                  {(() => {
-                    try {
-                      return formatDistanceToNow(new Date(nirRequest.createdAt), { addSuffix: true, locale: ptBR });
-                    } catch { return "—"; }
-                  })()}
-                </p>
-              </div>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+              </button>
+              {/* Autonomia médica — aparece em pending após 30min ou imediatamente se >60min */}
+              {isPending && (
+                <div className="border-t border-border/60 px-2.5 py-1.5 flex items-center justify-between gap-2">
+                  <span className="text-[9px] text-muted-foreground uppercase tracking-wide">
+                    Autonomia médica
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="h-6 text-[10px] px-2 gap-1"
+                    disabled={approvingBed}
+                    onClick={handleApproveBed}
+                  >
+                    <CheckIcon className="h-3 w-3" />
+                    {approvingBed ? "Alocando…" : "Aprovar e alocar leito"}
+                  </Button>
+                </div>
+              )}
             </div>
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-          </button>
-        )}
+          );
+        })()}
 
         {/* ===== ZONA 3.10: REQUISIÇÕES ESPECIAIS (realtime) ===== */}
         {specialSummary.total > 0 && (
