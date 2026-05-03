@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useHospital } from "@/contexts/HospitalContext";
 import { cn } from "@/lib/utils";
 import { useNirMetrics, type NirFilters } from "@/hooks/useNirMetrics";
@@ -307,14 +308,17 @@ export default function NirDashboardPage() {
     <div className="space-y-4 p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-primary" />
-            Núcleo Interno de Regulação (NIR)
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gestão centralizada de leitos, regulações e fluxo de pacientes
-          </p>
+        <div className="flex items-start gap-2">
+          <SidebarTrigger className="mt-1 h-8 w-8" />
+          <div>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              <Building2 className="h-6 w-6 text-primary" />
+              Núcleo Interno de Regulação (NIR)
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Gestão centralizada de leitos, regulações e fluxo de pacientes
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <NirNotificationCenter metrics={metrics} />
