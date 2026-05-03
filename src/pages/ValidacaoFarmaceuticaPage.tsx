@@ -570,7 +570,8 @@ const ValidacaoFarmaceuticaPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 };
 
