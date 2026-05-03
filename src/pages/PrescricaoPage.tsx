@@ -1323,7 +1323,10 @@ function SortablePrescriptionItemRow({
               </p>
             </div>
           )}
-          {item.status === 'active' && (
+          {item.status === 'active' && item.category === 'nutrition' && (
+            <NutritionFields item={item} onUpdate={onUpdate} />
+          )}
+          {item.status === 'active' && item.category !== 'nutrition' && (
             <>
               {/* Row 1: Dose + Via + Intervalo */}
               <div className="flex items-center gap-1.5 flex-wrap">
