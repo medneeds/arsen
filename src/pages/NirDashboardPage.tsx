@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { cn } from "@/lib/utils";
 import { useNirMetrics, type NirFilters } from "@/hooks/useNirMetrics";
@@ -305,26 +306,29 @@ export default function NirDashboardPage() {
   };
 
   return (
-    <div className="space-y-4 p-4 md:p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-2">
-          <SidebarTrigger className="mt-1 h-8 w-8" />
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Building2 className="h-6 w-6 text-primary" />
-              Núcleo Interno de Regulação (NIR)
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Gestão centralizada de leitos, regulações e fluxo de pacientes
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <NirNotificationCenter metrics={metrics} />
-          <NirPdfExport metrics={metrics} predictions={predictions} />
-        </div>
-      </div>
+    <>
+      <PlatformHeader
+        variant="institutional"
+        eyebrow="Regulação · NIR"
+        title="Núcleo Interno de Regulação"
+        icon={Building2}
+        subtitle={
+          <>
+            <Building2 className="h-3 w-3" />
+            <span className="truncate">{currentHospital?.name || "Unidade"}</span>
+            <span className="opacity-50">·</span>
+            <span className="truncate">Gestão de leitos e fluxo de pacientes</span>
+          </>
+        }
+        actions={
+          <>
+            <NirNotificationCenter metrics={metrics} />
+            <NirPdfExport metrics={metrics} predictions={predictions} />
+          </>
+        }
+      />
+
+      <div className="space-y-4 p-4 md:p-6 max-w-7xl mx-auto">
 
       {/* Filtros globais */}
       <NirGlobalFilters filters={filters} onChange={setFilters} onRefresh={refetch} isLoading={isLoading} />
@@ -473,6 +477,7 @@ export default function NirDashboardPage() {
         open={!!selectedBed}
         onOpenChange={(o) => !o && setSelectedBed(null)}
       />
-    </div>
+      </div>
+    </>
   );
 }

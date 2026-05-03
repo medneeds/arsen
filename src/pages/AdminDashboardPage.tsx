@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -732,30 +733,31 @@ const AdminDashboardPage = () => {
     <MainLayout>
       <div className="flex flex-col h-screen bg-background">
         {/* Header */}
-        <header className="flex items-center gap-3 px-4 py-3 border-b bg-card shrink-0">
-          <SidebarTrigger />
-          <div className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-bold text-foreground">Recepção / Administrativo</h1>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setGlobalSearchOpen(true)}
-              className="gap-2 text-xs h-8 text-muted-foreground hover:text-foreground"
-            >
-              <Search className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Buscar paciente / atendimento</span>
-              <kbd className="hidden md:inline-flex h-5 items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[9px] font-medium text-muted-foreground">
-                <span className="text-[10px]">⌘</span>K
-              </kbd>
-            </Button>
-            <Badge variant="secondary" className="text-xs">
-              {recentEncounters.filter(e => e.status === "active").length} ativos
-            </Badge>
-          </div>
-        </header>
+        <PlatformHeader
+          variant="institutional"
+          eyebrow="Atendimento · Recepção"
+          title="Recepção / Administrativo"
+          icon={ClipboardList}
+          actions={
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setGlobalSearchOpen(true)}
+                className="gap-2 text-xs h-9 text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
+              >
+                <Search className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Buscar paciente / atendimento</span>
+                <kbd className="hidden md:inline-flex h-5 items-center gap-0.5 rounded border border-white/30 bg-white/10 px-1.5 font-mono text-[9px] font-medium text-primary-foreground/90">
+                  <span className="text-[10px]">⌘</span>K
+                </kbd>
+              </Button>
+              <Badge variant="secondary" className="text-xs bg-white/15 text-primary-foreground border-white/20">
+                {recentEncounters.filter(e => e.status === "active").length} ativos
+              </Badge>
+            </>
+          }
+        />
 
         {/* Main content */}
         <div className="flex-1 overflow-auto p-4">
