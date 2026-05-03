@@ -900,55 +900,7 @@ function SortablePrescriptionItemRow({
             />
           ))}
         </div>
-        {/* Schedule - far right aligned */}
-        <div className="shrink-0 flex items-center gap-1.5 pl-2 border-l border-border/30">
-          {(() => {
-            const presets = getPresetsForPosology(item.posology);
-            if (presets) {
-              return (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-6 px-1.5 text-[10px] border-border/40 text-muted-foreground hover:text-foreground shrink-0">
-                      <ClipboardList className="h-3 w-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground tracking-wider">
-                      {presets.label}
-                    </div>
-                    <DropdownMenuSeparator />
-                    {presets.options.map((opt) => (
-                      <DropdownMenuItem
-                        key={opt.name}
-                        onClick={() => onUpdate(item.id, "schedule", opt.times)}
-                        className="text-xs gap-2 font-mono"
-                      >
-                        {opt.times}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              );
-            }
-            return null;
-          })()}
-          <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-44 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
-          {item.schedule && item.schedule.includes(',') && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-6 w-6 p-0 border-border/40 text-muted-foreground hover:text-primary shrink-0"
-                  onClick={() => onUpdate(item.id, "schedule", rotateSchedule(item.schedule))}
-                >
-                  <RotateCw className="h-2.5 w-2.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">Rotacionar aprazamento</TooltipContent>
-            </Tooltip>
-          )}
-        </div>
+        {/* Schedule removed — manual aprazamento by nursing */}
         <ItemActions />
       </div>
     );
@@ -1038,12 +990,7 @@ function SortablePrescriptionItemRow({
             return f ? <Badge key={fk} variant="outline" className="text-[8px] px-1 shrink-0 text-muted-foreground border-border/50">{f.label}</Badge> : null;
           })}
         </div>
-        {/* Schedule compact — far right */}
-        <div className="shrink-0 flex items-center gap-1 pl-2 border-l border-border/30">
-          {item.schedule && (
-            <span className="text-[10px] font-mono text-primary/80">{item.schedule}</span>
-          )}
-        </div>
+        {/* Aprazamento removido — feito manualmente pela enfermagem */}
         <ItemActions />
       </div>
     );
@@ -1140,82 +1087,24 @@ function SortablePrescriptionItemRow({
           )}
           {item.status === 'active' && (
             <>
-              {/* Row 1: Dose + Via + Intervalo + Aprazamento (far right) */}
-              <div className="flex items-center gap-1.5">
-                <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
-                  <Input value={item.dose} onChange={(e) => onUpdate(item.id, "dose", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-24" placeholder="Dose" />
-                  <span className="text-muted-foreground text-[10px]">—</span>
-                  <Select value={item.route} onValueChange={(v) => {
-                    onUpdate(item.id, "route", v);
-                    if (isIVRoute(v) && !item.infusionMode) {
-                      onUpdate(item.id, "infusionMode", 'BIC');
-                    }
-                  }}>
-                    <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-32"><SelectValue /></SelectTrigger>
-                    <SelectContent>{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
-                  </Select>
-                  <span className="text-muted-foreground text-[10px]">—</span>
-                  <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
-                    <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-24"><SelectValue /></SelectTrigger>
-                    <SelectContent>{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-                {/* Schedule - far right, with presets */}
-                <div className="shrink-0 flex items-center gap-1.5 ml-auto pl-3 border-l border-border/30">
-                  <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Apraz:</span>
-                  <div className="flex items-center gap-1">
-                    {(() => {
-                      const presets = getPresetsForPosology(item.posology);
-                      if (presets) {
-                        return (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="sm" className="h-7 px-1.5 text-[10px] border-border/40 text-muted-foreground hover:text-foreground shrink-0">
-                                <ClipboardList className="h-3 w-3" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56">
-                              <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground tracking-wider">
-                                {presets.label} — Escolha um esquema
-                              </div>
-                              <DropdownMenuSeparator />
-                              {presets.options.map((opt) => (
-                                <DropdownMenuItem
-                                  key={opt.name}
-                                  onClick={() => onUpdate(item.id, "schedule", opt.times)}
-                                  className="text-xs gap-2 font-mono"
-                                >
-                                  {opt.times}
-                                </DropdownMenuItem>
-                              ))}
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-[10px] text-muted-foreground italic" onClick={() => {}}>
-                                Personalizado: edite o campo →
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        );
-                      }
-                      return null;
-                    })()}
-                    <Input value={item.schedule} onChange={(e) => onUpdate(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-48 font-mono text-center" placeholder="06h, 12h, 18h, 00h" />
-                    {item.schedule && item.schedule.includes(',') && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 w-7 p-0 border-border/40 text-muted-foreground hover:text-primary shrink-0"
-                            onClick={() => onUpdate(item.id, "schedule", rotateSchedule(item.schedule))}
-                          >
-                            <RotateCw className="h-3 w-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="text-xs">Rotacionar aprazamento</TooltipContent>
-                      </Tooltip>
-                    )}
-                  </div>
-                </div>
+              {/* Row 1: Dose + Via + Intervalo */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Input value={item.dose} onChange={(e) => onUpdate(item.id, "dose", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-24" placeholder="Dose" />
+                <span className="text-muted-foreground text-[10px]">—</span>
+                <Select value={item.route} onValueChange={(v) => {
+                  onUpdate(item.id, "route", v);
+                  if (isIVRoute(v) && !item.infusionMode) {
+                    onUpdate(item.id, "infusionMode", 'BIC');
+                  }
+                }}>
+                  <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-32"><SelectValue /></SelectTrigger>
+                  <SelectContent>{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
+                </Select>
+                <span className="text-muted-foreground text-[10px]">—</span>
+                <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
+                  <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-28"><SelectValue /></SelectTrigger>
+                  <SelectContent>{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
+                </Select>
               </div>
 
               {/* Row 2: Quantidade, Diluente, Vol Diluente, Acesso */}
@@ -1698,9 +1587,8 @@ function ExtraPrescriptionDialog({
                     ))}
                   </div>
                 </div>
-                {/* Row: Schedule */}
+                {/* Row: Observações */}
                 <div className="flex items-center gap-1.5">
-                  <Input value={item.schedule} onChange={(e) => updateExtraItem(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/10 border-border/30 w-44 font-mono" placeholder="Aprazamento (ex: 14h, 22h)" />
                   <Input value={item.instructions} onChange={(e) => updateExtraItem(item.id, "instructions", e.target.value)} className="h-7 text-[11px] bg-muted/10 border-border/20 flex-1 text-muted-foreground italic" placeholder="Observações..." />
                 </div>
               </div>
@@ -1881,10 +1769,7 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
         borderBottom: '0.5px solid #e2e8f0', borderRight: '0.5px solid #e2e8f0',
         verticalAlign: 'top', backgroundColor: '#fff', padding: '4px 6px',
       }}>
-        <div style={{ minHeight: '36px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '4px' }}>
-          <div style={{ borderBottom: '1px dotted #94a3b8', height: '13px' }} />
-          <div style={{ borderBottom: '1px dotted #94a3b8', height: '13px' }} />
-        </div>
+        <div style={{ minHeight: '36px' }} />
       </td>
     </tr>
   );
