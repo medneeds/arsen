@@ -52,7 +52,7 @@ export function MainLayout({ children, onOpenHandover }: MainLayoutProps) {
             </PageTransition>
           </main>
           
-          <footer className="fixed bottom-2 right-4 z-50 pointer-events-none">
+          <footer className="hidden md:block fixed bottom-2 right-4 z-50 pointer-events-none">
             <p className="text-[10px] text-muted-foreground/40 italic">
               {whitelabel.credits.footerText}
             </p>
