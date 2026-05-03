@@ -503,7 +503,7 @@ export function CultureRequestDialog({
               </div>
             </div>
           )}
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="p-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
