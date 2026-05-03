@@ -11,6 +11,7 @@ function buildSystemPrompt(opts: {
   includeTime: boolean;
   onlyAltered: boolean;
   clinicalImpression: boolean;
+  compactMode: boolean;
 }) {
   const sep = opts.usePipeSeparator ? ' | ' : ' ';
   const sepLabel = opts.usePipeSeparator ? '" | " (espaço barra espaço)' : 'espaço simples';
@@ -60,6 +61,22 @@ IMPRESSÃO CLÍNICA
 • Se todos os exames forem normais: "Exames dentro dos parâmetros de normalidade. Sem alterações que demandem intervenção imediata."
 
 FORMATAÇÃO: Sem asteriscos, sem markdown. Títulos em CAIXA ALTA. Bullet points com •
+`
+    : '';
+
+  const compactBlock = opts.compactMode
+    ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODO COMPACTO ATIVADO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+REGRA: Máxima densidade de informação. SEM redundância.
+• Use abreviações curtas sempre que possível (Hb, Ht, Leuco, Cr, Ur, K, Na, etc.)
+• NÃO use linhas em branco entre seções (compacte tudo)
+• NÃO repita o nome do exame se já estiver implícito
+• Para gaso/cultura: mesma linha do laboratorial quando viável, separados por ; (ponto e vírgula)
+• Mantenha LSI em linha única por exame de imagem
+• Remova qualquer texto explicativo ou contextual
 `
     : '';
 
@@ -159,7 +176,7 @@ REGRAS:
 
 EXEMPLO:
 19/11${opts.includeTime ? ' 10:45' : ''} (TC Crânio): Hipodensidade em território de ACM esquerda compatível com AVCi recente
-${onlyAlteredBlock}${clinicalBlock}
+${onlyAlteredBlock}${clinicalBlock}${compactBlock}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 COMPORTAMENTO
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -193,6 +210,7 @@ serve(async (req) => {
       includeTime = true,
       onlyAltered = false,
       clinicalImpression = false,
+      compactMode = false,
     } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
@@ -205,6 +223,7 @@ serve(async (req) => {
       includeTime: !!includeTime,
       onlyAltered: !!onlyAltered,
       clinicalImpression: !!clinicalImpression,
+      compactMode: !!compactMode,
     });
 
     // Reforço anti-introdução injetado antes do histórico
