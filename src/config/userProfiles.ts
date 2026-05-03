@@ -194,6 +194,15 @@ export const ACCESS_PROFILES: AccessProfileConfig[] = [
     icon: Activity,
     skipSectorSelection: true,
   },
+  {
+    value: "desenvolvedor",
+    label: "Desenvolvedor",
+    shortLabel: "Dev",
+    description: "Console técnico, operações e radar de pendências (acesso restrito)",
+    defaultRoute: "/dev-console",
+    icon: Terminal,
+    skipSectorSelection: true,
+  },
 ];
 
 /** Combinação sugerida role × access_profile (usada como sugestão) */
@@ -208,6 +217,7 @@ export const PROFILE_TO_ROLE_HINT: Record<AccessProfile, AppRole> = {
   administrativo: "medico",
   multi: "medico",
   classificacao_risco: "medico",
+  desenvolvedor: "admin",
 };
 
 /** Agrupamento de setores em blocos hierárquicos para seleção em massa */
