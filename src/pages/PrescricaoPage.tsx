@@ -4597,6 +4597,29 @@ const PrescricaoPage = () => {
         }}
       />
 
+      <ItemAssistantWizard
+        open={!!itemAssistantTargetId}
+        onOpenChange={(o) => { if (!o) setItemAssistantTargetId(null); }}
+        item={(() => {
+          const it = items.find(i => i.id === itemAssistantTargetId);
+          return it ? {
+            id: it.id, name: it.name, category: it.category,
+            diluent: it.diluent, diluentVolume: it.diluentVolume, volumeTotal: it.volumeTotal,
+            route: it.route, accessType: it.accessType,
+            infusionMode: it.infusionMode, infusionRate: it.infusionRate,
+            infusionTime: it.infusionTime, infusionTimeUnit: it.infusionTimeUnit,
+            posology: it.posology, instructions: it.instructions,
+            nutVolDay: it.nutVolDay, nutMode: it.nutMode, nutFraction: it.nutFraction,
+            nutNightPause: it.nutNightPause, nutBedHead: it.nutBedHead, nutResidualCheck: it.nutResidualCheck,
+          } : null;
+        })()}
+        onApply={(patch: AssistantPatch) => {
+          if (!itemAssistantTargetId) return;
+          setItems(prev => prev.map(it => it.id === itemAssistantTargetId ? { ...it, ...patch } as PrescriptionItem : it));
+          toast.success("Configuração aplicada pelo assistente");
+        }}
+      />
+
         {items.length === 0 && (() => {
           const admissionTpls = quickTemplates.filter(t => t.clinical_category === 'admissao');
           return (
