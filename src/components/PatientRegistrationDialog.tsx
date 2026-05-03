@@ -107,6 +107,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
+  const { mode: mrMode } = useMedicalRecordMode(currentHospital?.id);
 
   const updateField = (field: keyof PatientFormData, value: string | boolean) => {
     setForm(prev => ({ ...prev, [field]: value as never }));
