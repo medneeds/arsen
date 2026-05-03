@@ -171,18 +171,113 @@ export const HEMOTHERAPY_OPTIONS: MedicationEntry[] = [
 // CUIDADOS = SUPORTE ASSISTENCIAL (sinais vitais, decúbito, fisio, fono, curativos,
 // prevenção de LPP, comunicação). NÃO inclui medicação, ATB, exames laboratoriais
 // ou de imagem — esses pertencem às suas próprias categorias.
-// Lista enxuta (10 itens) para uso rápido. Perfis especializados abaixo.
-export const CARE_OPTIONS: MedicationEntry[] = [
-  { id: 'c1',  name: 'Sinais vitais',                          presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '4/4h',     defaultSchedule: '-', category: 'care' },
-  { id: 'c2',  name: 'Cabeceira elevada 30-45°',                presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
-  { id: 'c3',  name: 'Mudança de decúbito',                     presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '2/2h',     defaultSchedule: '-', category: 'care' },
-  { id: 'c4',  name: 'Fisioterapia motora e respiratória',      presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '3x/dia',   defaultSchedule: '-', category: 'care' },
-  { id: 'c5',  name: 'Avaliação fonoaudiológica',               presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
-  { id: 'c6',  name: 'Curativo de prevenção de LPP',            presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
-  { id: 'c7',  name: 'Higiene oral com clorexidina 0,12%',      presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '3x/dia',   defaultSchedule: '-', category: 'care' },
-  { id: 'c8',  name: 'Aspiração de vias aéreas',                presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'SOS',      defaultSchedule: '-', category: 'care' },
-  { id: 'c9',  name: 'Balanço hídrico',                         presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '6/6h',     defaultSchedule: '-', category: 'care' },
-  { id: 'c10', name: 'Comunicar plantonista se instabilidade',  presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-',         defaultSchedule: '-', category: 'care' },
+// Catálogo amplo organizado por subgrupo (campo opcional `group`) usado pelo
+// assistente de cuidados para agrupar visualmente as opções rápidas.
+export const CARE_OPTIONS: (MedicationEntry & { group?: string })[] = [
+  // ===== Monitorização =====
+  { id: 'c1',   group: 'Monitorização',  name: 'Sinais vitais',                              presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '4/4h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c1b',  group: 'Monitorização',  name: 'Sinais vitais',                              presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '2/2h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c1c',  group: 'Monitorização',  name: 'Sinais vitais',                              presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1/1h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c1d',  group: 'Monitorização',  name: 'Monitorização cardíaca contínua',            presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'c1e',  group: 'Monitorização',  name: 'Oximetria de pulso contínua',                presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'c1f',  group: 'Monitorização',  name: 'PA não invasiva (PANI)',                     presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1/1h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c1g',  group: 'Monitorização',  name: 'PA invasiva (PAi)',                          presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'c1h',  group: 'Monitorização',  name: 'Glicemia capilar (HGT)',                     presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '6/6h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c1i',  group: 'Monitorização',  name: 'Glicemia capilar (HGT) — protocolo intensivo', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '2/2h',   defaultSchedule: '-', category: 'care' },
+  { id: 'c9',   group: 'Monitorização',  name: 'Balanço hídrico',                            presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '6/6h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c9b',  group: 'Monitorização',  name: 'Balanço hídrico horário',                    presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1/1h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c1j',  group: 'Monitorização',  name: 'Diurese horária quantificada',               presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1/1h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c1k',  group: 'Monitorização',  name: 'Escala de dor (EVA)',                        presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '4/4h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c1l',  group: 'Monitorização',  name: 'Escala de Glasgow',                          presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '2/2h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c1m',  group: 'Monitorização',  name: 'Avaliação RASS (sedação)',                   presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '4/4h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c1n',  group: 'Monitorização',  name: 'Avaliação CAM-ICU (delirium)',               presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '12/12h',   defaultSchedule: '-', category: 'care' },
+  { id: 'c1o',  group: 'Monitorização',  name: 'Pesar paciente',                             presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
+
+  // ===== Posicionamento =====
+  { id: 'c2',   group: 'Posicionamento', name: 'Cabeceira elevada 30-45°',                   presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'c2b',  group: 'Posicionamento', name: 'Decúbito dorsal (0°)',                       presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'c3',   group: 'Posicionamento', name: 'Mudança de decúbito',                        presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '2/2h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c3b',  group: 'Posicionamento', name: 'Mudança de decúbito em bloco',               presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '2/2h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c3c',  group: 'Posicionamento', name: 'Posição prona assistida',                    presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Conforme protocolo', defaultSchedule: '-', category: 'care' },
+  { id: 'c3d',  group: 'Posicionamento', name: 'Centralização cefálica',                     presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'c3e',  group: 'Posicionamento', name: 'Colar cervical',                             presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'c3f',  group: 'Posicionamento', name: 'Elevação de membros inferiores',             presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'c3g',  group: 'Posicionamento', name: 'Restrição mecânica de membros',              presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Conforme avaliação', defaultSchedule: '-', category: 'care' },
+
+  // ===== Reabilitação =====
+  { id: 'c4',   group: 'Reabilitação',   name: 'Fisioterapia motora e respiratória',         presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '3x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c4b',  group: 'Reabilitação',   name: 'Fisioterapia respiratória',                  presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '3x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c4c',  group: 'Reabilitação',   name: 'Fisioterapia motora',                        presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '2x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c4d',  group: 'Reabilitação',   name: 'Mobilização passiva no leito',               presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '2x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c4e',  group: 'Reabilitação',   name: 'Mobilização precoce (sentar/deambular)',     presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Conforme tolerância', defaultSchedule: '-', category: 'care' },
+  { id: 'c4f',  group: 'Reabilitação',   name: 'Tosse assistida e incentivador inspiratório',presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '4/4h',    defaultSchedule: '-', category: 'care' },
+  { id: 'c5',   group: 'Reabilitação',   name: 'Avaliação fonoaudiológica',                  presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c5b',  group: 'Reabilitação',   name: 'Avaliação de deglutição (fono)',             presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Antes de VO', defaultSchedule: '-', category: 'care' },
+  { id: 'c5c',  group: 'Reabilitação',   name: 'Acompanhamento de psicologia',               presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Conforme demanda', defaultSchedule: '-', category: 'care' },
+  { id: 'c5d',  group: 'Reabilitação',   name: 'Acompanhamento de serviço social',           presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Conforme demanda', defaultSchedule: '-', category: 'care' },
+
+  // ===== Pele e curativos =====
+  { id: 'c6',   group: 'Pele e curativos', name: 'Curativo de prevenção de LPP',             presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c6b',  group: 'Pele e curativos', name: 'Colchão pneumático/de pressão alternada', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'c6c',  group: 'Pele e curativos', name: 'Curativo de ferida operatória',           presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c6d',  group: 'Pele e curativos', name: 'Curativo de inserção de CVC/PICC',        presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Conforme protocolo', defaultSchedule: '-', category: 'care' },
+  { id: 'c6e',  group: 'Pele e curativos', name: 'Hidratação da pele com creme barreira',   presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '2x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c6f',  group: 'Pele e curativos', name: 'Avaliação diária de pele (escala Braden)',presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
+
+  // ===== Higiene =====
+  { id: 'c7',   group: 'Higiene',        name: 'Higiene oral com clorexidina 0,12%',         presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '3x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c7b',  group: 'Higiene',        name: 'Higiene oral simples',                       presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '3x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c7c',  group: 'Higiene',        name: 'Higiene corporal no leito',                  presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c7d',  group: 'Higiene',        name: 'Banho de aspersão com auxílio',              presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c7e',  group: 'Higiene',        name: 'Higiene corporal com clorexidina degermante',presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c7f',  group: 'Higiene',        name: 'Higiene perineal',                           presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'A cada troca', defaultSchedule: '-', category: 'care' },
+  { id: 'c7g',  group: 'Higiene',        name: 'Tricotomia conforme indicação',              presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Conforme indicação', defaultSchedule: '-', category: 'care' },
+
+  // ===== Vias aéreas =====
+  { id: 'c8',   group: 'Vias aéreas',    name: 'Aspiração de vias aéreas',                   presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'SOS',      defaultSchedule: '-', category: 'care' },
+  { id: 'c8b',  group: 'Vias aéreas',    name: 'Aspiração traqueal (técnica estéril)',       presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'SOS',      defaultSchedule: '-', category: 'care' },
+  { id: 'c8c',  group: 'Vias aéreas',    name: 'Verificar pressão do cuff (20-30 cmH₂O)',    presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '12/12h',   defaultSchedule: '-', category: 'care' },
+  { id: 'c8d',  group: 'Vias aéreas',    name: 'Trocar fixação de TOT/TQT',                  presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'c8e',  group: 'Vias aéreas',    name: 'Anotar nível de TOT na rima labial',         presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'A cada turno', defaultSchedule: '-', category: 'care' },
+  { id: 'c8f',  group: 'Vias aéreas',    name: 'Trocar circuitos do ventilador',             presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Conforme rotina', defaultSchedule: '-', category: 'care' },
+  { id: 'c8g',  group: 'Vias aéreas',    name: 'O₂ por cateter nasal (1-3 L/min)',           presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'c8h',  group: 'Vias aéreas',    name: 'O₂ por máscara de Venturi',                  presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+
+  // ===== Acessos e dispositivos =====
+  { id: 'cd1',  group: 'Acessos e dispositivos', name: 'Inspecionar acessos venosos periféricos', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'A cada turno', defaultSchedule: '-', category: 'care' },
+  { id: 'cd2',  group: 'Acessos e dispositivos', name: 'Reavaliar necessidade de SVD diariamente',presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',     defaultSchedule: '-', category: 'care' },
+  { id: 'cd3',  group: 'Acessos e dispositivos', name: 'Cuidados com SVD (sistema fechado, fixação)', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'A cada turno', defaultSchedule: '-', category: 'care' },
+  { id: 'cd4',  group: 'Acessos e dispositivos', name: 'Cuidados com SNE/SNG (fixação, lavagem)', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'A cada turno', defaultSchedule: '-', category: 'care' },
+  { id: 'cd5',  group: 'Acessos e dispositivos', name: 'Quantificar débito de drenos por turno', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'A cada turno', defaultSchedule: '-', category: 'care' },
+  { id: 'cd6',  group: 'Acessos e dispositivos', name: 'Reavaliar diariamente cateteres invasivos',presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',     defaultSchedule: '-', category: 'care' },
+
+  // ===== Prevenção =====
+  { id: 'cp1',  group: 'Prevenção',      name: 'Profilaxia mecânica de TEV (compressor pneumático)', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'cp2',  group: 'Prevenção',      name: 'Meias elásticas de compressão',              presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'cp3',  group: 'Prevenção',      name: 'Avaliação de risco de queda (Morse)',        presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
+  { id: 'cp4',  group: 'Prevenção',      name: 'Manter grades do leito elevadas',            presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'cp5',  group: 'Prevenção',      name: 'Precauções padrão',                          presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'cp6',  group: 'Prevenção',      name: 'Precauções de contato',                      presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'cp7',  group: 'Prevenção',      name: 'Precauções para gotículas',                  presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'cp8',  group: 'Prevenção',      name: 'Precauções para aerossóis',                  presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+
+  // ===== Comunicação =====
+  { id: 'c10',  group: 'Comunicação',    name: 'Comunicar plantonista se instabilidade',     presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-',         defaultSchedule: '-', category: 'care' },
+  { id: 'cc1',  group: 'Comunicação',    name: 'Comunicar se PAS < 90 ou > 180 mmHg',        presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-',         defaultSchedule: '-', category: 'care' },
+  { id: 'cc2',  group: 'Comunicação',    name: 'Comunicar se FC < 50 ou > 130 bpm',          presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-',         defaultSchedule: '-', category: 'care' },
+  { id: 'cc3',  group: 'Comunicação',    name: 'Comunicar se SpO₂ < 92%',                    presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-',         defaultSchedule: '-', category: 'care' },
+  { id: 'cc4',  group: 'Comunicação',    name: 'Comunicar se Tax > 38°C',                    presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-',         defaultSchedule: '-', category: 'care' },
+  { id: 'cc5',  group: 'Comunicação',    name: 'Comunicar se diurese < 0,5 mL/kg/h',         presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-',         defaultSchedule: '-', category: 'care' },
+  { id: 'cc6',  group: 'Comunicação',    name: 'Comunicar se queda de Glasgow ≥ 2 pontos',   presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-',         defaultSchedule: '-', category: 'care' },
+  { id: 'cc7',  group: 'Comunicação',    name: 'Comunicar se sangramento ativo',             presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-',         defaultSchedule: '-', category: 'care' },
+  { id: 'cc8',  group: 'Comunicação',    name: 'Comunicar se dor refratária',                presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-',         defaultSchedule: '-', category: 'care' },
+
+  // ===== Conforto e família =====
+  { id: 'cf1',  group: 'Conforto e família', name: 'Permitir acompanhante em período integral', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '-', defaultSchedule: '-', category: 'care' },
+  { id: 'cf2',  group: 'Conforto e família', name: 'Ambiente calmo, iluminação suave',       presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'cf3',  group: 'Conforto e família', name: 'Orientação têmporo-espacial a cada turno',presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'A cada turno', defaultSchedule: '-', category: 'care' },
+  { id: 'cf4',  group: 'Conforto e família', name: 'Evitar despertar para procedimentos não essenciais', presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
+  { id: 'cf5',  group: 'Conforto e família', name: 'Atualizar família sobre estado clínico',  presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1x/dia',   defaultSchedule: '-', category: 'care' },
 ];
 
 // ========== MEDICAMENTOS GERAIS ==========
