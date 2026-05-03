@@ -12,7 +12,7 @@ import { ptBR } from "date-fns/locale";
 import {
   Pill, Plus, Trash2, Copy, Printer, Save, RefreshCw,
   Search, AlertTriangle, UtensilsCrossed, Droplets, Syringe, History,
-  ClipboardList, X, Check, Shield, Wind, TestTube, FileText,
+  ClipboardList, X, Check, Shield, Wind, TestTube, FileText, FlaskConical,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal,
   Play, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
   Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, Heart, List, AlignJustify, ChevronUp,
