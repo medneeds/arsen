@@ -49,12 +49,7 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
         setHospitals(enriched);
 
         if (!selectedHospitalId && enriched.length > 0) {
-          const hmdm = enriched.find((h) =>
-            h.name.toLowerCase().includes("djalma marques") ||
-            h.name.toLowerCase().includes("socorrão")
-          );
-          if (hmdm) onSelect(hmdm);
-          else onSelect(enriched[0]);
+          onSelect(enriched[0]);
         }
       } catch (err) {
         console.error("Error fetching hospitals:", err);

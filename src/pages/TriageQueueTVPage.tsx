@@ -166,7 +166,7 @@ const TriageQueueTVPage = () => {
               {whitelabel.institution.hospitalFullName}
             </p>
           </div>
-          <img src={socorraoCross} alt="Cruz HMDM" className="h-16 w-16 object-contain" />
+          <img src={socorraoCross} alt="Cruz institucional" className="h-16 w-16 object-contain" />
         </div>
         {/* Barra cruz colorida — identidade Norma Zero */}
         <div className="grid grid-cols-5 h-2">

@@ -152,7 +152,7 @@ function AntimicrobialCombobox({
             <CommandEmpty className="py-3 px-3 text-xs text-muted-foreground">
               Nenhum antimicrobiano padrão. O texto digitado será usado.
             </CommandEmpty>
-            <CommandGroup heading="Padronizados (HMDM 2026)">
+            <CommandGroup heading="Padronizados">
               {ANTIMICROBIAL_OPTIONS.map(med => (
                 <CommandItem
                   key={med.id}
