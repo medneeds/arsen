@@ -1138,6 +1138,7 @@ export type Database = {
           address: string | null
           created_at: string
           id: string
+          medical_record_mode: string
           name: string
           state_id: string
           unit_code: string | null
@@ -1146,6 +1147,7 @@ export type Database = {
           address?: string | null
           created_at?: string
           id?: string
+          medical_record_mode?: string
           name: string
           state_id: string
           unit_code?: string | null
@@ -1154,6 +1156,7 @@ export type Database = {
           address?: string | null
           created_at?: string
           id?: string
+          medical_record_mode?: string
           name?: string
           state_id?: string
           unit_code?: string | null
@@ -1334,48 +1337,67 @@ export type Database = {
       }
       medical_records: {
         Row: {
-          ano_referencia: string
-          codigo_unidade: string
+          ano_referencia: string | null
+          codigo_unidade: string | null
           created_at: string
           created_by: string | null
           data_criacao: string
-          dv: number
+          dv: number | null
+          generation_mode: string
+          hospital_unit_id: string | null
           id: string
-          numero_base: string
+          is_legacy: boolean
+          numero_base: string | null
           numero_prontuario: string
+          numero_prontuario_legado: string | null
           patient_id: string | null
           patient_registry_id: string | null
-          sequencia: number
+          sequencia: number | null
         }
         Insert: {
-          ano_referencia: string
-          codigo_unidade: string
+          ano_referencia?: string | null
+          codigo_unidade?: string | null
           created_at?: string
           created_by?: string | null
           data_criacao?: string
-          dv: number
+          dv?: number | null
+          generation_mode?: string
+          hospital_unit_id?: string | null
           id?: string
-          numero_base: string
+          is_legacy?: boolean
+          numero_base?: string | null
           numero_prontuario: string
+          numero_prontuario_legado?: string | null
           patient_id?: string | null
           patient_registry_id?: string | null
-          sequencia: number
+          sequencia?: number | null
         }
         Update: {
-          ano_referencia?: string
-          codigo_unidade?: string
+          ano_referencia?: string | null
+          codigo_unidade?: string | null
           created_at?: string
           created_by?: string | null
           data_criacao?: string
-          dv?: number
+          dv?: number | null
+          generation_mode?: string
+          hospital_unit_id?: string | null
           id?: string
-          numero_base?: string
+          is_legacy?: boolean
+          numero_base?: string | null
           numero_prontuario?: string
+          numero_prontuario_legado?: string | null
           patient_id?: string | null
           patient_registry_id?: string | null
-          sequencia?: number
+          sequencia?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "medical_records_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "medical_records_patient_id_fkey"
             columns: ["patient_id"]
