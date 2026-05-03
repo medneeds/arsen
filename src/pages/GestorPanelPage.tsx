@@ -355,15 +355,59 @@ export default function GestorPanelPage() {
     Vagos: s.total - s.occupied,
   }));
 
-  // ── KPIs ──
+  // ── KPIs (key habilita drill-down) ──
   const kpiCards = [
-    { title: "Taxa de Ocupação", value: `${occupancyRate}%`, sub: `${bedStats.occupied}/${bedStats.total} leitos`, icon: Bed, color: occupancyRate > 85 ? "text-destructive" : occupancyRate > 70 ? "text-amber-600" : "text-emerald-600", bg: occupancyRate > 85 ? "bg-destructive/10" : occupancyRate > 70 ? "bg-amber-500/10" : "bg-emerald-500/10" },
-    { title: "Leitos Vagos", value: bedStats.vacant.toString(), sub: "Disponíveis", icon: ArrowUpDown, color: "text-primary", bg: "bg-primary/10" },
-    { title: "Pacientes Porta", value: bedStats.doorPatients.toString(), sub: "Aguardando leito", icon: Users, color: bedStats.doorPatients > 0 ? "text-amber-600" : "text-muted-foreground", bg: bedStats.doorPatients > 0 ? "bg-amber-500/10" : "bg-muted/30" },
-    { title: "Alertas Críticos", value: criticalAlerts.filter(a => a.severity === "critical").length.toString(), sub: `${criticalAlerts.length} totais`, icon: AlertTriangle, color: criticalAlerts.length > 0 ? "text-destructive" : "text-muted-foreground", bg: criticalAlerts.length > 0 ? "bg-destructive/10" : "bg-muted/30" },
-    { title: "Prescrições", value: prescriptionStats.total.toString(), sub: `${prescriptionStats.validated} validadas`, icon: FileText, color: "text-primary", bg: "bg-primary/10" },
-    { title: "Solicitações", value: pendingRequests.toString(), sub: "Alocação pendente", icon: Clock, color: pendingRequests > 0 ? "text-amber-600" : "text-muted-foreground", bg: pendingRequests > 0 ? "bg-amber-500/10" : "bg-muted/30" },
+    { key: "occupancy", title: "Taxa de Ocupação", value: `${occupancyRate}%`, sub: `${bedStats.occupied}/${bedStats.total} leitos`, icon: Bed, color: occupancyRate > 85 ? "text-destructive" : occupancyRate > 70 ? "text-amber-600" : "text-emerald-600", bg: occupancyRate > 85 ? "bg-destructive/10" : occupancyRate > 70 ? "bg-amber-500/10" : "bg-emerald-500/10" },
+    { key: "vacant", title: "Leitos Vagos", value: bedStats.vacant.toString(), sub: "Disponíveis", icon: ArrowUpDown, color: "text-primary", bg: "bg-primary/10" },
+    { key: "door", title: "Pacientes Porta", value: bedStats.doorPatients.toString(), sub: "Aguardando leito", icon: Users, color: bedStats.doorPatients > 0 ? "text-amber-600" : "text-muted-foreground", bg: bedStats.doorPatients > 0 ? "bg-amber-500/10" : "bg-muted/30" },
+    { key: "alerts", title: "Alertas Críticos", value: criticalAlerts.filter(a => a.severity === "critical").length.toString(), sub: `${criticalAlerts.length} totais`, icon: AlertTriangle, color: criticalAlerts.length > 0 ? "text-destructive" : "text-muted-foreground", bg: criticalAlerts.length > 0 ? "bg-destructive/10" : "bg-muted/30" },
+    { key: "prescriptions", title: "Prescrições", value: prescriptionStats.total.toString(), sub: `${prescriptionStats.validated} validadas`, icon: FileText, color: "text-primary", bg: "bg-primary/10" },
+    { key: "requests", title: "Solicitações", value: pendingRequests.toString(), sub: "Alocação pendente", icon: Clock, color: pendingRequests > 0 ? "text-amber-600" : "text-muted-foreground", bg: pendingRequests > 0 ? "bg-amber-500/10" : "bg-muted/30" },
   ];
+
+  // ── Datasets para drill-down (D-5) ──
+  const drillRows: Record<string, DrillDownRow[]> = {
+    occupancy: occupiedPatientsList.map(p => ({
+      id: p.id,
+      primary: p.name || "(SEM NOME)",
+      secondary: `LEITO ${p.bed_number} • ${getSectorDisplayLabel(p.sector)}`,
+      badge: p.clinical_status ? { label: String(p.clinical_status).toUpperCase(), variant: ["gravíssimo", "grave", "crítico"].includes(p.clinical_status) ? "destructive" : "secondary" } : undefined,
+    })),
+    vacant: vacantBedsList.map(p => ({
+      id: p.id,
+      primary: `LEITO ${p.bed_number}`,
+      secondary: getSectorDisplayLabel(p.sector),
+      badge: { label: "VAGO", variant: "outline" },
+    })),
+    door: doorPatientsList.map(p => ({
+      id: p.id,
+      primary: p.name || "(SEM NOME)",
+      secondary: `LEITO PORTA ${p.bed_number} • ${getSectorDisplayLabel(p.sector)}`,
+      badge: { label: "AGUARDANDO", variant: "secondary" },
+    })),
+    alerts: criticalAlerts.map(a => ({
+      id: a.id,
+      primary: a.patientName,
+      secondary: `LEITO ${a.bed} • ${a.sector}`,
+      tertiary: a.detail,
+      badge: { label: a.type.toUpperCase(), variant: a.severity === "critical" ? "destructive" : "outline" },
+    })),
+    prescriptions: prescriptionsList.slice(0, 100).map((p: any) => ({
+      id: p.id,
+      primary: p.patient_name || "—",
+      secondary: `${p.patient_bed ? `LEITO ${p.patient_bed} • ` : ""}${p.department || ""}`,
+      tertiary: format(new Date(p.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR }),
+      badge: { label: String(p.status || "ATIVA").toUpperCase(), variant: "outline" },
+    })),
+    requests: pendingRequestsList.map((r: any) => ({
+      id: r.id,
+      primary: r.patient?.name || "(PACIENTE)",
+      secondary: `${r.patient?.bed_number ? `LEITO ${r.patient.bed_number} → ` : ""}${r.requested_sector}${r.requested_bed ? ` (${r.requested_bed})` : ""}`,
+      tertiary: `${r.requesting_doctor_name ? r.requesting_doctor_name + " • " : ""}${formatDistanceToNow(new Date(r.created_at), { addSuffix: true, locale: ptBR })}`,
+      badge: { label: "PENDENTE", variant: "secondary" },
+    })),
+  };
+  const activeDrill = drillDown ? kpiCards.find(k => k.key === drillDown) : null;
 
   return (
     <MainLayout>
