@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -11,23 +11,16 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
-  UtensilsCrossed, Soup, Milk, Pill, Droplets, AlertTriangle, Check,
-  Ban, ChevronRight, ChevronLeft, Sparkles, Activity,
+  UtensilsCrossed, Soup, Droplets, AlertTriangle, Check,
+  Ban, ChevronRight, ChevronLeft, Sparkles, Activity, Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MedicationEntry } from "@/data/medicationsDatabase";
 
 /**
  * Nutrition Wizard — Terapia Nutricional Hospitalar
- * Fluxo guiado para prescrição de:
- *  - Dieta zero (NPO) com motivo/tempo
- *  - Via oral (consistência + perfil terapêutico)
- *  - Enteral (via, fórmula, modo de infusão, progressão)
- *  - Parenteral (central/periférica, volume, observações)
- *
- * Inclui chips de comorbidades para ajustar automaticamente o perfil.
- * Retorna entradas no formato MedicationEntry para reaproveitar o fluxo
- * de adição de itens da prescrição (categoria nutrition).
+ * Suporte a dieta MISTA (multi-modalidade), sistema enteral aberto/fechado,
+ * água enteral programada, e personalização manual por modalidade.
  */
 
 export type NutritionModality = "zero" | "oral" | "enteral" | "parenteral";
@@ -56,7 +49,7 @@ type ComorbKey = typeof COMORBIDITIES[number]["key"];
 const ORAL_CONSISTENCIES = [
   { key: "geral",       label: "Geral / Livre",        desc: "Sem restrições de consistência" },
   { key: "branda",      label: "Branda",               desc: "Cocção mais prolongada, fácil mastigação" },
-  { key: "pastosa",     label: "Pastosa",              desc: "Liquidificada/amassada, sem necessidade de mastigar" },
+  { key: "pastosa",     label: "Pastosa",              desc: "Liquidificada/amassada, sem mastigar" },
   { key: "liquida_c",   label: "Líquida completa",     desc: "Líquidos e semilíquidos, com leite/suplementos" },
   { key: "liquida_r",   label: "Líquida restrita",     desc: "Apenas líquidos claros (água, chá, gelatina)" },
   { key: "semiliq",     label: "Semilíquida",          desc: "Mingaus e cremes" },
@@ -132,7 +125,7 @@ interface NutritionWizardProps {
 
 export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: NutritionWizardProps) {
   const [step, setStep] = useState(0);
-  const [modality, setModality] = useState<NutritionModality>("oral");
+  const [modalities, setModalities] = useState<Set<NutritionModality>>(new Set(["oral"]));
   const [comorbs, setComorbs] = useState<Set<ComorbKey>>(new Set());
 
   // Oral
@@ -140,16 +133,27 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
   const [oralProfiles, setOralProfiles] = useState<Set<string>>(new Set(["livre"]));
   const [oralFraction, setOralFraction] = useState<string>("6x/dia");
   const [oralWaterFree, setOralWaterFree] = useState(true);
+  const [oralCustom, setOralCustom] = useState("");
 
   // Enteral
+  const [entSystem, setEntSystem] = useState<"aberto" | "fechado">("fechado");
   const [entVia, setEntVia] = useState<string>("sne");
   const [entFormula, setEntFormula] = useState<string>("polim_padrao");
   const [entMode, setEntMode] = useState<string>("continua");
-  const [entRate, setEntRate] = useState<string>("25");      // mL/h
-  const [entVolDay, setEntVolDay] = useState<string>("1500"); // mL/dia
+  const [entRate, setEntRate] = useState<string>("25");
+  const [entVolDay, setEntVolDay] = useState<string>("1500");
   const [entFractions, setEntFractions] = useState<string>("6");
   const [entProgression, setEntProgression] = useState(true);
-  const [entFlush, setEntFlush] = useState(true);
+  const [entCustom, setEntCustom] = useState("");
+
+  // Água enteral
+  const [waterFlush, setWaterFlush] = useState(true);
+  const [waterScheduled, setWaterScheduled] = useState(false);
+  const [waterVol, setWaterVol] = useState("100");
+  const [waterFreq, setWaterFreq] = useState("4/4h");
+  const [waterCorrection, setWaterCorrection] = useState(false);
+  const [waterCorrectionVol, setWaterCorrectionVol] = useState("");
+  const [waterCorrectionObs, setWaterCorrectionObs] = useState("");
 
   // Parenteral
   const [parType, setParType] = useState<"central" | "periferica">("central");
@@ -157,37 +161,64 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
   const [parKcal, setParKcal] = useState<string>("");
   const [parRate, setParRate] = useState<string>("");
   const [parObs, setParObs] = useState<string>("");
+  const [parCustom, setParCustom] = useState("");
 
   // Zero
   const [zeroReason, setZeroReason] = useState<string>("preop");
   const [zeroSince, setZeroSince] = useState<string>("");
   const [zeroHydrate, setZeroHydrate] = useState(true);
+  const [zeroCustom, setZeroCustom] = useState("");
 
   // Free notes
   const [notes, setNotes] = useState<string>("");
 
+  // Sugestão automática de modo conforme sistema enteral
+  useEffect(() => {
+    if (!modalities.has("enteral")) return;
+    if (entSystem === "aberto" && entMode === "continua") setEntMode("intermitente");
+    if (entSystem === "fechado" && entMode !== "continua" && entMode !== "ciclica") setEntMode("continua");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entSystem]);
+
   const reset = () => {
-    setStep(0); setModality("oral"); setComorbs(new Set());
-    setOralConsist("geral"); setOralProfiles(new Set(["livre"])); setOralFraction("6x/dia"); setOralWaterFree(true);
-    setEntVia("sne"); setEntFormula("polim_padrao"); setEntMode("continua");
-    setEntRate("25"); setEntVolDay("1500"); setEntFractions("6"); setEntProgression(true); setEntFlush(true);
-    setParType("central"); setParVolume("1500"); setParKcal(""); setParRate(""); setParObs("");
-    setZeroReason("preop"); setZeroSince(""); setZeroHydrate(true);
+    setStep(0); setModalities(new Set(["oral"])); setComorbs(new Set());
+    setOralConsist("geral"); setOralProfiles(new Set(["livre"])); setOralFraction("6x/dia"); setOralWaterFree(true); setOralCustom("");
+    setEntSystem("fechado"); setEntVia("sne"); setEntFormula("polim_padrao"); setEntMode("continua");
+    setEntRate("25"); setEntVolDay("1500"); setEntFractions("6"); setEntProgression(true); setEntCustom("");
+    setWaterFlush(true); setWaterScheduled(false); setWaterVol("100"); setWaterFreq("4/4h");
+    setWaterCorrection(false); setWaterCorrectionVol(""); setWaterCorrectionObs("");
+    setParType("central"); setParVolume("1500"); setParKcal(""); setParRate(""); setParObs(""); setParCustom("");
+    setZeroReason("preop"); setZeroSince(""); setZeroHydrate(true); setZeroCustom("");
     setNotes("");
+  };
+
+  const toggleModality = (k: NutritionModality) => {
+    setModalities(prev => {
+      const n = new Set(prev);
+      if (n.has(k)) {
+        if (n.size === 1) return n; // não permite ficar vazio
+        n.delete(k);
+      } else {
+        // Dieta zero é exclusiva — desmarca outras se zero for adicionado, ou desmarca zero se outra for adicionada
+        if (k === "zero") return new Set(["zero"]);
+        n.delete("zero");
+        n.add(k);
+      }
+      return n;
+    });
   };
 
   const toggleComorb = (k: ComorbKey) => {
     setComorbs(prev => {
       const n = new Set(prev);
       if (n.has(k)) n.delete(k); else n.add(k);
-      // Sugestões automáticas: ao marcar HAS, sugerir hipossódica; DM → para diabético, etc.
       const profileMap: Record<string, string> = {
         has: "hipossodica", dm: "dm", drc: "hipoprot", hepato: "hipoprot",
         ic: "hipossodica", celiaco: "sem_gluten", lactose: "sem_lactose",
         constip: "rica_fibras", diarreia: "pobre_fibras", pancrea: "hipolip",
         obeso: "hipocal", desnut: "hipercal",
       };
-      if (modality === "oral" && profileMap[k] && n.has(k as any)) {
+      if (modalities.has("oral") && profileMap[k] && n.has(k as any)) {
         setOralProfiles(p => new Set([...Array.from(p).filter(x => x !== "livre"), profileMap[k]]));
       }
       return n;
@@ -205,7 +236,6 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
     });
   };
 
-  // Build prescription entries from wizard state
   const buildEntries = (): MedicationEntry[] => {
     const entries: MedicationEntry[] = [];
     const comorbStr = Array.from(comorbs)
@@ -213,8 +243,12 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       .filter(Boolean)
       .join(", ");
     const comorbSuffix = comorbStr ? ` — Comorbidades: ${comorbStr}` : "";
+    const withCustom = (parts: (string | null | undefined)[], custom: string) => {
+      const all = [...parts.filter(Boolean), custom ? `Personalização: ${custom}` : null, notes];
+      return all.filter(Boolean).join(" · ");
+    };
 
-    if (modality === "zero") {
+    if (modalities.has("zero")) {
       const reason = ZERO_REASONS.find(r => r.key === zeroReason)?.label || "";
       entries.push({
         id: `nut-zero-${uid()}`,
@@ -224,13 +258,12 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
         defaultRoute: "-",
         defaultPosology: "Contínuo",
         defaultSchedule: "-",
-        instructions: [
+        instructions: withCustom([
           `Motivo: ${reason}`,
           zeroSince ? `Em jejum desde: ${zeroSince}` : null,
           "Reavaliar reintrodução de dieta a cada 12-24h",
           comorbSuffix.trim(),
-          notes,
-        ].filter(Boolean).join(" · "),
+        ], zeroCustom),
         category: "nutrition",
       });
       if (zeroHydrate) {
@@ -246,28 +279,28 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
           category: "hydration",
         });
       }
-      return entries;
     }
 
-    if (modality === "oral") {
+    if (modalities.has("oral")) {
       const consist = ORAL_CONSISTENCIES.find(c => c.key === oralConsist)?.label || "";
       const profiles = Array.from(oralProfiles)
         .map(k => ORAL_PROFILES.find(p => p.key === k)?.label)
         .filter(Boolean)
         .join(" + ");
+      const isMixed = modalities.size > 1;
       entries.push({
         id: `nut-oral-${uid()}`,
-        name: `Dieta via oral — ${consist}${profiles ? ` (${profiles})` : ""}`,
+        name: `${isMixed ? "Dieta mista — VO" : "Dieta via oral"} — ${consist}${profiles ? ` (${profiles})` : ""}`,
         presentation: "-",
         defaultDose: "-",
         defaultRoute: "Oral",
         defaultPosology: oralFraction,
         defaultSchedule: "07h, 10h, 12h, 15h, 18h, 21h",
-        instructions: [
+        instructions: withCustom([
           "Ofertar conforme aceitação; observar resíduo e tolerância",
+          isMixed && modalities.has("enteral") ? "Em progressão de dieta oral — acompanhar com fonoterapia/nutrição" : null,
           comorbSuffix.trim(),
-          notes,
-        ].filter(Boolean).join(" · "),
+        ], oralCustom),
         category: "nutrition",
       });
       if (oralWaterFree) {
@@ -283,81 +316,117 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
           category: "nutrition",
         });
       }
-      return entries;
     }
 
-    if (modality === "enteral") {
+    if (modalities.has("enteral")) {
       const via = ENTERAL_VIAS.find(v => v.key === entVia)?.label || "";
       const formula = ENTERAL_FORMULAS.find(f => f.key === entFormula)?.label || "";
       const mode = ENTERAL_MODES.find(m => m.key === entMode)?.label || "";
       const dose = entMode === "continua"
         ? `${entRate} mL/h (${entVolDay} mL/dia)`
         : `${entVolDay} mL/dia em ${entFractions} tomadas`;
+      const isMixed = modalities.size > 1;
+      const sysLabel = entSystem === "aberto" ? "Sistema aberto" : "Sistema fechado";
       entries.push({
         id: `nut-ent-${uid()}`,
-        name: `Dieta enteral — ${formula} via ${via}`,
+        name: `${isMixed ? "Dieta mista — Enteral" : "Dieta enteral"} (${sysLabel}) — ${formula} via ${via}`,
         presentation: "-",
         defaultDose: dose,
-        defaultRoute: via === "GTT" ? "Gastrostomia" : "Enteral (SNE/SNG)",
+        defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : "Enteral (SNE/SNG)",
         defaultPosology: mode,
         defaultSchedule: entMode === "continua" ? "Contínua 24h" : "06h, 10h, 14h, 18h, 22h, 02h",
-        instructions: [
-          entProgression ? "Iniciar com 20 mL/h; progredir 20 mL/h a cada 6-8h conforme tolerância (resíduo gástrico, distensão, diarreia)" : null,
+        instructions: withCustom([
+          entSystem === "aberto"
+            ? "Sistema aberto: trocar equipo e frasco a cada 4h; lavar utensílios entre tomadas; manipulação asséptica"
+            : "Sistema fechado: bolsa pré-pronta pendura até 24h; programar BIC; trocar equipo conforme rotina (24-72h)",
+          entProgression ? "Iniciar com 20 mL/h; progredir 20 mL/h a cada 6-8h conforme tolerância (resíduo, distensão, diarreia)" : null,
           "Cabeceira elevada a 30-45° durante e até 1h após a infusão",
           "Avaliar resíduo gástrico a cada 6h (suspender se > 250 mL)",
           comorbs.has("uti") ? "Meta: 25-30 kcal/kg/dia + 1,2-2 g/kg/dia de proteína" : null,
           comorbSuffix.trim(),
-          notes,
-        ].filter(Boolean).join(" · "),
+        ], entCustom),
         category: "nutrition",
       });
-      if (entFlush) {
+      // Água via sonda — flush
+      if (waterFlush) {
         entries.push({
           id: `nut-ent-flush-${uid()}`,
-          name: "Flush de água via sonda",
+          name: "Água via sonda — flush de manutenção",
           presentation: "-",
           defaultDose: "30 mL",
-          defaultRoute: via === "GTT" ? "Gastrostomia" : "Enteral (SNE/SNG)",
-          defaultPosology: "4/4h",
+          defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : "Enteral (SNE/SNG)",
+          defaultPosology: "Antes/após dieta e medicações",
           defaultSchedule: "ACM",
-          instructions: "Antes e após dieta/medicações para manter pérvia a sonda",
+          instructions: "Manter pérvia a sonda; usar água potável/filtrada à temperatura ambiente",
           category: "nutrition",
         });
       }
-      return entries;
+      // Água programada
+      if (waterScheduled) {
+        entries.push({
+          id: `nut-ent-water-${uid()}`,
+          name: "Água via sonda — hidratação programada",
+          presentation: "-",
+          defaultDose: `${waterVol} mL`,
+          defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : "Enteral (SNE/SNG)",
+          defaultPosology: waterFreq,
+          defaultSchedule: "Conforme aprazamento",
+          instructions: "Hidratação enteral programada — checar aceitação e balanço hídrico",
+          category: "nutrition",
+        });
+      }
+      // Correção de DHE
+      if (waterCorrection) {
+        entries.push({
+          id: `nut-ent-water-corr-${uid()}`,
+          name: "Água via sonda — correção de distúrbio hidroeletrolítico",
+          presentation: "-",
+          defaultDose: `${waterCorrectionVol || "—"} mL/dia`,
+          defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : "Enteral (SNE/SNG)",
+          defaultPosology: "Fracionado conforme prescrição",
+          defaultSchedule: "Conforme aprazamento",
+          instructions: [
+            "Esquema de correção de DHE — ofertar conforme balanço hídrico, Na sérico e diurese",
+            waterCorrectionObs,
+          ].filter(Boolean).join(" · "),
+          category: "nutrition",
+        });
+      }
     }
 
-    if (modality === "parenteral") {
+    if (modalities.has("parenteral")) {
+      const isMixed = modalities.size > 1;
       entries.push({
         id: `nut-par-${uid()}`,
-        name: `NPT ${parType === "central" ? "central" : "periférica"}`,
+        name: `${isMixed ? "Dieta mista — NPT" : "NPT"} ${parType === "central" ? "central" : "periférica"}`,
         presentation: "Bolsa NPT",
         defaultDose: `${parVolume} mL${parKcal ? ` (${parKcal} kcal)` : ""}`,
         defaultRoute: "Intravenosa",
         defaultPosology: "Contínuo",
         defaultSchedule: "Infusão contínua 24h",
-        instructions: [
+        instructions: withCustom([
           parType === "central" ? "Acesso venoso central exclusivo (PICC/CVC) — não infundir junto com medicações" : "Acesso periférico — osmolaridade ≤ 900 mOsm/L",
           parRate ? `Vazão: ${parRate} mL/h (BIC)` : "Programar BIC",
           "Monitorar glicemia 6/6h, ionograma diário, função hepática 2x/sem",
           "Trocar bolsa a cada 24h; não exceder 24h após manipulação",
           parObs,
+          isMixed && modalities.has("enteral") ? "NPT complementar à enteral — ajustar oferta calórica conforme aceitação enteral" : null,
           comorbSuffix.trim(),
-          notes,
-        ].filter(Boolean).join(" · "),
+        ], parCustom),
         category: "nutrition",
       });
-      return entries;
     }
 
     return entries;
   };
 
   const entries = useMemo(buildEntries, [
-    modality, comorbs, oralConsist, oralProfiles, oralFraction, oralWaterFree,
-    entVia, entFormula, entMode, entRate, entVolDay, entFractions, entProgression, entFlush,
-    parType, parVolume, parKcal, parRate, parObs,
-    zeroReason, zeroSince, zeroHydrate, notes,
+    modalities, comorbs,
+    oralConsist, oralProfiles, oralFraction, oralWaterFree, oralCustom,
+    entSystem, entVia, entFormula, entMode, entRate, entVolDay, entFractions, entProgression, entCustom,
+    waterFlush, waterScheduled, waterVol, waterFreq, waterCorrection, waterCorrectionVol, waterCorrectionObs,
+    parType, parVolume, parKcal, parRate, parObs, parCustom,
+    zeroReason, zeroSince, zeroHydrate, zeroCustom, notes,
   ]);
 
   const handleConfirm = () => {
@@ -366,7 +435,15 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
     onOpenChange(false);
   };
 
-  const STEPS = ["Modalidade", "Detalhes", "Comorbidades", "Revisão"];
+  const STEPS = ["Modalidades", "Detalhes", "Comorbidades", "Revisão"];
+  const canAdvance = step === 0 ? modalities.size > 0 : true;
+
+  const MODALITY_OPTIONS = [
+    { k: "zero" as const,       icon: Ban,             label: "Dieta zero",       desc: "Jejum / NPO com motivo (exclusiva)" },
+    { k: "oral" as const,       icon: UtensilsCrossed, label: "Via oral",         desc: "Consistência + perfil" },
+    { k: "enteral" as const,    icon: Soup,            label: "Enteral",          desc: "Sonda — sistema + fórmula + infusão" },
+    { k: "parenteral" as const, icon: Droplets,        label: "Parenteral (NPT)", desc: "Central ou periférica" },
+  ];
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
@@ -377,7 +454,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
             Assistente de Terapia Nutricional
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Fluxo guiado para prescrição nutricional baseada em consistência, perfil terapêutico e comorbidades.
+            Fluxo guiado com suporte a dieta mista, sistema enteral aberto/fechado e personalização por modalidade.
           </DialogDescription>
         </DialogHeader>
 
@@ -405,42 +482,56 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
         </div>
 
         <ScrollArea className="flex-1 pr-3 -mr-3">
-          {/* STEP 0 — Modalidade */}
+          {/* STEP 0 — Modalidades (multi) */}
           {step === 0 && (
-            <div className="grid grid-cols-2 gap-3 p-1">
-              {[
-                { k: "zero",       icon: Ban,             label: "Dieta zero",       desc: "Jejum / NPO com motivo" },
-                { k: "oral",       icon: UtensilsCrossed, label: "Via oral",         desc: "Consistência + perfil" },
-                { k: "enteral",    icon: Soup,            label: "Enteral",          desc: "Sonda — fórmula + infusão" },
-                { k: "parenteral", icon: Droplets,        label: "Parenteral (NPT)", desc: "Central ou periférica" },
-              ].map(opt => {
-                const Icon = opt.icon;
-                const sel = modality === opt.k;
-                return (
-                  <button
-                    key={opt.k}
-                    type="button"
-                    onClick={() => setModality(opt.k as NutritionModality)}
-                    className={cn(
-                      "p-4 rounded-xl border-2 text-left transition-all hover:shadow-md",
-                      sel ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 shadow-md"
-                          : "border-border hover:border-emerald-300"
-                    )}
-                  >
-                    <Icon className={cn("h-6 w-6 mb-2", sel ? "text-emerald-600" : "text-muted-foreground")} />
-                    <div className={cn("font-semibold text-sm", sel && "text-emerald-700 dark:text-emerald-300")}>{opt.label}</div>
-                    <div className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</div>
-                  </button>
-                );
-              })}
+            <div className="space-y-3 p-1">
+              <div className="text-[11px] text-muted-foreground bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/60 rounded-lg px-3 py-2">
+                <span className="font-semibold text-emerald-700 dark:text-emerald-300">Dieta mista permitida.</span>{" "}
+                Selecione mais de uma modalidade quando aplicável (ex.: oral em progressão + enteral, ou enteral + parenteral). "Dieta zero" é exclusiva.
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {MODALITY_OPTIONS.map(opt => {
+                  const Icon = opt.icon;
+                  const sel = modalities.has(opt.k);
+                  return (
+                    <button
+                      key={opt.k}
+                      type="button"
+                      onClick={() => toggleModality(opt.k)}
+                      className={cn(
+                        "relative p-4 rounded-xl border-2 text-left transition-all hover:shadow-md",
+                        sel ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 shadow-md ring-2 ring-emerald-500/20"
+                            : "border-border hover:border-emerald-300"
+                      )}
+                    >
+                      <div className={cn(
+                        "absolute top-2 right-2 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all",
+                        sel ? "bg-emerald-500 border-emerald-500" : "border-border bg-background"
+                      )}>
+                        {sel && <Check className="h-3 w-3 text-white" />}
+                      </div>
+                      <Icon className={cn("h-6 w-6 mb-2", sel ? "text-emerald-600" : "text-muted-foreground")} />
+                      <div className={cn("font-semibold text-sm", sel && "text-emerald-700 dark:text-emerald-300")}>{opt.label}</div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">{opt.desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+              {modalities.size > 1 && !modalities.has("zero") && (
+                <div className="text-[11px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  <span>Dieta mista selecionada ({Array.from(modalities).join(" + ")}). Cada modalidade gerará uma linha independente na prescrição.</span>
+                </div>
+              )}
             </div>
           )}
 
           {/* STEP 1 — Detalhes por modalidade */}
           {step === 1 && (
-            <div className="space-y-4 p-1">
-              {modality === "zero" && (
-                <>
+            <div className="space-y-5 p-1">
+              {modalities.has("zero") && (
+                <section className="rounded-lg border border-border/60 p-3 space-y-3">
+                  <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5"><Ban className="h-3.5 w-3.5" /> Dieta zero (NPO)</h3>
                   <div>
                     <Label className="text-xs font-semibold">Motivo do jejum</Label>
                     <div className="grid grid-cols-2 gap-1.5 mt-2">
@@ -462,11 +553,16 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
                     <input type="checkbox" checked={zeroHydrate} onChange={e => setZeroHydrate(e.target.checked)} className="rounded" />
                     Adicionar hidratação venosa de manutenção (30-35 mL/kg/dia)
                   </label>
-                </>
+                  <div>
+                    <Label className="text-xs font-semibold">Ajustes manuais / observações desta dieta</Label>
+                    <Textarea value={zeroCustom} onChange={e => setZeroCustom(e.target.value)} placeholder="Ex.: aguardar resultado de TC abdome para reintrodução..." className="mt-1.5 text-xs min-h-[50px]" />
+                  </div>
+                </section>
               )}
 
-              {modality === "oral" && (
-                <>
+              {modalities.has("oral") && (
+                <section className="rounded-lg border border-border/60 p-3 space-y-3">
+                  <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5"><UtensilsCrossed className="h-3.5 w-3.5" /> Via oral</h3>
                   <div>
                     <Label className="text-xs font-semibold">Consistência</Label>
                     <div className="grid grid-cols-2 gap-1.5 mt-2">
@@ -518,11 +614,39 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
                       </label>
                     </div>
                   </div>
-                </>
+                  <div>
+                    <Label className="text-xs font-semibold">Ajustes manuais / observações desta dieta</Label>
+                    <Textarea value={oralCustom} onChange={e => setOralCustom(e.target.value)} placeholder="Ex.: progressão conforme avaliação fonoaudiológica; teste de deglutição..." className="mt-1.5 text-xs min-h-[50px]" />
+                  </div>
+                </section>
               )}
 
-              {modality === "enteral" && (
-                <>
+              {modalities.has("enteral") && (
+                <section className="rounded-lg border border-border/60 p-3 space-y-3">
+                  <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5"><Soup className="h-3.5 w-3.5" /> Enteral</h3>
+
+                  {/* Sistema aberto/fechado */}
+                  <div>
+                    <Label className="text-xs font-semibold">Sistema (padrão hospitalar)</Label>
+                    <div className="grid grid-cols-2 gap-1.5 mt-2">
+                      {[
+                        { k: "aberto" as const,  label: "Sistema aberto",  desc: "Frasco/copo dosador, troca a cada 4h. Maior flexibilidade gravitacional/intermitente." },
+                        { k: "fechado" as const, label: "Sistema fechado", desc: "Bolsa pré-pronta, pendura até 24h. Indicado para BIC contínua." },
+                      ].map(o => (
+                        <button key={o.k} type="button" onClick={() => setEntSystem(o.k)}
+                          className={cn("text-xs px-3 py-2 rounded-lg border text-left transition-all",
+                            entSystem === o.k ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300" : "border-border hover:border-emerald-300"
+                          )}>
+                          <div className="font-semibold">{o.label}</div>
+                          <div className="text-[10px] text-muted-foreground">{o.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      Trocar o sistema sugere automaticamente o modo de infusão (pode sobrescrever abaixo).
+                    </p>
+                  </div>
+
                   <div>
                     <Label className="text-xs font-semibold">Via de acesso</Label>
                     <div className="grid grid-cols-4 gap-1.5 mt-2">
@@ -587,21 +711,91 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
                       </div>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="flex items-center gap-2 text-xs cursor-pointer">
-                      <input type="checkbox" checked={entProgression} onChange={e => setEntProgression(e.target.checked)} className="rounded" />
-                      Incluir esquema de progressão (20 mL/h a cada 6-8h)
-                    </label>
-                    <label className="flex items-center gap-2 text-xs cursor-pointer">
-                      <input type="checkbox" checked={entFlush} onChange={e => setEntFlush(e.target.checked)} className="rounded" />
-                      Adicionar flush de água via sonda (30 mL 4/4h)
-                    </label>
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <input type="checkbox" checked={entProgression} onChange={e => setEntProgression(e.target.checked)} className="rounded" />
+                    Incluir esquema de progressão (20 mL/h a cada 6-8h)
+                  </label>
+
+                  {/* Água via sonda */}
+                  <Separator />
+                  <div>
+                    <Label className="text-xs font-semibold flex items-center gap-1.5"><Droplets className="h-3.5 w-3.5 text-blue-500" /> Água via sonda</Label>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">As três opções podem ser combinadas; cada uma gera uma linha própria na prescrição.</p>
+
+                    <div className="mt-2 space-y-2">
+                      <label className="flex items-start gap-2 text-xs cursor-pointer p-2 rounded-md border border-border/60 hover:border-emerald-300">
+                        <input type="checkbox" checked={waterFlush} onChange={e => setWaterFlush(e.target.checked)} className="rounded mt-0.5" />
+                        <div>
+                          <div className="font-semibold">Flush de manutenção</div>
+                          <div className="text-[10px] text-muted-foreground">30 mL antes/após dieta e medicações para manter pérvia a sonda.</div>
+                        </div>
+                      </label>
+
+                      <div className={cn("p-2 rounded-md border transition-all", waterScheduled ? "border-emerald-400 bg-emerald-50/30 dark:bg-emerald-950/20" : "border-border/60")}>
+                        <label className="flex items-start gap-2 text-xs cursor-pointer">
+                          <input type="checkbox" checked={waterScheduled} onChange={e => setWaterScheduled(e.target.checked)} className="rounded mt-0.5" />
+                          <div className="flex-1">
+                            <div className="font-semibold">Hidratação enteral programada</div>
+                            <div className="text-[10px] text-muted-foreground">Volume e frequência regulares.</div>
+                          </div>
+                        </label>
+                        {waterScheduled && (
+                          <div className="grid grid-cols-2 gap-2 mt-2 pl-6">
+                            <div>
+                              <Label className="text-[10px] font-semibold">Volume por tomada (mL)</Label>
+                              <Input value={waterVol} onChange={e => setWaterVol(e.target.value)} className="mt-1 h-8 text-xs" />
+                            </div>
+                            <div>
+                              <Label className="text-[10px] font-semibold">Frequência</Label>
+                              <Select value={waterFreq} onValueChange={setWaterFreq}>
+                                <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="2/2h">2/2h</SelectItem>
+                                  <SelectItem value="3/3h">3/3h</SelectItem>
+                                  <SelectItem value="4/4h">4/4h</SelectItem>
+                                  <SelectItem value="6/6h">6/6h</SelectItem>
+                                  <SelectItem value="8/8h">8/8h</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className={cn("p-2 rounded-md border transition-all", waterCorrection ? "border-amber-400 bg-amber-50/30 dark:bg-amber-950/20" : "border-border/60")}>
+                        <label className="flex items-start gap-2 text-xs cursor-pointer">
+                          <input type="checkbox" checked={waterCorrection} onChange={e => setWaterCorrection(e.target.checked)} className="rounded mt-0.5" />
+                          <div className="flex-1">
+                            <div className="font-semibold flex items-center gap-1.5"><AlertTriangle className="h-3 w-3 text-amber-500" /> Correção de distúrbio hidroeletrolítico</div>
+                            <div className="text-[10px] text-muted-foreground">Esquema terapêutico (ex.: hipernatremia).</div>
+                          </div>
+                        </label>
+                        {waterCorrection && (
+                          <div className="space-y-2 mt-2 pl-6">
+                            <div>
+                              <Label className="text-[10px] font-semibold">Volume total/dia (mL)</Label>
+                              <Input value={waterCorrectionVol} onChange={e => setWaterCorrectionVol(e.target.value)} placeholder="ex: 1500" className="mt-1 h-8 text-xs" />
+                            </div>
+                            <div>
+                              <Label className="text-[10px] font-semibold">Observações (fracionamento, alvo de Na, reavaliação)</Label>
+                              <Textarea value={waterCorrectionObs} onChange={e => setWaterCorrectionObs(e.target.value)} placeholder="Ex.: 250 mL 4/4h; alvo Na 145; reavaliar em 12h" className="mt-1 text-xs min-h-[40px]" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </>
+
+                  <div>
+                    <Label className="text-xs font-semibold">Ajustes manuais / observações desta dieta</Label>
+                    <Textarea value={entCustom} onChange={e => setEntCustom(e.target.value)} placeholder="Ex.: pausa para fisioterapia respiratória 14h; ajuste conforme glicemia; fórmula caseira do hospital..." className="mt-1.5 text-xs min-h-[50px]" />
+                  </div>
+                </section>
               )}
 
-              {modality === "parenteral" && (
-                <>
+              {modalities.has("parenteral") && (
+                <section className="rounded-lg border border-border/60 p-3 space-y-3">
+                  <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5"><Droplets className="h-3.5 w-3.5" /> Parenteral (NPT)</h3>
                   <div>
                     <Label className="text-xs font-semibold">Tipo de NPT</Label>
                     <div className="grid grid-cols-2 gap-1.5 mt-2">
@@ -625,12 +819,16 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
                     <div><Label className="text-xs font-semibold">Vazão (mL/h)</Label><Input value={parRate} onChange={e => setParRate(e.target.value)} className="mt-1.5 h-9 text-sm" /></div>
                   </div>
                   <div>
-                    <Label className="text-xs font-semibold">Composição/observações (macros, eletrólitos, multivitamínico)</Label>
+                    <Label className="text-xs font-semibold">Composição (macros, eletrólitos, multivitamínico)</Label>
                     <Textarea value={parObs} onChange={e => setParObs(e.target.value)}
                       placeholder="ex: AA 10% 500mL + Glicose 50% 500mL + Lipídeo 20% 250mL + multivit + oligoelementos + KCl 30 mEq + NaCl 60 mEq"
-                      className="mt-1.5 text-xs min-h-[70px]" />
+                      className="mt-1.5 text-xs min-h-[60px]" />
                   </div>
-                </>
+                  <div>
+                    <Label className="text-xs font-semibold">Ajustes manuais / observações desta dieta</Label>
+                    <Textarea value={parCustom} onChange={e => setParCustom(e.target.value)} placeholder="Ex.: ajuste após glicemia; transição gradual para enteral em 48h..." className="mt-1.5 text-xs min-h-[50px]" />
+                  </div>
+                </section>
               )}
             </div>
           )}
@@ -658,10 +856,10 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
               </div>
               <Separator />
               <div>
-                <Label className="text-xs font-semibold">Observações adicionais</Label>
+                <Label className="text-xs font-semibold">Observações gerais (aplicam-se a todas as modalidades)</Label>
                 <Textarea value={notes} onChange={e => setNotes(e.target.value)}
-                  placeholder="Ex: avaliação de fonoaudiologia para deglutição; reavaliação nutricional em 48h; meta nutricional plena em 72h..."
-                  className="mt-1.5 text-xs min-h-[70px]" />
+                  placeholder="Ex: avaliação de fonoaudiologia; reavaliação nutricional em 48h; meta nutricional plena em 72h..."
+                  className="mt-1.5 text-xs min-h-[60px]" />
               </div>
             </div>
           )}
@@ -669,9 +867,14 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
           {/* STEP 3 — Revisão */}
           {step === 3 && (
             <div className="space-y-2 p-1">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                <Activity className="h-3.5 w-3.5 text-emerald-500" />
-                Itens que serão adicionados à prescrição:
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Activity className="h-3.5 w-3.5 text-emerald-500" />
+                  Itens que serão adicionados à prescrição:
+                </div>
+                <Button variant="outline" size="sm" className="h-7 text-[11px]" onClick={() => setStep(0)}>
+                  <Plus className="h-3 w-3 mr-1" /> Adicionar outra modalidade
+                </Button>
               </div>
               {entries.map((e, i) => (
                 <div key={e.id} className="rounded-lg border border-emerald-200 bg-emerald-50/40 dark:bg-emerald-950/20 p-3">
@@ -705,13 +908,13 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
             <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Voltar
           </Button>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            {step < STEPS.length - 1 ? (
-              <Button size="sm" onClick={() => setStep(s => Math.min(STEPS.length - 1, s + 1))} className="bg-emerald-600 hover:bg-emerald-700">
-                Continuar <ChevronRight className="h-3.5 w-3.5 ml-1" />
+            <Button variant="outline" size="sm" onClick={() => { reset(); onOpenChange(false); }}>Cancelar</Button>
+            {step < 3 ? (
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" disabled={!canAdvance} onClick={() => setStep(s => Math.min(3, s + 1))}>
+                Avançar <ChevronRight className="h-3.5 w-3.5 ml-1" />
               </Button>
             ) : (
-              <Button size="sm" onClick={handleConfirm} className="bg-emerald-600 hover:bg-emerald-700">
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={handleConfirm} disabled={entries.length === 0}>
                 <Check className="h-3.5 w-3.5 mr-1" /> Adicionar à prescrição ({entries.length})
               </Button>
             )}
