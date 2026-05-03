@@ -25,6 +25,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { ANTIMICROBIAL_OPTIONS, type MedicationEntry } from "@/data/medicationsDatabase";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import { cn } from "@/lib/utils";
+import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 
 interface AntimicrobialEntry {
   id: string;
