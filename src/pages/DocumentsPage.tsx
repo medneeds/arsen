@@ -5,7 +5,7 @@ import {
   ClipboardList, 
   Droplet, 
   FileCheck, 
-  DollarSign,
+  
   Search,
   ChevronRight,
   Scissors,
