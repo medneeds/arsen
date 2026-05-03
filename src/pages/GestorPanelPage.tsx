@@ -742,6 +742,17 @@ export default function GestorPanelPage() {
           </CardContent>
         </Card>
       </div>
+      {/* D-5: Drill-down dos KPIs */}
+      <KpiDrillDownDialog
+        open={!!drillDown}
+        onOpenChange={(v) => !v && setDrillDown(null)}
+        title={activeDrill?.title || ""}
+        description={activeDrill?.sub}
+        icon={activeDrill?.icon}
+        iconColor={activeDrill?.color}
+        iconBg={activeDrill?.bg}
+        rows={drillDown ? drillRows[drillDown] || [] : []}
+      />
     </MainLayout>
   );
 }
