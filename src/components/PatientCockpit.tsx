@@ -824,23 +824,28 @@ interface AlertChipProps {
 }
 
 function AlertChip({ icon: Icon, tone, label, value, count }: AlertChipProps) {
-  const toneClasses = {
-    danger: "bg-destructive/10 text-destructive border-destructive/20",
-    warning: "bg-warning/10 text-warning border-warning/20",
-    success: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
-    muted: "bg-muted/60 text-muted-foreground border-border",
+  const toneStyles = {
+    danger: { wrap: "border-l-destructive/70", icon: "text-destructive", count: "text-destructive" },
+    warning: { wrap: "border-l-warning/70", icon: "text-warning", count: "text-warning" },
+    success: { wrap: "border-l-emerald-500/70", icon: "text-emerald-600 dark:text-emerald-400", count: "text-emerald-600 dark:text-emerald-400" },
+    muted: { wrap: "border-l-border", icon: "text-muted-foreground", count: "text-muted-foreground" },
   }[tone];
 
   return (
-    <div className={cn("flex items-start gap-2 px-2.5 py-1.5 rounded-md border", toneClasses)}>
-      <Icon className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+    <div
+      className={cn(
+        "flex items-start gap-2 px-2.5 py-1.5 rounded-md border border-border/60 bg-muted/30 border-l-2",
+        toneStyles.wrap,
+      )}
+    >
+      <Icon className={cn("h-3.5 w-3.5 mt-0.5 shrink-0", toneStyles.icon)} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[11px] font-semibold leading-tight">{label}</span>
-          {count && <span className="text-[10px] font-bold opacity-80">{count}</span>}
+          <span className="text-[11px] font-semibold leading-tight text-foreground">{label}</span>
+          {count && <span className={cn("text-[10px] font-bold", toneStyles.count)}>{count}</span>}
         </div>
         {value && (
-          <p className="text-[11px] leading-snug opacity-90 truncate preserve-case mt-0.5">{value}</p>
+          <p className="text-[11px] leading-snug text-muted-foreground truncate preserve-case mt-0.5">{value}</p>
         )}
       </div>
     </div>
