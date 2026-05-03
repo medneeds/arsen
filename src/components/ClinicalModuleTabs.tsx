@@ -39,8 +39,10 @@ export function ClinicalModuleTabs({ variant = "dark" }: ClinicalModuleTabsProps
 
   return (
     <div className={cn(
-      "flex gap-0.5 rounded-lg p-0.5",
-      variant === "dark" ? "bg-white/10" : "bg-muted/50"
+      "flex gap-0.5 rounded-lg p-1 border",
+      variant === "dark"
+        ? "bg-slate-900/40 border-white/15 shadow-inner"
+        : "bg-muted/50 border-transparent"
     )}>
       {MODULE_TABS.map(tab => {
         const isActive = location.pathname === tab.path;
@@ -49,11 +51,11 @@ export function ClinicalModuleTabs({ variant = "dark" }: ClinicalModuleTabsProps
             key={tab.path}
             onClick={() => navigate(`${tab.path}${queryString ? `?${queryString}` : ""}`)}
             className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-medium transition-all duration-200",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold tracking-wide transition-all duration-200",
               variant === "dark"
                 ? isActive
-                  ? "bg-white/20 text-white shadow-sm"
-                  : "text-white/60 hover:text-white hover:bg-white/10"
+                  ? "bg-white text-primary shadow-md ring-1 ring-white/40"
+                  : "text-white/85 hover:text-white hover:bg-white/15"
                 : isActive
                   ? "bg-background text-primary shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/50"

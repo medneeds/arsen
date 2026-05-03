@@ -242,12 +242,13 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               title={pinned ? "Desafixar (recolher ao tirar o mouse)" : "Fixar painel aberto"}
               onClick={() => setPinned((v) => !v)}
               className={cn(
-                "text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border transition-colors",
+                "inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full transition-all duration-200",
                 pinned
-                  ? "border-primary/40 text-primary bg-primary/10"
-                  : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-sm hover:shadow-md"
+                  : "bg-muted/60 text-muted-foreground hover:bg-primary/10 hover:text-primary"
               )}
             >
+              <ChevronRight className={cn("h-3 w-3 transition-transform", pinned ? "rotate-90" : "rotate-180")} />
               {pinned ? "Fixado" : "Fixar"}
             </button>
           </div>

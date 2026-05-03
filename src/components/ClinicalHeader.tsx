@@ -18,6 +18,7 @@ export function ClinicalHeader({ moduleLabel, showBack = true, actions }: Clinic
   return (
     <div className="px-2 sm:px-4 pt-3 print:hidden">
       <BreadcrumbBar
+        variant="institutional"
         showSector
         showNavTabs={false}
         showPatient

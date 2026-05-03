@@ -121,14 +121,14 @@ export function BreadcrumbBar({
         {showPatient && (
           <>
             <ChevronRight className={cn("h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
-            <PatientSwitcher variant="default" />
+            <PatientSwitcher variant={isInstitutional ? "dark" : "default"} />
           </>
         )}
 
         {showModules && (
           <>
             <ChevronRight className={cn("h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
-            <ClinicalModuleTabs variant="default" />
+            <ClinicalModuleTabs variant={isInstitutional ? "dark" : "default"} />
           </>
         )}
 
