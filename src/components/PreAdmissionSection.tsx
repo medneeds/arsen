@@ -39,6 +39,7 @@ const RISK_COLORS: Record<string, string> = {
   amarelo: "bg-yellow-500 text-black",
   verde: "bg-green-600 text-white",
   azul: "bg-blue-600 text-white",
+  branca: "bg-white text-slate-900 border border-slate-400",
 };
 
 const RISK_LABELS: Record<string, string> = {
@@ -47,6 +48,7 @@ const RISK_LABELS: Record<string, string> = {
   amarelo: "URGENTE",
   verde: "POUCO URGENTE",
   azul: "NÃO URGENTE",
+  branca: "FICHA BRANCA",
 };
 
 interface PreAdmissionSectionProps {
@@ -171,6 +173,7 @@ export function PreAdmissionSection({ sectorFilterLabel }: PreAdmissionSectionPr
                     pa.risk_classification === "amarelo" && "border-l-yellow-500",
                     pa.risk_classification === "verde" && "border-l-green-600",
                     pa.risk_classification === "azul" && "border-l-blue-600",
+                    pa.risk_classification === "branca" && "border-l-slate-400",
                   )}>
                     <CardContent className="p-3 space-y-2">
                       <div className="flex items-start justify-between gap-2">

@@ -57,6 +57,7 @@ const RISK_COLORS: Record<string, string> = {
   amarelo: "bg-yellow-500 text-black",
   verde: "bg-green-600 text-white",
   azul: "bg-blue-600 text-white",
+  branca: "bg-white text-slate-900 border border-slate-400",
 };
 
 const RISK_LABELS: Record<string, string> = {
@@ -65,6 +66,7 @@ const RISK_LABELS: Record<string, string> = {
   amarelo: "URGENTE",
   verde: "POUCO URGENTE",
   azul: "NÃO URGENTE",
+  branca: "FICHA BRANCA",
 };
 
 // ─── Component ──────────────────────────────────────────────────────────────

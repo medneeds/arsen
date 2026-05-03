@@ -71,6 +71,15 @@ const RISK_LEVELS = [
     icon: Info,
     time: "240 min",
   },
+  {
+    value: "branca",
+    label: "FICHA BRANCA",
+    description: "Eletivo — sem critério de risco imediato. Fluxo Socorrão I (atendimento por ordem de chegada, sem temporalidade Manchester).",
+    color: "bg-white hover:bg-slate-50 text-slate-900 border-slate-400",
+    selectedColor: "ring-4 ring-slate-400 bg-white text-slate-900 border-slate-500",
+    icon: Info,
+    time: "ELETIVO",
+  },
 ] as const;
 
 interface VitalSigns {
