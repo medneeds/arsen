@@ -772,7 +772,7 @@ function NutritionFields({
       {(subtype === 'diet_enteral' || subtype === 'diet_oral') && (
         <>
           <div className="flex items-center gap-1.5 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
-            <Utensils className="h-3 w-3 text-primary shrink-0" />
+            <UtensilsCrossed className="h-3 w-3 text-primary shrink-0" />
             <FieldLabel>Vol/dia:</FieldLabel>
             <TinyInput value={item.nutVolDay || ''} onChange={(e) => onUpdate(item.id, 'nutVolDay', e.target.value)} className="w-16 text-center" placeholder="mL" />
             {subtype === 'diet_enteral' && (
