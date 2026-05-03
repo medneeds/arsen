@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, User, Volume2 } from "lucide-react";
+import { Clock, User, Volume2, VolumeX } from "lucide-react";
 import { whitelabel } from "@/config/whitelabel";
 import socorraoLogo from "@/assets/socorrao-logo.jpg";
 import socorraoCross from "@/assets/socorrao-cross-logo.png";
+import { Button } from "@/components/ui/button";
 
 interface QueuePatient {
   id: string;
@@ -27,6 +28,55 @@ const TriageQueueTVPage = () => {
   const [queue, setQueue] = useState<QueuePatient[]>([]);
   const [calledPatient, setCalledPatient] = useState<QueuePatient | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const announcedRef = useRef<Set<string>>(new Set());
+
+  // ─── Voz feminina (Web Speech API) ────────────────────────────
+  const speakCall = (patientName: string) => {
+    if (!voiceEnabled || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const voices = window.speechSynthesis.getVoices();
+      // Prefere voz feminina em pt-BR
+      const ptVoices = voices.filter(v => v.lang?.toLowerCase().startsWith("pt"));
+      const female =
+        ptVoices.find(v => /female|mulher|francisca|luciana|maria|joana|fernanda|camila|vitoria/i.test(v.name)) ||
+        ptVoices[0] ||
+        voices[0];
+      const cleanName = patientName.replace(/\s+/g, " ").trim();
+      const phrases = [
+        new SpeechSynthesisUtterance("Atenção."),
+        new SpeechSynthesisUtterance(`${cleanName}.`),
+        new SpeechSynthesisUtterance("Por favor, dirija-se à triagem."),
+      ];
+      phrases.forEach(u => {
+        u.lang = "pt-BR";
+        u.rate = 0.9;
+        u.pitch = 1.05;
+        u.volume = 1;
+        if (female) u.voice = female;
+        window.speechSynthesis.speak(u);
+      });
+    } catch (e) {
+      console.error("[TV] speakCall error", e);
+    }
+  };
+
+  // Garante que a lista de vozes carregue no Chrome
+  useEffect(() => {
+    if (!("speechSynthesis" in window)) return;
+    const load = () => window.speechSynthesis.getVoices();
+    load();
+    window.speechSynthesis.onvoiceschanged = load;
+  }, []);
+
+  // Anuncia o paciente chamado uma única vez
+  useEffect(() => {
+    if (calledPatient && !announcedRef.current.has(calledPatient.id)) {
+      announcedRef.current.add(calledPatient.id);
+      speakCall(calledPatient.patient_name);
+    }
+  }, [calledPatient, voiceEnabled]);
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -105,13 +155,44 @@ const TriageQueueTVPage = () => {
             Recepção · Classificação de Risco
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-4xl font-mono font-bold tabular-nums">
-            {format(currentTime, "HH:mm:ss")}
-          </p>
-          <p className="text-white/60 text-sm uppercase">
-            {format(currentTime, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-          </p>
+        <div className="flex items-center gap-4">
+          <Button
+            size="lg"
+            variant={voiceEnabled ? "default" : "secondary"}
+            onClick={() => {
+              const next = !voiceEnabled;
+              setVoiceEnabled(next);
+              // Gesto do usuário: dispara um utterance vazio para liberar áudio no navegador
+              if (next && "speechSynthesis" in window) {
+                const u = new SpeechSynthesisUtterance("Voz ativada.");
+                u.lang = "pt-BR";
+                window.speechSynthesis.speak(u);
+              } else {
+                window.speechSynthesis?.cancel();
+              }
+            }}
+            className="gap-2"
+          >
+            {voiceEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+            {voiceEnabled ? "Voz ativa" : "Ativar voz"}
+          </Button>
+          {voiceEnabled && (
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => speakCall(calledPatient?.patient_name || "Paciente teste")}
+            >
+              Testar chamada
+            </Button>
+          )}
+          <div className="text-right">
+            <p className="text-4xl font-mono font-bold tabular-nums">
+              {format(currentTime, "HH:mm:ss")}
+            </p>
+            <p className="text-white/60 text-sm uppercase">
+              {format(currentTime, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+            </p>
+          </div>
         </div>
       </div>
 
