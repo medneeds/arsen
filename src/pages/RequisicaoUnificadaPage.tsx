@@ -1358,7 +1358,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                     key={qa.code}
                     size="sm"
                     variant="outline"
-                    className={`h-7 text-xs font-normal ${isSelected ? "bg-primary/10 border-primary/40 text-primary" : "bg-muted/30 hover:bg-muted/60"}`}
+                    className={`h-7 text-xs font-normal ${isSelected ? "bg-primary/10 border-primary/40 text-primary hover:bg-primary/15 hover:text-primary" : "bg-muted/40 text-foreground border-border hover:bg-accent hover:text-accent-foreground hover:border-primary/40"}`}
                     onClick={() => proc && addProcedure(proc)}
                     disabled={isSelected}
                   >
