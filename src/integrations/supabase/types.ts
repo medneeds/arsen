@@ -259,55 +259,91 @@ export type Database = {
       }
       bed_census: {
         Row: {
+          administrative_discharge_at: string | null
+          admission_at: string | null
           bed_number: string
           block_reason: string | null
           block_started_at: string | null
+          cleaning_finished_at: string | null
+          cleaning_started_at: string | null
           created_at: string
+          deallocated_at: string | null
+          destination_released_at: string | null
           hospital_unit_id: string
           id: string
+          last_patient_id: string | null
+          last_patient_name: string | null
+          medical_discharge_at: string | null
+          occupied_at: string | null
           patient_id: string | null
           patient_name: string | null
+          ready_for_admission_at: string | null
           reserved_for: string | null
           reserved_until: string | null
           sector: string
           state_id: string
           status: string
+          status_changed_at: string
           updated_at: string
           updated_by: string | null
           updated_by_name: string | null
         }
         Insert: {
+          administrative_discharge_at?: string | null
+          admission_at?: string | null
           bed_number: string
           block_reason?: string | null
           block_started_at?: string | null
+          cleaning_finished_at?: string | null
+          cleaning_started_at?: string | null
           created_at?: string
+          deallocated_at?: string | null
+          destination_released_at?: string | null
           hospital_unit_id: string
           id?: string
+          last_patient_id?: string | null
+          last_patient_name?: string | null
+          medical_discharge_at?: string | null
+          occupied_at?: string | null
           patient_id?: string | null
           patient_name?: string | null
+          ready_for_admission_at?: string | null
           reserved_for?: string | null
           reserved_until?: string | null
           sector: string
           state_id: string
           status?: string
+          status_changed_at?: string
           updated_at?: string
           updated_by?: string | null
           updated_by_name?: string | null
         }
         Update: {
+          administrative_discharge_at?: string | null
+          admission_at?: string | null
           bed_number?: string
           block_reason?: string | null
           block_started_at?: string | null
+          cleaning_finished_at?: string | null
+          cleaning_started_at?: string | null
           created_at?: string
+          deallocated_at?: string | null
+          destination_released_at?: string | null
           hospital_unit_id?: string
           id?: string
+          last_patient_id?: string | null
+          last_patient_name?: string | null
+          medical_discharge_at?: string | null
+          occupied_at?: string | null
           patient_id?: string | null
           patient_name?: string | null
+          ready_for_admission_at?: string | null
           reserved_for?: string | null
           reserved_until?: string | null
           sector?: string
           state_id?: string
           status?: string
+          status_changed_at?: string
           updated_at?: string
           updated_by?: string | null
           updated_by_name?: string | null
