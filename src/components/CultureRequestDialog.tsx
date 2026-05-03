@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { CollapsibleInfoCard } from "@/components/shared/CollapsibleInfoCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -313,207 +314,98 @@ export function CultureRequestDialog({
           {previewMode ? (
             <PrintableCultureRequest request={previewData} />
           ) : (
-            <Tabs defaultValue="patient" className="space-y-4">
-              <TabsList className="grid grid-cols-3 w-full">
-                <TabsTrigger value="patient">Paciente</TabsTrigger>
-                <TabsTrigger value="antecedents">Antecedentes</TabsTrigger>
-                <TabsTrigger value="cultures">Culturas solicitadas</TabsTrigger>
-              </TabsList>
-
-              {/* Paciente */}
-              <TabsContent value="patient" className="space-y-3">
+            <div className="space-y-4">
+              {/* Bloco retrátil — paciente já carregado */}
+              <CollapsibleInfoCard
+                title="Identificação do paciente"
+                summary={data.patient_name || "—"}
+                badge={[data.patient_sector, data.patient_bed].filter(Boolean).join(" · ") || undefined}
+              >
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Nome completo" full>
-                    <Input
-                      value={data.patient_name}
-                      onChange={(e) => setData({ ...data, patient_name: e.target.value.toUpperCase() })}
-                    />
+                    <Input value={data.patient_name} onChange={(e) => setData({ ...data, patient_name: e.target.value.toUpperCase() })} />
                   </Field>
                   <Field label="Nome social">
-                    <Input
-                      value={data.patient_social_name || ""}
-                      onChange={(e) => setData({ ...data, patient_social_name: e.target.value })}
-                    />
+                    <Input value={data.patient_social_name || ""} onChange={(e) => setData({ ...data, patient_social_name: e.target.value })} />
                   </Field>
                   <Field label="Data de nascimento">
-                    <Input
-                      type="date"
-                      value={data.patient_birth_date || ""}
-                      onChange={(e) => setData({ ...data, patient_birth_date: e.target.value })}
-                    />
+                    <Input type="date" value={data.patient_birth_date || ""} onChange={(e) => setData({ ...data, patient_birth_date: e.target.value })} />
                   </Field>
                   <Field label="CPF">
-                    <Input
-                      value={data.patient_cpf || ""}
-                      onChange={(e) => setData({ ...data, patient_cpf: e.target.value })}
-                      placeholder="000.000.000-00"
-                    />
+                    <Input value={data.patient_cpf || ""} onChange={(e) => setData({ ...data, patient_cpf: e.target.value })} placeholder="000.000.000-00" />
                   </Field>
                   <Field label="CNS">
-                    <Input
-                      value={data.patient_cns || ""}
-                      onChange={(e) => setData({ ...data, patient_cns: e.target.value })}
-                    />
+                    <Input value={data.patient_cns || ""} onChange={(e) => setData({ ...data, patient_cns: e.target.value })} />
                   </Field>
                   <Field label="N° prontuário">
-                    <Input
-                      value={data.patient_record || ""}
-                      onChange={(e) => setData({ ...data, patient_record: e.target.value })}
-                    />
+                    <Input value={data.patient_record || ""} onChange={(e) => setData({ ...data, patient_record: e.target.value })} />
                   </Field>
                   <Field label="Setor">
-                    <Input
-                      value={data.patient_sector || ""}
-                      onChange={(e) => setData({ ...data, patient_sector: e.target.value })}
-                    />
+                    <Input value={data.patient_sector || ""} onChange={(e) => setData({ ...data, patient_sector: e.target.value })} />
                   </Field>
                   <Field label="Leito">
-                    <Input
-                      value={data.patient_bed || ""}
-                      onChange={(e) => setData({ ...data, patient_bed: e.target.value })}
-                    />
+                    <Input value={data.patient_bed || ""} onChange={(e) => setData({ ...data, patient_bed: e.target.value })} />
                   </Field>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-muted-foreground">
-                    Dados da mãe {isMinor && <span className="text-destructive">(obrigatório — menor de 18 anos)</span>}
-                  </Label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Nome da mãe" full>
-                      <Input
-                        value={data.mother_name || ""}
-                        onChange={(e) => setData({ ...data, mother_name: e.target.value.toUpperCase() })}
-                      />
-                    </Field>
-                    <Field label="Data de nascimento da mãe">
-                      <Input
-                        type="date"
-                        value={data.mother_birth_date || ""}
-                        onChange={(e) => setData({ ...data, mother_birth_date: e.target.value })}
-                      />
-                    </Field>
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* Antecedentes */}
-              <TabsContent value="antecedents" className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Esteve internado nos últimos 30 dias?</Label>
-                  <RadioGroup
-                    value={String(data.hospitalized_last_30d ?? "")}
-                    onValueChange={(v) => setData({ ...data, hospitalized_last_30d: v === "true" })}
-                    className="flex gap-4"
-                  >
-                    <div className="flex items-center gap-2"><RadioGroupItem value="true" id="h30-s" /><Label htmlFor="h30-s">Sim</Label></div>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="false" id="h30-n" /><Label htmlFor="h30-n">Não</Label></div>
-                  </RadioGroup>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Fez uso de antibiótico nas últimas 24h?</Label>
-                  <RadioGroup
-                    value={String(data.used_antibiotic_last_24h ?? "")}
-                    onValueChange={(v) => setData({ ...data, used_antibiotic_last_24h: v === "true" })}
-                    className="flex gap-4"
-                  >
-                    <div className="flex items-center gap-2"><RadioGroupItem value="true" id="atb24-s" /><Label htmlFor="atb24-s">Sim</Label></div>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="false" id="atb24-n" /><Label htmlFor="atb24-n">Não</Label></div>
-                  </RadioGroup>
-
-                  {data.used_antibiotic_last_24h && (
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                      <Field label="Qual antibiótico?" full>
-                        <Input
-                          value={data.antibiotic_name || ""}
-                          onChange={(e) => setData({ ...data, antibiotic_name: e.target.value })}
-                          placeholder="ex.: Ceftriaxona 1g 12/12h"
-                        />
+                  {(isMinor || data.mother_name) && (
+                    <>
+                      <Field label={`Nome da mãe${isMinor ? " (obrigatório — menor de 18 anos)" : ""}`} full>
+                        <Input value={data.mother_name || ""} onChange={(e) => setData({ ...data, mother_name: e.target.value.toUpperCase() })} />
                       </Field>
-                      <Field label="Data de início">
-                        <Input
-                          type="date"
-                          value={data.antibiotic_start_date || ""}
-                          onChange={(e) => setData({ ...data, antibiotic_start_date: e.target.value })}
-                        />
+                      <Field label="Data de nascimento da mãe">
+                        <Input type="date" value={data.mother_birth_date || ""} onChange={(e) => setData({ ...data, mother_birth_date: e.target.value })} />
                       </Field>
-                    </div>
+                    </>
                   )}
                 </div>
+              </CollapsibleInfoCard>
 
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Tipo de uso do antibiótico</Label>
-                  <RadioGroup
-                    value={data.antibiotic_use || ""}
-                    onValueChange={(v) => setData({ ...data, antibiotic_use: v as "profilatico" | "terapeutico" })}
-                    className="flex gap-4"
-                  >
-                    <div className="flex items-center gap-2"><RadioGroupItem value="profilatico" id="atbu-p" /><Label htmlFor="atbu-p">Profilático</Label></div>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="terapeutico" id="atbu-t" /><Label htmlFor="atbu-t">Terapêutico</Label></div>
-                  </RadioGroup>
+              {/* PRINCIPAL — Culturas em evidência */}
+              <div className="rounded-lg border-2 border-emerald-500/30 ring-1 ring-emerald-500/10 bg-emerald-500/5 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                  <Microscope className="h-4 w-4" /> Culturas solicitadas
                 </div>
-
-                <Separator />
-
-                <Field label="Justificativa clínica (opcional)" full>
-                  <Textarea
-                    rows={3}
-                    value={data.clinical_indication || ""}
-                    onChange={(e) => setData({ ...data, clinical_indication: e.target.value })}
-                    placeholder="Hipótese diagnóstica, suspeita de foco infeccioso, etc."
-                  />
-                </Field>
-              </TabsContent>
-
-              {/* Culturas */}
-              <TabsContent value="cultures" className="space-y-3">
                 <p className="text-xs text-muted-foreground">
                   Selecione as culturas com TSA (Teste de Sensibilidade aos Antimicrobianos).
                 </p>
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {CULTURE_ITEMS.map((item) => {
                     const sel = selection[item.key];
+                    const isChecked = !!sel?.checked;
                     return (
-                      <div key={item.key} className="border rounded-md p-3">
+                      <div
+                        key={item.key}
+                        className={`border rounded-md p-2.5 transition-colors ${isChecked ? "border-emerald-500/60 bg-card" : "border-border bg-card/60 hover:bg-accent/40"}`}
+                      >
                         <div className="flex items-center gap-2">
                           <Checkbox
                             id={`cult-${item.key}`}
-                            checked={!!sel?.checked}
+                            checked={isChecked}
                             onCheckedChange={(v) => updateSel(item.key, { checked: !!v })}
                           />
                           <Label htmlFor={`cult-${item.key}`} className="text-sm font-medium cursor-pointer flex-1">
                             {item.label}
                           </Label>
                         </div>
-                        {sel?.checked && item.hasSamples && (
+                        {isChecked && item.hasSamples && (
                           <div className="mt-2 pl-6 flex items-center gap-2">
-                            <Label className="text-xs text-muted-foreground whitespace-nowrap">
-                              N° de amostras:
-                            </Label>
+                            <Label className="text-xs text-muted-foreground whitespace-nowrap">Amostras:</Label>
                             <Input
-                              className="h-8 max-w-[120px]"
+                              className="h-7 max-w-[100px] text-sm"
                               value={sel.samples || ""}
                               onChange={(e) => updateSel(item.key, { samples: e.target.value })}
                               placeholder="ex.: 2"
                             />
                           </div>
                         )}
-                        {sel?.checked && item.hasDetail && (
+                        {isChecked && item.hasDetail && (
                           <div className="mt-2 pl-6">
                             <Input
-                              className="h-8"
+                              className="h-7 text-sm"
                               value={sel.detail || ""}
                               onChange={(e) => updateSel(item.key, { detail: e.target.value })}
                               placeholder={
                                 item.key === "secrecao"
-                                  ? "ex.: ferida operatória, traqueal, abdominal..."
+                                  ? "ex.: ferida operatória, traqueal..."
                                   : item.key === "fragmento"
                                   ? "ex.: tecido subcutâneo, óssea..."
                                   : item.key === "swab"
@@ -527,8 +419,76 @@ export function CultureRequestDialog({
                     );
                   })}
                 </div>
+              </div>
 
-                <Separator />
+              {/* Antecedentes — compactos */}
+              <div className="rounded-lg border bg-card p-4 space-y-3">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Antecedentes</div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Internado nos últimos 30 dias?</Label>
+                    <RadioGroup
+                      value={String(data.hospitalized_last_30d ?? "")}
+                      onValueChange={(v) => setData({ ...data, hospitalized_last_30d: v === "true" })}
+                      className="flex gap-3"
+                    >
+                      <div className="flex items-center gap-1.5"><RadioGroupItem value="true" id="h30-s" /><Label htmlFor="h30-s" className="text-xs">Sim</Label></div>
+                      <div className="flex items-center gap-1.5"><RadioGroupItem value="false" id="h30-n" /><Label htmlFor="h30-n" className="text-xs">Não</Label></div>
+                    </RadioGroup>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">ATB nas últimas 24h?</Label>
+                    <RadioGroup
+                      value={String(data.used_antibiotic_last_24h ?? "")}
+                      onValueChange={(v) => setData({ ...data, used_antibiotic_last_24h: v === "true" })}
+                      className="flex gap-3"
+                    >
+                      <div className="flex items-center gap-1.5"><RadioGroupItem value="true" id="atb24-s" /><Label htmlFor="atb24-s" className="text-xs">Sim</Label></div>
+                      <div className="flex items-center gap-1.5"><RadioGroupItem value="false" id="atb24-n" /><Label htmlFor="atb24-n" className="text-xs">Não</Label></div>
+                    </RadioGroup>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Tipo de uso</Label>
+                    <RadioGroup
+                      value={data.antibiotic_use || ""}
+                      onValueChange={(v) => setData({ ...data, antibiotic_use: v as "profilatico" | "terapeutico" })}
+                      className="flex gap-3"
+                    >
+                      <div className="flex items-center gap-1.5"><RadioGroupItem value="profilatico" id="atbu-p" /><Label htmlFor="atbu-p" className="text-xs">Profilático</Label></div>
+                      <div className="flex items-center gap-1.5"><RadioGroupItem value="terapeutico" id="atbu-t" /><Label htmlFor="atbu-t" className="text-xs">Terapêutico</Label></div>
+                    </RadioGroup>
+                  </div>
+                </div>
+
+                {data.used_antibiotic_last_24h && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                    <div className="md:col-span-2">
+                      <Label className="text-xs text-muted-foreground">Qual antibiótico?</Label>
+                      <Input
+                        value={data.antibiotic_name || ""}
+                        onChange={(e) => setData({ ...data, antibiotic_name: e.target.value })}
+                        placeholder="ex.: Ceftriaxona 1g 12/12h"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Início</Label>
+                      <Input
+                        type="date"
+                        value={data.antibiotic_start_date || ""}
+                        onChange={(e) => setData({ ...data, antibiotic_start_date: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <Field label="Justificativa clínica (opcional)" full>
+                  <Textarea
+                    rows={2}
+                    value={data.clinical_indication || ""}
+                    onChange={(e) => setData({ ...data, clinical_indication: e.target.value })}
+                    placeholder="Hipótese diagnóstica, suspeita de foco infeccioso, etc."
+                  />
+                </Field>
 
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Médico solicitante">
@@ -538,8 +498,8 @@ export function CultureRequestDialog({
                     />
                   </Field>
                 </div>
-              </TabsContent>
-            </Tabs>
+              </div>
+            </div>
           )}
         </ScrollArea>
 
