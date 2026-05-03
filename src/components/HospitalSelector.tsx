@@ -164,7 +164,7 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
                       setSearch("");
                     }}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-primary/5 transition-colors",
+                      "w-full flex items-center gap-3 px-4 py-3 sm:py-2.5 text-left hover:bg-primary/5 active:bg-primary/10 transition-colors",
                       hospital.id === selectedHospitalId && "bg-primary/8"
                     )}
                   >
