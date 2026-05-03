@@ -469,7 +469,7 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
 };
 
 const TAB_ORDER: PrescriptionCategory[] = [
-  'nutrition', 'hydration', 'medication', 'antimicrobial',
+  'nutrition', 'hydration', 'replacement', 'medication', 'antimicrobial',
   'high_alert', 'inhalation', 'hemotherapy', 'care', 'nonstandard',
 ];
 
