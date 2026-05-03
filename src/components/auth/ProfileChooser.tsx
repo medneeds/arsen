@@ -117,7 +117,7 @@ export function ProfileChooser({ userName, profiles, appRole, compact, onChosen 
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 + idx * 0.04 }}
                       onClick={() => handleSelect(p.value)}
-                      className="group text-left relative bg-card border border-border/70 rounded-2xl p-4 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all"
+                      className="group text-left relative bg-card border border-border/70 rounded-2xl p-3.5 sm:p-4 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 active:scale-[0.99] transition-all"
                     >
                       <div className="flex items-start gap-3">
                         <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/15 shrink-0">
