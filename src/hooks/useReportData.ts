@@ -925,6 +925,166 @@ async function executeQuery(
       };
     }
 
+
+    case 'gestao_readmission_30d': {
+      const startDate = new Date(startFull);
+      const lookback = new Date(startDate.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await supabase.from('patient_encounters')
+        .select('patient_name, patient_id, encounter_code, created_at, outcome, outcome_date')
+        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
+        .gte('created_at', lookback).lte('created_at', endFull)
+        .order('created_at', { ascending: true });
+      const byPatient: Record<string, any[]> = {};
+      (data || []).forEach(r => {
+        const key = r.patient_id || r.patient_name.trim().toLowerCase();
+        if (!byPatient[key]) byPatient[key] = [];
+        byPatient[key].push(r);
+      });
+      const readmissions: any[] = [];
+      Object.values(byPatient).forEach(list => {
+        for (let i = 1; i < list.length; i++) {
+          const prev = list[i - 1];
+          const curr = list[i];
+          if (!prev.outcome_date) continue;
+          const gapDays = (new Date(curr.created_at).getTime() - new Date(prev.outcome_date).getTime()) / 86400000;
+          if (gapDays >= 0 && gapDays <= 30 && new Date(curr.created_at) >= startDate) {
+            readmissions.push({
+              'Paciente': curr.patient_name,
+              'Atendimento Anterior': prev.encounter_code,
+              'Desfecho Anterior': prev.outcome || '-',
+              'Reentrada': formatDate(curr.created_at),
+              'Novo Atendimento': curr.encounter_code,
+              'Intervalo (dias)': gapDays.toFixed(1),
+            });
+          }
+        }
+      });
+      return {
+        columns: ['Paciente', 'Atendimento Anterior', 'Desfecho Anterior', 'Reentrada', 'Novo Atendimento', 'Intervalo (dias)'],
+        rows: readmissions,
+        summary: { 'Readmissões 30d': readmissions.length },
+      };
+    }
+
+    case 'gestao_uti_mortality': {
+      const { data } = await supabase.from('patient_encounters')
+        .select('patient_name, encounter_code, destination_sector, outcome, outcome_date, created_at')
+        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
+        .gte('created_at', startFull).lte('created_at', endFull);
+      const utiAll = (data || []).filter(r => /uti/i.test(r.destination_sector || ''));
+      const utiDeaths = utiAll.filter(r => (r as any).outcome === 'obito');
+      return {
+        columns: ['Paciente', 'Código', 'Setor', 'Entrada', 'Óbito em'],
+        rows: utiDeaths.map(r => ({
+          'Paciente': r.patient_name,
+          'Código': r.encounter_code,
+          'Setor': r.destination_sector || '-',
+          'Entrada': formatDate(r.created_at),
+          'Óbito em': (r as any).outcome_date ? formatDate((r as any).outcome_date) : '-',
+        })),
+        summary: {
+          'Total UTI': utiAll.length,
+          Óbitos: utiDeaths.length,
+          'Mortalidade UTI': ((utiDeaths.length / Math.max(utiAll.length, 1)) * 100).toFixed(2) + '%',
+        },
+      };
+    }
+
+    case 'gestao_transfers': {
+      const { data } = await supabase.from('patient_encounters')
+        .select('patient_name, encounter_code, destination_sector, outcome_date, created_at')
+        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
+        .eq('outcome', 'transferencia')
+        .gte('created_at', startFull).lte('created_at', endFull);
+      const bySector: Record<string, number> = {};
+      (data || []).forEach(r => {
+        const s = r.destination_sector || 'Não definido';
+        bySector[s] = (bySector[s] || 0) + 1;
+      });
+      return {
+        columns: ['Setor de Origem', 'Transferências'],
+        rows: Object.entries(bySector).sort((a, b) => b[1] - a[1]).map(([s, n]) => ({
+          'Setor de Origem': s, 'Transferências': n,
+        })),
+        summary: { Total: (data || []).length },
+      };
+    }
+
+    case 'gestao_top_diagnoses': {
+      const { data } = await supabase.from('admission_histories')
+        .select('cid_primary, cid_secondary')
+        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
+        .gte('created_at', startFull).lte('created_at', endFull);
+      const counts: Record<string, number> = {};
+      (data || []).forEach(r => {
+        [r.cid_primary, r.cid_secondary].filter(Boolean).forEach(c => {
+          counts[c!] = (counts[c!] || 0) + 1;
+        });
+      });
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 20);
+      const total = sorted.reduce((a, [, n]) => a + n, 0) || 1;
+      return {
+        columns: ['Posição', 'CID', 'Quantidade', '% do Top 20'],
+        rows: sorted.map(([c, n], i) => ({
+          'Posição': i + 1, 'CID': c, 'Quantidade': n,
+          '% do Top 20': ((n / total) * 100).toFixed(1) + '%',
+        })),
+        summary: { 'CIDs únicos': Object.keys(counts).length },
+      };
+    }
+
+    case 'gestao_nir_rejections': {
+      const { data } = await supabase.from('bed_allocation_requests')
+        .select('patient_id, requested_sector, requested_bed, requesting_doctor_name, rejection_reason, reviewed_at, created_at, status')
+        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
+        .eq('status', 'rejected')
+        .gte('created_at', startFull).lte('created_at', endFull)
+        .order('reviewed_at', { ascending: false });
+      const motivos: Record<string, number> = {};
+      (data || []).forEach(r => {
+        const m = r.rejection_reason || 'Sem motivo';
+        motivos[m] = (motivos[m] || 0) + 1;
+      });
+      return {
+        columns: ['Setor Solicitado', 'Leito', 'Médico', 'Motivo', 'Aberta em', 'Rejeitada em'],
+        rows: (data || []).map(r => ({
+          'Setor Solicitado': r.requested_sector,
+          'Leito': r.requested_bed || '-',
+          'Médico': r.requesting_doctor_name || '-',
+          'Motivo': r.rejection_reason || '-',
+          'Aberta em': formatDate(r.created_at),
+          'Rejeitada em': r.reviewed_at ? formatDate(r.reviewed_at) : '-',
+        })),
+        summary: { Total: (data || []).length, ...motivos },
+      };
+    }
+
+    case 'gestao_cleaning_time': {
+      const { data } = await supabase.from('bed_census')
+        .select('sector, bed_number, cleaning_started_at, cleaning_finished_at')
+        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
+        .not('cleaning_started_at', 'is', null)
+        .not('cleaning_finished_at', 'is', null)
+        .gte('cleaning_started_at', startFull).lte('cleaning_started_at', endFull);
+      const bySector: Record<string, number[]> = {};
+      (data || []).forEach(r => {
+        const mins = (new Date(r.cleaning_finished_at!).getTime() - new Date(r.cleaning_started_at!).getTime()) / 60000;
+        if (mins < 0 || mins > 24 * 60) return;
+        if (!bySector[r.sector]) bySector[r.sector] = [];
+        bySector[r.sector].push(mins);
+      });
+      return {
+        columns: ['Setor', 'Limpezas', 'Tempo Médio (min)', 'Mínimo (min)', 'Máximo (min)'],
+        rows: Object.entries(bySector).map(([s, t]) => ({
+          'Setor': s, 'Limpezas': t.length,
+          'Tempo Médio (min)': (t.reduce((a, b) => a + b, 0) / t.length).toFixed(1),
+          'Mínimo (min)': Math.min(...t).toFixed(1),
+          'Máximo (min)': Math.max(...t).toFixed(1),
+        })),
+        summary: { 'Total limpezas': (data || []).length },
+      };
+    }
+
     default:
       return { columns: ['Info'], rows: [{ Info: 'Relatório em desenvolvimento' }] };
   }

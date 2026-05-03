@@ -105,6 +105,14 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   { id: 'gestao_producao_medico', name: 'Produção por médico', description: 'Atendimentos, evoluções e desfechos por médico no período', category: 'gestao', queryType: 'gestao_production_per_doctor', available: true },
   { id: 'gestao_fila_nir', name: 'Fila de pedidos NIR', description: 'Solicitações de leito por status, idade da fila e SLA', category: 'gestao', queryType: 'gestao_nir_queue', available: true },
   { id: 'gestao_sla_triagem', name: 'SLA de triagem', description: 'Tempo entre chegada e classificação de risco, com aderência ao SLA', category: 'gestao', queryType: 'gestao_triage_sla', available: true },
+
+  // Gestão Executiva (Sprint 4)
+  { id: 'gestao_readmissao_30d', name: 'Readmissão em 30 dias', description: 'Pacientes que retornaram ao PS dentro de 30 dias após desfecho', category: 'gestao', queryType: 'gestao_readmission_30d', available: true },
+  { id: 'gestao_mortalidade_uti', name: 'Mortalidade UTI', description: 'Óbitos em pacientes com setor de destino UTI', category: 'gestao', queryType: 'gestao_uti_mortality', available: true },
+  { id: 'gestao_transferencias', name: 'Transferências externas', description: 'Atendimentos com desfecho de transferência por setor de origem', category: 'gestao', queryType: 'gestao_transfers', available: true },
+  { id: 'gestao_top_diagnosticos', name: 'Top diagnósticos (CID)', description: 'Ranking dos 20 CIDs mais frequentes no período', category: 'gestao', queryType: 'gestao_top_diagnoses', available: true },
+  { id: 'gestao_cancelamentos_nir', name: 'Cancelamentos / Rejeições NIR', description: 'Solicitações de leito rejeitadas com motivo', category: 'gestao', queryType: 'gestao_nir_rejections', available: true },
+  { id: 'gestao_tempo_limpeza', name: 'Tempo de limpeza de leito', description: 'Intervalo entre início e fim da limpeza por setor', category: 'gestao', queryType: 'gestao_cleaning_time', available: true },
 ];
 
 // Macrorregiões do Maranhão
