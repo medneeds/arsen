@@ -142,6 +142,50 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
 
   const glasgowTotal = form.glasgow_eye + form.glasgow_verbal + form.glasgow_motor;
 
+  // ─── Sugestão automática Manchester (não-vinculante) ──────────
+  const suggestion = (() => {
+    const reasons: string[] = [];
+    let level: typeof RISK_LEVELS[number]["value"] = "azul";
+    const bump = (l: typeof level, reason: string) => {
+      const order = ["branca", "azul", "verde", "amarelo", "laranja", "vermelho"];
+      if (order.indexOf(l) > order.indexOf(level)) level = l;
+      reasons.push(reason);
+    };
+    const fc = Number(form.vital_signs.fc);
+    const fr = Number(form.vital_signs.fr);
+    const sis = Number(form.vital_signs.pa_systolic);
+    const spo2 = Number(form.vital_signs.spo2);
+    const tax = Number(form.vital_signs.tax);
+    const hgt = Number(form.vital_signs.hgt);
+
+    if (form.airway_obstruction) bump("vermelho", "Obstrução de vias aéreas");
+    if (form.airway_intubated) bump("vermelho", "Paciente intubado");
+    if (glasgowTotal <= 8) bump("vermelho", `Glasgow ≤ 8 (${glasgowTotal})`);
+    if (form.pulse_quality === "ausente") bump("vermelho", "Pulso ausente");
+    if (spo2 && spo2 < 85) bump("vermelho", `SpO₂ < 85% (${spo2}%)`);
+    if (sis && sis < 80) bump("vermelho", `PAS < 80 (${sis})`);
+
+    if (glasgowTotal >= 9 && glasgowTotal <= 12) bump("laranja", `Glasgow 9-12 (${glasgowTotal})`);
+    if (spo2 && spo2 >= 85 && spo2 < 90) bump("laranja", `SpO₂ 85-89% (${spo2}%)`);
+    if (sis && sis >= 80 && sis < 90) bump("laranja", `PAS 80-89 (${sis})`);
+    if (fc && (fc < 40 || fc > 140)) bump("laranja", `FC alterada (${fc})`);
+    if (fr && (fr < 8 || fr > 30)) bump("laranja", `FR alterada (${fr})`);
+    if (form.pain_scale >= 8) bump("laranja", `Dor severa (${form.pain_scale}/10)`);
+    if (form.pulse_quality === "fraco") bump("laranja", "Pulso fraco/filiforme");
+
+    if (spo2 && spo2 >= 90 && spo2 < 94) bump("amarelo", `SpO₂ 90-93% (${spo2}%)`);
+    if (tax && tax >= 39) bump("amarelo", `Hipertermia ≥ 39°C (${tax})`);
+    if (form.pain_scale >= 5 && form.pain_scale <= 7) bump("amarelo", `Dor moderada (${form.pain_scale}/10)`);
+    if (form.oxygen_therapy) bump("amarelo", "Em oxigenoterapia");
+    if (hgt && (hgt < 60 || hgt > 300)) bump("amarelo", `HGT alterado (${hgt})`);
+    if (form.peripheral_perfusion === "muito_lenta") bump("amarelo", "Perfusão muito lenta");
+
+    if (form.pain_scale >= 1 && form.pain_scale <= 4) bump("verde", `Dor leve (${form.pain_scale}/10)`);
+    if (form.flu_symptoms) bump("verde", "Sintomas gripais");
+
+    return { level, reasons };
+  })();
+
   const handleSave = async () => {
     if (!selected || !preAdmission) return;
 
@@ -566,7 +610,46 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
               </div>
             </div>
           ) : (
-            <div className="space-y-2 pb-4">
+            <div className="space-y-3 pb-4">
+              {(() => {
+                const sug = RISK_LEVELS.find(r => r.value === suggestion.level)!;
+                return (
+                  <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Info className="h-4 w-4 text-primary" />
+                        <span className="text-xs font-semibold uppercase tracking-wide text-primary">
+                          Sugestão do sistema
+                        </span>
+                        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded", sug.color.split(" ").filter(c => c.startsWith("bg-") || c.startsWith("text-")).join(" "))}>
+                          {sug.label}
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => setSelected(suggestion.level)}
+                        disabled={selected === suggestion.level}
+                      >
+                        {selected === suggestion.level ? "Aplicada" : "Aplicar sugestão"}
+                      </Button>
+                    </div>
+                    {suggestion.reasons.length > 0 ? (
+                      <ul className="text-[11px] text-muted-foreground space-y-0.5 pl-5 list-disc">
+                        {suggestion.reasons.slice(0, 5).map((r, i) => <li key={i}>{r}</li>)}
+                      </ul>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground pl-1">
+                        Sem critérios de gravidade detectados nos sinais avaliados.
+                      </p>
+                    )}
+                    <p className="text-[10px] text-muted-foreground italic pl-1">
+                      Sugestão não-vinculante. A decisão final é do profissional triador.
+                    </p>
+                  </div>
+                );
+              })()}
               {RISK_LEVELS.map(level => {
                 const Icon = level.icon;
                 const isSelected = selected === level.value;
