@@ -87,18 +87,19 @@ export function PendingApprovalScreen() {
             transition={{ delay: 0.2 }}
             className="text-center mb-8"
           >
-            <div className="flex items-center justify-center gap-1 mb-3">
-              <span className="text-4xl font-black bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                Hap
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <span className="text-4xl font-black bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent tracking-tight">
+                {whitelabel.platform.name}
               </span>
-              <span className="text-4xl font-light text-white">Map</span>
-              <span className="text-xs font-medium text-cyan-400 bg-cyan-400/20 px-2 py-0.5 rounded-full ml-2">
-                2.0
+              <span className="text-xs font-medium text-cyan-400 bg-cyan-400/20 px-2 py-0.5 rounded-full">
+                {whitelabel.platform.version}
               </span>
             </div>
             <p className="text-sm text-blue-200/80 italic">
-              Tecnologia que valoriza seu tempo.<br />
-              Inteligência que salva vidas.
+              {whitelabel.platform.slogan}
+            </p>
+            <p className="text-[11px] text-white/50 mt-2 uppercase tracking-wider">
+              {whitelabel.institution.hospitalShortName}
             </p>
           </motion.div>
 
