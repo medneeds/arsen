@@ -885,19 +885,24 @@ const RequisicaoUnificadaPage = () => {
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.group}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {group.items.map(item => {
-                      const selected = formSelectedItems.includes(item);
+                      const idx = formSelectedItems.indexOf(item);
+                      const selected = idx >= 0;
                       return (
                         <button
                           key={item}
                           onClick={() => toggleItem(item)}
                           className={cn(
-                            "px-3 py-1.5 rounded-lg text-xs border transition-all duration-150",
+                            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-all duration-150",
                             selected
                               ? "border-primary bg-primary/10 text-primary font-medium shadow-sm"
                               : "border-border bg-background text-foreground hover:bg-muted/50"
                           )}
                         >
-                          {selected && <span className="mr-1">✓</span>}
+                          {selected && (
+                            <span className="inline-flex items-center justify-center min-w-[18px] h-4 px-1 rounded bg-primary text-primary-foreground text-[10px] font-bold tabular-nums">
+                              {idx + 1}
+                            </span>
+                          )}
                           {item}
                         </button>
                       );
