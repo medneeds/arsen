@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, User, Volume2 } from "lucide-react";
+import { Clock, User, Volume2, VolumeX } from "lucide-react";
 import { whitelabel } from "@/config/whitelabel";
 import socorraoLogo from "@/assets/socorrao-logo.jpg";
 import socorraoCross from "@/assets/socorrao-cross-logo.png";
+import { Button } from "@/components/ui/button";
 
 interface QueuePatient {
   id: string;
