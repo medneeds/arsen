@@ -458,6 +458,13 @@ export default function NirDashboardPage() {
           </ScrollArea>
         </DialogContent>
       </Dialog>
+
+      {/* Detalhes do leito (linha do tempo + tempos do ciclo) */}
+      <BedDetailDialog
+        bed={selectedBed}
+        open={!!selectedBed}
+        onOpenChange={(o) => !o && setSelectedBed(null)}
+      />
     </div>
   );
 }
