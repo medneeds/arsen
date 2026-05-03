@@ -1245,6 +1245,7 @@ const CcihDashboardPage = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 
