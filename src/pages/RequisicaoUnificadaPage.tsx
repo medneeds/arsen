@@ -9,7 +9,7 @@ import { ptBR } from "date-fns/locale";
 import {
   TestTubes, ScanLine, UserCheck, Plus, Search, Clock, CheckCircle2,
   XCircle, FileText, AlertTriangle, Loader2, Send, Trash2,
-  ChevronDown, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
+  ChevronDown, ChevronUp, Filter, Eye, ClipboardList, Package, Zap, TrendingUp,
   CalendarIcon, Printer, RotateCcw, FileCheck, Microscope, Droplet, Syringe,
 } from "lucide-react";
 import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDialog";
