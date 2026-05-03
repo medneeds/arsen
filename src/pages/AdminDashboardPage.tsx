@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -45,6 +45,7 @@ import {
   Send,
   Clock,
   UserX,
+  FileUp,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MedicalRecordsList } from "@/components/MedicalRecordsList";
@@ -184,6 +185,52 @@ const AdminDashboardPage = () => {
     ni_arrival_circumstance: "",
   });
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isExtractingPis, setIsExtractingPis] = useState(false);
+  const pisInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePisImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo muito grande", { description: "Máximo 10MB" });
+      return;
+    }
+    setIsExtractingPis(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const base64 = btoa(binary);
+      const response = await supabase.functions.invoke("extract-patient-data", {
+        body: { imageBase64: base64, mimeType: file.type },
+      });
+      if (response.error) throw new Error(response.error.message);
+      const { data } = response.data;
+      if (data) {
+        setRegisterForm(prev => ({
+          ...prev,
+          full_name: (data.patient_name || prev.full_name).toUpperCase(),
+          mother_name: (data.mother_name || prev.mother_name).toUpperCase(),
+          birth_date: data.birth_date || prev.birth_date,
+          sex: data.sex || prev.sex,
+          cpf: data.cpf || prev.cpf,
+          cns: data.cns || prev.cns,
+          phone: data.phone || prev.phone,
+          address: (data.address || prev.address).toUpperCase(),
+          neighborhood: (data.neighborhood || prev.neighborhood).toUpperCase(),
+          city: (data.city || prev.city).toUpperCase(),
+        }));
+        toast.success("Dados importados do PIS", { description: "Revise os campos preenchidos pela IA" });
+      }
+    } catch (err: any) {
+      console.error("PIS import error:", err);
+      toast.error("Falha ao importar do PIS", { description: err.message || "Tente novamente ou preencha manualmente" });
+    } finally {
+      setIsExtractingPis(false);
+      if (pisInputRef.current) pisInputRef.current.value = "";
+    }
+  };
 
   const toggleUnidentified = (checked: boolean) => {
     setRegisterForm(prev => ({
@@ -1039,6 +1086,31 @@ const AdminDashboardPage = () => {
               Cadastre um novo paciente no sistema. O número do prontuário será gerado automaticamente.
             </DialogDescription>
           </DialogHeader>
+
+          {/* Botão discreto: importar do sistema legado PIS via IA */}
+          {!registerForm.is_unidentified && (
+            <div className="flex items-center justify-end">
+              <input
+                ref={pisInputRef}
+                type="file"
+                accept="application/pdf,image/*"
+                className="hidden"
+                onChange={handlePisImport}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => pisInputRef.current?.click()}
+                disabled={isExtractingPis}
+                className="h-7 px-2.5 text-[11px] gap-1.5 border-dashed text-muted-foreground hover:text-foreground"
+                title="Importar PDF do sistema PIS — IA preenche os campos automaticamente"
+              >
+                {isExtractingPis ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileUp className="h-3 w-3" />}
+                Importar do PIS
+              </Button>
+            </div>
+          )}
 
           {/* Detecção de duplicatas em tempo real (só quando NÃO é NI) */}
           {!registerForm.is_unidentified && (
