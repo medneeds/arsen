@@ -4197,6 +4197,7 @@ export type Database = {
         Returns: boolean
       }
       is_dev_user: { Args: { _user_id: string }; Returns: boolean }
+      is_gestor: { Args: { _user_id: string }; Returns: boolean }
       is_global_profile: {
         Args: { _access_profile: string; _app_role: string }
         Returns: boolean
