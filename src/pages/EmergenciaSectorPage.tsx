@@ -508,6 +508,7 @@ export default function EmergenciaSectorPage() {
     <MainLayout>
       <main className="container mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4">
         <BreadcrumbBar
+          variant="institutional"
           actions={
             <>
               <Select value={activeSector} onValueChange={handleSectorChange}>

@@ -1076,7 +1076,7 @@ const Index = () => {
           <main className="container mx-auto px-2 sm:px-4 py-3 sm:py-6 print:py-0 print:px-1 pt-[120px] sm:pt-[110px] print:pt-3">
             <div className="space-y-3 sm:space-y-4 print:space-y-1">
               {/* Unified breadcrumb bar */}
-              <BreadcrumbBar />
+              <BreadcrumbBar variant="institutional" />
 
 
               {/* Pre-admission section — filtra por setor ativo (exceto UE Vertical/Horizontal que mostram todos) */}
