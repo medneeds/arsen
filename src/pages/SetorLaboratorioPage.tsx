@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
 import { printRequisitionGuide } from "@/components/PrintableRequisitionGuide";
@@ -257,22 +258,26 @@ const SetorLaboratorioPage = () => {
   };
 
   return (
+    <>
+      <PlatformHeader
+        variant="institutional"
+        eyebrow="Diagnóstico · Laboratório"
+        title="Setor Laboratorial"
+        icon={TestTubes}
+        subtitle={<span className="truncate">Recepção e execução de exames laboratoriais</span>}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchRequests}
+            className="gap-2 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground"
+          >
+            <RefreshCw className="h-3.5 w-3.5" /> Atualizar
+          </Button>
+        }
+      />
+
     <div className="p-4 sm:p-6 space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
-            <TestTubes className="h-6 w-6 text-amber-600" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Setor Laboratorial</h1>
-            <p className="text-xs text-muted-foreground">Recepção e Execução de Exames Laboratoriais</p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" onClick={fetchRequests} className="gap-2">
-          <RefreshCw className="h-3.5 w-3.5" /> Atualizar
-        </Button>
-      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -654,6 +659,7 @@ const SetorLaboratorioPage = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 

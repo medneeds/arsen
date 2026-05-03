@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
@@ -362,22 +363,26 @@ const CcihDashboardPage = () => {
   const sectorsToShow = activeSector === "all" ? [...SECTORS] : [activeSector as typeof SECTORS[number]];
 
   return (
+    <>
+      <PlatformHeader
+        variant="institutional"
+        eyebrow="Vigilância · CCIH"
+        title="Painel CCIH"
+        icon={Microscope}
+        subtitle={<span className="truncate">Comissão de Controle de Infecção Hospitalar — gestão de culturas</span>}
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchData}
+            className="gap-2 h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground"
+          >
+            <RefreshCw className="h-3.5 w-3.5" /> Atualizar
+          </Button>
+        }
+      />
+
     <div className="p-4 sm:p-6 space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20">
-            <Microscope className="h-6 w-6 text-violet-600" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Painel CCIH</h1>
-            <p className="text-xs text-muted-foreground">Comissão de Controle de Infecção Hospitalar — gestão de culturas</p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" onClick={fetchData} className="gap-2">
-          <RefreshCw className="h-3.5 w-3.5" /> Atualizar
-        </Button>
-      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1240,6 +1245,7 @@ const CcihDashboardPage = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 

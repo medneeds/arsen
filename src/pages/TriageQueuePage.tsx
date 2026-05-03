@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -305,24 +306,34 @@ const TriageQueuePage = () => {
     <MainLayout>
       <div className="flex flex-col h-screen bg-background">
         {/* Header */}
-        <header className="flex items-center gap-3 px-4 py-3 border-b bg-card shrink-0">
-          <SidebarTrigger />
-          <div className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-bold text-foreground">Triagem & Classificação de Risco</h1>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <Badge variant="secondary" className="text-[10px]">
-              {waiting.length} fila · {preAdmissions.length} pré-admissões
-            </Badge>
-            <Button size="sm" onClick={() => setShowRegistration(true)} className="gap-1">
-              <UserPlus className="h-4 w-4" /> Cadastrar Paciente
-            </Button>
-            <Button variant="outline" size="sm" onClick={openTVScreen}>
-              <Monitor className="h-4 w-4 mr-1" /> Painel TV
-            </Button>
-          </div>
-        </header>
+        <PlatformHeader
+          variant="institutional"
+          eyebrow="Acolhimento · Triagem"
+          title="Triagem & Classificação de Risco"
+          icon={Users}
+          actions={
+            <>
+              <Badge variant="secondary" className="text-[10px] bg-white/15 text-primary-foreground border-white/20">
+                {waiting.length} fila · {preAdmissions.length} pré-admissões
+              </Badge>
+              <Button
+                size="sm"
+                onClick={() => setShowRegistration(true)}
+                className="gap-1 h-9 bg-white text-primary hover:bg-white/90"
+              >
+                <UserPlus className="h-4 w-4" /> Cadastrar Paciente
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openTVScreen}
+                className="h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground"
+              >
+                <Monitor className="h-4 w-4 mr-1" /> Painel TV
+              </Button>
+            </>
+          }
+        />
 
         <div className="flex-1 overflow-auto p-4">
           <div className="max-w-6xl mx-auto space-y-6">

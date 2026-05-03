@@ -140,7 +140,11 @@ export function NirNotificationCenter({ metrics }: Props) {
   return (
     <Popover open={autoOpen || undefined} onOpenChange={(o) => { if (!o) setAutoOpen(false); }}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="relative h-9 gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          className="relative h-9 gap-2 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground"
+        >
           <Bell className={cn("h-4 w-4", criticalCount > 0 && "text-red-500 animate-pulse")} />
           <span className="text-xs font-medium">Notificações</span>
           {total > 0 && (

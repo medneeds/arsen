@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -252,28 +253,27 @@ const ValidacaoFarmaceuticaPage = () => {
   const highAlertItems = activeItems.filter((i) => i.highAlert);
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-primary/10">
-            <ShieldCheck className="h-6 w-6 text-primary" />
+    <>
+      <PlatformHeader
+        variant="institutional"
+        eyebrow="Farmácia · Validação"
+        title="Validação Farmacêutica"
+        icon={ShieldCheck}
+        subtitle={<span className="truncate">Conferência e aprovação de prescrições</span>}
+        actions={
+          <div className="relative w-56 sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-foreground/70" />
+            <Input
+              placeholder="Buscar paciente ou medicamento..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-9 bg-white/15 border-white/25 text-primary-foreground placeholder:text-primary-foreground/60 focus-visible:ring-white/40"
+            />
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Validação Farmacêutica</h1>
-            <p className="text-sm text-muted-foreground">Conferência e aprovação de prescrições</p>
-          </div>
-        </div>
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar paciente ou medicamento..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-      </div>
+        }
+      />
+
+      <div className="space-y-4 p-4 md:p-6">
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -570,7 +570,8 @@ const ValidacaoFarmaceuticaPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </>
   );
 };
 
