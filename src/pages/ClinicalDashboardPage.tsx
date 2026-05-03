@@ -282,7 +282,8 @@ const ClinicalDashboardPage = () => {
               size="icon"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="h-8 w-8"
+              className="h-9 w-9 bg-white/95 text-foreground border-white/40 hover:bg-white hover:text-primary shadow-sm"
+              title="Atualizar"
             >
               <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
             </Button>
