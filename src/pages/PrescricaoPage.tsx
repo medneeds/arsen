@@ -3248,7 +3248,7 @@ const PrescricaoPage = () => {
 
   const itemsByCategory = useMemo(() => {
     const map: Record<PrescriptionCategory, PrescriptionItem[]> = {
-      nutrition: [], hydration: [], medication: [], antimicrobial: [],
+      nutrition: [], hydration: [], replacement: [], medication: [], antimicrobial: [],
       high_alert: [], inhalation: [], hemotherapy: [], care: [], nonstandard: [],
     };
     items.forEach(item => {
