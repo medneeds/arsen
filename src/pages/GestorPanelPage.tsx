@@ -15,8 +15,10 @@ import {
   Bed, Activity, AlertTriangle, Users, Clock,
   Pill, BarChart3, ArrowUpDown, HeartPulse,
   RefreshCw, Download, TrendingUp, FileText,
-  ShieldCheck, Loader2, LayoutGrid, Filter, Check,
+  ShieldCheck, Loader2, LayoutGrid, Filter, Check, Building2,
 } from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { GestorNotificationCenter } from "@/components/gestor/GestorNotificationCenter";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
