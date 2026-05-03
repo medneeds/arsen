@@ -256,8 +256,9 @@ export function AppSidebar({
   // 5. Inteligência e Farmácia (IA + suporte farmacêutico)
   const gestorMenu = [
     // ── Visão Geral ──
-    { title: "Início", icon: LayoutDashboard, link: "/", profiles: ["gestor"] },
+    { title: "Início", icon: LayoutDashboard, link: "/painel-gestor", profiles: ["gestor"] },
     { title: "Painel do Gestor", icon: BarChart3, link: "/painel-gestor", profiles: ["gestor"] },
+    { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: ["gestor"] },
 
     // ── Operação Clínica em tempo real ──
     {
