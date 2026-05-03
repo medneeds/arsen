@@ -93,6 +93,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const navigate = useNavigate();
   const { currentHospital } = useHospital();
   const [showFullId, setShowFullId] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const [hovering, setHovering] = useState(false);
+  const isExpanded = variant === "inline" || pinned || hovering;
 
   // Live patient data — sync sector, bed, allergies, medical responsibility, etc.
   const { patient: livePatient } = usePatientLive(patientProp?.id || null);
