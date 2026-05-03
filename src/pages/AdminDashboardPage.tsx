@@ -369,9 +369,9 @@ const AdminDashboardPage = () => {
         return;
       }
 
-      // Padronização AA-UUU-SSSSSS-DV: gera prontuário oficial e atualiza o cadastro
+      // Padronização AA-UUU-SSSSSS-DV: só gera automaticamente se NÃO foi informado manualmente (modo auto)
       let officialMr: string | null = (data as any).medical_record;
-      try {
+      if (!manualMr && mrMode === "auto") try {
         const { data: unit } = await supabase
           .from("hospital_units")
           .select("unit_code")
