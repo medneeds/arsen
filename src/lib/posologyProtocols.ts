@@ -77,8 +77,11 @@ const PROTOCOL_DB: Record<string, PosologyProtocol[]> = {
     { label: "Náusea", dose: "10 mg", route: "Intravenosa", posology: "8/8h", evidence: "Bula" },
   ],
   "omeprazol": [
-    { label: "Profilaxia úlcera de estresse", dose: "40 mg", route: "Intravenosa", posology: "1x/dia", evidence: "A" },
-    { label: "HDA — bolus", dose: "80 mg", route: "Intravenosa", posology: "Dose única", instructions: "Seguido de BIC 8 mg/h por 72h", evidence: "A" },
+    { label: "Profilaxia úlcera — IV", indication: "Profilaxia gastroprotetora em internado", dose: "40 mg", route: "Intravenosa", posology: "1x/dia", schedule: "08h", diluent: "AD", diluentVolume: "10 mL", infusionTime: "5", instructions: "Reconstituir FA com 10 mL de diluente próprio (AD). Bolus lento ou diluir em 100 mL SF e correr 20-30 min.", evidence: "A" },
+    { label: "Profilaxia úlcera — IV 12/12h", indication: "Pacientes em VM ou alto risco", dose: "40 mg", route: "Intravenosa", posology: "12/12h", schedule: "08h-20h", diluent: "AD", diluentVolume: "10 mL", infusionTime: "5", evidence: "A" },
+    { label: "HDA — ataque + BIC", indication: "Hemorragia digestiva alta varicosa/não", dose: "80 mg", route: "Intravenosa", posology: "Dose única", instructions: "Bolus 80 mg, seguir BIC 8 mg/h por 72h. Diluir 200 mg em 100 mL SF.", evidence: "A" },
+    { label: "Profilaxia — VO 20 mg", indication: "Paciente VO, baixo risco", dose: "20 mg", route: "Oral", posology: "1x/dia", schedule: "08h", instructions: "Em jejum, 30 min antes do café.", evidence: "A" },
+    { label: "DRGE/úlcera — VO 40 mg", indication: "Tratamento DRGE/úlcera péptica", dose: "40 mg", route: "Oral", posology: "1x/dia", schedule: "08h", instructions: "Em jejum, 30 min antes do café. Por 4-8 semanas.", evidence: "A" },
   ],
   "pantoprazol": [
     { label: "Profilaxia úlcera de estresse", dose: "40 mg", route: "Intravenosa", posology: "1x/dia", evidence: "A" },
