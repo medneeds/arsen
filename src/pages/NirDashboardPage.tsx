@@ -20,6 +20,8 @@ import { NirAnalyticsPanel } from "@/components/nir/NirAnalyticsPanel";
 import { NirDischargeForecast } from "@/components/nir/NirDischargeForecast";
 import { NirPdfExport } from "@/components/nir/NirPdfExport";
 import { useDischargePredictions } from "@/hooks/useDischargePredictions";
+import { BedDetailDialog } from "@/components/nir/BedDetailDialog";
+import { sectorLabelFromCode, HOSPITAL_SECTOR_GROUPS } from "@/lib/hospitalSectors";
 
 const NIR_MODULES = [
   { key: "regulacao_interna", label: "Regulação Interna", subtitle: "Transferências entre setores", icon: ArrowLeftRight, color: "text-blue-500", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/20" },
