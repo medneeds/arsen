@@ -138,7 +138,7 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar hospital..."
-                  className="w-full pl-9 pr-3 py-2 text-sm bg-muted/40 border border-border rounded-lg text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
+                  className="w-full pl-9 pr-3 py-2.5 sm:py-2 text-base sm:text-sm bg-muted/40 border border-border rounded-lg text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
                   autoFocus
                 />
               </div>
