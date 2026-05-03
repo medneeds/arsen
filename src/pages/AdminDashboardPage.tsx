@@ -329,30 +329,34 @@ const AdminDashboardPage = () => {
         finalName = `NÃO IDENTIFICADO (${niCode})`;
       }
 
+      const manualMr = registerForm.medical_record.trim() || null;
+      const insertPayload: any = {
+        full_name: finalName,
+        social_name: registerForm.social_name.trim() || null,
+        cpf: registerForm.cpf.replace(/\D/g, "") || null,
+        cns: registerForm.cns.replace(/\D/g, "") || null,
+        birth_date: registerForm.birth_date || null,
+        sex: registerForm.sex || null,
+        mother_name: registerForm.mother_name.trim() || null,
+        phone: registerForm.phone.trim() || null,
+        address: registerForm.address.trim() || null,
+        neighborhood: registerForm.neighborhood.trim() || null,
+        city: registerForm.city.trim() || null,
+        blood_type: registerForm.blood_type || null,
+        allergies: registerForm.allergies.trim() || null,
+        comorbidities: registerForm.comorbidities.trim() || null,
+        is_unidentified: registerForm.is_unidentified,
+        unidentified_code: niCode,
+        unidentified_features: niFeatures,
+        created_by: user?.id,
+        hospital_unit_id: selectedHospitalId,
+        state_id: stateId,
+      };
+      if (manualMr) insertPayload.medical_record = manualMr;
+
       const { data, error } = await supabase
         .from("patient_registry")
-        .insert({
-          full_name: finalName,
-          social_name: registerForm.social_name.trim() || null,
-          cpf: registerForm.cpf.replace(/\D/g, "") || null,
-          cns: registerForm.cns.replace(/\D/g, "") || null,
-          birth_date: registerForm.birth_date || null,
-          sex: registerForm.sex || null,
-          mother_name: registerForm.mother_name.trim() || null,
-          phone: registerForm.phone.trim() || null,
-          address: registerForm.address.trim() || null,
-          neighborhood: registerForm.neighborhood.trim() || null,
-          city: registerForm.city.trim() || null,
-          blood_type: registerForm.blood_type || null,
-          allergies: registerForm.allergies.trim() || null,
-          comorbidities: registerForm.comorbidities.trim() || null,
-          is_unidentified: registerForm.is_unidentified,
-          unidentified_code: niCode,
-          unidentified_features: niFeatures,
-          created_by: user?.id,
-          hospital_unit_id: selectedHospitalId,
-          state_id: stateId,
-        } as any)
+        .insert(insertPayload)
         .select()
         .single();
 
