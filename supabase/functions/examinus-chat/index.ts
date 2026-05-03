@@ -64,6 +64,22 @@ FORMATAÇÃO: Sem asteriscos, sem markdown. Títulos em CAIXA ALTA. Bullet point
 `
     : '';
 
+  const compactBlock = opts.compactMode
+    ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODO COMPACTO ATIVADO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+REGRA: Máxima densidade de informação. SEM redundância.
+• Use abreviações curtas sempre que possível (Hb, Ht, Leuco, Cr, Ur, K, Na, etc.)
+• NÃO use linhas em branco entre seções (compacte tudo)
+• NÃO repita o nome do exame se já estiver implícito
+• Para gaso/cultura: mesma linha do laboratorial quando viável, separados por ; (ponto e vírgula)
+• Mantenha LSI em linha única por exame de imagem
+• Remova qualquer texto explicativo ou contextual
+`
+    : '';
+
   return `EXAMINUS AI - EXTRATOR DE EXAMES MÉDICOS
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
