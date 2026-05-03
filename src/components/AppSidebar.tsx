@@ -757,7 +757,7 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/50 p-3 bg-muted/30 space-y-2">
-        <DevConsoleLink isCollapsed={isCollapsed} onNavigate={() => navigate("/dev-console")} />
+        {/* Dev Console agora é acessado via perfil "Desenvolvedor" (rota /dev-console) */}
         {/* Theme toggle */}
         <div className={cn(
           "flex items-center rounded-lg p-1.5 transition-all duration-200",

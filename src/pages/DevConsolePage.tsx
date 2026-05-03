@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Activity, Database, Users, AlertTriangle, Bot, Send, RefreshCw, ShieldAlert, Terminal, Sliders } from "lucide-react";
+import { Loader2, Activity, Database, Users, AlertTriangle, Bot, Send, RefreshCw, ShieldAlert, Terminal, Sliders, ListChecks } from "lucide-react";
 import { CustomizationTab } from "@/components/dev/CustomizationTab";
+import { PendenciesTab } from "@/components/dev/PendenciesTab";
 import { toast } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
@@ -76,8 +77,9 @@ export default function DevConsolePage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-6">
-        <Tabs defaultValue="health" className="space-y-4">
+        <Tabs defaultValue="pendencies" className="space-y-4">
           <TabsList>
+            <TabsTrigger value="pendencies" className="gap-1.5"><ListChecks className="h-4 w-4" /> Pendências</TabsTrigger>
             <TabsTrigger value="health" className="gap-1.5"><Activity className="h-4 w-4" /> Saúde</TabsTrigger>
             <TabsTrigger value="logs" className="gap-1.5"><Database className="h-4 w-4" /> Logs</TabsTrigger>
             <TabsTrigger value="ai" className="gap-1.5"><Bot className="h-4 w-4" /> Console IA</TabsTrigger>
@@ -85,6 +87,7 @@ export default function DevConsolePage() {
             <TabsTrigger value="customization" className="gap-1.5"><Sliders className="h-4 w-4" /> Personalização</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="pendencies"><PendenciesTab /></TabsContent>
           <TabsContent value="health"><HealthTab /></TabsContent>
           <TabsContent value="logs"><LogsTab /></TabsContent>
           <TabsContent value="ai"><AiTab /></TabsContent>

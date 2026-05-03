@@ -829,6 +829,51 @@ export type Database = {
         }
         Relationships: []
       }
+      dev_pendencies: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          notes: string | null
+          priority: string
+          resolved_at: string | null
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          resolved_at?: string | null
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dhd_patients: {
         Row: {
           created_at: string
