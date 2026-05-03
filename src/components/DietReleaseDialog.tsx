@@ -42,6 +42,7 @@ const RESTRICTIONS = [
 ];
 
 export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialogProps) {
+  const currentDoctor = useCurrentDoctor();
   const [dietRoute, setDietRoute] = useState<"oral" | "enteral">("oral");
   const [selectedDietType, setSelectedDietType] = useState<string>("");
   const [customDietType, setCustomDietType] = useState("");
@@ -51,6 +52,13 @@ export function DietReleaseDialog({ isOpen, onClose, patient }: DietReleaseDialo
   const [doctorName, setDoctorName] = useState("");
   const [crm, setCrm] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+
+  // Sincroniza com o profissional logado (médico prescritor)
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!doctorName && currentDoctor.fullName) setDoctorName(currentDoctor.fullName);
+    if (!crm && currentDoctor.crm) setCrm(currentDoctor.crm);
+  }, [isOpen, currentDoctor.fullName, currentDoctor.crm]);
 
   const formatDateInput = (value: string): string => {
     const numbers = value.replace(/\D/g, '');
