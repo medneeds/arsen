@@ -218,6 +218,10 @@ const TriageQueueTVPage = () => {
               Testar chamada
             </Button>
           )}
+          <Button size="lg" variant="outline" onClick={enterFullscreen} className="gap-2" title="Tela cheia (F11)">
+            <Maximize2 className="h-5 w-5" />
+            Tela cheia
+          </Button>
           <div className="text-right">
             <p className="text-4xl font-mono font-bold tabular-nums">
               {format(currentTime, "HH:mm:ss")}
