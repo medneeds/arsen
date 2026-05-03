@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Calendar, Building2, Flag, RefreshCw } from "lucide-react";
+import { Calendar, Building2, Flag, RefreshCw, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { NirFilters, NirPeriod, SectorScope } from "@/hooks/useNirMetrics";
 
 interface Props {
