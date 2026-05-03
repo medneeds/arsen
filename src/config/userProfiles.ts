@@ -41,7 +41,8 @@ export type AccessProfile =
   | "laboratorio"
   | "administrativo"
   | "multi"
-  | "classificacao_risco";
+  | "classificacao_risco"
+  | "desenvolvedor";
 
 /** Roles do sistema (enum app_role no Postgres). Controla RLS. */
 export interface RoleConfig {
