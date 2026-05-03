@@ -5256,7 +5256,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     <tr>
                       <td style={{ ...thStyle, width: '22px', textAlign: 'center', fontSize: '6pt' }}>Nº</td>
                       <td style={thStyle}>Descrição</td>
-                      <td style={{ ...thStyle, width: '140px', textAlign: 'center', fontSize: '6.5pt' }}>Aprazamento</td>
+                      <td style={{ ...thStyle, width: '230px', textAlign: 'center', fontSize: '6.5pt' }}>Aprazamento / Checagem</td>
                     </tr>
                   </thead>
                   <tbody>
