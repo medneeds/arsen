@@ -60,6 +60,8 @@ export function MainLayout({ children, onOpenHandover }: MainLayoutProps) {
         </div>
       </div>
 
+      <MobileMenuFab />
+
       <GlobalSearchDialog />
       <KeyboardShortcutsDialog open={showShortcuts} onOpenChange={setShowShortcuts} />
       <CultureNotifications />
