@@ -94,7 +94,7 @@ import { CareCatalogDialog } from "@/components/CareCatalogDialog";
 import { DoseCalculatorDialog, type DoseCalculatorResult } from "@/components/DoseCalculatorDialog";
 import { PreValidationAlertDialog } from "@/components/PreValidationAlertDialog";
 import { runClinicalAlertChecks, type ClinicalAlert } from "@/lib/clinicalAlertChecks";
-import { Star, Calculator } from "lucide-react";
+import { Star, Calculator, Sparkles } from "lucide-react";
 import { getProtocolsFor, type PosologyProtocol } from "@/lib/posologyProtocols";
 import { PosologySuggestionsBar } from "@/components/PosologySuggestionsBar";
 import { useMedicationProtocols } from "@/hooks/useMedicationProtocols";
