@@ -3964,21 +3964,97 @@ const PrescricaoPage = () => {
       {/* ===== UNIFIED PRESCRIPTION WORKBENCH (itens + histórico + busca) ===== */}
       <div className="rounded-xl border border-border bg-card overflow-visible print:hidden divide-y divide-border/40">
 
-        {/* Section 2 — Itens summary chips */}
+        {/* Section 2 — Itens summary chips (clicáveis: navegam até a categoria) */}
         {items.length > 0 && (
-          <div className="px-3 py-2 bg-muted/20">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-[10px] font-semibold text-muted-foreground tracking-wider">Itens:</span>
-              {TAB_ORDER.map(cat => {
+          <div className="sticky top-0 z-10 px-3 py-2 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b border-border/40">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase mr-1">Ir para:</span>
+              {/* Grupo 1: Suporte (dieta + hidratação) */}
+              {(['nutrition', 'hydration'] as PrescriptionCategory[]).map(cat => {
                 const count = itemsByCategory[cat].length;
                 if (count === 0) return null;
                 const config = CATEGORY_CONFIG[cat];
                 const validatedCount = itemsByCategory[cat].filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
+                const ok = validatedCount === count;
                 return (
-                  <div key={cat} className="flex items-center gap-1">
-                    <Circle className={cn("h-2 w-2 fill-current", validatedCount === count ? "text-emerald-500" : "text-amber-500")} />
-                    <span className="text-[10px] text-foreground font-medium">{count} {config.label.toLowerCase()}</span>
-                  </div>
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    className={cn(
+                      "group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm hover:-translate-y-px",
+                      ok
+                        ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
+                        : "border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300"
+                    )}
+                  >
+                    <Circle className={cn("h-1.5 w-1.5 fill-current", ok ? "text-emerald-500" : "text-amber-500")} />
+                    {config.label.toLowerCase()}
+                    <span className="ml-0.5 font-bold">{count}</span>
+                  </button>
+                );
+              })}
+              {/* Separador entre grupos */}
+              {(itemsByCategory.nutrition.length > 0 || itemsByCategory.hydration.length > 0) &&
+                (itemsByCategory.medication.length > 0 || itemsByCategory.antimicrobial.length > 0 || itemsByCategory.high_alert.length > 0) && (
+                <span className="w-px h-4 bg-border/60 mx-0.5" />
+              )}
+              {/* Grupo 2: Medicações (com ênfase em ATB e alto alerta) */}
+              {(['medication', 'antimicrobial', 'high_alert', 'inhalation', 'hemotherapy'] as PrescriptionCategory[]).map(cat => {
+                const count = itemsByCategory[cat].length;
+                if (count === 0) return null;
+                const config = CATEGORY_CONFIG[cat];
+                const validatedCount = itemsByCategory[cat].filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
+                const ok = validatedCount === count;
+                const emphasis = cat === 'antimicrobial' || cat === 'high_alert';
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    className={cn(
+                      "group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm hover:-translate-y-px",
+                      emphasis && cat === 'antimicrobial' && "ring-1 ring-blue-300/60",
+                      emphasis && cat === 'high_alert' && "ring-1 ring-red-300/70",
+                      ok
+                        ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
+                        : "border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300"
+                    )}
+                  >
+                    <Circle className={cn("h-1.5 w-1.5 fill-current", ok ? "text-emerald-500" : "text-amber-500")} />
+                    {config.label.toLowerCase()}
+                    <span className="ml-0.5 font-bold">{count}</span>
+                  </button>
+                );
+              })}
+              {/* Separador antes de cuidados */}
+              {(itemsByCategory.medication.length + itemsByCategory.antimicrobial.length + itemsByCategory.high_alert.length + itemsByCategory.inhalation.length + itemsByCategory.hemotherapy.length) > 0 &&
+                (itemsByCategory.care.length > 0 || itemsByCategory.nonstandard.length > 0) && (
+                <span className="w-px h-4 bg-border/60 mx-0.5" />
+              )}
+              {/* Grupo 3: Cuidados + não padrão */}
+              {(['care', 'nonstandard'] as PrescriptionCategory[]).map(cat => {
+                const count = itemsByCategory[cat].length;
+                if (count === 0) return null;
+                const config = CATEGORY_CONFIG[cat];
+                const validatedCount = itemsByCategory[cat].filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
+                const ok = validatedCount === count;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    className={cn(
+                      "group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm hover:-translate-y-px",
+                      ok
+                        ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
+                        : "border-amber-300 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300"
+                    )}
+                  >
+                    <Circle className={cn("h-1.5 w-1.5 fill-current", ok ? "text-emerald-500" : "text-amber-500")} />
+                    {config.label.toLowerCase()}
+                    <span className="ml-0.5 font-bold">{count}</span>
+                  </button>
                 );
               })}
               {!allItemsValidated && (
