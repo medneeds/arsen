@@ -928,19 +928,26 @@ const RequisicaoUnificadaPage = () => {
               {/* Selected items summary */}
               {formSelectedItems.length > 0 && (
                 <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
-                  <p className="text-[11px] font-semibold text-primary mb-2">Itens selecionados ({formSelectedItems.length})</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {formSelectedItems.map(item => (
-                      <Badge
-                        key={item}
-                        variant="outline"
-                        className="text-xs cursor-pointer hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive transition-colors"
-                        onClick={() => toggleItem(item)}
-                      >
-                        {item} ×
-                      </Badge>
+                  <p className="text-[11px] font-semibold text-primary mb-2">
+                    Itens solicitados ({formSelectedItems.length}) — a numeração reflete a ordem que sairá impressa
+                  </p>
+                  <ol className="flex flex-wrap gap-1.5 list-none">
+                    {formSelectedItems.map((item, idx) => (
+                      <li key={item}>
+                        <Badge
+                          variant="outline"
+                          className="text-xs cursor-pointer hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive transition-colors gap-1.5 pl-1"
+                          onClick={() => toggleItem(item)}
+                          title="Clique para remover"
+                        >
+                          <span className="inline-flex items-center justify-center min-w-[18px] h-4 px-1 rounded bg-primary text-primary-foreground text-[10px] font-bold tabular-nums">
+                            {idx + 1}
+                          </span>
+                          {item} ×
+                        </Badge>
+                      </li>
                     ))}
-                  </div>
+                  </ol>
                 </div>
               )}
             </CardContent>
