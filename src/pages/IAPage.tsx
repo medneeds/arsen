@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Sparkles, Loader2, Copy, Check, FileText, X } from "lucide-react";
+import { Send, Sparkles, Loader2, Copy, Check, FileText, X, SeparatorVertical, Clock, AlertTriangle, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import * as pdfjsLib from "pdfjs-dist";
 
 // Configurar worker do PDF.js
