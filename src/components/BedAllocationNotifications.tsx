@@ -26,6 +26,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useNotificationSound } from "@/hooks/useNotificationSound";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { SlaBadge } from "@/components/sla/SlaBadge";
 
 // Animation variants for staggered grid items
 const containerVariants = {
@@ -378,9 +379,12 @@ export function BedAllocationNotifications() {
                             )}
                           </div>
                         )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(request.created_at), "dd/MM HH:mm", { locale: ptBR })}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(request.created_at), "dd/MM HH:mm", { locale: ptBR })}
+                          </p>
+                          <SlaBadge startAt={request.created_at} thresholds={[60, 120, 180]} compact />
+                        </div>
                       </div>
                       <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 shrink-0">
                         Pendente
@@ -417,9 +421,12 @@ export function BedAllocationNotifications() {
                             )}
                           </div>
                         )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(request.created_at), "dd/MM HH:mm", { locale: ptBR })}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(request.created_at), "dd/MM HH:mm", { locale: ptBR })}
+                          </p>
+                          <SlaBadge startAt={request.created_at} thresholds={[60, 120, 180]} compact />
+                        </div>
                       </div>
                       <Badge className="bg-blue-500/20 text-blue-500 border-blue-500/30 shrink-0">
                         Em Discussão
