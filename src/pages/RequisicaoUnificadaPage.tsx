@@ -117,7 +117,7 @@ const CATEGORIES = {
       { group: "Gasometria", items: ["Gasometria Arterial", "Gasometria Venosa", "Lactato"] },
       { group: "Marcadores", items: ["Troponina", "BNP/NT-proBNP", "Procalcitonina", "DHL"] },
       { group: "Urina", items: ["EAS/Urina Tipo I", "Urocultura", "Creatinina Urinária"] },
-      { group: "Culturas", items: ["Hemocultura (2 pares)", "Urocultura", "Cultura de Secreção"] },
+      // Culturas saem das requisições comuns — usar a aba "Especiais → Cultura".
       { group: "Hormônios", items: ["TSH", "T4 Livre", "Cortisol"] },
     ],
   },
