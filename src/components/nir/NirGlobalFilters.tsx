@@ -25,11 +25,11 @@ const SCOPES: { key: SectorScope; label: string }[] = [
   { key: "emergencia", label: "Emergência" },
 ];
 
-const PRIORITIES: { key: NirFilters["priority"]; label: string; tone: string }[] = [
-  { key: "all", label: "Todas", tone: "" },
-  { key: "vermelha", label: "Vermelha", tone: "text-red-600" },
-  { key: "amarela", label: "Amarela", tone: "text-amber-600" },
-  { key: "verde", label: "Verde", tone: "text-emerald-600" },
+const PRIORITIES: { key: NirFilters["priority"]; label: string; tone: string; hint: string }[] = [
+  { key: "all", label: "Todas", tone: "", hint: "Sem filtro de prioridade" },
+  { key: "vermelha", label: "P1 · Vermelha", tone: "text-red-600", hint: "Emergente — vaga imediata (UTI, Sala Vermelha, instabilidade hemodinâmica)" },
+  { key: "amarela", label: "P2 · Amarela", tone: "text-amber-600", hint: "Urgente — vaga em até 4h (semi-eletivo, agravamento previsível)" },
+  { key: "verde", label: "P3 · Verde", tone: "text-emerald-600", hint: "Eletiva / agendável (transferência de conforto, alta administrativa)" },
 ];
 
 export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading }: Props) {
