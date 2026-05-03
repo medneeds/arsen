@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Send, Sparkles, Loader2, Copy, Check, FileText, X, SeparatorVertical, Clock, AlertTriangle, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -16,6 +18,8 @@ interface Message {
 }
 
 export default function IAPage() {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -265,8 +269,21 @@ export default function IAPage() {
     streamChat(userMessage, selectedFile || undefined);
   };
 
+  const handleClose = (next: boolean) => {
+    setOpen(next);
+    if (!next) {
+      // Volta para a tela anterior; se não houver, vai para a Home
+      if (window.history.length > 1) navigate(-1);
+      else navigate("/");
+    }
+  };
+
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col bg-background">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent
+        className="p-0 gap-0 max-w-4xl w-[92vw] h-[88vh] sm:h-[85vh] flex flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
       {/* Header */}
       <div className="border-b bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 backdrop-blur-sm">
         <div className="px-3 py-2">
@@ -556,7 +573,8 @@ export default function IAPage() {
             </p>
           </form>
         </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
