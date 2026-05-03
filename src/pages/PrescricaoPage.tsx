@@ -4134,6 +4134,27 @@ const PrescricaoPage = () => {
                     </div>
                   </div>
 
+                  {/* Nutrition Wizard launcher — only for 'nutrition' category */}
+                  {cat === 'nutrition' && (
+                    <div className="border-b border-border/50 bg-emerald-50/40 dark:bg-emerald-950/20 px-3 py-2 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-200">Assistente de Terapia Nutricional</p>
+                          <p className="text-[10px] text-muted-foreground">Fluxo guiado: zero · oral · enteral · parenteral + comorbidades</p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-[11px] border-emerald-400 text-emerald-700 hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-900/40 shrink-0"
+                        onClick={() => setNutritionWizardOpen(true)}
+                      >
+                        <Zap className="h-3 w-3 mr-1" /> Abrir assistente
+                      </Button>
+                    </div>
+                  )}
+
                   {/* Care Profiles Panel — only for 'care' category */}
                   {cat === 'care' && (
                     <div className="border-b border-border/50 bg-muted/20 p-3 space-y-3">
