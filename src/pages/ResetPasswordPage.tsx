@@ -94,12 +94,12 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-10">
+    <div className="min-h-screen flex items-start sm:items-center justify-center bg-background px-4 pt-6 pb-10 sm:py-10">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-md bg-card border border-border/70 rounded-2xl p-6 shadow-xl"
+        className="w-full max-w-md bg-card border border-border/70 rounded-2xl p-5 sm:p-6 shadow-xl"
       >
         <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
           <KeyRound className="h-6 w-6 text-primary" />
