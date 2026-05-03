@@ -140,7 +140,7 @@ export function CultureRequestDialog({
         patient_cpf: registry?.cpf || null,
         patient_cns: registry?.cns || null,
         patient_record: registry?.medical_record || p.medical_record || null,
-        patient_sector: p.sector || d.patient_sector,
+        patient_sector: (p.sector ? (SECTOR_DISPLAY[p.sector] || p.sector) : d.patient_sector),
         patient_bed: p.bed_number || d.patient_bed,
         mother_name: registry?.mother_name || null,
       }));
