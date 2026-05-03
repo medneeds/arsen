@@ -31,15 +31,12 @@ import {
 
 /* ───────────────────────── Tipos & catálogos ───────────────────────── */
 
-export type SectorKey =
-  // Pronto Socorro
-  | "sala_vermelha" | "sala_laranja" | "sala_decisao" | "retaguarda_ps1" | "retaguarda_ps2" | "corredor_ps"
-  // Centro Cirúrgico
-  | "cc_preparo" | "cc_bloco" | "cc_srpa"
-  // UTI
-  | "uti_1" | "uti_2"
-  // Clínicas
-  | "clinica_cirurgica" | "neurocirurgia" | "cardiologia" | "uci" | "pediatria";
+/**
+ * Código de setor do hospital — mantém sincronia com `DepartmentContext`
+ * e `lib/hospitalSectors`. Aceita string para compatibilidade com novos
+ * setores adicionados ao catálogo institucional.
+ */
+export type SectorKey = string;
 
 export type ComponentKey = "hemacias" | "plaquetas" | "plasma" | "crio";
 export type TransfusionType = "programada" | "rotina" | "urgencia" | "emergencia";
