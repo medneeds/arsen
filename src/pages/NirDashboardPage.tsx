@@ -345,7 +345,7 @@ export default function NirDashboardPage() {
                 return (
                   <div key={s.sector} className="rounded-lg border p-2.5">
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-medium truncate capitalize">{s.sector}</span>
+                      <span className="text-xs font-medium truncate">{sectorLabelFromCode(s.sector)}</span>
                       <span className={cn("text-xs font-bold", colorText)}>{s.rate}%</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-muted overflow-hidden">
