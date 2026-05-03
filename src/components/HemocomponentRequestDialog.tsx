@@ -144,7 +144,7 @@ export function HemocomponentRequestDialog({
         patient_sex: registry?.sex || null,
         patient_blood_group: registry?.blood_type || null,
         patient_record: registry?.medical_record || p.medical_record || null,
-        patient_unit: p.sector || d.patient_unit,
+        patient_unit: (p.sector ? (SECTOR_DISPLAY[p.sector] || p.sector) : d.patient_unit),
         patient_bed: p.bed_number || d.patient_bed,
         patient_diagnosis: p.diagnoses || null,
       }));
