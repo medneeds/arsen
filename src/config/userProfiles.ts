@@ -18,6 +18,7 @@ import {
   Users as UsersIcon,
   Building2,
   Eye,
+  Terminal,
   type LucideIcon,
 } from "lucide-react";
 import type { Department } from "@/contexts/DepartmentContext";
