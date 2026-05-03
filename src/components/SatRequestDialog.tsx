@@ -312,7 +312,7 @@ export function SatRequestDialog({
           <CollapsibleInfoCard
             title="Identificação do paciente"
             summary={patientName || "—"}
-            badge={[patientSector, patientBed].filter(Boolean).join(" · ") || undefined}
+            badge={[sectorLabel, patientBed].filter(Boolean).join(" · ") || undefined}
           >
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="md:col-span-2">
