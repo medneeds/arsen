@@ -106,6 +106,7 @@ export function SatRequestDialog({
 }: Props) {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
+  const sectorLabel = patientSector ? (SECTOR_DISPLAY[patientSector] || patientSector) : "";
 
   const [wound, setWound] = useState<WoundClass>("outras");
   const [vac, setVac] = useState<VaccinationStatus>("incompleta_ou_desconhecida");
