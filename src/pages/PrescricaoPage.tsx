@@ -993,7 +993,7 @@ function FlagToggle({ flag, active, onToggle }: {
 }
 
 // --- Sortable Prescription Item Row ---
-function SortablePrescriptionItemRow({
+const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItemRow({
   item,
   index,
   onUpdate,
@@ -1608,7 +1608,7 @@ function SortablePrescriptionItemRow({
       </div>
     </div>
   );
-}
+});
 
 // --- Suspension Dialog ---
 function SuspensionDialog({
