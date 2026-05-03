@@ -320,6 +320,7 @@ export default function NirDashboardPage() {
           <NirNotificationCenter metrics={metrics} />
           <NirPdfExport metrics={metrics} predictions={predictions} />
         </div>
+      </div>
 
       {/* Filtros globais */}
       <NirGlobalFilters filters={filters} onChange={setFilters} onRefresh={refetch} isLoading={isLoading} />
