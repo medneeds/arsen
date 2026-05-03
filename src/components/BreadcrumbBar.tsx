@@ -25,6 +25,8 @@ interface BreadcrumbBarProps {
   moduleLabel?: string;
   /** Right-side action slot */
   actions?: ReactNode;
+  /** Visual variant: 'default' (light card) or 'institutional' (blue gradient border, sticky wide). */
+  variant?: "default" | "institutional";
   /** Additional className for the wrapper */
   className?: string;
 }
@@ -32,8 +34,6 @@ interface BreadcrumbBarProps {
 /**
  * Unified clinical breadcrumb bar.
  * Pattern: [SidebarTrigger] [Back] [Hospital] ▸ [Sector ▼] ▸ [NavTabs / Patient / Modules]   [Actions]
- *
- * Light, body-aligned design — replaces the previous dark headers.
  */
 export function BreadcrumbBar({
   showSector = true,
@@ -43,19 +43,35 @@ export function BreadcrumbBar({
   showBack = false,
   moduleLabel,
   actions,
+  variant = "default",
   className,
 }: BreadcrumbBarProps) {
   const navigate = useNavigate();
+  const isInstitutional = variant === "institutional";
 
   return (
     <nav
       aria-label="Hierarquia do setor"
       className={cn(
-        "print:hidden flex items-center justify-between gap-2 flex-wrap",
-        "rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm",
-        "px-2 sm:px-3 py-1.5 shadow-sm",
+        "print:hidden flex items-center justify-between gap-2 flex-wrap px-2 sm:px-3 py-1.5 shadow-sm",
+        isInstitutional
+          ? "rounded-xl border border-transparent bg-card/80 backdrop-blur-sm relative"
+          : "rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm",
         className,
       )}
+      style={
+        isInstitutional
+          ? {
+              backgroundImage:
+                "linear-gradient(hsl(var(--card)), hsl(var(--card))), linear-gradient(110deg, hsl(var(--primary)) 0%, hsl(210 70% 22%) 55%, hsl(210 75% 18%) 100%)",
+              backgroundOrigin: "border-box",
+              backgroundClip: "padding-box, border-box",
+              borderWidth: "1.5px",
+              borderStyle: "solid",
+              borderColor: "transparent",
+            }
+          : undefined
+      }
     >
       <div className="flex items-center flex-wrap gap-x-2 gap-y-1.5 text-[11px] sm:text-xs font-medium tracking-wide min-w-0">
         <SidebarTrigger className="flex-shrink-0 h-9 w-9 sm:h-7 sm:w-7" />
