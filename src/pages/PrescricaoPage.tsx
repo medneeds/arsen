@@ -3864,7 +3864,11 @@ const PrescricaoPage = () => {
                   <button
                     key={cat}
                     type="button"
-                    onClick={() => document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    title={cat === 'nutrition' ? 'Abrir assistente de nutrição' : undefined}
+                    onClick={() => {
+                      document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      if (cat === 'nutrition') setNutritionWizardOpen(true);
+                    }}
                     className={cn(
                       "group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm hover:-translate-y-px",
                       ok
@@ -3875,6 +3879,7 @@ const PrescricaoPage = () => {
                     <Circle className={cn("h-1.5 w-1.5 fill-current", ok ? "text-emerald-500" : "text-amber-500")} />
                     {config.label.toLowerCase()}
                     <span className="ml-0.5 font-bold">{count}</span>
+                    {cat === 'nutrition' && <Sparkles className="h-2.5 w-2.5 ml-0.5 opacity-70" />}
                   </button>
                 );
               })}
