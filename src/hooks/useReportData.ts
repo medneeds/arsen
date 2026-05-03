@@ -739,6 +739,192 @@ async function executeQuery(
       };
     }
 
+    case 'gestao_occupancy_by_sector': {
+      const { data } = await supabase.from('bed_census')
+        .select('sector, status')
+        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId);
+      const bySector: Record<string, Record<string, number>> = {};
+      (data || []).forEach(r => {
+        if (!bySector[r.sector]) bySector[r.sector] = { total: 0, ocupado: 0, vago: 0, bloqueado: 0, reservado: 0, outros: 0 };
+        bySector[r.sector].total++;
+        const k = ['ocupado', 'vago', 'bloqueado', 'reservado'].includes(r.status) ? r.status : 'outros';
+        bySector[r.sector][k]++;
+      });
+      return {
+        columns: ['Setor', 'Total', 'Ocupados', 'Vagos', 'Bloqueados', 'Reservados', 'Ocupação %'],
+        rows: Object.entries(bySector).sort().map(([s, v]) => ({
+          'Setor': s, 'Total': v.total,
+          'Ocupados': v.ocupado, 'Vagos': v.vago,
+          'Bloqueados': v.bloqueado, 'Reservados': v.reservado,
+          'Ocupação %': ((v.ocupado / Math.max(v.total, 1)) * 100).toFixed(1) + '%',
+        })),
+        summary: { Setores: Object.keys(bySector).length, 'Total leitos': (data || []).length },
+      };
+    }
+
+    case 'gestao_stay_by_sector': {
+      const { data } = await supabase.from('patient_encounters')
+        .select('destination_sector, created_at, outcome_date, outcome')
+        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
+        .gte('created_at', startFull).lte('created_at', endFull)
+        .not('outcome_date', 'is', null);
+      const bySector: Record<string, number[]> = {};
+      (data || []).forEach(r => {
+        const sec = r.destination_sector || 'Não definido';
+        const mins = (new Date((r as any).outcome_date).getTime() - new Date(r.created_at).getTime()) / 60000;
+        if (!bySector[sec]) bySector[sec] = [];
+        bySector[sec].push(mins);
+      });
+      return {
+        columns: ['Setor', 'Qtd', 'LOS Médio (h)', 'LOS Mínimo (h)', 'LOS Máximo (h)'],
+        rows: Object.entries(bySector).map(([s, t]) => ({
+          'Setor': s, 'Qtd': t.length,
+          'LOS Médio (h)': (t.reduce((a, b) => a + b, 0) / t.length / 60).toFixed(1),
+          'LOS Mínimo (h)': (Math.min(...t) / 60).toFixed(1),
+          'LOS Máximo (h)': (Math.max(...t) / 60).toFixed(1),
+        })),
+      };
+    }
+
+    case 'gestao_discharge_death_rate': {
+      const { data } = await supabase.from('patient_encounters')
+        .select('outcome')
+        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
+        .gte('created_at', startFull).lte('created_at', endFull)
+        .not('outcome', 'is', null);
+      const counts: Record<string, number> = {};
+      (data || []).forEach(r => {
+        const o = (r as any).outcome || 'Sem desfecho';
+        counts[o] = (counts[o] || 0) + 1;
+      });
+      const total = (data || []).length || 1;
+      const labelMap: Record<string, string> = {
+        alta: 'Alta', obito: 'Óbito', evasao: 'Evasão',
+        internacao: 'Internação', transferencia: 'Transferência', desistencia: 'Desistência',
+      };
+      return {
+        columns: ['Desfecho', 'Quantidade', 'Taxa %'],
+        rows: Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([o, n]) => ({
+          'Desfecho': labelMap[o] || o,
+          'Quantidade': n,
+          'Taxa %': ((n / total) * 100).toFixed(2) + '%',
+        })),
+        summary: {
+          Total: total,
+          'Taxa Óbito': (((counts.obito || 0) / total) * 100).toFixed(2) + '%',
+          'Taxa Alta': (((counts.alta || 0) / total) * 100).toFixed(2) + '%',
+        },
+      };
+    }
+
+    case 'gestao_production_per_doctor': {
+      const { data: enc } = await supabase.from('patient_encounters')
+        .select('attending_doctor_name, outcome')
+        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
+        .gte('created_at', startFull).lte('created_at', endFull)
+        .not('attending_doctor_name', 'is', null);
+      const { data: evo } = await supabase.from('clinical_evolutions')
+        .select('created_by_name')
+        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
+        .gte('created_at', startFull).lte('created_at', endFull);
+      const byDoc: Record<string, { atendimentos: number; evolucoes: number; altas: number; obitos: number }> = {};
+      (enc || []).forEach(r => {
+        const d = (r as any).attending_doctor_name || 'Não informado';
+        if (!byDoc[d]) byDoc[d] = { atendimentos: 0, evolucoes: 0, altas: 0, obitos: 0 };
+        byDoc[d].atendimentos++;
+        if ((r as any).outcome === 'alta') byDoc[d].altas++;
+        if ((r as any).outcome === 'obito') byDoc[d].obitos++;
+      });
+      (evo || []).forEach(r => {
+        const d = r.created_by_name || 'Não informado';
+        if (!byDoc[d]) byDoc[d] = { atendimentos: 0, evolucoes: 0, altas: 0, obitos: 0 };
+        byDoc[d].evolucoes++;
+      });
+      return {
+        columns: ['Médico', 'Atendimentos', 'Evoluções', 'Altas', 'Óbitos'],
+        rows: Object.entries(byDoc).sort((a, b) => b[1].atendimentos - a[1].atendimentos).map(([d, v]) => ({
+          'Médico': d, 'Atendimentos': v.atendimentos, 'Evoluções': v.evolucoes,
+          'Altas': v.altas, 'Óbitos': v.obitos,
+        })),
+        summary: { Médicos: Object.keys(byDoc).length },
+      };
+    }
+
+    case 'gestao_nir_queue': {
+      const { data } = await supabase.from('bed_allocation_requests')
+        .select('*')
+        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
+        .gte('created_at', startFull).lte('created_at', endFull)
+        .order('created_at', { ascending: false });
+      const SLA_MIN = 120;
+      const rows = (data || []).map(r => {
+        const ageMin = (Date.now() - new Date(r.created_at).getTime()) / 60000;
+        const slaOk = ageMin <= SLA_MIN;
+        return {
+          'Status': r.status,
+          'Setor Solicitado': r.requested_sector,
+          'Leito': r.requested_bed || '-',
+          'Médico': r.requesting_doctor_name || '-',
+          'Aberta em': formatDate(r.created_at),
+          'Idade (h)': (ageMin / 60).toFixed(1),
+          'SLA (≤2h)': slaOk ? '✅' : '❌',
+        };
+      });
+      const counts: Record<string, number> = {};
+      (data || []).forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1; });
+      return {
+        columns: ['Status', 'Setor Solicitado', 'Leito', 'Médico', 'Aberta em', 'Idade (h)', 'SLA (≤2h)'],
+        rows,
+        summary: { Total: (data || []).length, ...counts },
+      };
+    }
+
+    case 'gestao_triage_sla': {
+      const { data } = await supabase.from('pre_admissions')
+        .select('patient_name, created_at, risk_classified_at, risk_classification')
+        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
+        .gte('created_at', startFull).lte('created_at', endFull);
+      const SLA_BY_COLOR: Record<string, number> = {
+        vermelho: 0, laranja: 10, amarelo: 60, verde: 120, azul: 240,
+      };
+      let dentro = 0, fora = 0, semClass = 0;
+      const rows = (data || []).map(r => {
+        if (!r.risk_classified_at) {
+          semClass++;
+          return {
+            'Paciente': r.patient_name,
+            'Classificação': '-',
+            'Tempo (min)': '-',
+            'SLA (min)': '-',
+            'Status': 'Sem classificação',
+          };
+        }
+        const mins = (new Date(r.risk_classified_at).getTime() - new Date(r.created_at).getTime()) / 60000;
+        const sla = SLA_BY_COLOR[r.risk_classification || ''] ?? 60;
+        const ok = mins <= sla;
+        if (ok) dentro++; else fora++;
+        return {
+          'Paciente': r.patient_name,
+          'Classificação': r.risk_classification || '-',
+          'Tempo (min)': mins.toFixed(1),
+          'SLA (min)': sla,
+          'Status': ok ? '✅ Dentro' : '❌ Fora',
+        };
+      });
+      const total = dentro + fora || 1;
+      return {
+        columns: ['Paciente', 'Classificação', 'Tempo (min)', 'SLA (min)', 'Status'],
+        rows,
+        summary: {
+          Total: (data || []).length,
+          'Dentro do SLA': dentro,
+          'Fora do SLA': fora,
+          'Sem classificação': semClass,
+          Aderência: ((dentro / total) * 100).toFixed(1) + '%',
+        },
+      };
+    }
+
     default:
       return { columns: ['Info'], rows: [{ Info: 'Relatório em desenvolvimento' }] };
   }
