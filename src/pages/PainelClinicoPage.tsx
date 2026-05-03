@@ -453,8 +453,10 @@ const MOCK_REQUISITIONS: Record<string, Array<{ date: string; category: string; 
 };
 
 export default function PainelClinicoPage() {
-  const { currentDepartment } = useDepartment();
-  const { patients: dbPatients, isLoading, updatePatient } = usePatients(currentDepartment);
+  const { currentDepartment, currentSectorCode } = useDepartment();
+  const scopedDepartment = currentSectorCode ? undefined : currentDepartment;
+  const scopedSector = currentSectorCode || undefined;
+  const { patients: dbPatients, isLoading, updatePatient } = usePatients(scopedDepartment, scopedSector);
   const navigate = useNavigate();
 
   // Gestor não acessa o Painel Clínico — redireciona para o Mapa de Leitos
@@ -493,9 +495,8 @@ export default function PainelClinicoPage() {
     fetchSaps();
   }, []);
 
-  // Use DB patients if available (occupied ones), otherwise fallback to mock for demo
-  const occupiedDbPatients = dbPatients.filter(p => !p.isVacant && p.name && p.name.trim() !== "");
-  const patients = occupiedDbPatients.length > 0 ? dbPatients : ALL_MOCK_PATIENTS;
+  // Painel clínico deve refletir exclusivamente o banco sincronizado com o mapa de leitos.
+  const patients = dbPatients;
 
   // Filter out vacant beds and apply search/sector filter
   const filteredPatients = useMemo(() => {
