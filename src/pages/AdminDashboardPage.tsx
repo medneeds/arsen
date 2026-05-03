@@ -1087,6 +1087,31 @@ const AdminDashboardPage = () => {
             </DialogDescription>
           </DialogHeader>
 
+          {/* Botão discreto: importar do sistema legado PIS via IA */}
+          {!registerForm.is_unidentified && (
+            <div className="flex items-center justify-end">
+              <input
+                ref={pisInputRef}
+                type="file"
+                accept="application/pdf,image/*"
+                className="hidden"
+                onChange={handlePisImport}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => pisInputRef.current?.click()}
+                disabled={isExtractingPis}
+                className="h-7 px-2.5 text-[11px] gap-1.5 border-dashed text-muted-foreground hover:text-foreground"
+                title="Importar PDF do sistema PIS — IA preenche os campos automaticamente"
+              >
+                {isExtractingPis ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileUp className="h-3 w-3" />}
+                Importar do PIS
+              </Button>
+            </div>
+          )}
+
           {/* Detecção de duplicatas em tempo real (só quando NÃO é NI) */}
           {!registerForm.is_unidentified && (
             <DuplicatePatientWarning
