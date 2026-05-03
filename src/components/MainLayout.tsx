@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect } from "react";
 import { whitelabel } from "@/config/whitelabel";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { useUserPresence } from "@/hooks/useUserPresence";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
