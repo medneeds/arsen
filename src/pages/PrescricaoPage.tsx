@@ -1875,19 +1875,16 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
           </div>
         )}
       </td>
-      {/* Aprazamento */}
-      <td style={{ 
-        borderBottom: '0.5px solid #e2e8f0',
-        textAlign: 'center', verticalAlign: 'middle',
-        fontSize: '7pt', fontWeight: 700, fontFamily: 'monospace',
-        color: '#0c4a6e', padding: '2px 4px', backgroundColor: rowBg,
-        whiteSpace: 'nowrap', letterSpacing: '0.5px',
+      {/* Aprazamento manual — preenchido pela enfermagem */}
+      <td style={{
+        width: '220px',
+        borderBottom: '0.5px solid #e2e8f0', borderRight: '0.5px solid #e2e8f0',
+        verticalAlign: 'top', backgroundColor: '#fff', padding: '4px 6px',
       }}>
-        {slots.length > 0 ? slots.join('  ') : '—'}
-      </td>
-      {/* Checagem enfermagem */}
-      <td style={{ width: '28px', borderBottom: '0.5px solid #e2e8f0', borderRight: '0.5px solid #e2e8f0', textAlign: 'center', verticalAlign: 'middle', backgroundColor: rowBg }}>
-        <div style={{ width: '12px', height: '12px', border: '1.5px solid #94a3b8', borderRadius: '3px', margin: '0 auto' }} />
+        <div style={{ minHeight: '36px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '4px' }}>
+          <div style={{ borderBottom: '1px dotted #94a3b8', height: '13px' }} />
+          <div style={{ borderBottom: '1px dotted #94a3b8', height: '13px' }} />
+        </div>
       </td>
     </tr>
   );
@@ -5236,8 +5233,12 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   </div>
                 )}
               </td>
-              <td style={{ ...cellStyle, width: '140px', textAlign: 'center', verticalAlign: 'middle', fontFamily: 'monospace', fontSize: '7.5pt', fontWeight: 800, color: '#0c4a6e', backgroundColor: rowBg, whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>
-                {slots.length > 0 ? slots.join('  ') : '—'}
+              <td style={{ ...cellStyle, width: '230px', textAlign: 'left', verticalAlign: 'top', backgroundColor: '#fff', padding: '4px 6px' }}>
+                {/* Coluna de aprazamento manual — preenchida pela enfermagem */}
+                <div style={{ minHeight: '38px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '4px' }}>
+                  <div style={{ borderBottom: '1px dotted #94a3b8', height: '14px' }} />
+                  <div style={{ borderBottom: '1px dotted #94a3b8', height: '14px' }} />
+                </div>
               </td>
             </tr>
           );
@@ -5252,7 +5253,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     <tr>
                       <td style={{ ...thStyle, width: '22px', textAlign: 'center', fontSize: '6pt' }}>Nº</td>
                       <td style={thStyle}>Descrição</td>
-                      <td style={{ ...thStyle, width: '140px', textAlign: 'center', fontSize: '6.5pt' }}>Aprazamento</td>
+                      <td style={{ ...thStyle, width: '230px', textAlign: 'center', fontSize: '6.5pt' }}>Aprazamento / Checagem</td>
                     </tr>
                   </thead>
                   <tbody>

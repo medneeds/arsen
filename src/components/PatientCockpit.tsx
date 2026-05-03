@@ -93,6 +93,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const navigate = useNavigate();
   const { currentHospital } = useHospital();
   const [showFullId, setShowFullId] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const [hovering, setHovering] = useState(false);
+  const isExpanded = variant === "inline" || pinned || hovering;
 
   // Live patient data — sync sector, bed, allergies, medical responsibility, etc.
   const { patient: livePatient } = usePatientLive(patientProp?.id || null);
@@ -195,13 +198,60 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   return (
     <TooltipProvider delayDuration={300}>
       <aside
+        onMouseEnter={() => variant === "fixed" && setHovering(true)}
+        onMouseLeave={() => variant === "fixed" && setHovering(false)}
         className={cn(
-          variant === "fixed" && "hidden lg:flex w-80 shrink-0 border-l border-border bg-card sticky top-0 h-screen",
+          variant === "fixed" && [
+            "hidden lg:flex shrink-0 border-l border-border bg-card sticky top-0 h-screen",
+            "transition-[width] duration-200 ease-out overflow-hidden",
+            isExpanded ? "w-80" : "w-12",
+          ],
           variant === "inline" && "w-full bg-card border border-border rounded-lg",
           "flex-col print:hidden",
           className
         )}
       >
+        {/* Collapsed rail (desktop, only when retracted) */}
+        {variant === "fixed" && !isExpanded && (
+          <div className="flex flex-col items-center gap-3 pt-3 text-muted-foreground">
+            <button
+              type="button"
+              title="Fixar painel do paciente"
+              onClick={() => setPinned(true)}
+              className="p-1.5 rounded hover:bg-muted/40 hover:text-foreground"
+            >
+              <ChevronRight className="h-4 w-4 rotate-180" />
+            </button>
+            <div className={cn("h-2 w-2 rounded-full", status.dot)} title={status.label} />
+            <div className="text-[10px] font-bold tracking-wide writing-mode-vertical text-foreground" style={{ writingMode: "vertical-rl" as any, transform: "rotate(180deg)" }}>
+              {patient.bedNumber} · {sector}
+            </div>
+            {allergies.length > 0 && (
+              <span title={`Alergia: ${allergies.join(", ")}`}>
+                <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
+              </span>
+            )}
+          </div>
+        )}
+        {/* Expanded content */}
+        <div className={cn("flex flex-col flex-1 min-h-0", variant === "fixed" && !isExpanded && "hidden")}>
+        {variant === "fixed" && isExpanded && (
+          <div className="flex justify-end px-2 pt-2">
+            <button
+              type="button"
+              title={pinned ? "Desafixar (recolher ao tirar o mouse)" : "Fixar painel aberto"}
+              onClick={() => setPinned((v) => !v)}
+              className={cn(
+                "text-[10px] uppercase tracking-wider px-2 py-0.5 rounded border transition-colors",
+                pinned
+                  ? "border-primary/40 text-primary bg-primary/10"
+                  : "border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/40"
+              )}
+            >
+              {pinned ? "Fixado" : "Fixar"}
+            </button>
+          </div>
+        )}
         {/* ===== ZONA 1: IDENTIDADE (sticky) ===== */}
         <div className="px-4 pt-4 pb-3 border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
           <div className="flex items-start justify-between gap-2 mb-2">
@@ -761,6 +811,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </TabsContent>
           </ScrollArea>
         </Tabs>
+        </div>
       </aside>
     </TooltipProvider>
   );
