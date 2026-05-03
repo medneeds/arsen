@@ -476,16 +476,6 @@ export default function GestorPanelPage() {
                 </ScrollArea>
               </PopoverContent>
             </Popover>
-
-            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="gap-2">
-              {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              Exportar CSV
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => { fetchData(); toast.success("Dados atualizados"); }} disabled={loading} className="gap-2">
-              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-              Atualizar
-            </Button>
-          </div>
         </div>
 
         {/* KPI Cards */}
