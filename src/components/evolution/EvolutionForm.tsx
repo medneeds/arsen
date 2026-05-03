@@ -88,14 +88,12 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   diagnosticsSlot,
 }) => {
   const [examinusOpen, setExaminusOpen] = useState(false);
-  const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'vitals', 'evolucao', 'objective', 'plan']);
+  const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'evolucao', 'complementares', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
   const { currentHospital } = useHospital();
   const hospitalId = currentHospital?.id ?? null;
 
   // Texto unificado da Evolução = Subjetivo + Avaliação (concatenados para registros antigos).
-  // Tudo passa a ser persistido em `subjective`; `assessment` fica vazio nos novos registros
-  // mas é preservado se já existir em registros antigos (legacy display).
   const evolucaoText = useMemo(() => {
     const s = (soap.subjective || "").trim();
     const a = (soap.assessment || "").trim();
@@ -104,24 +102,20 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   }, [soap.subjective, soap.assessment]);
 
   const handleEvolucaoChange = (value: string) => {
-    // Ao editar, gravamos tudo em `subjective` e zeramos `assessment`
     onSOAPChange('subjective', value);
     if (soap.assessment) onSOAPChange('assessment', '');
   };
 
-  // Calculate completion status for each section
-  const completion = useMemo(() => {
-    const vitalsCount = Object.values(vitals).filter(v => v.trim()).length;
-    const examCount = Object.values(physicalExam).filter(v => v.trim()).length;
-    return {
-      vitals: vitalsCount >= 3,
-      evolucao: evolucaoText.trim().length >= 10,
-      objective: soap.objective.trim().length >= 10 || examCount >= 1,
-      plan: soap.plan.trim().length >= 10,
-    };
-  }, [soap, vitals, physicalExam, evolucaoText]);
+  // Calculate completion status — apenas Evolução e Plano são obrigatórios.
+  // Sinais vitais e exame físico foram removidos do formulário (médico relata dentro
+  // do corpo da Evolução). Exames complementares permanecem como campo opcional.
+  const completion = useMemo(() => ({
+    evolucao: evolucaoText.trim().length >= 10,
+    complementares: soap.objective.trim().length > 0,
+    plan: soap.plan.trim().length >= 10,
+  }), [soap.objective, soap.plan, evolucaoText]);
 
-  const requiredComplete = completion.evolucao && completion.objective && completion.plan;
+  const requiredComplete = completion.evolucao && completion.plan;
 
   const handleImportExams = (newExams: string[]) => {
     const current = soap.objective?.trim() || "";
