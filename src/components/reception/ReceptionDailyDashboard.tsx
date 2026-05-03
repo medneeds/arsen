@@ -29,7 +29,6 @@ import { CompletePatientDataDialog } from "./CompletePatientDataDialog";
 import { PromoteNiDialog } from "./PromoteNiDialog";
 import { UserStatsPanel } from "./UserStatsPanel";
 import { SlaBadge } from "@/components/sla/SlaBadge";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface KpiCardProps {
   icon: React.ElementType;
