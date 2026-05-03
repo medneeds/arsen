@@ -18,6 +18,8 @@ interface Message {
 }
 
 export default function IAPage() {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
