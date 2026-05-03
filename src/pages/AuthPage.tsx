@@ -27,7 +27,7 @@ import type { AccessProfile } from "@/config/userProfiles";
 function PageHeader() {
   const navigate = useNavigate();
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border/60">
+    <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/70 border-b border-border/60" style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}>
       <div className="max-w-6xl mx-auto px-4 md:px-6 h-12 md:h-14 flex items-center justify-between">
         <div className="flex items-center gap-2 text-[9px] md:text-[10px] font-medium text-muted-foreground tracking-[0.18em] md:tracking-[0.2em]">
           <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
