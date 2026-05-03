@@ -116,7 +116,7 @@ const CATEGORIES = {
       { group: "Coagulação", items: ["TAP/INR", "TTPA", "Fibrinogênio", "D-Dímero"] },
       { group: "Gasometria", items: ["Gasometria Arterial", "Gasometria Venosa", "Lactato"] },
       { group: "Marcadores", items: ["Troponina", "BNP/NT-proBNP", "Procalcitonina", "DHL"] },
-      { group: "Urina", items: ["EAS/Urina Tipo I", "Urocultura", "Creatinina Urinária"] },
+      { group: "Urina", items: ["EAS/Urina Tipo I", "Creatinina Urinária"] },
       // Culturas saem das requisições comuns — usar a aba "Especiais → Cultura".
       { group: "Hormônios", items: ["TSH", "T4 Livre", "Cortisol"] },
     ],
