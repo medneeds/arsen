@@ -447,7 +447,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
-      <DialogContent className="max-w-3xl w-[min(48rem,calc(100vw-2rem))] max-h-[calc(100vh-9rem)] top-[calc(50%-2.5rem)] z-[80] overflow-hidden flex flex-col p-4">
+      <DialogContent className="max-w-3xl w-[min(48rem,calc(100vw-2rem))] h-[calc(100svh-8rem)] max-h-[calc(100svh-8rem)] top-4 translate-y-0 sm:top-4 z-[80] overflow-hidden flex flex-col p-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-emerald-500" />
