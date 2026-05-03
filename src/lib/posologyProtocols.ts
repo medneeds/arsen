@@ -42,9 +42,10 @@ function k(name: string): string {
 const PROTOCOL_DB: Record<string, PosologyProtocol[]> = {
   // ===== ANALGESIA / SINTOMÁTICOS =====
   "dipirona": [
-    { label: "Dor leve/moderada", dose: "1 g", route: "Intravenosa", posology: "6/6h", diluent: "SF 0,9%", diluentVolume: "100 mL", infusionTime: "15", evidence: "Bula" },
-    { label: "Dor — VO", dose: "500 mg", route: "Oral", posology: "6/6h", evidence: "Bula" },
-    { label: "Antitérmico SN", dose: "1 g", route: "Intravenosa", posology: "SOS", instructions: "Se Tax > 37,8°C", evidence: "Bula" },
+    { label: "Dor/febre — IV padrão", indication: "Analgesia/antitérmico de horário", dose: "1 g", route: "Intravenosa", posology: "6/6h", schedule: "06h-12h-18h-24h", diluent: "SF 0,9%", diluentVolume: "10 mL", infusionTime: "5", instructions: "Diluir 1 amp (2 mL) em 8-18 mL SF. Infusão lenta. Máx 4 g/dia.", evidence: "Bula" },
+    { label: "Antitérmico SN", indication: "Se Tax > 37,8°C", dose: "1 g", route: "Intravenosa", posology: "SOS", diluent: "SF 0,9%", diluentVolume: "10 mL", infusionTime: "5", instructions: "Se Tax > 37,8°C. Máx 4 g/dia.", evidence: "Bula" },
+    { label: "Dor — VO comp", indication: "Dor leve/moderada VO", dose: "1 g (2 comp 500 mg)", route: "Oral", posology: "6/6h", schedule: "06h-12h-18h-24h", evidence: "Bula" },
+    { label: "Dor — VO gotas", indication: "Adulto VO líquida", dose: "40 gotas", route: "Oral", posology: "6/6h", instructions: "1 gota = 25 mg. Máx 4 g/dia.", evidence: "Bula" },
   ],
   "paracetamol": [
     { label: "Dor/febre — VO", dose: "750 mg", route: "Oral", posology: "6/6h", evidence: "Bula" },
@@ -76,8 +77,11 @@ const PROTOCOL_DB: Record<string, PosologyProtocol[]> = {
     { label: "Náusea", dose: "10 mg", route: "Intravenosa", posology: "8/8h", evidence: "Bula" },
   ],
   "omeprazol": [
-    { label: "Profilaxia úlcera de estresse", dose: "40 mg", route: "Intravenosa", posology: "1x/dia", evidence: "A" },
-    { label: "HDA — bolus", dose: "80 mg", route: "Intravenosa", posology: "Dose única", instructions: "Seguido de BIC 8 mg/h por 72h", evidence: "A" },
+    { label: "Profilaxia úlcera — IV", indication: "Profilaxia gastroprotetora em internado", dose: "40 mg", route: "Intravenosa", posology: "1x/dia", schedule: "08h", diluent: "AD", diluentVolume: "10 mL", infusionTime: "5", instructions: "Reconstituir FA com 10 mL de diluente próprio (AD). Bolus lento ou diluir em 100 mL SF e correr 20-30 min.", evidence: "A" },
+    { label: "Profilaxia úlcera — IV 12/12h", indication: "Pacientes em VM ou alto risco", dose: "40 mg", route: "Intravenosa", posology: "12/12h", schedule: "08h-20h", diluent: "AD", diluentVolume: "10 mL", infusionTime: "5", evidence: "A" },
+    { label: "HDA — ataque + BIC", indication: "Hemorragia digestiva alta varicosa/não", dose: "80 mg", route: "Intravenosa", posology: "Dose única", instructions: "Bolus 80 mg, seguir BIC 8 mg/h por 72h. Diluir 200 mg em 100 mL SF.", evidence: "A" },
+    { label: "Profilaxia — VO 20 mg", indication: "Paciente VO, baixo risco", dose: "20 mg", route: "Oral", posology: "1x/dia", schedule: "08h", instructions: "Em jejum, 30 min antes do café.", evidence: "A" },
+    { label: "DRGE/úlcera — VO 40 mg", indication: "Tratamento DRGE/úlcera péptica", dose: "40 mg", route: "Oral", posology: "1x/dia", schedule: "08h", instructions: "Em jejum, 30 min antes do café. Por 4-8 semanas.", evidence: "A" },
   ],
   "pantoprazol": [
     { label: "Profilaxia úlcera de estresse", dose: "40 mg", route: "Intravenosa", posology: "1x/dia", evidence: "A" },
@@ -172,7 +176,13 @@ const PROTOCOL_DB: Record<string, PosologyProtocol[]> = {
     { label: "Delirium hiperativo", dose: "2,5 mg", route: "Intravenosa", posology: "SOS", instructions: "Máx 20 mg/24h. Monitorar QTc.", evidence: "B" },
   ],
   "fenitoina": [
-    { label: "Manutenção", dose: "100 mg", route: "Intravenosa", posology: "8/8h", diluent: "SF 0,9%", diluentVolume: "100 mL", infusionTime: "30", evidence: "A" },
+    { label: "Ataque — status epilético", indication: "Status epilético / pós-crise", dose: "20 mg/kg", route: "Intravenosa", posology: "Dose única", diluent: "SF 0,9%", diluentVolume: "250 mL", infusionTime: "30", instructions: "SOMENTE em SF 0,9% (precipita em SG). Velocidade máx 50 mg/min (25 mg/min em idosos). Monitorar PA e ECG.", evidence: "A" },
+    { label: "Manutenção — IV 100 mg", indication: "Manutenção pós-ataque", dose: "100 mg", route: "Intravenosa", posology: "8/8h", schedule: "06h-14h-22h", diluent: "SF 0,9%", diluentVolume: "100 mL", infusionTime: "20", instructions: "SOMENTE em SF 0,9%. Lavar acesso com SF antes/depois.", evidence: "A" },
+    { label: "Manutenção — VO 100 mg", indication: "Manutenção VO", dose: "100 mg", route: "Oral", posology: "8/8h", schedule: "06h-14h-22h", instructions: "Tomar com alimento. Monitorar nível sérico (alvo 10-20 mcg/mL).", evidence: "A" },
+  ],
+  "hidantal": [
+    { label: "Ataque — status epilético", indication: "Status epilético", dose: "20 mg/kg", route: "Intravenosa", posology: "Dose única", diluent: "SF 0,9%", diluentVolume: "250 mL", infusionTime: "30", instructions: "SOMENTE em SF 0,9%. Velocidade máx 50 mg/min. Monitorar PA/ECG.", evidence: "A" },
+    { label: "Manutenção IV", indication: "Manutenção pós-crise", dose: "100 mg", route: "Intravenosa", posology: "8/8h", schedule: "06h-14h-22h", diluent: "SF 0,9%", diluentVolume: "100 mL", infusionTime: "20", evidence: "A" },
   ],
 
   // ===== ENDÓCRINO / METABÓLICO =====
@@ -188,7 +198,16 @@ const PROTOCOL_DB: Record<string, PosologyProtocol[]> = {
     { label: "Crise asmática", dose: "200 mg", route: "Intravenosa", posology: "6/6h", evidence: "A" },
   ],
   "dexametasona": [
-    { label: "COVID/anti-inflamatório", dose: "6 mg", route: "Intravenosa", posology: "1x/dia", evidence: "A" },
+    { label: "COVID-19 / SDRA", indication: "Hipoxemia ou em VM por COVID/SDRA", dose: "6 mg", route: "Intravenosa", posology: "1x/dia", schedule: "08h", diluent: "SF 0,9%", diluentVolume: "100 mL", infusionTime: "15", instructions: "Por até 10 dias. Monitorar glicemia.", evidence: "A" },
+    { label: "Antiemético — QT/PO", indication: "Profilaxia náusea pós-QT/pós-op", dose: "8 mg", route: "Intravenosa", posology: "Dose única", diluent: "SF 0,9%", diluentVolume: "50 mL", infusionTime: "15", evidence: "A" },
+    { label: "Edema cerebral", indication: "Tumor SNC / metástase", dose: "10 mg", route: "Intravenosa", posology: "Ataque", instructions: "Seguir 4 mg EV 6/6h. Reduzir conforme resposta.", evidence: "A" },
+    { label: "Edema cerebral — manutenção", indication: "Manutenção pós-ataque", dose: "4 mg", route: "Intravenosa", posology: "6/6h", schedule: "06h-12h-18h-24h", diluent: "SF 0,9%", diluentVolume: "50 mL", infusionTime: "15", evidence: "A" },
+    { label: "Crupe / laringite", indication: "Pediátrico — laringite", dose: "0,6 mg/kg", route: "Intravenosa", posology: "Dose única", instructions: "Dose máxima 10 mg.", evidence: "A" },
+    { label: "Anti-inflamatório — VO", indication: "Tratamento curto VO", dose: "4 mg", route: "Oral", posology: "1x/dia", schedule: "08h", instructions: "Tomar com alimento.", evidence: "Bula" },
+  ],
+  "decadron": [
+    { label: "COVID-19 / SDRA", dose: "6 mg", route: "Intravenosa", posology: "1x/dia", schedule: "08h", diluent: "SF 0,9%", diluentVolume: "100 mL", infusionTime: "15", evidence: "A" },
+    { label: "Antiemético", dose: "8 mg", route: "Intravenosa", posology: "Dose única", evidence: "A" },
   ],
 
   // ===== RESPIRATÓRIO =====
