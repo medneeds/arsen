@@ -45,6 +45,7 @@ import {
   Send,
   Clock,
   UserX,
+  FileUp,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MedicalRecordsList } from "@/components/MedicalRecordsList";
