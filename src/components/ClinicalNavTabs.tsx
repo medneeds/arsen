@@ -65,7 +65,7 @@ export function ClinicalNavTabs({ variant = "default", hideSector = false }: Cli
                 variant === "dark"
                   ? isActive
                     ? "bg-white text-primary shadow-md ring-1 ring-white/40"
-                    : "text-white/85 hover:text-white hover:bg-white/15"
+                    : "text-white hover:text-white hover:bg-white/20"
                   : isActive
                     ? "bg-background text-primary shadow-sm"
                     : "text-muted-foreground hover:text-foreground hover:bg-background/50"
