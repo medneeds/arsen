@@ -90,15 +90,6 @@ export default function DocumentsPage() {
       bgColor: "bg-green-500/10"
     },
     { 
-      id: "sadt", 
-      title: "SADT", 
-      description: "Serviço Auxiliar de Diagnóstico e Terapia",
-      route: "/documents/sadt",
-      icon: ClipboardList,
-      color: "text-cyan-500",
-      bgColor: "bg-cyan-500/10"
-    },
-    { 
       id: "priorizacao-cirurgica", 
       title: "Priorização Cirúrgica", 
       description: "Classificação de procedimentos cirúrgicos por prioridade",

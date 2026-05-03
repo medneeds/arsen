@@ -19,7 +19,7 @@ import SepsisProtocolPage from "./pages/SepsisProtocolPage";
 import TomografiasPage from "./pages/TomografiasPage";
 import HemoderivadosPage from "./pages/HemoderivadosPage";
 import RegulacoesPage from "./pages/RegulacoesPage";
-import SadtPage from "./pages/SadtPage";
+
 import MovementsPage from "./pages/MovementsPage";
 import AuthPage from "./pages/AuthPage";
 import SignupRedirectPage from "./pages/SignupRedirectPage";
@@ -271,16 +271,6 @@ const App = () => {
             <ProtectedRoute>
               <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
                 <RegulacoesPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/documents/sadt"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <SadtPage />
               </MainLayout>
             </ProtectedRoute>
           }
