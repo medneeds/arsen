@@ -176,7 +176,7 @@ REGRAS:
 
 EXEMPLO:
 19/11${opts.includeTime ? ' 10:45' : ''} (TC Crânio): Hipodensidade em território de ACM esquerda compatível com AVCi recente
-${onlyAlteredBlock}${clinicalBlock}
+${onlyAlteredBlock}${clinicalBlock}${compactBlock}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 COMPORTAMENTO
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
