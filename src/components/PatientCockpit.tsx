@@ -809,6 +809,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </TabsContent>
           </ScrollArea>
         </Tabs>
+        </div>
       </aside>
     </TooltipProvider>
   );
