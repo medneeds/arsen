@@ -4424,7 +4424,8 @@ const PrescricaoPage = () => {
                             cat === 'nutrition' ? () => setNutritionWizardOpen(true) :
                             cat === 'hydration' ? () => setHydrationWizardOpen(true) :
                             cat === 'replacement' ? () => setReplacementWizardOpen(true) :
-                            ['medication','antimicrobial','high_alert','inhalation','hemotherapy','care'].includes(cat)
+                            cat === 'care' ? () => setCareCatalogOpen(true) :
+                            ['medication','antimicrobial','high_alert','inhalation','hemotherapy'].includes(cat)
                               ? () => toast.info('Assistente desta categoria em construção.')
                               : undefined
                           }
@@ -4432,6 +4433,7 @@ const PrescricaoPage = () => {
                             cat === 'nutrition' ? 'Assistente de Terapia Nutricional' :
                             cat === 'hydration' ? 'Assistente de Hidratação' :
                             cat === 'replacement' ? 'Assistente de Reposição / Correção Eletrolítica' :
+                            cat === 'care' ? 'Assistente de Cuidados (perfis clínicos)' :
                             'Assistente — em breve'
                           }
                         />
