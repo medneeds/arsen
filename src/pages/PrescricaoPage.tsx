@@ -15,7 +15,7 @@ import {
   ClipboardList, X, Check, Shield, Wind, TestTube, FileText, FlaskConical,
   GripVertical, CheckSquare, Square, Pause, MoreHorizontal,
   Play, CopyPlus, Lock, Eye, EyeOff, ShieldCheck, Fingerprint,
-  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, Heart, List, AlignJustify, ChevronUp,
+  Zap, Loader2, CalendarDays, Circle, RotateCw, Package, Hash, Heart, List, AlignJustify, ChevronUp, Wand2,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -102,6 +102,7 @@ import { PatientCockpit } from "@/components/PatientCockpit";
 import { NutritionWizard } from "@/components/NutritionWizard";
 import { HydrationWizard } from "@/components/HydrationWizard";
 import { ReplacementWizard } from "@/components/ReplacementWizard";
+import { ItemAssistantWizard, type AssistantPatch } from "@/components/ItemAssistantWizard";
 import type { Patient } from "@/types/patient";
 
 // --- Types ---
@@ -1005,6 +1006,7 @@ function SortablePrescriptionItemRow({
   onRequestSuspend,
   onReactivate,
   onToggleValidation,
+  onAssistant,
   isPastRenewalTime,
   prescriptionLocked,
 }: {
@@ -1021,6 +1023,7 @@ function SortablePrescriptionItemRow({
   onRequestSuspend: (id: string) => void;
   onReactivate: (id: string) => void;
   onToggleValidation: (id: string) => void;
+  onAssistant?: (id: string) => void;
   isPastRenewalTime: boolean;
   prescriptionLocked: boolean;
 }) {
@@ -1048,7 +1051,15 @@ function SortablePrescriptionItemRow({
           <MoreHorizontal className="h-3.5 w-3.5" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
+      <DropdownMenuContent align="end" className="w-52">
+        {onAssistant && ['replacement', 'hydration', 'nutrition'].includes(item.category) && (
+          <>
+            <DropdownMenuItem onClick={() => onAssistant(item.id)} className="text-xs gap-2 text-sky-600 focus:text-sky-700">
+              <Wand2 className="h-3.5 w-3.5" /> Configurar com assistente
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
         <DropdownMenuItem onClick={() => onDuplicate(item.id)} className="text-xs gap-2">
           <CopyPlus className="h-3.5 w-3.5" /> Duplicar item
         </DropdownMenuItem>
@@ -2518,6 +2529,7 @@ const PrescricaoPage = () => {
   const [nutritionWizardOpen, setNutritionWizardOpen] = useState(false);
   const [hydrationWizardOpen, setHydrationWizardOpen] = useState(false);
   const [replacementWizardOpen, setReplacementWizardOpen] = useState(false);
+  const [itemAssistantTargetId, setItemAssistantTargetId] = useState<string | null>(null);
   const [compactView, setCompactView] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<PrescriptionCategory>>(new Set());
 
@@ -4514,6 +4526,7 @@ const PrescricaoPage = () => {
                           onDuplicate={duplicateItem}
                           onRequestSuspend={requestSuspendItem}
                           onReactivate={reactivateItem}
+                          onAssistant={(id) => setItemAssistantTargetId(id)}
                           onToggleValidation={requestValidateItem}
                           isPastRenewalTime={isPastRenewalTime}
                           prescriptionLocked={prescriptionLocked}
@@ -4581,6 +4594,29 @@ const PrescricaoPage = () => {
         onAdd={(entries) => {
           entries.forEach(e => addItem(e));
           toast.success(`${entries.length} ${entries.length === 1 ? 'item de reposição adicionado' : 'itens de reposição adicionados'}`);
+        }}
+      />
+
+      <ItemAssistantWizard
+        open={!!itemAssistantTargetId}
+        onOpenChange={(o) => { if (!o) setItemAssistantTargetId(null); }}
+        item={(() => {
+          const it = items.find(i => i.id === itemAssistantTargetId);
+          return it ? {
+            id: it.id, name: it.name, category: it.category,
+            diluent: it.diluent, diluentVolume: it.diluentVolume, volumeTotal: it.volumeTotal,
+            route: it.route, accessType: it.accessType,
+            infusionMode: it.infusionMode, infusionRate: it.infusionRate,
+            infusionTime: it.infusionTime, infusionTimeUnit: it.infusionTimeUnit,
+            posology: it.posology, instructions: it.instructions,
+            nutVolDay: it.nutVolDay, nutMode: it.nutMode, nutFraction: it.nutFraction,
+            nutNightPause: it.nutNightPause, nutBedHead: it.nutBedHead, nutResidualCheck: it.nutResidualCheck,
+          } : null;
+        })()}
+        onApply={(patch: AssistantPatch) => {
+          if (!itemAssistantTargetId) return;
+          setItems(prev => prev.map(it => it.id === itemAssistantTargetId ? { ...it, ...patch } as PrescriptionItem : it));
+          toast.success("Configuração aplicada pelo assistente");
         }}
       />
 
