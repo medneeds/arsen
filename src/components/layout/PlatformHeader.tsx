@@ -129,12 +129,7 @@ export function PlatformHeader({
         </div>
 
         {actions && (
-          <div
-            className={cn(
-              "flex items-center gap-1.5 shrink-0",
-              isInstitutional && "[&_button]:text-primary-foreground",
-            )}
-          >
+          <div className="flex items-center gap-1.5 shrink-0">
             {actions}
           </div>
         )}

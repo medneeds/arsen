@@ -53,77 +53,94 @@ export function BreadcrumbBar({
     <nav
       aria-label="Hierarquia do setor"
       className={cn(
-        "print:hidden flex items-center justify-between gap-2 flex-wrap px-2 sm:px-3 py-1.5 shadow-sm",
+        "print:hidden flex items-center justify-between gap-2 flex-wrap px-2 sm:px-3 py-1.5 shadow-sm rounded-xl backdrop-blur-sm",
         isInstitutional
-          ? "rounded-xl border border-transparent bg-card/80 backdrop-blur-sm relative"
-          : "rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm",
+          ? "border border-primary/30 text-primary-foreground"
+          : "border border-border/60 bg-card/60",
         className,
       )}
       style={
         isInstitutional
           ? {
               backgroundImage:
-                "linear-gradient(hsl(var(--card)), hsl(var(--card))), linear-gradient(110deg, hsl(var(--primary)) 0%, hsl(210 70% 22%) 55%, hsl(210 75% 18%) 100%)",
-              backgroundOrigin: "border-box",
-              backgroundClip: "padding-box, border-box",
-              borderWidth: "1.5px",
-              borderStyle: "solid",
-              borderColor: "transparent",
+                "linear-gradient(110deg, hsl(var(--primary)) 0%, hsl(210 70% 22%) 55%, hsl(210 75% 18%) 100%)",
             }
           : undefined
       }
     >
       <div className="flex items-center flex-wrap gap-x-2 gap-y-1.5 text-[11px] sm:text-xs font-medium tracking-wide min-w-0">
-        <SidebarTrigger className="flex-shrink-0 h-9 w-9 sm:h-7 sm:w-7" />
+        <SidebarTrigger
+          className={cn(
+            "flex-shrink-0 h-9 w-9 sm:h-7 sm:w-7",
+            isInstitutional && "text-primary-foreground hover:bg-white/10",
+          )}
+        />
 
         {showBack && (
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
-            className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-foreground"
+            className={cn(
+              "h-7 w-7 flex-shrink-0",
+              isInstitutional
+                ? "text-primary-foreground/90 hover:text-primary-foreground hover:bg-white/10"
+                : "text-muted-foreground hover:text-foreground",
+            )}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
         )}
 
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/60 text-muted-foreground border border-border/50">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border",
+            isInstitutional
+              ? "bg-white/10 text-primary-foreground border-white/20 backdrop-blur"
+              : "bg-muted/60 text-muted-foreground border-border/50",
+          )}
+        >
           <Building2 className="h-3.5 w-3.5" />
           <span className="uppercase">{whitelabel.institution.hospitalAbbreviation}</span>
         </span>
 
         {showSector && (
           <>
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
-            <SectorSelector variant="light" />
+            <ChevronRight className={cn("h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
+            <SectorSelector variant={isInstitutional ? "dark" : "light"} />
           </>
         )}
 
         {showNavTabs && (
           <>
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
+            <ChevronRight className={cn("h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
             <ClinicalNavTabs hideSector />
           </>
         )}
 
         {showPatient && (
           <>
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
+            <ChevronRight className={cn("h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
             <PatientSwitcher variant="default" />
           </>
         )}
 
         {showModules && (
           <>
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
+            <ChevronRight className={cn("h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
             <ClinicalModuleTabs variant="default" />
           </>
         )}
 
         {moduleLabel && (
           <>
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
-            <span className="px-2 py-1 rounded-md bg-primary/10 text-primary uppercase tracking-wide">
+            <ChevronRight className={cn("h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
+            <span
+              className={cn(
+                "px-2 py-1 rounded-md uppercase tracking-wide",
+                isInstitutional ? "bg-white/15 text-primary-foreground border border-white/20" : "bg-primary/10 text-primary",
+              )}
+            >
               {moduleLabel}
             </span>
           </>
