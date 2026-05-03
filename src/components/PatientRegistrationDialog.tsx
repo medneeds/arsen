@@ -433,11 +433,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="ai" className="text-xs gap-1" disabled={form.is_unidentified}>
-              <Sparkles className="h-3.5 w-3.5" />
-              Importar com IA
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="dados" className="text-xs gap-1">
               <User className="h-3.5 w-3.5" />
               {form.is_unidentified ? "Características NI" : "Dados do Paciente"}
@@ -447,31 +443,6 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
               Pedido de Leito
             </TabsTrigger>
           </TabsList>
-
-          {/* Tab 1: AI Import (oculta se NI) */}
-          {!form.is_unidentified && (
-            <TabsContent value="ai" className="space-y-4 mt-4">
-              <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
-                <CardContent className="p-6 text-center space-y-4">
-                  <div className="flex flex-col items-center gap-2">
-                    <Camera className="h-10 w-10 text-primary/60" />
-                    <h3 className="font-semibold">Upload de Documento</h3>
-                    <p className="text-sm text-muted-foreground max-w-sm">
-                      Fotografe ou faça upload de RG, CNH ou Cartão SUS (imagem ou PDF). A IA extrairá os dados automaticamente.
-                    </p>
-                  </div>
-                  <input ref={fileInputRef} type="file" accept="image/*,application/pdf" onChange={handleImageUpload} className="hidden" />
-                  <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isExtracting}>
-                    {isExtracting ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" />Extraindo dados...</>)
-                                  : (<><Upload className="h-4 w-4 mr-2" />Selecionar Imagem ou PDF</>)}
-                  </Button>
-                  {previewImage && previewImage !== 'pdf' && (
-                    <img src={previewImage} alt="Documento" className="max-h-48 mx-auto rounded-lg border shadow-sm" />
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
 
           {/* Tab 2: Patient Data */}
           <TabsContent value="dados" className="space-y-3 mt-4">
