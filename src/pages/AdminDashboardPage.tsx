@@ -795,6 +795,57 @@ const AdminDashboardPage = () => {
 
               <TabsContent value="inicio" className="space-y-6 mt-0">
 
+            {/* HERO superior — ações primárias e consulta de prontuário */}
+            <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-background to-rose-500/5 shadow-md">
+              <CardContent className="p-5 space-y-4">
+                <div className="flex flex-col lg:flex-row lg:items-stretch gap-3">
+                  <Button
+                    onClick={openTriageExpress}
+                    className="flex-1 h-auto min-h-[72px] py-4 bg-rose-600 hover:bg-rose-700 text-white shadow-md flex flex-col items-center justify-center gap-1"
+                  >
+                    <div className="flex items-center gap-2 font-semibold text-sm">
+                      <AlertTriangle className="h-5 w-5" />
+                      Triagem Express
+                    </div>
+                    <span className="text-[11px] opacity-90 font-normal">NI + triagem em 1 clique</span>
+                  </Button>
+                  <Button
+                    onClick={() => setShowRegisterDialog(true)}
+                    className="flex-1 h-auto min-h-[72px] py-4 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md flex flex-col items-center justify-center gap-1"
+                  >
+                    <div className="flex items-center gap-2 font-semibold text-sm">
+                      <UserPlus className="h-5 w-5" />
+                      Novo Cadastro Completo
+                    </div>
+                    <span className="text-[11px] opacity-90 font-normal">Prontuário + dados completos</span>
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Search className="h-4 w-4 text-primary" />
+                    Consultar Prontuário
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Digite o nome, CPF, CNS ou nº do prontuário..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                      className="flex-1 h-10 bg-background"
+                    />
+                    <Button onClick={handleSearch} disabled={isSearching || !searchQuery.trim()} className="h-10">
+                      {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      <span className="ml-2 hidden sm:inline">Buscar</span>
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Busca por nome, CPF, CNS ou número do prontuário · ignora acentos
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Painel diário da recepção (KPIs + Triagem Express + sub-tabs) */}
             <ReceptionDailyDashboard
               onPickRegistry={handlePickRegistryFromDashboard}
