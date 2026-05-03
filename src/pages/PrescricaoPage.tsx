@@ -4274,13 +4274,69 @@ const PrescricaoPage = () => {
         />
 
 
-        {items.length === 0 && (
-          <div className="rounded-xl border border-dashed border-border bg-muted/20 p-8 text-center">
-            <Pill className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">Nenhum item na prescrição</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">Use a barra de busca acima para adicionar itens</p>
-          </div>
-        )}
+        {items.length === 0 && (() => {
+          const admissionTpls = quickTemplates.filter(t => t.clinical_category === 'admissao');
+          return (
+            <div className="rounded-xl border border-dashed border-border bg-gradient-to-br from-primary/5 via-background to-muted/20 p-6">
+              <div className="text-center mb-5">
+                <Pill className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-sm font-medium text-foreground">Comece a prescrição em 1 clique</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Aplique um modelo de admissão ou use a busca acima para itens individuais
+                </p>
+              </div>
+              {admissionTpls.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                    <Zap className="h-3.5 w-3.5 text-amber-500" />
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Modelos de admissão
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                    {admissionTpls.map(tpl => (
+                      <button
+                        key={tpl.id}
+                        type="button"
+                        onClick={() => applyQuickTemplate(tpl)}
+                        className="group text-left rounded-lg border border-border bg-card hover:border-primary hover:shadow-md hover:-translate-y-0.5 transition-all p-3"
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <h4 className="text-xs font-bold text-foreground leading-tight uppercase tracking-wide line-clamp-2">
+                            {tpl.name}
+                          </h4>
+                          <Plus className="h-3.5 w-3.5 text-primary shrink-0 opacity-60 group-hover:opacity-100" />
+                        </div>
+                        {tpl.description && (
+                          <p className="text-[10px] text-muted-foreground line-clamp-2 mb-2">
+                            {tpl.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                          <Pill className="h-2.5 w-2.5" />
+                          <span>{tpl.items.length} itens</span>
+                          {tpl.use_count > 0 && (
+                            <>
+                              <span>·</span>
+                              <span>{tpl.use_count}x</span>
+                            </>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setQuickTemplatesDialogOpen(true)}
+                    className="mt-3 w-full text-[11px] text-primary hover:underline font-medium"
+                  >
+                    Ver todos os templates →
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* ===== PRINT PORTAL ===== */}
