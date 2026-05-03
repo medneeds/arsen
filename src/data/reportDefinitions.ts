@@ -16,7 +16,8 @@ export type ReportCategory =
   | 'procedencia'
   | 'exames'
   | 'incidentes'
-  | 'indicadores';
+  | 'indicadores'
+  | 'gestao';
 
 export const REPORT_CATEGORIES: Record<ReportCategory, { label: string; color: string }> = {
   atendimento: { label: 'Atendimentos', color: 'bg-blue-500' },
@@ -28,6 +29,7 @@ export const REPORT_CATEGORIES: Record<ReportCategory, { label: string; color: s
   exames: { label: 'Exames', color: 'bg-cyan-500' },
   incidentes: { label: 'Incidentes e Agravos', color: 'bg-amber-500' },
   indicadores: { label: 'Indicadores', color: 'bg-indigo-500' },
+  gestao: { label: 'Gestão Executiva', color: 'bg-fuchsia-600' },
 };
 
 export const REPORT_DEFINITIONS: ReportDefinition[] = [
@@ -95,6 +97,14 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   // Indicadores
   { id: 'lean_indicadores', name: 'LEAN Indicadores PA', description: 'Indicadores LEAN do Pronto Atendimento', category: 'indicadores', queryType: 'lean_indicators', available: true },
   { id: 'taxa_conversao_setor', name: 'Taxa de conversão por setor', description: 'Taxa de conversão de atendimentos por setor de destino', category: 'indicadores', queryType: 'conversion_by_sector', available: true },
+
+  // Gestão Executiva (Sprint 3)
+  { id: 'gestao_ocupacao_setor', name: 'Ocupação por setor', description: 'Taxa de ocupação atual de leitos por setor (vago/ocupado/bloqueado/reservado)', category: 'gestao', queryType: 'gestao_occupancy_by_sector', available: true },
+  { id: 'gestao_tempo_permanencia', name: 'Tempo de permanência', description: 'LOS médio por setor de destino e desfecho no período', category: 'gestao', queryType: 'gestao_stay_by_sector', available: true },
+  { id: 'gestao_alta_obito', name: 'Taxa de alta / óbito', description: 'Distribuição de desfechos com taxas (alta, óbito, transferência, evasão)', category: 'gestao', queryType: 'gestao_discharge_death_rate', available: true },
+  { id: 'gestao_producao_medico', name: 'Produção por médico', description: 'Atendimentos, evoluções e desfechos por médico no período', category: 'gestao', queryType: 'gestao_production_per_doctor', available: true },
+  { id: 'gestao_fila_nir', name: 'Fila de pedidos NIR', description: 'Solicitações de leito por status, idade da fila e SLA', category: 'gestao', queryType: 'gestao_nir_queue', available: true },
+  { id: 'gestao_sla_triagem', name: 'SLA de triagem', description: 'Tempo entre chegada e classificação de risco, com aderência ao SLA', category: 'gestao', queryType: 'gestao_triage_sla', available: true },
 ];
 
 // Macrorregiões do Maranhão
