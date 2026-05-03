@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Search, Eye, Filter, FileText, Pill, Activity, ClipboardList, FolderOpen, User, Calendar, Clock, Stethoscope, Heart, TrendingUp, AlertTriangle, TestTubes, Syringe, Shield, Thermometer, Pencil, Check, X, ClipboardCheck, Plus, LogOut, History } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { ClinicalNavTabs } from "@/components/ClinicalNavTabs";
+import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
