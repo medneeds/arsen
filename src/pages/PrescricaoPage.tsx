@@ -5119,11 +5119,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 )}
               </td>
               <td style={{ ...cellStyle, width: '230px', textAlign: 'left', verticalAlign: 'top', backgroundColor: '#fff', padding: '4px 6px' }}>
-                {/* Coluna de aprazamento manual — preenchida pela enfermagem */}
-                <div style={{ minHeight: '38px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '4px' }}>
-                  <div style={{ borderBottom: '1px dotted #94a3b8', height: '14px' }} />
-                  <div style={{ borderBottom: '1px dotted #94a3b8', height: '14px' }} />
-                </div>
+                {/* Coluna de aprazamento manual — em branco para preenchimento pela enfermagem */}
+                <div style={{ minHeight: '38px' }} />
               </td>
             </tr>
           );
