@@ -130,7 +130,7 @@ export function ProfileChooser({ userName, profiles, appRole, compact, onChosen 
                           <p className="preserve-case text-xs text-muted-foreground leading-relaxed line-clamp-2">
                             {p.description}
                           </p>
-                          <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-primary opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                             Entrar como {p.shortLabel}
                             <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                           </div>
