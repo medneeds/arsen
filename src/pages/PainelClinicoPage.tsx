@@ -117,10 +117,6 @@ const DOCUMENTS = [
     { name: "Solicitação Hemoconcentrados", path: "/documents/hemoderivados/solicitacao-hemoconcentrados.pdf" },
     { name: "Termo Hemotransfusão", path: "/documents/hemoderivados/termo-esclarecimento-hemotransfusao.pdf" },
   ]},
-  { group: "SADT", items: [
-    { name: "Guia SP/SADT", path: "/documents/sadt/hapvida-guia-sp-sadt.pdf" },
-    { name: "Guia SP/SADT Paisagem", path: "/documents/sadt/hapvida-guia-sp-sadt-paisagem.pdf" },
-  ]},
   { group: "Tomografias", items: [
     { name: "Ficha Acompanhamento TC", path: "/documents/tomografias/ficha-acompanhamento-tc.pdf" },
     { name: "Termo Consentimento TC", path: "/documents/tomografias/termo-consentimento-tc.pdf" },
