@@ -6,87 +6,99 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
 import { PrivacyProvider } from "@/contexts/PrivacyContext";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import { useState } from "react";
-import ResourcesPage from "./pages/ResourcesPage";
-import MedicalCodesPage from "./pages/MedicalCodesPage";
-import HandoversPage from "./pages/HandoversPage";
-import VersionsPage from "./pages/VersionsPage";
-import DocumentsPage from "./pages/DocumentsPage";
-import DocumentosPacientePage from "./pages/DocumentosPacientePage";
-import SepsisProtocolPage from "./pages/SepsisProtocolPage";
-import TomografiasPage from "./pages/TomografiasPage";
-import HemoderivadosPage from "./pages/HemoderivadosPage";
-import RegulacoesPage from "./pages/RegulacoesPage";
-
-import MovementsPage from "./pages/MovementsPage";
-import AuthPage from "./pages/AuthPage";
-import SignupRedirectPage from "./pages/SignupRedirectPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import LandingPage from "./pages/LandingPage";
-import IAPage from "./pages/IAPage";
-import InternmentHistoryPage from "./pages/InternmentHistoryPage";
-import DashboardPage from "./pages/DashboardPage";
-import PriorizacaoCirurgicaPage from "./pages/PriorizacaoCirurgicaPage";
-import ControleGlicemicoPage from "./pages/ControleGlicemicoPage";
-import CuidadosPaliativosPage from "./pages/CuidadosPaliativosPage";
-import FluxoPaliativacaoPage from "./pages/FluxoPaliativacaoPage";
-import DhdDashboardPage from "./pages/DhdDashboardPage";
-import DhdRegistrationPage from "./pages/DhdRegistrationPage";
-import DhdHistoryPage from "./pages/DhdHistoryPage";
-import AuditLogsPage from "./pages/AuditLogsPage";
-import UserManagementPage from "./pages/UserManagementPage";
-import PrivacyPage from "./pages/PrivacyPage";
-import AdminStatesPage from "./pages/AdminStatesPage";
-import AdminUnitsPage from "./pages/AdminUnitsPage";
-import AdminCoordinatorsPage from "./pages/AdminCoordinatorsPage";
-import TherapeuticTemplatesPage from "./pages/TherapeuticTemplatesPage";
-import RoundPage from "./pages/RoundPage";
-import RelatorioPage from "./pages/RelatorioPage";
-import RequisicaoUnificadaPage from "./pages/RequisicaoUnificadaPage";
-import PrescricaoPage from "./pages/PrescricaoPage";
-import EvolucaoPage from "./pages/EvolucaoPage";
-import MovimentacoesPage from "./pages/MovimentacoesPage";
-import MedicationCatalogPage from "./pages/MedicationCatalogPage";
-import GestorPanelPage from "./pages/GestorPanelPage";
-import ValidacaoFarmaceuticaPage from "./pages/ValidacaoFarmaceuticaPage";
-import PainelClinicoPage from "./pages/PainelClinicoPage";
-import SetorImagemPage from "./pages/SetorImagemPage";
-import SetorLaboratorioPage from "./pages/SetorLaboratorioPage";
-import Saps3Page from "./pages/Saps3Page";
-import ClinicalDashboardPage from "./pages/ClinicalDashboardPage";
-import ProtocolosUtiPage from "./pages/ProtocolosUtiPage";
-import CcihDashboardPage from "./pages/CcihDashboardPage";
-import AdminDashboardPage from "./pages/AdminDashboardPage";
-import TriageQueuePage from "./pages/TriageQueuePage";
-import TriageQueueTVPage from "./pages/TriageQueueTVPage";
-import AltaDesfechoPage from "./pages/AltaDesfechoPage";
-import EmergenciaSectorPage from "./pages/EmergenciaSectorPage";
-import MonitoramentoClinicoPage from "./pages/MonitoramentoClinicoPage";
-import RequisicaoImagensPage from "./pages/RequisicaoImagensPage";
-import FichaAtendimentoPage from "./pages/FichaAtendimentoPage";
-import NirDashboardPage from "./pages/NirDashboardPage";
-import UeVerticalPage from "./pages/UeVerticalPage";
-import UeHorizontalPage from "./pages/UeHorizontalPage";
-import DevConsolePage from "./pages/DevConsolePage";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { FloatingThemeToggle } from "@/components/FloatingThemeToggle";
 
-// Lazy: página standalone, carregada sob demanda para preservar fluidez do app
+// Telas críticas (eager): impactam first paint do app
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import AuthPage from "./pages/AuthPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import LandingPage from "./pages/LandingPage";
+
+// Demais páginas: lazy para reduzir bundle inicial e uso de memória
+const SignupRedirectPage = lazy(() => import("./pages/SignupRedirectPage"));
+const ResourcesPage = lazy(() => import("./pages/ResourcesPage"));
+const MedicalCodesPage = lazy(() => import("./pages/MedicalCodesPage"));
+const HandoversPage = lazy(() => import("./pages/HandoversPage"));
+const VersionsPage = lazy(() => import("./pages/VersionsPage"));
+const DocumentsPage = lazy(() => import("./pages/DocumentsPage"));
+const DocumentosPacientePage = lazy(() => import("./pages/DocumentosPacientePage"));
+const SepsisProtocolPage = lazy(() => import("./pages/SepsisProtocolPage"));
+const TomografiasPage = lazy(() => import("./pages/TomografiasPage"));
+const HemoderivadosPage = lazy(() => import("./pages/HemoderivadosPage"));
+const RegulacoesPage = lazy(() => import("./pages/RegulacoesPage"));
+const MovementsPage = lazy(() => import("./pages/MovementsPage"));
+const IAPage = lazy(() => import("./pages/IAPage"));
+const InternmentHistoryPage = lazy(() => import("./pages/InternmentHistoryPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const PriorizacaoCirurgicaPage = lazy(() => import("./pages/PriorizacaoCirurgicaPage"));
+const ControleGlicemicoPage = lazy(() => import("./pages/ControleGlicemicoPage"));
+const CuidadosPaliativosPage = lazy(() => import("./pages/CuidadosPaliativosPage"));
+const FluxoPaliativacaoPage = lazy(() => import("./pages/FluxoPaliativacaoPage"));
+const DhdDashboardPage = lazy(() => import("./pages/DhdDashboardPage"));
+const DhdRegistrationPage = lazy(() => import("./pages/DhdRegistrationPage"));
+const DhdHistoryPage = lazy(() => import("./pages/DhdHistoryPage"));
+const AuditLogsPage = lazy(() => import("./pages/AuditLogsPage"));
+const UserManagementPage = lazy(() => import("./pages/UserManagementPage"));
+const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
+const AdminStatesPage = lazy(() => import("./pages/AdminStatesPage"));
+const AdminUnitsPage = lazy(() => import("./pages/AdminUnitsPage"));
+const AdminCoordinatorsPage = lazy(() => import("./pages/AdminCoordinatorsPage"));
+const TherapeuticTemplatesPage = lazy(() => import("./pages/TherapeuticTemplatesPage"));
+const RoundPage = lazy(() => import("./pages/RoundPage"));
+const RelatorioPage = lazy(() => import("./pages/RelatorioPage"));
+const RequisicaoUnificadaPage = lazy(() => import("./pages/RequisicaoUnificadaPage"));
+const PrescricaoPage = lazy(() => import("./pages/PrescricaoPage"));
+const EvolucaoPage = lazy(() => import("./pages/EvolucaoPage"));
+const MovimentacoesPage = lazy(() => import("./pages/MovimentacoesPage"));
+const MedicationCatalogPage = lazy(() => import("./pages/MedicationCatalogPage"));
+const GestorPanelPage = lazy(() => import("./pages/GestorPanelPage"));
+const ValidacaoFarmaceuticaPage = lazy(() => import("./pages/ValidacaoFarmaceuticaPage"));
+const PainelClinicoPage = lazy(() => import("./pages/PainelClinicoPage"));
+const SetorImagemPage = lazy(() => import("./pages/SetorImagemPage"));
+const SetorLaboratorioPage = lazy(() => import("./pages/SetorLaboratorioPage"));
+const Saps3Page = lazy(() => import("./pages/Saps3Page"));
+const ClinicalDashboardPage = lazy(() => import("./pages/ClinicalDashboardPage"));
+const ProtocolosUtiPage = lazy(() => import("./pages/ProtocolosUtiPage"));
+const CcihDashboardPage = lazy(() => import("./pages/CcihDashboardPage"));
+const AdminDashboardPage = lazy(() => import("./pages/AdminDashboardPage"));
+const TriageQueuePage = lazy(() => import("./pages/TriageQueuePage"));
+const TriageQueueTVPage = lazy(() => import("./pages/TriageQueueTVPage"));
+const AltaDesfechoPage = lazy(() => import("./pages/AltaDesfechoPage"));
+const EmergenciaSectorPage = lazy(() => import("./pages/EmergenciaSectorPage"));
+const MonitoramentoClinicoPage = lazy(() => import("./pages/MonitoramentoClinicoPage"));
+const RequisicaoImagensPage = lazy(() => import("./pages/RequisicaoImagensPage"));
+const FichaAtendimentoPage = lazy(() => import("./pages/FichaAtendimentoPage"));
+const NirDashboardPage = lazy(() => import("./pages/NirDashboardPage"));
+const UeVerticalPage = lazy(() => import("./pages/UeVerticalPage"));
+const UeHorizontalPage = lazy(() => import("./pages/UeHorizontalPage"));
+const DevConsolePage = lazy(() => import("./pages/DevConsolePage"));
 const HistoricoPacientePage = lazy(() => import("./pages/HistoricoPacientePage"));
 
-const HistoricoFallback = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
+// React Query: defaults conservadores para reduzir refetch agressivo
+// e manter UX fluida em máquinas mais fracas / múltiplos usuários simultâneos.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,            // 1 min: evita refetch instantâneo ao remontar
+      gcTime: 5 * 60_000,           // 5 min: mantém dados em cache mais tempo
+      refetchOnWindowFocus: false,  // evita avalanche de requests ao trocar de aba
+      refetchOnReconnect: "always", // reconciliar após queda de rede
+      retry: 1,                     // não congelar UI em falhas transientes
+    },
+  },
+});
+
+const PageFallback = () => (
+  <div className="min-h-[60vh] flex items-center justify-center bg-background">
     <div className="flex items-center gap-2 text-muted-foreground text-sm">
       <Loader2 className="h-4 w-4 animate-spin" />
-      Carregando histórico do paciente...
+      Carregando…
     </div>
   </div>
 );
-
-const queryClient = new QueryClient();
 
 /** Redirects profile-specific roles to their dedicated panels */
 function ProfileHomeRedirect() {
@@ -105,571 +117,90 @@ function ProfileHomeRedirect() {
 
 const App = () => {
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
-  
+
   return (
     <QueryClientProvider client={queryClient}>
       <PrivacyProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          <Route path="/welcome" element={<LandingPage />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/signup" element={<SignupRedirectPage />} />
-          <Route path="/sign-up" element={<SignupRedirectPage />} />
-          <Route path="/cadastro" element={<SignupRedirectPage />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <ProfileHomeRedirect />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/mapa"
-            element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/painel-clinico"
-            element={
-              <ProtectedRoute>
-                <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                  <PainelClinicoPage />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/resources"
-            element={
-              <ProtectedRoute>
-                <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                  <ResourcesPage />
-                </MainLayout>
-              </ProtectedRoute>
-            }
-          />
-        <Route
-          path="/codigos"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <MedicalCodesPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/handovers"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <HandoversPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/versions"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <VersionsPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/documents"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <DocumentsPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/sepsis-protocol"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <SepsisProtocolPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/protocolos-uti"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <ProtocolosUtiPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/documents/controle-glicemico"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <ControleGlicemicoPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/documents/cuidados-paliativos"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <CuidadosPaliativosPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/documents/fluxo-paliativacao"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <FluxoPaliativacaoPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/documents/tomografias"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <TomografiasPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/documents/hemoderivados"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <HemoderivadosPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/documents/regulacoes"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <RegulacoesPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/documents/priorizacao-cirurgica"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <PriorizacaoCirurgicaPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/documents/apac"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <RequisicaoImagensPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/movements"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <MovementsPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/ia"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <IAPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/internment-history"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <InternmentHistoryPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <DashboardPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dhd"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <DhdDashboardPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dhd/cadastro"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <DhdRegistrationPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dhd/historico"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <DhdHistoryPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/audit-logs"
-          element={
-            <ProtectedRoute>
-              <AuditLogsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/user-management"
-          element={
-            <ProtectedRoute>
-              <UserManagementPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/privacy"
-          element={
-            <ProtectedRoute>
-              <PrivacyPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/states"
-          element={
-            <ProtectedRoute>
-              <AdminStatesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/units"
-          element={
-            <ProtectedRoute>
-              <AdminUnitsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/coordinators"
-          element={
-            <ProtectedRoute>
-              <AdminCoordinatorsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/therapeutic-templates"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <TherapeuticTemplatesPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/round"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <RoundPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/relatorio"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <RelatorioPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/requisicoes"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <RequisicaoUnificadaPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/requisicao/laboratorio" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
-        <Route path="/requisicao/imagens" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
-        <Route path="/requisicao/parecer" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
-        <Route path="/monitoramento" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MonitoramentoClinicoPage /></MainLayout></ProtectedRoute>} />
-        <Route
-          path="/documentos"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <DocumentosPacientePage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/prescricao"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <PrescricaoPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/evolucao"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <EvolucaoPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/movimentacoes"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <MovimentacoesPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/catalogo-medicamentos"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <MedicationCatalogPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/painel-gestor"
-          element={
-            <ProtectedRoute>
-              <GestorPanelPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/validacao-farmaceutica"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <ValidacaoFarmaceuticaPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/setor-imagem"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <SetorImagemPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/setor-laboratorio"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <SetorLaboratorioPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/saps3"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <Saps3Page />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/ccih"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <CcihDashboardPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/nir"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <NirDashboardPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/recepcao"
-          element={
-            <ProtectedRoute>
-              <AdminDashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/triagem-fila"
-          element={
-            <ProtectedRoute>
-              <TriageQueuePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/triagem-tv"
-          element={
-            <ProtectedRoute>
-              <TriageQueueTVPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/alta-desfecho"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <AltaDesfechoPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/emergencia"
-          element={
-            <ProtectedRoute>
-              <EmergenciaSectorPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/ue-vertical"
-          element={
-            <ProtectedRoute>
-              <UeVerticalPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/ue-horizontal"
-          element={
-            <ProtectedRoute>
-              <UeHorizontalPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/ficha-atendimento"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <FichaAtendimentoPage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/historico-paciente"
-          element={
-            <ProtectedRoute>
-              <Suspense fallback={<HistoricoFallback />}>
-                <HistoricoPacientePage />
-              </Suspense>
-            </ProtectedRoute>
-          }
-        />
-         <Route
-          path="/dev-console"
-          element={
-            <ProtectedRoute>
-              <MainLayout onOpenHandover={() => setIsHandoverOpen(true)}>
-                <DevConsolePage />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <FloatingThemeToggle />
-    </TooltipProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
+              <Route path="/welcome" element={<LandingPage />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/signup" element={<SignupRedirectPage />} />
+              <Route path="/sign-up" element={<SignupRedirectPage />} />
+              <Route path="/cadastro" element={<SignupRedirectPage />} />
+              <Route path="/" element={<ProtectedRoute><ProfileHomeRedirect /></ProtectedRoute>} />
+              <Route path="/mapa" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/painel-clinico" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><PainelClinicoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/resources" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><ResourcesPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/codigos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MedicalCodesPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/handovers" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><HandoversPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/versions" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><VersionsPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents" element={<ProtectedRoute><MainLayout><DocumentsPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/sepsis-protocol" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><SepsisProtocolPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/protocolos-uti" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><ProtocolosUtiPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/controle-glicemico" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><ControleGlicemicoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/cuidados-paliativos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><CuidadosPaliativosPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/fluxo-paliativacao" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><FluxoPaliativacaoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/tomografias" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><TomografiasPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/hemoderivados" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><HemoderivadosPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/regulacoes" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RegulacoesPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/priorizacao-cirurgica" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><PriorizacaoCirurgicaPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documents/apac" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoImagensPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/movements" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MovementsPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/ia" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IAPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/internment-history" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><InternmentHistoryPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DashboardPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/dhd" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DhdDashboardPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/dhd/cadastro" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DhdRegistrationPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/dhd/historico" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DhdHistoryPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/audit-logs" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
+              <Route path="/user-management" element={<ProtectedRoute><UserManagementPage /></ProtectedRoute>} />
+              <Route path="/privacy" element={<ProtectedRoute><PrivacyPage /></ProtectedRoute>} />
+              <Route path="/admin/states" element={<ProtectedRoute><AdminStatesPage /></ProtectedRoute>} />
+              <Route path="/admin/units" element={<ProtectedRoute><AdminUnitsPage /></ProtectedRoute>} />
+              <Route path="/admin/coordinators" element={<ProtectedRoute><AdminCoordinatorsPage /></ProtectedRoute>} />
+              <Route path="/therapeutic-templates" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><TherapeuticTemplatesPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/round" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RoundPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/relatorio" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RelatorioPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/requisicoes" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/requisicao/laboratorio" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/requisicao/imagens" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/requisicao/parecer" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><RequisicaoUnificadaPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/monitoramento" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MonitoramentoClinicoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/documentos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DocumentosPacientePage /></MainLayout></ProtectedRoute>} />
+              <Route path="/prescricao" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><PrescricaoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/evolucao" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><EvolucaoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/movimentacoes" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MovimentacoesPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/catalogo-medicamentos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MedicationCatalogPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/painel-gestor" element={<ProtectedRoute><GestorPanelPage /></ProtectedRoute>} />
+              <Route path="/validacao-farmaceutica" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><ValidacaoFarmaceuticaPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/setor-imagem" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><SetorImagemPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/setor-laboratorio" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><SetorLaboratorioPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/saps3" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><Saps3Page /></MainLayout></ProtectedRoute>} />
+              <Route path="/ccih" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><CcihDashboardPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/nir" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><NirDashboardPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/recepcao" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
+              <Route path="/triagem-fila" element={<ProtectedRoute><TriageQueuePage /></ProtectedRoute>} />
+              <Route path="/triagem-tv" element={<ProtectedRoute><TriageQueueTVPage /></ProtectedRoute>} />
+              <Route path="/alta-desfecho" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><AltaDesfechoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/emergencia" element={<ProtectedRoute><EmergenciaSectorPage /></ProtectedRoute>} />
+              <Route path="/ue-vertical" element={<ProtectedRoute><UeVerticalPage /></ProtectedRoute>} />
+              <Route path="/ue-horizontal" element={<ProtectedRoute><UeHorizontalPage /></ProtectedRoute>} />
+              <Route path="/ficha-atendimento" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><FichaAtendimentoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/historico-paciente" element={<ProtectedRoute><HistoricoPacientePage /></ProtectedRoute>} />
+              <Route path="/dev-console" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DevConsolePage /></MainLayout></ProtectedRoute>} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+          <FloatingThemeToggle />
+        </TooltipProvider>
       </PrivacyProvider>
-  </QueryClientProvider>
+    </QueryClientProvider>
   );
 };
 
