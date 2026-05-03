@@ -34,7 +34,8 @@ export const CATEGORY_CONFIG: Record<PrescriptionCategory, {
   bgColor: string;
 }> = {
   nutrition:     { label: 'Nutrição',          icon: 'UtensilsCrossed', color: 'text-emerald-500',  bgColor: 'bg-emerald-500/10' },
-  hydration:     { label: 'Hidratação / Reposição', icon: 'Droplets', color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+  hydration:     { label: 'Hidratação',         icon: 'Droplets',       color: 'text-blue-500',     bgColor: 'bg-blue-500/10' },
+  replacement:   { label: 'Reposição',          icon: 'FlaskConical',   color: 'text-sky-500',      bgColor: 'bg-sky-500/10' },
   medication:    { label: 'Medicamentos',      icon: 'Pill',           color: 'text-primary',      bgColor: 'bg-primary/10' },
   antimicrobial: { label: 'Antimicrobianos',   icon: 'Shield',         color: 'text-orange-500',   bgColor: 'bg-orange-500/10' },
   high_alert:    { label: 'Alta Vigilância',   icon: 'AlertTriangle',  color: 'text-red-500',      bgColor: 'bg-red-500/10' },
