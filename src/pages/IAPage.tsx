@@ -22,6 +22,11 @@ export default function IAPage() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  // Toggles de inteligência clínica
+  const [usePipeSeparator, setUsePipeSeparator] = useState(false);
+  const [includeTime, setIncludeTime] = useState(true);
+  const [onlyAltered, setOnlyAltered] = useState(false);
+  const [clinicalImpression, setClinicalImpression] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
