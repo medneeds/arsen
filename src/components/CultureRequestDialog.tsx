@@ -29,6 +29,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { asUuidOrNull } from "@/lib/utils";
+import { SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 import { toast } from "sonner";
 import {
   PrintableCultureRequest,
@@ -98,13 +99,14 @@ export function CultureRequestDialog({
     created_at: new Date().toISOString(),
   });
 
-  // Pré-preenche com props (mock ou contexto da URL) imediatamente
+  // Pré-preenche com props (mock ou contexto da URL) imediatamente — converte código de setor → label real
   useEffect(() => {
     if (!open) return;
+    const normalizedSector = patientSector ? (SECTOR_DISPLAY[patientSector] || patientSector) : null;
     setData((d) => ({
       ...d,
       patient_name: d.patient_name || patientName || "",
-      patient_sector: d.patient_sector || patientSector || null,
+      patient_sector: d.patient_sector || normalizedSector,
       patient_bed: d.patient_bed || patientBed || null,
     }));
   }, [open, patientName, patientBed, patientSector]);
@@ -138,7 +140,7 @@ export function CultureRequestDialog({
         patient_cpf: registry?.cpf || null,
         patient_cns: registry?.cns || null,
         patient_record: registry?.medical_record || p.medical_record || null,
-        patient_sector: p.sector || d.patient_sector,
+        patient_sector: (p.sector ? (SECTOR_DISPLAY[p.sector] || p.sector) : d.patient_sector),
         patient_bed: p.bed_number || d.patient_bed,
         mother_name: registry?.mother_name || null,
       }));
@@ -310,7 +312,7 @@ export function CultureRequestDialog({
           </div>
         </div>
 
-        <ScrollArea className="flex-1 px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 pr-3">
           {previewMode ? (
             <PrintableCultureRequest request={previewData} />
           ) : (
@@ -501,7 +503,7 @@ export function CultureRequestDialog({
               </div>
             </div>
           )}
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="p-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>

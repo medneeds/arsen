@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { asUuidOrNull } from "@/lib/utils";
+import { SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 import { toast } from "sonner";
 import {
   PrintableHemocomponentRequest,
@@ -105,10 +106,11 @@ export function HemocomponentRequestDialog({
   // Pré-preenche com props (mock ou contexto da URL) imediatamente
   useEffect(() => {
     if (!open) return;
+    const normalizedSector = patientSector ? (SECTOR_DISPLAY[patientSector] || patientSector) : null;
     setData((d) => ({
       ...d,
       patient_name: d.patient_name || patientName || "",
-      patient_unit: d.patient_unit || patientSector || null,
+      patient_unit: d.patient_unit || normalizedSector,
       patient_bed: d.patient_bed || patientBed || null,
     }));
   }, [open, patientName, patientBed, patientSector]);
@@ -142,7 +144,7 @@ export function HemocomponentRequestDialog({
         patient_sex: registry?.sex || null,
         patient_blood_group: registry?.blood_type || null,
         patient_record: registry?.medical_record || p.medical_record || null,
-        patient_unit: p.sector || d.patient_unit,
+        patient_unit: (p.sector ? (SECTOR_DISPLAY[p.sector] || p.sector) : d.patient_unit),
         patient_bed: p.bed_number || d.patient_bed,
         patient_diagnosis: p.diagnoses || null,
       }));
@@ -321,7 +323,7 @@ export function HemocomponentRequestDialog({
           </div>
         </div>
 
-        <ScrollArea className="flex-1 px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 pr-3">
           {previewMode ? (
             <PrintableHemocomponentRequest request={previewData} />
           ) : (
@@ -551,7 +553,7 @@ export function HemocomponentRequestDialog({
               </Tabs>
             </div>
           )}
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="p-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>

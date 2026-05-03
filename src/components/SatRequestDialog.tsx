@@ -27,6 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { CollapsibleInfoCard } from "@/components/shared/CollapsibleInfoCard";
+import { SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -106,6 +107,7 @@ export function SatRequestDialog({
 }: Props) {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
+  const sectorLabel = patientSector ? (SECTOR_DISPLAY[patientSector] || patientSector) : "";
 
   const [wound, setWound] = useState<WoundClass>("outras");
   const [vac, setVac] = useState<VaccinationStatus>("incompleta_ou_desconhecida");
@@ -310,7 +312,7 @@ export function SatRequestDialog({
           <CollapsibleInfoCard
             title="Identificação do paciente"
             summary={patientName || "—"}
-            badge={[patientSector, patientBed].filter(Boolean).join(" · ") || undefined}
+            badge={[sectorLabel, patientBed].filter(Boolean).join(" · ") || undefined}
           >
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="md:col-span-2">
@@ -319,7 +321,7 @@ export function SatRequestDialog({
               </div>
               <div>
                 <Label className="text-xs">Setor</Label>
-                <Input value={patientSector || "—"} readOnly className="bg-muted/40" />
+                <Input value={sectorLabel || "—"} readOnly className="bg-muted/40" />
               </div>
               <div>
                 <Label className="text-xs">Leito</Label>
