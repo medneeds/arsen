@@ -133,9 +133,13 @@ export function ForgotPasswordDialog({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu.email@hospital.com.br"
-                  className="pl-10 h-11"
+                  className="pl-10 h-12 text-base sm:h-11 sm:text-sm"
                   disabled={loading}
                   autoFocus
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  inputMode="email"
                 />
               </div>
               <p className="mt-1.5 text-[10px] text-muted-foreground preserve-case">
@@ -151,17 +155,17 @@ export function ForgotPasswordDialog({
               </p>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0">
+            <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => handleClose(false)}
                 disabled={loading}
-                className="preserve-case"
+                className="preserve-case w-full sm:w-auto h-11 sm:h-10"
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={loading} className="preserve-case">
+              <Button type="submit" disabled={loading} className="preserve-case w-full sm:w-auto h-11 sm:h-10">
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />

@@ -9,6 +9,7 @@ import { GlobalSearchDialog } from "@/components/GlobalSearchDialog";
 import { PageTransition } from "@/components/PageTransition";
 import { CultureNotifications } from "@/components/CultureNotifications";
 import { useIsGestor } from "@/hooks/useIsGestor";
+import { MobileMenuFab } from "@/components/MobileMenuFab";
 import { cn } from "@/lib/utils";
 
 interface MainLayoutProps {
@@ -58,6 +59,8 @@ export function MainLayout({ children, onOpenHandover }: MainLayoutProps) {
           </footer>
         </div>
       </div>
+
+      <MobileMenuFab />
 
       <GlobalSearchDialog />
       <KeyboardShortcutsDialog open={showShortcuts} onOpenChange={setShowShortcuts} />

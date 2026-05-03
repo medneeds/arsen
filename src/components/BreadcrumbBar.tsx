@@ -58,7 +58,7 @@ export function BreadcrumbBar({
       )}
     >
       <div className="flex items-center flex-wrap gap-x-2 gap-y-1.5 text-[11px] sm:text-xs font-medium tracking-wide min-w-0">
-        <SidebarTrigger className="flex-shrink-0 h-7 w-7" />
+        <SidebarTrigger className="flex-shrink-0 h-9 w-9 sm:h-7 sm:w-7" />
 
         {showBack && (
           <Button

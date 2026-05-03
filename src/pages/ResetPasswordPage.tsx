@@ -94,12 +94,12 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-10">
+    <div className="min-h-screen flex items-start sm:items-center justify-center bg-background px-4 pt-6 pb-10 sm:py-10">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-md bg-card border border-border/70 rounded-2xl p-6 shadow-xl"
+        className="w-full max-w-md bg-card border border-border/70 rounded-2xl p-5 sm:p-6 shadow-xl"
       >
         <div className="mx-auto h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
           <KeyRound className="h-6 w-6 text-primary" />
@@ -149,15 +149,19 @@ export default function ResetPasswordPage() {
                   type={show ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value.slice(0, 12))}
-                  className="pl-10 pr-11 h-11"
+                  className="pl-10 pr-12 h-12 text-base sm:h-11 sm:text-sm"
                   placeholder="6 a 12 caracteres"
                   maxLength={12}
                   autoFocus
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
                 <button
                   type="button"
                   onClick={() => setShow(!show)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 inline-flex items-center justify-center rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted/60"
+                  aria-label={show ? "Ocultar senha" : "Mostrar senha"}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 inline-flex items-center justify-center rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted/60"
                 >
                   {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -174,14 +178,17 @@ export default function ResetPasswordPage() {
                   type={show ? "text" : "password"}
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value.slice(0, 12))}
-                  className="pl-10 h-11"
+                  className="pl-10 h-12 text-base sm:h-11 sm:text-sm"
                   placeholder="Repita a nova senha"
                   maxLength={12}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </div>
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full h-11 preserve-case">
+            <Button type="submit" disabled={loading} className="w-full h-12 sm:h-11 preserve-case">
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />

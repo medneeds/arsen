@@ -230,7 +230,7 @@ export default function AuthPage() {
 
         <PageHeader />
 
-        <main className="flex-1 flex items-center justify-center px-3 sm:px-6 py-4 md:py-16 relative">
+        <main className="flex-1 flex items-start sm:items-center justify-center px-3 sm:px-6 pt-4 pb-8 sm:py-16 relative">
           <AnimatePresence mode="wait">
             {screen === "login" ? (
               <motion.div
@@ -286,11 +286,14 @@ export default function AuthPage() {
                           value={loginData.username}
                           onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
                           placeholder="Usuário, CPF ou e-mail"
-                          className="preserve-case pl-10 h-12 md:h-11 text-base md:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
+                          className="preserve-case pl-10 h-12 text-base sm:h-11 sm:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
                           disabled={loading}
                           autoComplete="username"
                           autoFocus
                           inputMode="text"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
                         />
                       </div>
                     </div>
@@ -307,25 +310,28 @@ export default function AuthPage() {
                           value={loginData.password}
                           onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                           placeholder="Digite sua senha"
-                          className="pl-10 pr-11 h-12 md:h-11 text-base md:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
+                          className="pl-10 pr-12 h-12 text-base sm:h-11 sm:text-sm bg-muted/40 border border-border rounded-xl font-medium text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:bg-card transition-all"
                           disabled={loading}
                           autoComplete="current-password"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
                           aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 inline-flex items-center justify-center rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted/60 transition-colors"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 inline-flex items-center justify-center rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-muted/60 active:bg-muted transition-colors"
                           tabIndex={-1}
                         >
                           {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
-                      <div className="mt-1.5 flex justify-end">
+                      <div className="mt-2 flex justify-end">
                         <button
                           type="button"
                           onClick={() => setForgotOpen(true)}
-                          className="preserve-case text-[11px] text-primary hover:text-primary/80 hover:underline transition-colors"
+                          className="preserve-case text-xs sm:text-[11px] py-1 px-1 -mr-1 text-primary hover:text-primary/80 hover:underline transition-colors"
                           disabled={loading}
                         >
                           Esqueceu a senha?
@@ -333,14 +339,10 @@ export default function AuthPage() {
                       </div>
                     </div>
 
-                    {/* Tipo de Acesso REMOVIDO — login generalista.
-                        O perfil é definido pelo gestor/admin no cadastro
-                        e o redirecionamento acontece automaticamente. */}
-
                     <Button
                       type="submit"
                       disabled={loading}
-                      className="preserve-case w-full h-12 md:h-11 bg-gradient-to-b from-primary to-primary/90 hover:from-primary/95 hover:to-primary/80 text-primary-foreground font-medium text-sm rounded-xl transition-all duration-300 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 group border border-primary/20"
+                      className="preserve-case w-full h-12 sm:h-11 bg-gradient-to-b from-primary to-primary/90 hover:from-primary/95 hover:to-primary/80 text-primary-foreground font-medium text-sm rounded-xl transition-all duration-300 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 group border border-primary/20"
                     >
                       {loading ? "Entrando..." : (
                         <span className="inline-flex items-center gap-2">
@@ -367,9 +369,9 @@ export default function AuthPage() {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
                 >
-                  <p className="preserve-case inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/80">
-                    <ShieldCheck className="h-3 w-3" />
-                    Acesso restrito • Solicite seu cadastro à coordenação da unidade
+                  <p className="preserve-case inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/80 px-4">
+                    <ShieldCheck className="h-3 w-3 shrink-0" />
+                    <span>Acesso restrito • Solicite seu cadastro à coordenação</span>
                   </p>
                 </motion.div>
               </motion.div>
