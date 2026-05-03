@@ -28,6 +28,55 @@ const TriageQueueTVPage = () => {
   const [queue, setQueue] = useState<QueuePatient[]>([]);
   const [calledPatient, setCalledPatient] = useState<QueuePatient | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const announcedRef = useRef<Set<string>>(new Set());
+
+  // ─── Voz feminina (Web Speech API) ────────────────────────────
+  const speakCall = (patientName: string) => {
+    if (!voiceEnabled || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const voices = window.speechSynthesis.getVoices();
+      // Prefere voz feminina em pt-BR
+      const ptVoices = voices.filter(v => v.lang?.toLowerCase().startsWith("pt"));
+      const female =
+        ptVoices.find(v => /female|mulher|francisca|luciana|maria|joana|fernanda|camila|vitoria/i.test(v.name)) ||
+        ptVoices[0] ||
+        voices[0];
+      const cleanName = patientName.replace(/\s+/g, " ").trim();
+      const phrases = [
+        new SpeechSynthesisUtterance("Atenção."),
+        new SpeechSynthesisUtterance(`${cleanName}.`),
+        new SpeechSynthesisUtterance("Por favor, dirija-se à triagem."),
+      ];
+      phrases.forEach(u => {
+        u.lang = "pt-BR";
+        u.rate = 0.9;
+        u.pitch = 1.05;
+        u.volume = 1;
+        if (female) u.voice = female;
+        window.speechSynthesis.speak(u);
+      });
+    } catch (e) {
+      console.error("[TV] speakCall error", e);
+    }
+  };
+
+  // Garante que a lista de vozes carregue no Chrome
+  useEffect(() => {
+    if (!("speechSynthesis" in window)) return;
+    const load = () => window.speechSynthesis.getVoices();
+    load();
+    window.speechSynthesis.onvoiceschanged = load;
+  }, []);
+
+  // Anuncia o paciente chamado uma única vez
+  useEffect(() => {
+    if (calledPatient && !announcedRef.current.has(calledPatient.id)) {
+      announcedRef.current.add(calledPatient.id);
+      speakCall(calledPatient.patient_name);
+    }
+  }, [calledPatient, voiceEnabled]);
 
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(new Date()), 1000);
