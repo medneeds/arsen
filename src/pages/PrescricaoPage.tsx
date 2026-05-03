@@ -4124,21 +4124,24 @@ const PrescricaoPage = () => {
           <div className="sticky top-0 z-10 px-3 py-2 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border-b border-border/40">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase mr-1">Ir para:</span>
-              {/* Grupo 1: Suporte (dieta + hidratação) */}
-              {(['nutrition', 'hydration'] as PrescriptionCategory[]).map(cat => {
+              {/* Grupo 1: Suporte (dieta + hidratação + reposição) */}
+              {(['nutrition', 'hydration', 'replacement'] as PrescriptionCategory[]).map(cat => {
                 const count = itemsByCategory[cat].length;
                 if (count === 0) return null;
                 const config = CATEGORY_CONFIG[cat];
                 const validatedCount = itemsByCategory[cat].filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
                 const ok = validatedCount === count;
+                const hasWizard = cat === 'nutrition' || cat === 'hydration' || cat === 'replacement';
                 return (
                   <button
                     key={cat}
                     type="button"
-                    title={cat === 'nutrition' ? 'Abrir assistente de nutrição' : undefined}
+                    title={hasWizard ? `Abrir assistente de ${config.label.toLowerCase()}` : undefined}
                     onClick={() => {
                       document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       if (cat === 'nutrition') setNutritionWizardOpen(true);
+                      else if (cat === 'hydration') setHydrationWizardOpen(true);
+                      else if (cat === 'replacement') setReplacementWizardOpen(true);
                     }}
                     className={cn(
                       "group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm hover:-translate-y-px",
@@ -4150,7 +4153,7 @@ const PrescricaoPage = () => {
                     <Circle className={cn("h-1.5 w-1.5 fill-current", ok ? "text-emerald-500" : "text-amber-500")} />
                     {config.label.toLowerCase()}
                     <span className="ml-0.5 font-bold">{count}</span>
-                    {cat === 'nutrition' && <Sparkles className="h-2.5 w-2.5 ml-0.5 opacity-70" />}
+                    {hasWizard && <Sparkles className="h-2.5 w-2.5 ml-0.5 opacity-70" />}
                   </button>
                 );
               })}
