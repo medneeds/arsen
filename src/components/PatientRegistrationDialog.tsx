@@ -106,7 +106,25 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [duplicateMatch, setDuplicateMatch] = useState<{ id: string; full_name: string; medical_record: string | null } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pisInputRef = useRef<HTMLInputElement>(null);
+  const [pisDialogOpen, setPisDialogOpen] = useState(false);
+
+  const formatCPFLocal = (s: string) => s.replace(/\D/g, "").replace(/(\d{3})(\d{3})(\d{3})(\d{2}).*/, "$1.$2.$3-$4");
+  const applyPisData = (data: ExtractedPisData) => {
+    setForm(prev => ({
+      ...prev,
+      patient_name: (data.patient_name || prev.patient_name).toUpperCase(),
+      mother_name: (data.mother_name || prev.mother_name).toUpperCase(),
+      birth_date: data.birth_date || prev.birth_date,
+      sex: data.sex || prev.sex,
+      cpf: data.cpf ? formatCPFLocal(data.cpf) : prev.cpf,
+      cns: data.cns || prev.cns,
+      phone: data.phone || prev.phone,
+      address: (data.address || prev.address).toUpperCase(),
+      neighborhood: (data.neighborhood || prev.neighborhood).toUpperCase(),
+      city: (data.city || prev.city).toUpperCase(),
+    }));
+    setActiveTab("dados");
+  };
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
   const { mode: mrMode } = useMedicalRecordMode(currentHospital?.id);
