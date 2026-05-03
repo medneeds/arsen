@@ -18,6 +18,7 @@ import {
   ShieldCheck, Loader2, LayoutGrid, Filter, Check, Building2,
 } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { GestorNotificationCenter } from "@/components/gestor/GestorNotificationCenter";
 import {
   Popover, PopoverContent, PopoverTrigger,
