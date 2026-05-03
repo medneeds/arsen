@@ -505,7 +505,7 @@ export function ReplacementWizard({
             </div>
             <div>
               <Label className="text-[10px]">Valor laboratorial atual (opcional)</Label>
-              <Input value={value} onChange={(e) => setValue(e.target.value)} className="h-7 text-xs" placeholder="Ex: K 2,8 mEq/L" />
+              <Input value={value} onChange={(e) => setValue(e.target.value)} className="h-7 text-xs" placeholder={LAB_PLACEHOLDERS[disorder]} />
             </div>
           </div>
 
