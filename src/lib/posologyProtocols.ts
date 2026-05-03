@@ -42,9 +42,10 @@ function k(name: string): string {
 const PROTOCOL_DB: Record<string, PosologyProtocol[]> = {
   // ===== ANALGESIA / SINTOMÁTICOS =====
   "dipirona": [
-    { label: "Dor leve/moderada", dose: "1 g", route: "Intravenosa", posology: "6/6h", diluent: "SF 0,9%", diluentVolume: "100 mL", infusionTime: "15", evidence: "Bula" },
-    { label: "Dor — VO", dose: "500 mg", route: "Oral", posology: "6/6h", evidence: "Bula" },
-    { label: "Antitérmico SN", dose: "1 g", route: "Intravenosa", posology: "SOS", instructions: "Se Tax > 37,8°C", evidence: "Bula" },
+    { label: "Dor/febre — IV padrão", indication: "Analgesia/antitérmico de horário", dose: "1 g", route: "Intravenosa", posology: "6/6h", schedule: "06h-12h-18h-24h", diluent: "SF 0,9%", diluentVolume: "10 mL", infusionTime: "5", instructions: "Diluir 1 amp (2 mL) em 8-18 mL SF. Infusão lenta. Máx 4 g/dia.", evidence: "Bula" },
+    { label: "Antitérmico SN", indication: "Se Tax > 37,8°C", dose: "1 g", route: "Intravenosa", posology: "SOS", diluent: "SF 0,9%", diluentVolume: "10 mL", infusionTime: "5", instructions: "Se Tax > 37,8°C. Máx 4 g/dia.", evidence: "Bula" },
+    { label: "Dor — VO comp", indication: "Dor leve/moderada VO", dose: "1 g (2 comp 500 mg)", route: "Oral", posology: "6/6h", schedule: "06h-12h-18h-24h", evidence: "Bula" },
+    { label: "Dor — VO gotas", indication: "Adulto VO líquida", dose: "40 gotas", route: "Oral", posology: "6/6h", instructions: "1 gota = 25 mg. Máx 4 g/dia.", evidence: "Bula" },
   ],
   "paracetamol": [
     { label: "Dor/febre — VO", dose: "750 mg", route: "Oral", posology: "6/6h", evidence: "Bula" },
