@@ -240,40 +240,11 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           </SectionItem>
         )}
         <SectionItem
-          id="vitals"
-          icon={Heart}
-          iconColor="text-emerald-500"
-          label="Sinais Vitais"
-          hint="ao menos 3 aferições recomendadas"
-          complete={completion.vitals}
-          required={false}
-        >
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-            {VITAL_FIELDS.map(v => (
-              <div key={v.key}>
-                <Label className="text-[9px] text-muted-foreground">{v.label}</Label>
-                <div className="relative">
-                  <Input
-                    value={vitals[v.key]}
-                    onChange={e => onVitalsChange(v.key, e.target.value)}
-                    placeholder={v.placeholder}
-                    className="h-7 text-xs pr-8"
-                  />
-                  {v.unit && (
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground">{v.unit}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </SectionItem>
-
-        <SectionItem
           id="evolucao"
           icon={NotebookPen}
           iconColor="text-blue-500"
           label="Evolução"
-          hint="Relato clínico, queixas, hipóteses e avaliação"
+          hint="Relato clínico completo: sinais vitais, exame físico, queixas, hipóteses e avaliação"
           complete={completion.evolucao}
           required
         >
@@ -291,80 +262,49 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           <Textarea
             value={evolucaoText}
             onChange={e => handleEvolucaoChange(e.target.value)}
-            placeholder="Relato clínico do plantão: queixas, evolução percebida, achados, hipóteses diagnósticas, raciocínio clínico..."
-            className="min-h-[180px] text-xs"
+            placeholder="Relato clínico do plantão: sinais vitais relevantes, exame físico dirigido, queixas, evolução percebida, hipóteses diagnósticas, raciocínio clínico..."
+            className="min-h-[220px] text-xs"
           />
         </SectionItem>
 
         <SectionItem
-          id="objective"
+          id="complementares"
           icon={Stethoscope}
           iconColor="text-emerald-500"
-          label="Objetivo"
-          hint="Exame físico + complementares"
-          complete={completion.objective}
-          required
+          label="Exames Complementares"
+          hint="Laboratoriais e de imagem (opcional)"
+          complete={completion.complementares}
+          required={false}
         >
-          <div className="space-y-3">
-            <div>
-              <p className="text-[10px] text-muted-foreground font-semibold tracking-wider mb-2">EXAME FÍSICO POR SISTEMA</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {EXAM_FIELDS.map(exam => (
-                  <div key={exam.key}>
-                    <div className="flex items-center justify-between">
-                      <Label className="text-[10px] text-muted-foreground">{exam.label}</Label>
-                      <FieldTemplates
-                        scope={`evolution.objective.exam.${exam.key}`}
-                        currentValue={physicalExam[exam.key]}
-                        onApply={(v) => onPhysicalExamChange(exam.key, v)}
-                        hospitalUnitId={hospitalId}
-                      />
-                    </div>
-                    <Input
-                      value={physicalExam[exam.key]}
-                      onChange={e => onPhysicalExamChange(exam.key, e.target.value)}
-                      placeholder={`${exam.label}...`}
-                      className="h-7 text-xs"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <Separator />
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <Label className="text-[10px] text-muted-foreground font-semibold tracking-wider">
-                  EXAMES COMPLEMENTARES (laboratoriais e de imagem)
-                </Label>
-                <div className="flex items-center gap-1">
-                  <FieldTemplates
-                    scope="evolution.objective.complementares"
-                    currentValue={soap.objective}
-                    onApply={(v) => onSOAPChange('objective', v)}
-                    hospitalUnitId={hospitalId}
-                  />
-                  <Button
-                    type="button" size="sm" variant="outline"
-                    onClick={() => setExaminusOpen(true)}
-                    className="h-6 gap-1 text-[10px] border-primary/40 text-primary hover:bg-primary/10"
-                    title="Importar exames com Examinus AI"
-                  >
-                    <Sparkles className="h-3 w-3" />
-                    Examinus AI
-                  </Button>
-                </div>
-              </div>
-              <Textarea
-                value={soap.objective}
-                onChange={e => onSOAPChange('objective', e.target.value)}
-                placeholder="Cole resultados laboratoriais ou de imagem, ou use o Examinus AI para extrair automaticamente..."
-                className="min-h-[100px] text-xs"
+          <div className="flex items-center justify-between mb-1">
+            <Label className="text-[10px] text-muted-foreground font-semibold tracking-wider">
+              RESULTADOS LABORATORIAIS E DE IMAGEM
+            </Label>
+            <div className="flex items-center gap-1">
+              <FieldTemplates
+                scope="evolution.objective.complementares"
+                currentValue={soap.objective}
+                onApply={(v) => onSOAPChange('objective', v)}
+                hospitalUnitId={hospitalId}
               />
+              <Button
+                type="button" size="sm" variant="outline"
+                onClick={() => setExaminusOpen(true)}
+                className="h-6 gap-1 text-[10px] border-primary/40 text-primary hover:bg-primary/10"
+                title="Importar exames com Examinus AI"
+              >
+                <Sparkles className="h-3 w-3" />
+                Examinus AI
+              </Button>
             </div>
           </div>
+          <Textarea
+            value={soap.objective}
+            onChange={e => onSOAPChange('objective', e.target.value)}
+            placeholder="Cole resultados laboratoriais ou de imagem, ou use o Examinus AI para extrair automaticamente..."
+            className="min-h-[120px] text-xs"
+          />
         </SectionItem>
-
-        {/* Avaliação foi unificada à Evolução (acima) */}
 
         <SectionItem
           id="plan"
