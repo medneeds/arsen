@@ -20,6 +20,7 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { GestorNotificationCenter } from "@/components/gestor/GestorNotificationCenter";
+import { KpiDrillDownDialog, type DrillDownRow } from "@/components/gestor/KpiDrillDownDialog";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
