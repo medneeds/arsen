@@ -106,10 +106,11 @@ export function HemocomponentRequestDialog({
   // Pré-preenche com props (mock ou contexto da URL) imediatamente
   useEffect(() => {
     if (!open) return;
+    const normalizedSector = patientSector ? (SECTOR_DISPLAY[patientSector] || patientSector) : null;
     setData((d) => ({
       ...d,
       patient_name: d.patient_name || patientName || "",
-      patient_unit: d.patient_unit || patientSector || null,
+      patient_unit: d.patient_unit || normalizedSector,
       patient_bed: d.patient_bed || patientBed || null,
     }));
   }, [open, patientName, patientBed, patientSector]);
