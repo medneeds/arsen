@@ -300,7 +300,7 @@ export function CareCatalogDialog({
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                         Cuidados padronizados
                       </p>
-                      <div className="space-y-1">
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                         {activeProfile.items.map((id) => {
                           const care = CARE_OPTIONS.find((c) => c.id === id);
                           if (!care) return null;
@@ -338,7 +338,7 @@ export function CareCatalogDialog({
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                         Recomendações específicas
                       </p>
-                      <div className="space-y-1">
+                      <div className="grid sm:grid-cols-2 gap-1.5">
                         {activeProfile.extraItems.map((txt) => {
                           const checked = selectedExtras.has(txt);
                           return (
@@ -368,7 +368,7 @@ export function CareCatalogDialog({
             </>
           ) : tab === "perfis" ? (
             <ScrollArea className="flex-1 min-h-0">
-              <div className="px-5 py-3 space-y-2">
+              <div className="px-5 py-3 grid sm:grid-cols-2 gap-2">
                 {CARE_PROFILES.map((profile) => {
                   const Icon = PROFILE_ICONS[profile.icon] ?? ClipboardList;
                   const applied = appliedProfileIds.has(profile.id);
