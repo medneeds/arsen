@@ -104,6 +104,7 @@ import { HydrationWizard } from "@/components/HydrationWizard";
 import { ReplacementWizard } from "@/components/ReplacementWizard";
 import { ItemAssistantWizard, type AssistantPatch } from "@/components/ItemAssistantWizard";
 import type { Patient } from "@/types/patient";
+import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 
 // --- Types ---
 interface DigitalSignature {
