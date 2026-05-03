@@ -196,6 +196,9 @@ export default function GestorPanelPage() {
         });
 
         setBedStats({ total: patients.length, occupied: occupied.length, vacant: vacant.length, doorPatients: doorPatients.length, bySector });
+        setOccupiedPatientsList(occupied);
+        setVacantBedsList(vacant);
+        setDoorPatientsList(doorPatients);
 
         // Critical alerts
         const alerts: CriticalAlert[] = [];
