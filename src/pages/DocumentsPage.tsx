@@ -72,15 +72,6 @@ export default function DocumentsPage() {
       bgColor: "bg-blue-500/10"
     },
     { 
-      id: "opme", 
-      title: "Listas OPME", 
-      description: "Órteses, Próteses e Materiais Especiais",
-      route: "/documents/opme",
-      icon: ClipboardList,
-      color: "text-purple-500",
-      bgColor: "bg-purple-500/10"
-    },
-    { 
       id: "hemoderivados", 
       title: "Hemoderivados", 
       description: "Solicitações e termos de hemotransfusão",
@@ -97,15 +88,6 @@ export default function DocumentsPage() {
       icon: FileCheck,
       color: "text-green-500",
       bgColor: "bg-green-500/10"
-    },
-    { 
-      id: "alto-custo", 
-      title: "Alto Custo", 
-      description: "Solicitações de medicamentos e procedimentos de alto custo",
-      route: "/documents/alto-custo",
-      icon: DollarSign,
-      color: "text-amber-500",
-      bgColor: "bg-amber-500/10"
     },
     { 
       id: "sadt", 

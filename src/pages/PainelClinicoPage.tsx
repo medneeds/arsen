@@ -117,14 +117,6 @@ const DOCUMENTS = [
     { name: "Solicitação Hemoconcentrados", path: "/documents/hemoderivados/solicitacao-hemoconcentrados.pdf" },
     { name: "Termo Hemotransfusão", path: "/documents/hemoderivados/termo-esclarecimento-hemotransfusao.pdf" },
   ]},
-  { group: "OPME", items: [
-    { name: "Angiografia Cerebral", path: "/documents/opme/angiografia-cerebral.doc" },
-    { name: "ATC/CATE", path: "/documents/opme/atc-cate.doc" },
-    { name: "Cateterismo", path: "/documents/opme/cateterismo.doc" },
-    { name: "Gastrostomia", path: "/documents/opme/gastrostomia-endoscopica.doc" },
-    { name: "Implante Permcath", path: "/documents/opme/implante-permcath.odt" },
-    { name: "Trombectomia Mecânica", path: "/documents/opme/trombectomia-mecanica.doc" },
-  ]},
   { group: "SADT", items: [
     { name: "Guia SP/SADT", path: "/documents/sadt/hapvida-guia-sp-sadt.pdf" },
     { name: "Guia SP/SADT Paisagem", path: "/documents/sadt/hapvida-guia-sp-sadt-paisagem.pdf" },
@@ -141,13 +133,6 @@ const DOCUMENTS = [
   ]},
   { group: "Regulações SUS", items: [
     { name: "Modelo Anamnese Regulação", path: "/documents/regulacoes-sus/modelo-anamnese-regulacao.pdf" },
-  ]},
-  { group: "Alto Custo", items: [
-    { name: "Alteplase AVEI", path: "/documents/alto-custo/alteplase-avei.odt" },
-    { name: "Ciclofosfamida", path: "/documents/alto-custo/ciclofosfamida.odt" },
-    { name: "Ertapenem", path: "/documents/alto-custo/ertapenem.odt" },
-    { name: "Imunoglobulina Humana", path: "/documents/alto-custo/imunoglobulina-humana.odt" },
-    { name: "Teicoplanina", path: "/documents/alto-custo/teicoplanina.odt" },
   ]},
 ];
 
