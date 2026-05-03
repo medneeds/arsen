@@ -990,12 +990,7 @@ function SortablePrescriptionItemRow({
             return f ? <Badge key={fk} variant="outline" className="text-[8px] px-1 shrink-0 text-muted-foreground border-border/50">{f.label}</Badge> : null;
           })}
         </div>
-        {/* Schedule compact — far right */}
-        <div className="shrink-0 flex items-center gap-1 pl-2 border-l border-border/30">
-          {item.schedule && (
-            <span className="text-[10px] font-mono text-primary/80">{item.schedule}</span>
-          )}
-        </div>
+        {/* Aprazamento removido — feito manualmente pela enfermagem */}
         <ItemActions />
       </div>
     );
