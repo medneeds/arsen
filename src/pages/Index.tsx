@@ -1055,6 +1055,31 @@ const Index = () => {
             </div>
           </main>
 
+          {/* Floating bottom controls — Tela cheia + Ocultar nomes (LGPD) */}
+          <div className="fixed bottom-5 right-5 z-40 flex items-center gap-1.5 rounded-full border border-border/60 bg-card/95 backdrop-blur-md shadow-lg p-1 print:hidden">
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={toggleNamesHidden}
+                    className={`h-9 w-9 rounded-full transition-all ${namesHidden ? 'bg-primary text-primary-foreground hover:bg-primary/90' : 'text-foreground hover:bg-muted'}`}>
+                    {namesHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left"><p>{namesHidden ? "Mostrar nomes" : "Ocultar nomes (LGPD)"}</p></TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={toggleFullscreen}
+                    className="h-9 w-9 rounded-full text-foreground hover:bg-muted">
+                    {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left"><p>{isFullscreen ? "Sair da tela cheia" : "Tela cheia"}</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+
           {/* Footer */}
           <footer className="border-t border-border mt-8 print:hidden">
             <div className="container mx-auto px-4 py-4">
