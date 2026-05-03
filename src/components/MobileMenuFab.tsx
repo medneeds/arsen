@@ -19,8 +19,9 @@ export function MobileMenuFab() {
       type="button"
       onClick={toggleSidebar}
       aria-label="Abrir menu"
+      style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
       className={cn(
-        "md:hidden fixed bottom-4 left-3 z-40",
+        "md:hidden fixed left-3 z-40",
         "h-12 w-12 rounded-full",
         "bg-primary text-primary-foreground shadow-lg shadow-primary/30",
         "border border-primary/30",
