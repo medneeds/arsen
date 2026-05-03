@@ -111,6 +111,13 @@ export default function GestorPanelPage() {
   const [movementTrend, setMovementTrend] = useState<{ day: string; altas: number; admissoes: number; transferencias: number; obitos: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  // ── Drill-down datasets (D-5) ──
+  const [occupiedPatientsList, setOccupiedPatientsList] = useState<any[]>([]);
+  const [vacantBedsList, setVacantBedsList] = useState<any[]>([]);
+  const [doorPatientsList, setDoorPatientsList] = useState<any[]>([]);
+  const [pendingRequestsList, setPendingRequestsList] = useState<any[]>([]);
+  const [prescriptionsList, setPrescriptionsList] = useState<any[]>([]);
+  const [drillDown, setDrillDown] = useState<string | null>(null);
   const [sectorFilter, setSectorFilter] = useState<string>(() => {
     if (typeof window === "undefined") return "ALL";
     return localStorage.getItem("gestor_sector_filter") || "ALL";
