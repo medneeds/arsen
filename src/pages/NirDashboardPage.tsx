@@ -316,8 +316,10 @@ export default function NirDashboardPage() {
             Gestão centralizada de leitos, regulações e fluxo de pacientes
           </p>
         </div>
-        <NirPdfExport metrics={metrics} predictions={predictions} />
-      </div>
+        <div className="flex items-center gap-2">
+          <NirNotificationCenter metrics={metrics} />
+          <NirPdfExport metrics={metrics} predictions={predictions} />
+        </div>
 
       {/* Filtros globais */}
       <NirGlobalFilters filters={filters} onChange={setFilters} onRefresh={refetch} isLoading={isLoading} />
