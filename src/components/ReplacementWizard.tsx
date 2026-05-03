@@ -22,6 +22,17 @@ const DISORDERS: { key: Disorder; label: string; detail: string }[] = [
   { key: "acidose", label: "Acidose metabólica", detail: "HCO₃⁻ baixo, pH < 7,30" },
 ];
 
+const LAB_PLACEHOLDERS: Record<Disorder, string> = {
+  hipoK: "Ex: K 2,8 mEq/L",
+  hipoMg: "Ex: Mg 1,4 mg/dL",
+  hipoCa: "Ex: Ca iônico 0,95 mmol/L",
+  hipoNa: "Ex: Na 128 mEq/L",
+  hipoP: "Ex: P 1,8 mg/dL",
+  hiperK: "Ex: K 6,2 mEq/L",
+  hiperNa: "Ex: Na 152 mEq/L",
+  acidose: "Ex: pH 7,22 / HCO₃ 14",
+};
+
 interface RecipeItem {
   name: string;
   presentation: string;
