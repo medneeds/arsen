@@ -4305,7 +4305,7 @@ const PrescricaoPage = () => {
               //  - Medicações (meds, ATB, alto alerta, inalatórios, hemo)
               //  - Cuidados e orientações (care + não padrão)
               const GROUPS: { id: string; label: string; cats: PrescriptionCategory[] }[] = [
-                { id: 'suporte', label: 'Suporte clínico', cats: ['nutrition', 'hydration'] },
+                { id: 'suporte', label: 'Suporte clínico', cats: ['nutrition', 'hydration', 'replacement'] },
                 { id: 'medicacoes', label: 'Medicações', cats: ['medication', 'antimicrobial', 'high_alert', 'inhalation', 'hemotherapy'] },
                 { id: 'cuidados', label: 'Cuidados e orientações', cats: ['care', 'nonstandard'] },
               ];
