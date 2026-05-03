@@ -4526,6 +4526,7 @@ const PrescricaoPage = () => {
                           onDuplicate={duplicateItem}
                           onRequestSuspend={requestSuspendItem}
                           onReactivate={reactivateItem}
+                          onAssistant={(id) => setItemAssistantTargetId(id)}
                           onToggleValidation={requestValidateItem}
                           isPastRenewalTime={isPastRenewalTime}
                           prescriptionLocked={prescriptionLocked}
