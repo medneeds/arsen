@@ -173,6 +173,7 @@ export function PreAdmissionSection({ sectorFilterLabel }: PreAdmissionSectionPr
                     pa.risk_classification === "amarelo" && "border-l-yellow-500",
                     pa.risk_classification === "verde" && "border-l-green-600",
                     pa.risk_classification === "azul" && "border-l-blue-600",
+                    pa.risk_classification === "branca" && "border-l-slate-400",
                   )}>
                     <CardContent className="p-3 space-y-2">
                       <div className="flex items-start justify-between gap-2">
