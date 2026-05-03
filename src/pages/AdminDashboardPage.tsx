@@ -851,6 +851,7 @@ const AdminDashboardPage = () => {
               onPickRegistry={handlePickRegistryFromDashboard}
               onTriageExpress={openTriageExpress}
               onNewRegistration={() => setShowRegisterDialog(true)}
+              hideQuickActions
             />
 
             {/* Search & Quick Actions */}
