@@ -58,6 +58,9 @@ export function MainLayout({ children, onOpenHandover }: MainLayoutProps) {
             </p>
           </footer>
         </div>
+
+        {/* Trigger global flutuante — sempre visível para abrir/fechar a sidebar em qualquer página */}
+        <FloatingSidebarTrigger />
       </div>
 
       <MobileMenuFab />
@@ -66,5 +69,20 @@ export function MainLayout({ children, onOpenHandover }: MainLayoutProps) {
       <KeyboardShortcutsDialog open={showShortcuts} onOpenChange={setShowShortcuts} />
       <CultureNotifications />
     </SidebarProvider>
+  );
+}
+
+/** Botão flutuante persistente que alterna a sidebar — funciona em toda a plataforma */
+function FloatingSidebarTrigger() {
+  const { state, isMobile } = useSidebar();
+  if (isMobile) return null; // mobile já tem o MobileMenuFab
+  return (
+    <SidebarTrigger
+      className={cn(
+        "fixed top-3 z-50 h-9 w-9 rounded-full border bg-background/90 shadow-sm backdrop-blur transition-all hover:bg-accent",
+        state === "expanded" ? "left-[calc(var(--sidebar-width)+0.75rem)]" : "left-3",
+      )}
+      aria-label="Alternar menu lateral"
+    />
   );
 }
