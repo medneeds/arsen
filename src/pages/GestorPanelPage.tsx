@@ -350,47 +350,36 @@ export default function GestorPanelPage() {
 
   return (
     <MainLayout>
-      {/* Cabeçalho institucional sticky — distribui trigger, identidade e ações */}
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center gap-3">
-          {/* Trigger da sidebar — sempre alinhado ao início, sem sobreposição */}
-          <SidebarTrigger className="h-9 w-9 shrink-0" aria-label="Alternar menu lateral" />
-
-          {/* Identidade */}
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="h-9 w-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-              <BarChart3 className="h-4.5 w-4.5 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-base md:text-lg font-bold text-foreground leading-tight truncate">
-                Painel do Gestor
-              </h1>
-              <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                <Building2 className="h-3 w-3" />
-                <span className="truncate">{selectedUnit?.name || "Unidade"}</span>
-                <span className="text-muted-foreground/40">·</span>
-                <span className="truncate">{isAllSectors ? "Visão consolidada" : sectorDisplayName}</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Ações */}
-          <div className="flex items-center gap-1.5 shrink-0">
+      <PlatformHeader
+        variant="institutional"
+        eyebrow="Painel · Gestão Hospitalar"
+        title="Painel do Gestor"
+        icon={BarChart3}
+        subtitle={
+          <>
+            <Building2 className="h-3 w-3" />
+            <span className="truncate">{selectedUnit?.name || "Unidade"}</span>
+            <span className="opacity-50">·</span>
+            <span className="truncate">{isAllSectors ? "Visão consolidada" : sectorDisplayName}</span>
+          </>
+        }
+        actions={
+          <>
             <GestorNotificationCenter
               data={{ occupancyRate, bedStats, criticalAlerts, pendingRequests, prescriptionStats }}
             />
-            <span className="hidden md:block w-px h-6 bg-border/60 mx-1" />
-            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="gap-1.5 h-9">
+            <span className="hidden md:block w-px h-6 bg-white/20 mx-1" />
+            <Button variant="ghost" size="sm" onClick={handleExport} disabled={exporting} className="gap-1.5 h-9 text-primary-foreground hover:bg-white/10 hover:text-primary-foreground">
               {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               <span className="hidden md:inline">Exportar</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => { fetchData(); toast.success("Dados atualizados"); }} disabled={loading} className="gap-1.5 h-9">
+            <Button variant="ghost" size="sm" onClick={() => { fetchData(); toast.success("Dados atualizados"); }} disabled={loading} className="gap-1.5 h-9 text-primary-foreground hover:bg-white/10 hover:text-primary-foreground">
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
               <span className="hidden md:inline">Atualizar</span>
             </Button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <div className="p-4 md:p-6 space-y-5 max-w-7xl mx-auto">
         {/* Filtro hierárquico de setores */}
