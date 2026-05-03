@@ -15,6 +15,7 @@ import { useMedicalRecordMode } from "@/hooks/useMedicalRecordMode";
 import { Camera, Upload, User, MapPin, Loader2, Sparkles, AlertCircle, ShieldAlert, UserX, FileUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { PisImportDialog, ExtractedPisData } from "./PisImportDialog";
 
 interface PatientRegistrationDialogProps {
   open: boolean;
@@ -105,7 +106,25 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [duplicateMatch, setDuplicateMatch] = useState<{ id: string; full_name: string; medical_record: string | null } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const pisInputRef = useRef<HTMLInputElement>(null);
+  const [pisDialogOpen, setPisDialogOpen] = useState(false);
+
+  const formatCPFLocal = (s: string) => s.replace(/\D/g, "").replace(/(\d{3})(\d{3})(\d{3})(\d{2}).*/, "$1.$2.$3-$4");
+  const applyPisData = (data: ExtractedPisData) => {
+    setForm(prev => ({
+      ...prev,
+      patient_name: (data.patient_name || prev.patient_name).toUpperCase(),
+      mother_name: (data.mother_name || prev.mother_name).toUpperCase(),
+      birth_date: data.birth_date || prev.birth_date,
+      sex: data.sex || prev.sex,
+      cpf: data.cpf ? formatCPFLocal(data.cpf) : prev.cpf,
+      cns: data.cns || prev.cns,
+      phone: data.phone || prev.phone,
+      address: (data.address || prev.address).toUpperCase(),
+      neighborhood: (data.neighborhood || prev.neighborhood).toUpperCase(),
+      city: (data.city || prev.city).toUpperCase(),
+    }));
+    setActiveTab("dados");
+  };
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
   const { mode: mrMode } = useMedicalRecordMode(currentHospital?.id);
@@ -410,27 +429,21 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
         {/* Botão discreto sempre visível: importar do sistema legado PIS */}
         {!form.is_unidentified && (
           <div className="flex items-center justify-end">
-            <input
-              ref={pisInputRef}
-              type="file"
-              accept="application/pdf,image/*"
-              className="hidden"
-              onChange={handleImageUpload}
-            />
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => pisInputRef.current?.click()}
-              disabled={isExtracting}
+              onClick={() => setPisDialogOpen(true)}
               className="h-7 px-2.5 text-[11px] gap-1.5 border-dashed text-muted-foreground hover:text-foreground"
-              title="Importar PDF do sistema PIS — IA preenche os campos automaticamente"
+              title="Importar dados do sistema PIS — anexe PDF/imagem ou cole o texto"
             >
-              {isExtracting ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileUp className="h-3 w-3" />}
+              <FileUp className="h-3 w-3" />
               Importar do PIS
             </Button>
           </div>
         )}
+
+        <PisImportDialog open={pisDialogOpen} onOpenChange={setPisDialogOpen} onExtracted={applyPisData} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">

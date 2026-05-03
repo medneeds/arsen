@@ -20,10 +20,10 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64, mimeType } = await req.json();
-    
-    if (!imageBase64) {
-      return new Response(JSON.stringify({ error: "Imagem não fornecida" }), {
+    const { imageBase64, mimeType, rawText } = await req.json();
+
+    if (!imageBase64 && !rawText) {
+      return new Response(JSON.stringify({ error: "Forneça imageBase64 ou rawText" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -31,6 +31,28 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    const systemPrompt = `Você é um extrator de dados de documentos médicos e de identificação brasileiros (sistema PIS, RG, CNH, Cartão SUS, ficha hospitalar, etc).
+Extraia os seguintes dados do paciente:
+- patient_name: Nome completo
+- mother_name: Nome da mãe (se disponível)
+- birth_date: Data de nascimento no formato YYYY-MM-DD
+- sex: Sexo (M, F ou Outro)
+- cpf: CPF (apenas números)
+- cns: Cartão Nacional de Saúde (se disponível)
+- address: Endereço completo (logradouro + número)
+- neighborhood: Bairro
+- city: Cidade
+- phone: Telefone (se disponível)
+
+Se um campo não for encontrado, retorne null. Responda APENAS via tool call.`;
+
+    const userContent = rawText
+      ? [{ type: "text", text: `Extraia os dados do paciente deste texto colado (pode estar bruto, com quebras estranhas):\n\n${rawText}` }]
+      : [
+          { type: "image_url", image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` } },
+          { type: "text", text: "Extraia os dados do paciente deste documento." }
+        ];
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -41,39 +63,8 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          {
-            role: "system",
-            content: `Você é um extrator de dados de documentos médicos e de identificação brasileiros.
-Analise a imagem do documento e extraia os seguintes dados do paciente:
-- patient_name: Nome completo
-- mother_name: Nome da mãe (se disponível)
-- birth_date: Data de nascimento no formato YYYY-MM-DD
-- sex: Sexo (M, F ou Outro)
-- cpf: CPF (apenas números)
-- cns: Cartão Nacional de Saúde (se disponível)
-- address: Endereço completo
-- neighborhood: Bairro
-- city: Cidade
-- phone: Telefone (se disponível)
-
-Se um campo não for encontrado, retorne null.
-Responda APENAS com o JSON, sem markdown.`
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}`
-                }
-              },
-              {
-                type: "text",
-                text: "Extraia os dados do paciente deste documento."
-              }
-            ]
-          }
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userContent },
         ],
         tools: [
           {
