@@ -227,7 +227,9 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               {patient.bedNumber} · {sector}
             </div>
             {allergies.length > 0 && (
-              <ShieldAlert className="h-3.5 w-3.5 text-destructive" title={`Alergia: ${allergies.join(", ")}`} />
+              <span title={`Alergia: ${allergies.join(", ")}`}>
+                <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
+              </span>
             )}
           </div>
         )}
