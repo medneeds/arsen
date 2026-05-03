@@ -145,7 +145,7 @@ export function HospitalSelector({ selectedHospitalId, onSelect, className }: Ho
             </div>
 
             {/* List */}
-            <div className="max-h-[240px] overflow-y-auto py-1">
+            <div className="max-h-[60vh] sm:max-h-[240px] overflow-y-auto py-1 overscroll-contain">
               {filtered.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground py-6">
                   Nenhum hospital encontrado
