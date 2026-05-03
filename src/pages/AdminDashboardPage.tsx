@@ -1057,30 +1057,24 @@ const AdminDashboardPage = () => {
             </DialogDescription>
           </DialogHeader>
 
-          {/* Botão discreto: importar do sistema legado PIS via IA */}
+          {/* Botão discreto: importar do sistema legado PIS via IA (PDF/imagem ou texto colado) */}
           {!registerForm.is_unidentified && (
             <div className="flex items-center justify-end">
-              <input
-                ref={pisInputRef}
-                type="file"
-                accept="application/pdf,image/*"
-                className="hidden"
-                onChange={handlePisImport}
-              />
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => pisInputRef.current?.click()}
-                disabled={isExtractingPis}
+                onClick={() => setPisDialogOpen(true)}
                 className="h-7 px-2.5 text-[11px] gap-1.5 border-dashed text-muted-foreground hover:text-foreground"
-                title="Importar PDF do sistema PIS — IA preenche os campos automaticamente"
+                title="Importar dados do sistema PIS — anexe PDF/imagem ou cole o texto"
               >
-                {isExtractingPis ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileUp className="h-3 w-3" />}
+                <FileUp className="h-3 w-3" />
                 Importar do PIS
               </Button>
             </div>
           )}
+
+          <PisImportDialog open={pisDialogOpen} onOpenChange={setPisDialogOpen} onExtracted={applyPisData} />
 
           {/* Detecção de duplicatas em tempo real (só quando NÃO é NI) */}
           {!registerForm.is_unidentified && (
