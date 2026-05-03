@@ -437,6 +437,66 @@ export default function IAPage() {
               </div>
             )}
 
+            {/* Toggles de inteligência clínica */}
+            <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setUsePipeSeparator((v) => !v)}
+                title="Separar parâmetros com barra ( | )"
+                className={cn(
+                  "inline-flex items-center gap-1 h-7 px-2 rounded-full border text-[10px] uppercase tracking-wide transition-colors",
+                  usePipeSeparator
+                    ? "bg-primary/15 border-primary/40 text-primary"
+                    : "bg-background border-border text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <SeparatorVertical className="h-3 w-3" />
+                Pipe
+              </button>
+              <button
+                type="button"
+                onClick={() => setIncludeTime((v) => !v)}
+                title="Incluir horário HH:MM após a data"
+                className={cn(
+                  "inline-flex items-center gap-1 h-7 px-2 rounded-full border text-[10px] uppercase tracking-wide transition-colors",
+                  includeTime
+                    ? "bg-primary/15 border-primary/40 text-primary"
+                    : "bg-background border-border text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <Clock className="h-3 w-3" />
+                Horário
+              </button>
+              <button
+                type="button"
+                onClick={() => setOnlyAltered((v) => !v)}
+                title="Exibir somente resultados alterados (↑ ↓)"
+                className={cn(
+                  "inline-flex items-center gap-1 h-7 px-2 rounded-full border text-[10px] uppercase tracking-wide transition-colors",
+                  onlyAltered
+                    ? "bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400"
+                    : "bg-background border-border text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <AlertTriangle className="h-3 w-3" />
+                Alterados
+              </button>
+              <button
+                type="button"
+                onClick={() => setClinicalImpression((v) => !v)}
+                title="Adicionar seção de Impressão Clínica após os exames"
+                className={cn(
+                  "inline-flex items-center gap-1 h-7 px-2 rounded-full border text-[10px] uppercase tracking-wide transition-colors",
+                  clinicalImpression
+                    ? "bg-blue-500/15 border-blue-500/40 text-blue-600 dark:text-blue-400"
+                    : "bg-background border-border text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <Stethoscope className="h-3 w-3" />
+                Impressão
+              </button>
+            </div>
+
             <div className="flex gap-1.5">
               <div className="flex-1 space-y-0.5">
                 <Textarea
