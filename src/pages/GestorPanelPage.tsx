@@ -528,20 +528,26 @@ export default function GestorPanelPage() {
             </Popover>
         </div>
 
-        {/* KPI Cards */}
+        {/* KPI Cards (clicáveis para drill-down) */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {kpiCards.map((kpi, i) => (
             <motion.div key={kpi.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-              <Card className="border-border/50 hover:shadow-md transition-shadow">
-                <CardContent className="p-3.5">
-                  <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center mb-2", kpi.bg)}>
-                    <kpi.icon className={cn("h-4 w-4", kpi.color)} />
-                  </div>
-                  <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-0.5">{kpi.title}</p>
-                  <p className="text-[9px] text-muted-foreground/70">{kpi.sub}</p>
-                </CardContent>
-              </Card>
+              <button
+                type="button"
+                onClick={() => setDrillDown(kpi.key)}
+                className="w-full text-left"
+              >
+                <Card className="border-border/50 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer">
+                  <CardContent className="p-3.5">
+                    <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center mb-2", kpi.bg)}>
+                      <kpi.icon className={cn("h-4 w-4", kpi.color)} />
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-0.5">{kpi.title}</p>
+                    <p className="text-[9px] text-muted-foreground/70">{kpi.sub}</p>
+                  </CardContent>
+                </Card>
+              </button>
             </motion.div>
           ))}
         </div>
