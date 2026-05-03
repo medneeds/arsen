@@ -198,7 +198,16 @@ const PROTOCOL_DB: Record<string, PosologyProtocol[]> = {
     { label: "Crise asmática", dose: "200 mg", route: "Intravenosa", posology: "6/6h", evidence: "A" },
   ],
   "dexametasona": [
-    { label: "COVID/anti-inflamatório", dose: "6 mg", route: "Intravenosa", posology: "1x/dia", evidence: "A" },
+    { label: "COVID-19 / SDRA", indication: "Hipoxemia ou em VM por COVID/SDRA", dose: "6 mg", route: "Intravenosa", posology: "1x/dia", schedule: "08h", diluent: "SF 0,9%", diluentVolume: "100 mL", infusionTime: "15", instructions: "Por até 10 dias. Monitorar glicemia.", evidence: "A" },
+    { label: "Antiemético — QT/PO", indication: "Profilaxia náusea pós-QT/pós-op", dose: "8 mg", route: "Intravenosa", posology: "Dose única", diluent: "SF 0,9%", diluentVolume: "50 mL", infusionTime: "15", evidence: "A" },
+    { label: "Edema cerebral", indication: "Tumor SNC / metástase", dose: "10 mg", route: "Intravenosa", posology: "Ataque", instructions: "Seguir 4 mg EV 6/6h. Reduzir conforme resposta.", evidence: "A" },
+    { label: "Edema cerebral — manutenção", indication: "Manutenção pós-ataque", dose: "4 mg", route: "Intravenosa", posology: "6/6h", schedule: "06h-12h-18h-24h", diluent: "SF 0,9%", diluentVolume: "50 mL", infusionTime: "15", evidence: "A" },
+    { label: "Crupe / laringite", indication: "Pediátrico — laringite", dose: "0,6 mg/kg", route: "Intravenosa", posology: "Dose única", instructions: "Dose máxima 10 mg.", evidence: "A" },
+    { label: "Anti-inflamatório — VO", indication: "Tratamento curto VO", dose: "4 mg", route: "Oral", posology: "1x/dia", schedule: "08h", instructions: "Tomar com alimento.", evidence: "Bula" },
+  ],
+  "decadron": [
+    { label: "COVID-19 / SDRA", dose: "6 mg", route: "Intravenosa", posology: "1x/dia", schedule: "08h", diluent: "SF 0,9%", diluentVolume: "100 mL", infusionTime: "15", evidence: "A" },
+    { label: "Antiemético", dose: "8 mg", route: "Intravenosa", posology: "Dose única", evidence: "A" },
   ],
 
   // ===== RESPIRATÓRIO =====
