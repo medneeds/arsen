@@ -1587,9 +1587,8 @@ function ExtraPrescriptionDialog({
                     ))}
                   </div>
                 </div>
-                {/* Row: Schedule */}
+                {/* Row: Observações */}
                 <div className="flex items-center gap-1.5">
-                  <Input value={item.schedule} onChange={(e) => updateExtraItem(item.id, "schedule", e.target.value)} className="h-7 text-xs bg-muted/10 border-border/30 w-44 font-mono" placeholder="Aprazamento (ex: 14h, 22h)" />
                   <Input value={item.instructions} onChange={(e) => updateExtraItem(item.id, "instructions", e.target.value)} className="h-7 text-[11px] bg-muted/10 border-border/20 flex-1 text-muted-foreground italic" placeholder="Observações..." />
                 </div>
               </div>
