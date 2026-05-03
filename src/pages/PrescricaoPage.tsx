@@ -4347,6 +4347,10 @@ const PrescricaoPage = () => {
                 </div>
               );
             })}
+                  </div>
+                );
+              });
+            })()}
           </SortableContext>
         </DndContext>
 
