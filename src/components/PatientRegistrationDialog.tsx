@@ -15,6 +15,7 @@ import { useMedicalRecordMode } from "@/hooks/useMedicalRecordMode";
 import { Camera, Upload, User, MapPin, Loader2, Sparkles, AlertCircle, ShieldAlert, UserX, FileUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { PisImportDialog, ExtractedPisData } from "./PisImportDialog";
 
 interface PatientRegistrationDialogProps {
   open: boolean;
