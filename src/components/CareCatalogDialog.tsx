@@ -481,7 +481,7 @@ export function CareCatalogDialog({
                             {g.items.length}
                           </Badge>
                         </div>
-                        <div className="grid sm:grid-cols-2 gap-1.5">
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                           {g.items.map((care) => {
                             const selected = quickSelected.has(care.id);
                             const flashed = justAdded.has(care.id);
