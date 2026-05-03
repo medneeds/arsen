@@ -4278,6 +4278,21 @@ const PrescricaoPage = () => {
           onDuplicateSelected={duplicateSelected}
         />
 
+      {/* Nutrition Wizard */}
+      <NutritionWizard
+        open={nutritionWizardOpen}
+        onOpenChange={setNutritionWizardOpen}
+        patientWeight={patient.weight}
+        onAdd={(entries) => {
+          // Substitui qualquer item de nutrição existente para evitar duplicidade conflitante
+          setItems(prev => {
+            const filtered = prev.filter(i => i.category !== 'nutrition');
+            const newItems = entries.map(e => createItem(e));
+            return [...filtered, ...newItems];
+          });
+          toast.success(`${entries.length} ${entries.length === 1 ? 'item nutricional adicionado' : 'itens nutricionais adicionados'}`);
+        }}
+      />
 
         {items.length === 0 && (() => {
           const admissionTpls = quickTemplates.filter(t => t.clinical_category === 'admissao');
