@@ -2247,6 +2247,7 @@ const PrescricaoPage = () => {
   const [pendingAntimicrobialMed, setPendingAntimicrobialMed] = useState<MedicationEntry | null>(null);
   const [highAlertGuideOpen, setHighAlertGuideOpen] = useState(false);
   const [careCatalogOpen, setCareCatalogOpen] = useState(false);
+  const [nutritionWizardOpen, setNutritionWizardOpen] = useState(false);
   const [compactView, setCompactView] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<PrescriptionCategory>>(new Set());
 
