@@ -121,6 +121,44 @@ export function SatRequestDialog({
   const [doctorCrm, setDoctorCrm] = useState("");
   const [observations, setObservations] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [patientRecord, setPatientRecord] = useState<string>("");
+  const [patientBirth, setPatientBirth] = useState<string>("");
+
+  // Pré-carrega dados do médico + paciente
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      if (user?.id) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("full_name, crm")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (prof?.full_name) setDoctorName(prof.full_name);
+        if (prof?.crm) setDoctorCrm(prof.crm);
+      }
+      const validId = asUuidOrNull(patientId);
+      if (validId) {
+        const { data: p } = await supabase
+          .from("patients")
+          .select("medical_record, patient_registry_id")
+          .eq("id", validId)
+          .maybeSingle();
+        if (p) {
+          setPatientRecord(p.medical_record || "");
+          if (p.patient_registry_id) {
+            const { data: r } = await supabase
+              .from("patient_registry")
+              .select("birth_date, medical_record")
+              .eq("id", p.patient_registry_id)
+              .maybeSingle();
+            if (r?.birth_date) setPatientBirth(r.birth_date);
+            if (r?.medical_record) setPatientRecord(r.medical_record);
+          }
+        }
+      }
+    })();
+  }, [open, user?.id, patientId]);
 
   // Recomendação dinâmica do PNI
   const recommendation = useMemo(() => recommendConduct(wound, vac), [wound, vac]);
