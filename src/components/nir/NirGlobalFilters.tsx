@@ -76,24 +76,41 @@ export function NirGlobalFilters({ filters, onChange, onRefresh, isLoading }: Pr
       </div>
 
       {/* Prioridade */}
-      <div className="flex items-center gap-1.5">
-        <Flag className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Prioridade:</span>
-        <div className="flex rounded-md border overflow-hidden">
-          {PRIORITIES.map((p) => (
-            <button
-              key={p.key}
-              onClick={() => onChange({ ...filters, priority: p.key })}
-              className={cn(
-                "px-2.5 py-1 text-[11px] font-medium transition-colors",
-                filters.priority === p.key ? "bg-primary text-primary-foreground" : cn("bg-background hover:bg-accent", p.tone),
-              )}
-            >
-              {p.label}
-            </button>
-          ))}
+      <TooltipProvider delayDuration={150}>
+        <div className="flex items-center gap-1.5">
+          <Flag className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Prioridade:</span>
+          <div className="flex rounded-md border overflow-hidden">
+            {PRIORITIES.map((p) => (
+              <Tooltip key={p.key}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => onChange({ ...filters, priority: p.key })}
+                    className={cn(
+                      "px-2.5 py-1 text-[11px] font-medium transition-colors",
+                      filters.priority === p.key ? "bg-primary text-primary-foreground" : cn("bg-background hover:bg-accent", p.tone),
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[240px] text-xs">
+                  {p.hint}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="text-muted-foreground hover:text-foreground"><HelpCircle className="h-3.5 w-3.5" /></button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[280px] text-xs">
+              <p className="font-semibold mb-1">Lógica de Prioridade (Manchester adaptado)</p>
+              <p>Aplicada às <strong>solicitações de regulação</strong> (não aos leitos). Define o tempo-alvo para alocação de vaga conforme gravidade clínica.</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
-      </div>
+      </TooltipProvider>
 
       <div className="flex-1" />
 
