@@ -269,8 +269,21 @@ export default function IAPage() {
     streamChat(userMessage, selectedFile || undefined);
   };
 
+  const handleClose = (next: boolean) => {
+    setOpen(next);
+    if (!next) {
+      // Volta para a tela anterior; se não houver, vai para a Home
+      if (window.history.length > 1) navigate(-1);
+      else navigate("/");
+    }
+  };
+
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col bg-background">
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent
+        className="p-0 gap-0 max-w-4xl w-[92vw] h-[88vh] sm:h-[85vh] flex flex-col overflow-hidden rounded-2xl border bg-background shadow-2xl"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
       {/* Header */}
       <div className="border-b bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 backdrop-blur-sm">
         <div className="px-3 py-2">
