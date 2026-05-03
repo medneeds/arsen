@@ -610,7 +610,46 @@ export function RiskClassificationDialog({ open, onOpenChange, preAdmission, onS
               </div>
             </div>
           ) : (
-            <div className="space-y-2 pb-4">
+            <div className="space-y-3 pb-4">
+              {(() => {
+                const sug = RISK_LEVELS.find(r => r.value === suggestion.level)!;
+                return (
+                  <div className="rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Info className="h-4 w-4 text-primary" />
+                        <span className="text-xs font-semibold uppercase tracking-wide text-primary">
+                          Sugestão do sistema
+                        </span>
+                        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded", sug.color.split(" ").filter(c => c.startsWith("bg-") || c.startsWith("text-")).join(" "))}>
+                          {sug.label}
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => setSelected(suggestion.level)}
+                        disabled={selected === suggestion.level}
+                      >
+                        {selected === suggestion.level ? "Aplicada" : "Aplicar sugestão"}
+                      </Button>
+                    </div>
+                    {suggestion.reasons.length > 0 ? (
+                      <ul className="text-[11px] text-muted-foreground space-y-0.5 pl-5 list-disc">
+                        {suggestion.reasons.slice(0, 5).map((r, i) => <li key={i}>{r}</li>)}
+                      </ul>
+                    ) : (
+                      <p className="text-[11px] text-muted-foreground pl-1">
+                        Sem critérios de gravidade detectados nos sinais avaliados.
+                      </p>
+                    )}
+                    <p className="text-[10px] text-muted-foreground italic pl-1">
+                      Sugestão não-vinculante. A decisão final é do profissional triador.
+                    </p>
+                  </div>
+                );
+              })()}
               {RISK_LEVELS.map(level => {
                 const Icon = level.icon;
                 const isSelected = selected === level.value;
