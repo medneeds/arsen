@@ -113,6 +113,9 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   { id: 'gestao_top_diagnosticos', name: 'Top diagnósticos (CID)', description: 'Ranking dos 20 CIDs mais frequentes no período', category: 'gestao', queryType: 'gestao_top_diagnoses', available: true },
   { id: 'gestao_cancelamentos_nir', name: 'Cancelamentos / Rejeições NIR', description: 'Solicitações de leito rejeitadas com motivo', category: 'gestao', queryType: 'gestao_nir_rejections', available: true },
   { id: 'gestao_tempo_limpeza', name: 'Tempo de limpeza de leito', description: 'Intervalo entre início e fim da limpeza por setor', category: 'gestao', queryType: 'gestao_cleaning_time', available: true },
+
+  // Gestão Executiva (Sprint 5)
+  { id: 'gestao_aderencia_saps3', name: 'Aderência ao SAPS 3', description: 'Pacientes UTI com SAPS 3 preenchido em até 24h da admissão', category: 'gestao', queryType: 'gestao_saps3_adherence', available: true },
 ];
 
 // Macrorregiões do Maranhão
