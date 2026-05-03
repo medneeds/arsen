@@ -234,6 +234,15 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
       }
     }
 
+    // Modo legacy: número do prontuário é obrigatório (digitado manualmente do sistema antigo)
+    if (mrMode === "legacy" && !form.is_unidentified && !form.medical_record.trim()) {
+      toast({
+        title: "Prontuário obrigatório",
+        description: "Esta unidade está em modo legado: informe o número do sistema antigo.",
+        variant: "destructive",
+      });
+      return;
+    }
     setIsSaving(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
