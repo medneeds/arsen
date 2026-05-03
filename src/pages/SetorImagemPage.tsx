@@ -690,6 +690,7 @@ const SetorImagemPage = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 
