@@ -741,14 +741,14 @@ const AdminDashboardPage = () => {
           actions={
             <>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => setGlobalSearchOpen(true)}
-                className="gap-2 text-xs h-9 text-primary-foreground hover:bg-white/10 hover:text-primary-foreground"
+                className="gap-2 text-xs h-9 bg-white/95 text-foreground border-border hover:bg-white hover:text-foreground dark:bg-background dark:text-foreground"
               >
                 <Search className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Buscar paciente / atendimento</span>
-                <kbd className="hidden md:inline-flex h-5 items-center gap-0.5 rounded border border-white/30 bg-white/10 px-1.5 font-mono text-[9px] font-medium text-primary-foreground/90">
+                <kbd className="hidden md:inline-flex h-5 items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[9px] font-medium text-muted-foreground">
                   <span className="text-[10px]">⌘</span>K
                 </kbd>
               </Button>
