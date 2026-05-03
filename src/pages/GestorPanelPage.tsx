@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
-import { format, subDays, startOfDay, differenceInHours } from "date-fns";
+import { format, subDays, startOfDay, differenceInHours, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
