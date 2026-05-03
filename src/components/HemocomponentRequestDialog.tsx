@@ -48,32 +48,8 @@ interface Props {
   patientSector?: string;
 }
 
-const SECTOR_GROUPS: Array<{ title: string; items: Array<{ key: SectorKey; label: string }> }> = [
-  { title: "Pronto Socorro", items: [
-    { key: "sala_vermelha", label: "Sala Vermelha" },
-    { key: "sala_laranja", label: "Sala Laranja" },
-    { key: "sala_decisao", label: "Sala de decisão médica" },
-    { key: "retaguarda_ps1", label: "Retaguarda PS1" },
-    { key: "retaguarda_ps2", label: "Retaguarda PS2" },
-    { key: "corredor_ps", label: "Corredor PS" },
-  ]},
-  { title: "Centro Cirúrgico", items: [
-    { key: "cc_preparo", label: "Preparo" },
-    { key: "cc_bloco", label: "Bloco" },
-    { key: "cc_srpa", label: "SRPA" },
-  ]},
-  { title: "UTI", items: [
-    { key: "uti_1", label: "UTI 1" },
-    { key: "uti_2", label: "UTI 2" },
-  ]},
-  { title: "Clínicas", items: [
-    { key: "clinica_cirurgica", label: "Clínica Cirúrgica" },
-    { key: "neurocirurgia", label: "Neurocirurgia" },
-    { key: "cardiologia", label: "Cardiologia" },
-    { key: "uci", label: "UCI" },
-    { key: "pediatria", label: "Pediatria" },
-  ]},
-];
+import { HOSPITAL_SECTOR_GROUPS, isKnownSectorCode } from "@/lib/hospitalSectors";
+const SECTOR_GROUPS = HOSPITAL_SECTOR_GROUPS as Array<{ title: string; items: Array<{ key: SectorKey; label: string }> }>;
 
 const COMPONENT_KEYS: ComponentKey[] = ["hemacias", "plaquetas", "plasma", "crio"];
 const COMPONENT_LABELS: Record<ComponentKey, string> = {
@@ -107,11 +83,18 @@ export function HemocomponentRequestDialog({
   useEffect(() => {
     if (!open) return;
     const normalizedSector = patientSector ? (SECTOR_DISPLAY[patientSector] || patientSector) : null;
+    const sectorCode = patientSector && isKnownSectorCode(patientSector) ? patientSector : null;
     setData((d) => ({
       ...d,
       patient_name: d.patient_name || patientName || "",
       patient_unit: d.patient_unit || normalizedSector,
       patient_bed: d.patient_bed || patientBed || null,
+      transfusion_sectors:
+        d.transfusion_sectors && d.transfusion_sectors.length > 0
+          ? d.transfusion_sectors
+          : sectorCode
+            ? [sectorCode]
+            : d.transfusion_sectors || [],
     }));
   }, [open, patientName, patientBed, patientSector]);
 
@@ -136,18 +119,27 @@ export function HemocomponentRequestDialog({
         registry = r.data;
       }
 
-      setData((d) => ({
-        ...d,
-        patient_name: registry?.full_name || p.name || d.patient_name,
-        patient_social_name: registry?.social_name || null,
-        patient_birth_date: registry?.birth_date || null,
-        patient_sex: registry?.sex || null,
-        patient_blood_group: registry?.blood_type || null,
-        patient_record: registry?.medical_record || p.medical_record || null,
-        patient_unit: (p.sector ? (SECTOR_DISPLAY[p.sector] || p.sector) : d.patient_unit),
-        patient_bed: p.bed_number || d.patient_bed,
-        patient_diagnosis: p.diagnoses || null,
-      }));
+      setData((d) => {
+        const sectorCode = p.sector && isKnownSectorCode(p.sector) ? p.sector : null;
+        return {
+          ...d,
+          patient_name: registry?.full_name || p.name || d.patient_name,
+          patient_social_name: registry?.social_name || null,
+          patient_birth_date: registry?.birth_date || null,
+          patient_sex: registry?.sex || null,
+          patient_blood_group: registry?.blood_type || null,
+          patient_record: registry?.medical_record || p.medical_record || null,
+          patient_unit: (p.sector ? (SECTOR_DISPLAY[p.sector] || p.sector) : d.patient_unit),
+          patient_bed: p.bed_number || d.patient_bed,
+          patient_diagnosis: p.diagnoses || null,
+          transfusion_sectors:
+            d.transfusion_sectors && d.transfusion_sectors.length > 0
+              ? d.transfusion_sectors
+              : sectorCode
+                ? [sectorCode]
+                : d.transfusion_sectors || [],
+        };
+      });
     })();
   }, [open, patientId]);
 

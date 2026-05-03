@@ -282,6 +282,24 @@
 }
 
 @media print {
+  /* PDFs/impressões SEMPRE em formato light, mesmo se a UI estiver em modo escuro. */
+  :root, .dark {
+    color-scheme: light only !important;
+    --background: 0 0% 100% !important;
+    --foreground: 215 25% 12% !important;
+    --card: 0 0% 100% !important;
+    --card-foreground: 215 25% 12% !important;
+    --popover: 0 0% 100% !important;
+    --popover-foreground: 215 25% 12% !important;
+    --secondary: 210 18% 93% !important;
+    --secondary-foreground: 215 25% 12% !important;
+    --muted: 210 18% 95% !important;
+    --muted-foreground: 215 12% 50% !important;
+    --accent: 174 60% 42% !important;
+    --accent-foreground: 0 0% 100% !important;
+    --border: 215 20% 90% !important;
+    --input: 215 20% 90% !important;
+  }
   * {
     print-color-adjust: exact !important;
     -webkit-print-color-adjust: exact !important;

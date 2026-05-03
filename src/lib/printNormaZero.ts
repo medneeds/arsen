@@ -83,8 +83,9 @@ export const normaZeroBaseStyles = (orientation: "portrait" | "landscape" = "por
     table.nz { page-break-inside: auto; }
     table.nz tr { page-break-inside: avoid; }
   }
+  :root { color-scheme: light only; }
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  html, body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: #0f172a; margin: 0; font-size: 9.5pt; line-height: 1.35; }
+  html, body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: #0f172a; background: #ffffff; margin: 0; font-size: 9.5pt; line-height: 1.35; }
 
   /* === TIMBRADO INSTITUCIONAL (Norma Zero MAN.05-001) === */
   .nz-header { background: #fff; border-bottom: 2.5pt solid #0054A6; padding: 8pt 0 6pt; margin-bottom: 8pt; }
