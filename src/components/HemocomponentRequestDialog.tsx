@@ -83,11 +83,18 @@ export function HemocomponentRequestDialog({
   useEffect(() => {
     if (!open) return;
     const normalizedSector = patientSector ? (SECTOR_DISPLAY[patientSector] || patientSector) : null;
+    const sectorCode = patientSector && isKnownSectorCode(patientSector) ? patientSector : null;
     setData((d) => ({
       ...d,
       patient_name: d.patient_name || patientName || "",
       patient_unit: d.patient_unit || normalizedSector,
       patient_bed: d.patient_bed || patientBed || null,
+      transfusion_sectors:
+        d.transfusion_sectors && d.transfusion_sectors.length > 0
+          ? d.transfusion_sectors
+          : sectorCode
+            ? [sectorCode]
+            : d.transfusion_sectors || [],
     }));
   }, [open, patientName, patientBed, patientSector]);
 
