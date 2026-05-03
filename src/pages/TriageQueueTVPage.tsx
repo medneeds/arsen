@@ -28,8 +28,41 @@ const TriageQueueTVPage = () => {
   const [queue, setQueue] = useState<QueuePatient[]>([]);
   const [calledPatient, setCalledPatient] = useState<QueuePatient | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(() => localStorage.getItem("tv:voiceEnabled") === "1");
+  const [online, setOnline] = useState(navigator.onLine);
   const announcedRef = useRef<Set<string>>(new Set());
+
+  // ─── Auto-refresh a cada 4h (evita memory leak em TV 24/7) ───
+  useEffect(() => {
+    const REFRESH_MS = 4 * 60 * 60 * 1000;
+    const t = setTimeout(() => window.location.reload(), REFRESH_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  // ─── Indicador online/offline ───
+  useEffect(() => {
+    const up = () => setOnline(true);
+    const down = () => setOnline(false);
+    window.addEventListener("online", up);
+    window.addEventListener("offline", down);
+    return () => {
+      window.removeEventListener("online", up);
+      window.removeEventListener("offline", down);
+    };
+  }, []);
+
+  // ─── Tela cheia (1 clique do usuário libera; oferece botão) ───
+  const enterFullscreen = () => {
+    const el = document.documentElement as any;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (req) req.call(el).catch(() => {});
+  };
+
+  // Persistência da voz
+  useEffect(() => {
+    localStorage.setItem("tv:voiceEnabled", voiceEnabled ? "1" : "0");
+  }, [voiceEnabled]);
+
 
   // ─── Voz feminina (Web Speech API) ────────────────────────────
   const speakCall = (patientName: string) => {
