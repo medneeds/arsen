@@ -115,13 +115,14 @@ export function PendenciesTab() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* KPIs com cartões dark gradiente */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <KpiBox label="Abertas" value={counts.abertas} icon={<ListChecks className="h-3.5 w-3.5" />} />
-        <KpiBox label="Em andamento" value={counts.andamento} />
-        <KpiBox label="Bloqueadas" value={counts.bloqueadas} />
-        <KpiBox label="Concluídas" value={counts.concluidas} icon={<CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />} />
-        <KpiBox label="Críticas pendentes" value={counts.criticas} icon={<AlertTriangle className="h-3.5 w-3.5 text-red-500" />} />
+        <KpiBox label="Abertas" value={counts.abertas} tone="blue" icon={<ListChecks className="h-4 w-4" />} />
+        <KpiBox label="Em andamento" value={counts.andamento} tone="indigo" />
+        <KpiBox label="Bloqueadas" value={counts.bloqueadas} tone="amber" />
+        <KpiBox label="Concluídas" value={counts.concluidas} tone="emerald" icon={<CheckCircle2 className="h-4 w-4" />} />
+        <KpiBox label="Críticas pendentes" value={counts.criticas} tone="red" icon={<AlertTriangle className="h-4 w-4" />} />
       </div>
 
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -144,7 +145,9 @@ export function PendenciesTab() {
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm"><Plus className="h-4 w-4 mr-1.5" /> Nova pendência</Button>
+            <Button size="sm" className="bg-gradient-to-br from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white shadow-md">
+              <Plus className="h-4 w-4 mr-1.5" /> Nova pendência
+            </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader><DialogTitle>Nova pendência</DialogTitle></DialogHeader>
@@ -181,35 +184,46 @@ export function PendenciesTab() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button onClick={create}>Criar</Button>
+              <Button onClick={create} className="bg-gradient-to-br from-blue-600 to-blue-800 text-white">Criar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm">Radar de pendências ({filtered.length})</CardTitle>
+      <Card className="border-slate-200 dark:border-slate-800 shadow-sm">
+        <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/60 dark:bg-slate-900/30">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+            Radar de pendências <span className="text-muted-foreground font-normal">({filtered.length})</span>
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           {loading ? (
             <div className="py-8 grid place-items-center"><Loader2 className="h-5 w-5 animate-spin" /></div>
           ) : filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">Nenhuma pendência neste filtro.</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {filtered.map(p => (
-                <div key={p.id} className="border border-border rounded-lg p-3 bg-card/50 space-y-2">
-                  <div className="flex items-start justify-between gap-3">
+                <div
+                  key={p.id}
+                  className="group relative border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 bg-white dark:bg-slate-900/50 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-700/60 transition-all"
+                >
+                  <div className={`absolute left-0 top-3 bottom-3 w-1 rounded-r ${
+                    p.priority === "critica" ? "bg-red-500" :
+                    p.priority === "alta" ? "bg-amber-500" :
+                    p.priority === "media" ? "bg-blue-500" : "bg-slate-400"
+                  }`} />
+                  <div className="flex items-start justify-between gap-3 pl-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-medium text-sm">{p.title}</h3>
+                        <h3 className="font-semibold text-sm">{p.title}</h3>
                         <Badge variant="outline" className={`text-[10px] uppercase ${PRIORITY_COLOR[p.priority]}`}>{PRIORITY_LABEL[p.priority]}</Badge>
                         {p.category && <Badge variant="secondary" className="text-[10px]">{p.category}</Badge>}
                         {p.tags?.map(t => <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>)}
                       </div>
-                      {p.description && <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{p.description}</p>}
-                      <p className="text-[10px] text-muted-foreground mt-1">
+                      {p.description && <p className="text-xs text-muted-foreground mt-1.5 whitespace-pre-wrap leading-relaxed">{p.description}</p>}
+                      <p className="text-[10px] text-muted-foreground mt-2 normal-case">
                         Criada em {new Date(p.created_at).toLocaleString("pt-BR")}
                         {p.resolved_at && ` • Resolvida em ${new Date(p.resolved_at).toLocaleString("pt-BR")}`}
                       </p>
@@ -231,7 +245,7 @@ export function PendenciesTab() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => remove(p.id)}>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive opacity-60 group-hover:opacity-100" onClick={() => remove(p.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
@@ -246,11 +260,22 @@ export function PendenciesTab() {
   );
 }
 
-function KpiBox({ label, value, icon }: { label: string; value: number; icon?: React.ReactNode }) {
+const TONE_STYLES = {
+  blue: "from-blue-600 to-blue-800 ring-blue-500/30",
+  indigo: "from-indigo-600 to-indigo-800 ring-indigo-500/30",
+  amber: "from-amber-600 to-amber-800 ring-amber-500/30",
+  emerald: "from-emerald-600 to-emerald-800 ring-emerald-500/30",
+  red: "from-red-600 to-red-800 ring-red-500/30",
+} as const;
+
+function KpiBox({ label, value, icon, tone = "blue" }: { label: string; value: number; icon?: React.ReactNode; tone?: keyof typeof TONE_STYLES }) {
   return (
-    <div className="border border-border rounded-lg p-3 bg-card/50">
-      <div className="text-[10px] uppercase text-muted-foreground flex items-center gap-1">{icon}{label}</div>
-      <div className="text-2xl font-semibold tabular-nums mt-1">{value}</div>
+    <div className={`relative overflow-hidden rounded-xl p-4 bg-gradient-to-br ${TONE_STYLES[tone]} text-white shadow-md ring-1`}>
+      <div className="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-white/10 blur-xl" />
+      <div className="relative">
+        <div className="text-[10px] uppercase tracking-wider text-white/80 flex items-center gap-1.5 font-medium">{icon}{label}</div>
+        <div className="text-3xl font-bold tabular-nums mt-1.5 drop-shadow-sm">{value}</div>
+      </div>
     </div>
   );
 }
