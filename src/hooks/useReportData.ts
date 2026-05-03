@@ -1085,6 +1085,67 @@ async function executeQuery(
       };
     }
 
+
+    case 'gestao_saps3_adherence': {
+      // UTI: usar patients (admission_date + sector ILIKE %UTI%) como fonte de admissões
+      const { data: utiPatients } = await supabase.from('patients')
+        .select('id, name, sector, bed_number, admission_date')
+        .eq('hospital_unit_id', hospitalId).eq('state_id', stateId)
+        .ilike('sector', '%uti%')
+        .not('admission_date', 'is', null)
+        .gte('admission_date', startFull).lte('admission_date', endFull);
+
+      const ids = (utiPatients || []).map(p => p.id);
+      const { data: sapsList } = ids.length
+        ? await supabase.from('saps3_assessments')
+            .select('patient_id, created_at, status, total_score')
+            .in('patient_id', ids)
+        : { data: [] as any[] };
+
+      const sapsByPatient: Record<string, any[]> = {};
+      (sapsList || []).forEach((s: any) => {
+        if (!sapsByPatient[s.patient_id]) sapsByPatient[s.patient_id] = [];
+        sapsByPatient[s.patient_id].push(s);
+      });
+
+      let dentro = 0, fora = 0, sem = 0;
+      const rows = (utiPatients || []).map(p => {
+        const list = (sapsByPatient[p.id] || []).filter((s: any) => s.status === 'completed');
+        list.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        const first = list[0];
+        let status = 'Sem SAPS 3', tempoH: string | number = '-', score: any = '-';
+        if (!first) { sem++; }
+        else {
+          const h = (new Date(first.created_at).getTime() - new Date(p.admission_date!).getTime()) / 3600000;
+          tempoH = h.toFixed(1);
+          score = first.total_score ?? '-';
+          if (h <= 24 && h >= 0) { dentro++; status = '✅ Dentro 24h'; }
+          else { fora++; status = '❌ Fora 24h'; }
+        }
+        return {
+          'Paciente': p.name,
+          'Setor': p.sector,
+          'Leito': p.bed_number || '-',
+          'Admissão': formatDate(p.admission_date!),
+          'Tempo até SAPS 3 (h)': tempoH,
+          'Score': score,
+          'Status': status,
+        };
+      });
+      const total = (utiPatients || []).length || 1;
+      return {
+        columns: ['Paciente', 'Setor', 'Leito', 'Admissão', 'Tempo até SAPS 3 (h)', 'Score', 'Status'],
+        rows,
+        summary: {
+          'Admissões UTI': (utiPatients || []).length,
+          'Dentro 24h': dentro,
+          'Fora 24h': fora,
+          'Sem SAPS 3': sem,
+          Aderência: ((dentro / total) * 100).toFixed(1) + '%',
+        },
+      };
+    }
+
     default:
       return { columns: ['Info'], rows: [{ Info: 'Relatório em desenvolvimento' }] };
   }
