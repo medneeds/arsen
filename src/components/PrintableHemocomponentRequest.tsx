@@ -267,63 +267,65 @@ export function PrintableHemocomponentRequest({
         Solicitação de Sangue / Hemocomponentes
       </div>
 
-      {/* TABELA ÚNICA — espelha o formulário oficial */}
-      <table style={tableStyle}>
+      {/* TABELA ÚNICA — grade de 12 colunas (sincroniza com o PDF) */}
+      <table style={{ ...tableStyle, tableLayout: "fixed" }}>
+        <colgroup>
+          {Array.from({ length: 12 }).map((_, i) => (
+            <col key={i} style={{ width: "8.333%" }} />
+          ))}
+        </colgroup>
         <tbody>
           {/* ── Identificação do Paciente ── */}
-          <tr><td style={sectionBand} colSpan={6}>Identificação do Paciente</td></tr>
+          <tr><td style={sectionBand} colSpan={12}>Identificação do Paciente</td></tr>
           <tr>
-            <td style={labelCell}>Nome:</td>
-            <td style={valueCell} colSpan={5}>{(request.patient_name || "").toUpperCase()}</td>
+            <td style={labelCell} colSpan={2}>Nome:</td>
+            <td style={valueCell} colSpan={10}>{(request.patient_name || "").toUpperCase()}</td>
           </tr>
           <tr>
-            <td style={labelCell}>Nome social:</td>
-            <td style={valueCell} colSpan={5}>{request.patient_social_name || ""}</td>
+            <td style={labelCell} colSpan={2}>Nome social:</td>
+            <td style={valueCell} colSpan={10}>{request.patient_social_name || ""}</td>
           </tr>
           <tr>
-            <td style={labelCell}>Data de Nascimento:</td>
-            <td style={valueCell}>{fmtDate(request.patient_birth_date)}</td>
-            <td style={{ ...labelCell, width: "10%" }}>Sexo:</td>
-            <td style={cellBase}>
+            <td style={labelCell} colSpan={2}>Nascimento:</td>
+            <td style={valueCell} colSpan={2}>{fmtDate(request.patient_birth_date)}</td>
+            <td style={labelCell} colSpan={1}>Sexo:</td>
+            <td style={cellBase} colSpan={3}>
               <Checkbox checked={isSexFem(request.patient_sex)} /> Fem
               <span style={{ display: "inline-block", width: 14 }} />
               <Checkbox checked={isSexMasc(request.patient_sex)} /> Masc
             </td>
-            <td style={{ ...labelCell, width: "12%" }}>Grupo (ABO/RH):</td>
-            <td style={valueCell}>{request.patient_blood_group || ""}</td>
+            <td style={labelCell} colSpan={2}>Grupo (ABO/RH):</td>
+            <td style={valueCell} colSpan={2}>{request.patient_blood_group || ""}</td>
           </tr>
           <tr>
-            <td style={labelCell}>N° prontuário:</td>
-            <td style={valueCell}>{request.patient_record || ""}</td>
-            <td style={labelCell}>Raça:</td>
-            <td style={cellBase}>{request.patient_race || ""}</td>
-            <td style={labelCell}>Peso:</td>
-            <td style={valueCell}>{request.patient_weight ?? ""}</td>
+            <td style={labelCell} colSpan={2}>N° prontuário:</td>
+            <td style={valueCell} colSpan={3}>{request.patient_record || ""}</td>
+            <td style={labelCell} colSpan={1}>Raça:</td>
+            <td style={cellBase} colSpan={2}>{request.patient_race || ""}</td>
+            <td style={labelCell} colSpan={1}>Peso:</td>
+            <td style={valueCell} colSpan={3}>{request.patient_weight ?? ""}</td>
           </tr>
           <tr>
-            <td style={labelCell}>Unidade:</td>
-            <td style={valueCell} colSpan={3}>
-              {sectorName || ""}{" "}
-              {request.patient_bed ? `· Leito ${request.patient_bed}` : ""}
-            </td>
-            <td style={labelCell}>Leito:</td>
-            <td style={valueCell}>{request.patient_bed || ""}</td>
+            <td style={labelCell} colSpan={2}>Unidade:</td>
+            <td style={valueCell} colSpan={6}>{sectorName || ""}</td>
+            <td style={labelCell} colSpan={1}>Leito:</td>
+            <td style={valueCell} colSpan={3}>{request.patient_bed || ""}</td>
           </tr>
           <tr>
-            <td style={labelCell}>Diagnóstico:</td>
-            <td style={cellBase} colSpan={5}>{request.patient_diagnosis || ""}</td>
+            <td style={labelCell} colSpan={2}>Diagnóstico:</td>
+            <td style={cellBase} colSpan={10}>{request.patient_diagnosis || ""}</td>
           </tr>
 
-          {/* ── Dados da Transfusão (matriz 4 colunas) ── */}
-          <tr><td style={sectionBand} colSpan={6}>Dados da Transfusão</td></tr>
+          {/* ── Dados da Transfusão ── */}
+          <tr><td style={sectionBand} colSpan={12}>Dados da Transfusão · Setor onde será realizada</td></tr>
           <tr>
             {SECTOR_GROUPS.map((g) => (
-              <td key={g.title} style={subheadCell} colSpan={6 / SECTOR_GROUPS.length}>{g.title}</td>
+              <td key={g.title} style={subheadCell} colSpan={3}>{g.title}</td>
             ))}
           </tr>
           <tr>
             {SECTOR_GROUPS.map((g) => (
-              <td key={g.title} style={{ ...cellBase, padding: "5px 8px" }} colSpan={6 / SECTOR_GROUPS.length}>
+              <td key={g.title} style={{ ...cellBase, padding: "5px 8px" }} colSpan={3}>
                 {g.items.map((it) => (
                   <div key={it.key} style={{ fontSize: "8pt", padding: "1.5px 0", display: "flex", alignItems: "center" }}>
                     <Checkbox checked={isSectorChecked(request, it.key)} /> {it.label}
@@ -333,24 +335,23 @@ export function PrintableHemocomponentRequest({
             ))}
           </tr>
 
-          {/* ── Hemocomponentes Solicitados (matriz 4 colunas) ── */}
-          <tr><td style={sectionBand} colSpan={6}>Hemocomponentes Solicitados</td></tr>
+          {/* ── Hemocomponentes Solicitados ── */}
+          <tr><td style={sectionBand} colSpan={12}>Hemocomponentes Solicitados</td></tr>
           <tr>
             {COMPONENT_KEYS.map((k) => {
               const c = getComponent(request, k);
               return (
-                <td key={k} style={subheadCell} colSpan={6 / COMPONENT_KEYS.length}>
+                <td key={k} style={subheadCell} colSpan={3}>
                   <Checkbox checked={Boolean(c)} /> {COMPONENT_LABELS[k]}
                 </td>
               );
             })}
           </tr>
-          {/* Quantidade */}
           <tr>
             {COMPONENT_KEYS.map((k) => {
               const c = getComponent(request, k);
               return (
-                <td key={k} style={{ ...cellBase, padding: "5px 8px" }} colSpan={6 / COMPONENT_KEYS.length}>
+                <td key={k} style={{ ...cellBase, padding: "5px 8px" }} colSpan={3}>
                   <div style={{ fontSize: "8pt" }}>
                     <strong>Quantidade:</strong>{" "}
                     <span style={{ borderBottom: `1px solid ${ink}`, display: "inline-block", minWidth: "60%", paddingLeft: 4 }}>
@@ -361,12 +362,11 @@ export function PrintableHemocomponentRequest({
               );
             })}
           </tr>
-          {/* Atributos */}
           <tr>
             {COMPONENT_KEYS.map((k) => {
               const c = getComponent(request, k);
               return (
-                <td key={k} style={{ ...cellBase, padding: "5px 8px", fontSize: "8pt" }} colSpan={6 / COMPONENT_KEYS.length}>
+                <td key={k} style={{ ...cellBase, padding: "5px 8px", fontSize: "8pt" }} colSpan={3}>
                   {k === "hemacias" && (
                     <>
                       <div><Checkbox checked={c?.desleucocitado} /> Desleucocitado / Filtrado</div>
@@ -392,19 +392,16 @@ export function PrintableHemocomponentRequest({
               );
             })}
           </tr>
-          {/* Justificativa Laboratorial */}
           <tr>
             {COMPONENT_KEYS.map((k) => (
-              <td key={k} style={subheadCell} colSpan={6 / COMPONENT_KEYS.length}>
-                Justificativa Laboratorial
-              </td>
+              <td key={k} style={subheadCell} colSpan={3}>Justificativa Laboratorial</td>
             ))}
           </tr>
           <tr>
             {COMPONENT_KEYS.map((k) => {
               const c = getComponent(request, k);
               return (
-                <td key={k} style={{ ...cellBase, padding: "5px 8px", fontSize: "8pt" }} colSpan={6 / COMPONENT_KEYS.length}>
+                <td key={k} style={{ ...cellBase, padding: "5px 8px", fontSize: "8pt" }} colSpan={3}>
                   {k === "hemacias" && (
                     <>
                       <div><strong>Hb:</strong> <span style={{ borderBottom: `1px solid ${ink}`, display: "inline-block", minWidth: "60%", paddingLeft: 4 }}>{c?.lab_hb || ""}</span></div>
@@ -430,27 +427,27 @@ export function PrintableHemocomponentRequest({
           </tr>
 
           {/* ── Histórico Transfusional ── */}
-          <tr><td style={sectionBand} colSpan={6}>Histórico Transfusional</td></tr>
+          <tr><td style={sectionBand} colSpan={12}>Histórico Transfusional</td></tr>
           <tr>
-            <td style={cellBase} colSpan={3}>
+            <td style={cellBase} colSpan={6}>
               Transfusões prévias:&nbsp;
               <Checkbox checked={request.previous_transfusion === true} /> Sim&nbsp;&nbsp;
               <Checkbox checked={request.previous_transfusion === false} /> Não
             </td>
-            <td style={cellBase} colSpan={3}>
+            <td style={cellBase} colSpan={6}>
               Teve reação transfusional?&nbsp;
               <Checkbox checked={request.transfusion_reaction === true} /> Sim&nbsp;&nbsp;
               <Checkbox checked={request.transfusion_reaction === false} /> Não
             </td>
           </tr>
           <tr>
-            <td style={cellBase} colSpan={3}>
+            <td style={cellBase} colSpan={6}>
               <strong>Tipo de reação:</strong>{" "}
               <span style={{ borderBottom: `1px solid ${ink}`, display: "inline-block", minWidth: "60%", paddingLeft: 4 }}>
                 {request.reaction_type || ""}
               </span>
             </td>
-            <td style={cellBase} colSpan={3}>
+            <td style={cellBase} colSpan={6}>
               <strong>Antecedentes Gestacionais:</strong>&nbsp;&nbsp;
               Gesta <span style={{ borderBottom: `1px solid ${ink}`, display: "inline-block", minWidth: 32, paddingLeft: 4, textAlign: "center" }}>{request.obstetric_history?.gesta ?? ""}</span>&nbsp;
               Parto <span style={{ borderBottom: `1px solid ${ink}`, display: "inline-block", minWidth: 32, paddingLeft: 4, textAlign: "center" }}>{request.obstetric_history?.parto ?? ""}</span>&nbsp;
@@ -459,9 +456,9 @@ export function PrintableHemocomponentRequest({
           </tr>
 
           {/* ── Tipos de Transfusão ── */}
-          <tr><td style={sectionBand} colSpan={6}>Tipos de Transfusão</td></tr>
+          <tr><td style={sectionBand} colSpan={12}>Tipos de Transfusão</td></tr>
           <tr>
-            <td style={cellBase} colSpan={4}>
+            <td style={cellBase} colSpan={8}>
               <Checkbox checked={request.transfusion_type === "programada"} /> Programada para{" "}
               <span style={{ borderBottom: `1px solid ${ink}`, display: "inline-block", minWidth: 80, paddingLeft: 4 }}>
                 {fmtDate(request.scheduled_date)}
@@ -471,7 +468,7 @@ export function PrintableHemocomponentRequest({
                 {request.scheduled_time || ""}
               </span> h
             </td>
-            <td style={cellBase} colSpan={2} rowSpan={3}>
+            <td style={cellBase} colSpan={4} rowSpan={3}>
               <div style={{ fontSize: "8pt", marginBottom: 2 }}>
                 <strong>Data:</strong> {createdStr}&nbsp;&nbsp;
                 <strong>Hora:</strong> {createdTime}
@@ -492,22 +489,22 @@ export function PrintableHemocomponentRequest({
             </td>
           </tr>
           <tr>
-            <td style={cellBase} colSpan={2}>
+            <td style={cellBase} colSpan={4}>
               <Checkbox checked={request.transfusion_type === "rotina"} /> De rotina (Dentro de 24 horas)
             </td>
-            <td style={cellBase} colSpan={2}>
+            <td style={cellBase} colSpan={4}>
               <Checkbox checked={request.transfusion_type === "urgencia"} /> De urgência (Dentro de 3 horas)
             </td>
           </tr>
           <tr>
-            <td style={cellBase} colSpan={4}>
+            <td style={cellBase} colSpan={8}>
               <Checkbox checked={request.transfusion_type === "emergencia"} /> De emergência (qualquer retardo acarretará risco de vida)
             </td>
           </tr>
 
           {/* ── Rodapé regulatório ── */}
           <tr>
-            <td colSpan={6} style={{ ...cellBase, fontSize: "7pt", lineHeight: 1.4, padding: "6px 8px", textAlign: "justify" }}>
+            <td colSpan={12} style={{ ...cellBase, fontSize: "7pt", lineHeight: 1.4, padding: "6px 8px", textAlign: "justify" }}>
               <p style={{ margin: 0, marginBottom: 4 }}>
                 <strong>UMA REQUISIÇÃO INCOMPLETA, INADEQUADA E ILEGÍVEL NÃO DEVE SER ACEITA PELO SERVIÇO DE HEMOTERAPIA.
                 AS TRANSFUSÕES DEVEM SER REALIZADAS, PREFERENCIALMENTE, NO PERÍODO DIURNO (RDC 153/2004 — MINISTÉRIO DA SAÚDE).</strong>
