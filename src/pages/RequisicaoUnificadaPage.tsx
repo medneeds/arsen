@@ -1322,19 +1322,26 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   return (
     <>
       <div className="space-y-4 print:hidden mt-4">
-        {/* Quick access */}
+        {/* Quick access — neutral, soft styling */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Acesso rápido — Tomografias</CardTitle>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acesso rápido — Tomografias</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {APAC_QUICK_ACCESS.map((qa) => {
                 const proc = APAC_PROCEDURES.find((p) => p.code === qa.code);
                 const isSelected = selectedProcedures.some((p) => p.code === qa.code);
                 return (
-                  <Button key={qa.code} size="sm" className={`${isSelected ? "ring-2 ring-offset-2 ring-primary opacity-60" : qa.color} transition-all font-semibold`} onClick={() => proc && addProcedure(proc)} disabled={isSelected}>
-                    <Plus className="h-3.5 w-3.5 mr-1" />{qa.label}
+                  <Button
+                    key={qa.code}
+                    size="sm"
+                    variant="outline"
+                    className={`h-7 text-xs font-normal ${isSelected ? "bg-primary/10 border-primary/40 text-primary" : "bg-muted/30 hover:bg-muted/60"}`}
+                    onClick={() => proc && addProcedure(proc)}
+                    disabled={isSelected}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />{qa.label}
                   </Button>
                 );
               })}
@@ -1342,174 +1349,174 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           </CardContent>
         </Card>
 
+        {/* PRIMARY: Procedure selection + Justification (highlighted) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Left: patient + justification */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Estabelecimento solicitante</CardTitle></CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <Label className="text-xs text-muted-foreground">Nome</Label>
-                    <Input value={APAC_INSTITUTION.name} readOnly className="bg-muted/50 font-medium text-sm" />
-                  </div>
-                  <div className="w-28">
-                    <Label className="text-xs text-muted-foreground">CNES</Label>
-                    <Input value={APAC_INSTITUTION.cnes} readOnly className="bg-muted/50 font-mono font-bold text-sm text-center" />
-                  </div>
+          <Card className="border-primary/40 ring-1 ring-primary/10">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+                <ScanLine className="h-4 w-4" /> Procedimento
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input value={searchProcedure} onChange={(e) => setSearchProcedure(e.target.value)} placeholder="Buscar por nome ou código SIGTAP..." className="pl-9" />
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Identificação do paciente</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="col-span-2">
-                    <Label className="text-xs text-muted-foreground">Nome do Paciente *</Label>
-                    <Input value={apacPatientName} onChange={(e) => setApacPatientName(e.target.value)} placeholder="Nome completo" />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Nº Prontuário</Label>
-                    <Input value={patientRecord} onChange={(e) => setPatientRecord(e.target.value)} />
-                  </div>
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="TC">TC</SelectItem>
+                    <SelectItem value="RM">RM</SelectItem>
+                    <SelectItem value="DOPPLER">Doppler</SelectItem>
+                    <SelectItem value="USG">USG</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="max-h-48 overflow-y-auto border rounded-lg divide-y">
+                {filteredProcedures.map((proc) => {
+                  const isSelected = selectedProcedures.some((p) => p.code === proc.code);
+                  return (
+                    <button key={proc.code} className={`w-full text-left px-3 py-2 text-sm hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 ${isSelected ? "bg-primary/5 opacity-60" : ""}`} onClick={() => addProcedure(proc)} disabled={isSelected}>
+                      <div className="min-w-0"><span className="font-mono text-xs text-muted-foreground mr-2">{proc.code}</span><span className="text-foreground">{proc.name}</span></div>
+                      <Badge variant="outline" className="shrink-0 text-xs">{proc.category}</Badge>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="border-t pt-3">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  Selecionados ({selectedProcedures.length}/6)
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">CNS</Label>
-                    <Input value={patientCNS} onChange={(e) => setPatientCNS(e.target.value)} />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Data Nasc.</Label>
-                    <Input type="date" value={patientDOB} onChange={(e) => setPatientDOB(e.target.value)} />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Sexo</Label>
-                    <Select value={patientSex} onValueChange={setPatientSex}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="M">Masculino</SelectItem>
-                        <SelectItem value="F">Feminino</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label className="text-xs text-muted-foreground">Nome da Mãe</Label><Input value={patientMotherName} onChange={(e) => setPatientMotherName(e.target.value)} /></div>
-                  <div><Label className="text-xs text-muted-foreground">Telefone</Label><Input value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)} /></div>
-                </div>
-                <div className="grid grid-cols-4 gap-3">
-                  <div className="col-span-2"><Label className="text-xs text-muted-foreground">Endereço</Label><Input value={patientAddress} onChange={(e) => setPatientAddress(e.target.value)} /></div>
-                  <div><Label className="text-xs text-muted-foreground">Município</Label><Input value={patientCity} onChange={(e) => setPatientCity(e.target.value)} /></div>
-                  <div><Label className="text-xs text-muted-foreground">UF</Label><Input value={patientUF} onChange={(e) => setPatientUF(e.target.value)} maxLength={2} /></div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Justificativa clínica</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <div><Label className="text-xs text-muted-foreground">Diagnóstico Inicial</Label><Input value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} placeholder="Descreva o diagnóstico" /></div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div><Label className="text-xs text-muted-foreground">CID-10 Principal</Label><Input value={cidPrimary} onChange={(e) => setCidPrimary(e.target.value)} placeholder="Ex: I63.9" className="font-mono" /></div>
-                  <div><Label className="text-xs text-muted-foreground">CID-10 Secundário</Label><Input value={cidSecondary} onChange={(e) => setCidSecondary(e.target.value)} className="font-mono" /></div>
-                  <div><Label className="text-xs text-muted-foreground">CID-10 Associado</Label><Input value={cidAssociated} onChange={(e) => setCidAssociated(e.target.value)} className="font-mono" /></div>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <Label className="text-xs text-muted-foreground">Observações</Label>
-                    <div className="flex gap-1.5">
-                      <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={importAdmission} disabled={!patientId || importingAdmission}>
-                        <FileText className="h-3 w-3" /> {importingAdmission ? "Importando..." : "Importar Admissão"}
-                      </Button>
-                      <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={importEvolution} disabled={!patientId || importingEvolution}>
-                        <ClipboardList className="h-3 w-3" /> {importingEvolution ? "Importando..." : "Importar Evolução"}
-                      </Button>
-                    </div>
-                  </div>
-                  <Textarea value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Informações clínicas relevantes..." rows={3} />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right: search + selected + doctor */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Catálogo de Procedimentos SIGTAP</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input value={searchProcedure} onChange={(e) => setSearchProcedure(e.target.value)} placeholder="Buscar por nome ou código..." className="pl-9" />
-                  </div>
-                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                    <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="TC">TC</SelectItem>
-                      <SelectItem value="RM">RM</SelectItem>
-                      <SelectItem value="DOPPLER">Doppler</SelectItem>
-                      <SelectItem value="USG">USG</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="max-h-60 overflow-y-auto border rounded-lg divide-y">
-                  {filteredProcedures.map((proc) => {
-                    const isSelected = selectedProcedures.some((p) => p.code === proc.code);
-                    return (
-                      <button key={proc.code} className={`w-full text-left px-3 py-2 text-sm hover:bg-accent/50 transition-colors flex items-center justify-between gap-2 ${isSelected ? "bg-primary/5 opacity-60" : ""}`} onClick={() => addProcedure(proc)} disabled={isSelected}>
-                        <div className="min-w-0"><span className="font-mono text-xs text-muted-foreground mr-2">{proc.code}</span><span className="text-foreground">{proc.name}</span></div>
-                        <Badge variant="outline" className="shrink-0 text-xs">{proc.category}</Badge>
-                      </button>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className={selectedProcedures.length > 0 ? "border-primary/30" : ""}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Procedimentos selecionados ({selectedProcedures.length}/6)</CardTitle>
-              </CardHeader>
-              <CardContent>
                 {selectedProcedures.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">Use os botões de acesso rápido ou busque no catálogo acima</p>
+                  <p className="text-xs text-muted-foreground text-center py-3">Use o acesso rápido ou busque acima</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {selectedProcedures.map((proc, idx) => (
-                      <div key={proc.code} className="flex items-center gap-2 p-2 rounded-lg border bg-card">
-                        <Badge variant="secondary" className="shrink-0 font-mono text-xs">{idx === 0 ? "Principal" : `Sec. ${idx}`}</Badge>
+                      <div key={proc.code} className="flex items-center gap-2 p-1.5 rounded border bg-card">
+                        <Badge variant="secondary" className="shrink-0 font-mono text-[10px]">{idx === 0 ? "Princ." : `Sec.${idx}`}</Badge>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-foreground truncate">{proc.name}</p>
-                          <p className="text-xs font-mono text-muted-foreground">{proc.code}</p>
+                          <p className="text-xs font-medium text-foreground truncate">{proc.name}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground">{proc.code}</p>
                         </div>
-                        <Input type="number" min={1} max={99} value={proc.qty} onChange={(e) => { const qty = parseInt(e.target.value) || 1; setSelectedProcedures((prev) => prev.map((p) => (p.code === proc.code ? { ...p, qty } : p))); }} className="w-14 text-center text-sm" />
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeProcedure(proc.code)}><Trash2 className="h-4 w-4" /></Button>
+                        <Input type="number" min={1} max={99} value={proc.qty} onChange={(e) => { const qty = parseInt(e.target.value) || 1; setSelectedProcedures((prev) => prev.map((p) => (p.code === proc.code ? { ...p, qty } : p))); }} className="w-12 h-7 text-center text-xs" />
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeProcedure(proc.code)}><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Profissional solicitante</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <div><Label className="text-xs text-muted-foreground">Nome do Profissional</Label><Input value={doctorName} onChange={(e) => setDoctorName(e.target.value)} className="bg-muted/30 font-medium" /></div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label className="text-xs text-muted-foreground">CRM</Label><Input value={doctorCRM} onChange={(e) => setDoctorCRM(e.target.value)} className="bg-muted/30 font-mono" /></div>
-                  <div><Label className="text-xs text-muted-foreground">CPF</Label><Input value={doctorCPF} onChange={(e) => setDoctorCPF(e.target.value)} placeholder="000.000.000-00" className="font-mono" /></div>
+          <Card className="border-primary/40 ring-1 ring-primary/10">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+                <ClipboardList className="h-4 w-4" /> Justificativa Clínica
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div><Label className="text-xs text-muted-foreground">Diagnóstico Inicial</Label><Input value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} placeholder="Descreva o diagnóstico" /></div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><Label className="text-xs text-muted-foreground">CID-10 Principal</Label><Input value={cidPrimary} onChange={(e) => setCidPrimary(e.target.value)} placeholder="I63.9" className="font-mono" /></div>
+                <div><Label className="text-xs text-muted-foreground">Secundário</Label><Input value={cidSecondary} onChange={(e) => setCidSecondary(e.target.value)} className="font-mono" /></div>
+                <div><Label className="text-xs text-muted-foreground">Associado</Label><Input value={cidAssociated} onChange={(e) => setCidAssociated(e.target.value)} className="font-mono" /></div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-xs text-muted-foreground">Observações / Justificativa</Label>
+                  <div className="flex gap-1.5">
+                    <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={importAdmission} disabled={!patientId || importingAdmission}>
+                      <FileText className="h-3 w-3" /> {importingAdmission ? "..." : "Admissão"}
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={importEvolution} disabled={!patientId || importingEvolution}>
+                      <ClipboardList className="h-3 w-3" /> {importingEvolution ? "..." : "Evolução"}
+                    </Button>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">Data da solicitação: <strong>{todayFormatted}</strong></p>
-              </CardContent>
-            </Card>
+                <Textarea value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Informações clínicas relevantes..." rows={6} />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={resetApacForm}><RotateCcw className="h-4 w-4 mr-1" /> Limpar</Button>
-              <Button className="flex-1" onClick={handlePrint}><Printer className="h-4 w-4 mr-1" /> Imprimir APAC</Button>
+        {/* SECONDARY: Pre-filled data — collapsed by default */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <CollapsibleInfoCard title="Estabelecimento solicitante" summary={`${APAC_INSTITUTION.name} · CNES ${APAC_INSTITUTION.cnes}`}>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <Label className="text-xs text-muted-foreground">Nome</Label>
+                <Input value={APAC_INSTITUTION.name} readOnly className="bg-muted/50 font-medium text-sm" />
+              </div>
+              <div className="w-28">
+                <Label className="text-xs text-muted-foreground">CNES</Label>
+                <Input value={APAC_INSTITUTION.cnes} readOnly className="bg-muted/50 font-mono font-bold text-sm text-center" />
+              </div>
             </div>
-          </div>
+          </CollapsibleInfoCard>
+
+          <CollapsibleInfoCard
+            title="Identificação do paciente"
+            summary={apacPatientName || "—"}
+            badge={patientRecord ? `Pront. ${patientRecord}` : undefined}
+          >
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <Label className="text-xs text-muted-foreground">Nome do Paciente *</Label>
+                  <Input value={apacPatientName} onChange={(e) => setApacPatientName(e.target.value)} placeholder="Nome completo" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Nº Prontuário</Label>
+                  <Input value={patientRecord} onChange={(e) => setPatientRecord(e.target.value)} />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div><Label className="text-xs text-muted-foreground">CNS</Label><Input value={patientCNS} onChange={(e) => setPatientCNS(e.target.value)} /></div>
+                <div><Label className="text-xs text-muted-foreground">Data Nasc.</Label><Input type="date" value={patientDOB} onChange={(e) => setPatientDOB(e.target.value)} /></div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Sexo</Label>
+                  <Select value={patientSex} onValueChange={setPatientSex}>
+                    <SelectTrigger><SelectValue placeholder="Sel." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="M">Masculino</SelectItem>
+                      <SelectItem value="F">Feminino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs text-muted-foreground">Nome da Mãe</Label><Input value={patientMotherName} onChange={(e) => setPatientMotherName(e.target.value)} /></div>
+                <div><Label className="text-xs text-muted-foreground">Telefone</Label><Input value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)} /></div>
+              </div>
+              <div className="grid grid-cols-4 gap-3">
+                <div className="col-span-2"><Label className="text-xs text-muted-foreground">Endereço</Label><Input value={patientAddress} onChange={(e) => setPatientAddress(e.target.value)} /></div>
+                <div><Label className="text-xs text-muted-foreground">Município</Label><Input value={patientCity} onChange={(e) => setPatientCity(e.target.value)} /></div>
+                <div><Label className="text-xs text-muted-foreground">UF</Label><Input value={patientUF} onChange={(e) => setPatientUF(e.target.value)} maxLength={2} /></div>
+              </div>
+            </div>
+          </CollapsibleInfoCard>
+
+          <CollapsibleInfoCard
+            title="Profissional solicitante"
+            summary={doctorName || "—"}
+            badge={doctorCRM ? `CRM ${doctorCRM}` : undefined}
+          >
+            <div className="space-y-3">
+              <div><Label className="text-xs text-muted-foreground">Nome do Profissional</Label><Input value={doctorName} onChange={(e) => setDoctorName(e.target.value)} className="bg-muted/30 font-medium" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs text-muted-foreground">CRM</Label><Input value={doctorCRM} onChange={(e) => setDoctorCRM(e.target.value)} className="bg-muted/30 font-mono" /></div>
+                <div><Label className="text-xs text-muted-foreground">CPF</Label><Input value={doctorCPF} onChange={(e) => setDoctorCPF(e.target.value)} placeholder="000.000.000-00" className="font-mono" /></div>
+              </div>
+              <p className="text-xs text-muted-foreground">Data: <strong>{todayFormatted}</strong></p>
+            </div>
+          </CollapsibleInfoCard>
+        </div>
+
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1" onClick={resetApacForm}><RotateCcw className="h-4 w-4 mr-1" /> Limpar</Button>
+          <Button className="flex-1" onClick={handlePrint}><Printer className="h-4 w-4 mr-1" /> Imprimir APAC</Button>
         </div>
       </div>
 
