@@ -2529,6 +2529,7 @@ const PrescricaoPage = () => {
   const [nutritionWizardOpen, setNutritionWizardOpen] = useState(false);
   const [hydrationWizardOpen, setHydrationWizardOpen] = useState(false);
   const [replacementWizardOpen, setReplacementWizardOpen] = useState(false);
+  const [itemAssistantTargetId, setItemAssistantTargetId] = useState<string | null>(null);
   const [compactView, setCompactView] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<PrescriptionCategory>>(new Set());
 
