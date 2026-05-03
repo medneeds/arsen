@@ -51,6 +51,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { MedicalRecordsList } from "@/components/MedicalRecordsList";
 import { ReceptionDailyDashboard } from "@/components/reception/ReceptionDailyDashboard";
 import { DuplicatePatientWarning } from "@/components/reception/DuplicatePatientWarning";
+import { PisImportDialog } from "@/components/PisImportDialog";
 import { ReceptionGlobalSearch } from "@/components/reception/ReceptionGlobalSearch";
 import { TriageExpressDialog, type TriageExpressPayload } from "@/components/reception/TriageExpressDialog";
 import { useReceptionPost } from "@/hooks/useReceptionPost";
