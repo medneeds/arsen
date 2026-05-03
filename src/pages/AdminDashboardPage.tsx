@@ -1199,6 +1199,22 @@ const AdminDashboardPage = () => {
                     onChange={(e) => setRegisterForm(prev => ({ ...prev, cns: e.target.value }))}
                   />
                 </div>
+                <div className="md:col-span-2">
+                  <Label>
+                    Prontuário {mrMode === "legacy" && <span className="text-destructive">*</span>}
+                  </Label>
+                  <Input
+                    placeholder={mrMode === "legacy" ? "Obrigatório — nº do sistema antigo" : "Auto: AA-UUU-SSSSSS-DV (deixe vazio para gerar)"}
+                    value={registerForm.medical_record}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, medical_record: e.target.value }))}
+                    className={cn(mrMode === "legacy" && !registerForm.medical_record.trim() && "border-amber-500/60")}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {mrMode === "legacy"
+                      ? "⚠ Unidade em modo legado: informe o número do sistema antigo. Será preservado em numero_prontuario_legado."
+                      : "Vazio → será gerado automaticamente no formato seguro."}
+                  </p>
+                </div>
                 <div>
                   <Label>Data de Nascimento</Label>
                   <Input
