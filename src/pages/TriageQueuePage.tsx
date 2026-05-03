@@ -97,19 +97,34 @@ const TriageQueuePage = () => {
     loadQueue();
     loadPreAdmissions();
 
+    let qId: number | null = null;
+    let pId: number | null = null;
+    const debouncedQueue = () => {
+      if (qId) window.clearTimeout(qId);
+      qId = window.setTimeout(() => loadQueue(), 400);
+    };
+    const debouncedPreAdm = () => {
+      if (pId) window.clearTimeout(pId);
+      pId = window.setTimeout(() => loadPreAdmissions(), 400);
+    };
+
     const channel = supabase
       .channel("triage-queue-multi")
       .on("postgres_changes", {
         event: "*", schema: "public", table: "patient_encounters",
         filter: `hospital_unit_id=eq.${currentHospital.id}`,
-      }, () => loadQueue())
+      }, debouncedQueue)
       .on("postgres_changes", {
         event: "*", schema: "public", table: "pre_admissions",
         filter: `hospital_unit_id=eq.${currentHospital.id}`,
-      }, () => loadPreAdmissions())
+      }, debouncedPreAdm)
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (qId) window.clearTimeout(qId);
+      if (pId) window.clearTimeout(pId);
+      supabase.removeChannel(channel);
+    };
   }, [currentHospital?.id, currentState?.id]);
 
   const loadQueue = async () => {

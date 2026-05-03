@@ -138,32 +138,23 @@ const DashboardPage = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    
-    const movementsChannel = supabase
-      .channel('dashboard-movements')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'patient_movements' }, () => {
-        fetchDashboardData();
-      })
-      .subscribe();
 
-    const requestsChannel = supabase
-      .channel('dashboard-requests')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'internment_requests' }, () => {
-        fetchDashboardData();
-      })
-      .subscribe();
+    let debounceId: number | null = null;
+    const debouncedRefetch = () => {
+      if (debounceId) window.clearTimeout(debounceId);
+      debounceId = window.setTimeout(() => fetchDashboardData(), 800);
+    };
 
-    const patientsChannel = supabase
-      .channel('dashboard-patients')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'patients' }, () => {
-        fetchDashboardData();
-      })
+    const channel = supabase
+      .channel('dashboard-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'patient_movements' }, debouncedRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'internment_requests' }, debouncedRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'patients' }, debouncedRefetch)
       .subscribe();
 
     return () => {
-      supabase.removeChannel(movementsChannel);
-      supabase.removeChannel(requestsChannel);
-      supabase.removeChannel(patientsChannel);
+      if (debounceId) window.clearTimeout(debounceId);
+      supabase.removeChannel(channel);
     };
   }, [dateRange, activeSector, comparisonPeriod]);
 
