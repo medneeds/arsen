@@ -49,10 +49,10 @@ export function ClinicalNavTabs({ variant = "default", hideSector = false }: Cli
       )}
 
       <div className={cn(
-        "flex gap-1 rounded-lg p-1 border",
+        "flex gap-1 rounded-lg p-1 border shadow-inner",
         variant === "dark"
-          ? "bg-slate-950/60 border-white/20 shadow-inner"
-          : "bg-muted border-border/60"
+          ? "bg-primary/35 border-white/25"
+          : "bg-primary/10 border-primary/20"
       )}>
         {tabs.map((tab) => {
           const isActive = location.pathname === tab.path;
@@ -64,11 +64,11 @@ export function ClinicalNavTabs({ variant = "default", hideSector = false }: Cli
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold tracking-wide transition-all duration-200",
                 variant === "dark"
                   ? isActive
-                    ? "bg-white text-primary shadow-md ring-1 ring-white/40"
-                    : "bg-white/15 text-white hover:bg-white/30 ring-1 ring-white/20"
+                    ? "bg-white text-primary shadow-lg ring-2 ring-white/60"
+                    : "bg-white/20 text-white ring-1 ring-white/30 hover:bg-white/35 hover:ring-white/55 hover:shadow-md"
                   : isActive
-                    ? "bg-background text-primary shadow-sm ring-1 ring-primary/20"
-                    : "bg-background/80 text-foreground hover:bg-background hover:text-primary ring-1 ring-border/60"
+                    ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30"
+                    : "bg-background text-foreground shadow-sm ring-1 ring-primary/15 hover:bg-primary/15 hover:text-primary hover:ring-primary/35 hover:shadow-md"
               )}
             >
               <tab.icon className="h-3.5 w-3.5" />
