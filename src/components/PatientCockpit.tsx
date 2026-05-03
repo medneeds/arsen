@@ -149,6 +149,15 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const { vitals } = useLatestVitalSigns(patient?.id || null);
   const { round } = useLatestRoundSession(patient?.id || null);
   const { request: nirRequest } = usePatientNirRequest(patient?.id || null);
+  const { approveRequest } = useBedAllocationRequests();
+  const [approvingBed, setApprovingBed] = useState(false);
+  // Tick para refresh do cronômetro a cada 60s
+  const [, setNowTick] = useState(0);
+  useEffect(() => {
+    if (!nirRequest || nirRequest.status !== "pending") return;
+    const id = setInterval(() => setNowTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, [nirRequest?.status]);
   const { items: specialItems, summary: specialSummary } = usePatientSpecialRequests(
     patient?.id || null,
     patient?.name || null,
