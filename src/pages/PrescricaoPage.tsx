@@ -141,6 +141,33 @@ interface PrescriptionItem {
   infusionRate?: string;      // Vazão editável (mL/h ou gts/min)
   volumeTotal?: string;       // Volume total (mL)
   concentration?: string;     // Concentração calculada ou manual
+  // Nutrition-specific optional fields
+  nutritionType?: 'diet_enteral' | 'diet_oral' | 'water' | 'npt' | 'zero';
+  nutVolDay?: string;         // Volume total / dia (mL)
+  nutMode?: string;           // Contínua BIC / Gravitacional intermitente / Bolus / Bomba ciclada / VO fracionada
+  nutFraction?: string;       // Fracionamento / horários
+  nutNightPause?: string;     // Pausa noturna / repouso digestivo
+  nutProgression?: string;    // Esquema de progressão
+  nutBedHead?: string;        // Cabeceira (graus)
+  nutResidualCheck?: string;  // Checagem de resíduo gástrico
+  nutConsistency?: string;    // IDDSI / textura (oral)
+  nutAccess?: string;         // NPT: CVC / PICC / Periférico
+  nutComposition?: string;    // NPT: composição resumida
+  nutMonitoring?: string;     // NPT: monitorização
+  nutWaterVolPerAdmin?: string; // Água: mL por administração
+  nutWaterFreq?: string;      // Água: frequência
+  nutZeroReason?: string;     // Motivo do jejum
+}
+
+// Detect nutrition subtype from wizard-generated item name
+function detectNutritionType(name: string): PrescriptionItem['nutritionType'] | undefined {
+  const n = name.toLowerCase();
+  if (n.includes('zero') || n.includes('npo') || n.includes('jejum')) return 'zero';
+  if (n.includes('npt') || n.includes('parenteral')) return 'npt';
+  if (n.includes('água') || n.includes('agua') || n.includes('flush') || n.includes('hidratação enteral') || n.includes('hidratacao enteral')) return 'water';
+  if (n.includes('enteral') || n.includes('sne') || n.includes('sng') || n.includes('gastrostomia') || n.includes('jejunostomia')) return 'diet_enteral';
+  if (n.includes('oral') || n.includes(' vo')) return 'diet_oral';
+  return undefined;
 }
 
 // Normalize text for accent-insensitive search
