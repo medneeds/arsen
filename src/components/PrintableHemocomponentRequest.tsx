@@ -101,48 +101,12 @@ interface PrintableHemocomponentRequestProps {
   sectorLabel?: (s: string | null) => string;
 }
 
-/* Catálogo dos setores agrupados (matriz 4 colunas) */
+/* Catálogo dos setores agrupados — sincronizado com hospitalSectors.ts */
+import { HOSPITAL_SECTOR_GROUPS } from "@/lib/hospitalSectors";
 const SECTOR_GROUPS: Array<{
   title: string;
   items: Array<{ key: SectorKey; label: string }>;
-}> = [
-  {
-    title: "Pronto Socorro",
-    items: [
-      { key: "sala_vermelha", label: "Sala Vermelha" },
-      { key: "sala_laranja", label: "Sala Laranja" },
-      { key: "sala_decisao", label: "Sala de decisão médica" },
-      { key: "retaguarda_ps1", label: "Retaguarda PS1" },
-      { key: "retaguarda_ps2", label: "Retaguarda PS2" },
-      { key: "corredor_ps", label: "Corredor PS" },
-    ],
-  },
-  {
-    title: "Centro Cirúrgico",
-    items: [
-      { key: "cc_preparo", label: "Preparo" },
-      { key: "cc_bloco", label: "Bloco" },
-      { key: "cc_srpa", label: "SRPA" },
-    ],
-  },
-  {
-    title: "UTI",
-    items: [
-      { key: "uti_1", label: "UTI 1" },
-      { key: "uti_2", label: "UTI 2" },
-    ],
-  },
-  {
-    title: "Clínicas",
-    items: [
-      { key: "clinica_cirurgica", label: "Clínica Cirúrgica" },
-      { key: "neurocirurgia", label: "Neurocirurgia" },
-      { key: "cardiologia", label: "Cardiologia" },
-      { key: "uci", label: "UCI" },
-      { key: "pediatria", label: "Pediatria" },
-    ],
-  },
-];
+}> = HOSPITAL_SECTOR_GROUPS;
 
 const COMPONENT_LABELS: Record<ComponentKey, string> = {
   hemacias: "Conc. de Hemácias",
