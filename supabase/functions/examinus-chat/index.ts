@@ -210,6 +210,7 @@ serve(async (req) => {
       includeTime = true,
       onlyAltered = false,
       clinicalImpression = false,
+      compactMode = false,
     } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
@@ -222,6 +223,7 @@ serve(async (req) => {
       includeTime: !!includeTime,
       onlyAltered: !!onlyAltered,
       clinicalImpression: !!clinicalImpression,
+      compactMode: !!compactMode,
     });
 
     // Reforço anti-introdução injetado antes do histórico
