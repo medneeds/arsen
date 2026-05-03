@@ -1881,10 +1881,7 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
         borderBottom: '0.5px solid #e2e8f0', borderRight: '0.5px solid #e2e8f0',
         verticalAlign: 'top', backgroundColor: '#fff', padding: '4px 6px',
       }}>
-        <div style={{ minHeight: '36px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '4px' }}>
-          <div style={{ borderBottom: '1px dotted #94a3b8', height: '13px' }} />
-          <div style={{ borderBottom: '1px dotted #94a3b8', height: '13px' }} />
-        </div>
+        <div style={{ minHeight: '36px' }} />
       </td>
     </tr>
   );
