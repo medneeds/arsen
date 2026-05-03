@@ -1051,7 +1051,15 @@ function SortablePrescriptionItemRow({
           <MoreHorizontal className="h-3.5 w-3.5" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
+      <DropdownMenuContent align="end" className="w-52">
+        {onAssistant && ['replacement', 'hydration', 'nutrition'].includes(item.category) && (
+          <>
+            <DropdownMenuItem onClick={() => onAssistant(item.id)} className="text-xs gap-2 text-sky-600 focus:text-sky-700">
+              <Wand2 className="h-3.5 w-3.5" /> Configurar com assistente
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
         <DropdownMenuItem onClick={() => onDuplicate(item.id)} className="text-xs gap-2">
           <CopyPlus className="h-3.5 w-3.5" /> Duplicar item
         </DropdownMenuItem>
