@@ -854,166 +854,97 @@ const AdminDashboardPage = () => {
               hideQuickActions
             />
 
-            {/* Search & Quick Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Search Card */}
-              <Card className="lg:col-span-2">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Search className="h-4 w-4 text-primary" />
-                    Consultar Prontuário
-                  </CardTitle>
-                  <CardDescription>
-                    Busque por nome, CPF, CNS ou número do prontuário
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Digite o nome, CPF, CNS ou nº do prontuário..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                      className="flex-1"
-                    />
-                    <Button onClick={handleSearch} disabled={isSearching || !searchQuery.trim()}>
-                      {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                      <span className="ml-2 hidden sm:inline">Buscar</span>
-                    </Button>
-                  </div>
-
-                  {/* Search Results */}
-                  <AnimatePresence>
-                    {hasSearched && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-4"
-                      >
-                        {searchResults.length === 0 ? (
-                          <div className="text-center py-8 text-muted-foreground">
-                            <XCircle className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                            <p className="text-sm">Nenhum prontuário encontrado</p>
-                            <Button
-                              variant="link"
-                              size="sm"
-                              className="mt-1"
-                              onClick={() => {
-                                setRegisterForm(prev => ({ ...prev, full_name: searchQuery.trim() }));
-                                setShowRegisterDialog(true);
-                              }}
-                            >
-                              <UserPlus className="h-3 w-3 mr-1" />
-                              Cadastrar novo paciente
-                            </Button>
-                          </div>
-                        ) : (
-                          <ScrollArea className="max-h-[320px]">
-                            <div className="space-y-2">
-                              {searchResults.map((patient) => (
-                                <motion.div
-                                  key={patient.id}
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
-                                  onClick={() => {
-                                    setSelectedPatient(patient);
-                                    setShowPatientDetail(true);
-                                  }}
-                                >
-                                  <div className="flex items-center gap-3 min-w-0">
-                                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                      <User className="h-4 w-4 text-primary" />
-                                    </div>
-                                    <div className="min-w-0">
-                                      <p className="font-medium text-sm truncate">{patient.full_name}</p>
-                                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {/* Resultados da busca (compacto) */}
+            <AnimatePresence>
+              {hasSearched && (
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Search className="h-3.5 w-3.5 text-primary" />
+                        Resultados da busca
+                        <Badge variant="secondary" className="text-[10px]">{searchResults.length}</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {searchResults.length === 0 ? (
+                        <div className="text-center py-6 text-muted-foreground">
+                          <XCircle className="h-7 w-7 mx-auto mb-2 opacity-40" />
+                          <p className="text-sm">Nenhum prontuário encontrado</p>
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="mt-1"
+                            onClick={() => {
+                              setRegisterForm(prev => ({ ...prev, full_name: searchQuery.trim() }));
+                              setShowRegisterDialog(true);
+                            }}
+                          >
+                            <UserPlus className="h-3 w-3 mr-1" />
+                            Cadastrar novo paciente
+                          </Button>
+                        </div>
+                      ) : (
+                        <ScrollArea className="max-h-[320px]">
+                          <div className="space-y-2">
+                            {searchResults.map((patient) => (
+                              <div
+                                key={patient.id}
+                                className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
+                                onClick={() => { setSelectedPatient(patient); setShowPatientDetail(true); }}
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                    <User className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-sm truncate">{patient.full_name}</p>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <span className="flex items-center gap-1"><Hash className="h-3 w-3" />{patient.medical_record}</span>
+                                      {patient.cpf && <span>CPF: {patient.cpf}</span>}
+                                      {patient.birth_date && (
                                         <span className="flex items-center gap-1">
-                                          <Hash className="h-3 w-3" />
-                                          {patient.medical_record}
+                                          <Calendar className="h-3 w-3" />
+                                          {format(new Date(patient.birth_date + 'T00:00:00'), "dd/MM/yyyy")}
                                         </span>
-                                        {patient.cpf && <span>CPF: {patient.cpf}</span>}
-                                        {patient.birth_date && (
-                                          <span className="flex items-center gap-1">
-                                            <Calendar className="h-3 w-3" />
-                                            {format(new Date(patient.birth_date + 'T00:00:00'), "dd/MM/yyyy")}
-                                          </span>
-                                        )}
-                                      </div>
+                                      )}
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedPatient(patient);
-                                        setShowNewEncounter(true);
-                                      }}
-                                    >
-                                      <Play className="h-3 w-3 mr-1" />
-                                      Novo Atendimento
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedPatient(patient);
-                                        setShowPatientDetail(true);
-                                      }}
-                                    >
-                                      <Eye className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </motion.div>
-                              ))}
-                            </div>
-                          </ScrollArea>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </CardContent>
-              </Card>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setSelectedPatient(patient); setShowNewEncounter(true); }}>
+                                    <Play className="h-3 w-3 mr-1" />Novo Atendimento
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setSelectedPatient(patient); setShowPatientDetail(true); }}>
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Plus className="h-4 w-4 text-primary" />
-                    Ações Rápidas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button
-                    className="w-full justify-start"
-                    variant="outline"
-                    onClick={() => setShowRegisterDialog(true)}
-                  >
-                    <UserPlus className="h-4 w-4 mr-2 text-emerald-500" />
-                    Novo Prontuário
-                  </Button>
-                  <Button
-                    className="w-full justify-start"
-                    variant="outline"
-                    disabled={!selectedPatient}
-                    onClick={() => selectedPatient && setShowNewEncounter(true)}
-                  >
-                    <Play className="h-4 w-4 mr-2 text-blue-500" />
+            {selectedPatient && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardContent className="p-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Paciente selecionado</p>
+                    <p className="text-sm font-semibold truncate">{selectedPatient.full_name}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{selectedPatient.medical_record}</p>
+                  </div>
+                  <Button size="sm" onClick={() => setShowNewEncounter(true)}>
+                    <Play className="h-3.5 w-3.5 mr-1" />
                     Iniciar Atendimento
                   </Button>
-                  {selectedPatient && (
-                    <div className="p-2 rounded-md bg-primary/5 border border-primary/10">
-                      <p className="text-xs text-muted-foreground">Paciente selecionado:</p>
-                      <p className="text-sm font-medium truncate">{selectedPatient.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{selectedPatient.medical_record}</p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
-            </div>
+            )}
 
             {/* Recent Encounters */}
             <Card>
