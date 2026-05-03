@@ -325,16 +325,16 @@ export function HemocomponentRequestDialog({
           {previewMode ? (
             <PrintableHemocomponentRequest request={previewData} />
           ) : (
-            <Tabs defaultValue="patient" className="space-y-4">
-              <TabsList className="grid grid-cols-4 w-full">
-                <TabsTrigger value="patient">Paciente</TabsTrigger>
-                <TabsTrigger value="transfusion">Transfusão</TabsTrigger>
-                <TabsTrigger value="components">Hemocomponentes</TabsTrigger>
-                <TabsTrigger value="history">Histórico & Tipo</TabsTrigger>
-              </TabsList>
-
-              {/* Paciente */}
-              <TabsContent value="patient" className="space-y-3">
+            <div className="space-y-4">
+              {/* Bloco retrátil — paciente já carregado */}
+              <CollapsibleInfoCard
+                title="Identificação do paciente"
+                summary={data.patient_name || "—"}
+                badge={[
+                  data.patient_blood_group,
+                  [data.patient_unit, data.patient_bed].filter(Boolean).join(" · "),
+                ].filter(Boolean).join(" · ") || undefined}
+              >
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Nome completo" full>
                     <Input value={data.patient_name} onChange={(e) => setData({ ...data, patient_name: e.target.value.toUpperCase() })} />
@@ -373,169 +373,183 @@ export function HemocomponentRequestDialog({
                     <Textarea rows={2} value={data.patient_diagnosis || ""} onChange={(e) => setData({ ...data, patient_diagnosis: e.target.value })} />
                   </Field>
                 </div>
-              </TabsContent>
+              </CollapsibleInfoCard>
 
-              {/* Transfusão (setores) */}
-              <TabsContent value="transfusion" className="space-y-3">
-                <p className="text-sm text-muted-foreground">Selecione o(s) setor(es) onde a transfusão será realizada:</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {SECTOR_GROUPS.map((g) => (
-                    <div key={g.title} className="border rounded-md p-3">
-                      <div className="text-xs font-bold uppercase text-center mb-2 text-muted-foreground">{g.title}</div>
-                      <div className="space-y-1.5">
-                        {g.items.map((it) => (
-                          <div key={it.key} className="flex items-center gap-2">
-                            <Checkbox
-                              id={`sec-${it.key}`}
-                              checked={(data.transfusion_sectors || []).includes(it.key)}
-                              onCheckedChange={(c) => toggleSector(it.key, !!c)}
-                            />
-                            <Label htmlFor={`sec-${it.key}`} className="text-sm cursor-pointer">{it.label}</Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+              {/* PRINCIPAL — Hemocomponentes em evidência */}
+              <div className="rounded-lg border-2 border-rose-500/30 ring-1 ring-rose-500/10 bg-rose-500/5 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-rose-700 dark:text-rose-400 uppercase tracking-wider">
+                  <Droplet className="h-4 w-4" /> Hemocomponentes solicitados
                 </div>
-              </TabsContent>
-
-              {/* Hemocomponentes */}
-              <TabsContent value="components" className="space-y-3">
-                {COMPONENT_KEYS.map((k) => {
-                  const c = getComponent(k);
-                  const active = isComponentActive(k);
-                  return (
-                    <div key={k} className="border rounded-md p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Checkbox id={`cmp-${k}`} checked={active} onCheckedChange={(v) => toggleComponent(k, !!v)} />
-                        <Label htmlFor={`cmp-${k}`} className="text-base font-bold cursor-pointer">{COMPONENT_LABELS[k]}</Label>
-                      </div>
-                      {active && (
-                        <div className="grid grid-cols-2 gap-3 pl-6 text-sm">
-                          <Field label="Quantidade">
-                            <Input value={String(c?.quantity ?? "")} onChange={(e) => updateComponent(k, { quantity: e.target.value })} />
-                          </Field>
-                          {(k === "hemacias" || k === "plaquetas") && (
-                            <div className="col-span-2 flex flex-wrap gap-4 pt-1">
-                              <div className="flex items-center gap-2">
-                                <Checkbox id={`${k}-des`} checked={!!c?.desleucocitado} onCheckedChange={(v) => updateComponent(k, { desleucocitado: !!v })} />
-                                <Label htmlFor={`${k}-des`} className="cursor-pointer">Desleucocitado / Filtrado</Label>
-                              </div>
-                              {k === "hemacias" && (
-                                <div className="flex items-center gap-2">
-                                  <Checkbox id={`${k}-lav`} checked={!!c?.lavado} onCheckedChange={(v) => updateComponent(k, { lavado: !!v })} />
-                                  <Label htmlFor={`${k}-lav`} className="cursor-pointer">Lavado</Label>
-                                </div>
-                              )}
-                              <div className="flex items-center gap-2">
-                                <Checkbox id={`${k}-irr`} checked={!!c?.irradiado} onCheckedChange={(v) => updateComponent(k, { irradiado: !!v })} />
-                                <Label htmlFor={`${k}-irr`} className="cursor-pointer">Irradiado</Label>
-                              </div>
-                            </div>
-                          )}
-                          {k === "plasma" && (
-                            <div className="col-span-2">
-                              <Label className="text-xs text-muted-foreground">Administração</Label>
-                              <RadioGroup value={c?.admin_schedule || ""} onValueChange={(v) => updateComponent(k, { admin_schedule: v })} className="flex gap-4 pt-1">
-                                <div className="flex items-center gap-2"><RadioGroupItem value="8_8h" id="pl-88" /><Label htmlFor="pl-88">8/8 Horas</Label></div>
-                                <div className="flex items-center gap-2"><RadioGroupItem value="continuo" id="pl-co" /><Label htmlFor="pl-co">Contínuo</Label></div>
-                              </RadioGroup>
-                            </div>
-                          )}
-                          <Separator className="col-span-2 my-1" />
-                          <div className="col-span-2 text-xs font-bold uppercase text-muted-foreground">Justificativa Laboratorial</div>
-                          {k === "hemacias" && (
-                            <>
-                              <Field label="Hb"><Input value={c?.lab_hb || ""} onChange={(e) => updateComponent(k, { lab_hb: e.target.value })} /></Field>
-                              <Field label="Ht"><Input value={c?.lab_ht || ""} onChange={(e) => updateComponent(k, { lab_ht: e.target.value })} /></Field>
-                            </>
-                          )}
-                          {k === "plaquetas" && (
-                            <Field label="N° de plaquetas" full><Input value={c?.lab_platelets || ""} onChange={(e) => updateComponent(k, { lab_platelets: e.target.value })} /></Field>
-                          )}
-                          {k === "plasma" && (
-                            <>
-                              <Field label="TAP"><Input value={c?.lab_tap || ""} onChange={(e) => updateComponent(k, { lab_tap: e.target.value })} /></Field>
-                              <Field label="TTPA"><Input value={c?.lab_ttpa || ""} onChange={(e) => updateComponent(k, { lab_ttpa: e.target.value })} /></Field>
-                              <Field label="RNI"><Input value={c?.lab_rni || ""} onChange={(e) => updateComponent(k, { lab_rni: e.target.value })} /></Field>
-                            </>
-                          )}
-                          {k === "crio" && (
-                            <Field label="Fibrinogênio" full><Input value={c?.lab_fibrinogen || ""} onChange={(e) => updateComponent(k, { lab_fibrinogen: e.target.value })} /></Field>
-                          )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {COMPONENT_KEYS.map((k) => {
+                    const c = getComponent(k);
+                    const active = isComponentActive(k);
+                    return (
+                      <div
+                        key={k}
+                        className={`border rounded-md p-3 transition-colors ${active ? "border-rose-500/60 bg-card" : "border-border bg-card/60 hover:bg-accent/40"}`}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Checkbox id={`cmp-${k}`} checked={active} onCheckedChange={(v) => toggleComponent(k, !!v)} />
+                          <Label htmlFor={`cmp-${k}`} className="text-sm font-bold cursor-pointer">{COMPONENT_LABELS[k]}</Label>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </TabsContent>
+                        {active && (
+                          <div className="grid grid-cols-2 gap-2 pl-6 text-sm">
+                            <Field label="Quantidade">
+                              <Input value={String(c?.quantity ?? "")} onChange={(e) => updateComponent(k, { quantity: e.target.value })} />
+                            </Field>
+                            {(k === "hemacias" || k === "plaquetas") && (
+                              <div className="col-span-2 flex flex-wrap gap-3 pt-1">
+                                <div className="flex items-center gap-2">
+                                  <Checkbox id={`${k}-des`} checked={!!c?.desleucocitado} onCheckedChange={(v) => updateComponent(k, { desleucocitado: !!v })} />
+                                  <Label htmlFor={`${k}-des`} className="text-xs cursor-pointer">Desleuco/Filtrado</Label>
+                                </div>
+                                {k === "hemacias" && (
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox id={`${k}-lav`} checked={!!c?.lavado} onCheckedChange={(v) => updateComponent(k, { lavado: !!v })} />
+                                    <Label htmlFor={`${k}-lav`} className="text-xs cursor-pointer">Lavado</Label>
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-2">
+                                  <Checkbox id={`${k}-irr`} checked={!!c?.irradiado} onCheckedChange={(v) => updateComponent(k, { irradiado: !!v })} />
+                                  <Label htmlFor={`${k}-irr`} className="text-xs cursor-pointer">Irradiado</Label>
+                                </div>
+                              </div>
+                            )}
+                            {k === "plasma" && (
+                              <div className="col-span-2">
+                                <Label className="text-xs text-muted-foreground">Administração</Label>
+                                <RadioGroup value={c?.admin_schedule || ""} onValueChange={(v) => updateComponent(k, { admin_schedule: v })} className="flex gap-4 pt-1">
+                                  <div className="flex items-center gap-2"><RadioGroupItem value="8_8h" id="pl-88" /><Label htmlFor="pl-88" className="text-xs">8/8h</Label></div>
+                                  <div className="flex items-center gap-2"><RadioGroupItem value="continuo" id="pl-co" /><Label htmlFor="pl-co" className="text-xs">Contínuo</Label></div>
+                                </RadioGroup>
+                              </div>
+                            )}
+                            <div className="col-span-2 text-[10px] font-bold uppercase text-muted-foreground border-t pt-1.5">Justificativa Lab.</div>
+                            {k === "hemacias" && (
+                              <>
+                                <Field label="Hb"><Input value={c?.lab_hb || ""} onChange={(e) => updateComponent(k, { lab_hb: e.target.value })} /></Field>
+                                <Field label="Ht"><Input value={c?.lab_ht || ""} onChange={(e) => updateComponent(k, { lab_ht: e.target.value })} /></Field>
+                              </>
+                            )}
+                            {k === "plaquetas" && (
+                              <Field label="N° de plaquetas" full><Input value={c?.lab_platelets || ""} onChange={(e) => updateComponent(k, { lab_platelets: e.target.value })} /></Field>
+                            )}
+                            {k === "plasma" && (
+                              <>
+                                <Field label="TAP"><Input value={c?.lab_tap || ""} onChange={(e) => updateComponent(k, { lab_tap: e.target.value })} /></Field>
+                                <Field label="TTPA"><Input value={c?.lab_ttpa || ""} onChange={(e) => updateComponent(k, { lab_ttpa: e.target.value })} /></Field>
+                                <Field label="RNI" full><Input value={c?.lab_rni || ""} onChange={(e) => updateComponent(k, { lab_rni: e.target.value })} /></Field>
+                              </>
+                            )}
+                            {k === "crio" && (
+                              <Field label="Fibrinogênio" full><Input value={c?.lab_fibrinogen || ""} onChange={(e) => updateComponent(k, { lab_fibrinogen: e.target.value })} /></Field>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-              {/* Histórico & Tipo */}
-              <TabsContent value="history" className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Transfusões prévias?</Label>
-                    <RadioGroup value={String(data.previous_transfusion ?? "")} onValueChange={(v) => setData({ ...data, previous_transfusion: v === "true" })} className="flex gap-4">
-                      <div className="flex items-center gap-2"><RadioGroupItem value="true" id="pt-s" /><Label htmlFor="pt-s">Sim</Label></div>
-                      <div className="flex items-center gap-2"><RadioGroupItem value="false" id="pt-n" /><Label htmlFor="pt-n">Não</Label></div>
+              {/* Tipo de transfusão + Setores em tabs compactas */}
+              <Tabs defaultValue="transfusion" className="space-y-3">
+                <TabsList className="grid grid-cols-2 w-full">
+                  <TabsTrigger value="transfusion">Tipo & Setores</TabsTrigger>
+                  <TabsTrigger value="history">Histórico transfusional</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="transfusion" className="space-y-4">
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">Tipo de Transfusão</Label>
+                    <RadioGroup value={data.transfusion_type || ""} onValueChange={(v) => setData({ ...data, transfusion_type: v as TransfusionType })} className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2">
+                      <label className="flex items-center gap-2 p-2 rounded border cursor-pointer hover:bg-accent/40"><RadioGroupItem value="programada" id="tt-p" /><span className="text-xs">Programada</span></label>
+                      <label className="flex items-center gap-2 p-2 rounded border cursor-pointer hover:bg-accent/40"><RadioGroupItem value="rotina" id="tt-r" /><span className="text-xs">Rotina (24h)</span></label>
+                      <label className="flex items-center gap-2 p-2 rounded border cursor-pointer hover:bg-accent/40"><RadioGroupItem value="urgencia" id="tt-u" /><span className="text-xs">Urgência (3h)</span></label>
+                      <label className="flex items-center gap-2 p-2 rounded border border-rose-500/40 cursor-pointer hover:bg-rose-500/10"><RadioGroupItem value="emergencia" id="tt-e" /><span className="text-xs font-semibold">Emergência</span></label>
                     </RadioGroup>
+                    {data.transfusion_type === "programada" && (
+                      <div className="grid grid-cols-2 gap-3 mt-2 pl-1">
+                        <Field label="Data programada">
+                          <Input type="date" value={data.scheduled_date || ""} onChange={(e) => setData({ ...data, scheduled_date: e.target.value })} />
+                        </Field>
+                        <Field label="Horário">
+                          <Input type="time" value={data.scheduled_time || ""} onChange={(e) => setData({ ...data, scheduled_time: e.target.value })} />
+                        </Field>
+                      </div>
+                    )}
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold">Reação transfusional?</Label>
-                    <RadioGroup value={String(data.transfusion_reaction ?? "")} onValueChange={(v) => setData({ ...data, transfusion_reaction: v === "true" })} className="flex gap-4">
-                      <div className="flex items-center gap-2"><RadioGroupItem value="true" id="rt-s" /><Label htmlFor="rt-s">Sim</Label></div>
-                      <div className="flex items-center gap-2"><RadioGroupItem value="false" id="rt-n" /><Label htmlFor="rt-n">Não</Label></div>
-                    </RadioGroup>
-                  </div>
-                  <Field label="Tipo de reação" full>
-                    <Input value={data.reaction_type || ""} onChange={(e) => setData({ ...data, reaction_type: e.target.value })} />
-                  </Field>
-                  <Field label="Gesta">
-                    <Input value={String(data.obstetric_history?.gesta ?? "")} onChange={(e) => setData({ ...data, obstetric_history: { ...data.obstetric_history, gesta: e.target.value } })} />
-                  </Field>
-                  <Field label="Parto">
-                    <Input value={String(data.obstetric_history?.parto ?? "")} onChange={(e) => setData({ ...data, obstetric_history: { ...data.obstetric_history, parto: e.target.value } })} />
-                  </Field>
-                  <Field label="Aborto">
-                    <Input value={String(data.obstetric_history?.aborto ?? "")} onChange={(e) => setData({ ...data, obstetric_history: { ...data.obstetric_history, aborto: e.target.value } })} />
-                  </Field>
-                </div>
 
-                <Separator />
+                  <Separator />
 
-                <div className="space-y-3">
-                  <Label className="text-sm font-bold uppercase">Tipo de Transfusão</Label>
-                  <RadioGroup value={data.transfusion_type || ""} onValueChange={(v) => setData({ ...data, transfusion_type: v as TransfusionType })} className="space-y-2">
-                    <div className="flex items-center gap-2"><RadioGroupItem value="programada" id="tt-p" /><Label htmlFor="tt-p">Programada</Label></div>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="rotina" id="tt-r" /><Label htmlFor="tt-r">De rotina (até 24h)</Label></div>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="urgencia" id="tt-u" /><Label htmlFor="tt-u">De urgência (até 3h)</Label></div>
-                    <div className="flex items-center gap-2"><RadioGroupItem value="emergencia" id="tt-e" /><Label htmlFor="tt-e">De emergência (risco de vida)</Label></div>
-                  </RadioGroup>
-
-                  {data.transfusion_type === "programada" && (
-                    <div className="grid grid-cols-2 gap-3 pl-6">
-                      <Field label="Data programada">
-                        <Input type="date" value={data.scheduled_date || ""} onChange={(e) => setData({ ...data, scheduled_date: e.target.value })} />
-                      </Field>
-                      <Field label="Horário">
-                        <Input type="time" value={data.scheduled_time || ""} onChange={(e) => setData({ ...data, scheduled_time: e.target.value })} />
-                      </Field>
+                  <div>
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">Setor(es) onde a transfusão será realizada</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+                      {SECTOR_GROUPS.map((g) => (
+                        <div key={g.title} className="border rounded-md p-2.5">
+                          <div className="text-[10px] font-bold uppercase text-center mb-1.5 text-muted-foreground">{g.title}</div>
+                          <div className="space-y-1">
+                            {g.items.map((it) => (
+                              <div key={it.key} className="flex items-center gap-2">
+                                <Checkbox
+                                  id={`sec-${it.key}`}
+                                  checked={(data.transfusion_sectors || []).includes(it.key)}
+                                  onCheckedChange={(c) => toggleSector(it.key, !!c)}
+                                />
+                                <Label htmlFor={`sec-${it.key}`} className="text-xs cursor-pointer">{it.label}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                <Separator />
+                  <Separator />
 
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Médico solicitante">
-                    <Input value={data.requested_by_name || ""} onChange={(e) => setData({ ...data, requested_by_name: e.target.value })} />
-                  </Field>
-                  <Field label="CRM">
-                    <Input value={data.requested_by_crm || ""} onChange={(e) => setData({ ...data, requested_by_crm: e.target.value })} />
-                  </Field>
-                </div>
-              </TabsContent>
-            </Tabs>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Médico solicitante">
+                      <Input value={data.requested_by_name || ""} onChange={(e) => setData({ ...data, requested_by_name: e.target.value })} />
+                    </Field>
+                    <Field label="CRM">
+                      <Input value={data.requested_by_crm || ""} onChange={(e) => setData({ ...data, requested_by_crm: e.target.value })} />
+                    </Field>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="history" className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Transfusões prévias?</Label>
+                      <RadioGroup value={String(data.previous_transfusion ?? "")} onValueChange={(v) => setData({ ...data, previous_transfusion: v === "true" })} className="flex gap-4">
+                        <div className="flex items-center gap-2"><RadioGroupItem value="true" id="pt-s" /><Label htmlFor="pt-s">Sim</Label></div>
+                        <div className="flex items-center gap-2"><RadioGroupItem value="false" id="pt-n" /><Label htmlFor="pt-n">Não</Label></div>
+                      </RadioGroup>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Reação transfusional?</Label>
+                      <RadioGroup value={String(data.transfusion_reaction ?? "")} onValueChange={(v) => setData({ ...data, transfusion_reaction: v === "true" })} className="flex gap-4">
+                        <div className="flex items-center gap-2"><RadioGroupItem value="true" id="rt-s" /><Label htmlFor="rt-s">Sim</Label></div>
+                        <div className="flex items-center gap-2"><RadioGroupItem value="false" id="rt-n" /><Label htmlFor="rt-n">Não</Label></div>
+                      </RadioGroup>
+                    </div>
+                    <Field label="Tipo de reação" full>
+                      <Input value={data.reaction_type || ""} onChange={(e) => setData({ ...data, reaction_type: e.target.value })} />
+                    </Field>
+                    <Field label="Gesta">
+                      <Input value={String(data.obstetric_history?.gesta ?? "")} onChange={(e) => setData({ ...data, obstetric_history: { ...data.obstetric_history, gesta: e.target.value } })} />
+                    </Field>
+                    <Field label="Parto">
+                      <Input value={String(data.obstetric_history?.parto ?? "")} onChange={(e) => setData({ ...data, obstetric_history: { ...data.obstetric_history, parto: e.target.value } })} />
+                    </Field>
+                    <Field label="Aborto">
+                      <Input value={String(data.obstetric_history?.aborto ?? "")} onChange={(e) => setData({ ...data, obstetric_history: { ...data.obstetric_history, aborto: e.target.value } })} />
+                    </Field>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
           )}
         </ScrollArea>
 
