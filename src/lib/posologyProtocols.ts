@@ -176,7 +176,13 @@ const PROTOCOL_DB: Record<string, PosologyProtocol[]> = {
     { label: "Delirium hiperativo", dose: "2,5 mg", route: "Intravenosa", posology: "SOS", instructions: "Máx 20 mg/24h. Monitorar QTc.", evidence: "B" },
   ],
   "fenitoina": [
-    { label: "Manutenção", dose: "100 mg", route: "Intravenosa", posology: "8/8h", diluent: "SF 0,9%", diluentVolume: "100 mL", infusionTime: "30", evidence: "A" },
+    { label: "Ataque — status epilético", indication: "Status epilético / pós-crise", dose: "20 mg/kg", route: "Intravenosa", posology: "Dose única", diluent: "SF 0,9%", diluentVolume: "250 mL", infusionTime: "30", instructions: "SOMENTE em SF 0,9% (precipita em SG). Velocidade máx 50 mg/min (25 mg/min em idosos). Monitorar PA e ECG.", evidence: "A" },
+    { label: "Manutenção — IV 100 mg", indication: "Manutenção pós-ataque", dose: "100 mg", route: "Intravenosa", posology: "8/8h", schedule: "06h-14h-22h", diluent: "SF 0,9%", diluentVolume: "100 mL", infusionTime: "20", instructions: "SOMENTE em SF 0,9%. Lavar acesso com SF antes/depois.", evidence: "A" },
+    { label: "Manutenção — VO 100 mg", indication: "Manutenção VO", dose: "100 mg", route: "Oral", posology: "8/8h", schedule: "06h-14h-22h", instructions: "Tomar com alimento. Monitorar nível sérico (alvo 10-20 mcg/mL).", evidence: "A" },
+  ],
+  "hidantal": [
+    { label: "Ataque — status epilético", indication: "Status epilético", dose: "20 mg/kg", route: "Intravenosa", posology: "Dose única", diluent: "SF 0,9%", diluentVolume: "250 mL", infusionTime: "30", instructions: "SOMENTE em SF 0,9%. Velocidade máx 50 mg/min. Monitorar PA/ECG.", evidence: "A" },
+    { label: "Manutenção IV", indication: "Manutenção pós-crise", dose: "100 mg", route: "Intravenosa", posology: "8/8h", schedule: "06h-14h-22h", diluent: "SF 0,9%", diluentVolume: "100 mL", infusionTime: "20", evidence: "A" },
   ],
 
   // ===== ENDÓCRINO / METABÓLICO =====
