@@ -1,90 +1,62 @@
 ## Objetivo
-Tornar o assistente de nutrição mais acessível e clinicamente fiel à realidade do Socorrão I, permitindo dietas mistas, sistema enteral aberto/fechado, prescrição de água enteral e ajustes manuais.
 
-## 1. Atalho do chip "Nutrição" (topo da prescrição)
-`src/pages/PrescricaoPage.tsx` (linhas 3856-3880, chips "Ir para")
+Eliminar a barra flutuante inferior da Prescrição (Nova / Extra / Interações / Guia ATM / Psicotrópicos / TEV / Imprimir / Validar / Compacto·Expandido) e reposicioná-la no topo da página, acoplada ao cabeçalho "Prescrição médica diária", logo abaixo da linha de Peso · Alergias · Calendário · Dose/kg · Templates. O resultado deve ser limpo, denso e sem poluição visual.
 
-- Manter o comportamento atual de scroll para a categoria.
-- Quando o chip clicado for `nutrition`, **também** abrir o `NutritionWizard` (`setNutritionWizardOpen(true)`) imediatamente após o scroll.
-- Adicionar `title`/tooltip "Abrir assistente de nutrição" no chip de nutrição para deixar a ação clara.
-- Os demais chips (hidratação, medicação etc.) continuam só navegando.
+## Onde está hoje
 
-## 2. NutritionWizard — dieta mista (multi-modalidade)
-`src/components/NutritionWizard.tsx`
+Arquivo: `src/pages/PrescricaoPage.tsx`
 
-- Trocar `modality: NutritionModality` por `modalities: Set<NutritionModality>` (multi-seleção). O Step 0 passa a permitir marcar 1+ cards.
-- Step 1 ("Detalhes") renderiza os blocos das modalidades selecionadas em sequência, cada um dentro de um card colapsável com o título da modalidade.
-- Step 3 (revisão) lista as entradas geradas por todas as modalidades, agrupadas por seção.
-- `buildEntries()` itera sobre o `Set` e concatena as entradas (NPO + oral + enteral + parenteral conforme marcado).
-- Adicionar, abaixo do Step 0, um aviso curto: "Dieta mista permitida — selecione mais de uma modalidade quando aplicável (ex.: oral em progressão + enteral)".
-- Botão extra na revisão: **"Adicionar outra modalidade"** que volta ao Step 0 mantendo as modalidades já configuradas (permite empilhar).
+- Cabeçalho atual (linhas ~3784–3937): título "Prescrição médica diária" + linha única lotada com Peso, Alergias, Calendário, Dose/kg, Templates, Atalhos, Atualizar.
+- Toolbar inferior (linhas ~4009–4130): renderizada via `createPortal` em `position: fixed; bottom: 0`. Contém Nova, Extra, Interações, Guia ATM, Psicotrópicos, TEV, Imprimir, Validar prescrição, badge de "Sessão validada", e Compacto/Expandido. Hoje colide com o conteúdo e com pop-ups (Cuidados, Guia ATM, etc.).
 
-## 3. Sistema enteral aberto vs. fechado
-Bloco enteral do Step 1:
+## Nova arquitetura do cabeçalho (2 linhas)
 
-- Novo seletor `entSystem`: `aberto` | `fechado`, dois cards no topo do bloco enteral.
-  - **Aberto**: descrição "Frasco/copo dosador, troca a cada 4h. Maior flexibilidade gravitacional/intermitente."
-  - **Fechado**: descrição "Bolsa pré-pronta, pendura até 24h. Indicado para BIC contínua."
-- Ao trocar o sistema, **sugerir** automaticamente o modo de infusão (aberto → `intermitente`/`bolus`; fechado → `continua`), sem travar — médico pode sobrescrever.
-- A label da prescrição passa a incluir o sistema: `"Dieta enteral [aberto|fechado] — <fórmula> via <via>"`.
-- Instruções automáticas adicionais:
-  - Aberto: "Trocar equipo e frasco a cada 4h; lavar utensílios entre tomadas."
-  - Fechado: "Bolsa pendura até 24h; programar BIC; trocar equipo conforme rotina (24-72h)."
+Reorganizar o bloco do topo em um card único, com 2 fileiras bem separadas. O `createPortal` da toolbar inferior é removido.
 
-## 4. Água enteral prescritível
-Bloco enteral do Step 1:
-
-- Substituir o checkbox simples de "flush" por uma sub-seção **"Água via sonda"** com 3 modos:
-  - **Flush de manutenção** (atual: 30 mL antes/após dieta e medicação).
-  - **Hidratação enteral programada**: campos `Volume por tomada (mL)` + `Frequência` (2/2h, 4/4h, 6/6h, 8/8h) — gera entrada própria "Água via sonda" com posologia escolhida.
-  - **Esquema para distúrbio hidroeletrolítico**: campo livre `Volume total/dia (mL)` + observações; gera entrada com instrução "Correção de distúrbio hidroeletrolítico — ofertar conforme balanço hídrico e Na sérico".
-- As três opções podem ser combinadas; cada uma vira uma `MedicationEntry` separada (categoria `nutrition`).
-
-## 5. Campo personalizável (ajustes manuais)
-Em **cada** bloco de modalidade (oral, enteral, parenteral, zero) do Step 1:
-
-- Adicionar um `Textarea` "Ajustes manuais / observações específicas desta dieta" no final do bloco.
-- O conteúdo entra na coluna `instructions` da entrada gerada **daquela modalidade** (concatenado com as instruções automáticas, prefixado por "Personalização: ").
-- Já existe um `notes` global no Step 2 — manter como está; os campos novos são por modalidade, com escopo localizado.
-
-## 6. Visual do Step 0 (cards de modalidade)
-- Como agora é multi-seleção, mudar visual: cards com checkbox no canto superior direito; selecionados ganham ring esmeralda + check; deselecionar com clique novamente.
-- Botão "Avançar" só habilita com pelo menos 1 selecionado.
-
-## Detalhes técnicos
-
-```ts
-// NutritionWizard.tsx
-const [modalities, setModalities] = useState<Set<NutritionModality>>(new Set(["oral"]));
-const [entSystem, setEntSystem] = useState<"aberto" | "fechado">("fechado");
-
-// Água enteral
-const [waterFlush, setWaterFlush] = useState(true);
-const [waterScheduled, setWaterScheduled] = useState(false);
-const [waterVol, setWaterVol] = useState("100");
-const [waterFreq, setWaterFreq] = useState("4/4h");
-const [waterCorrection, setWaterCorrection] = useState(false);
-const [waterCorrectionVol, setWaterCorrectionVol] = useState("");
-const [waterCorrectionObs, setWaterCorrectionObs] = useState("");
-
-// Personalização por modalidade
-const [oralCustom, setOralCustom] = useState("");
-const [entCustom, setEntCustom] = useState("");
-const [parCustom, setParCustom] = useState("");
-const [zeroCustom, setZeroCustom] = useState("");
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  💊  Prescrição médica diária   [Salva] #ATD  03/05/2026                    │  ← Linha 0 (título + meta)
+│                                                                             │
+│  Peso [72]  ⚠ Alergias [NDAM]   │  📅 Calendário(3)   🧮 Dose/kg   ⚡Templates(5)  │ ⌨ ?  ⟳ │  ← Linha 1 (contexto clínico)
+│  ─────────────────────────────────────────────────────────────────────────  │
+│  + Nova   💉 Extra   ⚡ Interações   🛡 Guia ATM   📄 Psicotrópicos   💧 TEV  │  🖨 Imprimir   ✅ Validar prescrição  · 12min  │  ⇕ Compacto │  ← Linha 2 (ações da prescrição)
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-`buildEntries()` passa a iterar `modalities` e usar `entSystem` na label/instruções. Sugestão automática de modo:
-```ts
-useEffect(() => {
-  if (entSystem === "aberto" && entMode === "continua") setEntMode("intermitente");
-  if (entSystem === "fechado" && entMode !== "continua") setEntMode("continua");
-}, [entSystem]);
-```
+Diretrizes visuais:
 
-## Arquivos afetados
-- `src/components/NutritionWizard.tsx` — refatoração do estado, Step 0 multi-select, novos campos no enteral, água enteral expandida, personalização por modalidade, revisão atualizada.
-- `src/pages/PrescricaoPage.tsx` — chip "nutrition" abre o wizard além de fazer scroll.
+- Linha 1 = "contexto do paciente / da prescrição" (dados de entrada e navegação por data/templates).
+- Linha 2 = "ações sobre a prescrição" (compor, validar, imprimir, modo de visualização).
+- Separador horizontal sutil (`border-t border-border/40`) entre as duas linhas para diferenciar os papéis.
+- Agrupamentos internos com `<span className="h-5 w-px bg-border/60" />` já usado no projeto:
+  - Linha 2: `[Nova · Extra]` | `[Interações · Guia ATM · Psicotrópicos · TEV]` | `[Imprimir · Validar (+badge sessão)]` | `[Compacto/Expandido]`.
+- Em telas estreitas (viewport < ~900px) a Linha 2 quebra por grupo (`flex-wrap`), mantendo cada cluster junto. Sem scroll horizontal.
+- Botão primário continua sendo "Validar prescrição" (verde) quando há pendências; demais ficam `variant="ghost"` h-7 text-[10px], idênticos ao estilo atual da toolbar inferior, para manter densidade.
+- Atalhos (`?`) e Atualizar passam para o canto direito da Linha 1 (já estão lá).
 
-## Não muda
-- Estrutura de `MedicationEntry`, persistência, demais categorias, layout do PDF.
+## Mudanças no código
+
+`src/pages/PrescricaoPage.tsx`:
+
+1. Linhas ~3784–3937 (cabeçalho atual): converter em um card `rounded-xl border border-border bg-card/60 px-3 py-2.5 space-y-2` contendo:
+   - Sub-bloco "title row" (título + badges + meta) inalterado.
+   - Sub-bloco "context row" (Peso, Alergias, alerta, Calendário, Dose/kg, Templates, Atalhos, Atualizar) — manter exatamente os mesmos componentes.
+   - Sub-bloco novo "actions row" — mover para cá o conteúdo do Portal.
+2. Linhas ~4009–4130 (Portal `data-prescription-toolbar`): remover por completo, incluindo o `createPortal` e a dependência visual com `sidebarCollapsed`/`sidebarIsMobile` que só servia para o posicionamento fixo. As variáveis e `useSidebar` permanecem somente se ainda forem usadas em outros pontos (verificar com `rg`); se não, remover o import para evitar dead code.
+3. Manter intactos: handlers (`handleNewPrescription`, `setExtraPrescriptionOpen`, `setInteractionDialogOpen`, `setAntimicrobialGuideOpen`, `setPsychotropicFormOpen`, `setTevProtocolOpen`, `handlePrint`, `requestValidateAll`, `setCompactView`) e regras de habilitação (`canPrescribe`, `allItemsValidated`, `prescriptionLocked`, `isValidationSessionActive`, `sessionMinutesLeft`).
+4. Ajuste de padding inferior do conteúdo: hoje a página reserva espaço para a toolbar fixa (`pb-*` ou spacer logo antes dos Dialogs, comentário na linha 4008). Remover o spacer/padding extra para o conteúdo encostar no rodapé natural — ganhamos altura útil no workbench.
+5. Diálogos afetados (Cuidados, Guia ATM, Extra, etc.) deixam de precisar lidar com a sobreposição da toolbar inferior; as larguras/alturas atuais permanecem.
+
+## Acessibilidade e responsividade
+
+- Tab order: título → Peso → Alergias → Calendário → Dose/kg → Templates → Atalhos → Atualizar → Nova → Extra → Interações → Guia ATM → Psicotrópicos → TEV → Imprimir → Validar → Compacto.
+- Tooltips existentes preservados (Atalhos, badge "Sessão validada", botão Compacto/Expandido).
+- Em viewports ≤ 833px (atual do usuário): a Linha 2 quebra em 2 fileiras de chips, mantendo agrupamentos.
+
+## Critérios de aceite
+
+- A barra inferior desaparece da tela (sem `position: fixed` da prescrição).
+- Todos os botões e estados (validado, sessão ativa, compacto, etc.) continuam funcionando com o mesmo comportamento.
+- Pop-ups (Cuidados, Guia ATM, Extra, TEV, Psicotrópicos) não sofrem mais sobreposição com a barra de ações.
+- Cabeçalho ocupa ~2 linhas de chips abaixo do título; sem scroll horizontal em 833px.
+- Workbench da prescrição ganha o espaço vertical antes ocupado pela barra fixa.
