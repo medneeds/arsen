@@ -312,7 +312,7 @@ export function CultureRequestDialog({
           </div>
         </div>
 
-        <ScrollArea className="flex-1 px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 pr-3">
           {previewMode ? (
             <PrintableCultureRequest request={previewData} />
           ) : (
