@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, User, Volume2, VolumeX } from "lucide-react";
+import { Clock, User, Volume2, VolumeX, Wifi, WifiOff, Maximize2 } from "lucide-react";
 import { whitelabel } from "@/config/whitelabel";
 import socorraoLogo from "@/assets/socorrao-logo.jpg";
 import socorraoCross from "@/assets/socorrao-cross-logo.png";
@@ -28,8 +28,41 @@ const TriageQueueTVPage = () => {
   const [queue, setQueue] = useState<QueuePatient[]>([]);
   const [calledPatient, setCalledPatient] = useState<QueuePatient | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(() => localStorage.getItem("tv:voiceEnabled") === "1");
+  const [online, setOnline] = useState(navigator.onLine);
   const announcedRef = useRef<Set<string>>(new Set());
+
+  // ─── Auto-refresh a cada 4h (evita memory leak em TV 24/7) ───
+  useEffect(() => {
+    const REFRESH_MS = 4 * 60 * 60 * 1000;
+    const t = setTimeout(() => window.location.reload(), REFRESH_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  // ─── Indicador online/offline ───
+  useEffect(() => {
+    const up = () => setOnline(true);
+    const down = () => setOnline(false);
+    window.addEventListener("online", up);
+    window.addEventListener("offline", down);
+    return () => {
+      window.removeEventListener("online", up);
+      window.removeEventListener("offline", down);
+    };
+  }, []);
+
+  // ─── Tela cheia (1 clique do usuário libera; oferece botão) ───
+  const enterFullscreen = () => {
+    const el = document.documentElement as any;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (req) req.call(el).catch(() => {});
+  };
+
+  // Persistência da voz
+  useEffect(() => {
+    localStorage.setItem("tv:voiceEnabled", voiceEnabled ? "1" : "0");
+  }, [voiceEnabled]);
+
 
   // ─── Voz feminina (Web Speech API) ────────────────────────────
   const speakCall = (patientName: string) => {
@@ -185,6 +218,10 @@ const TriageQueueTVPage = () => {
               Testar chamada
             </Button>
           )}
+          <Button size="lg" variant="outline" onClick={enterFullscreen} className="gap-2" title="Tela cheia (F11)">
+            <Maximize2 className="h-5 w-5" />
+            Tela cheia
+          </Button>
           <div className="text-right">
             <p className="text-4xl font-mono font-bold tabular-nums">
               {format(currentTime, "HH:mm:ss")}
@@ -300,6 +337,13 @@ const TriageQueueTVPage = () => {
       {/* ─── Footer institucional ─── */}
       <footer className="px-8 py-3 bg-black/40 border-t border-white/10 flex items-center justify-between text-xs text-white/50 uppercase tracking-wider">
         <span>{whitelabel.institution.hospitalAbbreviation} · {whitelabel.platform.fullName}</span>
+        <span className="flex items-center gap-2">
+          {online ? (
+            <><Wifi className="h-3 w-3 text-emerald-400" /> Online</>
+          ) : (
+            <><WifiOff className="h-3 w-3 text-red-400" /> Offline</>
+          )}
+        </span>
         <span>Norma Zero · {whitelabel.compliance.normaZeroCode} v{whitelabel.compliance.normaZeroVersion}</span>
       </footer>
     </div>
