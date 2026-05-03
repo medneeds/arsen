@@ -56,7 +56,7 @@ const UTI_COMBOS: UtiCombo[] = [
   {
     id: "rotina-uti",
     label: "Rotina UTI",
-    description: "Exames laboratoriais de rotina diária da UTI",
+    description: "Exames laboratoriais diários de paciente crítico",
     icon: Clock,
     color: "text-blue-600",
     bg: "bg-blue-500/10",
@@ -70,50 +70,25 @@ const UTI_COMBOS: UtiCombo[] = [
     },
   },
   {
-    id: "admissao-uti",
-    label: "Admissão UTI (SAPS)",
-    description: "Pacote completo: SAPS 3, culturas, RX tórax admissional, ECG",
-    icon: Package,
+    id: "rotina-enfermaria",
+    label: "Rotina Enfermaria",
+    description: "Controle laboratorial diário de paciente em enfermaria",
+    icon: Clock,
     color: "text-emerald-600",
     bg: "bg-emerald-500/10",
     border: "border-emerald-300",
     categories: {
       laboratorio: [
-        "Hemograma Completo", "Plaquetas",
-        "Ureia", "Creatinina", "Sódio", "Potássio", "Cálcio", "Magnésio", "Fósforo",
-        "Glicemia", "TGO", "TGP", "Bilirrubina Total e Frações", "Albumina", "PCR",
-        "Amilase", "Lipase", "DHL",
-        "TAP/INR", "TTPA", "Fibrinogênio", "D-Dímero",
-        "Gasometria Arterial", "Lactato",
-        "Troponina", "BNP/NT-proBNP", "Procalcitonina",
-        "Hemocultura (2 pares)", "Urocultura", "Cultura de Secreção",
-        "EAS/Urina Tipo I",
-        "TSH", "T4 Livre", "Cortisol",
-      ],
-      imagem: [
-        "RX Tórax AP (leito)", "ECG 12 derivações",
-      ],
-    },
-  },
-  {
-    id: "sepse-uti",
-    label: "Pacote Sepse",
-    description: "Investigação e manejo de sepse: labs + culturas",
-    icon: Zap,
-    color: "text-red-600",
-    bg: "bg-red-500/10",
-    border: "border-red-300",
-    categories: {
-      laboratorio: [
-        "Hemograma Completo", "Plaquetas", "PCR", "Procalcitonina", "Lactato",
-        "Gasometria Arterial", "Ureia", "Creatinina", "Sódio", "Potássio",
-        "TGO", "TGP", "Bilirrubina Total e Frações",
-        "TAP/INR", "TTPA", "Fibrinogênio", "D-Dímero",
-        "Hemocultura (2 pares)", "Urocultura", "Cultura de Secreção",
+        "Hemograma Completo", "Ureia", "Creatinina", "Sódio", "Potássio",
+        "Glicemia", "TGO", "TGP", "PCR",
       ],
     },
   },
 ];
+
+// Pacotes de admissão (UTI / Enfermaria) e sepse não são combos aplicáveis aqui:
+// admissão envolve RX, ECG e culturas; sepse mistura culturas com laboratório comum.
+// Esses fluxos vivem em outros módulos (Imagem, Especiais → Cultura, Admissão).
 
 // ── Category config ──
 const CATEGORIES = {
@@ -129,8 +104,8 @@ const CATEGORIES = {
       { group: "Coagulação", items: ["TAP/INR", "TTPA", "Fibrinogênio", "D-Dímero"] },
       { group: "Gasometria", items: ["Gasometria Arterial", "Gasometria Venosa", "Lactato"] },
       { group: "Marcadores", items: ["Troponina", "BNP/NT-proBNP", "Procalcitonina", "DHL"] },
-      { group: "Urina", items: ["EAS/Urina Tipo I", "Urocultura", "Creatinina Urinária"] },
-      { group: "Culturas", items: ["Hemocultura (2 pares)", "Urocultura", "Cultura de Secreção"] },
+      { group: "Urina", items: ["EAS/Urina Tipo I", "Creatinina Urinária"] },
+      // Culturas saem das requisições comuns — usar a aba "Especiais → Cultura".
       { group: "Hormônios", items: ["TSH", "T4 Livre", "Cortisol"] },
     ],
   },
@@ -517,45 +492,62 @@ const RequisicaoUnificadaPage = () => {
       {/* Identificação do paciente fica integralmente no cockpit à direita
           (com Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
 
-      {/* ── Scope Selector: Comuns vs Especiais ── */}
-      <div className="flex flex-wrap items-center gap-2 print:hidden">
-        <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
-          <button
-            onClick={() => {
-              setActiveScope("comum");
-              if (activeCategory === "apac") setActiveCategory("laboratorio");
-              setActiveSubTab("solicitar");
-            }}
-            className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-semibold transition-all",
-              activeScope === "comum"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Comuns (Norma Zero)
-          </button>
-          <button
-            onClick={() => {
-              setActiveScope("especial");
-              setActiveCategory("apac");
-              setActiveSubTab("solicitar");
-            }}
-            className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-semibold transition-all",
-              activeScope === "especial"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Especiais (APAC, SAT, Cultura)
-          </button>
-        </div>
-        <span className="text-[10px] text-muted-foreground hidden sm:inline">
-          {activeScope === "comum"
-            ? "Lab, Imagem, Pareceres — fluxo padrão Norma Zero"
-            : "Alta complexidade e exames específicos"}
-        </span>
+      {/* ── Scope Selector: Comuns vs Especiais (cards distintos, não pílula) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 print:hidden">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveScope("comum");
+            if (activeCategory === "apac") setActiveCategory("laboratorio");
+            setActiveSubTab("solicitar");
+          }}
+          className={cn(
+            "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
+            activeScope === "comum"
+              ? "border-blue-500 bg-blue-50 dark:bg-blue-500/10 shadow-sm ring-1 ring-blue-500/30"
+              : "border-border bg-background hover:bg-muted/40"
+          )}
+        >
+          <div className={cn("p-2 rounded-lg shrink-0", activeScope === "comum" ? "bg-blue-500/20" : "bg-muted")}>
+            <ClipboardList className={cn("h-4 w-4", activeScope === "comum" ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground")} />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <p className={cn("text-sm font-semibold", activeScope === "comum" ? "text-blue-700 dark:text-blue-300" : "text-foreground")}>
+                Requisição Comum
+              </p>
+              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-blue-300 text-blue-600 dark:text-blue-400">Norma Zero</Badge>
+            </div>
+            <p className="text-[10px] text-muted-foreground">Laboratório · Imagem · Pareceres — fluxo do dia-a-dia</p>
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveScope("especial");
+            setActiveCategory("apac");
+            setActiveSubTab("solicitar");
+          }}
+          className={cn(
+            "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
+            activeScope === "especial"
+              ? "border-amber-500 bg-amber-50 dark:bg-amber-500/10 shadow-sm ring-1 ring-amber-500/30"
+              : "border-border bg-background hover:bg-muted/40"
+          )}
+        >
+          <div className={cn("p-2 rounded-lg shrink-0", activeScope === "especial" ? "bg-amber-500/20" : "bg-muted")}>
+            <AlertTriangle className={cn("h-4 w-4", activeScope === "especial" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground")} />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <p className={cn("text-sm font-semibold", activeScope === "especial" ? "text-amber-700 dark:text-amber-300" : "text-foreground")}>
+                Requisições Especiais
+              </p>
+              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-600 dark:text-amber-400">Formulários próprios</Badge>
+            </div>
+            <p className="text-[10px] text-muted-foreground">APAC · Cultura · Hemocomponentes · SAT · AIH</p>
+          </div>
+        </button>
       </div>
 
       {/* ── Category Selector ── */}
@@ -777,15 +769,18 @@ const RequisicaoUnificadaPage = () => {
             />
           </div>
 
-          {/* ── Combos UTI ── */}
-          {(activeCategory === "laboratorio" || activeCategory === "imagem") && (
+          {/* ── Pacotes rápidos de rotina (UTI / Enfermaria) ── */}
+          {activeCategory === "laboratorio" && (
             <Card className="border-border/50 bg-muted/30">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2 flex-wrap">
                   <Package className="h-4 w-4 text-primary" />
-                  Pacotes Rápidos UTI
+                  Pacotes de Rotina
                   <Badge variant="outline" className="text-[10px] font-normal">Clique para aplicar</Badge>
                 </CardTitle>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Os pacotes de <strong>admissão (UTI e enfermaria)</strong> e <strong>sepse</strong> não são aplicáveis aqui — incluem RX tórax, ECG e culturas, que devem ser solicitados pelo fluxo próprio (aba <em>Imagem</em>, <em>Especiais → Cultura</em> e <em>Admissão</em>).
+                </p>
               </CardHeader>
               <CardContent className="space-y-2">
                 {UTI_COMBOS.map(combo => {
@@ -847,19 +842,24 @@ const RequisicaoUnificadaPage = () => {
                               </p>
                               <div className="flex flex-wrap gap-1">
                                 {(items || []).map(item => {
-                                  const selected = formSelectedItems.includes(item);
+                                  const idx = formSelectedItems.indexOf(item);
+                                  const selected = idx >= 0;
                                   return (
                                     <button
                                       key={item}
                                       onClick={() => toggleItem(item)}
                                       className={cn(
-                                        "px-2.5 py-1 rounded-md text-[11px] border transition-all duration-150",
+                                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] border transition-all duration-150",
                                         selected
                                           ? "border-primary bg-primary/10 text-primary font-medium"
                                           : "border-border/60 bg-background text-muted-foreground hover:bg-muted/50"
                                       )}
                                     >
-                                      {selected && <span className="mr-0.5">✓</span>}
+                                      {selected && (
+                                        <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded bg-primary text-primary-foreground text-[9px] font-bold tabular-nums">
+                                          {idx + 1}
+                                        </span>
+                                      )}
                                       {item}
                                     </button>
                                   );
@@ -893,19 +893,24 @@ const RequisicaoUnificadaPage = () => {
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.group}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {group.items.map(item => {
-                      const selected = formSelectedItems.includes(item);
+                      const idx = formSelectedItems.indexOf(item);
+                      const selected = idx >= 0;
                       return (
                         <button
                           key={item}
                           onClick={() => toggleItem(item)}
                           className={cn(
-                            "px-3 py-1.5 rounded-lg text-xs border transition-all duration-150",
+                            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border transition-all duration-150",
                             selected
                               ? "border-primary bg-primary/10 text-primary font-medium shadow-sm"
                               : "border-border bg-background text-foreground hover:bg-muted/50"
                           )}
                         >
-                          {selected && <span className="mr-1">✓</span>}
+                          {selected && (
+                            <span className="inline-flex items-center justify-center min-w-[18px] h-4 px-1 rounded bg-primary text-primary-foreground text-[10px] font-bold tabular-nums">
+                              {idx + 1}
+                            </span>
+                          )}
                           {item}
                         </button>
                       );
@@ -931,19 +936,26 @@ const RequisicaoUnificadaPage = () => {
               {/* Selected items summary */}
               {formSelectedItems.length > 0 && (
                 <div className="bg-primary/5 rounded-lg p-3 border border-primary/20">
-                  <p className="text-[11px] font-semibold text-primary mb-2">Itens selecionados ({formSelectedItems.length})</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {formSelectedItems.map(item => (
-                      <Badge
-                        key={item}
-                        variant="outline"
-                        className="text-xs cursor-pointer hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive transition-colors"
-                        onClick={() => toggleItem(item)}
-                      >
-                        {item} ×
-                      </Badge>
+                  <p className="text-[11px] font-semibold text-primary mb-2">
+                    Itens solicitados ({formSelectedItems.length}) — a numeração reflete a ordem que sairá impressa
+                  </p>
+                  <ol className="flex flex-wrap gap-1.5 list-none">
+                    {formSelectedItems.map((item, idx) => (
+                      <li key={item}>
+                        <Badge
+                          variant="outline"
+                          className="text-xs cursor-pointer hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive transition-colors gap-1.5 pl-1"
+                          onClick={() => toggleItem(item)}
+                          title="Clique para remover"
+                        >
+                          <span className="inline-flex items-center justify-center min-w-[18px] h-4 px-1 rounded bg-primary text-primary-foreground text-[10px] font-bold tabular-nums">
+                            {idx + 1}
+                          </span>
+                          {item} ×
+                        </Badge>
+                      </li>
                     ))}
-                  </div>
+                  </ol>
                 </div>
               )}
             </CardContent>
