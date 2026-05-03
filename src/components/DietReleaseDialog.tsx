@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Patient } from "@/types/patient";
+import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import {
   Dialog,
   DialogContent,
