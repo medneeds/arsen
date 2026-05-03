@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -335,15 +335,29 @@ export default function UeVerticalPage() {
   useEffect(() => { fetchPatients(); fetchWaitingPatients(); },
     [currentHospital?.id, currentState?.id]);
 
+  const debouncePatRef = useRef<number | null>(null);
+  const debounceWaitRef = useRef<number | null>(null);
   useEffect(() => {
     if (!currentHospital?.id) return;
+    const debouncedPatients = () => {
+      if (debouncePatRef.current) window.clearTimeout(debouncePatRef.current);
+      debouncePatRef.current = window.setTimeout(() => fetchPatients(), 400);
+    };
+    const debouncedWaiting = () => {
+      if (debounceWaitRef.current) window.clearTimeout(debounceWaitRef.current);
+      debounceWaitRef.current = window.setTimeout(() => fetchWaitingPatients(), 400);
+    };
     const channel = supabase.channel("ue-vertical-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "patients",
-        filter: `hospital_unit_id=eq.${currentHospital.id}` }, () => fetchPatients())
+        filter: `hospital_unit_id=eq.${currentHospital.id}` }, debouncedPatients)
       .on("postgres_changes", { event: "*", schema: "public", table: "pre_admissions",
-        filter: `hospital_unit_id=eq.${currentHospital.id}` }, () => fetchWaitingPatients())
+        filter: `hospital_unit_id=eq.${currentHospital.id}` }, debouncedWaiting)
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (debouncePatRef.current) window.clearTimeout(debouncePatRef.current);
+      if (debounceWaitRef.current) window.clearTimeout(debounceWaitRef.current);
+      supabase.removeChannel(channel);
+    };
   }, [currentHospital?.id]);
 
   const handlePullPatient = async (wp: WaitingPatient, consultorio: number) => {
@@ -374,12 +388,15 @@ export default function UeVerticalPage() {
     } catch { toast.error("Erro ao puxar paciente"); }
   };
 
-  const activePatients = patients.filter(p => !p.is_vacant);
-  const filtered = activePatients.filter(p =>
-    !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.bed_number.toLowerCase().includes(search.toLowerCase()));
-  const c1Patients = filtered.filter(p => getConsultorio(p.bed_number) === 1);
-  const c2Patients = filtered.filter(p => getConsultorio(p.bed_number) === 2);
-  const unassigned = filtered.filter(p => getConsultorio(p.bed_number) === 0);
+  const { c1Patients, c2Patients, unassigned } = useMemo(() => {
+    const q = search.toLowerCase();
+    const filtered = patients.filter(p => !p.is_vacant && (!q || p.name.toLowerCase().includes(q) || p.bed_number.toLowerCase().includes(q)));
+    return {
+      c1Patients: filtered.filter(p => getConsultorio(p.bed_number) === 1),
+      c2Patients: filtered.filter(p => getConsultorio(p.bed_number) === 2),
+      unassigned: filtered.filter(p => getConsultorio(p.bed_number) === 0),
+    };
+  }, [patients, search]);
   const canPull = role === "medico" || role === "admin" || role === "porta";
 
   const handleApplyPreset = (preset: AttendancePreset, items: PresetItem[], destination: string) => {

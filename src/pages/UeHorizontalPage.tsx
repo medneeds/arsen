@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/MainLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -347,15 +347,29 @@ export default function UeHorizontalPage() {
   useEffect(() => { fetchPatients(); fetchWaitingPatients(); },
     [currentHospital?.id, currentState?.id]);
 
+  const debouncePatRef = useRef<number | null>(null);
+  const debounceWaitRef = useRef<number | null>(null);
   useEffect(() => {
     if (!currentHospital?.id) return;
+    const debouncedPatients = () => {
+      if (debouncePatRef.current) window.clearTimeout(debouncePatRef.current);
+      debouncePatRef.current = window.setTimeout(() => fetchPatients(), 400);
+    };
+    const debouncedWaiting = () => {
+      if (debounceWaitRef.current) window.clearTimeout(debounceWaitRef.current);
+      debounceWaitRef.current = window.setTimeout(() => fetchWaitingPatients(), 400);
+    };
     const channel = supabase.channel("ue-horizontal-rt")
       .on("postgres_changes", { event: "*", schema: "public", table: "patients",
-        filter: `hospital_unit_id=eq.${currentHospital.id}` }, () => fetchPatients())
+        filter: `hospital_unit_id=eq.${currentHospital.id}` }, debouncedPatients)
       .on("postgres_changes", { event: "*", schema: "public", table: "pre_admissions",
-        filter: `hospital_unit_id=eq.${currentHospital.id}` }, () => fetchWaitingPatients())
+        filter: `hospital_unit_id=eq.${currentHospital.id}` }, debouncedWaiting)
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      if (debouncePatRef.current) window.clearTimeout(debouncePatRef.current);
+      if (debounceWaitRef.current) window.clearTimeout(debounceWaitRef.current);
+      supabase.removeChannel(channel);
+    };
   }, [currentHospital?.id]);
 
   const handlePullPatient = async (wp: WaitingPatient) => {
@@ -387,9 +401,14 @@ export default function UeHorizontalPage() {
     } catch { toast.error("Erro ao puxar paciente"); }
   };
 
-  const filtered = patients.filter(p =>
-    !p.is_vacant && (!search || p.name.toLowerCase().includes(search.toLowerCase()) || p.bed_number.toLowerCase().includes(search.toLowerCase())));
-  const activeCount = patients.filter(p => !p.is_vacant).length;
+  const { filtered, activeCount } = useMemo(() => {
+    const q = search.toLowerCase();
+    const active = patients.filter(p => !p.is_vacant);
+    return {
+      filtered: active.filter(p => !q || p.name.toLowerCase().includes(q) || p.bed_number.toLowerCase().includes(q)),
+      activeCount: active.length,
+    };
+  }, [patients, search]);
   const canPull = role === "medico" || role === "admin" || role === "porta";
 
   const handleApplyPreset = (preset: AttendancePreset, items: PresetItem[], destination: string) => {
