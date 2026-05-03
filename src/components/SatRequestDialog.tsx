@@ -321,7 +321,7 @@ export function SatRequestDialog({
               </div>
               <div>
                 <Label className="text-xs">Setor</Label>
-                <Input value={patientSector || "—"} readOnly className="bg-muted/40" />
+                <Input value={sectorLabel || "—"} readOnly className="bg-muted/40" />
               </div>
               <div>
                 <Label className="text-xs">Leito</Label>
