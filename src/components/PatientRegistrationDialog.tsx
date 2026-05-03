@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useMedicalRecordMode } from "@/hooks/useMedicalRecordMode";
-import { Camera, Upload, User, MapPin, Loader2, Sparkles, AlertCircle, ShieldAlert, UserX } from "lucide-react";
+import { Camera, Upload, User, MapPin, Loader2, Sparkles, AlertCircle, ShieldAlert, UserX, FileUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
