@@ -61,14 +61,14 @@ export function ClinicalNavTabs({ variant = "default", hideSector = false }: Cli
               key={tab.path}
               onClick={() => navigate(tab.path)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold tracking-wide transition-all duration-200",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold tracking-wide transition-all duration-200 hover:-translate-y-0.5",
                 variant === "dark"
                   ? isActive
-                    ? "bg-white text-primary shadow-lg ring-2 ring-white/60"
-                    : "bg-white/20 text-white ring-1 ring-white/30 hover:bg-white/35 hover:ring-white/55 hover:shadow-md"
+                    ? "bg-white text-primary shadow-lg ring-2 ring-accent/70"
+                    : "bg-primary/80 text-primary-foreground shadow-sm ring-1 ring-white/35 hover:bg-accent hover:text-accent-foreground hover:ring-white/70 hover:shadow-lg"
                   : isActive
                     ? "bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30"
-                    : "bg-background text-foreground shadow-sm ring-1 ring-primary/15 hover:bg-primary/15 hover:text-primary hover:ring-primary/35 hover:shadow-md"
+                    : "bg-background text-primary shadow-sm ring-1 ring-primary/25 hover:bg-accent hover:text-accent-foreground hover:ring-accent/50 hover:shadow-md"
               )}
             >
               <tab.icon className="h-3.5 w-3.5" />
