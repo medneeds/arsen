@@ -165,6 +165,7 @@ const AdminDashboardPage = () => {
     social_name: "",
     cpf: "",
     cns: "",
+    medical_record: "",
     birth_date: "",
     sex: "",
     mother_name: "",
