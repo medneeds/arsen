@@ -26,6 +26,8 @@ import { usePatientBedWatcher } from "@/hooks/usePatientBedWatcher";
 import { useLatestVitalSigns } from "@/hooks/useLatestVitalSigns";
 import { useLatestRoundSession } from "@/hooks/useLatestRoundSession";
 import { usePatientNirRequest } from "@/hooks/usePatientNirRequest";
+import { useBedAllocationRequests } from "@/hooks/useBedAllocationRequests";
+import { Check as CheckIcon, Clock as ClockIcon } from "lucide-react";
 import { usePatientSpecialRequests } from "@/hooks/usePatientSpecialRequests";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { formatDistanceToNow } from "date-fns";
