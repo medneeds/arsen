@@ -504,45 +504,62 @@ const RequisicaoUnificadaPage = () => {
       {/* Identificação do paciente fica integralmente no cockpit à direita
           (com Prontuário, Atendimento e botão "Ver dados do prontuário"). */}
 
-      {/* ── Scope Selector: Comuns vs Especiais ── */}
-      <div className="flex flex-wrap items-center gap-2 print:hidden">
-        <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
-          <button
-            onClick={() => {
-              setActiveScope("comum");
-              if (activeCategory === "apac") setActiveCategory("laboratorio");
-              setActiveSubTab("solicitar");
-            }}
-            className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-semibold transition-all",
-              activeScope === "comum"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Comuns (Norma Zero)
-          </button>
-          <button
-            onClick={() => {
-              setActiveScope("especial");
-              setActiveCategory("apac");
-              setActiveSubTab("solicitar");
-            }}
-            className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-semibold transition-all",
-              activeScope === "especial"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Especiais (APAC, SAT, Cultura)
-          </button>
-        </div>
-        <span className="text-[10px] text-muted-foreground hidden sm:inline">
-          {activeScope === "comum"
-            ? "Lab, Imagem, Pareceres — fluxo padrão Norma Zero"
-            : "Alta complexidade e exames específicos"}
-        </span>
+      {/* ── Scope Selector: Comuns vs Especiais (cards distintos, não pílula) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 print:hidden">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveScope("comum");
+            if (activeCategory === "apac") setActiveCategory("laboratorio");
+            setActiveSubTab("solicitar");
+          }}
+          className={cn(
+            "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
+            activeScope === "comum"
+              ? "border-blue-500 bg-blue-50 dark:bg-blue-500/10 shadow-sm ring-1 ring-blue-500/30"
+              : "border-border bg-background hover:bg-muted/40"
+          )}
+        >
+          <div className={cn("p-2 rounded-lg shrink-0", activeScope === "comum" ? "bg-blue-500/20" : "bg-muted")}>
+            <ClipboardList className={cn("h-4 w-4", activeScope === "comum" ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground")} />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <p className={cn("text-sm font-semibold", activeScope === "comum" ? "text-blue-700 dark:text-blue-300" : "text-foreground")}>
+                Requisição Comum
+              </p>
+              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-blue-300 text-blue-600 dark:text-blue-400">Norma Zero</Badge>
+            </div>
+            <p className="text-[10px] text-muted-foreground">Laboratório · Imagem · Pareceres — fluxo do dia-a-dia</p>
+          </div>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveScope("especial");
+            setActiveCategory("apac");
+            setActiveSubTab("solicitar");
+          }}
+          className={cn(
+            "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
+            activeScope === "especial"
+              ? "border-amber-500 bg-amber-50 dark:bg-amber-500/10 shadow-sm ring-1 ring-amber-500/30"
+              : "border-border bg-background hover:bg-muted/40"
+          )}
+        >
+          <div className={cn("p-2 rounded-lg shrink-0", activeScope === "especial" ? "bg-amber-500/20" : "bg-muted")}>
+            <AlertTriangle className={cn("h-4 w-4", activeScope === "especial" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground")} />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <p className={cn("text-sm font-semibold", activeScope === "especial" ? "text-amber-700 dark:text-amber-300" : "text-foreground")}>
+                Requisições Especiais
+              </p>
+              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-600 dark:text-amber-400">Formulários próprios</Badge>
+            </div>
+            <p className="text-[10px] text-muted-foreground">APAC · Cultura · Hemocomponentes · SAT · AIH</p>
+          </div>
+        </button>
       </div>
 
       {/* ── Category Selector ── */}
