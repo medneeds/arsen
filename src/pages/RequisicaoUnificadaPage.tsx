@@ -834,19 +834,24 @@ const RequisicaoUnificadaPage = () => {
                               </p>
                               <div className="flex flex-wrap gap-1">
                                 {(items || []).map(item => {
-                                  const selected = formSelectedItems.includes(item);
+                                  const idx = formSelectedItems.indexOf(item);
+                                  const selected = idx >= 0;
                                   return (
                                     <button
                                       key={item}
                                       onClick={() => toggleItem(item)}
                                       className={cn(
-                                        "px-2.5 py-1 rounded-md text-[11px] border transition-all duration-150",
+                                        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] border transition-all duration-150",
                                         selected
                                           ? "border-primary bg-primary/10 text-primary font-medium"
                                           : "border-border/60 bg-background text-muted-foreground hover:bg-muted/50"
                                       )}
                                     >
-                                      {selected && <span className="mr-0.5">✓</span>}
+                                      {selected && (
+                                        <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded bg-primary text-primary-foreground text-[9px] font-bold tabular-nums">
+                                          {idx + 1}
+                                        </span>
+                                      )}
                                       {item}
                                     </button>
                                   );
