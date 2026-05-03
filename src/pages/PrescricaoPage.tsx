@@ -464,7 +464,7 @@ interface PatientHeader {
 }
 
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  UtensilsCrossed, Droplets, Pill, Shield, AlertTriangle,
+  UtensilsCrossed, Droplets, FlaskConical, Pill, Shield, AlertTriangle,
   Wind, TestTube, ClipboardList, FileText, Syringe, Zap,
 };
 
