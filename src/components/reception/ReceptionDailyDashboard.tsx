@@ -28,6 +28,7 @@ import { printWristband } from "./PatientWristband";
 import { CompletePatientDataDialog } from "./CompletePatientDataDialog";
 import { PromoteNiDialog } from "./PromoteNiDialog";
 import { UserStatsPanel } from "./UserStatsPanel";
+import { SlaBadge } from "@/components/sla/SlaBadge";
 
 interface KpiCardProps {
   icon: React.ElementType;
@@ -712,7 +713,6 @@ export function ReceptionDailyDashboard({
                       const waitMin = Math.round((Date.now() - new Date(e.created_at).getTime()) / 60000);
                       const isWaitingTriage =
                         e.destination_sector === "triagem" && e.triage_status === "aguardando_chamada";
-                      // SLA: verde <15min, amarelo 15-30, vermelho >30
                       const slaTone =
                         !isWaitingTriage ? null : waitMin > 30 ? "danger" : waitMin > 15 ? "warn" : "ok";
                       const isRedRoom = e.destination_sector === "sala_vermelha";
@@ -764,19 +764,14 @@ export function ReceptionDailyDashboard({
                                     </Badge>
                                   );
                                 })()}
-                                {/* SLA badge para fila de triagem */}
-                                {slaTone && (
-                                  <Badge
-                                    className={cn(
-                                      "text-[9px] h-4 gap-1 border",
-                                      slaTone === "ok" && "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
-                                      slaTone === "warn" && "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
-                                      slaTone === "danger" && "bg-rose-500/15 text-rose-700 dark:text-rose-400 border-rose-500/30 animate-pulse",
-                                    )}
-                                  >
-                                    <Timer className="h-2.5 w-2.5" />
-                                    {waitMin}min
-                                  </Badge>
+                                {/* SLA: chegada → chamada de triagem (15/30/60min) */}
+                                {isWaitingTriage && (
+                                  <SlaBadge
+                                    startAt={e.created_at}
+                                    thresholds={[15, 30, 60]}
+                                    label="triagem"
+                                    compact
+                                  />
                                 )}
                               </div>
                               <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-1">
