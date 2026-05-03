@@ -250,27 +250,32 @@ export default function GestorPanelPage() {
       const { count } = await supabase.from("medication_catalog").select("id", { count: "exact", head: true });
       setMedicationCount(count || 0);
 
-      // ── 4. Pending bed allocation requests ──
+      // ── 4. Pending bed allocation requests (with detail for drill-down) ──
       let pendingQuery = supabase
         .from("bed_allocation_requests")
-        .select("id", { count: "exact", head: true })
+        .select("id, requested_sector, requested_bed, requesting_doctor_name, created_at, patient:patients(name, bed_number, sector)")
         .eq("hospital_unit_id", selectedUnit.id)
-        .eq("status", "pending");
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
       if (filteredDepartments && filteredDepartments.length > 0) {
         pendingQuery = pendingQuery.in("requested_sector", filteredDepartments);
       }
-      const { count: pendCount } = await pendingQuery;
-      setPendingRequests(pendCount || 0);
+      const { data: pendData } = await pendingQuery;
+      setPendingRequests(pendData?.length || 0);
+      setPendingRequestsList(pendData || []);
 
       // ── 5. Prescription & validation stats ──
       let prescriptionQuery = supabase
         .from("prescriptions")
-        .select("id", { count: "exact", head: true })
-        .eq("hospital_unit_id", selectedUnit.id);
+        .select("id, patient_name, patient_bed, department, created_at, status")
+        .eq("hospital_unit_id", selectedUnit.id)
+        .order("created_at", { ascending: false })
+        .limit(200);
       if (filteredDepartments && filteredDepartments.length > 0) {
         prescriptionQuery = prescriptionQuery.in("department", filteredDepartments);
       }
-      const { count: totalPrescriptions } = await prescriptionQuery;
+      const { data: prescData } = await prescriptionQuery;
+      setPrescriptionsList(prescData || []);
 
       let validationsQuery = supabase
         .from("prescription_validations")
@@ -287,7 +292,7 @@ export default function GestorPanelPage() {
         else if (v.status === "pending") valCounts.pending++;
         else valCounts.rejected++;
       });
-      setPrescriptionStats({ total: totalPrescriptions || 0, ...valCounts });
+      setPrescriptionStats({ total: prescData?.length || 0, ...valCounts });
 
     } catch (err) {
       console.error("Error fetching gestor data:", err);
