@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
+import { useMedicalRecordMode } from "@/hooks/useMedicalRecordMode";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -136,6 +137,7 @@ const AdminDashboardPage = () => {
   const selectedHospitalId = currentHospital?.id;
   const { currentDepartment } = useDepartment();
   const { point: receptionPoint } = useReceptionPost();
+  const { mode: mrMode } = useMedicalRecordMode(selectedHospitalId);
 
   // Tab state synced with URL (?tab=inicio|dia|aguardando|prontuarios) — sincroniza com sidebar
   const [searchParams, setSearchParams] = useSearchParams();
@@ -163,6 +165,7 @@ const AdminDashboardPage = () => {
     social_name: "",
     cpf: "",
     cns: "",
+    medical_record: "",
     birth_date: "",
     sex: "",
     mother_name: "",
@@ -293,6 +296,14 @@ const AdminDashboardPage = () => {
       return;
     }
 
+    // Modo legacy: prontuário do sistema antigo é obrigatório
+    if (mrMode === "legacy" && !registerForm.is_unidentified && !registerForm.medical_record.trim()) {
+      toast.error("Prontuário obrigatório", {
+        description: "Unidade em modo legado: informe o número do sistema antigo.",
+      });
+      return;
+    }
+
     setIsRegistering(true);
     try {
       const stateId = localStorage.getItem("selected_state_id");
@@ -318,30 +329,34 @@ const AdminDashboardPage = () => {
         finalName = `NÃO IDENTIFICADO (${niCode})`;
       }
 
+      const manualMr = registerForm.medical_record.trim() || null;
+      const insertPayload: any = {
+        full_name: finalName,
+        social_name: registerForm.social_name.trim() || null,
+        cpf: registerForm.cpf.replace(/\D/g, "") || null,
+        cns: registerForm.cns.replace(/\D/g, "") || null,
+        birth_date: registerForm.birth_date || null,
+        sex: registerForm.sex || null,
+        mother_name: registerForm.mother_name.trim() || null,
+        phone: registerForm.phone.trim() || null,
+        address: registerForm.address.trim() || null,
+        neighborhood: registerForm.neighborhood.trim() || null,
+        city: registerForm.city.trim() || null,
+        blood_type: registerForm.blood_type || null,
+        allergies: registerForm.allergies.trim() || null,
+        comorbidities: registerForm.comorbidities.trim() || null,
+        is_unidentified: registerForm.is_unidentified,
+        unidentified_code: niCode,
+        unidentified_features: niFeatures,
+        created_by: user?.id,
+        hospital_unit_id: selectedHospitalId,
+        state_id: stateId,
+      };
+      if (manualMr) insertPayload.medical_record = manualMr;
+
       const { data, error } = await supabase
         .from("patient_registry")
-        .insert({
-          full_name: finalName,
-          social_name: registerForm.social_name.trim() || null,
-          cpf: registerForm.cpf.replace(/\D/g, "") || null,
-          cns: registerForm.cns.replace(/\D/g, "") || null,
-          birth_date: registerForm.birth_date || null,
-          sex: registerForm.sex || null,
-          mother_name: registerForm.mother_name.trim() || null,
-          phone: registerForm.phone.trim() || null,
-          address: registerForm.address.trim() || null,
-          neighborhood: registerForm.neighborhood.trim() || null,
-          city: registerForm.city.trim() || null,
-          blood_type: registerForm.blood_type || null,
-          allergies: registerForm.allergies.trim() || null,
-          comorbidities: registerForm.comorbidities.trim() || null,
-          is_unidentified: registerForm.is_unidentified,
-          unidentified_code: niCode,
-          unidentified_features: niFeatures,
-          created_by: user?.id,
-          hospital_unit_id: selectedHospitalId,
-          state_id: stateId,
-        } as any)
+        .insert(insertPayload)
         .select()
         .single();
 
@@ -354,9 +369,9 @@ const AdminDashboardPage = () => {
         return;
       }
 
-      // Padronização AA-UUU-SSSSSS-DV: gera prontuário oficial e atualiza o cadastro
+      // Padronização AA-UUU-SSSSSS-DV: só gera automaticamente se NÃO foi informado manualmente (modo auto)
       let officialMr: string | null = (data as any).medical_record;
-      try {
+      if (!manualMr && mrMode === "auto") try {
         const { data: unit } = await supabase
           .from("hospital_units")
           .select("unit_code")
@@ -391,7 +406,7 @@ const AdminDashboardPage = () => {
       );
       setShowRegisterDialog(false);
       setRegisterForm({
-        full_name: "", social_name: "", cpf: "", cns: "", birth_date: "",
+        full_name: "", social_name: "", cpf: "", cns: "", medical_record: "", birth_date: "",
         sex: "", mother_name: "", phone: "", address: "", neighborhood: "",
         city: "", blood_type: "", allergies: "", comorbidities: "",
         is_unidentified: false, ni_estimated_age: "", ni_apparent_sex: "",
@@ -780,173 +795,156 @@ const AdminDashboardPage = () => {
 
               <TabsContent value="inicio" className="space-y-6 mt-0">
 
-            {/* Painel diário da recepção (KPIs + Triagem Express + sub-tabs) */}
-            <ReceptionDailyDashboard
-              onPickRegistry={handlePickRegistryFromDashboard}
-              onTriageExpress={openTriageExpress}
-              onNewRegistration={() => setShowRegisterDialog(true)}
-            />
+            {/* HERO superior — ações primárias e consulta de prontuário */}
+            <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-background to-rose-500/5 shadow-md">
+              <CardContent className="p-5 space-y-4">
+                <div className="flex flex-col lg:flex-row lg:items-stretch gap-3">
+                  <Button
+                    onClick={openTriageExpress}
+                    className="flex-1 h-auto min-h-[72px] py-4 bg-rose-600 hover:bg-rose-700 text-white shadow-md flex flex-col items-center justify-center gap-1"
+                  >
+                    <div className="flex items-center gap-2 font-semibold text-sm">
+                      <AlertTriangle className="h-5 w-5" />
+                      Triagem Express
+                    </div>
+                    <span className="text-[11px] opacity-90 font-normal">NI + triagem em 1 clique</span>
+                  </Button>
+                  <Button
+                    onClick={() => setShowRegisterDialog(true)}
+                    className="flex-1 h-auto min-h-[72px] py-4 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md flex flex-col items-center justify-center gap-1"
+                  >
+                    <div className="flex items-center gap-2 font-semibold text-sm">
+                      <UserPlus className="h-5 w-5" />
+                      Novo Cadastro Completo
+                    </div>
+                    <span className="text-[11px] opacity-90 font-normal">Prontuário + dados completos</span>
+                  </Button>
+                </div>
 
-            {/* Search & Quick Actions */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Search Card */}
-              <Card className="lg:col-span-2">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
                     <Search className="h-4 w-4 text-primary" />
                     Consultar Prontuário
-                  </CardTitle>
-                  <CardDescription>
-                    Busque por nome, CPF, CNS ou número do prontuário
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+                  </div>
                   <div className="flex gap-2">
                     <Input
                       placeholder="Digite o nome, CPF, CNS ou nº do prontuário..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                      className="flex-1"
+                      className="flex-1 h-10 bg-background"
                     />
-                    <Button onClick={handleSearch} disabled={isSearching || !searchQuery.trim()}>
+                    <Button onClick={handleSearch} disabled={isSearching || !searchQuery.trim()} className="h-10">
                       {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                       <span className="ml-2 hidden sm:inline">Buscar</span>
                     </Button>
                   </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Busca por nome, CPF, CNS ou número do prontuário · ignora acentos
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
 
-                  {/* Search Results */}
-                  <AnimatePresence>
-                    {hasSearched && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-4"
-                      >
-                        {searchResults.length === 0 ? (
-                          <div className="text-center py-8 text-muted-foreground">
-                            <XCircle className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                            <p className="text-sm">Nenhum prontuário encontrado</p>
-                            <Button
-                              variant="link"
-                              size="sm"
-                              className="mt-1"
-                              onClick={() => {
-                                setRegisterForm(prev => ({ ...prev, full_name: searchQuery.trim() }));
-                                setShowRegisterDialog(true);
-                              }}
-                            >
-                              <UserPlus className="h-3 w-3 mr-1" />
-                              Cadastrar novo paciente
-                            </Button>
-                          </div>
-                        ) : (
-                          <ScrollArea className="max-h-[320px]">
-                            <div className="space-y-2">
-                              {searchResults.map((patient) => (
-                                <motion.div
-                                  key={patient.id}
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
-                                  onClick={() => {
-                                    setSelectedPatient(patient);
-                                    setShowPatientDetail(true);
-                                  }}
-                                >
-                                  <div className="flex items-center gap-3 min-w-0">
-                                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                      <User className="h-4 w-4 text-primary" />
-                                    </div>
-                                    <div className="min-w-0">
-                                      <p className="font-medium text-sm truncate">{patient.full_name}</p>
-                                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {/* Painel diário da recepção (KPIs + Triagem Express + sub-tabs) */}
+            <ReceptionDailyDashboard
+              onPickRegistry={handlePickRegistryFromDashboard}
+              onTriageExpress={openTriageExpress}
+              onNewRegistration={() => setShowRegisterDialog(true)}
+              hideQuickActions
+            />
+
+            {/* Resultados da busca (compacto) */}
+            <AnimatePresence>
+              {hasSearched && (
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Search className="h-3.5 w-3.5 text-primary" />
+                        Resultados da busca
+                        <Badge variant="secondary" className="text-[10px]">{searchResults.length}</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {searchResults.length === 0 ? (
+                        <div className="text-center py-6 text-muted-foreground">
+                          <XCircle className="h-7 w-7 mx-auto mb-2 opacity-40" />
+                          <p className="text-sm">Nenhum prontuário encontrado</p>
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="mt-1"
+                            onClick={() => {
+                              setRegisterForm(prev => ({ ...prev, full_name: searchQuery.trim() }));
+                              setShowRegisterDialog(true);
+                            }}
+                          >
+                            <UserPlus className="h-3 w-3 mr-1" />
+                            Cadastrar novo paciente
+                          </Button>
+                        </div>
+                      ) : (
+                        <ScrollArea className="max-h-[320px]">
+                          <div className="space-y-2">
+                            {searchResults.map((patient) => (
+                              <div
+                                key={patient.id}
+                                className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 cursor-pointer transition-colors"
+                                onClick={() => { setSelectedPatient(patient); setShowPatientDetail(true); }}
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                    <User className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-sm truncate">{patient.full_name}</p>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <span className="flex items-center gap-1"><Hash className="h-3 w-3" />{patient.medical_record}</span>
+                                      {patient.cpf && <span>CPF: {patient.cpf}</span>}
+                                      {patient.birth_date && (
                                         <span className="flex items-center gap-1">
-                                          <Hash className="h-3 w-3" />
-                                          {patient.medical_record}
+                                          <Calendar className="h-3 w-3" />
+                                          {format(new Date(patient.birth_date + 'T00:00:00'), "dd/MM/yyyy")}
                                         </span>
-                                        {patient.cpf && <span>CPF: {patient.cpf}</span>}
-                                        {patient.birth_date && (
-                                          <span className="flex items-center gap-1">
-                                            <Calendar className="h-3 w-3" />
-                                            {format(new Date(patient.birth_date + 'T00:00:00'), "dd/MM/yyyy")}
-                                          </span>
-                                        )}
-                                      </div>
+                                      )}
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedPatient(patient);
-                                        setShowNewEncounter(true);
-                                      }}
-                                    >
-                                      <Play className="h-3 w-3 mr-1" />
-                                      Novo Atendimento
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedPatient(patient);
-                                        setShowPatientDetail(true);
-                                      }}
-                                    >
-                                      <Eye className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </motion.div>
-                              ))}
-                            </div>
-                          </ScrollArea>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </CardContent>
-              </Card>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setSelectedPatient(patient); setShowNewEncounter(true); }}>
+                                    <Play className="h-3 w-3 mr-1" />Novo Atendimento
+                                  </Button>
+                                  <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setSelectedPatient(patient); setShowPatientDetail(true); }}>
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Plus className="h-4 w-4 text-primary" />
-                    Ações Rápidas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button
-                    className="w-full justify-start"
-                    variant="outline"
-                    onClick={() => setShowRegisterDialog(true)}
-                  >
-                    <UserPlus className="h-4 w-4 mr-2 text-emerald-500" />
-                    Novo Prontuário
-                  </Button>
-                  <Button
-                    className="w-full justify-start"
-                    variant="outline"
-                    disabled={!selectedPatient}
-                    onClick={() => selectedPatient && setShowNewEncounter(true)}
-                  >
-                    <Play className="h-4 w-4 mr-2 text-blue-500" />
+            {selectedPatient && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardContent className="p-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Paciente selecionado</p>
+                    <p className="text-sm font-semibold truncate">{selectedPatient.full_name}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{selectedPatient.medical_record}</p>
+                  </div>
+                  <Button size="sm" onClick={() => setShowNewEncounter(true)}>
+                    <Play className="h-3.5 w-3.5 mr-1" />
                     Iniciar Atendimento
                   </Button>
-                  {selectedPatient && (
-                    <div className="p-2 rounded-md bg-primary/5 border border-primary/10">
-                      <p className="text-xs text-muted-foreground">Paciente selecionado:</p>
-                      <p className="text-sm font-medium truncate">{selectedPatient.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{selectedPatient.medical_record}</p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
-            </div>
+            )}
 
             {/* Recent Encounters */}
             <Card>
@@ -1183,6 +1181,22 @@ const AdminDashboardPage = () => {
                     value={registerForm.cns}
                     onChange={(e) => setRegisterForm(prev => ({ ...prev, cns: e.target.value }))}
                   />
+                </div>
+                <div className="md:col-span-2">
+                  <Label>
+                    Prontuário {mrMode === "legacy" && <span className="text-destructive">*</span>}
+                  </Label>
+                  <Input
+                    placeholder={mrMode === "legacy" ? "Obrigatório — nº do sistema antigo" : "Auto: AA-UUU-SSSSSS-DV (deixe vazio para gerar)"}
+                    value={registerForm.medical_record}
+                    onChange={(e) => setRegisterForm(prev => ({ ...prev, medical_record: e.target.value }))}
+                    className={cn(mrMode === "legacy" && !registerForm.medical_record.trim() && "border-amber-500/60")}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {mrMode === "legacy"
+                      ? "⚠ Unidade em modo legado: informe o número do sistema antigo. Será preservado em numero_prontuario_legado."
+                      : "Vazio → será gerado automaticamente no formato seguro."}
+                  </p>
                 </div>
                 <div>
                   <Label>Data de Nascimento</Label>

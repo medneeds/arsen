@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
+import { useMedicalRecordMode } from "@/hooks/useMedicalRecordMode";
 import { Camera, Upload, User, MapPin, Loader2, Sparkles, AlertCircle, ShieldAlert, UserX } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -106,6 +107,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
+  const { mode: mrMode } = useMedicalRecordMode(currentHospital?.id);
 
   const updateField = (field: keyof PatientFormData, value: string | boolean) => {
     setForm(prev => ({ ...prev, [field]: value as never }));
@@ -232,6 +234,15 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
       }
     }
 
+    // Modo legacy: número do prontuário é obrigatório (digitado manualmente do sistema antigo)
+    if (mrMode === "legacy" && !form.is_unidentified && !form.medical_record.trim()) {
+      toast({
+        title: "Prontuário obrigatório",
+        description: "Esta unidade está em modo legado: informe o número do sistema antigo.",
+        variant: "destructive",
+      });
+      return;
+    }
     setIsSaving(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -534,8 +545,20 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
                   <Input value={form.cns} onChange={e => updateField("cns", e.target.value)} placeholder="Cartão Nacional de Saúde" />
                 </div>
                 <div>
-                  <Label className="text-xs">Prontuário</Label>
-                  <Input value={form.medical_record} onChange={e => updateField("medical_record", e.target.value)} placeholder="Auto: AA-UUU-SSSSSS-DV" />
+                  <Label className="text-xs">
+                    Prontuário {mrMode === "legacy" && <span className="text-destructive">*</span>}
+                  </Label>
+                  <Input
+                    value={form.medical_record}
+                    onChange={e => updateField("medical_record", e.target.value)}
+                    placeholder={mrMode === "legacy" ? "Obrigatório — nº do sistema antigo" : "Auto: AA-UUU-SSSSSS-DV"}
+                    className={cn(mrMode === "legacy" && !form.medical_record.trim() && "border-amber-500/60")}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {mrMode === "legacy"
+                      ? "⚠ Unidade em modo legado: informe o número do sistema antigo."
+                      : "Vazio → será gerado automaticamente no formato seguro."}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-xs">Telefone</Label>
