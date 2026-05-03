@@ -99,6 +99,9 @@ function ProfileHomeRedirect() {
   if (profile === "administrativo") return <Navigate to="/recepcao" replace />;
   if (profile === "multi") return <Navigate to="/triagem-fila" replace />;
   if (profile === "nir") return <Navigate to="/nir" replace />;
+  if (profile === "gestor") return <Navigate to="/painel-gestor" replace />;
+  if (profile === "farmacia") return <Navigate to="/validacao-farmaceutica" replace />;
+  if (profile === "classificacao_risco") return <Navigate to="/triagem-fila" replace />;
   return <ClinicalDashboardPage />;
 }
 
