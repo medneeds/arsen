@@ -86,21 +86,9 @@ const UTI_COMBOS: UtiCombo[] = [
   },
 ];
 
-// Pacotes de admissão (UTI / Enfermaria) NÃO são aplicáveis aqui como combo único
-// porque envolvem RX, ECG e culturas — fluxos separados. Aparecem como atalhos
-// informativos no topo, redirecionando o usuário para os módulos corretos.
-const ADMISSION_PACKAGES = [
-  {
-    id: "admissao-uti",
-    label: "Admissão UTI",
-    hint: "Use o fluxo de admissão (SAPS 3 + culturas + RX tórax + ECG)",
-  },
-  {
-    id: "admissao-enfermaria",
-    label: "Admissão Enfermaria",
-    hint: "Use o fluxo de admissão da enfermaria (labs + RX tórax conforme caso)",
-  },
-];
+// Pacotes de admissão (UTI / Enfermaria) e sepse não são combos aplicáveis aqui:
+// admissão envolve RX, ECG e culturas; sepse mistura culturas com laboratório comum.
+// Esses fluxos vivem em outros módulos (Imagem, Especiais → Cultura, Admissão).
 
 // ── Category config ──
 const CATEGORIES = {
