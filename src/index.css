@@ -600,3 +600,27 @@ body.gestor-readonly main::before {
   border: 1px solid hsl(var(--primary) / 0.3);
   pointer-events: none;
 }
+
+/* ── Mobile safe-area & touch optimization ──────────────────── */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Prevent iOS auto-zoom on input focus (font must be ≥16px) */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Hide gestor read-only badge on mobile (não cabe sem ocluir) */
+@media (max-width: 767px) {
+  body.gestor-readonly main::before {
+    display: none;
+  }
+}
