@@ -155,13 +155,44 @@ const TriageQueueTVPage = () => {
             Recepção · Classificação de Risco
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-4xl font-mono font-bold tabular-nums">
-            {format(currentTime, "HH:mm:ss")}
-          </p>
-          <p className="text-white/60 text-sm uppercase">
-            {format(currentTime, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-          </p>
+        <div className="flex items-center gap-4">
+          <Button
+            size="lg"
+            variant={voiceEnabled ? "default" : "secondary"}
+            onClick={() => {
+              const next = !voiceEnabled;
+              setVoiceEnabled(next);
+              // Gesto do usuário: dispara um utterance vazio para liberar áudio no navegador
+              if (next && "speechSynthesis" in window) {
+                const u = new SpeechSynthesisUtterance("Voz ativada.");
+                u.lang = "pt-BR";
+                window.speechSynthesis.speak(u);
+              } else {
+                window.speechSynthesis?.cancel();
+              }
+            }}
+            className="gap-2"
+          >
+            {voiceEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+            {voiceEnabled ? "Voz ativa" : "Ativar voz"}
+          </Button>
+          {voiceEnabled && (
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => speakCall(calledPatient?.patient_name || "Paciente teste")}
+            >
+              Testar chamada
+            </Button>
+          )}
+          <div className="text-right">
+            <p className="text-4xl font-mono font-bold tabular-nums">
+              {format(currentTime, "HH:mm:ss")}
+            </p>
+            <p className="text-white/60 text-sm uppercase">
+              {format(currentTime, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+            </p>
+          </div>
         </div>
       </div>
 
