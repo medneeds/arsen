@@ -99,13 +99,14 @@ export function CultureRequestDialog({
     created_at: new Date().toISOString(),
   });
 
-  // Pré-preenche com props (mock ou contexto da URL) imediatamente
+  // Pré-preenche com props (mock ou contexto da URL) imediatamente — converte código de setor → label real
   useEffect(() => {
     if (!open) return;
+    const normalizedSector = patientSector ? (SECTOR_DISPLAY[patientSector] || patientSector) : null;
     setData((d) => ({
       ...d,
       patient_name: d.patient_name || patientName || "",
-      patient_sector: d.patient_sector || patientSector || null,
+      patient_sector: d.patient_sector || normalizedSector,
       patient_bed: d.patient_bed || patientBed || null,
     }));
   }, [open, patientName, patientBed, patientSector]);
