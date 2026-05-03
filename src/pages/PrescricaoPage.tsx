@@ -4968,9 +4968,34 @@ const PrescricaoPage = () => {
         open={careCatalogOpen}
         onOpenChange={setCareCatalogOpen}
         onAddItem={(entry) => addItem(entry)}
-        onApplyProfile={(profile) => {
-          applyCareProfile(profile);
-          setCareCatalogOpen(false);
+        onAddBulk={(structured, extras, profile) => {
+          const existingNames = new Set(items.filter(i => i.category === 'care').map(i => i.name));
+          const newItems: PrescriptionItem[] = [];
+          for (const careMed of structured) {
+            if (!existingNames.has(careMed.name)) {
+              newItems.push(createItem(careMed));
+              existingNames.add(careMed.name);
+            }
+          }
+          for (const extraText of extras) {
+            if (!existingNames.has(extraText)) {
+              newItems.push({
+                id: crypto.randomUUID(),
+                name: extraText,
+                presentation: '-', dose: '-', route: '-',
+                posology: '-', schedule: '-', instructions: '',
+                category: 'care', flags: [], highAlert: false, status: 'active',
+              });
+              existingNames.add(extraText);
+            }
+          }
+          if (newItems.length > 0) {
+            setItems(prev => [...prev, ...newItems]);
+            toast.success(`${newItems.length} cuidado(s) adicionado(s)${profile ? ` — ${profile.label}` : ''}`);
+          } else {
+            toast.info('Todos os cuidados selecionados já constam na prescrição');
+          }
+          if (profile) setAppliedCareProfiles(prev => new Set(prev).add(profile.id));
         }}
         appliedProfileIds={appliedCareProfiles}
         patientName={patient?.name}
