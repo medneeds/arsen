@@ -781,15 +781,18 @@ const RequisicaoUnificadaPage = () => {
             />
           </div>
 
-          {/* ── Combos UTI ── */}
-          {(activeCategory === "laboratorio" || activeCategory === "imagem") && (
+          {/* ── Pacotes rápidos de rotina (UTI / Enfermaria) ── */}
+          {activeCategory === "laboratorio" && (
             <Card className="border-border/50 bg-muted/30">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2 flex-wrap">
                   <Package className="h-4 w-4 text-primary" />
-                  Pacotes Rápidos UTI
+                  Pacotes de Rotina
                   <Badge variant="outline" className="text-[10px] font-normal">Clique para aplicar</Badge>
                 </CardTitle>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Os pacotes de <strong>admissão (UTI e enfermaria)</strong> e <strong>sepse</strong> não são aplicáveis aqui — incluem RX tórax, ECG e culturas, que devem ser solicitados pelo fluxo próprio (aba <em>Imagem</em>, <em>Especiais → Cultura</em> e <em>Admissão</em>).
+                </p>
               </CardHeader>
               <CardContent className="space-y-2">
                 {UTI_COMBOS.map(combo => {
