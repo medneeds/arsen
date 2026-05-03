@@ -113,7 +113,12 @@ function createEmptyPsychEntry(item?: PrescriptionItem): PsychotropicEntry {
   };
 }
 
-export function PsychotropicFormDialog({ open, onOpenChange, patient, controlledItems = [], doctorName = "", doctorCrm = "", doctorSpecialty = "", hospitalName = "", hospitalAddress = "" }: Props) {
+export function PsychotropicFormDialog({ open, onOpenChange, patient, controlledItems = [], doctorName: doctorNameProp = "", doctorCrm: doctorCrmProp = "", doctorSpecialty: doctorSpecialtyProp = "", hospitalName = "", hospitalAddress = "" }: Props) {
+  const currentDoctor = useCurrentDoctor();
+  // Sincroniza com perfil do médico logado quando não há assinatura digital prévia
+  const doctorName = doctorNameProp || currentDoctor.fullName;
+  const doctorCrm = doctorCrmProp || currentDoctor.crm;
+  const doctorSpecialty = doctorSpecialtyProp || currentDoctor.specialty;
   const [entries, setEntries] = useState<PsychotropicEntry[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
 
