@@ -4592,8 +4592,48 @@ const PrescricaoPage = () => {
                 <Pill className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
                 <p className="text-sm font-medium text-foreground">Comece a prescrição em 1 clique</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Aplique um modelo de admissão ou use a busca acima para itens individuais
+                  Aplique um modelo de admissão, abra um assistente ou use a busca acima
                 </p>
+              </div>
+
+              {/* Atalhos para assistentes */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setNutritionWizardOpen(true)}
+                  className="text-left rounded-lg border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-400 dark:bg-emerald-950/20 dark:border-emerald-900 transition-all p-3 group"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <UtensilsCrossed className="h-4 w-4 text-emerald-600" />
+                    <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">Nutrição</span>
+                    <Sparkles className="h-3 w-3 text-emerald-500 ml-auto opacity-60 group-hover:opacity-100" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-tight">Zero · Oral · Enteral · NPT</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHydrationWizardOpen(true)}
+                  className="text-left rounded-lg border border-blue-200 bg-blue-50/50 hover:bg-blue-50 hover:border-blue-400 dark:bg-blue-950/20 dark:border-blue-900 transition-all p-3 group"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Droplets className="h-4 w-4 text-blue-600" />
+                    <span className="text-xs font-bold text-blue-800 dark:text-blue-300">Hidratação</span>
+                    <Sparkles className="h-3 w-3 text-blue-500 ml-auto opacity-60 group-hover:opacity-100" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-tight">SF · RL · SG · Soluções preparadas</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReplacementWizardOpen(true)}
+                  className="text-left rounded-lg border border-sky-200 bg-sky-50/50 hover:bg-sky-50 hover:border-sky-400 dark:bg-sky-950/20 dark:border-sky-900 transition-all p-3 group"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <FlaskConical className="h-4 w-4 text-sky-600" />
+                    <span className="text-xs font-bold text-sky-800 dark:text-sky-300">Reposição / Correção</span>
+                    <Sparkles className="h-3 w-3 text-sky-500 ml-auto opacity-60 group-hover:opacity-100" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-tight">HipoK · HipoMg · HipoNa · HiperK</p>
+                </button>
               </div>
               {admissionTpls.length > 0 && (
                 <div>
