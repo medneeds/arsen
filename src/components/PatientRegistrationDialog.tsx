@@ -98,7 +98,7 @@ const isValidCPF = (cpf: string) => {
 };
 
 export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: PatientRegistrationDialogProps) {
-  const [activeTab, setActiveTab] = useState("ai");
+  const [activeTab, setActiveTab] = useState("dados");
   const [form, setForm] = useState<PatientFormData>(EMPTY_FORM);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -355,7 +355,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
       setForm(EMPTY_FORM);
       setPreviewImage(null);
       setDuplicateMatch(null);
-      setActiveTab("ai");
+      setActiveTab("dados");
       onOpenChange(false);
       onSuccess?.();
     } catch (err: any) {
@@ -370,7 +370,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
     setForm(EMPTY_FORM);
     setPreviewImage(null);
     setDuplicateMatch(null);
-    setActiveTab("ai");
+    setActiveTab("dados");
     onOpenChange(false);
   };
 
