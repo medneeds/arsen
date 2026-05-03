@@ -211,7 +211,7 @@ export function CareCatalogDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[760px] h-[88vh] max-h-[88vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[1100px] w-[96vw] h-[82vh] max-h-[82vh] flex flex-col p-0 overflow-hidden">
         {/* HEADER */}
         <DialogHeader className="space-y-2 px-5 pt-5 pb-3 border-b shrink-0">
           <div className="flex items-center gap-3">
