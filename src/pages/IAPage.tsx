@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Send, Sparkles, Loader2, Copy, Check, FileText, X, SeparatorVertical, Clock, AlertTriangle, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
