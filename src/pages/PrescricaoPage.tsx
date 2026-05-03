@@ -3435,11 +3435,12 @@ const PrescricaoPage = () => {
   // ===== Quick templates: apply + save =====
   const mapTemplateCategory = useCallback((cat: string): PrescriptionCategory => {
     const c = (cat || "").toLowerCase().trim();
-    const valid: PrescriptionCategory[] = ['nutrition','hydration','medication','antimicrobial','high_alert','inhalation','hemotherapy','care','nonstandard'];
+    const valid: PrescriptionCategory[] = ['nutrition','hydration','replacement','medication','antimicrobial','high_alert','inhalation','hemotherapy','care','nonstandard'];
     if (valid.includes(c as PrescriptionCategory)) return c as PrescriptionCategory;
     // pt-BR aliases used in seed templates
     if (c === 'antimicrobianos') return 'antimicrobial';
     if (c === 'hidratacao' || c === 'hidratação') return 'hydration';
+    if (c === 'reposicao' || c === 'reposição' || c === 'eletroliticos' || c === 'eletrolíticos') return 'replacement';
     if (c === 'dieta' || c === 'dietas') return 'nutrition';
     if (c === 'sintomaticos' || c === 'sintomáticos' || c === 'medicacoes' || c === 'medicações' || c === 'antiagregantes' || c === 'profilaxia') return 'medication';
     if (c === 'cuidados') return 'care';
