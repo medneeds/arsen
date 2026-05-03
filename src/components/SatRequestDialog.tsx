@@ -306,19 +306,35 @@ export function SatRequestDialog({
         </DialogHeader>
 
         <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
-          {/* Identificação */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Paciente</Label>
-              <Input value={patientName} readOnly className="bg-muted/40" />
+          {/* Identificação retrátil — paciente já carregado */}
+          <CollapsibleInfoCard
+            title="Identificação do paciente"
+            summary={patientName || "—"}
+            badge={[patientSector, patientBed].filter(Boolean).join(" · ") || undefined}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="md:col-span-2">
+                <Label className="text-xs">Paciente</Label>
+                <Input value={patientName} readOnly className="bg-muted/40" />
+              </div>
+              <div>
+                <Label className="text-xs">Setor</Label>
+                <Input value={patientSector || "—"} readOnly className="bg-muted/40" />
+              </div>
+              <div>
+                <Label className="text-xs">Leito</Label>
+                <Input value={patientBed || "—"} readOnly className="bg-muted/40" />
+              </div>
+              <div>
+                <Label className="text-xs">N° prontuário</Label>
+                <Input value={patientRecord} readOnly className="bg-muted/40" />
+              </div>
+              <div>
+                <Label className="text-xs">Data de nascimento</Label>
+                <Input type="date" value={patientBirth} readOnly className="bg-muted/40" />
+              </div>
             </div>
-            <div>
-              <Label className="text-xs">Setor / Leito</Label>
-              <Input value={`${patientSector || "—"} / ${patientBed || "—"}`} readOnly className="bg-muted/40" />
-            </div>
-          </div>
-
-          <Separator />
+          </CollapsibleInfoCard>
 
           {/* Avaliação do ferimento */}
           <div className="space-y-3">
