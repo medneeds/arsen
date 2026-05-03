@@ -175,9 +175,13 @@ export default function IAPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             messages: newMessages,
-            fileContent 
+            fileContent,
+            usePipeSeparator,
+            includeTime,
+            onlyAltered,
+            clinicalImpression,
           }),
         }
       );
