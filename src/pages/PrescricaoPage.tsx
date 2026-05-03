@@ -1006,6 +1006,7 @@ function SortablePrescriptionItemRow({
   onRequestSuspend,
   onReactivate,
   onToggleValidation,
+  onAssistant,
   isPastRenewalTime,
   prescriptionLocked,
 }: {
@@ -1022,6 +1023,7 @@ function SortablePrescriptionItemRow({
   onRequestSuspend: (id: string) => void;
   onReactivate: (id: string) => void;
   onToggleValidation: (id: string) => void;
+  onAssistant?: (id: string) => void;
   isPastRenewalTime: boolean;
   prescriptionLocked: boolean;
 }) {
