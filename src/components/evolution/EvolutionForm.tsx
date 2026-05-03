@@ -359,7 +359,6 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               </p>
               <ul className="text-[11px] text-amber-700/80 dark:text-amber-400/80 space-y-0.5 ml-5 list-disc">
                 {!completion.evolucao && <li>Preencher <strong>Evolução</strong> (mín. 10 caracteres)</li>}
-                {!completion.objective && <li>Preencher <strong>Objetivo</strong> — exame físico ou complementares</li>}
                 {!completion.plan && <li>Preencher <strong>Plano</strong> (mín. 10 caracteres)</li>}
               </ul>
             </div>
