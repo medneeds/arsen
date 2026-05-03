@@ -631,41 +631,43 @@ export async function printHemocomponentRequest(
   const bodyHtml = `
     <table class="nz hemo">
       <colgroup>
-        <col style="width:16.66%"/><col style="width:16.66%"/><col style="width:16.66%"/>
-        <col style="width:16.66%"/><col style="width:16.66%"/><col style="width:16.7%"/>
+        <col style="width:8.333%"/><col style="width:8.333%"/><col style="width:8.333%"/>
+        <col style="width:8.333%"/><col style="width:8.333%"/><col style="width:8.333%"/>
+        <col style="width:8.333%"/><col style="width:8.333%"/><col style="width:8.333%"/>
+        <col style="width:8.333%"/><col style="width:8.333%"/><col style="width:8.337%"/>
       </colgroup>
       <tbody>
         <!-- Identificação -->
-        <tr><td colspan="6" class="band">Identificação do Paciente</td></tr>
-        <tr><th>Nome:</th><td colspan="5" class="bold">${escapeHtml((request.patient_name || "").toUpperCase())}</td></tr>
-        <tr><th>Nome social:</th><td colspan="5">${escapeHtml(request.patient_social_name || "")}</td></tr>
+        <tr><td colspan="12" class="band">Identificação do Paciente</td></tr>
+        <tr><th colspan="2">Nome:</th><td colspan="10" class="bold">${escapeHtml((request.patient_name || "").toUpperCase())}</td></tr>
+        <tr><th colspan="2">Nome social:</th><td colspan="10">${escapeHtml(request.patient_social_name || "")}</td></tr>
         <tr>
-          <th>Data de Nascimento:</th><td class="bold">${escapeHtml(fmtDate(request.patient_birth_date))}</td>
-          <th>Sexo:</th><td>${cb(isSexFem(request.patient_sex))} Fem &nbsp; ${cb(isSexMasc(request.patient_sex))} Masc</td>
-          <th>Grupo (ABO/RH):</th><td class="bold">${escapeHtml(request.patient_blood_group || "")}</td>
+          <th colspan="2">Nascimento:</th><td colspan="2" class="bold">${escapeHtml(fmtDate(request.patient_birth_date))}</td>
+          <th colspan="1">Sexo:</th><td colspan="3">${cb(isSexFem(request.patient_sex))} Fem &nbsp; ${cb(isSexMasc(request.patient_sex))} Masc</td>
+          <th colspan="2">Grupo (ABO/RH):</th><td colspan="2" class="bold">${escapeHtml(request.patient_blood_group || "")}</td>
         </tr>
         <tr>
-          <th>N° prontuário:</th><td class="bold">${escapeHtml(request.patient_record || "")}</td>
-          <th>Raça:</th><td>${escapeHtml(request.patient_race || "")}</td>
-          <th>Peso:</th><td class="bold">${escapeHtml(String(request.patient_weight ?? ""))}</td>
+          <th colspan="2">N° prontuário:</th><td colspan="3" class="bold">${escapeHtml(request.patient_record || "")}</td>
+          <th colspan="1">Raça:</th><td colspan="2">${escapeHtml(request.patient_race || "")}</td>
+          <th colspan="1">Peso:</th><td colspan="3" class="bold">${escapeHtml(String(request.patient_weight ?? ""))}</td>
         </tr>
         <tr>
-          <th>Unidade:</th><td colspan="3" class="bold">${escapeHtml(sectorName || "")}${request.patient_bed ? " · Leito " + escapeHtml(request.patient_bed) : ""}</td>
-          <th>Leito:</th><td class="bold">${escapeHtml(request.patient_bed || "")}</td>
+          <th colspan="2">Unidade:</th><td colspan="6" class="bold">${escapeHtml(sectorName || "")}</td>
+          <th colspan="1">Leito:</th><td colspan="3" class="bold">${escapeHtml(request.patient_bed || "")}</td>
         </tr>
-        <tr><th>Diagnóstico:</th><td colspan="5">${escapeHtml(request.patient_diagnosis || "")}</td></tr>
+        <tr><th colspan="2">Diagnóstico:</th><td colspan="10">${escapeHtml(request.patient_diagnosis || "")}</td></tr>
 
         <!-- Dados da Transfusão -->
-        <tr><td colspan="6" class="band">Dados da Transfusão</td></tr>
-        <tr>${SECTOR_GROUPS.map((g) => `<td colspan="${6 / SECTOR_GROUPS.length}" class="sub">${escapeHtml(g.title)}</td>`).join("")}</tr>
-        <tr>${SECTOR_GROUPS.map((g) => `<td colspan="${6 / SECTOR_GROUPS.length}" class="cell">${g.items.map((it) => `<div class="opt">${cb(isSectorChecked(request, it.key))} ${escapeHtml(it.label)}</div>`).join("")}</td>`).join("")}</tr>
+        <tr><td colspan="12" class="band">Dados da Transfusão · Setor onde será realizada</td></tr>
+        <tr>${SECTOR_GROUPS.map((g) => `<td colspan="3" class="sub">${escapeHtml(g.title)}</td>`).join("")}</tr>
+        <tr>${SECTOR_GROUPS.map((g) => `<td colspan="3" class="cell">${g.items.map((it) => `<div class="opt">${cb(isSectorChecked(request, it.key))} ${escapeHtml(it.label)}</div>`).join("")}</td>`).join("")}</tr>
 
         <!-- Hemocomponentes -->
-        <tr><td colspan="6" class="band">Hemocomponentes Solicitados</td></tr>
-        <tr>${COMPONENT_KEYS.map((k) => `<td colspan="${6 / COMPONENT_KEYS.length}" class="sub">${cb(Boolean(getComponent(request, k)))} ${escapeHtml(COMPONENT_LABELS[k])}</td>`).join("")}</tr>
+        <tr><td colspan="12" class="band">Hemocomponentes Solicitados</td></tr>
+        <tr>${COMPONENT_KEYS.map((k) => `<td colspan="3" class="sub">${cb(Boolean(getComponent(request, k)))} ${escapeHtml(COMPONENT_LABELS[k])}</td>`).join("")}</tr>
         <tr>${COMPONENT_KEYS.map((k) => {
           const c = getComponent(request, k);
-          return `<td colspan="${6 / COMPONENT_KEYS.length}" class="cell"><strong>Quantidade:</strong> ${fill(c?.quantity ?? "", "60%")}</td>`;
+          return `<td colspan="3" class="cell"><strong>Quantidade:</strong> ${fill(c?.quantity ?? "", "60%")}</td>`;
         }).join("")}</tr>
         <tr>${COMPONENT_KEYS.map((k) => {
           const c = getComponent(request, k);
@@ -674,9 +676,9 @@ export async function printHemocomponentRequest(
           else if (k === "plaquetas") body = `<div>${cb(c?.desleucocitado)} Desleucocitado / Filtrado</div><div>${cb(c?.irradiado)} Irradiado</div>`;
           else if (k === "plasma") body = `<div class="muted-bold">Administração de:</div><div>${cb(c?.admin_schedule === "8_8h")} 8/8 Horas</div><div>${cb(c?.admin_schedule === "continuo")} Contínuo</div>`;
           else body = `<div style="min-height:32pt">&nbsp;</div>`;
-          return `<td colspan="${6 / COMPONENT_KEYS.length}" class="cell">${body}</td>`;
+          return `<td colspan="3" class="cell">${body}</td>`;
         }).join("")}</tr>
-        <tr>${COMPONENT_KEYS.map(() => `<td colspan="${6 / COMPONENT_KEYS.length}" class="sub">Justificativa Laboratorial</td>`).join("")}</tr>
+        <tr>${COMPONENT_KEYS.map(() => `<td colspan="3" class="sub">Justificativa Laboratorial</td>`).join("")}</tr>
         <tr>${COMPONENT_KEYS.map((k) => {
           const c = getComponent(request, k);
           let body = "";
@@ -684,36 +686,36 @@ export async function printHemocomponentRequest(
           else if (k === "plaquetas") body = `<div><strong>N° de plaquetas:</strong> ${fill(c?.lab_platelets, "55%")}</div>`;
           else if (k === "plasma") body = `<div><strong>TAP:</strong> ${fill(c?.lab_tap, "60%")}</div><div style="margin-top:3pt"><strong>TTPA:</strong> ${fill(c?.lab_ttpa, "55%")}</div><div style="margin-top:3pt"><strong>RNI:</strong> ${fill(c?.lab_rni, "60%")}</div>`;
           else body = `<div><strong>Fibrinogênio:</strong> ${fill(c?.lab_fibrinogen, "55%")}</div>`;
-          return `<td colspan="${6 / COMPONENT_KEYS.length}" class="cell">${body}</td>`;
+          return `<td colspan="3" class="cell">${body}</td>`;
         }).join("")}</tr>
 
         <!-- Histórico Transfusional -->
-        <tr><td colspan="6" class="band">Histórico Transfusional</td></tr>
+        <tr><td colspan="12" class="band">Histórico Transfusional</td></tr>
         <tr>
-          <td colspan="3" class="cell">Transfusões prévias: ${cb(request.previous_transfusion === true)} Sim &nbsp; ${cb(request.previous_transfusion === false)} Não</td>
-          <td colspan="3" class="cell">Teve reação transfusional? ${cb(request.transfusion_reaction === true)} Sim &nbsp; ${cb(request.transfusion_reaction === false)} Não</td>
+          <td colspan="6" class="cell">Transfusões prévias: ${cb(request.previous_transfusion === true)} Sim &nbsp; ${cb(request.previous_transfusion === false)} Não</td>
+          <td colspan="6" class="cell">Teve reação transfusional? ${cb(request.transfusion_reaction === true)} Sim &nbsp; ${cb(request.transfusion_reaction === false)} Não</td>
         </tr>
         <tr>
-          <td colspan="3" class="cell"><strong>Tipo de reação:</strong> ${fill(request.reaction_type, "60%")}</td>
-          <td colspan="3" class="cell"><strong>Antecedentes Gestacionais:</strong> Gesta ${fill(request.obstetric_history?.gesta, "30pt")} Parto ${fill(request.obstetric_history?.parto, "30pt")} Aborto ${fill(request.obstetric_history?.aborto, "30pt")}</td>
+          <td colspan="6" class="cell"><strong>Tipo de reação:</strong> ${fill(request.reaction_type, "60%")}</td>
+          <td colspan="6" class="cell"><strong>Antecedentes Gestacionais:</strong> Gesta ${fill(request.obstetric_history?.gesta, "30pt")} Parto ${fill(request.obstetric_history?.parto, "30pt")} Aborto ${fill(request.obstetric_history?.aborto, "30pt")}</td>
         </tr>
 
         <!-- Tipos de Transfusão -->
-        <tr><td colspan="6" class="band">Tipos de Transfusão</td></tr>
+        <tr><td colspan="12" class="band">Tipos de Transfusão</td></tr>
         <tr>
-          <td colspan="4" class="cell">${cb(request.transfusion_type === "programada")} Programada para ${fill(fmtDate(request.scheduled_date), "80pt")} às ${fill(request.scheduled_time, "50pt")} h</td>
-          <td colspan="2" rowspan="3" class="sig-cell">${sigBlock}</td>
+          <td colspan="8" class="cell">${cb(request.transfusion_type === "programada")} Programada para ${fill(fmtDate(request.scheduled_date), "80pt")} às ${fill(request.scheduled_time, "50pt")} h</td>
+          <td colspan="4" rowspan="3" class="sig-cell">${sigBlock}</td>
         </tr>
         <tr>
-          <td colspan="2" class="cell">${cb(request.transfusion_type === "rotina")} De rotina (Dentro de 24 horas)</td>
-          <td colspan="2" class="cell">${cb(request.transfusion_type === "urgencia")} De urgência (Dentro de 3 horas)</td>
+          <td colspan="4" class="cell">${cb(request.transfusion_type === "rotina")} De rotina (Dentro de 24 horas)</td>
+          <td colspan="4" class="cell">${cb(request.transfusion_type === "urgencia")} De urgência (Dentro de 3 horas)</td>
         </tr>
         <tr>
-          <td colspan="4" class="cell">${cb(request.transfusion_type === "emergencia")} De emergência (qualquer retardo acarretará risco de vida)</td>
+          <td colspan="8" class="cell">${cb(request.transfusion_type === "emergencia")} De emergência (qualquer retardo acarretará risco de vida)</td>
         </tr>
 
         <!-- Rodapé regulatório -->
-        <tr><td colspan="6" class="legal">
+        <tr><td colspan="12" class="legal">
           <p><strong>UMA REQUISIÇÃO INCOMPLETA, INADEQUADA E ILEGÍVEL NÃO DEVE SER ACEITA PELO SERVIÇO DE HEMOTERAPIA. AS TRANSFUSÕES DEVEM SER REALIZADAS, PREFERENCIALMENTE, NO PERÍODO DIURNO (RDC 153/2004 — MINISTÉRIO DA SAÚDE).</strong></p>
           <p>Em cumprimento à portaria N° 05, publicada em 28/09/2017 (que substitui a RDC N° 34/2014-MS), é obrigatória a realização dos testes pré-transfusionais (classificação sanguínea ABO + Rh e provas de compatibilidade) para liberação de sangue total ou concentrado de hemácias a ser transfundido.</p>
           <p>Diante de situações emergenciais, o médico tem autoridade para dispensar a realização dos testes, agilizando a liberação dos produtos. Nesses casos, é <strong>IMPRESCINDÍVEL</strong> o preenchimento do Termo de Responsabilidade no verso desta folha pelo médico responsável.</p>
