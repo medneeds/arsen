@@ -2147,6 +2147,7 @@ function SignPrescriptionDialog({
   open: boolean; onClose: () => void; onConfirm: (sig: DigitalSignature) => void;
   totalItems: number; activeItems: number;
 }) {
+  const currentDoctor = useCurrentDoctor();
   const [step, setStep] = useState<1 | 2>(1);
   const [doctorName, setDoctorName] = useState("");
   const [crm, setCrm] = useState("");
@@ -2156,6 +2157,13 @@ function SignPrescriptionDialog({
   const [showConfirm, setShowConfirm] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState("");
+
+  // Prefill com dados do médico logado (full_name + CRM do perfil)
+  useEffect(() => {
+    if (!open) return;
+    if (!doctorName && currentDoctor.fullName) setDoctorName(currentDoctor.fullName);
+    if (!crm && currentDoctor.crm) setCrm(currentDoctor.crm.replace(/\D/g, ""));
+  }, [open, currentDoctor.fullName, currentDoctor.crm]);
 
   const reset = () => { setStep(1); setDoctorName(""); setCrm(""); setPassword(""); setConfirmPassword(""); setShowPassword(false); setShowConfirm(false); setVerifying(false); setError(""); };
   const handleClose = () => { reset(); onClose(); };
