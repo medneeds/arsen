@@ -384,6 +384,10 @@ const RequisicaoUnificadaPage = () => {
     if (!formPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
     if (formSelectedItems.length === 0) { toast.error("Selecione ao menos um item"); return; }
     if (!formIndication.trim()) { toast.error("Informe a justificativa clínica"); return; }
+    if (requiresExtraJustification && formExtraJustification.trim().length < 10) {
+      toast.error("Itens fora dos pacotes de rotina exigem justificativa específica (mín. 10 caracteres) para liberação da guia");
+      return;
+    }
     if (formPriority === "programado" && !formScheduledDate) { toast.error("Informe a data programada"); return; }
 
     // Validações de contexto com mensagens claras (antes só fazia return silencioso)
