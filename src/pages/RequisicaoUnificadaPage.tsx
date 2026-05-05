@@ -403,6 +403,10 @@ const RequisicaoUnificadaPage = () => {
         const scheduledInfo = `[PROGRAMADO: ${formScheduledDate}${formScheduledTime ? " às " + formScheduledTime : ""}]`;
         notesContent = scheduledInfo + (notesContent ? "\n" + notesContent : "");
       }
+      if (requiresExtraJustification) {
+        const extraBlock = `[JUSTIFICATIVA — EXAMES FORA DA ROTINA]\nItens: ${offQuickLabItems.join(", ")}\nMotivo: ${formExtraJustification.trim()}`;
+        notesContent = (notesContent ? notesContent + "\n\n" : "") + extraBlock;
+      }
 
       const payload = {
         category: activeCategory,
