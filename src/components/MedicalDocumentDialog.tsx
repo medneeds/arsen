@@ -9,14 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  FileSignature, ClipboardList, FileCheck2, Pill, ArrowLeft, Printer, Plus, Trash2,
+  FileSignature, ClipboardList, FileCheck2, Pill, PillBottle, ArrowLeft, Printer, Plus, Trash2,
 } from "lucide-react";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 
-type DocKind = "atestado" | "relatorio" | "termo" | "receituario";
+type DocKind = "atestado" | "relatorio" | "termo" | "receituario" | "receituario_especial";
 
 const TEMPLATES: Array<{
   kind: DocKind;
@@ -27,10 +27,11 @@ const TEMPLATES: Array<{
   bg: string;
   prefix: string;
 }> = [
-  { kind: "atestado",   label: "Atestado médico",       desc: "Afastamento, comparecimento, repouso",     icon: FileSignature, tone: "text-blue-600",    bg: "bg-blue-500/10",    prefix: "ATEST" },
-  { kind: "relatorio",  label: "Relatório médico",      desc: "Quadro clínico, evolução, conclusão",       icon: ClipboardList, tone: "text-violet-600",  bg: "bg-violet-500/10",  prefix: "RELAT" },
-  { kind: "termo",      label: "Termo / declaração",    desc: "Consentimento, responsabilidade, recusa",   icon: FileCheck2,    tone: "text-amber-600",   bg: "bg-amber-500/10",   prefix: "TERMO" },
-  { kind: "receituario",label: "Receituário simples",   desc: "Prescrição ambulatorial / pós-alta",         icon: Pill,          tone: "text-emerald-600", bg: "bg-emerald-500/10", prefix: "RECEIT" },
+  { kind: "atestado",            label: "Atestado médico",                  desc: "Afastamento, comparecimento, repouso",     icon: FileSignature, tone: "text-blue-600",    bg: "bg-blue-500/10",    prefix: "ATEST" },
+  { kind: "relatorio",           label: "Relatório médico",                 desc: "Quadro clínico, evolução, conclusão",       icon: ClipboardList, tone: "text-violet-600",  bg: "bg-violet-500/10",  prefix: "RELAT" },
+  { kind: "termo",               label: "Termo / declaração",               desc: "Consentimento, responsabilidade, recusa",   icon: FileCheck2,    tone: "text-amber-600",   bg: "bg-amber-500/10",   prefix: "TERMO" },
+  { kind: "receituario",         label: "Receituário simples",              desc: "Prescrição ambulatorial / pós-alta",         icon: Pill,          tone: "text-emerald-600", bg: "bg-emerald-500/10", prefix: "RECEIT" },
+  { kind: "receituario_especial",label: "Receituário de controle especial", desc: "Portaria 344/98 — listas C1, C2, C5 (2 vias)", icon: PillBottle,    tone: "text-rose-600",    bg: "bg-rose-500/10",    prefix: "RECCE" },
 ];
 
 interface Props {
@@ -81,9 +82,12 @@ export function MedicalDocumentDialog({
       case "termo":
         return `Eu, _____________________________________, portador(a) do RG nº __________________, responsável legal pelo(a) paciente ${nm}, declaro estar ciente das informações prestadas pela equipe assistencial e ____________________________________________________________________.`;
       case "receituario":
+      case "receituario_especial":
         return ""; // handled separately
     }
   };
+
+  const isRx = kind === "receituario" || kind === "receituario_especial";
 
   const startEdit = (k: DocKind) => {
     setKind(k);
@@ -103,7 +107,7 @@ export function MedicalDocumentDialog({
         ${includeCid && cidPrimary ? `<div><b>CID-10:</b> ${esc(cidPrimary)}</div>` : ""}
       </div>`;
 
-    if (kind === "receituario") {
+    if (isRx) {
       const rows = rx.filter((r) => r.name.trim()).map((r, i) => `
         <tr>
           <td class="nz-c">${i + 1}</td>
@@ -112,6 +116,10 @@ export function MedicalDocumentDialog({
           <td>${esc(r.freq)}</td>
           <td>${esc(r.duration)}</td>
         </tr>`).join("");
+      const especialNote = kind === "receituario_especial"
+        ? `<div style="margin-top:8pt;padding:6pt 8pt;border:1px dashed #be123c;border-radius:4pt;font-size:8.5pt;color:#9f1239;background:#fff1f2">
+             <b>Receituário de Controle Especial</b> — Portaria SVS/MS nº 344/1998. Validade: 30 dias a partir da data de emissão. Emitido em 2 (duas) vias: 1ª via retida pela farmácia, 2ª via do paciente.
+           </div>` : "";
       return `${patientLine}
         <table class="nz">
           <thead><tr>
@@ -120,6 +128,7 @@ export function MedicalDocumentDialog({
           <tbody>${rows || `<tr><td colspan="5" class="nz-empty">Sem itens</td></tr>`}</tbody>
         </table>
         ${body ? `<div style="margin-top:10pt;font-size:9pt;white-space:pre-wrap">${esc(body)}</div>` : ""}
+        ${especialNote}
       `;
     }
 
@@ -131,13 +140,24 @@ export function MedicalDocumentDialog({
   const handlePrint = async () => {
     if (!tpl) return;
     const logo = await prepareLogo();
+    const subtitle =
+      kind === "atestado" && days ? `Afastamento de ${days} dia(s)` :
+      kind === "receituario_especial" ? "Portaria SVS/MS nº 344/1998 — 2 vias" : undefined;
+
+    const baseBody = buildBodyHtml();
+    const bodyHtml = kind === "receituario_especial"
+      ? `<div style="border-bottom:2px dashed #94a3b8;padding-bottom:8pt;margin-bottom:8pt"><div style="font-size:8pt;color:#64748b;margin-bottom:4pt"><b>1ª VIA — FARMÁCIA</b></div>${baseBody}</div>
+         <div style="page-break-before:always"></div>
+         <div><div style="font-size:8pt;color:#64748b;margin-bottom:4pt"><b>2ª VIA — PACIENTE</b></div>${baseBody}</div>`
+      : baseBody;
+
     const html = buildNormaZeroDocument({
       title: tpl.label,
-      subtitle: kind === "atestado" && days ? `Afastamento de ${days} dia(s)` : undefined,
+      subtitle,
       sectorLabel: patientSector ? `Assistência — ${patientSector}` : "Assistência Médica",
       hospitalName,
       docCodePrefix: tpl.prefix,
-      bodyHtml: buildBodyHtml(),
+      bodyHtml,
       signatures: [
         {
           label: doctor.fullName ? doctor.fullName.toUpperCase() : "MÉDICO ASSISTENTE",
@@ -220,7 +240,7 @@ export function MedicalDocumentDialog({
                 </div>
               )}
 
-              {kind === "receituario" ? (
+              {isRx ? (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs">Itens do receituário</Label>
