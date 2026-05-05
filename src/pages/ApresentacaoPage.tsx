@@ -511,9 +511,9 @@ const slides: Slide[] = [
               color={COLORS.green}
             />
             <FeatureRow
-              icon={Brain}
-              title="Sugestões com IA"
-              desc="Posologia sugerida com fonte (UpToDate, AMIB, KDIGO) — sem alucinação."
+              icon={ClipboardList}
+              title="Templates terapêuticos"
+              desc="Modelos clínicos prontos (sepse, choque, neurocrítico) — padronização e velocidade."
               color={COLORS.blue}
             />
             <FeatureRow
