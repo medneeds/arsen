@@ -6,7 +6,7 @@ import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import { useHospital } from "@/contexts/HospitalContext";
 import {
   FolderOpen, Droplet, FileCheck, Syringe, FileText,
-  Microscope, Plus,
+  Microscope, Plus, FileSignature,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDialog";
 import { SatRequestDialog } from "@/components/SatRequestDialog";
 import { CultureRequestDialog } from "@/components/CultureRequestDialog";
+import { MedicalDocumentDialog } from "@/components/MedicalDocumentDialog";
 import {
   PatientDocumentsPanel,
 } from "@/components/PatientDocumentsPanel";
@@ -46,6 +47,7 @@ const DocumentosPacientePage = () => {
   const [hemoOpen, setHemoOpen] = useState(false);
   const [satOpen, setSatOpen] = useState(false);
   const [cultureOpen, setCultureOpen] = useState(false);
+  const [medDocOpen, setMedDocOpen] = useState(false);
 
   const handleNewByType = useCallback(
     (type: DocumentType) => {
@@ -144,6 +146,26 @@ const DocumentosPacientePage = () => {
             </Badge>
           </div>
 
+          {/* CTA destaque — Emissão de documentos médicos */}
+          <button
+            type="button"
+            onClick={() => setMedDocOpen(true)}
+            className="w-full group relative overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent hover:from-primary/15 hover:via-primary/10 transition-all p-3.5 flex items-center gap-3 text-left"
+          >
+            <div className="p-2.5 rounded-lg bg-primary/15 border border-primary/20">
+              <FileSignature className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">EMITIR DOCUMENTO MÉDICO</p>
+              <p className="text-[11px] text-muted-foreground">
+                Atestado • Relatório • Termo / Declaração • Receituário simples
+              </p>
+            </div>
+            <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+              Norma Zero
+            </Badge>
+          </button>
+
           {/* Quick CTAs */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
             <QuickCta
@@ -225,6 +247,17 @@ const DocumentosPacientePage = () => {
         patientName={patientName}
         patientBed={patientBed}
         patientSector={patientSector}
+      />
+
+      {/* Dialog: Emissão de documentos médicos (atestado, relatório, termo, receituário) */}
+      <MedicalDocumentDialog
+        open={medDocOpen}
+        onOpenChange={setMedDocOpen}
+        patientId={patientId || null}
+        patientName={patientName}
+        patientBed={patientBed}
+        patientSector={patientSector}
+        hospitalName={currentHospital?.name}
       />
     </div>
   );
