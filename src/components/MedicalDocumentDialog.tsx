@@ -27,10 +27,10 @@ const TEMPLATES: Array<{
   bg: string;
   prefix: string;
 }> = [
-  { kind: "atestado",   label: "ATESTADO MÉDICO",       desc: "Afastamento, comparecimento, repouso",     icon: FileSignature, tone: "text-blue-600",    bg: "bg-blue-500/10",    prefix: "ATEST" },
-  { kind: "relatorio",  label: "RELATÓRIO MÉDICO",      desc: "Quadro clínico, evolução, conclusão",       icon: ClipboardList, tone: "text-violet-600",  bg: "bg-violet-500/10",  prefix: "RELAT" },
-  { kind: "termo",      label: "TERMO / DECLARAÇÃO",    desc: "Consentimento, responsabilidade, recusa",   icon: FileCheck2,    tone: "text-amber-600",   bg: "bg-amber-500/10",   prefix: "TERMO" },
-  { kind: "receituario",label: "RECEITUÁRIO SIMPLES",   desc: "Prescrição ambulatorial / pós-alta",         icon: Pill,          tone: "text-emerald-600", bg: "bg-emerald-500/10", prefix: "RECEIT" },
+  { kind: "atestado",   label: "Atestado médico",       desc: "Afastamento, comparecimento, repouso",     icon: FileSignature, tone: "text-blue-600",    bg: "bg-blue-500/10",    prefix: "ATEST" },
+  { kind: "relatorio",  label: "Relatório médico",      desc: "Quadro clínico, evolução, conclusão",       icon: ClipboardList, tone: "text-violet-600",  bg: "bg-violet-500/10",  prefix: "RELAT" },
+  { kind: "termo",      label: "Termo / declaração",    desc: "Consentimento, responsabilidade, recusa",   icon: FileCheck2,    tone: "text-amber-600",   bg: "bg-amber-500/10",   prefix: "TERMO" },
+  { kind: "receituario",label: "Receituário simples",   desc: "Prescrição ambulatorial / pós-alta",         icon: Pill,          tone: "text-emerald-600", bg: "bg-emerald-500/10", prefix: "RECEIT" },
 ];
 
 interface Props {
