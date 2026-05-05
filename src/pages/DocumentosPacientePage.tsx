@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { HemocomponentRequestDialog } from "@/components/HemocomponentRequestDialog";
 import { SatRequestDialog } from "@/components/SatRequestDialog";
 import { CultureRequestDialog } from "@/components/CultureRequestDialog";
+import { MedicalDocumentDialog } from "@/components/MedicalDocumentDialog";
 import {
   PatientDocumentsPanel,
 } from "@/components/PatientDocumentsPanel";
