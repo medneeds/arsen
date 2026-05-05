@@ -1116,13 +1116,13 @@ const slides: Slide[] = [
 
   // 17B-G — MOCKUPS PDF NORMA ZERO (modelos para apreciação da Direção)
   ...([
-    { id: 18, tag: "Modelo 1/7", title: "Prescrição Médica", color: C.red, M: PrescriptionMockup, note: "Cabeçalho Norma Zero • paciente • dieta • hidratação • medicamentos com diluição/aprazamento • profilaxias TEV/TGI • assinaturas (médico, farmacêutico, enfermagem)." },
-    { id: 19, tag: "Modelo 2/7", title: "Evolução Médica (SOAP)", color: C.green, M: EvolutionMockup, note: "Estrutura SOAP padronizada • sinais vitais • parâmetros ventilatórios • exames • impressão diagnóstica • plano terapêutico com SAPS 3/NEWS2." },
-    { id: 20, tag: "Modelo 3/7", title: "Requisição Simples (Laboratório)", color: C.blue, M: SimpleRequestMockup, note: "Indicação clínica • lista de exames por categoria • marcação de urgência • integração direta com o setor de Laboratório." },
-    { id: 21, tag: "Modelo 4/7", title: "Solicitação de Cultura", color: C.orange, M: CultureMockup, note: "Sítio e material • frascos e volumes • antibiograma • notificação automática à CCIH com trilha de auditoria." },
-    { id: 22, tag: "Modelo 5/7", title: "Guia de Antimicrobiano", color: C.red, M: AntimicrobialMockup, note: "ATB de uso restrito • justificativa clínica • critérios de reavaliação obrigatórios • aprovação CCIH com auditoria." },
-    { id: 23, tag: "Modelo 6/7", title: "Soro Antitetânico", color: C.yellow, M: TetanusSerumMockup, note: "Profilaxia pós-exposição • esquema SAT + dT conforme Min. Saúde • cuidados pré e pós-aplicação." },
-    { id: 24, tag: "Modelo 7/7", title: "Solicitação de Hemocomponentes", color: C.red, M: HemocomponentMockup, note: "RDC 34/2014 • tipagem • indicação clínica • critérios de monitorização • termo de consentimento obrigatório." },
+    { id: 18, tag: "Modelo 1/7", title: "Prescrição Médica", color: COLORS.red, M: PrescriptionMockup, note: "Cabeçalho Norma Zero • paciente • dieta • hidratação • medicamentos com diluição/aprazamento • profilaxias TEV/TGI • assinaturas (médico, farmacêutico, enfermagem)." },
+    { id: 19, tag: "Modelo 2/7", title: "Evolução Médica (SOAP)", color: COLORS.green, M: EvolutionMockup, note: "Estrutura SOAP padronizada • sinais vitais • parâmetros ventilatórios • exames • impressão diagnóstica • plano terapêutico com SAPS 3/NEWS2." },
+    { id: 20, tag: "Modelo 3/7", title: "Requisição Simples (Laboratório)", color: COLORS.blue, M: SimpleRequestMockup, note: "Indicação clínica • lista de exames por categoria • marcação de urgência • integração direta com o setor de Laboratório." },
+    { id: 21, tag: "Modelo 4/7", title: "Solicitação de Cultura", color: COLORS.orange, M: CultureMockup, note: "Sítio e material • frascos e volumes • antibiograma • notificação automática à CCIH com trilha de auditoria." },
+    { id: 22, tag: "Modelo 5/7", title: "Guia de Antimicrobiano", color: COLORS.red, M: AntimicrobialMockup, note: "ATB de uso restrito • justificativa clínica • critérios de reavaliação obrigatórios • aprovação CCIH com auditoria." },
+    { id: 23, tag: "Modelo 6/7", title: "Soro Antitetânico", color: COLORS.yellow, M: TetanusSerumMockup, note: "Profilaxia pós-exposição • esquema SAT + dT conforme Min. Saúde • cuidados pré e pós-aplicação." },
+    { id: 24, tag: "Modelo 7/7", title: "Solicitação de Hemocomponentes", color: COLORS.red, M: HemocomponentMockup, note: "RDC 34/2014 • tipagem • indicação clínica • critérios de monitorização • termo de consentimento obrigatório." },
   ] as const).map<Slide>((s) => ({
     id: s.id,
     variant: "light" as const,
@@ -1143,19 +1143,19 @@ const slides: Slide[] = [
             </p>
             <ul className="space-y-1.5">
               <li className="flex gap-2">
-                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-none" style={{ color: C.green }} />
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-none" style={{ color: COLORS.green }} />
                 <span>Cabeçalho institucional unificado</span>
               </li>
               <li className="flex gap-2">
-                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-none" style={{ color: C.green }} />
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-none" style={{ color: COLORS.green }} />
                 <span>Código rastreável + setor + emissão</span>
               </li>
               <li className="flex gap-2">
-                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-none" style={{ color: C.green }} />
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-none" style={{ color: COLORS.green }} />
                 <span>Assinaturas por papel funcional</span>
               </li>
               <li className="flex gap-2">
-                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-none" style={{ color: C.green }} />
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 flex-none" style={{ color: COLORS.green }} />
                 <span>Trilha de auditoria + LGPD/CFM</span>
               </li>
             </ul>
