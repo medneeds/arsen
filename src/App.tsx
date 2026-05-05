@@ -76,6 +76,7 @@ const UeVerticalPage = lazy(() => import("./pages/UeVerticalPage"));
 const UeHorizontalPage = lazy(() => import("./pages/UeHorizontalPage"));
 const DevConsolePage = lazy(() => import("./pages/DevConsolePage"));
 const HistoricoPacientePage = lazy(() => import("./pages/HistoricoPacientePage"));
+const ApresentacaoPage = lazy(() => import("./pages/ApresentacaoPage"));
 
 // React Query: defaults conservadores para reduzir refetch agressivo
 // e manter UX fluida em máquinas mais fracas / múltiplos usuários simultâneos.
@@ -127,6 +128,8 @@ const App = () => {
           <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/welcome" element={<LandingPage />} />
+              <Route path="/apresentacao" element={<ApresentacaoPage />} />
+              <Route path="/apresentacao-hmdm" element={<ApresentacaoPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/signup" element={<SignupRedirectPage />} />
