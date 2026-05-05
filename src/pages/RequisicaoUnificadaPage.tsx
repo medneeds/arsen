@@ -349,6 +349,21 @@ const RequisicaoUnificadaPage = () => {
     return allItems.some(item => formSelectedItems.includes(item)) && !isComboFullySelected(combo);
   };
 
+  // Conjunto de exames laboratoriais cobertos pelos combos rápidos (Rotina UTI / Enfermaria).
+  // Itens fora deste set, quando solicitados na categoria laboratório, exigem justificativa extra.
+  const QUICK_LAB_SET = useMemo(() => {
+    const s = new Set<string>();
+    UTI_COMBOS.forEach(c => (c.categories.laboratorio || []).forEach(i => s.add(i)));
+    return s;
+  }, []);
+
+  const offQuickLabItems = useMemo(() => {
+    if (activeCategory !== "laboratorio") return [] as string[];
+    return formSelectedItems.filter(i => !QUICK_LAB_SET.has(i));
+  }, [formSelectedItems, activeCategory, QUICK_LAB_SET]);
+
+  const requiresExtraJustification = offQuickLabItems.length > 0;
+
   const resetForm = () => {
     setFormPatientId(null);
     setFormPatientName("");
@@ -361,6 +376,7 @@ const RequisicaoUnificadaPage = () => {
     setFormNotes("");
     setFormSelectedItems([]);
     setFormCustomItem("");
+    setFormExtraJustification("");
     setExpandedCombo(null);
   };
 
