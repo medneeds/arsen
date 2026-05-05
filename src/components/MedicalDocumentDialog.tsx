@@ -82,9 +82,12 @@ export function MedicalDocumentDialog({
       case "termo":
         return `Eu, _____________________________________, portador(a) do RG nº __________________, responsável legal pelo(a) paciente ${nm}, declaro estar ciente das informações prestadas pela equipe assistencial e ____________________________________________________________________.`;
       case "receituario":
+      case "receituario_especial":
         return ""; // handled separately
     }
   };
+
+  const isRx = kind === "receituario" || kind === "receituario_especial";
 
   const startEdit = (k: DocKind) => {
     setKind(k);
