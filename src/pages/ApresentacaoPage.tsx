@@ -53,9 +53,9 @@ function InstitutionalHeader({ tone = "light" }: { tone?: "light" | "dark" }) {
       }`}
     >
       <img
-        src={whitelabel.logos.hospital}
+        src={socorraoCross}
         alt={whitelabel.institution.hospitalLogoAlt}
-        className="h-14 w-auto max-w-[80px] object-contain"
+        className="h-14 w-14 object-contain"
       />
       <div className="flex-1 leading-tight">
         <p
