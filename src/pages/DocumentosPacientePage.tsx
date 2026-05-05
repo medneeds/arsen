@@ -47,6 +47,7 @@ const DocumentosPacientePage = () => {
   const [hemoOpen, setHemoOpen] = useState(false);
   const [satOpen, setSatOpen] = useState(false);
   const [cultureOpen, setCultureOpen] = useState(false);
+  const [medDocOpen, setMedDocOpen] = useState(false);
 
   const handleNewByType = useCallback(
     (type: DocumentType) => {
