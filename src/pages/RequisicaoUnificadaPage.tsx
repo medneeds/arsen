@@ -207,6 +207,7 @@ const RequisicaoUnificadaPage = () => {
   const [formNotes, setFormNotes] = useState("");
   const [formSelectedItems, setFormSelectedItems] = useState<string[]>([]);
   const [formCustomItem, setFormCustomItem] = useState("");
+  const [formExtraJustification, setFormExtraJustification] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [expandedCombo, setExpandedCombo] = useState<string | null>(null);
   const [hemoDialogOpen, setHemoDialogOpen] = useState(false);
@@ -348,6 +349,21 @@ const RequisicaoUnificadaPage = () => {
     return allItems.some(item => formSelectedItems.includes(item)) && !isComboFullySelected(combo);
   };
 
+  // Conjunto de exames laboratoriais cobertos pelos combos rápidos (Rotina UTI / Enfermaria).
+  // Itens fora deste set, quando solicitados na categoria laboratório, exigem justificativa extra.
+  const QUICK_LAB_SET = useMemo(() => {
+    const s = new Set<string>();
+    UTI_COMBOS.forEach(c => (c.categories.laboratorio || []).forEach(i => s.add(i)));
+    return s;
+  }, []);
+
+  const offQuickLabItems = useMemo(() => {
+    if (activeCategory !== "laboratorio") return [] as string[];
+    return formSelectedItems.filter(i => !QUICK_LAB_SET.has(i));
+  }, [formSelectedItems, activeCategory, QUICK_LAB_SET]);
+
+  const requiresExtraJustification = offQuickLabItems.length > 0;
+
   const resetForm = () => {
     setFormPatientId(null);
     setFormPatientName("");
@@ -360,6 +376,7 @@ const RequisicaoUnificadaPage = () => {
     setFormNotes("");
     setFormSelectedItems([]);
     setFormCustomItem("");
+    setFormExtraJustification("");
     setExpandedCombo(null);
   };
 
@@ -367,6 +384,10 @@ const RequisicaoUnificadaPage = () => {
     if (!formPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
     if (formSelectedItems.length === 0) { toast.error("Selecione ao menos um item"); return; }
     if (!formIndication.trim()) { toast.error("Informe a justificativa clínica"); return; }
+    if (requiresExtraJustification && formExtraJustification.trim().length < 10) {
+      toast.error("Itens fora dos pacotes de rotina exigem justificativa específica (mín. 10 caracteres) para liberação da guia");
+      return;
+    }
     if (formPriority === "programado" && !formScheduledDate) { toast.error("Informe a data programada"); return; }
 
     // Validações de contexto com mensagens claras (antes só fazia return silencioso)
@@ -381,6 +402,10 @@ const RequisicaoUnificadaPage = () => {
       if (formPriority === "programado" && formScheduledDate) {
         const scheduledInfo = `[PROGRAMADO: ${formScheduledDate}${formScheduledTime ? " às " + formScheduledTime : ""}]`;
         notesContent = scheduledInfo + (notesContent ? "\n" + notesContent : "");
+      }
+      if (requiresExtraJustification) {
+        const extraBlock = `[JUSTIFICATIVA — EXAMES FORA DA ROTINA]\nItens: ${offQuickLabItems.join(", ")}\nMotivo: ${formExtraJustification.trim()}`;
+        notesContent = (notesContent ? notesContent + "\n\n" : "") + extraBlock;
       }
 
       const payload = {
@@ -961,6 +986,44 @@ const RequisicaoUnificadaPage = () => {
             </CardContent>
           </Card>
 
+          {/* Justificativa extra para exames laboratoriais fora dos pacotes rápidos */}
+          {requiresExtraJustification && (
+            <Card className="border-amber-300 bg-amber-50/60 dark:bg-amber-950/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                  <AlertTriangle className="h-4 w-4" />
+                  Liberação condicionada — exame fora da rotina
+                </CardTitle>
+                <p className="text-[11px] text-amber-700/90 dark:text-amber-400/80 mt-1">
+                  Os itens abaixo não fazem parte dos pacotes rápidos (Rotina UTI / Enfermaria) e exigem
+                  justificativa clínica específica para liberação da guia pelo laboratório.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex flex-wrap gap-1.5">
+                  {offQuickLabItems.map(it => (
+                    <Badge key={it} variant="outline" className="text-[11px] border-amber-400 text-amber-800 dark:text-amber-300 bg-amber-100/60">
+                      {it}
+                    </Badge>
+                  ))}
+                </div>
+                <Label className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                  Justificativa específica <span className="text-red-600">*</span>
+                </Label>
+                <Textarea
+                  placeholder="Ex.: suspeita de hipotireoidismo subclínico — solicito TSH e T4 livre..."
+                  value={formExtraJustification}
+                  onChange={e => setFormExtraJustification(e.target.value)}
+                  rows={3}
+                  className="resize-none text-sm bg-background"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Mínimo 10 caracteres. Esta justificativa fica registrada na guia para auditoria.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Notes */}
           <div className="space-y-1.5">
             <Label className="text-xs">Observações</Label>
@@ -970,7 +1033,16 @@ const RequisicaoUnificadaPage = () => {
           {/* Submit */}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={resetForm} disabled={submitting}>Limpar</Button>
-            <Button onClick={handleSubmitRequest} disabled={submitting || formSelectedItems.length === 0 || !formPatientName.trim()} className="gap-2">
+            <Button
+              onClick={handleSubmitRequest}
+              disabled={
+                submitting ||
+                formSelectedItems.length === 0 ||
+                !formPatientName.trim() ||
+                (requiresExtraJustification && formExtraJustification.trim().length < 10)
+              }
+              className="gap-2"
+            >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Enviar Requisição
             </Button>
