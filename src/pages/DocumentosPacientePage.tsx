@@ -130,41 +130,32 @@ const DocumentosPacientePage = () => {
         <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4 max-w-5xl mx-auto">
           {/* Title */}
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10 shrink-0">
                 <FolderOpen className="h-4 w-4 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <h1 className="text-lg font-semibold text-foreground leading-tight">Documentos do paciente</h1>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground truncate">
                   Solicitações, requisições e documentos clínicos vinculados
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="text-[11px]">
-              {docs.length} no total
-            </Badge>
+            <div className="flex items-center gap-2 shrink-0">
+              <Badge variant="outline" className="text-[11px]">
+                {docs.length} no total
+              </Badge>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setMedDocOpen(true)}
+                className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-sm normal-case"
+              >
+                <FileSignature className="h-4 w-4" />
+                Emitir documento médico
+              </Button>
+            </div>
           </div>
-
-          {/* CTA destaque — Emissão de documentos médicos */}
-          <button
-            type="button"
-            onClick={() => setMedDocOpen(true)}
-            className="w-full group relative overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent hover:from-primary/15 hover:via-primary/10 transition-all p-3.5 flex items-center gap-3 text-left"
-          >
-            <div className="p-2.5 rounded-lg bg-primary/15 border border-primary/20">
-              <FileSignature className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground normal-case">Emitir documento médico</p>
-              <p className="text-[11px] text-muted-foreground">
-                Atestado • Relatório • Termo / Declaração • Receituário simples
-              </p>
-            </div>
-            <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
-              Norma Zero
-            </Badge>
-          </button>
 
           {/* Quick CTAs */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
