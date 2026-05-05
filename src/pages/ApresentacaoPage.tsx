@@ -2,6 +2,15 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { whitelabel } from "@/config/whitelabel";
 import socorraoCross from "@/assets/socorrao-cross-logo.png";
 import {
+  PrescriptionMockup,
+  EvolutionMockup,
+  SimpleRequestMockup,
+  CultureMockup,
+  AntimicrobialMockup,
+  TetanusSerumMockup,
+  HemocomponentMockup,
+} from "./apresentacao/NormaZeroMockups";
+import {
   ChevronLeft,
   ChevronRight,
   Maximize2,
