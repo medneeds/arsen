@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { 
   Building2, ArrowLeftRight, Globe, BedDouble, ClipboardPlus, 
   Repeat, LogOut, Lock, FileText, BarChart3, 
@@ -106,7 +107,28 @@ type AlertKind = "stuck24h" | "saturated" | "cleaning" | "sisreg" | null;
 
 export default function NirDashboardPage() {
   const { currentHospital } = useHospital();
-  const [activeModule, setActiveModule] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeModule, setActiveModule] = useState<string | null>(searchParams.get("modulo"));
+
+  useEffect(() => {
+    const m = searchParams.get("modulo");
+    if (m !== activeModule) setActiveModule(m);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  useEffect(() => {
+    const current = searchParams.get("modulo");
+    if (activeModule && activeModule !== current) {
+      const next = new URLSearchParams(searchParams);
+      next.set("modulo", activeModule);
+      setSearchParams(next, { replace: true });
+    } else if (!activeModule && current) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("modulo");
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeModule]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeAlert, setActiveAlert] = useState<AlertKind>(null);
   const [filters, setFilters] = useState<NirFilters>({ period: "today", sectorScope: "all", priority: "all" });
