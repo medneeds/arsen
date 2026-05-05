@@ -287,7 +287,6 @@ export function AppSidebar({
       profiles: ["gestor"],
       items: [
         { name: "Relatórios", link: "/relatorio", profiles: ["gestor"] },
-        { name: "Censo de Leitos", link: "/nir?modulo=censo_leitos", profiles: ["gestor"] },
         { name: "Regulação de Leitos", link: "/regulacoes", profiles: ["gestor"] },
         { name: "Alta e Desfecho", link: "/alta-desfecho", profiles: ["gestor"] },
         { name: "Hemoderivados", link: "/hemoderivados", profiles: ["gestor"] },
