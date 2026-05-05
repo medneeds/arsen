@@ -238,7 +238,7 @@ export default function NirDashboardPage() {
 
         return (
           <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <h3 className="text-lg font-semibold text-foreground">{moduleConfig?.label}</h3>
               <div className="flex items-center gap-2">
                 <div className="relative">
@@ -256,51 +256,11 @@ export default function NirDashboardPage() {
               </div>
             </div>
 
-            {moduleRequests.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  {moduleConfig && <moduleConfig.icon className="h-12 w-12 mx-auto mb-3 opacity-30" />}
-                  <p className="font-medium">Nenhuma solicitação encontrada</p>
-                  <p className="text-sm mt-1">As solicitações de {moduleConfig?.label.toLowerCase()} aparecerão aqui.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-2">
-                {moduleRequests.map((req: any) => (
-                  <Card key={req.id} className="hover:shadow-sm transition-shadow">
-                    <CardContent className="py-3 px-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="patient-id text-sm font-medium text-foreground truncate">{req.patient_name}</p>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                            {req.origin_sector && <span>De: {req.origin_sector}</span>}
-                            {req.destination_sector && <span>→ {req.destination_sector}</span>}
-                          </div>
-                          {req.reason && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{req.reason}</p>}
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge
-                            variant={
-                              req.status === "pendente" ? "secondary" :
-                              req.status === "aprovada" || req.status === "concluida" ? "default" :
-                              req.status === "negada" || req.status === "cancelada" ? "destructive" :
-                              "outline"
-                            }
-                            className="text-[10px]"
-                          >
-                            {req.status === "pendente" && <Clock className="h-3 w-3 mr-1" />}
-                            {req.status === "aprovada" && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                            {req.status === "negada" && <XCircle className="h-3 w-3 mr-1" />}
-                            {req.status}
-                          </Badge>
-                          <Badge variant="outline" className="text-[10px]">{req.priority}</Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <NirRequestActions
+              requests={moduleRequests}
+              typeFilter={typeFilter}
+              defaultRequestType={typeFilter}
+            />
           </div>
         );
       }
