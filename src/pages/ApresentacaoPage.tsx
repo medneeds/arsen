@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { whitelabel } from "@/config/whitelabel";
+import socorraoCross from "@/assets/socorrao-cross-logo.png";
 import {
   ChevronLeft,
   ChevronRight,
@@ -8,7 +9,6 @@ import {
   Hospital,
   Map as MapIcon,
   Activity,
-  Brain,
   Pill,
   ShieldCheck,
   Users,
@@ -17,9 +17,14 @@ import {
   Network,
   Lock,
   Stethoscope,
-  Sparkles,
   CheckCircle2,
   ArrowRight,
+  Printer,
+  Clock,
+  DollarSign,
+  Leaf,
+  PlayCircle,
+  Eye,
 } from "lucide-react";
 
 /* ============================================================
@@ -48,9 +53,9 @@ function InstitutionalHeader({ tone = "light" }: { tone?: "light" | "dark" }) {
       }`}
     >
       <img
-        src={whitelabel.logos.hospital}
+        src={socorraoCross}
         alt={whitelabel.institution.hospitalLogoAlt}
-        className="h-14 w-auto max-w-[80px] object-contain"
+        className="h-14 w-14 object-contain"
       />
       <div className="flex-1 leading-tight">
         <p
@@ -159,9 +164,9 @@ const slides: Slide[] = [
       <div className="relative flex h-full flex-col justify-between p-16 text-white">
         <div className="flex items-center gap-4">
           <img
-            src={whitelabel.logos.hospital}
+            src={socorraoCross}
             alt="Socorrão I"
-            className="h-16 w-auto max-w-[96px] object-contain"
+            className="h-20 w-20 object-contain drop-shadow-lg"
           />
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/60">
@@ -506,9 +511,9 @@ const slides: Slide[] = [
               color={COLORS.green}
             />
             <FeatureRow
-              icon={Brain}
-              title="Sugestões com IA"
-              desc="Posologia sugerida com fonte (UpToDate, AMIB, KDIGO) — sem alucinação."
+              icon={ClipboardList}
+              title="Templates terapêuticos"
+              desc="Modelos clínicos prontos (sepse, choque, neurocrítico) — padronização e velocidade."
               color={COLORS.blue}
             />
             <FeatureRow
@@ -529,7 +534,7 @@ const slides: Slide[] = [
     ),
   },
 
-  // 7 — INTELIGÊNCIA CLÍNICA (IA)
+  // 7 — ECONOMIA & OTIMIZAÇÃO (substitui IA)
   {
     id: 7,
     variant: "light",
@@ -537,19 +542,52 @@ const slides: Slide[] = [
       <div className="flex h-full flex-col gap-8 p-14">
         <InstitutionalHeader />
         <div>
-          <SectionTag color={COLORS.blue}>Inteligência Clínica</SectionTag>
+          <SectionTag color={COLORS.green}>Economia & Otimização</SectionTag>
           <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-900">
-            IA assistiva — apoio à decisão, sem substituir o médico
+            Menos papel, menos retrabalho, mais hospital
           </h2>
+          <p className="mt-2 text-lg text-slate-600">
+            A digitalização gera ganho real e mensurável — operacional, financeiro e humano.
+          </p>
         </div>
         <div className="grid flex-1 grid-cols-3 gap-6">
           {[
-            { i: Brain, t: "Interações medicamentosas", d: "Análise automática de toda a prescrição com base em fontes clínicas reconhecidas.", c: COLORS.blue },
-            { i: Sparkles, t: "Sugestões posológicas", d: "2-3 opções com rationale e fonte (UpToDate, AMIB, KDIGO, ACLS).", c: COLORS.green },
-            { i: Stethoscope, t: "Protocolos clínicos", d: "25 guias UTI: sepse, choque séptico, neurocrítico, paliativos.", c: COLORS.orange },
-            { i: Activity, t: "Escores integrados", d: "SAPS 3, NEWS2, Manchester — calculados em tempo real.", c: COLORS.red },
-            { i: ClipboardList, t: "Templates terapêuticos", d: "Modelos por especialidade, editáveis pelo corpo clínico.", c: COLORS.yellow },
-            { i: ShieldCheck, t: "Alertas clínicos", d: "Vigilância automática de pendências, gravíssimo e tempo de internação.", c: COLORS.blue },
+            {
+              i: Printer,
+              t: "Insumos & impressão",
+              d: "Prescrições, evoluções, mapas e relatórios deixam de consumir resmas diárias de papel, toner e formulários pré-impressos.",
+              c: COLORS.red,
+            },
+            {
+              i: Clock,
+              t: "Tempo de geração de relatórios",
+              d: "Relatórios de ocupação, produção, LOS e desfechos — antes feitos manualmente — passam a ser instantâneos, em segundos.",
+              c: COLORS.orange,
+            },
+            {
+              i: Users,
+              t: "Recurso humano otimizado",
+              d: "Equipes deixam de duplicar lançamentos em planilhas paralelas. Direção e NIR enxergam tudo em tempo real, sem intermediários.",
+              c: COLORS.blue,
+            },
+            {
+              i: TrendingUp,
+              t: "Produção sem retrabalho",
+              d: "Cada dado entra uma única vez no sistema e alimenta painéis, prontuário e gestão — sem reconciliação posterior.",
+              c: COLORS.green,
+            },
+            {
+              i: DollarSign,
+              t: "Custo evitado",
+              d: "Redução de glosas, perdas em prontuário, extravios de exames e horas administrativas dedicadas a digitação e arquivamento.",
+              c: COLORS.yellow,
+            },
+            {
+              i: Leaf,
+              t: "Sustentabilidade",
+              d: "Operação significativamente mais enxuta, alinhada à agenda ESG da gestão municipal de saúde.",
+              c: COLORS.green,
+            },
           ].map((m) => (
             <div key={m.t} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
               <div
@@ -562,6 +600,71 @@ const slides: Slide[] = [
               <p className="mt-2 text-sm leading-relaxed text-slate-600">{m.d}</p>
             </div>
           ))}
+        </div>
+      </div>
+    ),
+  },
+
+  // 7B — IMPACTO QUANTITATIVO DA ECONOMIA
+  {
+    id: 16,
+    variant: "light",
+    render: () => (
+      <div className="flex h-full flex-col gap-8 p-14">
+        <InstitutionalHeader />
+        <div>
+          <SectionTag color={COLORS.orange}>Impacto Esperado</SectionTag>
+          <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-900">
+            O que muda quando o hospital opera com a plataforma
+          </h2>
+          <p className="mt-2 text-base text-slate-600">
+            Estimativas conservadoras com base em hospitais de mesmo porte que digitalizaram a operação.
+          </p>
+        </div>
+        <div className="grid grid-cols-4 gap-5">
+          <StatCard value="-70%" label="Papel impresso na assistência" color={COLORS.red} />
+          <StatCard value="-90%" label="Tempo p/ gerar relatório gerencial" color={COLORS.orange} />
+          <StatCard value="0" label="Planilhas paralelas de leitos" color={COLORS.blue} />
+          <StatCard value="+100%" label="Visibilidade da Direção em tempo real" color={COLORS.green} />
+        </div>
+        <div className="grid flex-1 grid-cols-2 gap-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Antes</p>
+            <ul className="mt-4 space-y-2.5 text-sm text-slate-700">
+              {[
+                "Mapa de leitos em planilha paralela, atualizado manualmente",
+                "Relatórios mensais que demoram dias de digitação",
+                "Prescrições em papel, sem rastreabilidade de quem fez o quê",
+                "Equipe administrativa dedicada a consolidar números",
+                "Ocupação só conhecida no fechamento do mês",
+              ].map((t) => (
+                <li key={t} className="flex gap-2">
+                  <span className="mt-2 block h-1.5 w-1.5 flex-none rounded-full" style={{ background: COLORS.red }} />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div
+            className="rounded-2xl p-6 text-white shadow-lg"
+            style={{ background: `linear-gradient(135deg, ${COLORS.green}, #00663a)` }}
+          >
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/80">Depois</p>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              {[
+                "Mapa único, atualizado em tempo real por todos os setores",
+                "Relatório executivo gerado em segundos, sob demanda",
+                "Prescrição estruturada, auditável e impressa só quando preciso",
+                "Equipe administrativa redirecionada a atividades de valor",
+                "Ocupação, LOS e desfechos visíveis 24/7 para a Direção",
+              ].map((t) => (
+                <li key={t} className="flex gap-2">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none" style={{ color: COLORS.yellow }} />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
     ),
@@ -922,6 +1025,86 @@ const slides: Slide[] = [
     ),
   },
 
+  // 14B — TRANSIÇÃO PARA DEMO AO VIVO
+  {
+    id: 17,
+    variant: "dark",
+    render: () => (
+      <div className="relative flex h-full flex-col justify-between p-16 text-white">
+        <div className="flex items-center gap-4">
+          <img src={socorraoCross} alt="Socorrão I" className="h-14 w-14 object-contain drop-shadow-lg" />
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/60">
+              {whitelabel.print.institutionalHeader.line2}
+            </p>
+            <p className="text-sm font-bold uppercase tracking-wide text-white">
+              {whitelabel.institution.hospitalShortName}
+            </p>
+          </div>
+        </div>
+
+        <div className="max-w-4xl">
+          <SectionTag color={COLORS.yellow}>Demonstração ao vivo</SectionTag>
+          <h2 className="mt-6 text-6xl font-black leading-[1.05] tracking-tight">
+            Agora vamos <span style={{ color: COLORS.yellow }}>entrar na plataforma</span>
+          </h2>
+          <p className="mt-5 max-w-3xl text-xl font-light leading-relaxed text-white/80">
+            A partir deste ponto, sairemos dos slides e navegaremos pelo sistema real,
+            com foco em três experiências:
+          </p>
+
+          <div className="mt-10 grid grid-cols-3 gap-5">
+            {[
+              {
+                i: Stethoscope,
+                t: "Acesso Médico",
+                d: "Mapa de Pacientes, Painel Clínico, prescrição estruturada e evolução SOAP.",
+                c: COLORS.red,
+              },
+              {
+                i: Network,
+                t: "Perfil NIR",
+                d: "Solicitações de leito, regulação interna, fila e visão consolidada de ocupação.",
+                c: COLORS.blue,
+              },
+              {
+                i: Users,
+                t: "Recepção & Triagem",
+                d: "Cadastro do paciente, geração de prontuário e classificação de risco Manchester.",
+                c: COLORS.yellow,
+              },
+            ].map((b) => (
+              <div
+                key={b.t}
+                className="rounded-2xl border border-white/15 bg-white/5 p-6 backdrop-blur"
+              >
+                <div
+                  className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl text-white"
+                  style={{ background: b.c }}
+                >
+                  <b.i className="h-6 w-6" />
+                </div>
+                <p className="text-base font-bold uppercase tracking-wide text-white">{b.t}</p>
+                <p className="mt-2 text-sm leading-relaxed text-white/75">{b.d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between text-xs uppercase tracking-widest text-white/50">
+          <div className="flex items-center gap-3">
+            <PlayCircle className="h-5 w-5" style={{ color: COLORS.yellow }} />
+            <span>Demonstração com dados reais do piloto UTI 2</span>
+          </div>
+          <div className="flex items-center gap-2 text-white/60">
+            <Eye className="h-4 w-4" />
+            <span>Próximo: navegar pela plataforma</span>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+
   // 15 — ENCERRAMENTO
   {
     id: 15,
@@ -930,9 +1113,9 @@ const slides: Slide[] = [
       <div className="relative flex h-full flex-col justify-between p-16 text-white">
         <div className="flex items-center gap-4">
           <img
-            src={whitelabel.logos.hospital}
+            src={socorraoCross}
             alt="Socorrão I"
-            className="h-14 w-auto max-w-[84px] object-contain"
+            className="h-16 w-16 object-contain drop-shadow-lg"
           />
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/60">
