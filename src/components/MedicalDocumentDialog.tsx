@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  FileSignature, ClipboardList, FileCheck2, Pill, ArrowLeft, Printer, Plus, Trash2,
+  FileSignature, ClipboardList, FileCheck2, Pill, PillBottle, ArrowLeft, Printer, Plus, Trash2,
 } from "lucide-react";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { usePatientLive } from "@/hooks/usePatientLive";
