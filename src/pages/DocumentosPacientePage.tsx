@@ -156,7 +156,7 @@ const DocumentosPacientePage = () => {
               <FileSignature className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-foreground">EMITIR DOCUMENTO MÉDICO</p>
+              <p className="text-sm font-semibold text-foreground normal-case">Emitir documento médico</p>
               <p className="text-[11px] text-muted-foreground">
                 Atestado • Relatório • Termo / Declaração • Receituário simples
               </p>
