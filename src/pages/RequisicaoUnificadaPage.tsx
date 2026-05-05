@@ -207,6 +207,7 @@ const RequisicaoUnificadaPage = () => {
   const [formNotes, setFormNotes] = useState("");
   const [formSelectedItems, setFormSelectedItems] = useState<string[]>([]);
   const [formCustomItem, setFormCustomItem] = useState("");
+  const [formExtraJustification, setFormExtraJustification] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [expandedCombo, setExpandedCombo] = useState<string | null>(null);
   const [hemoDialogOpen, setHemoDialogOpen] = useState(false);
