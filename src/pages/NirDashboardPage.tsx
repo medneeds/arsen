@@ -40,15 +40,66 @@ const NIR_MODULES = [
   { key: "relatorios_nir", label: "Relatórios NIR", subtitle: "Indicadores e métricas", icon: BarChart3, color: "text-teal-500", bgColor: "bg-teal-500/10", borderColor: "border-teal-500/20" },
 ];
 
-const BED_STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  vago: { label: "Vago", color: "bg-emerald-500" },
-  ocupado: { label: "Ocupado", color: "bg-blue-500" },
-  bloqueado: { label: "Bloqueado", color: "bg-red-500" },
-  higienizacao: { label: "Higienização", color: "bg-amber-500" },
-  reservado: { label: "Reservado", color: "bg-purple-500" },
-  manutencao: { label: "Manutenção", color: "bg-orange-500" },
-  interditado: { label: "Interditado", color: "bg-red-700" },
-  alta_medica_dada: { label: "Alta Médica Dada", color: "bg-cyan-500" },
+const BED_STATUS_LABELS: Record<
+  string,
+  { label: string; dot: string; icon: string; ring: string; bg: string }
+> = {
+  vago: {
+    label: "Vago",
+    dot: "bg-emerald-500",
+    icon: "text-emerald-600 dark:text-emerald-400",
+    ring: "border-emerald-500/40",
+    bg: "bg-emerald-500/10 hover:bg-emerald-500/15",
+  },
+  ocupado: {
+    label: "Ocupado",
+    dot: "bg-red-500",
+    icon: "text-red-600 dark:text-red-400",
+    ring: "border-red-500/40",
+    bg: "bg-red-500/10 hover:bg-red-500/15",
+  },
+  bloqueado: {
+    label: "Bloqueado",
+    dot: "bg-zinc-700",
+    icon: "text-zinc-700 dark:text-zinc-300",
+    ring: "border-zinc-500/40",
+    bg: "bg-zinc-500/10 hover:bg-zinc-500/15",
+  },
+  higienizacao: {
+    label: "Higienização",
+    dot: "bg-sky-500",
+    icon: "text-sky-600 dark:text-sky-400",
+    ring: "border-sky-500/40",
+    bg: "bg-sky-500/10 hover:bg-sky-500/15",
+  },
+  reservado: {
+    label: "Reservado",
+    dot: "bg-purple-500",
+    icon: "text-purple-600 dark:text-purple-400",
+    ring: "border-purple-500/40",
+    bg: "bg-purple-500/10 hover:bg-purple-500/15",
+  },
+  manutencao: {
+    label: "Manutenção",
+    dot: "bg-orange-500",
+    icon: "text-orange-600 dark:text-orange-400",
+    ring: "border-orange-500/40",
+    bg: "bg-orange-500/10 hover:bg-orange-500/15",
+  },
+  interditado: {
+    label: "Interditado",
+    dot: "bg-red-800",
+    icon: "text-red-800 dark:text-red-300",
+    ring: "border-red-700/40",
+    bg: "bg-red-700/10 hover:bg-red-700/15",
+  },
+  alta_medica_dada: {
+    label: "Alta Médica",
+    dot: "bg-amber-500",
+    icon: "text-amber-600 dark:text-amber-400",
+    ring: "border-amber-500/40",
+    bg: "bg-amber-500/10 hover:bg-amber-500/15",
+  },
 };
 
 type AlertKind = "stuck24h" | "saturated" | "cleaning" | "sisreg" | null;
