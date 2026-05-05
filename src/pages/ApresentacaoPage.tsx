@@ -935,9 +935,9 @@ const slides: Slide[] = [
       <div className="relative flex h-full flex-col justify-between p-16 text-white">
         <div className="flex items-center gap-4">
           <img
-            src={whitelabel.logos.hospital}
+            src={socorraoCross}
             alt="Socorrão I"
-            className="h-14 w-auto max-w-[84px] object-contain"
+            className="h-16 w-16 object-contain drop-shadow-lg"
           />
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/60">
