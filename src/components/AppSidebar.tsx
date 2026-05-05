@@ -258,7 +258,15 @@ export function AppSidebar({
     // ── Visão Geral ──
     { title: "Início", icon: LayoutDashboard, link: "/painel-gestor", profiles: ["gestor"] },
     { title: "Painel do Gestor", icon: BarChart3, link: "/painel-gestor", profiles: ["gestor"] },
-    { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: ["gestor"] },
+    {
+      title: "Leitos",
+      icon: BedDouble,
+      profiles: ["gestor"],
+      items: [
+        { name: "Mapa de Leitos", link: "/mapa", profiles: ["gestor"] },
+        { name: "Quadro de Leitos", link: "/nir?modulo=censo_leitos", profiles: ["gestor"] },
+      ],
+    },
 
     // ── Operação Clínica em tempo real ──
     {
@@ -279,7 +287,6 @@ export function AppSidebar({
       profiles: ["gestor"],
       items: [
         { name: "Relatórios", link: "/relatorio", profiles: ["gestor"] },
-        { name: "Censo de Leitos", link: "/nir?modulo=censo_leitos", profiles: ["gestor"] },
         { name: "Regulação de Leitos", link: "/regulacoes", profiles: ["gestor"] },
         { name: "Alta e Desfecho", link: "/alta-desfecho", profiles: ["gestor"] },
         { name: "Hemoderivados", link: "/hemoderivados", profiles: ["gestor"] },
