@@ -6,7 +6,7 @@ import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import { useHospital } from "@/contexts/HospitalContext";
 import {
   FolderOpen, Droplet, FileCheck, Syringe, FileText,
-  Microscope, Plus,
+  Microscope, Plus, FileSignature,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
