@@ -26,6 +26,7 @@ import { useDischargePredictions } from "@/hooks/useDischargePredictions";
 import { BedDetailDialog } from "@/components/nir/BedDetailDialog";
 import { sectorLabelFromCode, HOSPITAL_SECTOR_GROUPS } from "@/lib/hospitalSectors";
 import { SlaBadge } from "@/components/sla/SlaBadge";
+import { NirRequestActions } from "@/components/nir/NirRequestActions";
 
 const NIR_MODULES = [
   { key: "regulacao_interna", label: "Regulação Interna", subtitle: "Transferências entre setores", icon: ArrowLeftRight, color: "text-blue-500", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/20" },
