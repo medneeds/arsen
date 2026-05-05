@@ -1,15 +1,22 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { format, formatDistanceStrict } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BedDouble, UserRound, Clock, Stethoscope, FileCheck2, ArrowRightCircle,
-  LogOut, Sparkles, Wand2, CheckCircle2, Lock, AlertTriangle,
+  LogOut, Sparkles, Wand2, CheckCircle2, Lock, AlertTriangle, Wrench, ShieldAlert,
+  Activity, Calendar, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { useBedCensusActions } from "@/hooks/useBedCensusActions";
 
 interface BedRecord {
   id: string;
@@ -31,6 +38,8 @@ interface BedRecord {
   ready_for_admission_at?: string | null;
   status_changed_at?: string | null;
   block_started_at?: string | null;
+  reserved_for?: string | null;
+  reserved_until?: string | null;
   updated_at?: string | null;
   updated_by_name?: string | null;
 }
@@ -47,30 +56,28 @@ const STATUS_META: Record<string, { label: string; color: string; icon: any }> =
   bloqueado: { label: "Bloqueado", color: "bg-red-500", icon: Lock },
   higienizacao: { label: "Em higienização", color: "bg-amber-500", icon: Sparkles },
   reservado: { label: "Reservado", color: "bg-purple-500", icon: FileCheck2 },
-  manutencao: { label: "Manutenção", color: "bg-orange-500", icon: Wand2 },
-  interditado: { label: "Interditado", color: "bg-red-700", icon: AlertTriangle },
+  manutencao: { label: "Manutenção", color: "bg-orange-500", icon: Wrench },
+  interditado: { label: "Interditado", color: "bg-red-700", icon: ShieldAlert },
   alta_medica_dada: { label: "Alta médica dada", color: "bg-cyan-500", icon: LogOut },
 };
 
 function fmt(ts?: string | null) {
   if (!ts) return null;
-  try {
-    return format(new Date(ts), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
-  } catch {
-    return null;
-  }
+  try { return format(new Date(ts), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }); } catch { return null; }
 }
-
 function elapsed(ts?: string | null) {
   if (!ts) return null;
-  try {
-    return formatDistanceStrict(new Date(ts), new Date(), { addSuffix: true, locale: ptBR });
-  } catch {
-    return null;
-  }
+  try { return formatDistanceStrict(new Date(ts), new Date(), { addSuffix: true, locale: ptBR }); } catch { return null; }
 }
 
 export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
+  const actions = useBedCensusActions();
+  const [busy, setBusy] = useState(false);
+  const [patientName, setPatientName] = useState("");
+  const [blockReason, setBlockReason] = useState("");
+  const [reserveFor, setReserveFor] = useState("");
+  const [reserveHours, setReserveHours] = useState("4");
+
   const meta = bed ? (STATUS_META[bed.status] || { label: bed.status, color: "bg-muted", icon: BedDouble }) : null;
   const StatusIcon = meta?.icon || BedDouble;
 
@@ -89,12 +96,10 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
     ];
   }, [bed]);
 
-  // KPIs derivados
   const kpis = useMemo(() => {
     if (!bed) return [] as Array<{ label: string; value: string }>;
     const out: Array<{ label: string; value: string }> = [];
     const now = Date.now();
-
     if (bed.status === "ocupado" && bed.occupied_at) {
       const h = (now - new Date(bed.occupied_at).getTime()) / 3_600_000;
       out.push({ label: "Tempo de ocupação", value: h < 24 ? `${h.toFixed(1)} h` : `${(h / 24).toFixed(1)} dias` });
@@ -120,9 +125,14 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
 
   if (!bed || !meta) return null;
 
+  const run = async (fn: () => Promise<boolean>) => {
+    setBusy(true);
+    try { await fn(); } finally { setBusy(false); }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BedDouble className="h-5 w-5 text-primary" />
@@ -159,9 +169,15 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
               <AlertTriangle className="h-3 w-3" /> {bed.block_reason}
             </p>
           )}
+          {bed.reserved_for && (
+            <p className="text-xs text-purple-600 mt-2 flex items-center gap-1">
+              <FileCheck2 className="h-3 w-3" /> Reservado para {bed.reserved_for}
+              {bed.reserved_until && ` · até ${fmt(bed.reserved_until)}`}
+            </p>
+          )}
         </div>
 
-        {/* KPIs do ciclo */}
+        {/* KPIs */}
         {kpis.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {kpis.map((k) => (
@@ -173,41 +189,189 @@ export function BedDetailDialog({ bed, open, onOpenChange }: Props) {
           </div>
         )}
 
-        <Separator />
+        <Tabs defaultValue="actions" className="mt-2">
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="actions"><Activity className="h-3.5 w-3.5 mr-1.5" /> Ações NIR</TabsTrigger>
+            <TabsTrigger value="timeline"><Clock className="h-3.5 w-3.5 mr-1.5" /> Linha do tempo</TabsTrigger>
+          </TabsList>
 
-        {/* Timeline de tempos */}
-        <div>
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5" /> Linha do tempo do leito
-          </h4>
-          <ol className="space-y-2">
-            {timeline.map((step) => {
-              const Icon = step.icon;
-              const has = !!step.ts;
-              return (
-                <li
-                  key={step.key}
-                  className={cn(
-                    "flex items-start gap-3 rounded-md border p-2",
-                    has ? "border-border bg-card" : "border-dashed border-border/50 bg-muted/20",
-                  )}
+          {/* PAINEL DE AÇÕES */}
+          <TabsContent value="actions" className="space-y-3 mt-3">
+            {/* Ocupar (vago) */}
+            {bed.status === "vago" && (
+              <div className="rounded-lg border p-3 space-y-2">
+                <Label className="text-xs font-semibold">Admitir paciente neste leito</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nome do paciente (ex.: JOSÉ DA SILVA)"
+                    value={patientName}
+                    onChange={(e) => setPatientName(e.target.value.toUpperCase())}
+                    className="text-sm"
+                  />
+                  <Button
+                    size="sm"
+                    disabled={busy || !patientName.trim()}
+                    onClick={() => run(async () => {
+                      const ok = await actions.occupyBed(bed.id, patientName.trim());
+                      if (ok) { setPatientName(""); onOpenChange(false); }
+                      return ok;
+                    })}
+                  >
+                    {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserRound className="h-3.5 w-3.5" />}
+                    Ocupar
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Ocupado → alta médica */}
+            {bed.status === "ocupado" && (
+              <div className="rounded-lg border p-3 grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline" size="sm" disabled={busy}
+                  onClick={() => run(() => actions.giveMedicalDischarge(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
                 >
-                  <Icon className={cn("h-4 w-4 mt-0.5 shrink-0", has ? step.tone : "text-muted-foreground/50")} />
-                  <div className="min-w-0 flex-1">
-                    <p className={cn("text-xs font-medium", !has && "text-muted-foreground")}>{step.label}</p>
-                    {has ? (
-                      <p className="text-[11px] text-muted-foreground">
-                        {fmt(step.ts)} <span className="text-muted-foreground/60">· {elapsed(step.ts)}</span>
-                      </p>
-                    ) : (
-                      <p className="text-[11px] text-muted-foreground/60">— ainda não registrado</p>
+                  <Stethoscope className="h-3.5 w-3.5 mr-1.5 text-cyan-600" /> Alta médica
+                </Button>
+                <Button
+                  variant="outline" size="sm" disabled={busy}
+                  onClick={() => run(() => actions.giveAdministrativeDischarge(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
+                >
+                  <FileCheck2 className="h-3.5 w-3.5 mr-1.5 text-rose-600" /> Alta administrativa
+                </Button>
+              </div>
+            )}
+
+            {/* Alta médica → administrativa ou higienização */}
+            {bed.status === "alta_medica_dada" && (
+              <div className="rounded-lg border p-3">
+                <p className="text-[11px] text-muted-foreground mb-2">Paciente liberado pela equipe médica. NIR libera o destino:</p>
+                <Button
+                  size="sm" disabled={busy} className="w-full"
+                  onClick={() => run(() => actions.giveAdministrativeDischarge(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
+                >
+                  <FileCheck2 className="h-3.5 w-3.5 mr-1.5" /> Liberar destino · iniciar higienização
+                </Button>
+              </div>
+            )}
+
+            {/* Higienização */}
+            {bed.status === "higienizacao" && (
+              <div className="rounded-lg border p-3">
+                <Button
+                  size="sm" disabled={busy} className="w-full"
+                  onClick={() => run(() => actions.finishCleaning(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Concluir higienização · liberar leito
+                </Button>
+              </div>
+            )}
+
+            {/* Reserva (vago) */}
+            {bed.status === "vago" && (
+              <div className="rounded-lg border p-3 space-y-2">
+                <Label className="text-xs font-semibold">Reservar leito</Label>
+                <Input
+                  placeholder="Reservado para… (ex.: pré-admissão UTI, transferência)"
+                  value={reserveFor}
+                  onChange={(e) => setReserveFor(e.target.value)}
+                  className="text-sm"
+                />
+                <div className="flex gap-2">
+                  <Input
+                    type="number" min={1} max={48} value={reserveHours}
+                    onChange={(e) => setReserveHours(e.target.value)}
+                    className="text-sm w-24"
+                  />
+                  <Button
+                    size="sm" variant="outline" disabled={busy || !reserveFor.trim()}
+                    onClick={() => run(() => actions.reserveBed(bed.id, reserveFor.trim(), Number(reserveHours) || 4).then(ok => { if (ok) { setReserveFor(""); onOpenChange(false); } return ok; }))}
+                  >
+                    <Calendar className="h-3.5 w-3.5 mr-1.5" /> Reservar
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {bed.status === "reservado" && (
+              <Button
+                variant="outline" size="sm" className="w-full" disabled={busy}
+                onClick={() => run(() => actions.releaseReservation(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
+              >
+                Liberar reserva
+              </Button>
+            )}
+
+            {/* Bloqueio / manutenção / interdição */}
+            {!["bloqueado", "manutencao", "interditado", "ocupado"].includes(bed.status) && (
+              <div className="rounded-lg border p-3 space-y-2">
+                <Label className="text-xs font-semibold">Bloquear leito</Label>
+                <Textarea
+                  placeholder="Motivo do bloqueio (obrigatório)"
+                  value={blockReason}
+                  onChange={(e) => setBlockReason(e.target.value)}
+                  className="text-sm min-h-[60px]"
+                />
+                <div className="grid grid-cols-3 gap-2">
+                  <Button variant="outline" size="sm" disabled={busy || !blockReason.trim()}
+                    onClick={() => run(() => actions.blockBed(bed.id, blockReason.trim(), "bloqueado").then(ok => { if (ok) { setBlockReason(""); onOpenChange(false); } return ok; }))}>
+                    <Lock className="h-3.5 w-3.5 mr-1 text-red-600" /> Bloquear
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={busy || !blockReason.trim()}
+                    onClick={() => run(() => actions.blockBed(bed.id, blockReason.trim(), "manutencao").then(ok => { if (ok) { setBlockReason(""); onOpenChange(false); } return ok; }))}>
+                    <Wrench className="h-3.5 w-3.5 mr-1 text-orange-600" /> Manutenção
+                  </Button>
+                  <Button variant="outline" size="sm" disabled={busy || !blockReason.trim()}
+                    onClick={() => run(() => actions.blockBed(bed.id, blockReason.trim(), "interditado").then(ok => { if (ok) { setBlockReason(""); onOpenChange(false); } return ok; }))}>
+                    <ShieldAlert className="h-3.5 w-3.5 mr-1 text-red-700" /> Interditar
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {["bloqueado", "manutencao", "interditado"].includes(bed.status) && (
+              <Button
+                variant="outline" size="sm" className="w-full" disabled={busy}
+                onClick={() => run(() => actions.unblockBed(bed.id).then(ok => { if (ok) onOpenChange(false); return ok; }))}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5 text-emerald-600" /> Desbloquear leito
+              </Button>
+            )}
+          </TabsContent>
+
+          {/* TIMELINE */}
+          <TabsContent value="timeline" className="space-y-2 mt-3">
+            <ol className="space-y-2">
+              {timeline.map((step) => {
+                const Icon = step.icon;
+                const has = !!step.ts;
+                return (
+                  <li
+                    key={step.key}
+                    className={cn(
+                      "flex items-start gap-3 rounded-md border p-2",
+                      has ? "border-border bg-card" : "border-dashed border-border/50 bg-muted/20",
                     )}
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
+                  >
+                    <Icon className={cn("h-4 w-4 mt-0.5 shrink-0", has ? step.tone : "text-muted-foreground/50")} />
+                    <div className="min-w-0 flex-1">
+                      <p className={cn("text-xs font-medium", !has && "text-muted-foreground")}>{step.label}</p>
+                      {has ? (
+                        <p className="text-[11px] text-muted-foreground">
+                          {fmt(step.ts)} <span className="text-muted-foreground/60">· {elapsed(step.ts)}</span>
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground/60">— ainda não registrado</p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </TabsContent>
+        </Tabs>
+
+        <Separator />
 
         {bed.updated_by_name && (
           <p className="text-[10px] text-muted-foreground text-right">
