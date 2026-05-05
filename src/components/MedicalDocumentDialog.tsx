@@ -183,8 +183,8 @@ export function MedicalDocumentDialog({
                     <Icon className={`h-5 w-5 ${t.tone}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground">{t.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{t.desc}</p>
+                    <p className="text-sm font-semibold text-foreground normal-case">{t.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 normal-case">{t.desc}</p>
                   </div>
                 </button>
               );
