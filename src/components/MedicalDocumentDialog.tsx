@@ -27,10 +27,10 @@ const TEMPLATES: Array<{
   bg: string;
   prefix: string;
 }> = [
-  { kind: "atestado",   label: "ATESTADO MÉDICO",       desc: "Afastamento, comparecimento, repouso",     icon: FileSignature, tone: "text-blue-600",    bg: "bg-blue-500/10",    prefix: "ATEST" },
-  { kind: "relatorio",  label: "RELATÓRIO MÉDICO",      desc: "Quadro clínico, evolução, conclusão",       icon: ClipboardList, tone: "text-violet-600",  bg: "bg-violet-500/10",  prefix: "RELAT" },
-  { kind: "termo",      label: "TERMO / DECLARAÇÃO",    desc: "Consentimento, responsabilidade, recusa",   icon: FileCheck2,    tone: "text-amber-600",   bg: "bg-amber-500/10",   prefix: "TERMO" },
-  { kind: "receituario",label: "RECEITUÁRIO SIMPLES",   desc: "Prescrição ambulatorial / pós-alta",         icon: Pill,          tone: "text-emerald-600", bg: "bg-emerald-500/10", prefix: "RECEIT" },
+  { kind: "atestado",   label: "Atestado médico",       desc: "Afastamento, comparecimento, repouso",     icon: FileSignature, tone: "text-blue-600",    bg: "bg-blue-500/10",    prefix: "ATEST" },
+  { kind: "relatorio",  label: "Relatório médico",      desc: "Quadro clínico, evolução, conclusão",       icon: ClipboardList, tone: "text-violet-600",  bg: "bg-violet-500/10",  prefix: "RELAT" },
+  { kind: "termo",      label: "Termo / declaração",    desc: "Consentimento, responsabilidade, recusa",   icon: FileCheck2,    tone: "text-amber-600",   bg: "bg-amber-500/10",   prefix: "TERMO" },
+  { kind: "receituario",label: "Receituário simples",   desc: "Prescrição ambulatorial / pós-alta",         icon: Pill,          tone: "text-emerald-600", bg: "bg-emerald-500/10", prefix: "RECEIT" },
 ];
 
 interface Props {
@@ -153,15 +153,15 @@ export function MedicalDocumentDialog({
     <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(v) : close())}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 normal-case">
             {kind && (
               <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setKind(null)}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
-            {kind ? tpl?.label : "EMITIR DOCUMENTO"}
+            {kind ? tpl?.label : "Emitir documento"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="normal-case">
             {kind
               ? `Para ${(patientName || "").toUpperCase()}${patientBed ? ` • leito ${patientBed}` : ""}`
               : "Selecione o tipo de documento a ser emitido"}
@@ -183,8 +183,8 @@ export function MedicalDocumentDialog({
                     <Icon className={`h-5 w-5 ${t.tone}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground">{t.label}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{t.desc}</p>
+                    <p className="text-sm font-semibold text-foreground normal-case">{t.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 normal-case">{t.desc}</p>
                   </div>
                 </button>
               );
