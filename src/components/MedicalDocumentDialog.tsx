@@ -153,15 +153,15 @@ export function MedicalDocumentDialog({
     <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(v) : close())}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 normal-case">
             {kind && (
               <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setKind(null)}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
-            {kind ? tpl?.label : "EMITIR DOCUMENTO"}
+            {kind ? tpl?.label : "Emitir documento"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="normal-case">
             {kind
               ? `Para ${(patientName || "").toUpperCase()}${patientBed ? ` • leito ${patientBed}` : ""}`
               : "Selecione o tipo de documento a ser emitido"}
