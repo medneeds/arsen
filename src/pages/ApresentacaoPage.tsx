@@ -1025,6 +1025,86 @@ const slides: Slide[] = [
     ),
   },
 
+  // 14B — TRANSIÇÃO PARA DEMO AO VIVO
+  {
+    id: 17,
+    variant: "dark",
+    render: () => (
+      <div className="relative flex h-full flex-col justify-between p-16 text-white">
+        <div className="flex items-center gap-4">
+          <img src={socorraoCross} alt="Socorrão I" className="h-14 w-14 object-contain drop-shadow-lg" />
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/60">
+              {whitelabel.print.institutionalHeader.line2}
+            </p>
+            <p className="text-sm font-bold uppercase tracking-wide text-white">
+              {whitelabel.institution.hospitalShortName}
+            </p>
+          </div>
+        </div>
+
+        <div className="max-w-4xl">
+          <SectionTag color={COLORS.yellow}>Demonstração ao vivo</SectionTag>
+          <h2 className="mt-6 text-6xl font-black leading-[1.05] tracking-tight">
+            Agora vamos <span style={{ color: COLORS.yellow }}>entrar na plataforma</span>
+          </h2>
+          <p className="mt-5 max-w-3xl text-xl font-light leading-relaxed text-white/80">
+            A partir deste ponto, sairemos dos slides e navegaremos pelo sistema real,
+            com foco em três experiências:
+          </p>
+
+          <div className="mt-10 grid grid-cols-3 gap-5">
+            {[
+              {
+                i: Stethoscope,
+                t: "Acesso Médico",
+                d: "Mapa de Pacientes, Painel Clínico, prescrição estruturada e evolução SOAP.",
+                c: COLORS.red,
+              },
+              {
+                i: Network,
+                t: "Perfil NIR",
+                d: "Solicitações de leito, regulação interna, fila e visão consolidada de ocupação.",
+                c: COLORS.blue,
+              },
+              {
+                i: Users,
+                t: "Recepção & Triagem",
+                d: "Cadastro do paciente, geração de prontuário e classificação de risco Manchester.",
+                c: COLORS.yellow,
+              },
+            ].map((b) => (
+              <div
+                key={b.t}
+                className="rounded-2xl border border-white/15 bg-white/5 p-6 backdrop-blur"
+              >
+                <div
+                  className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl text-white"
+                  style={{ background: b.c }}
+                >
+                  <b.i className="h-6 w-6" />
+                </div>
+                <p className="text-base font-bold uppercase tracking-wide text-white">{b.t}</p>
+                <p className="mt-2 text-sm leading-relaxed text-white/75">{b.d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between text-xs uppercase tracking-widest text-white/50">
+          <div className="flex items-center gap-3">
+            <PlayCircle className="h-5 w-5" style={{ color: COLORS.yellow }} />
+            <span>Demonstração com dados reais do piloto UTI 2</span>
+          </div>
+          <div className="flex items-center gap-2 text-white/60">
+            <Eye className="h-4 w-4" />
+            <span>Próximo: navegar pela plataforma</span>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+
   // 15 — ENCERRAMENTO
   {
     id: 15,
