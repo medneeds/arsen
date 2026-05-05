@@ -50,7 +50,7 @@ function InstitutionalHeader({ tone = "light" }: { tone?: "light" | "dark" }) {
       <img
         src={whitelabel.logos.hospital}
         alt={whitelabel.institution.hospitalLogoAlt}
-        className="h-14 w-14 rounded-md object-cover ring-1 ring-black/5"
+        className="h-14 w-auto max-w-[80px] object-contain"
       />
       <div className="flex-1 leading-tight">
         <p
@@ -161,7 +161,7 @@ const slides: Slide[] = [
           <img
             src={whitelabel.logos.hospital}
             alt="Socorrão I"
-            className="h-16 w-16 rounded-md object-cover ring-1 ring-white/20"
+            className="h-16 w-auto max-w-[96px] object-contain"
           />
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/60">
@@ -932,7 +932,7 @@ const slides: Slide[] = [
           <img
             src={whitelabel.logos.hospital}
             alt="Socorrão I"
-            className="h-14 w-14 rounded-md object-cover ring-1 ring-white/20"
+            className="h-14 w-auto max-w-[84px] object-contain"
           />
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/60">
