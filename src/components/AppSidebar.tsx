@@ -388,7 +388,7 @@ export function AppSidebar({
           { name: "Parecer Regulatório", link: "/nir?modulo=parecer_regulatorio", profiles: ["nir"] },
         ]},
         { title: "Leitos", icon: BedDouble, profiles: ["nir"], items: [
-          { name: "Censo de Leitos", link: "/nir?modulo=censo_leitos", profiles: ["nir"] },
+          { name: "Quadro de Leitos", link: "/nir?modulo=censo_leitos", profiles: ["nir"] },
           { name: "Bloqueio / Interdição", link: "/nir?modulo=bloqueio_interdicao", profiles: ["nir"] },
           { name: "Alta Administrativa", link: "/nir?modulo=alta_administrativa", profiles: ["nir"] },
         ]},
