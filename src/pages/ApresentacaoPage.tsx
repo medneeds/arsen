@@ -932,7 +932,7 @@ const slides: Slide[] = [
           <img
             src={whitelabel.logos.hospital}
             alt="Socorrão I"
-            className="h-14 w-14 rounded-md object-cover ring-1 ring-white/20"
+            className="h-14 w-auto max-w-[84px] object-contain"
           />
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/60">
