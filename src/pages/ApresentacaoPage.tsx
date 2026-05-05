@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { whitelabel } from "@/config/whitelabel";
+import socorraoCross from "@/assets/socorrao-cross-logo.png";
 import {
   ChevronLeft,
   ChevronRight,
@@ -8,7 +9,6 @@ import {
   Hospital,
   Map as MapIcon,
   Activity,
-  Brain,
   Pill,
   ShieldCheck,
   Users,
@@ -17,9 +17,14 @@ import {
   Network,
   Lock,
   Stethoscope,
-  Sparkles,
   CheckCircle2,
   ArrowRight,
+  Printer,
+  Clock,
+  DollarSign,
+  Leaf,
+  PlayCircle,
+  Eye,
 } from "lucide-react";
 
 /* ============================================================
