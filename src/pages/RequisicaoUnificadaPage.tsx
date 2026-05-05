@@ -986,6 +986,44 @@ const RequisicaoUnificadaPage = () => {
             </CardContent>
           </Card>
 
+          {/* Justificativa extra para exames laboratoriais fora dos pacotes rápidos */}
+          {requiresExtraJustification && (
+            <Card className="border-amber-300 bg-amber-50/60 dark:bg-amber-950/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                  <AlertTriangle className="h-4 w-4" />
+                  Liberação condicionada — exame fora da rotina
+                </CardTitle>
+                <p className="text-[11px] text-amber-700/90 dark:text-amber-400/80 mt-1">
+                  Os itens abaixo não fazem parte dos pacotes rápidos (Rotina UTI / Enfermaria) e exigem
+                  justificativa clínica específica para liberação da guia pelo laboratório.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex flex-wrap gap-1.5">
+                  {offQuickLabItems.map(it => (
+                    <Badge key={it} variant="outline" className="text-[11px] border-amber-400 text-amber-800 dark:text-amber-300 bg-amber-100/60">
+                      {it}
+                    </Badge>
+                  ))}
+                </div>
+                <Label className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                  Justificativa específica <span className="text-red-600">*</span>
+                </Label>
+                <Textarea
+                  placeholder="Ex.: suspeita de hipotireoidismo subclínico — solicito TSH e T4 livre..."
+                  value={formExtraJustification}
+                  onChange={e => setFormExtraJustification(e.target.value)}
+                  rows={3}
+                  className="resize-none text-sm bg-background"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Mínimo 10 caracteres. Esta justificativa fica registrada na guia para auditoria.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Notes */}
           <div className="space-y-1.5">
             <Label className="text-xs">Observações</Label>
@@ -995,7 +1033,16 @@ const RequisicaoUnificadaPage = () => {
           {/* Submit */}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={resetForm} disabled={submitting}>Limpar</Button>
-            <Button onClick={handleSubmitRequest} disabled={submitting || formSelectedItems.length === 0 || !formPatientName.trim()} className="gap-2">
+            <Button
+              onClick={handleSubmitRequest}
+              disabled={
+                submitting ||
+                formSelectedItems.length === 0 ||
+                !formPatientName.trim() ||
+                (requiresExtraJustification && formExtraJustification.trim().length < 10)
+              }
+              className="gap-2"
+            >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Enviar Requisição
             </Button>
