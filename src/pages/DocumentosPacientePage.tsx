@@ -248,6 +248,17 @@ const DocumentosPacientePage = () => {
         patientBed={patientBed}
         patientSector={patientSector}
       />
+
+      {/* Dialog: Emissão de documentos médicos (atestado, relatório, termo, receituário) */}
+      <MedicalDocumentDialog
+        open={medDocOpen}
+        onOpenChange={setMedDocOpen}
+        patientId={patientId || null}
+        patientName={patientName}
+        patientBed={patientBed}
+        patientSector={patientSector}
+        hospitalName={currentHospital?.name}
+      />
     </div>
   );
 };
