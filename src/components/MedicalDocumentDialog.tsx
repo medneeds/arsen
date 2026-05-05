@@ -240,7 +240,7 @@ export function MedicalDocumentDialog({
                 </div>
               )}
 
-              {kind === "receituario" ? (
+              {isRx ? (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs">Itens do receituário</Label>
