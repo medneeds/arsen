@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { 
   Building2, ArrowLeftRight, Globe, BedDouble, ClipboardPlus, 
   Repeat, LogOut, Lock, FileText, BarChart3, 
