@@ -107,7 +107,7 @@ export function MedicalDocumentDialog({
         ${includeCid && cidPrimary ? `<div><b>CID-10:</b> ${esc(cidPrimary)}</div>` : ""}
       </div>`;
 
-    if (kind === "receituario") {
+    if (isRx) {
       const rows = rx.filter((r) => r.name.trim()).map((r, i) => `
         <tr>
           <td class="nz-c">${i + 1}</td>
@@ -116,6 +116,10 @@ export function MedicalDocumentDialog({
           <td>${esc(r.freq)}</td>
           <td>${esc(r.duration)}</td>
         </tr>`).join("");
+      const especialNote = kind === "receituario_especial"
+        ? `<div style="margin-top:8pt;padding:6pt 8pt;border:1px dashed #be123c;border-radius:4pt;font-size:8.5pt;color:#9f1239;background:#fff1f2">
+             <b>Receituário de Controle Especial</b> — Portaria SVS/MS nº 344/1998. Validade: 30 dias a partir da data de emissão. Emitido em 2 (duas) vias: 1ª via retida pela farmácia, 2ª via do paciente.
+           </div>` : "";
       return `${patientLine}
         <table class="nz">
           <thead><tr>
@@ -124,6 +128,7 @@ export function MedicalDocumentDialog({
           <tbody>${rows || `<tr><td colspan="5" class="nz-empty">Sem itens</td></tr>`}</tbody>
         </table>
         ${body ? `<div style="margin-top:10pt;font-size:9pt;white-space:pre-wrap">${esc(body)}</div>` : ""}
+        ${especialNote}
       `;
     }
 
