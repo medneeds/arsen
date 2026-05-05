@@ -16,7 +16,7 @@ import { usePatientLive } from "@/hooks/usePatientLive";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 
-type DocKind = "atestado" | "relatorio" | "termo" | "receituario";
+type DocKind = "atestado" | "relatorio" | "termo" | "receituario" | "receituario_especial";
 
 const TEMPLATES: Array<{
   kind: DocKind;
@@ -27,10 +27,11 @@ const TEMPLATES: Array<{
   bg: string;
   prefix: string;
 }> = [
-  { kind: "atestado",   label: "Atestado médico",       desc: "Afastamento, comparecimento, repouso",     icon: FileSignature, tone: "text-blue-600",    bg: "bg-blue-500/10",    prefix: "ATEST" },
-  { kind: "relatorio",  label: "Relatório médico",      desc: "Quadro clínico, evolução, conclusão",       icon: ClipboardList, tone: "text-violet-600",  bg: "bg-violet-500/10",  prefix: "RELAT" },
-  { kind: "termo",      label: "Termo / declaração",    desc: "Consentimento, responsabilidade, recusa",   icon: FileCheck2,    tone: "text-amber-600",   bg: "bg-amber-500/10",   prefix: "TERMO" },
-  { kind: "receituario",label: "Receituário simples",   desc: "Prescrição ambulatorial / pós-alta",         icon: Pill,          tone: "text-emerald-600", bg: "bg-emerald-500/10", prefix: "RECEIT" },
+  { kind: "atestado",            label: "Atestado médico",                  desc: "Afastamento, comparecimento, repouso",     icon: FileSignature, tone: "text-blue-600",    bg: "bg-blue-500/10",    prefix: "ATEST" },
+  { kind: "relatorio",           label: "Relatório médico",                 desc: "Quadro clínico, evolução, conclusão",       icon: ClipboardList, tone: "text-violet-600",  bg: "bg-violet-500/10",  prefix: "RELAT" },
+  { kind: "termo",               label: "Termo / declaração",               desc: "Consentimento, responsabilidade, recusa",   icon: FileCheck2,    tone: "text-amber-600",   bg: "bg-amber-500/10",   prefix: "TERMO" },
+  { kind: "receituario",         label: "Receituário simples",              desc: "Prescrição ambulatorial / pós-alta",         icon: Pill,          tone: "text-emerald-600", bg: "bg-emerald-500/10", prefix: "RECEIT" },
+  { kind: "receituario_especial",label: "Receituário de controle especial", desc: "Portaria 344/98 — listas C1, C2, C5 (2 vias)", icon: PillBottle,    tone: "text-rose-600",    bg: "bg-rose-500/10",    prefix: "RECCE" },
 ];
 
 interface Props {
