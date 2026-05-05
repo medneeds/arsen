@@ -140,13 +140,24 @@ export function MedicalDocumentDialog({
   const handlePrint = async () => {
     if (!tpl) return;
     const logo = await prepareLogo();
+    const subtitle =
+      kind === "atestado" && days ? `Afastamento de ${days} dia(s)` :
+      kind === "receituario_especial" ? "Portaria SVS/MS nº 344/1998 — 2 vias" : undefined;
+
+    const baseBody = buildBodyHtml();
+    const bodyHtml = kind === "receituario_especial"
+      ? `<div style="border-bottom:2px dashed #94a3b8;padding-bottom:8pt;margin-bottom:8pt"><div style="font-size:8pt;color:#64748b;margin-bottom:4pt"><b>1ª VIA — FARMÁCIA</b></div>${baseBody}</div>
+         <div style="page-break-before:always"></div>
+         <div><div style="font-size:8pt;color:#64748b;margin-bottom:4pt"><b>2ª VIA — PACIENTE</b></div>${baseBody}</div>`
+      : baseBody;
+
     const html = buildNormaZeroDocument({
       title: tpl.label,
-      subtitle: kind === "atestado" && days ? `Afastamento de ${days} dia(s)` : undefined,
+      subtitle,
       sectorLabel: patientSector ? `Assistência — ${patientSector}` : "Assistência Médica",
       hospitalName,
       docCodePrefix: tpl.prefix,
-      bodyHtml: buildBodyHtml(),
+      bodyHtml,
       signatures: [
         {
           label: doctor.fullName ? doctor.fullName.toUpperCase() : "MÉDICO ASSISTENTE",
