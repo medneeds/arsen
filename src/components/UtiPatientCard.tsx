@@ -793,6 +793,7 @@ export function UtiPatientCard({
   const [movementType, setMovementType] = useState<"ALTA" | "ÓBITO" | "TRANSFERÊNCIA" | null>(null);
   const [isMovementDialogOpen, setIsMovementDialogOpen] = useState(false);
   const [isReallocationDialogOpen, setIsReallocationDialogOpen] = useState(false);
+  const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
 
   // Derive current UTI unit from colorVariant if not provided
   const derivedUtiUnit = currentUtiUnit || (colorVariant === 'blue' ? 'UTI 1' : 'UTI 2');
