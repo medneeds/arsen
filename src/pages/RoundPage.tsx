@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { ClipboardCheck, Search, Save, Printer, ChevronDown, ChevronRight, User, Calendar, BedDouble, Stethoscope, Target, MessageSquare, CheckCircle2, Clock } from "lucide-react";
+import { ClipboardCheck, Search, Save, Printer, ChevronDown, ChevronRight, User, Calendar, BedDouble, Stethoscope, Target, MessageSquare, CheckCircle2, Clock, RefreshCw } from "lucide-react";
 import PrintableRound from "@/components/PrintableRound";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,24 +93,49 @@ export default function RoundPage() {
   const [saving, setSaving] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [loadingSession, setLoadingSession] = useState(false);
+  const [syncingPatientId, setSyncingPatientId] = useState<string | null>(null);
+
+  const fetchPatients = useCallback(async () => {
+    if (!currentHospital || !currentState) return;
+    const { data } = await supabase
+      .from("patients")
+      .select("id, name, sector, bed_number, age, diagnoses")
+      .eq("hospital_unit_id", currentHospital.id)
+      .eq("state_id", currentState.id)
+      .eq("department", "UTI")
+      .eq("is_vacant", false)
+      .order("sector")
+      .order("bed_number");
+    if (data) setPatients(data.filter((p) => p.name && p.name.trim()));
+  }, [currentHospital, currentState]);
+
+  const handleSyncPatient = useCallback(async (e: React.MouseEvent, patientId: string) => {
+    e.stopPropagation();
+    if (!currentHospital) return;
+    setSyncingPatientId(patientId);
+    try {
+      const { data: fresh, error } = await supabase
+        .from("patients")
+        .select("id, name, sector, bed_number, age, diagnoses")
+        .eq("id", patientId)
+        .maybeSingle();
+      if (error) throw error;
+      if (fresh) {
+        setPatients((prev) => prev.map((p) => (p.id === fresh.id ? (fresh as PatientOption) : p)));
+        if (selectedPatient?.id === fresh.id) setSelectedPatient(fresh as PatientOption);
+      }
+      toast.success("Dados do paciente sincronizados");
+    } catch (err: any) {
+      toast.error("Erro ao sincronizar: " + (err.message || ""));
+    } finally {
+      setSyncingPatientId(null);
+    }
+  }, [currentHospital, selectedPatient?.id]);
 
   // Fetch UTI patients
   useEffect(() => {
-    if (!currentHospital || !currentState) return;
-    const fetchPatients = async () => {
-      const { data } = await supabase
-        .from("patients")
-        .select("id, name, sector, bed_number, age, diagnoses")
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
-        .eq("department", "UTI")
-        .eq("is_vacant", false)
-        .order("sector")
-        .order("bed_number");
-      if (data) setPatients(data.filter((p) => p.name && p.name.trim()));
-    };
     fetchPatients();
-  }, [currentHospital, currentState]);
+  }, [fetchPatients]);
 
   // Load existing session when patient/date changes
   useEffect(() => {
@@ -426,16 +451,28 @@ export default function RoundPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
                 {filteredPatients.map((p) => (
-                  <button
+                  <div
                     key={p.id}
-                    onClick={() => setSelectedPatient(p)}
-                    className="text-left p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-all text-sm group"
+                    className="relative group"
                   >
-                    <div className="patient-id font-medium text-foreground group-hover:text-primary transition-colors truncate">{p.name}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      {getSectorLabel(p.sector)} • Leito {p.bed_number} {p.age ? `• ${p.age}` : ""}
-                    </div>
-                  </button>
+                    <button
+                      onClick={() => setSelectedPatient(p)}
+                      className="w-full text-left p-3 pr-10 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-all text-sm"
+                    >
+                      <div className="patient-id font-medium text-foreground group-hover:text-primary transition-colors truncate">{p.name}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {getSectorLabel(p.sector)} • Leito {p.bed_number} {p.age ? `• ${p.age}` : ""}
+                      </div>
+                    </button>
+                    <button
+                      onClick={(e) => handleSyncPatient(e, p.id)}
+                      disabled={syncingPatientId === p.id}
+                      title="Sincronizar dados deste paciente"
+                      className="absolute top-2 right-2 p-1.5 rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${syncingPatientId === p.id ? "animate-spin" : ""}`} />
+                    </button>
+                  </div>
                 ))}
                 {filteredPatients.length === 0 && (
                   <div className="col-span-full text-center text-sm text-muted-foreground py-6">
