@@ -224,6 +224,97 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
         </>
       )}
 
+      {/* Comunicação à família */}
+      <div className="space-y-2 pt-2 border-t">
+        <div className="flex items-center gap-2">
+          <FileSignature className="h-3.5 w-3.5 text-primary" />
+          <span className="text-[11px] uppercase tracking-wider font-semibold">
+            Comunicação à família <span className="text-destructive">*</span>
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Familiar comunicado *">
+            <Input className="h-8 text-xs uppercase" value={form.family_contact_name || ""}
+              onChange={(e) => setField("family_contact_name", upper(e.target.value))}
+              placeholder="NOME COMPLETO" />
+          </Field>
+          <Field label="Grau de parentesco *">
+            <Select value={form.family_contact_relation || ""} onValueChange={(v) => setField("family_contact_relation", v)}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="SELECIONE" /></SelectTrigger>
+              <SelectContent>
+                {RELATION_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Telefone *">
+            <Input className="h-8 text-xs" value={form.family_contact_phone || ""}
+              onChange={(e) => setField("family_contact_phone", e.target.value)}
+              placeholder="(00) 00000-0000" />
+          </Field>
+          <Field label="E-mail">
+            <Input type="email" className="h-8 text-xs" value={form.family_contact_email || ""}
+              onChange={(e) => setField("family_contact_email", e.target.value.toLowerCase())} />
+          </Field>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <Field label="Modo *">
+            <Select value={form.family_communication_mode || ""} onValueChange={(v) => setField("family_communication_mode", v)}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="SELECIONE" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PRESENCIAL">Presencial</SelectItem>
+                <SelectItem value="TELEFONE">Telefone</SelectItem>
+                <SelectItem value="VIDEOCHAMADA">Videochamada</SelectItem>
+                <SelectItem value="MENSAGEM">Mensagem / WhatsApp</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Comunicado por">
+            <Input className="h-8 text-xs uppercase" value={form.family_communication_by || ""}
+              onChange={(e) => setField("family_communication_by", upper(e.target.value))}
+              placeholder="PROFISSIONAL" />
+          </Field>
+          <Field label="Data/hora">
+            <Input type="datetime-local" className="h-8 text-xs"
+              value={form.family_communication_at || ""}
+              onChange={(e) => setField("family_communication_at", e.target.value)} />
+          </Field>
+        </div>
+        <Field label="Grau de satisfação na comunicação médica *">
+          <div className="flex gap-1">
+            {[1,2,3,4,5].map((n) => {
+              const selected = form.family_satisfaction === String(n);
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setField("family_satisfaction", String(n))}
+                  className={cn(
+                    "flex-1 h-8 text-xs rounded-md border font-semibold transition-colors",
+                    selected
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background hover:bg-muted border-border text-muted-foreground"
+                  )}
+                  aria-label={`Nota ${n}`}
+                >
+                  {n}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex justify-between text-[9px] uppercase tracking-wider text-muted-foreground mt-0.5">
+            <span>Muito insatisfeito</span>
+            <span>Muito satisfeito</span>
+          </div>
+        </Field>
+        <Field label="Observações da comunicação">
+          <Textarea rows={2} className="text-xs" value={form.family_communication_notes || ""}
+            onChange={(e) => setField("family_communication_notes", upper(e.target.value))}
+            placeholder="REAÇÕES, DÚVIDAS, ENCAMINHAMENTOS" />
+        </Field>
+      </div>
+
       {/* Sign */}
       <div className="grid grid-cols-2 gap-2 pt-2 border-t">
         <Field label="Médico responsável *">
