@@ -28,7 +28,7 @@ export interface DischargeDocFormProps {
 const REQUIRED_BY_TYPE: Record<DischargeDocType, (keyof DischargeDocPayload)[]> = {
   alta_hospitalar: ["final_diagnoses", "evolution_summary", "discharge_summary", "orientations", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
   alta_pedido: ["final_diagnoses", "evolution_summary", "discharge_summary", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
-  obito: ["death_date_time", "immediate_cause", "basic_cause", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
+  obito: ["death_date_time", "death_summary", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
 };
 
 const RELATION_OPTIONS = [
