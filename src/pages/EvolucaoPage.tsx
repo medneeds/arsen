@@ -286,7 +286,7 @@ const EvolucaoPage = () => {
 
         {/* Intercurrence Form (compact, single field) */}
         {showIntercurrenceForm && (
-          <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/5 p-4 space-y-3">
+          <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/5 p-3 sm:p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
@@ -333,7 +333,7 @@ const EvolucaoPage = () => {
 
         {/* New Evolution Form (with Diagnósticos as 1st collapsible section) */}
         {showNewForm && (
-          <div className="rounded-xl border-2 border-primary/30 bg-card p-4 space-y-3">
+          <div className="rounded-xl border-2 border-primary/30 bg-card p-3 sm:p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Plus className="h-4 w-4 text-primary" />
