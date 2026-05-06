@@ -288,7 +288,7 @@ export function AppSidebar({
       items: [
         { name: "Relatórios", link: "/relatorio", profiles: ["gestor"] },
         { name: "Regulação de Leitos", link: "/regulacoes", profiles: ["gestor"] },
-        { name: "Alta e Desfecho", link: "/alta-desfecho", profiles: ["gestor"] },
+        { name: "Alta, Movimentações e Desfechos", link: "/alta-desfecho", profiles: ["gestor"] },
         { name: "Hemoderivados", link: "/hemoderivados", profiles: ["gestor"] },
       ],
     },
