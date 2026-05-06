@@ -270,7 +270,12 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
       const { data: userData } = await supabase.auth.getUser();
       const selectedSectors = form.destination_sector.split(", ").filter(Boolean);
       const isUtiDestination = selectedSectors.some(s => s.startsWith("UTI"));
-      const status = isUtiDestination ? "aguardando_leito_uti" : "pre_admissao";
+      // Quando o cadastro nasce de um setor (mapa do painel clínico), entra direto em "aguardando_leito"
+      const status = isUtiDestination
+        ? "aguardando_leito_uti"
+        : defaultDestinationSector
+          ? "aguardando_leito"
+          : "pre_admissao";
 
       // Generate NI code if unidentified
       let niCode: string | null = null;
