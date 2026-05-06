@@ -26,6 +26,59 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { ACCESS_PROFILES } from "@/config/userProfiles";
+import { whitelabel, getInstitutionalHeaderLines } from "@/config/whitelabel";
+import socorraoCross from "@/assets/socorrao-cross-logo.png";
+
+const INSTITUTIONAL_LINES = getInstitutionalHeaderLines();
+const INST_COLORS = whitelabel.theme.institutionalColors;
+
+function NormaZeroHeader() {
+  return (
+    <header className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 backdrop-blur-xl shadow-xl">
+      <div className="grid grid-cols-[68px_1fr_68px] items-center gap-3 px-5 py-3">
+        <img
+          src={socorraoCross}
+          alt="Brasão institucional"
+          className="h-[62px] w-[62px] object-contain drop-shadow"
+        />
+        <div className="text-center leading-tight">
+          {INSTITUTIONAL_LINES.map((l, i) => (
+            <div
+              key={i}
+              className={
+                i === 2
+                  ? "text-[12px] md:text-[13px] font-bold tracking-wide text-foreground"
+                  : "text-[10px] md:text-[11px] font-semibold tracking-wider text-muted-foreground uppercase"
+              }
+            >
+              {l}
+            </div>
+          ))}
+        </div>
+        <div />
+      </div>
+      <div className="flex h-1.5 w-full">
+        <div className="flex-1" style={{ background: INST_COLORS.red }} />
+        <div className="flex-1" style={{ background: INST_COLORS.orange }} />
+        <div className="flex-1" style={{ background: INST_COLORS.yellow }} />
+        <div className="flex-1" style={{ background: INST_COLORS.green }} />
+        <div className="flex-1" style={{ background: INST_COLORS.blue }} />
+      </div>
+    </header>
+  );
+}
+
+function NormaZeroFooter() {
+  return (
+    <footer className="text-center text-[10px] uppercase tracking-wider text-muted-foreground/80 space-y-0.5">
+      <div>HMDM · Arsen 1.0 · MAN.05-001 v05 · Conformidade LGPD/CFM</div>
+      <div className="text-muted-foreground/60 normal-case tracking-normal">
+        Seus dados são tratados conforme nossa política de privacidade. A aprovação
+        é feita manualmente pela equipe administrativa.
+      </div>
+    </footer>
+  );
+}
 
 interface HospitalUnit {
   id: string;
@@ -179,35 +232,40 @@ export default function PreCadastroPage() {
     return (
       <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center p-6">
         <Backdrop />
-        <Card className="relative max-w-lg w-full p-8 text-center space-y-4 backdrop-blur-xl bg-card/70 border-border/60 shadow-2xl shadow-emerald-500/10 animate-in fade-in zoom-in-95 duration-500">
-          <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-emerald-400/20 to-emerald-600/10 ring-1 ring-emerald-500/30 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">PRÉ-CADASTRO ENVIADO!</h1>
-          <p className="text-muted-foreground">
-            Sua solicitação foi recebida e entrará na lista de aprovações da equipe
-            administrativa. Você receberá um retorno por email assim que o cadastro
-            for revisado.
-          </p>
-          <div className="pt-2">
-            <Button asChild variant="outline" className="backdrop-blur">
-              <Link to="/auth">Voltar para o login</Link>
-            </Button>
-          </div>
-        </Card>
+        <div className="relative w-full max-w-lg space-y-5 animate-in fade-in zoom-in-95 duration-500">
+          <NormaZeroHeader />
+          <Card className="p-8 text-center space-y-4 backdrop-blur-xl bg-card/70 border-border/60 shadow-2xl shadow-emerald-500/10">
+            <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-emerald-400/20 to-emerald-600/10 ring-1 ring-emerald-500/30 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight">PRÉ-CADASTRO ENVIADO!</h1>
+            <p className="text-muted-foreground">
+              Sua solicitação foi recebida e entrará na lista de aprovações da equipe
+              administrativa. Você receberá um retorno por email assim que o cadastro
+              for revisado.
+            </p>
+            <div className="pt-2">
+              <Button asChild variant="outline" className="backdrop-blur">
+                <Link to="/auth">Voltar para o login</Link>
+              </Button>
+            </div>
+          </Card>
+          <NormaZeroFooter />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 py-10 px-4">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 py-8 px-4">
       <Backdrop />
-      <div className="relative max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="text-center space-y-3">
-          <div className="mx-auto h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/30 via-primary/15 to-blue-500/20 ring-1 ring-primary/30 flex items-center justify-center shadow-xl shadow-primary/20 transition-transform hover:scale-105">
-            <ShieldCheck className="h-8 w-8 text-primary drop-shadow" />
+      <div className="relative max-w-2xl mx-auto space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <NormaZeroHeader />
+        <div className="text-center space-y-2">
+          <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/30 via-primary/15 to-blue-500/20 ring-1 ring-primary/30 flex items-center justify-center shadow-xl shadow-primary/20">
+            <ShieldCheck className="h-7 w-7 text-primary drop-shadow" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent">
             PRÉ-CADASTRO DE ACESSO
           </h1>
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
@@ -371,10 +429,7 @@ export default function PreCadastroPage() {
           </form>
         </Card>
 
-        <p className="text-center text-xs text-muted-foreground">
-          Seus dados são tratados conforme nossa política de privacidade. A
-          aprovação é feita manualmente pela equipe administrativa.
-        </p>
+        <NormaZeroFooter />
       </div>
     </div>
   );
