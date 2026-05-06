@@ -501,7 +501,7 @@ export function PatientMovementDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
-      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className={cn("max-h-[92vh] overflow-y-auto", requiredDocType ? "sm:max-w-[760px]" : "sm:max-w-[520px]")}>
         <DialogHeader>
           <div className="flex items-center gap-3 mb-1">
             {HeaderIcon && headerTone && (
