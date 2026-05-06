@@ -21,6 +21,8 @@ interface PatientRegistrationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  /** Pre-fill destination sector (e.g. when opening from a sector map). Auto-routes to "aguardando_leito". */
+  defaultDestinationSector?: string;
 }
 
 interface PatientFormData {
@@ -98,9 +100,9 @@ const isValidCPF = (cpf: string) => {
   return dv2 === parseInt(c[10]);
 };
 
-export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: PatientRegistrationDialogProps) {
+export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defaultDestinationSector }: PatientRegistrationDialogProps) {
   const [activeTab, setActiveTab] = useState("dados");
-  const [form, setForm] = useState<PatientFormData>(EMPTY_FORM);
+  const [form, setForm] = useState<PatientFormData>(() => ({ ...EMPTY_FORM, destination_sector: defaultDestinationSector || "" }));
   const [isExtracting, setIsExtracting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
