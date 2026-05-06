@@ -456,14 +456,38 @@ export function PatientMovementDialog({
           />
         </div>
 
-        {/* Hint about discharge summary */}
-        {subtypeDef.linksToDischargeSummary && (
+        {/* Required document for Alta / Óbito */}
+        {requiredDocType && (
+          <div className="space-y-2">
+            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-warning/10 border border-warning/30">
+              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+              <p className="text-[11px] text-foreground leading-relaxed">
+                {requiredDocType === "obito"
+                  ? "É obrigatório preencher o Relatório de Óbito antes de confirmar."
+                  : "É obrigatório preencher o Sumário de Alta antes de confirmar."}{" "}
+                O documento será arquivado no histórico do paciente e impresso em padrão Norma Zero.
+              </p>
+            </div>
+            <DischargeDocumentForm
+              type={requiredDocType}
+              initial={{
+                patient_name: patient.name,
+                patient_bed: patient.bedNumber,
+                patient_sector: patient.sector,
+                hospital_name: currentHospital?.name,
+                signed_by_name: responsibleDoctor || undefined,
+              }}
+              onChange={(payload, complete) => { setDocPayload(payload); setDocComplete(complete); }}
+            />
+          </div>
+        )}
+
+        {/* Legacy hint (other linked subtypes) */}
+        {!requiredDocType && subtypeDef.linksToDischargeSummary && (
           <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border/60">
             <FileText className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Após confirmar, você poderá complementar este registro com o{" "}
-              <span className="font-medium text-foreground">Sumário de Alta</span> detalhado
-              (diagnósticos, condutas, prescrição).
+              Documento complementar disponível em <span className="font-medium text-foreground">/alta-desfecho</span>.
             </p>
           </div>
         )}
