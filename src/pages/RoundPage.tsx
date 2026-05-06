@@ -134,21 +134,8 @@ export default function RoundPage() {
 
   // Fetch UTI patients
   useEffect(() => {
-    if (!currentHospital || !currentState) return;
-    const fetchPatients = async () => {
-      const { data } = await supabase
-        .from("patients")
-        .select("id, name, sector, bed_number, age, diagnoses")
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
-        .eq("department", "UTI")
-        .eq("is_vacant", false)
-        .order("sector")
-        .order("bed_number");
-      if (data) setPatients(data.filter((p) => p.name && p.name.trim()));
-    };
     fetchPatients();
-  }, [currentHospital, currentState]);
+  }, [fetchPatients]);
 
   // Load existing session when patient/date changes
   useEffect(() => {
