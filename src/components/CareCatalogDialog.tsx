@@ -236,7 +236,7 @@ export function CareCatalogDialog({
 
         {/* TABS — sempre visíveis (exceto dentro do checklist de perfil) */}
         {!activeProfile && (
-          <div className="flex gap-1 border-b px-5 shrink-0">
+          <div className="flex gap-1 border-b px-2 sm:px-5 shrink-0 overflow-x-auto">
             <button
               type="button"
               onClick={() => setTab("perfis")}
