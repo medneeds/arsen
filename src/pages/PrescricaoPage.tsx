@@ -3782,7 +3782,7 @@ const PrescricaoPage = () => {
     <div className="animate-fade-in">
       <ClinicalHeader moduleLabel="Prescrição Médica" />
       <div className="flex print:block">
-        <div className="flex-1 min-w-0 max-w-6xl mx-auto p-4 sm:p-6 space-y-5">
+        <div className="flex-1 min-w-0 max-w-6xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-5">
       {/* Print styles — hide everything except portal */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
@@ -3813,7 +3813,7 @@ const PrescricaoPage = () => {
         </div>
 
         {/* Row 1 — Clinical context (peso, alergias, calendário, dose/kg, templates, atalhos) */}
-        <div className="flex items-center gap-1.5 flex-wrap px-3 py-2 border-t border-border/40">
+        <div className="flex items-center gap-1.5 flex-wrap px-2 sm:px-3 py-2 sm:border-t sm:border-border/40">
           <div className="flex items-center gap-1.5">
             <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
             <Input

@@ -266,7 +266,7 @@ export default function PainelClinicoPage() {
 
       {/* Table */}
       <ScrollArea className="flex-1">
-        <div className="p-4">
+        <div className="p-2 sm:p-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-20 text-muted-foreground">
               Carregando pacientes...
@@ -277,6 +277,59 @@ export default function PainelClinicoPage() {
               <p>Nenhum paciente encontrado</p>
             </div>
           ) : (
+            <>
+            {/* Mobile: card list */}
+            <div className="md:hidden flex flex-col gap-2">
+              {filteredPatients.map(patient => {
+                const days = calcDaysInternment(patient.admissionDate);
+                const prescStatus = getPrescriptionStatus(patient);
+                const pendencies = parseTextArray(patient.pendencies);
+                const saps = sapsScores[patient.name];
+                return (
+                  <button
+                    key={patient.id}
+                    onClick={() => goToPatientPanel(patient)}
+                    className="text-left rounded-xl border border-border bg-card p-3 active:scale-[0.99] transition-transform shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono font-bold text-sm text-foreground">{patient.bedNumber}</span>
+                          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", getSectorColor(patient.sector))}>
+                            {getSectorLabel(patient.sector)}
+                          </Badge>
+                          <span className={cn("inline-block h-2 w-2 rounded-full", prescStatus.dotColor, prescStatus.pulsing && "animate-pulse-soft")} />
+                          <span className="text-[10px] text-muted-foreground">{prescStatus.label}</span>
+                        </div>
+                        <p className="font-medium text-sm text-foreground mt-1.5 leading-tight line-clamp-2">{patient.name}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {patient.age ? `${patient.age} anos` : "—"}
+                          {days !== null && <span className={cn("ml-2", days > 7 && "text-destructive font-semibold")}>{days}d int.</span>}
+                          {saps && saps.status !== 'pending' && <span className="ml-2">SAPS {saps.score}</span>}
+                        </p>
+                        {parseTextArray(patient.diagnoses)[0] && (
+                          <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{parseTextArray(patient.diagnoses)[0]}</p>
+                        )}
+                        {pendencies.length > 0 && (
+                          <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-1 line-clamp-1">⚠ {pendencies[0]}{pendencies.length > 1 && ` +${pendencies.length - 1}`}</p>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        onClick={(e) => { e.stopPropagation(); openPatient(patient); }}
+                        aria-label="Pré-visualizar"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {/* Desktop / tablet: table */}
+            <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
@@ -405,6 +458,8 @@ export default function PainelClinicoPage() {
                 })}
               </TableBody>
             </Table>
+            </div>
+            </>
           )}
         </div>
       </ScrollArea>
