@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useHospital } from "@/contexts/HospitalContext";
+import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { supabase } from "@/integrations/supabase/client";
 import {
   MOVEMENT_CATEGORIES,
