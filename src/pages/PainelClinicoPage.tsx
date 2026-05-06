@@ -411,7 +411,7 @@ export default function PainelClinicoPage() {
 
       {/* Patient Sidebar Sheet — usa o PatientCockpit padronizado dos demais módulos clínicos */}
       <Sheet open={!!selectedPatient} onOpenChange={(open) => !open && setSelectedPatient(null)}>
-        <SheetContent className="w-full sm:max-w-md p-0 flex flex-col gap-0" side="right">
+        <SheetContent className="w-full sm:max-w-md p-0 flex flex-col gap-0 h-[100dvh]" side="right">
           {selectedPatient && (
             <div className="flex-1 min-h-0 overflow-hidden">
               <PatientCockpit patient={selectedPatient} variant="inline" className="h-full border-0 rounded-none" />
