@@ -1,5 +1,14 @@
 // ── Discharge / Death document utilities (Norma Zero PDF) ──
-// Reaproveitado tanto na geração da movimentação quanto pelo histórico do paciente.
+// Padronizado conforme MAN.05-001 (timbrado institucional Arsen).
+// Reutiliza buildNormaZeroDocument para garantir cabeçalho, banda colorida,
+// código do documento, assinatura e rodapé idênticos aos demais documentos.
+
+import {
+  buildNormaZeroDocument,
+  openPrintWindow,
+  prepareLogo,
+  type NormaZeroSignature,
+} from "@/lib/printNormaZero";
 
 export type DischargeDocType = "alta_hospitalar" | "alta_pedido" | "obito";
 
@@ -13,6 +22,12 @@ export const DISCHARGE_DOC_SHORT: Record<DischargeDocType, string> = {
   alta_hospitalar: "Sumário de Alta",
   alta_pedido: "Alta a Pedido",
   obito: "Relatório de Óbito",
+};
+
+const DISCHARGE_DOC_PREFIX: Record<DischargeDocType, string> = {
+  alta_hospitalar: "ALTA",
+  alta_pedido: "APED",
+  obito: "OBT",
 };
 
 export interface DischargeDocPayload {
@@ -46,24 +61,24 @@ export interface DischargeDocPayload {
   // Death specifics
   death_date_time?: string;
   death_place?: string;
-  death_summary?: string; // relatório livre do óbito (substitui causa mortis estruturada)
+  death_summary?: string;
   immediate_cause?: string;
   intermediate_causes?: string;
   basic_cause?: string;
   contributing_causes?: string;
-  death_type?: string; // natural/violenta
+  death_type?: string;
   necropsy?: string;
-  do_number?: string; // Declaração de Óbito
+  do_number?: string;
   notified_family?: string;
-  // Comunicação à família (alta e óbito)
+  // Comunicação à família
   family_contact_name?: string;
-  family_contact_relation?: string; // grau de parentesco
+  family_contact_relation?: string;
   family_contact_phone?: string;
   family_contact_email?: string;
-  family_communication_mode?: string; // presencial / telefone / videochamada
-  family_communication_at?: string; // datetime-local
-  family_communication_by?: string; // profissional que comunicou
-  family_satisfaction?: string; // 1..5
+  family_communication_mode?: string;
+  family_communication_at?: string;
+  family_communication_by?: string;
+  family_satisfaction?: string;
   family_communication_notes?: string;
   // Sign
   signed_by_name?: string;
@@ -83,55 +98,63 @@ const fmtDate = (s?: string | null) => {
   return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 };
 
-const block = (label: string, value?: string) => {
+/** Renderiza um par rótulo/valor em formato compacto Norma Zero. */
+const field = (label: string, value?: string) => {
   const v = String(value ?? "").trim();
   if (!v) return "";
-  return `<div class="block"><div class="lb">${escapeHtml(label)}</div><div class="vl">${escapeHtml(v).replace(/\n/g, "<br/>")}</div></div>`;
+  return `<div class="dz-field"><div class="dz-lb">${escapeHtml(label)}</div><div class="dz-vl">${escapeHtml(v).replace(/\n/g, "<br/>")}</div></div>`;
 };
 
-export function buildDischargeDocHTML(type: DischargeDocType, p: DischargeDocPayload): string {
-  const title = DISCHARGE_DOC_LABELS[type];
+/** Estilos específicos do documento de alta/óbito (somam-se aos do Norma Zero). */
+const dischargeExtraStyles = `
+  .dz-id-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2pt 14pt; padding: 5pt 8pt; border: 0.5pt solid #cbd5e1; background: #fafbfc; border-radius: 3pt; margin-bottom: 8pt; }
+  .dz-id-grid > div { font-size: 8.5pt; color: #0a1628; }
+  .dz-id-grid .k { color: #64748b; text-transform: uppercase; font-size: 6.8pt; letter-spacing: 0.4pt; font-weight: 700; margin-right: 4pt; }
+  .dz-field { margin-bottom: 4pt; page-break-inside: avoid; }
+  .dz-lb { font-weight: 700; text-transform: uppercase; font-size: 7.5pt; letter-spacing: 0.4pt; color: #0054A6; border-bottom: 0.5pt solid #cbd5e1; padding-bottom: 1pt; margin-bottom: 1.5pt; }
+  .dz-vl { font-size: 8.5pt; white-space: pre-wrap; color: #0a1628; }
+  .dz-section-title { font-size: 9pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5pt; color: #475569; margin: 10pt 0 4pt; padding-bottom: 2pt; border-bottom: 1pt solid #0054A6; }
+`;
+
+function buildBody(type: DischargeDocType, p: DischargeDocPayload): string {
   const isDeath = type === "obito";
 
-  const headerHospital = `
-    <div class="hosp">
-      <div class="hosp-name">${escapeHtml(p.hospital_name || "")}</div>
-      <div class="hosp-addr">${escapeHtml(p.hospital_address || "")}</div>
-    </div>`;
-
   const idGrid = `
-    <div class="grid">
-      <div><span class="k">Paciente:</span> <b>${escapeHtml(p.patient_name)}</b></div>
-      <div><span class="k">Prontuário:</span> ${escapeHtml(p.patient_record || "—")}</div>
-      <div><span class="k">Atendimento:</span> ${escapeHtml(p.encounter_code || "—")}</div>
-      <div><span class="k">Leito/Setor:</span> ${escapeHtml(`${p.patient_bed || "—"} • ${p.patient_sector || "—"}`)}</div>
-      <div><span class="k">Nascimento:</span> ${escapeHtml(p.patient_birth_date || "—")}</div>
-      <div><span class="k">Admissão:</span> ${escapeHtml(fmtDate(p.admission_date))}</div>
-      <div><span class="k">${isDeath ? "Data/Hora do Óbito" : "Alta"}:</span> ${escapeHtml(fmtDate(isDeath ? p.death_date_time : p.discharge_date))}</div>
-      ${isDeath ? `<div><span class="k">Local do óbito:</span> ${escapeHtml(p.death_place || "—")}</div>` : `<div><span class="k">Tipo de alta:</span> ${escapeHtml(p.discharge_type || "—")}</div>`}
+    <div class="dz-id-grid">
+      <div><span class="k">Paciente</span><b>${escapeHtml(p.patient_name)}</b></div>
+      <div><span class="k">Prontuário</span>${escapeHtml(p.patient_record || "—")}</div>
+      <div><span class="k">Atendimento</span>${escapeHtml(p.encounter_code || "—")}</div>
+      <div><span class="k">Leito / Setor</span>${escapeHtml(`${p.patient_bed || "—"} • ${p.patient_sector || "—"}`)}</div>
+      <div><span class="k">Nascimento</span>${escapeHtml(p.patient_birth_date || "—")}</div>
+      <div><span class="k">Admissão</span>${escapeHtml(fmtDate(p.admission_date))}</div>
+      <div><span class="k">${isDeath ? "Data/Hora do Óbito" : "Alta"}</span>${escapeHtml(fmtDate(isDeath ? p.death_date_time : p.discharge_date))}</div>
+      <div><span class="k">${isDeath ? "Local do óbito" : "Tipo de alta"}</span>${escapeHtml((isDeath ? p.death_place : p.discharge_type) || "—")}</div>
     </div>`;
 
   const clinicalCommon = `
-    ${block("Diagnóstico de admissão", p.admission_diagnosis)}
-    ${block(isDeath ? "Diagnósticos finais" : "Diagnósticos finais (CID e descrição)", p.final_diagnoses)}
-    ${block("Resumo da evolução / quadro clínico", p.evolution_summary)}
-    ${block("Procedimentos realizados", p.procedures)}
-    ${block("Intercorrências / complicações", p.complications)}
+    <div class="dz-section-title">Quadro clínico</div>
+    ${field("Diagnóstico de admissão", p.admission_diagnosis)}
+    ${field(isDeath ? "Diagnósticos finais" : "Diagnósticos finais (CID e descrição)", p.final_diagnoses)}
+    ${field("Resumo da evolução / quadro clínico", p.evolution_summary)}
+    ${field("Procedimentos realizados", p.procedures)}
+    ${field("Intercorrências / complicações", p.complications)}
   `;
 
   const dischargeBlocks = `
-    ${block("Sumário de alta", p.discharge_summary)}
-    ${block("Plano e orientações de alta", p.orientations)}
-    ${block("Prescrição de alta", p.prescription)}
-    ${block("Restrições", p.restrictions)}
-    ${block("Retorno / contrarreferência", [p.return_date, p.return_specialty, p.referral].filter(Boolean).join(" • "))}
+    <div class="dz-section-title">Plano de alta</div>
+    ${field("Sumário de alta", p.discharge_summary)}
+    ${field("Plano e orientações de alta", p.orientations)}
+    ${field("Prescrição de alta", p.prescription)}
+    ${field("Restrições", p.restrictions)}
+    ${field("Retorno / contrarreferência", [p.return_date, p.return_specialty, p.referral].filter(Boolean).join(" • "))}
   `;
 
   const deathBlocks = `
-    ${block("Resumo / relatório do óbito", p.death_summary)}
-    ${block("Tipo de morte", p.death_type)}
-    ${block("Necropsia", p.necropsy)}
-    ${block("Declaração de Óbito (nº)", p.do_number)}
+    <div class="dz-section-title">Óbito</div>
+    ${field("Resumo / relatório do óbito", p.death_summary)}
+    ${field("Tipo de morte", p.death_type)}
+    ${field("Necropsia", p.necropsy)}
+    ${field("Declaração de Óbito (nº)", p.do_number)}
   `;
 
   const satLabel = (s?: string) => {
@@ -145,65 +168,94 @@ export function buildDischargeDocHTML(type: DischargeDocType, p: DischargeDocPay
     return s ? m[s] || s : "";
   };
 
-  const familyBlocks = `
-    ${block("Familiar comunicado", [p.family_contact_name, p.family_contact_relation].filter(Boolean).join(" — "))}
-    ${block("Contato do familiar", [p.family_contact_phone, p.family_contact_email].filter(Boolean).join(" • "))}
-    ${block("Modo da comunicação", p.family_communication_mode)}
-    ${block("Comunicado por / em", [p.family_communication_by, fmtDate(p.family_communication_at)].filter(Boolean).join(" • "))}
-    ${block("Grau de satisfação na comunicação médica", satLabel(p.family_satisfaction))}
-    ${block("Observações da comunicação", p.family_communication_notes)}
-  `;
+  const familyAny =
+    p.family_contact_name ||
+    p.family_contact_relation ||
+    p.family_contact_phone ||
+    p.family_contact_email ||
+    p.family_communication_mode ||
+    p.family_communication_at ||
+    p.family_communication_by ||
+    p.family_satisfaction ||
+    p.family_communication_notes;
 
-  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"/>
-  <title>${escapeHtml(title)} - ${escapeHtml(p.patient_name)}</title>
-  <style>
-    @page { size: A4 portrait; margin: 12mm; }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; color: #111; font-size: 9pt; line-height: 1.35; }
-    .doc { padding: 0; }
-    .hosp { text-align: center; border-bottom: 1.5px solid #111; padding-bottom: 4mm; margin-bottom: 4mm; }
-    .hosp-name { font-weight: 700; font-size: 11pt; text-transform: uppercase; letter-spacing: 0.5px; }
-    .hosp-addr { font-size: 7.5pt; color: #444; margin-top: 1mm; }
-    h1.title { font-size: 12pt; text-align: center; margin: 2mm 0 4mm; text-transform: uppercase; letter-spacing: 1px; border: 1px solid #111; padding: 2mm; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5mm 6mm; margin-bottom: 4mm; padding: 2mm 3mm; border: 0.5px solid #999; background: #fafafa; }
-    .grid > div { font-size: 8.5pt; }
-    .k { color: #555; text-transform: uppercase; font-size: 7pt; letter-spacing: 0.4px; }
-    .block { margin-bottom: 3mm; page-break-inside: avoid; }
-    .lb { font-weight: 700; text-transform: uppercase; font-size: 8pt; letter-spacing: 0.4px; border-bottom: 0.5px solid #111; padding-bottom: 0.8mm; margin-bottom: 1.2mm; }
-    .vl { font-size: 8.5pt; white-space: pre-wrap; }
-    .sign { margin-top: 14mm; text-align: center; }
-    .sign .line { width: 70mm; border-top: 0.6px solid #111; margin: 0 auto 1.5mm; }
-    .sign .name { font-weight: 700; font-size: 9pt; text-transform: uppercase; }
-    .sign .crm { font-size: 8pt; color: #444; }
-    .meta { margin-top: 6mm; text-align: center; font-size: 7pt; color: #666; border-top: 0.5px dashed #999; padding-top: 2mm; }
-    .footer-doc { position: fixed; bottom: 6mm; left: 12mm; right: 12mm; font-size: 6.5pt; color: #888; display: flex; justify-content: space-between; }
-  </style></head>
-  <body><div class="doc">
-    ${headerHospital}
-    <h1 class="title">${escapeHtml(title)}</h1>
-    ${idGrid}
-    ${clinicalCommon}
-    ${isDeath ? deathBlocks : dischargeBlocks}
-    ${familyBlocks}
-    <div class="sign">
-      <div class="line"></div>
-      <div class="name">${escapeHtml(p.signed_by_name || "—")}</div>
-      <div class="crm">CRM: ${escapeHtml(p.signed_by_crm || "—")}</div>
-      <div class="crm">${escapeHtml(fmtDate(p.signed_at))}</div>
-    </div>
-    <div class="meta">Documento gerado eletronicamente conforme Norma Zero • ${escapeHtml(fmtDate(new Date().toISOString()))}</div>
-    <div class="footer-doc"><span>${escapeHtml(title)}</span><span>${escapeHtml(p.patient_name)}</span></div>
-  </div></body></html>`;
+  const familyBlocks = familyAny
+    ? `
+      <div class="dz-section-title">Comunicação à família</div>
+      ${field("Familiar comunicado", [p.family_contact_name, p.family_contact_relation].filter(Boolean).join(" — "))}
+      ${field("Contato do familiar", [p.family_contact_phone, p.family_contact_email].filter(Boolean).join(" • "))}
+      ${field("Modo da comunicação", p.family_communication_mode)}
+      ${field("Comunicado por / em", [p.family_communication_by, fmtDate(p.family_communication_at)].filter(Boolean).join(" • "))}
+      ${field("Grau de satisfação na comunicação médica", satLabel(p.family_satisfaction))}
+      ${field("Observações da comunicação", p.family_communication_notes)}
+    `
+    : "";
+
+  return `${idGrid}${clinicalCommon}${isDeath ? deathBlocks : dischargeBlocks}${familyBlocks}`;
 }
 
-export function printDischargeDocument(type: DischargeDocType, payload: DischargeDocPayload) {
-  const html = buildDischargeDocHTML(type, payload);
-  const w = window.open("", "_blank", "width=900,height=1100");
-  if (!w) return;
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  setTimeout(() => {
-    try { w.focus(); w.print(); } catch {}
-  }, 250);
+export async function printDischargeDocument(
+  type: DischargeDocType,
+  payload: DischargeDocPayload,
+) {
+  const title = DISCHARGE_DOC_LABELS[type];
+  const sectorLabel =
+    payload.patient_sector
+      ? `${payload.patient_sector}${payload.patient_bed ? ` • Leito ${payload.patient_bed}` : ""}`
+      : "Assistência hospitalar";
+
+  const signatures: NormaZeroSignature[] = [
+    {
+      label: payload.signed_by_name || "Médico responsável",
+      caption: payload.signed_by_crm
+        ? `CRM: ${payload.signed_by_crm}${payload.signed_at ? ` • ${fmtDate(payload.signed_at)}` : ""}`
+        : "Carimbo e assinatura",
+    },
+  ];
+
+  const logoDataUrl = await prepareLogo();
+
+  const html = buildNormaZeroDocument({
+    title,
+    subtitle: payload.patient_name
+      ? `${payload.patient_name}${payload.patient_record ? ` • Prontuário ${payload.patient_record}` : ""}`
+      : undefined,
+    sectorLabel,
+    hospitalName: payload.hospital_name,
+    docCodePrefix: DISCHARGE_DOC_PREFIX[type],
+    bodyHtml: buildBody(type, payload),
+    signatures,
+    logoDataUrl,
+    orientation: "portrait",
+    extraStyles: dischargeExtraStyles,
+  });
+
+  openPrintWindow(html, `Gerando ${title}…`);
+}
+
+/**
+ * Mantido por compatibilidade — alguns módulos podem importar a versão HTML
+ * direta. Agora apenas encapsula buildNormaZeroDocument com payload mínimo.
+ */
+export function buildDischargeDocHTML(
+  type: DischargeDocType,
+  p: DischargeDocPayload,
+): string {
+  const title = DISCHARGE_DOC_LABELS[type];
+  return buildNormaZeroDocument({
+    title,
+    subtitle: p.patient_name,
+    sectorLabel: p.patient_sector || "Assistência hospitalar",
+    hospitalName: p.hospital_name,
+    docCodePrefix: DISCHARGE_DOC_PREFIX[type],
+    bodyHtml: buildBody(type, p),
+    signatures: [
+      {
+        label: p.signed_by_name || "Médico responsável",
+        caption: p.signed_by_crm ? `CRM: ${p.signed_by_crm}` : "Carimbo e assinatura",
+      },
+    ],
+    orientation: "portrait",
+    extraStyles: dischargeExtraStyles,
+  });
 }
