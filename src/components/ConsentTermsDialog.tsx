@@ -73,11 +73,11 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
-        className="max-w-3xl max-h-[92vh] p-0 overflow-hidden gap-0"
+        className="max-w-3xl w-[calc(100vw-1rem)] sm:w-full h-[100dvh] sm:h-auto sm:max-h-[92vh] p-0 overflow-hidden gap-0 flex flex-col rounded-none sm:rounded-lg"
         onPointerDownOutside={(e) => e.preventDefault()}
       >
         {/* Header colorido compacto */}
-        <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b shrink-0">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1.5">
               <DialogTitle className="flex items-center gap-2 text-xl">
@@ -96,20 +96,20 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
 
         {/* Tabs de conteúdo */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid grid-cols-3 mx-6 mt-4 h-auto">
-            <TabsTrigger value="terms" className="flex items-center gap-1.5 py-2 text-xs">
+          <TabsList className="grid grid-cols-3 mx-4 sm:mx-6 mt-3 sm:mt-4 h-auto shrink-0">
+            <TabsTrigger value="terms" className="flex items-center gap-1 sm:gap-1.5 py-2 text-[11px] sm:text-xs">
               <FileText className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">TERMOS DE USO</span>
               <span className="sm:hidden">TERMOS</span>
               {termsAccepted && <CheckCircle2 className="h-3 w-3 text-emerald-600" />}
             </TabsTrigger>
-            <TabsTrigger value="privacy" className="flex items-center gap-1.5 py-2 text-xs">
+            <TabsTrigger value="privacy" className="flex items-center gap-1 sm:gap-1.5 py-2 text-[11px] sm:text-xs">
               <Lock className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">PRIVACIDADE</span>
               <span className="sm:hidden">LGPD</span>
               {privacyAccepted && <CheckCircle2 className="h-3 w-3 text-emerald-600" />}
             </TabsTrigger>
-            <TabsTrigger value="data" className="flex items-center gap-1.5 py-2 text-xs">
+            <TabsTrigger value="data" className="flex items-center gap-1 sm:gap-1.5 py-2 text-[11px] sm:text-xs">
               <Database className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">DADOS DE PACIENTES</span>
               <span className="sm:hidden">DADOS</span>
@@ -117,7 +117,7 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
             </TabsTrigger>
           </TabsList>
 
-          <ScrollArea className="flex-1 max-h-[42vh] px-6 py-4">
+          <ScrollArea className="flex-1 min-h-0 px-4 sm:px-6 py-3 sm:py-4 sm:max-h-[42vh]">
             <TabsContent value="terms" className="mt-0 space-y-3 text-sm">
               <p className="text-muted-foreground leading-relaxed">
                 O sistema <strong className="text-foreground">{whitelabel.platform.fullName}</strong> é destinado
@@ -211,12 +211,12 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
         </Tabs>
 
         {/* Footer fixo de aceite */}
-        <div className="border-t bg-muted/30 px-6 py-4 space-y-3">
+        <div className="border-t bg-muted/30 px-4 sm:px-6 py-3 sm:py-4 space-y-3 shrink-0 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
               <strong className="text-foreground">{acceptedCount}/3</strong> seções aceitas
             </p>
-            <div className="h-1.5 w-32 rounded-full bg-muted overflow-hidden">
+            <div className="h-1.5 w-24 sm:w-32 rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full bg-primary transition-all duration-300"
                 style={{ width: `${(acceptedCount / 3) * 100}%` }}
@@ -224,7 +224,7 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <label
               htmlFor="terms-cb"
               className="flex items-center gap-2 rounded-lg border bg-card p-2.5 cursor-pointer hover:border-primary/50 transition-colors"
