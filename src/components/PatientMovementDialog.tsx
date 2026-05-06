@@ -96,6 +96,7 @@ export function PatientMovementDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [docPayload, setDocPayload] = useState<DischargeDocPayload | null>(null);
   const [docComplete, setDocComplete] = useState(false);
+  const [signerProfile, setSignerProfile] = useState<{ name: string; crm: string }>({ name: "", crm: "" });
 
   const { toast } = useToast();
   const { currentState, currentHospital } = useHospital();
