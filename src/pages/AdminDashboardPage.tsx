@@ -100,6 +100,23 @@ const DESTINATION_SECTORS: DestinationSector[] = [
   { value: "cc_rpa", label: "CC — RPA", group: "Centro Cirúrgico / RIV", color: "bg-slate-700", sectorKey: "cc_rpa" },
 ];
 
+// Mapa sectorKey → título EXATO usado no mapa de leitos (Index.tsx SECTOR_VISUAL.title).
+// Necessário porque o PreAdmissionSection filtra por destination_sector === título do setor;
+// se gravarmos a label longa da recepção, o paciente nunca aparece em "Aguardando Admissão".
+const SECTOR_KEY_TO_MAP_TITLE: Record<string, string> = {
+  red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2", ucc: "UCC",
+  neuro_01: "Neuro 01", neuro_02: "Neuro 02",
+  clinica_cirurgica: "Clínica Cirúrgica",
+  enfermaria_transicao: "Enf. Transição",
+  enfermaria_vascular: "Enf. Vascular",
+  sala_vermelha: "Sala Vermelha", sala_laranja: "Sala Laranja",
+  observacao_clinica: "Obs. Clínica",
+  internacao_ue: "Internação UE",
+  ue_vertical: "UE Vertical", ue_horizontal: "UE Horizontal",
+  riv: "RIV",
+  cc_preparo: "CC Preparo", cc_bloco: "CC Bloco Cirúrgico", cc_rpa: "CC RPA",
+};
+
 const DESTINATION_GROUPS = Array.from(new Set(DESTINATION_SECTORS.map(s => s.group)));
 
 interface PatientRegistry {
