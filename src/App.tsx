@@ -6,9 +6,10 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
 import { PrivacyProvider } from "@/contexts/PrivacyContext";
-import { lazy, Suspense, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { FloatingThemeToggle } from "@/components/FloatingThemeToggle";
+import { PageLoader } from "@/components/PageLoader";
+import { startIdlePrefetch } from "@/lib/prefetchRoutes";
 
 // Telas críticas (eager): impactam first paint do app
 import Index from "./pages/Index";
