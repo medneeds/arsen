@@ -170,6 +170,18 @@ export default function AuthPage() {
 
         setCurrentDepartment("UTI");
 
+        // 🔐 Primeiro acesso: senha padrão 123456 → exige troca + escolha de username
+        const mustChange = (profileRow as { must_change_password?: boolean } | null)?.must_change_password === true;
+        if (mustChange && userId) {
+          toast.success("Bem-vindo(a)! Configure seu acesso.");
+          setFirstAccess({
+            userId,
+            fullName: (profileRow as { full_name?: string } | null)?.full_name ?? null,
+          });
+          setLoading(false);
+          return;
+        }
+
         if (effectiveProfiles.length > 1) {
           // Múltiplos perfis → mostra seletor antes de redirecionar.
           toast.success("Login realizado — escolha o ambiente");
