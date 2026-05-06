@@ -710,7 +710,7 @@ const AdminDashboardPage = () => {
             patient_sex: payload.sex,
             phone: payload.contactPhone || null,
             patient_registry_id: (registry as any).id,
-            destination_sector: sectorDef.label,
+            destination_sector: SECTOR_KEY_TO_MAP_TITLE[sectorDef.sectorKey!] || sectorDef.label,
             status: "aguardando_leito",
             hospital_unit_id: selectedHospitalId,
             state_id: stateId,
