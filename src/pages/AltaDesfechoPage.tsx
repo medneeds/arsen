@@ -531,7 +531,7 @@ function DeathOutcomeTab({ patient }: { patient: PatientCtx }) {
           </Button>
         </div>
 
-        {activeSection === "declaracao" && <DeathDeclarationSection />}
+        {activeSection === "declaracao" && <DeathDeclarationSection patient={patient} />}
         {activeSection === "morte_encefalica" && <BrainDeathProtocolSection />}
         {activeSection === "cihdott" && <CihdottSection />}
       </div>
