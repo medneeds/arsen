@@ -146,10 +146,10 @@ export default function AuthPage() {
         const { data: profileRow } = userId
           ? await supabase
               .from("profiles")
-              .select("id, full_name, access_profile, access_profiles")
+              .select("id, full_name, access_profile, access_profiles, must_change_password")
               .eq("id", userId)
               .maybeSingle()
-          : { data: null as { id?: string; full_name?: string; access_profile?: string; access_profiles?: string[] } | null };
+          : { data: null as { id?: string; full_name?: string; access_profile?: string; access_profiles?: string[]; must_change_password?: boolean } | null };
 
         let appRole: string | null = null;
         if (profileRow?.id) {
