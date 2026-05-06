@@ -56,6 +56,7 @@ const MovimentacoesPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentHospital, currentState } = useHospital();
+  const currentDoctor = useCurrentDoctor();
 
   const patientId = searchParams.get("patientId") || "";
   const patientName = searchParams.get("patientName") || "";
