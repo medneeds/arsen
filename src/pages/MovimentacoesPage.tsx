@@ -77,6 +77,14 @@ const MovimentacoesPage = () => {
   const [responsibleDoctor, setResponsibleDoctor] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Auto-fill responsible doctor with logged user when known
+  React.useEffect(() => {
+    if (!responsibleDoctor && currentDoctor.fullName) {
+      const crmSuffix = currentDoctor.crm ? ` — CRM ${currentDoctor.crm}` : "";
+      setResponsibleDoctor(`${currentDoctor.fullName.toUpperCase()}${crmSuffix}`);
+    }
+  }, [currentDoctor.fullName, currentDoctor.crm, responsibleDoctor]);
+
   // History — realtime via shared hook (synced with PatientCockpit "Trajeto" tab)
   const { movements, loading: loadingHistory, refresh: loadHistory } = usePatientMovements(
     patientId || null,
