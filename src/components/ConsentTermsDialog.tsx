@@ -73,11 +73,11 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
-        className="max-w-3xl max-h-[92vh] p-0 overflow-hidden gap-0"
+        className="max-w-3xl w-[calc(100vw-1rem)] sm:w-full h-[100dvh] sm:h-auto sm:max-h-[92vh] p-0 overflow-hidden gap-0 flex flex-col rounded-none sm:rounded-lg"
         onPointerDownOutside={(e) => e.preventDefault()}
       >
         {/* Header colorido compacto */}
-        <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-b shrink-0">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1.5">
               <DialogTitle className="flex items-center gap-2 text-xl">
