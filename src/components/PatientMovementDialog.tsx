@@ -449,14 +449,19 @@ export function PatientMovementDialog({
           </div>
         )}
 
-        {/* Doctor */}
+        {/* Doctor — pré-preenchido com o usuário logado */}
         <div className="space-y-1.5">
-          <Label htmlFor="responsibleDoctor" className="text-xs uppercase tracking-wider">
+          <Label htmlFor="responsibleDoctor" className="text-xs uppercase tracking-wider flex items-center gap-2">
             Médico Responsável
+            {signerProfile.name && (
+              <span className="text-[10px] normal-case text-muted-foreground">
+                (sincronizado com o login{signerProfile.crm ? ` • CRM ${signerProfile.crm}` : ""})
+              </span>
+            )}
           </Label>
           <Input
             id="responsibleDoctor"
-            placeholder="Nome do médico (opcional)"
+            placeholder="Nome do médico"
             value={responsibleDoctor}
             onChange={(e) => setResponsibleDoctor(e.target.value.toUpperCase())}
             className="uppercase"
