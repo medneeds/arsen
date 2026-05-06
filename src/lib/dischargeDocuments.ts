@@ -53,6 +53,16 @@ export interface DischargeDocPayload {
   necropsy?: string;
   do_number?: string; // Declaração de Óbito
   notified_family?: string;
+  // Comunicação à família (alta e óbito)
+  family_contact_name?: string;
+  family_contact_relation?: string; // grau de parentesco
+  family_contact_phone?: string;
+  family_contact_email?: string;
+  family_communication_mode?: string; // presencial / telefone / videochamada
+  family_communication_at?: string; // datetime-local
+  family_communication_by?: string; // profissional que comunicou
+  family_satisfaction?: string; // 1..5
+  family_communication_notes?: string;
   // Sign
   signed_by_name?: string;
   signed_by_crm?: string;
