@@ -3813,7 +3813,7 @@ const PrescricaoPage = () => {
         </div>
 
         {/* Row 1 — Clinical context (peso, alergias, calendário, dose/kg, templates, atalhos) */}
-        <div className="flex items-center gap-1.5 flex-wrap px-3 py-2 border-t border-border/40">
+        <div className="flex items-center gap-1.5 flex-wrap px-2 sm:px-3 py-2 sm:border-t sm:border-border/40">
           <div className="flex items-center gap-1.5">
             <Label className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">Peso (kg)</Label>
             <Input
