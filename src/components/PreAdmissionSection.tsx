@@ -80,7 +80,7 @@ export function PreAdmissionSection({ sectorFilterLabel }: PreAdmissionSectionPr
         .select("*")
         .eq("hospital_unit_id", currentHospital.id)
         .eq("state_id", currentState.id)
-        .in("status", ["pre_admissao", "classificado", "aguardando_leito"])
+        .in("status", ["pre_admissao", "classificado", "aguardando_leito", "aguardando_leito_uti"])
         .order("created_at", { ascending: false });
 
       // Filtra por setor de destino (quando estamos visualizando um setor clínico específico)
