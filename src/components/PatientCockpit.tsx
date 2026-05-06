@@ -34,6 +34,7 @@ import { formatDistanceToNow } from "date-fns";
 import { usePatientDischargeDocs } from "@/hooks/usePatientDischargeDocs";
 import { printDischargeDocument, DISCHARGE_DOC_SHORT } from "@/lib/dischargeDocuments";
 import { Skull, FileSignature, ArrowLeftRight } from "lucide-react";
+import { MedicalDocumentDialog } from "./MedicalDocumentDialog";
 
 interface PatientCockpitProps {
   patient: Patient | null;
@@ -100,6 +101,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const [showFullId, setShowFullId] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [hovering, setHovering] = useState(false);
+  const [docDialogOpen, setDocDialogOpen] = useState(false);
   const isExpanded = variant === "inline" || pinned || hovering;
 
   // Live patient data — sync sector, bed, allergies, medical responsibility, etc.
@@ -371,7 +373,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             size="sm"
             variant="outline"
             className="w-full h-8 text-xs gap-1.5"
-            onClick={() => goPatient("/documentos")}
+            onClick={() => setDocDialogOpen(true)}
           >
             <FileSignature className="h-3.5 w-3.5" />
             Emitir documentos médicos
@@ -866,6 +868,14 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         </Tabs>
         </div>
       </aside>
+      <MedicalDocumentDialog
+        open={docDialogOpen}
+        onOpenChange={setDocDialogOpen}
+        patientId={patient.id}
+        patientName={patient.name}
+        patientBed={patient.bedNumber}
+        patientSector={patient.sector}
+      />
     </TooltipProvider>
   );
 }
