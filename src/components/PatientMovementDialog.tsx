@@ -187,15 +187,25 @@ export function PatientMovementDialog({
       return;
     }
 
-    if (requiredDocType && (!docPayload || !docComplete)) {
-      toast({
-        title: "Documento obrigatório",
-        description: requiredDocType === "obito"
-          ? "Preencha o Relatório de Óbito antes de confirmar."
-          : "Preencha o Sumário de Alta antes de confirmar.",
-        variant: "destructive",
-      });
-      return;
+    if (requiredDocType) {
+      if (!responsibleDoctor.trim()) {
+        toast({
+          title: "Médico responsável obrigatório",
+          description: "O médico responsável precisa estar identificado (sincronizado com o usuário logado).",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!docPayload || !docComplete) {
+        toast({
+          title: "Documento obrigatório",
+          description: requiredDocType === "obito"
+            ? "Preencha o Relatório de Óbito antes de confirmar."
+            : "Preencha o Sumário de Alta antes de confirmar.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
