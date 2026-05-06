@@ -956,6 +956,78 @@ export type Database = {
           },
         ]
       }
+      discharge_documents: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          department: string
+          document_number: string | null
+          document_type: string
+          encounter_code: string | null
+          hospital_unit_id: string
+          id: string
+          movement_id: string | null
+          patient_bed: string | null
+          patient_id: string | null
+          patient_name: string
+          patient_registry_id: string | null
+          patient_sector: string | null
+          signed_at: string
+          signed_by: string | null
+          signed_by_crm: string | null
+          signed_by_name: string | null
+          state_id: string
+          updated_at: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          document_number?: string | null
+          document_type: string
+          encounter_code?: string | null
+          hospital_unit_id: string
+          id?: string
+          movement_id?: string | null
+          patient_bed?: string | null
+          patient_id?: string | null
+          patient_name: string
+          patient_registry_id?: string | null
+          patient_sector?: string | null
+          signed_at?: string
+          signed_by?: string | null
+          signed_by_crm?: string | null
+          signed_by_name?: string | null
+          state_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          department?: string
+          document_number?: string | null
+          document_type?: string
+          encounter_code?: string | null
+          hospital_unit_id?: string
+          id?: string
+          movement_id?: string | null
+          patient_bed?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          patient_registry_id?: string | null
+          patient_sector?: string | null
+          signed_at?: string
+          signed_by?: string | null
+          signed_by_crm?: string | null
+          signed_by_name?: string | null
+          state_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dispensations: {
         Row: {
           created_at: string
