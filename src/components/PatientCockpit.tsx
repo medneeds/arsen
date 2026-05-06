@@ -33,7 +33,7 @@ import { usePatientLive } from "@/hooks/usePatientLive";
 import { formatDistanceToNow } from "date-fns";
 import { usePatientDischargeDocs } from "@/hooks/usePatientDischargeDocs";
 import { printDischargeDocument, DISCHARGE_DOC_SHORT } from "@/lib/dischargeDocuments";
-import { Skull, FileSignature } from "lucide-react";
+import { Skull, FileSignature, ArrowLeftRight } from "lucide-react";
 
 interface PatientCockpitProps {
   patient: Patient | null;
