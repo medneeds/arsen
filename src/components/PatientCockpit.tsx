@@ -367,7 +367,12 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               Histórico
             </Button>
           </div>
-          <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => goPatient("/alta-desfecho")} />
+          <DischargeQuickActions
+            patientId={patient.id}
+            patientName={patient.name}
+            fallback={() => goPatient("/movimentacoes")}
+            onOpenFlow={() => goPatient("/movimentacoes")}
+          />
         </div>
 
         {/* ===== ZONA 3: ALERTAS CLÍNICOS ===== */}
