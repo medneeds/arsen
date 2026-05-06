@@ -96,20 +96,20 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
 
         {/* Tabs de conteúdo */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid grid-cols-3 mx-6 mt-4 h-auto">
-            <TabsTrigger value="terms" className="flex items-center gap-1.5 py-2 text-xs">
+          <TabsList className="grid grid-cols-3 mx-4 sm:mx-6 mt-3 sm:mt-4 h-auto shrink-0">
+            <TabsTrigger value="terms" className="flex items-center gap-1 sm:gap-1.5 py-2 text-[11px] sm:text-xs">
               <FileText className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">TERMOS DE USO</span>
               <span className="sm:hidden">TERMOS</span>
               {termsAccepted && <CheckCircle2 className="h-3 w-3 text-emerald-600" />}
             </TabsTrigger>
-            <TabsTrigger value="privacy" className="flex items-center gap-1.5 py-2 text-xs">
+            <TabsTrigger value="privacy" className="flex items-center gap-1 sm:gap-1.5 py-2 text-[11px] sm:text-xs">
               <Lock className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">PRIVACIDADE</span>
               <span className="sm:hidden">LGPD</span>
               {privacyAccepted && <CheckCircle2 className="h-3 w-3 text-emerald-600" />}
             </TabsTrigger>
-            <TabsTrigger value="data" className="flex items-center gap-1.5 py-2 text-xs">
+            <TabsTrigger value="data" className="flex items-center gap-1 sm:gap-1.5 py-2 text-[11px] sm:text-xs">
               <Database className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">DADOS DE PACIENTES</span>
               <span className="sm:hidden">DADOS</span>
@@ -117,7 +117,7 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
             </TabsTrigger>
           </TabsList>
 
-          <ScrollArea className="flex-1 max-h-[42vh] px-6 py-4">
+          <ScrollArea className="flex-1 min-h-0 px-4 sm:px-6 py-3 sm:py-4 sm:max-h-[42vh]">
             <TabsContent value="terms" className="mt-0 space-y-3 text-sm">
               <p className="text-muted-foreground leading-relaxed">
                 O sistema <strong className="text-foreground">{whitelabel.platform.fullName}</strong> é destinado
