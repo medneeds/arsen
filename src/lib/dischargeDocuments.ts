@@ -184,6 +184,7 @@ export function buildDischargeDocHTML(type: DischargeDocType, p: DischargeDocPay
     ${idGrid}
     ${clinicalCommon}
     ${isDeath ? deathBlocks : dischargeBlocks}
+    ${familyBlocks}
     <div class="sign">
       <div class="line"></div>
       <div class="name">${escapeHtml(p.signed_by_name || "—")}</div>
