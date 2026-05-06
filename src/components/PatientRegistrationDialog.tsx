@@ -144,7 +144,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess }: Pat
       cpf: checked ? "" : prev.cpf,
       cns: checked ? "" : prev.cns,
       birth_date: checked ? "" : prev.birth_date,
-      sex: checked ? "I" : prev.sex,
+      sex: checked ? "" : prev.sex,
       phone: checked ? "" : prev.phone,
       address: checked ? "" : prev.address,
       neighborhood: checked ? "" : prev.neighborhood,
