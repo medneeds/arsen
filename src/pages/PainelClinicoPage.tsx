@@ -458,6 +458,8 @@ export default function PainelClinicoPage() {
                 })}
               </TableBody>
             </Table>
+            </div>
+            </>
           )}
         </div>
       </ScrollArea>
