@@ -121,6 +121,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     setExtraBedRequested(false);
     setSectorFullAlert(false);
     setBedsLoaded(false);
+    setDischargeDays("");
+    setDischargeDate(undefined);
 
     if (!currentHospital?.id || !currentState?.id || !preAdmission?.id) return;
 
