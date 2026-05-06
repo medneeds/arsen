@@ -429,10 +429,7 @@ export default function PreCadastroPage() {
           </form>
         </Card>
 
-        <p className="text-center text-xs text-muted-foreground">
-          Seus dados são tratados conforme nossa política de privacidade. A
-          aprovação é feita manualmente pela equipe administrativa.
-        </p>
+        <NormaZeroFooter />
       </div>
     </div>
   );
