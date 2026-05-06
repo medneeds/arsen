@@ -393,7 +393,7 @@ export default function PainelClinicoPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="opacity-70 hover:opacity-100 transition-opacity"
                           onClick={(e) => { e.stopPropagation(); openPatient(patient); }}
                           title="Visualização rápida (preview)"
                         >
