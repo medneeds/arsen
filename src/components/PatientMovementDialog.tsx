@@ -491,13 +491,15 @@ export function PatientMovementDialog({
               </p>
             </div>
             <DischargeDocumentForm
+              key={`${requiredDocType}-${signerProfile.name}-${signerProfile.crm}`}
               type={requiredDocType}
               initial={{
                 patient_name: patient.name,
                 patient_bed: patient.bedNumber,
                 patient_sector: patient.sector,
                 hospital_name: currentHospital?.name,
-                signed_by_name: responsibleDoctor || undefined,
+                signed_by_name: responsibleDoctor || signerProfile.name || undefined,
+                signed_by_crm: signerProfile.crm || undefined,
               }}
               onChange={(payload, complete) => { setDocPayload(payload); setDocComplete(complete); }}
             />
