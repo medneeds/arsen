@@ -19,6 +19,7 @@ import LandingPage from "./pages/LandingPage";
 
 // Demais páginas: lazy para reduzir bundle inicial e uso de memória
 const SignupRedirectPage = lazy(() => import("./pages/SignupRedirectPage"));
+const PreCadastroPage = lazy(() => import("./pages/PreCadastroPage"));
 const ResourcesPage = lazy(() => import("./pages/ResourcesPage"));
 const MedicalCodesPage = lazy(() => import("./pages/MedicalCodesPage"));
 const HandoversPage = lazy(() => import("./pages/HandoversPage"));
@@ -136,6 +137,7 @@ const App = () => {
               <Route path="/signup" element={<SignupRedirectPage />} />
               <Route path="/sign-up" element={<SignupRedirectPage />} />
               <Route path="/cadastro" element={<SignupRedirectPage />} />
+              <Route path="/pre-cadastro" element={<PreCadastroPage />} />
               <Route path="/" element={<ProtectedRoute><ProfileHomeRedirect /></ProtectedRoute>} />
               <Route path="/mapa" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/painel-clinico" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><PainelClinicoPage /></MainLayout></ProtectedRoute>} />

@@ -60,8 +60,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CreateUserForm } from "@/components/users/CreateUserForm";
 import { UserAuditHistoryPanel } from "@/components/users/UserAuditHistoryPanel";
 import { UserApprovalsPanel } from "@/components/users/UserApprovalsPanel";
+import { PreRegistrationApprovalsPanel } from "@/components/users/PreRegistrationApprovalsPanel";
 import { logUserAdminAction } from "@/lib/userAdminAudit";
-import { UserPlus, History, ShieldCheck } from "lucide-react";
+import { UserPlus, History, ShieldCheck, Inbox } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -358,6 +359,18 @@ export default function UserManagementPage() {
   });
 
   const pendingCount = users.filter(u => u.status === "pending").length;
+  const [preRegPending, setPreRegPending] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { count } = await supabase
+        .from("pre_registration_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (!cancelled) setPreRegPending(count || 0);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Coordenadores (admin) e Gestores podem acessar a gestão de usuários
   const canManageUsers = currentUserRole === "admin" || isGestor;
@@ -420,6 +433,14 @@ export default function UserManagementPage() {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="prereg" className="gap-2">
+              <Inbox className="h-4 w-4" /> Pré-cadastros
+              {preRegPending > 0 && (
+                <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-[10px]">
+                  {preRegPending}
+                </Badge>
+              )}
+            </TabsTrigger>
             {(currentUserRole === "admin" || isGestor) && (
               <TabsTrigger value="create" className="gap-2">
                 <UserPlus className="h-4 w-4" /> Cadastrar Usuário
@@ -432,6 +453,10 @@ export default function UserManagementPage() {
 
           <TabsContent value="approvals">
             <UserApprovalsPanel />
+          </TabsContent>
+
+          <TabsContent value="prereg">
+            <PreRegistrationApprovalsPanel />
           </TabsContent>
 
           <TabsContent value="list" className="space-y-6">
