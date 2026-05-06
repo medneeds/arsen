@@ -137,6 +137,7 @@ const App = () => {
               <Route path="/signup" element={<SignupRedirectPage />} />
               <Route path="/sign-up" element={<SignupRedirectPage />} />
               <Route path="/cadastro" element={<SignupRedirectPage />} />
+              <Route path="/pre-cadastro" element={<PreCadastroPage />} />
               <Route path="/" element={<ProtectedRoute><ProfileHomeRedirect /></ProtectedRoute>} />
               <Route path="/mapa" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/painel-clinico" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><PainelClinicoPage /></MainLayout></ProtectedRoute>} />
