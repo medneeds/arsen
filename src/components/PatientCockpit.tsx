@@ -15,7 +15,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useActivePrescription } from "@/hooks/useActivePrescription";
 import { usePatientPendingItems } from "@/hooks/usePatientPendingItems";
