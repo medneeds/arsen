@@ -133,7 +133,7 @@ export function FirstAccessSetup({ userId, fullName, onComplete }: FirstAccessSe
         />
       </div>
 
-      <Card className="relative w-full max-w-md p-7 space-y-5 backdrop-blur-xl bg-card/80 border-border/60 shadow-2xl shadow-primary/10 animate-in fade-in zoom-in-95 duration-500">
+      <Card className="relative w-full max-w-md p-5 sm:p-7 space-y-5 backdrop-blur-xl bg-card/80 border-border/60 shadow-2xl shadow-primary/10 animate-in fade-in zoom-in-95 duration-500 my-auto">
         <div className="text-center space-y-2">
           <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/30 via-primary/15 to-emerald-500/20 ring-1 ring-primary/30 flex items-center justify-center shadow-lg shadow-primary/20">
             <ShieldCheck className="h-7 w-7 text-primary drop-shadow" />
