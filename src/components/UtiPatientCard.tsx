@@ -1007,8 +1007,17 @@ export function UtiPatientCard({
                 <span className="text-sm font-medium italic">Leito Vago</span>
               </div>
             </div>
-            {/* Actions for vacant bed: only deletion (governance). Admission flows through Recepção. */}
+            {/* Actions for vacant bed: cadastrar paciente + excluir leito */}
             <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[11px] gap-1 border-primary/40 text-primary hover:bg-primary/10"
+                onClick={() => setIsRegisterDialogOpen(true)}
+              >
+                <UserPlus className="h-3.5 w-3.5" />
+                Cadastrar Paciente
+              </Button>
               {onDelete && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
