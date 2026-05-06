@@ -36,6 +36,7 @@ export interface DischargeDocPayload {
   complications?: string;
   // Discharge specifics
   discharge_type?: string;
+  discharge_summary?: string;
   orientations?: string;
   return_date?: string;
   return_specialty?: string;
