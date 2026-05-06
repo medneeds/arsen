@@ -1227,6 +1227,7 @@ export default function AltaDesfechoPage() {
 
       {/* Patient Cockpit — fixed right sidebar */}
       <PatientCockpit patient={cockpitPatient} />
+      </div>
     </div>
   );
 }
