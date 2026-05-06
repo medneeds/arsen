@@ -53,6 +53,12 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
+import {
+  INTERNAL_TRANSFER_DESTINATIONS,
+  EXTERNAL_TRANSFER_DESTINATIONS,
+} from "@/data/movementFlow";
+import { ArrowLeftRight } from "lucide-react";
 
 // ── Discharge Summary Tab ──
 function DischargeSummaryTab({ patient }: { patient: PatientCtx }) {
