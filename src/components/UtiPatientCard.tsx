@@ -1525,6 +1525,7 @@ export function UtiPatientCard({
         open={isRegisterDialogOpen}
         onOpenChange={setIsRegisterDialogOpen}
         onSuccess={() => setIsRegisterDialogOpen(false)}
+        defaultDestinationSector={derivedUtiUnit}
       />
     </>
   );
