@@ -46,6 +46,7 @@ export interface DischargeDocPayload {
   // Death specifics
   death_date_time?: string;
   death_place?: string;
+  death_summary?: string; // relatório livre do óbito (substitui causa mortis estruturada)
   immediate_cause?: string;
   intermediate_causes?: string;
   basic_cause?: string;
@@ -127,10 +128,7 @@ export function buildDischargeDocHTML(type: DischargeDocType, p: DischargeDocPay
   `;
 
   const deathBlocks = `
-    ${block("Causa imediata da morte (Parte I-a)", p.immediate_cause)}
-    ${block("Causas intermediárias (Parte I-b/c)", p.intermediate_causes)}
-    ${block("Causa básica (Parte I-d)", p.basic_cause)}
-    ${block("Causas contribuintes (Parte II)", p.contributing_causes)}
+    ${block("Resumo / relatório do óbito", p.death_summary)}
     ${block("Tipo de morte", p.death_type)}
     ${block("Necropsia", p.necropsy)}
     ${block("Declaração de Óbito (nº)", p.do_number)}

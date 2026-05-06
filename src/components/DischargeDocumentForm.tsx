@@ -28,7 +28,7 @@ export interface DischargeDocFormProps {
 const REQUIRED_BY_TYPE: Record<DischargeDocType, (keyof DischargeDocPayload)[]> = {
   alta_hospitalar: ["final_diagnoses", "evolution_summary", "discharge_summary", "orientations", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
   alta_pedido: ["final_diagnoses", "evolution_summary", "discharge_summary", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
-  obito: ["death_date_time", "immediate_cause", "basic_cause", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
+  obito: ["death_date_time", "death_summary", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
 };
 
 const RELATION_OPTIONS = [
@@ -147,21 +147,10 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
 
       {isDeath ? (
         <>
-          <Field label="Causa imediata da morte (Parte I-a) *">
-            <Textarea rows={2} className="text-xs" value={form.immediate_cause || ""}
-              onChange={(e) => setField("immediate_cause", upper(e.target.value))} />
-          </Field>
-          <Field label="Causas intermediárias (Parte I-b/c)">
-            <Textarea rows={2} className="text-xs" value={form.intermediate_causes || ""}
-              onChange={(e) => setField("intermediate_causes", upper(e.target.value))} />
-          </Field>
-          <Field label="Causa básica (Parte I-d) *">
-            <Textarea rows={2} className="text-xs" value={form.basic_cause || ""}
-              onChange={(e) => setField("basic_cause", upper(e.target.value))} />
-          </Field>
-          <Field label="Causas contribuintes (Parte II)">
-            <Textarea rows={2} className="text-xs" value={form.contributing_causes || ""}
-              onChange={(e) => setField("contributing_causes", upper(e.target.value))} />
+          <Field label="Resumo do óbito / relatório livre *">
+            <Textarea rows={8} className="text-xs" value={form.death_summary || ""}
+              onChange={(e) => setField("death_summary", upper(e.target.value))}
+              placeholder="DESCREVA LIVREMENTE O RELATÓRIO DO ÓBITO: HISTÓRICO CLÍNICO RELEVANTE, EVOLUÇÃO ATÉ O ÓBITO, MANOBRAS REALIZADAS, HORÁRIO DA CONSTATAÇÃO E DEMAIS OBSERVAÇÕES." />
           </Field>
           <div className="grid grid-cols-3 gap-2">
             <Field label="Tipo de morte">
