@@ -219,7 +219,7 @@ export default function PainelClinicoPage() {
       patientSector: patient.sector,
     });
     if (patient.age) params.set("patientAge", patient.age.toString());
-    navigate(`/prescricao?${params.toString()}`);
+    navigate(`/paciente?${params.toString()}`);
   };
 
   return (
