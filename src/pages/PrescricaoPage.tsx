@@ -3796,7 +3796,7 @@ const PrescricaoPage = () => {
       {/* ===== UNIFIED HEADER — title + context (peso/alergias/data/templates) + actions ===== */}
       <div className="print:hidden rounded-xl border border-border bg-card/60">
         {/* Row 0 — Title + meta */}
-        <div className="flex items-center justify-between gap-3 flex-wrap px-3 pt-2.5 pb-2">
+        <div className="hidden sm:flex items-center justify-between gap-3 flex-wrap px-3 pt-2.5 pb-2">
           <div className="flex items-center gap-3 min-w-0">
             <div className="p-2 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10 shrink-0">
               <Pill className="h-4 w-4 text-primary" />
