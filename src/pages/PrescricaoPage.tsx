@@ -2476,6 +2476,7 @@ const PrescricaoPage = () => {
   const [searchParams] = useSearchParams();
   const { getCount: getFavoriteCount, trackUse: trackMedicationUse } = useMedicationFavorites();
   const { getDbProtocols } = useMedicationProtocols();
+  const { byCategory: UNIFIED_CATALOG } = useUnifiedMedicationCatalog();
   const { state: sidebarState, isMobile: sidebarIsMobile } = useSidebar();
   const sidebarCollapsed = sidebarState === "collapsed";
 
