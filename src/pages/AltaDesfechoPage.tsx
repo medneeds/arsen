@@ -195,6 +195,33 @@ function DischargeSummaryTab() {
           </CardContent>
         </Card>
 
+        {/* Discharge Summary (clinical synthesis - distinct from orientations) */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-primary" />
+              Sumário de Alta
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-normal ml-1">
+                (síntese clínica do internamento)
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1.5">
+            <Label className="text-xs">
+              Sumário clínico — diferente das orientações ao paciente
+            </Label>
+            <Textarea
+              value={form.dischargeSummary}
+              onChange={e => setForm(f => ({ ...f, dischargeSummary: e.target.value }))}
+              placeholder="Motivo da internação, evolução, exames relevantes, tratamentos realizados, condição clínica na alta..."
+              className="text-xs min-h-[140px]"
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Este texto compõe o sumário oficial enviado ao histórico do paciente e ao PDF Norma Zero.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Procedures */}
         <Card>
           <CardHeader className="pb-3">
