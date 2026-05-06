@@ -31,6 +31,9 @@ import { Check as CheckIcon, Clock as ClockIcon } from "lucide-react";
 import { usePatientSpecialRequests } from "@/hooks/usePatientSpecialRequests";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { formatDistanceToNow } from "date-fns";
+import { usePatientDischargeDocs } from "@/hooks/usePatientDischargeDocs";
+import { printDischargeDocument, DISCHARGE_DOC_SHORT } from "@/lib/dischargeDocuments";
+import { Skull, FileSignature } from "lucide-react";
 
 interface PatientCockpitProps {
   patient: Patient | null;
