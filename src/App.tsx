@@ -57,6 +57,7 @@ const MedicationCatalogPage = lazy(() => import("./pages/MedicationCatalogPage")
 const GestorPanelPage = lazy(() => import("./pages/GestorPanelPage"));
 const ValidacaoFarmaceuticaPage = lazy(() => import("./pages/ValidacaoFarmaceuticaPage"));
 const PainelClinicoPage = lazy(() => import("./pages/PainelClinicoPage"));
+const PacienteHubPage = lazy(() => import("./pages/PacienteHubPage"));
 const SetorImagemPage = lazy(() => import("./pages/SetorImagemPage"));
 const SetorLaboratorioPage = lazy(() => import("./pages/SetorLaboratorioPage"));
 const Saps3Page = lazy(() => import("./pages/Saps3Page"));
