@@ -1134,43 +1134,93 @@ function CihdottSection() {
 
 // ── Main Page ──
 export default function AltaDesfechoPage() {
+  const [searchParams] = useSearchParams();
+  const patientId = searchParams.get("patientId") || "";
+  const patientName =
+    searchParams.get("patientName") || searchParams.get("patient") || "";
+  const patientBed =
+    searchParams.get("patientBed") || searchParams.get("bed") || "";
+  const patientSector = searchParams.get("patientSector") || "";
+  const patientAge = searchParams.get("patientAge") || "";
+
+  const patientCtx: PatientCtx = {
+    id: patientId,
+    name: patientName,
+    bed: patientBed,
+    sector: patientSector,
+    age: patientAge,
+  };
+
+  // Live patient data for cockpit (subscribed via realtime)
+  const { patient: livePatient } = usePatientLive(patientId || null);
+
+  const cockpitPatient: Patient = useMemo(() => {
+    if (livePatient) return livePatient;
+    return {
+      id: patientId || "alta-stub",
+      bedNumber: patientBed,
+      name: patientName,
+      age: patientAge.replace(/\s*anos?$/i, ""),
+      sector: (patientSector as Patient["sector"]) || "outside",
+      diagnoses: [],
+      medicalHistory: [],
+      relevantExams: [],
+      pendencies: [],
+      schedule: [],
+      admissionHistory: "",
+      utiAllergies: [],
+      clinicalStatus: "regular",
+    } as Patient;
+  }, [livePatient, patientId, patientName, patientBed, patientSector, patientAge]);
+
+  const hasPatient = !!(patientId || patientName);
+
   return (
-    <div className="p-4 md:p-6 space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="bg-primary/10 p-2.5 rounded-xl">
-          <ArrowRight className="h-5 w-5 text-primary" />
+    <div className="flex">
+      <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/10 p-2.5 rounded-xl">
+            <ArrowRight className="h-5 w-5 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold text-foreground">Alta e Desfecho</h1>
+            <p className="text-xs text-muted-foreground truncate">
+              {hasPatient
+                ? `${patientName}${patientBed ? ` • Leito ${patientBed}` : ""}${patientSector ? ` • ${patientSector.toUpperCase()}` : ""}`
+                : "Selecione um paciente pelo cockpit ou painel clínico"}
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-lg font-bold text-foreground">Alta e Desfecho</h1>
-          <p className="text-xs text-muted-foreground">Sumário de alta, referência/contrarreferência e protocolos de óbito</p>
-        </div>
+
+        <Tabs defaultValue="sumario" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 h-10">
+            <TabsTrigger value="sumario" className="text-xs gap-1.5">
+              <ClipboardList className="h-3.5 w-3.5" />
+              Sumário de Alta
+            </TabsTrigger>
+            <TabsTrigger value="referencia" className="text-xs gap-1.5">
+              <Send className="h-3.5 w-3.5" />
+              Referência
+            </TabsTrigger>
+            <TabsTrigger value="obito" className="text-xs gap-1.5">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              Óbito
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="sumario" className="mt-4">
+            <DischargeSummaryTab patient={patientCtx} />
+          </TabsContent>
+          <TabsContent value="referencia" className="mt-4">
+            <ReferralTab patient={patientCtx} />
+          </TabsContent>
+          <TabsContent value="obito" className="mt-4">
+            <DeathOutcomeTab patient={patientCtx} />
+          </TabsContent>
+        </Tabs>
       </div>
 
-      <Tabs defaultValue="sumario" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 h-10">
-          <TabsTrigger value="sumario" className="text-xs gap-1.5">
-            <ClipboardList className="h-3.5 w-3.5" />
-            Sumário de Alta
-          </TabsTrigger>
-          <TabsTrigger value="referencia" className="text-xs gap-1.5">
-            <Send className="h-3.5 w-3.5" />
-            Referência
-          </TabsTrigger>
-          <TabsTrigger value="obito" className="text-xs gap-1.5">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            Óbito
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="sumario" className="mt-4">
-          <DischargeSummaryTab />
-        </TabsContent>
-        <TabsContent value="referencia" className="mt-4">
-          <ReferralTab />
-        </TabsContent>
-        <TabsContent value="obito" className="mt-4">
-          <DeathOutcomeTab />
-        </TabsContent>
-      </Tabs>
+      {/* Patient Cockpit — fixed right sidebar */}
+      <PatientCockpit patient={cockpitPatient} />
     </div>
   );
 }
