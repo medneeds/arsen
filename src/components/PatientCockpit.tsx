@@ -346,25 +346,28 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         </div>
 
         {/* ===== ZONA 2: AÇÕES PRIMÁRIAS ===== */}
-        <div className="px-3 py-3 border-b border-border grid grid-cols-2 gap-2">
-          <Button
-            size="sm"
-            variant="default"
-            className="h-8 text-xs gap-1.5"
-            onClick={() => goPatient("/prescricao")}
-          >
-            <Stethoscope className="h-3.5 w-3.5" />
-            Abrir Atendimento
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 text-xs gap-1.5"
-            onClick={() => goPatient("/historico-paciente")}
-          >
-            <FileText className="h-3.5 w-3.5" />
-            Histórico
-          </Button>
+        <div className="px-3 py-3 border-b border-border space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              size="sm"
+              variant="default"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => goPatient("/prescricao")}
+            >
+              <Stethoscope className="h-3.5 w-3.5" />
+              Abrir Atendimento
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => goPatient("/historico-paciente")}
+            >
+              <FileText className="h-3.5 w-3.5" />
+              Histórico
+            </Button>
+          </div>
+          <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => goPatient("/alta-desfecho")} />
         </div>
 
         {/* ===== ZONA 3: ALERTAS CLÍNICOS ===== */}
