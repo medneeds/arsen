@@ -83,6 +83,9 @@ export default function AuthPage() {
   const [chooserAppRole, setChooserAppRole] = useState<string | null>(null);
   const [chooserUserName, setChooserUserName] = useState<string | null>(null);
 
+  // Primeiro acesso (senha padrão 123456 → exige troca + escolha de username)
+  const [firstAccess, setFirstAccess] = useState<{ userId: string; fullName: string | null } | null>(null);
+
   const [loginData, setLoginData] = useState({
     username: "",
     password: "",
