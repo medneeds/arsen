@@ -53,7 +53,10 @@ export function BreadcrumbBar({
     <nav
       aria-label="Hierarquia do setor"
       className={cn(
-        "print:hidden flex items-center justify-between gap-1.5 sm:gap-2 flex-wrap px-1.5 sm:px-3 py-1 sm:py-1.5 shadow-sm rounded-lg sm:rounded-xl backdrop-blur-sm",
+        "print:hidden flex items-center justify-between gap-1.5 sm:gap-2 px-1.5 sm:px-3 py-1 sm:py-1.5 shadow-sm rounded-lg sm:rounded-xl backdrop-blur-sm",
+        // Mobile: nowrap + horizontal scroll keeps the bar to a single row.
+        // Desktop: wraps as before so all chips stay visible.
+        "flex-nowrap overflow-x-auto sm:flex-wrap sm:overflow-visible scrollbar-none",
         isInstitutional
           ? "border border-primary/30 text-primary-foreground"
           : "border border-border/60 bg-card/60",
@@ -68,7 +71,7 @@ export function BreadcrumbBar({
           : undefined
       }
     >
-      <div className="flex items-center flex-wrap gap-x-2 gap-y-1.5 text-[11px] sm:text-xs font-medium tracking-wide min-w-0">
+      <div className="flex items-center flex-nowrap sm:flex-wrap gap-x-1.5 sm:gap-x-2 gap-y-1.5 text-[11px] sm:text-xs font-medium tracking-wide min-w-0">
         <SidebarTrigger
           className={cn(
             "flex-shrink-0 h-9 w-9 sm:h-7 sm:w-7",
@@ -82,7 +85,7 @@ export function BreadcrumbBar({
             size="icon"
             onClick={() => navigate(-1)}
             className={cn(
-              "h-7 w-7 flex-shrink-0",
+              "h-8 w-8 sm:h-7 sm:w-7 flex-shrink-0",
               isInstitutional
                 ? "text-primary-foreground/90 hover:text-primary-foreground hover:bg-white/10"
                 : "text-muted-foreground hover:text-foreground",
@@ -92,6 +95,7 @@ export function BreadcrumbBar({
           </Button>
         )}
 
+        {/* Hospital chip — desktop only (mobile saves space; hospital lives in sidebar/login) */}
         <span
           className={cn(
             "hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-semibold",
@@ -106,38 +110,44 @@ export function BreadcrumbBar({
 
         {showSector && (
           <>
-            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
+            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
             <SectorSelector variant={isInstitutional ? "dark" : "light"} />
           </>
         )}
 
+        {/* Nav tabs (Mapa/Painel) — desktop only on patient flows to avoid 2nd row on mobile */}
         {showNavTabs && (
           <>
-            <ChevronRight className={cn("h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
-            <ClinicalNavTabs hideSector />
+            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
+            <span className={cn(showPatient ? "hidden sm:inline-flex" : "inline-flex")}>
+              <ClinicalNavTabs hideSector />
+            </span>
           </>
         )}
 
         {showPatient && (
           <>
-            <ChevronRight className={cn("h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
+            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
             <PatientSwitcher variant={isInstitutional ? "dark" : "default"} />
           </>
         )}
 
+        {/* Module tabs — desktop only; on mobile the moduleLabel chip below carries the context */}
         {showModules && (
           <>
-            <ChevronRight className={cn("h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
-            <ClinicalModuleTabs variant={isInstitutional ? "dark" : "default"} />
+            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
+            <span className="hidden sm:inline-flex">
+              <ClinicalModuleTabs variant={isInstitutional ? "dark" : "default"} />
+            </span>
           </>
         )}
 
         {moduleLabel && (
           <>
-            <ChevronRight className={cn("h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
+            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5 flex-shrink-0", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
             <span
               className={cn(
-                "px-2 py-1 rounded-md uppercase tracking-wide",
+                "px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md uppercase tracking-wide text-[10px] sm:text-xs whitespace-nowrap flex-shrink-0",
                 isInstitutional ? "bg-white/15 text-primary-foreground border border-white/20" : "bg-primary/10 text-primary",
               )}
             >
