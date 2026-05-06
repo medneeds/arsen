@@ -3008,7 +3008,7 @@ const PrescricaoPage = () => {
   // Callback when antimicrobial guide is confirmed — add both guide entry data and the prescription item
   const handleAntimicrobialConfirm = useCallback((confirmedEntries: Array<{ medication: string; dose: string; route: string; posology: string }>) => {
     // Find matching MedicationEntry from the database for each confirmed entry
-    const antimicrobialOptions = ALL_ITEMS_BY_CATEGORY['antimicrobial'] || [];
+    const antimicrobialOptions = UNIFIED_CATALOG['antimicrobial'] || [];
     const newItems: PrescriptionItem[] = confirmedEntries.map(entry => {
       const matchedMed = antimicrobialOptions.find(m => m.name === entry.medication);
       if (matchedMed) {
