@@ -1,6 +1,17 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PatientCockpit } from "@/components/PatientCockpit";
+import { usePatientLive } from "@/hooks/usePatientLive";
+import type { Patient } from "@/types/patient";
+
+interface PatientCtx {
+  id: string;
+  name: string;
+  bed: string;
+  sector: string;
+  age: string;
+}
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
