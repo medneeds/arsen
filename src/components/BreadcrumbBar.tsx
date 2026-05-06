@@ -94,7 +94,7 @@ export function BreadcrumbBar({
 
         <span
           className={cn(
-            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-semibold",
+            "hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-semibold",
             isInstitutional
               ? "bg-white/20 text-white border-white/30 backdrop-blur shadow-sm"
               : "bg-muted/60 text-muted-foreground border-border/50",
@@ -106,7 +106,7 @@ export function BreadcrumbBar({
 
         {showSector && (
           <>
-            <ChevronRight className={cn("h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
+            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
             <SectorSelector variant={isInstitutional ? "dark" : "light"} />
           </>
         )}
