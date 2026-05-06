@@ -51,7 +51,13 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
 
   const isComplete = useMemo(() => {
     const req = REQUIRED_BY_TYPE[type];
-    return req.every((k) => String((form as any)[k] ?? "").trim().length > 2);
+    const minOne: (keyof DischargeDocPayload)[] = [
+      "family_satisfaction", "family_communication_mode", "family_contact_relation",
+    ];
+    return req.every((k) => {
+      const v = String((form as any)[k] ?? "").trim();
+      return minOne.includes(k) ? v.length >= 1 : v.length > 2;
+    });
   }, [form, type]);
 
   useEffect(() => {
