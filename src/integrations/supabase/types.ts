@@ -2559,6 +2559,77 @@ export type Database = {
           },
         ]
       }
+      pre_registration_requests: {
+        Row: {
+          access_profile: string
+          cpf: string
+          created_at: string
+          created_user_id: string | null
+          crm: string | null
+          email: string
+          full_name: string
+          hospital_unit_id: string | null
+          id: string
+          ip_address: unknown
+          justification: string | null
+          phone: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          status: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          access_profile?: string
+          cpf: string
+          created_at?: string
+          created_user_id?: string | null
+          crm?: string | null
+          email: string
+          full_name: string
+          hospital_unit_id?: string | null
+          id?: string
+          ip_address?: unknown
+          justification?: string | null
+          phone: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          access_profile?: string
+          cpf?: string
+          created_at?: string
+          created_user_id?: string | null
+          crm?: string | null
+          email?: string
+          full_name?: string
+          hospital_unit_id?: string | null
+          id?: string
+          ip_address?: unknown
+          justification?: string | null
+          phone?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_registration_requests_hospital_unit_id_fkey"
+            columns: ["hospital_unit_id"]
+            isOneToOne: false
+            referencedRelation: "hospital_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prescription_quick_templates: {
         Row: {
           clinical_category: string
