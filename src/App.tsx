@@ -57,6 +57,7 @@ const MedicationCatalogPage = lazy(() => import("./pages/MedicationCatalogPage")
 const GestorPanelPage = lazy(() => import("./pages/GestorPanelPage"));
 const ValidacaoFarmaceuticaPage = lazy(() => import("./pages/ValidacaoFarmaceuticaPage"));
 const PainelClinicoPage = lazy(() => import("./pages/PainelClinicoPage"));
+const PacienteHubPage = lazy(() => import("./pages/PacienteHubPage"));
 const SetorImagemPage = lazy(() => import("./pages/SetorImagemPage"));
 const SetorLaboratorioPage = lazy(() => import("./pages/SetorLaboratorioPage"));
 const Saps3Page = lazy(() => import("./pages/Saps3Page"));
@@ -138,6 +139,7 @@ const App = () => {
               <Route path="/" element={<ProtectedRoute><ProfileHomeRedirect /></ProtectedRoute>} />
               <Route path="/mapa" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/painel-clinico" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><PainelClinicoPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/paciente" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><PacienteHubPage /></MainLayout></ProtectedRoute>} />
               <Route path="/resources" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><ResourcesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/codigos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MedicalCodesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/handovers" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><HandoversPage /></MainLayout></ProtectedRoute>} />
