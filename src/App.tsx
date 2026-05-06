@@ -6,9 +6,10 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
 import { PrivacyProvider } from "@/contexts/PrivacyContext";
-import { lazy, Suspense, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { FloatingThemeToggle } from "@/components/FloatingThemeToggle";
+import { PageLoader } from "@/components/PageLoader";
+import { startIdlePrefetch } from "@/lib/prefetchRoutes";
 
 // Telas críticas (eager): impactam first paint do app
 import Index from "./pages/Index";
@@ -85,23 +86,17 @@ const ApresentacaoPage = lazy(() => import("./pages/ApresentacaoPage"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60_000,            // 1 min: evita refetch instantâneo ao remontar
-      gcTime: 5 * 60_000,           // 5 min: mantém dados em cache mais tempo
+      staleTime: 5 * 60_000,        // 5 min: navegação entre páginas usa cache
+      gcTime: 30 * 60_000,          // 30 min: mantém dados quentes na sessão
       refetchOnWindowFocus: false,  // evita avalanche de requests ao trocar de aba
+      refetchOnMount: false,        // não refetch ao remontar se ainda fresco
       refetchOnReconnect: "always", // reconciliar após queda de rede
       retry: 1,                     // não congelar UI em falhas transientes
     },
   },
 });
 
-const PageFallback = () => (
-  <div className="min-h-[60vh] flex items-center justify-center bg-background">
-    <div className="flex items-center gap-2 text-muted-foreground text-sm">
-      <Loader2 className="h-4 w-4 animate-spin" />
-      Carregando…
-    </div>
-  </div>
-);
+const PageFallback = () => <PageLoader />;
 
 /** Redirects profile-specific roles to their dedicated panels */
 function ProfileHomeRedirect() {
@@ -120,6 +115,10 @@ function ProfileHomeRedirect() {
 
 const App = () => {
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
+
+  useEffect(() => {
+    startIdlePrefetch();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
