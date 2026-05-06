@@ -23,7 +23,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useHospital } from "@/contexts/HospitalContext";
-import { ArrowLeft, ArrowRight, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, Loader2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   MOVEMENT_CATEGORIES,
@@ -38,6 +38,12 @@ import {
   type MovementSubtype,
   type SubtypeDef,
 } from "@/data/movementFlow";
+import { DischargeDocumentForm } from "@/components/DischargeDocumentForm";
+import {
+  type DischargeDocType,
+  type DischargeDocPayload,
+  printDischargeDocument,
+} from "@/lib/dischargeDocuments";
 
 interface PatientMovementDialogProps {
   patient: Patient | null;
