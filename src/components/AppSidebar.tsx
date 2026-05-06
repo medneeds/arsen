@@ -245,6 +245,8 @@ export function AppSidebar({
   // Round e demais módulos acessados via card do paciente / aba Docs.
   const medicoMenu = [
     { title: "Início", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
+    { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: ["medico"] },
+    { title: "Painel Clínico", icon: ClipboardList, link: "/painel-clinico", profiles: ["medico"] },
     { title: "Examinus AI", icon: Brain, link: "/ia", profiles: ["medico"] },
   ];
 
