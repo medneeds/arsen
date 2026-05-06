@@ -733,16 +733,19 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         )}
 
         <Tabs defaultValue="resumo" className="flex-1 min-h-0 flex flex-col">
-          <TabsList className="mx-3 mt-2 grid grid-cols-4 h-8 p-0.5">
-            <TabsTrigger value="resumo" className="text-[11px] h-7 px-1">Resumo</TabsTrigger>
-            <TabsTrigger value="exames" className="text-[11px] h-7 px-1">Exames</TabsTrigger>
-            <TabsTrigger value="condutas" className="text-[11px] h-7 px-1">Condutas</TabsTrigger>
-            <TabsTrigger value="trajeto" className="text-[11px] h-7 px-1">Trajeto</TabsTrigger>
+          <TabsList className="mx-2 sm:mx-3 mt-2 grid grid-cols-4 h-9 sm:h-8 p-0.5 sticky top-0 z-10 shrink-0">
+            <TabsTrigger value="resumo" className="text-[11px] h-8 sm:h-7 px-1">Resumo</TabsTrigger>
+            <TabsTrigger value="exames" className="text-[11px] h-8 sm:h-7 px-1">Exames</TabsTrigger>
+            <TabsTrigger value="condutas" className="text-[11px] h-8 sm:h-7 px-1">Condutas</TabsTrigger>
+            <TabsTrigger value="trajeto" className="text-[11px] h-8 sm:h-7 px-1">Trajeto</TabsTrigger>
           </TabsList>
 
-          <ScrollArea className="flex-1 min-h-0 mt-1">
+          <div
+            className="flex-1 min-h-0 mt-1 overflow-y-auto overscroll-contain pb-[max(env(safe-area-inset-bottom),0.75rem)]"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
             {/* ABA RESUMO: diagnósticos + antecedentes + responsável */}
-            <TabsContent value="resumo" className="px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+            <TabsContent value="resumo" className="px-2.5 sm:px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
               <CockpitSection icon={Stethoscope} title="Diagnósticos" count={diagnoses.length}>
                 <ItemList items={diagnoses} emptyMsg="Sem diagnósticos registrados." />
               </CockpitSection>
@@ -759,7 +762,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </TabsContent>
 
             {/* ABA EXAMES: realtime + relevantes + dispositivos */}
-            <TabsContent value="exames" className="px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+            <TabsContent value="exames" className="px-2.5 sm:px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
               <CockpitSection icon={TestTubes} title="Atividade em tempo real">
                 <div className="grid grid-cols-2 gap-1.5 mb-2">
                   <PendingStat label="Exames pendentes" value={pendingSummary.pendingExams} tone="warning" />
@@ -806,7 +809,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </TabsContent>
 
             {/* ABA CONDUTAS: condutas do dia + pendências */}
-            <TabsContent value="condutas" className="px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+            <TabsContent value="condutas" className="px-2.5 sm:px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
               <CockpitSection icon={Heart} title="Condutas do dia" count={conducts.length}>
                 <ItemList items={conducts} emptyMsg="Nenhuma conduta lançada." />
               </CockpitSection>
@@ -816,7 +819,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </TabsContent>
 
             {/* ABA TRAJETO: previsão de alta + movimentações realtime */}
-            <TabsContent value="trajeto" className="px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
+            <TabsContent value="trajeto" className="px-2.5 sm:px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
               <CockpitSection icon={TrendingUp} title="Previsão de alta">
                 <div className="text-xs text-foreground preserve-case">
                   {patient.utiDischargePrediction && patient.utiDischargePrediction.length > 0
@@ -871,7 +874,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
 
               <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => goPatient("/alta-desfecho")} />
             </TabsContent>
-          </ScrollArea>
+          </div>
         </Tabs>
         </div>
       </aside>
