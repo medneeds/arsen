@@ -19,6 +19,7 @@ import LandingPage from "./pages/LandingPage";
 
 // Demais páginas: lazy para reduzir bundle inicial e uso de memória
 const SignupRedirectPage = lazy(() => import("./pages/SignupRedirectPage"));
+const PreCadastroPage = lazy(() => import("./pages/PreCadastroPage"));
 const ResourcesPage = lazy(() => import("./pages/ResourcesPage"));
 const MedicalCodesPage = lazy(() => import("./pages/MedicalCodesPage"));
 const HandoversPage = lazy(() => import("./pages/HandoversPage"));
