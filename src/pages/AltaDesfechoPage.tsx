@@ -54,14 +54,10 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
 
 // ── Discharge Summary Tab ──
-function DischargeSummaryTab() {
-  const [searchParams] = useSearchParams();
-  const patientName = searchParams.get("patient") || "";
-  const patientBed = searchParams.get("bed") || "";
-
+function DischargeSummaryTab({ patient }: { patient: PatientCtx }) {
   const [form, setForm] = useState({
-    patientName: patientName,
-    patientBed: patientBed,
+    patientName: patient.name,
+    patientBed: patient.bed,
     medicalRecord: "",
     admissionDate: "",
     dischargeDate: new Date().toISOString().split("T")[0],
