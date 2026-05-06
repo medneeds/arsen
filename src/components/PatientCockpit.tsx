@@ -886,7 +886,7 @@ function DischargeQuickActions({ patientId, patientName, fallback }: { patientId
   }
   return (
     <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5" onClick={fallback}>
-      <LogOut className="h-3.5 w-3.5" /> Abrir fluxo de alta
+      <ArrowLeftRight className="h-3.5 w-3.5" /> Abrir fluxo de movimentação
     </Button>
   );
 }
