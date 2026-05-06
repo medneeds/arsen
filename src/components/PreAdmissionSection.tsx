@@ -242,6 +242,7 @@ export function PreAdmissionSection({ sectorFilterLabel }: PreAdmissionSectionPr
         open={showRegistration}
         onOpenChange={setShowRegistration}
         onSuccess={fetchPreAdmissions}
+        defaultDestinationSector={sectorFilterLabel}
       />
 
       <RiskClassificationDialog
