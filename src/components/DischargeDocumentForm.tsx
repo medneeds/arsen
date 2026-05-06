@@ -26,10 +26,15 @@ export interface DischargeDocFormProps {
 }
 
 const REQUIRED_BY_TYPE: Record<DischargeDocType, (keyof DischargeDocPayload)[]> = {
-  alta_hospitalar: ["final_diagnoses", "evolution_summary", "orientations", "signed_by_name", "signed_by_crm"],
-  alta_pedido: ["final_diagnoses", "evolution_summary", "signed_by_name", "signed_by_crm"],
-  obito: ["death_date_time", "immediate_cause", "basic_cause", "signed_by_name", "signed_by_crm"],
+  alta_hospitalar: ["final_diagnoses", "evolution_summary", "orientations", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
+  alta_pedido: ["final_diagnoses", "evolution_summary", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
+  obito: ["death_date_time", "immediate_cause", "basic_cause", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
 };
+
+const RELATION_OPTIONS = [
+  "CÔNJUGE", "FILHO(A)", "PAI", "MÃE", "IRMÃO(Ã)", "AVÔ/AVÓ", "NETO(A)",
+  "TIO(A)", "SOBRINHO(A)", "PRIMO(A)", "RESPONSÁVEL LEGAL", "OUTRO",
+];
 
 export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocFormProps) {
   const [form, setForm] = useState<DischargeDocPayload>(() => ({
