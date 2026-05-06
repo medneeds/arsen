@@ -641,38 +641,23 @@ function DeathDeclarationSection() {
         </CardContent>
       </Card>
 
-      <Card className="border-amber-500/30 bg-amber-500/5">
+      <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            Causa Mortis — Padrão DO (Declaração de Óbito)
+            <FileText className="h-4 w-4 text-primary" />
+            Resumo do Óbito
           </CardTitle>
-          <CardDescription className="text-xs">Linha A → causa imediata • Linha D → causa básica (a mais importante)</CardDescription>
+          <CardDescription className="text-xs">
+            Relatório livre — descreva o histórico clínico relevante, a evolução até o óbito, manobras realizadas, horário da constatação e demais observações.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-2">
-            {[
-              { key: "causeA", label: "a) Causa imediata", placeholder: "Ex: Choque séptico" },
-              { key: "causeB", label: "b) Devido a", placeholder: "Ex: Peritonite generalizada" },
-              { key: "causeC", label: "c) Devido a", placeholder: "Ex: Perfuração intestinal" },
-              { key: "causeD", label: "d) Causa básica", placeholder: "Ex: Neoplasia de cólon (C18)" },
-            ].map(({ key, label, placeholder }) => (
-              <div key={key} className="flex items-center gap-3">
-                <Label className="text-xs w-32 flex-shrink-0 font-medium">{label}</Label>
-                <Input
-                  value={(form as any)[key]}
-                  onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                  placeholder={placeholder}
-                  className="text-xs h-9 flex-1"
-                />
-              </div>
-            ))}
-          </div>
-          <Separator />
-          <div className="space-y-1.5">
-            <Label className="text-xs">Parte II — Condições contribuintes</Label>
-            <Textarea value={form.causePart2} onChange={e => setForm(f => ({ ...f, causePart2: e.target.value }))} placeholder="Outras condições que contribuíram para o óbito (DM, HAS, etc.)" className="text-xs min-h-[50px]" />
-          </div>
+        <CardContent>
+          <Textarea
+            value={form.deathSummary}
+            onChange={e => setForm(f => ({ ...f, deathSummary: e.target.value }))}
+            placeholder="Descreva livremente o relatório do óbito..."
+            className="text-xs min-h-[200px]"
+          />
         </CardContent>
       </Card>
 
