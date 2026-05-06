@@ -34,6 +34,7 @@ import { formatDistanceToNow } from "date-fns";
 import { usePatientDischargeDocs } from "@/hooks/usePatientDischargeDocs";
 import { printDischargeDocument, DISCHARGE_DOC_SHORT } from "@/lib/dischargeDocuments";
 import { Skull, FileSignature, ArrowLeftRight } from "lucide-react";
+import { MedicalDocumentDialog } from "./MedicalDocumentDialog";
 
 interface PatientCockpitProps {
   patient: Patient | null;
