@@ -117,7 +117,10 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
             </TabsTrigger>
           </TabsList>
 
-          <ScrollArea className="flex-1 min-h-0 px-4 sm:px-6 py-3 sm:py-4 sm:max-h-[42vh]">
+          <div
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 py-3 sm:py-4"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
             <TabsContent value="terms" className="mt-0 space-y-3 text-sm">
               <p className="text-muted-foreground leading-relaxed">
                 O sistema <strong className="text-foreground">{whitelabel.platform.fullName}</strong> é destinado
@@ -207,7 +210,7 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
                 </div>
               </div>
             </TabsContent>
-          </ScrollArea>
+          </div>
         </Tabs>
 
         {/* Footer fixo de aceite */}
