@@ -841,15 +841,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 )}
               </CockpitSection>
 
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full h-8 text-xs gap-1.5"
-                onClick={() => goPatient("/alta-desfecho")}
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                Abrir fluxo de alta
-              </Button>
+              <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => goPatient("/alta-desfecho")} />
             </TabsContent>
           </ScrollArea>
         </Tabs>
