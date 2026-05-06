@@ -4913,7 +4913,7 @@ const PrescricaoPage = () => {
               : `${scheduledCount} de horário (serão incorporados na renovação)`,
           });
         }}
-        allMedications={Object.values(ALL_ITEMS_BY_CATEGORY).flat()}
+        allMedications={Object.values(UNIFIED_CATALOG).flat()}
       />
 
       {/* Antimicrobial Guide Dialog */}
