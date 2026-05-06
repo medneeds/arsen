@@ -277,7 +277,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           </div>
         )}
         {/* ===== ZONA 1: IDENTIDADE (sticky) ===== */}
-        <div className="px-4 pt-4 pb-3 border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
+        <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2.5 sm:pb-3 border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="min-w-0 flex-1">
               <h3 className="patient-id text-sm font-bold leading-tight text-foreground truncate">
