@@ -4413,7 +4413,7 @@ const PrescricaoPage = () => {
                         </div>
                       ) : (
                         <MedicationAutocomplete
-                          source={ALL_ITEMS_BY_CATEGORY[cat]}
+                          source={UNIFIED_CATALOG[cat]}
                           onSelect={addItem}
                           placeholder={`Buscar ${config.label.toLowerCase()}...`}
                           getFavoriteCount={getFavoriteCount}
