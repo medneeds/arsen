@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useHospital } from "@/contexts/HospitalContext";
+import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { supabase } from "@/integrations/supabase/client";
 import {
   MOVEMENT_CATEGORIES,
@@ -55,6 +56,7 @@ const MovimentacoesPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentHospital, currentState } = useHospital();
+  const currentDoctor = useCurrentDoctor();
 
   const patientId = searchParams.get("patientId") || "";
   const patientName = searchParams.get("patientName") || "";
@@ -74,6 +76,14 @@ const MovimentacoesPage = () => {
   const [notes, setNotes] = useState("");
   const [responsibleDoctor, setResponsibleDoctor] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Auto-fill responsible doctor with logged user when known
+  React.useEffect(() => {
+    if (!responsibleDoctor && currentDoctor.fullName) {
+      const crmSuffix = currentDoctor.crm ? ` — CRM ${currentDoctor.crm}` : "";
+      setResponsibleDoctor(`${currentDoctor.fullName.toUpperCase()}${crmSuffix}`);
+    }
+  }, [currentDoctor.fullName, currentDoctor.crm, responsibleDoctor]);
 
   // History — realtime via shared hook (synced with PatientCockpit "Trajeto" tab)
   const { movements, loading: loadingHistory, refresh: loadHistory } = usePatientMovements(

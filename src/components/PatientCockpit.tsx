@@ -33,7 +33,7 @@ import { usePatientLive } from "@/hooks/usePatientLive";
 import { formatDistanceToNow } from "date-fns";
 import { usePatientDischargeDocs } from "@/hooks/usePatientDischargeDocs";
 import { printDischargeDocument, DISCHARGE_DOC_SHORT } from "@/lib/dischargeDocuments";
-import { Skull, FileSignature } from "lucide-react";
+import { Skull, FileSignature, ArrowLeftRight } from "lucide-react";
 
 interface PatientCockpitProps {
   patient: Patient | null;
@@ -367,7 +367,11 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               Histórico
             </Button>
           </div>
-          <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => goPatient("/alta-desfecho")} />
+          <DischargeQuickActions
+            patientId={patient.id}
+            patientName={patient.name}
+            fallback={() => goPatient("/movimentacoes")}
+          />
         </div>
 
         {/* ===== ZONA 3: ALERTAS CLÍNICOS ===== */}
@@ -847,7 +851,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 )}
               </CockpitSection>
 
-              <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => goPatient("/alta-desfecho")} />
+              <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => goPatient("/movimentacoes")} />
             </TabsContent>
           </ScrollArea>
         </Tabs>
@@ -882,7 +886,7 @@ function DischargeQuickActions({ patientId, patientName, fallback }: { patientId
   }
   return (
     <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5" onClick={fallback}>
-      <LogOut className="h-3.5 w-3.5" /> Abrir fluxo de alta
+      <ArrowLeftRight className="h-3.5 w-3.5" /> Abrir fluxo de movimentação
     </Button>
   );
 }
