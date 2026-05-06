@@ -61,6 +61,7 @@ Deno.serve(async (req) => {
       hospitalUnitId,
       departments = [], // array<string>
       redirectTo,
+      skipDepartmentCheck = false, // pré-cadastro: setores definidos depois
     } = body ?? {};
 
     // Validações
@@ -83,7 +84,7 @@ Deno.serve(async (req) => {
     // Perfis globais NUNCA recebem setores específicos — limpa silenciosamente
     const effectiveDepartments: string[] = isGlobal ? [] : (Array.isArray(departments) ? departments : []);
 
-    if (!isGlobal && effectiveDepartments.length === 0) {
+    if (!isGlobal && effectiveDepartments.length === 0 && !skipDepartmentCheck) {
       return json(400, { error: "Selecione ao menos um setor (perfis não-globais)." });
     }
 

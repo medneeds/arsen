@@ -191,6 +191,7 @@ export function PreRegistrationApprovalsPanel() {
             role: PROFILE_TO_ROLE_HINT[target.access_profile as keyof typeof PROFILE_TO_ROLE_HINT] || "medico",
             hospitalUnitId: target.hospital_unit_id,
             departments: [],
+            skipDepartmentCheck: true,
           },
         });
         if (res.error) throw res.error;
