@@ -519,6 +519,145 @@ function ReferralTab({ patient }: { patient: PatientCtx }) {
 }
 
 // ── Death & Outcomes Tab ──
+// ── Transfer Tab ──
+function TransferTab({ patient }: { patient: PatientCtx }) {
+  const { currentHospital, currentState } = useHospital();
+  const doctor = useCurrentDoctor();
+  const [transferType, setTransferType] = useState<"interna" | "externa">("interna");
+  const [destination, setDestination] = useState("");
+  const [customDestination, setCustomDestination] = useState("");
+  const [reason, setReason] = useState("");
+  const [notes, setNotes] = useState("");
+  const [responsibleDoctor, setResponsibleDoctor] = useState(doctor?.fullName || "");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const destinations = transferType === "interna" ? INTERNAL_TRANSFER_DESTINATIONS : EXTERNAL_TRANSFER_DESTINATIONS;
+  const subtypeId = transferType === "interna" ? "TRANSFERENCIA_INTERNA" : "TRANSFERENCIA_EXTERNA";
+
+  const handleSave = async () => {
+    if (!currentHospital || !currentState) {
+      toast.error("Selecione hospital/unidade.");
+      return;
+    }
+    const finalDest = destination === "OUTRO" ? customDestination : destination;
+    if (!finalDest) {
+      toast.error("Informe o destino da transferência.");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from("patient_movements").insert({
+        patient_id: patient.id || null,
+        patient_name: patient.name,
+        patient_bed: patient.bed,
+        patient_sector: patient.sector,
+        movement_type: subtypeId,
+        destination: finalDest,
+        notes: [reason && `Motivo: ${reason}`, notes].filter(Boolean).join(" — ") || null,
+        responsible_doctor: responsibleDoctor || null,
+        created_by: user?.id,
+        department: "URGÊNCIA E EMERGÊNCIA ADULTO",
+        state_id: currentState.id,
+        hospital_unit_id: currentHospital.id,
+      } as any);
+      if (error) throw error;
+      toast.success(`Transferência ${transferType} registrada.`);
+      setDestination("");
+      setCustomDestination("");
+      setReason("");
+      setNotes("");
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e.message || "Erro ao registrar transferência.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <ScrollArea className="h-[calc(100vh-220px)]">
+      <div className="space-y-4 pr-4 pb-8">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <ArrowLeftRight className="h-4 w-4 text-primary" /> Tipo de Transferência
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Configure o fluxo intra (entre setores/leitos) ou interhospitalar.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex gap-2">
+              <Button
+                variant={transferType === "interna" ? "default" : "outline"}
+                onClick={() => { setTransferType("interna"); setDestination(""); }}
+                className="flex-1 text-xs h-9"
+              >
+                <ArrowLeftRight className="h-3.5 w-3.5 mr-1.5" /> Interna (intra-hospitalar)
+              </Button>
+              <Button
+                variant={transferType === "externa" ? "default" : "outline"}
+                onClick={() => { setTransferType("externa"); setDestination(""); }}
+                className="flex-1 text-xs h-9"
+              >
+                <Building2 className="h-3.5 w-3.5 mr-1.5" /> Externa (interhospitalar)
+              </Button>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Destino *</Label>
+              <Select value={destination} onValueChange={setDestination}>
+                <SelectTrigger className="text-xs h-9"><SelectValue placeholder="Selecione o destino" /></SelectTrigger>
+                <SelectContent>
+                  {destinations.map(d => <SelectItem key={d} value={d} className="text-xs">{d}</SelectItem>)}
+                  <SelectItem value="OUTRO" className="text-xs">OUTRO (especificar)</SelectItem>
+                </SelectContent>
+              </Select>
+              {destination === "OUTRO" && (
+                <Input
+                  value={customDestination}
+                  onChange={e => setCustomDestination(e.target.value.toUpperCase())}
+                  placeholder="DIGITE O DESTINO"
+                  className="text-xs h-9 mt-2"
+                />
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Motivo da transferência</Label>
+              <Input value={reason} onChange={e => setReason(e.target.value)} placeholder="Ex: necessidade de UTI, especialidade indisponível..." className="text-xs h-9" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Observações</Label>
+              <Textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="text-xs" placeholder="Condições do paciente, monitorização, equipamentos necessários..." />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Médico Responsável</Label>
+                <Input value={responsibleDoctor} onChange={e => setResponsibleDoctor(e.target.value)} className="text-xs h-9" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">CRM</Label>
+                <Input value={doctor?.crm || ""} disabled className="text-xs h-9 bg-muted" />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button onClick={handleSave} disabled={isSaving} className="text-xs h-9">
+                <Save className="h-3.5 w-3.5 mr-1.5" />
+                {isSaving ? "Registrando..." : "Registrar Transferência"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </ScrollArea>
+  );
+}
+
 function DeathOutcomeTab({ patient }: { patient: PatientCtx }) {
   const [activeSection, setActiveSection] = useState<"declaracao" | "morte_encefalica" | "cihdott">("declaracao");
 
