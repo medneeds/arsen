@@ -155,7 +155,7 @@ function AntimicrobialCombobox({
               Nenhum antimicrobiano padrão. O texto digitado será usado.
             </CommandEmpty>
             <CommandGroup heading="Padronizados">
-              {ANTIMICROBIAL_OPTIONS.map(med => (
+              {options.map(med => (
                 <CommandItem
                   key={med.id}
                   value={`${med.name} ${med.presentation || ''}`}
