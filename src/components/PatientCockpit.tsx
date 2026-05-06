@@ -371,7 +371,6 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             patientId={patient.id}
             patientName={patient.name}
             fallback={() => goPatient("/movimentacoes")}
-            onOpenFlow={() => goPatient("/movimentacoes")}
           />
         </div>
 
