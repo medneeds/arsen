@@ -83,6 +83,7 @@ import {
   type PrescriptionFlag,
 } from "@/data/medicationsDatabase";
 import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
+import { useUnifiedMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
 import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/PsychotropicFormDialog";
 import { TevProtocolDialog } from "@/components/TevProtocolDialog";
 import { HighAlertGuideDialog } from "@/components/HighAlertGuideDialog";
@@ -607,7 +608,8 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
   const [freeText, setFreeText] = useState("");
   const favCount = getFavoriteCount ?? (() => 0);
 
-  const allItems = useMemo(() => Object.values(ALL_ITEMS_BY_CATEGORY).flat(), []);
+  const { byCategory: UNIFIED_BY_CAT } = useUnifiedMedicationCatalog();
+  const allItems = useMemo(() => Object.values(UNIFIED_BY_CAT).flat(), [UNIFIED_BY_CAT]);
 
   const filtered = useMemo(() => {
     // Restringe a busca à categoria selecionada quando o usuário escolhe uma
@@ -2474,6 +2476,7 @@ const PrescricaoPage = () => {
   const [searchParams] = useSearchParams();
   const { getCount: getFavoriteCount, trackUse: trackMedicationUse } = useMedicationFavorites();
   const { getDbProtocols } = useMedicationProtocols();
+  const { byCategory: UNIFIED_CATALOG } = useUnifiedMedicationCatalog();
   const { state: sidebarState, isMobile: sidebarIsMobile } = useSidebar();
   const sidebarCollapsed = sidebarState === "collapsed";
 
@@ -3005,7 +3008,7 @@ const PrescricaoPage = () => {
   // Callback when antimicrobial guide is confirmed — add both guide entry data and the prescription item
   const handleAntimicrobialConfirm = useCallback((confirmedEntries: Array<{ medication: string; dose: string; route: string; posology: string }>) => {
     // Find matching MedicationEntry from the database for each confirmed entry
-    const antimicrobialOptions = ALL_ITEMS_BY_CATEGORY['antimicrobial'] || [];
+    const antimicrobialOptions = UNIFIED_CATALOG['antimicrobial'] || [];
     const newItems: PrescriptionItem[] = confirmedEntries.map(entry => {
       const matchedMed = antimicrobialOptions.find(m => m.name === entry.medication);
       if (matchedMed) {
@@ -4410,7 +4413,7 @@ const PrescricaoPage = () => {
                         </div>
                       ) : (
                         <MedicationAutocomplete
-                          source={ALL_ITEMS_BY_CATEGORY[cat]}
+                          source={UNIFIED_CATALOG[cat]}
                           onSelect={addItem}
                           placeholder={`Buscar ${config.label.toLowerCase()}...`}
                           getFavoriteCount={getFavoriteCount}
@@ -4910,7 +4913,7 @@ const PrescricaoPage = () => {
               : `${scheduledCount} de horário (serão incorporados na renovação)`,
           });
         }}
-        allMedications={Object.values(ALL_ITEMS_BY_CATEGORY).flat()}
+        allMedications={Object.values(UNIFIED_CATALOG).flat()}
       />
 
       {/* Antimicrobial Guide Dialog */}

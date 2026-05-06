@@ -23,6 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { ANTIMICROBIAL_OPTIONS, type MedicationEntry } from "@/data/medicationsDatabase";
+import { useUnifiedMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import { cn } from "@/lib/utils";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
@@ -117,11 +118,12 @@ function createEmptyEntry(item?: PrescriptionItem | MedicationEntry): Antimicrob
 
 // === Searchable antimicrobial combobox (allows free text + selectable presets) ===
 function AntimicrobialCombobox({
-  value, onSelectMed, onChangeText,
+  value, onSelectMed, onChangeText, options,
 }: {
   value: string;
   onSelectMed: (med: MedicationEntry) => void;
   onChangeText: (text: string) => void;
+  options: MedicationEntry[];
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -153,7 +155,7 @@ function AntimicrobialCombobox({
               Nenhum antimicrobiano padrão. O texto digitado será usado.
             </CommandEmpty>
             <CommandGroup heading="Padronizados">
-              {ANTIMICROBIAL_OPTIONS.map(med => (
+              {options.map(med => (
                 <CommandItem
                   key={med.id}
                   value={`${med.name} ${med.presentation || ''}`}
@@ -187,6 +189,8 @@ export function AntimicrobialGuideDialog({
   // Sincroniza com o usuário logado quando a prescrição não estiver assinada digitalmente
   const doctorName = doctorNameProp || currentDoctor.fullName;
   const doctorCrm = doctorCrmProp || currentDoctor.crm;
+  const { antimicrobials: unifiedAntimicrobials } = useUnifiedMedicationCatalog();
+  const antimicrobialOptions = unifiedAntimicrobials.length > 0 ? unifiedAntimicrobials : ANTIMICROBIAL_OPTIONS;
   const [entries, setEntries] = useState<AntimicrobialEntry[]>([]);
   const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | 'cultures' | null>>({});
   const [availableCultures, setAvailableCultures] = useState<Array<{ id: string; culture_type: string; collection_date: string | null; status: string; microorganism: string | null; antibiogram: string | null; sensitivity_profile: string | null; result_text: string | null; created_at: string }>>([]);
@@ -422,6 +426,7 @@ export function AntimicrobialGuideDialog({
                         value={entry.medication}
                         onSelectMed={(med) => updateEntryFromMed(entry.id, med)}
                         onChangeText={(text) => updateEntry(entry.id, "medication", text)}
+                        options={antimicrobialOptions}
                       />
                       {entry.presentation && (
                         <div className="text-[10px] text-muted-foreground mt-0.5 truncate">📦 {entry.presentation}</div>
