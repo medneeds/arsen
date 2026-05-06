@@ -26,10 +26,10 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { ACCESS_PROFILES } from "@/config/userProfiles";
-import { whitelabel, getInstitutionalHeader } from "@/config/whitelabel";
+import { whitelabel, getInstitutionalHeaderLines } from "@/config/whitelabel";
 import socorraoCross from "@/assets/socorrao-cross-logo.png";
 
-const INSTITUTIONAL_LINES = getInstitutionalHeader();
+const INSTITUTIONAL_LINES = getInstitutionalHeaderLines();
 const INST_COLORS = whitelabel.theme.institutionalColors;
 
 function NormaZeroHeader() {
