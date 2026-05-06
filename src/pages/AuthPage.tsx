@@ -21,6 +21,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { AuthBackgroundFx } from "@/components/auth/AuthBackgroundFx";
 import { resolveLandingRoute } from "@/config/profileDefaults";
 import { ProfileChooser } from "@/components/auth/ProfileChooser";
+import { FirstAccessSetup } from "@/components/auth/FirstAccessSetup";
 import type { AccessProfile } from "@/config/userProfiles";
 
 /* ─── Shared chrome ─────────────────────────────────────────────── */
