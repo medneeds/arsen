@@ -329,11 +329,13 @@ function DischargeSummaryTab({ patient }: { patient: PatientCtx }) {
 }
 
 // ── Referral Tab ──
-function ReferralTab() {
+function ReferralTab({ patient }: { patient: PatientCtx }) {
   const [referralType, setReferralType] = useState<"primaria" | "especializada">("primaria");
   const [form, setForm] = useState({
-    patientName: "",
+    patientName: patient.name,
     medicalRecord: "",
+    birthDate: "",
+    cns: "",
     birthDate: "",
     cns: "",
     // Clinical
