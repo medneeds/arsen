@@ -29,7 +29,8 @@ export type AppRole =
   | "porta"
   | "visitante"
   | "farmacia"
-  | "nir";
+  | "nir"
+  | "coordenador";
 
 export type AccessProfile =
   | "medico"
@@ -42,6 +43,9 @@ export type AccessProfile =
   | "administrativo"
   | "multi"
   | "classificacao_risco"
+  | "coord_medico"
+  | "coord_enfermagem"
+  | "coord_multi"
   | "desenvolvedor";
 
 /** Roles do sistema (enum app_role no Postgres). Controla RLS. */
@@ -195,6 +199,33 @@ export const ACCESS_PROFILES: AccessProfileConfig[] = [
     skipSectorSelection: true,
   },
   {
+    value: "coord_medico",
+    label: "Coordenador Médico",
+    shortLabel: "Coord. Médico",
+    description: "Acesso somente leitura à clínica de todos os setores das unidades atribuídas; pode validar rounds e liberar leitos.",
+    defaultRoute: "/mapa",
+    icon: Stethoscope,
+    skipSectorSelection: true,
+  },
+  {
+    value: "coord_enfermagem",
+    label: "Coordenador de Enfermagem",
+    shortLabel: "Coord. Enf.",
+    description: "Acesso somente leitura à clínica de todos os setores das unidades atribuídas; pode validar rounds e liberar leitos.",
+    defaultRoute: "/mapa",
+    icon: UsersIcon,
+    skipSectorSelection: true,
+  },
+  {
+    value: "coord_multi",
+    label: "Coordenador Multiprofissional",
+    shortLabel: "Coord. Multi",
+    description: "Coordenação ampliada (fisio, nutrição, psico, etc.) com leitura clínica e validação de fluxos.",
+    defaultRoute: "/mapa",
+    icon: UsersIcon,
+    skipSectorSelection: true,
+  },
+  {
     value: "desenvolvedor",
     label: "Desenvolvedor",
     shortLabel: "Dev",
@@ -217,6 +248,9 @@ export const PROFILE_TO_ROLE_HINT: Record<AccessProfile, AppRole> = {
   administrativo: "medico",
   multi: "medico",
   classificacao_risco: "medico",
+  coord_medico: "coordenador",
+  coord_enfermagem: "coordenador",
+  coord_multi: "coordenador",
   desenvolvedor: "admin",
 };
 
