@@ -1,0 +1,1 @@
+ALTER VIEW public.patient_timeline SET (security_invoker = true);
