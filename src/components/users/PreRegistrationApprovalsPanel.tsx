@@ -486,26 +486,32 @@ export function PreRegistrationApprovalsPanel() {
               </div>
 
               {decision === "approve" && (
-                <div className="space-y-2">
-                  <Label htmlFor="tempPwd">Senha provisória *</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="tempPwd"
-                      value={tempPassword}
-                      onChange={(e) => setTempPassword(e.target.value)}
-                      placeholder="Mín. 6 caracteres"
-                    />
+                <div className="rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <Label className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                        Senha de primeiro acesso
+                      </Label>
+                      <p className="font-mono text-2xl font-bold tracking-widest text-emerald-700 dark:text-emerald-400">
+                        {FIRST_ACCESS_PASSWORD}
+                      </p>
+                    </div>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setTempPassword(genTempPassword())}
+                      onClick={() => {
+                        navigator.clipboard.writeText(FIRST_ACCESS_PASSWORD);
+                        toast.success("Senha copiada");
+                      }}
                     >
-                      Gerar
+                      <Copy className="h-3.5 w-3.5 mr-1" /> Copiar
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    O usuário será criado com esta senha e deverá trocá-la no primeiro acesso. Repasse-a com segurança.
+                    Padrão institucional. O usuário fará login com CPF ou e-mail + esta senha,
+                    e será obrigado a definir uma <b>nova senha</b> e um <b>nome de usuário</b>{" "}
+                    no primeiro acesso.
                   </p>
                 </div>
               )}
