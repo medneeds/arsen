@@ -539,9 +539,9 @@ function DeathOutcomeTab({ patient }: { patient: PatientCtx }) {
   );
 }
 
-function DeathDeclarationSection() {
+function DeathDeclarationSection({ patient }: { patient: PatientCtx }) {
   const [form, setForm] = useState({
-    patientName: "",
+    patientName: patient.name,
     medicalRecord: "",
     birthDate: "",
     sex: "",
