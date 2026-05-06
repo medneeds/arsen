@@ -590,8 +590,26 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           )}
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Previsão de alta</Label>
-            <div className="flex gap-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Previsão de alta</Label>
+              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={noDischargePrediction}
+                  onChange={(e) => {
+                    setNoDischargePrediction(e.target.checked);
+                    if (e.target.checked) {
+                      setDischargeDays("");
+                      setDischargeDate(undefined);
+                    }
+                  }}
+                  className="h-3.5 w-3.5 cursor-pointer"
+                />
+                Sem previsão
+              </label>
+            </div>
+            <div className={cn("flex gap-2", noDischargePrediction && "opacity-50 pointer-events-none")}>
+
               <div className="relative w-32">
                 <Input
                   type="number"
