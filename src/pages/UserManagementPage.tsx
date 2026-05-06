@@ -359,6 +359,18 @@ export default function UserManagementPage() {
   });
 
   const pendingCount = users.filter(u => u.status === "pending").length;
+  const [preRegPending, setPreRegPending] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { count } = await supabase
+        .from("pre_registration_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (!cancelled) setPreRegPending(count || 0);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Coordenadores (admin) e Gestores podem acessar a gestão de usuários
   const canManageUsers = currentUserRole === "admin" || isGestor;
