@@ -14,7 +14,7 @@ const json = (status: number, body: unknown) =>
   });
 
 // Perfis de acesso "globais" — ignoram seleção de setor
-const GLOBAL_PROFILES = new Set(["gestor"]);
+const GLOBAL_PROFILES = new Set(["gestor", "coord_medico", "coord_enfermagem", "coord_multi"]);
 // Roles globais
 const GLOBAL_ROLES = new Set(["admin"]);
 

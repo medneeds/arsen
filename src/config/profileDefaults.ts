@@ -125,6 +125,24 @@ export const PROFILE_DEFAULTS: Record<AccessProfile, ProfileDefaults> = {
     landingRoute: "/triagem-fila",
     hint: "Classificação de risco • fila Manchester e PA adulto",
   },
+  coord_medico: {
+    role: "coordenador",
+    departments: [],
+    landingRoute: "/mapa",
+    hint: "Coordenador médico • leitura clínica completa por unidade hospitalar; pode validar rounds e liberar leitos",
+  },
+  coord_enfermagem: {
+    role: "coordenador",
+    departments: [],
+    landingRoute: "/mapa",
+    hint: "Coordenador de enfermagem • leitura clínica completa por unidade; pode validar rounds e liberar leitos",
+  },
+  coord_multi: {
+    role: "coordenador",
+    departments: [],
+    landingRoute: "/mapa",
+    hint: "Coordenação multiprofissional • leitura clínica completa por unidade; pode validar rounds e liberar leitos",
+  },
   desenvolvedor: {
     role: "admin",
     departments: [],

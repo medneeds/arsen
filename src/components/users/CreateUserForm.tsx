@@ -49,7 +49,12 @@ interface Props {
   onCreated?: () => void;
 }
 
-const GLOBAL_PROFILES: AccessProfile[] = ["gestor"];
+const GLOBAL_PROFILES: AccessProfile[] = [
+  "gestor",
+  "coord_medico",
+  "coord_enfermagem",
+  "coord_multi",
+];
 const GLOBAL_ROLES: AppRole[] = ["admin"];
 const DRAFT_KEY = "createUserForm:draft:v1";
 const AUTOSAVE_DEBOUNCE_MS = 800;
