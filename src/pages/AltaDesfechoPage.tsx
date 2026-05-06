@@ -1349,13 +1349,13 @@ export default function AltaDesfechoPage() {
               <ClipboardList className="h-3.5 w-3.5" />
               Sumário de Alta
             </TabsTrigger>
-            <TabsTrigger value="transferencia" className="text-xs gap-1.5">
-              <ArrowLeftRight className="h-3.5 w-3.5" />
-              Transferência
-            </TabsTrigger>
             <TabsTrigger value="referencia" className="text-xs gap-1.5">
               <Send className="h-3.5 w-3.5" />
               Referência / Regulação
+            </TabsTrigger>
+            <TabsTrigger value="movimentacoes" className="text-xs gap-1.5">
+              <ArrowLeftRight className="h-3.5 w-3.5" />
+              Movimentações
             </TabsTrigger>
             <TabsTrigger value="obito" className="text-xs gap-1.5">
               <AlertTriangle className="h-3.5 w-3.5" />
@@ -1365,11 +1365,11 @@ export default function AltaDesfechoPage() {
           <TabsContent value="sumario" className="mt-4">
             <DischargeSummaryTab patient={patientCtx} />
           </TabsContent>
-          <TabsContent value="transferencia" className="mt-4">
-            <TransferTab patient={patientCtx} />
-          </TabsContent>
           <TabsContent value="referencia" className="mt-4">
             <ReferralTab patient={patientCtx} />
+          </TabsContent>
+          <TabsContent value="movimentacoes" className="mt-4">
+            <TransferTab patient={patientCtx} />
           </TabsContent>
           <TabsContent value="obito" className="mt-4">
             <DeathOutcomeTab patient={patientCtx} />
