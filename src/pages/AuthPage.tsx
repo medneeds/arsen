@@ -210,6 +210,44 @@ export default function AuthPage() {
     }
   };
 
+  // Primeiro acesso (senha padrão 123456) — bloqueia até concluir
+  if (firstAccess && !showLoadingScreen) {
+    return (
+      <FirstAccessSetup
+        userId={firstAccess.userId}
+        fullName={firstAccess.fullName}
+        onComplete={async () => {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("access_profile, access_profiles")
+            .eq("id", firstAccess.userId)
+            .maybeSingle();
+          const list = (prof as { access_profiles?: string[] } | null)?.access_profiles ?? [];
+          const single = (prof as { access_profile?: string } | null)?.access_profile ?? null;
+          const eff = list.length > 0 ? list : (single ? [single] : []);
+          const { data: roleRow } = await supabase
+            .from("user_roles").select("role").eq("user_id", firstAccess.userId).maybeSingle();
+          const appRole = (roleRow as { role?: string } | null)?.role ?? null;
+          if (eff.length > 1) {
+            setChooserProfiles(eff as AccessProfile[]);
+            setChooserAppRole(appRole);
+            setChooserUserName(firstAccess.fullName);
+            setFirstAccess(null);
+            return;
+          }
+          const chosen = eff[0] ?? null;
+          if (chosen) {
+            localStorage.setItem("access_profile", chosen);
+            sessionStorage.setItem("active_access_profile", chosen);
+          }
+          setRedirectRoute(resolveLandingRoute(chosen, appRole));
+          setFirstAccess(null);
+          setShowLoadingScreen(true);
+        }}
+      />
+    );
+  }
+
   // Tela de escolha de perfil (multi-perfil) — toma a tela inteira após login bem-sucedido
   if (chooserProfiles && chooserProfiles.length > 1 && !showLoadingScreen) {
     return (
