@@ -587,12 +587,68 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
           <div className="space-y-1.5">
             <Label className="text-xs">Previsão de alta</Label>
-            <Input
-              value={dischargePrediction}
-              onChange={(e) => setDischargePrediction(e.target.value)}
-              placeholder="Ex: 5-7 dias, 48h, Sem previsão..."
-              className="h-9 text-xs"
-            />
+            <div className="flex gap-2">
+              <div className="relative w-32">
+                <Input
+                  type="number"
+                  min={0}
+                  max={365}
+                  value={dischargeDays}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, "");
+                    setDischargeDays(v);
+                    if (v === "") {
+                      setDischargeDate(undefined);
+                    } else {
+                      const n = parseInt(v, 10);
+                      if (!isNaN(n)) setDischargeDate(addDays(startOfDay(new Date()), n));
+                    }
+                  }}
+                  placeholder="Dias"
+                  className="h-9 text-xs pr-10"
+                />
+                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">dias</span>
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      "h-9 flex-1 justify-start text-left font-normal text-xs",
+                      !dischargeDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {dischargeDate
+                      ? format(dischargeDate, "dd/MM/yyyy (EEE)", { locale: ptBR })
+                      : "Selecionar data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarUI
+                    mode="single"
+                    selected={dischargeDate}
+                    onSelect={(d) => {
+                      setDischargeDate(d);
+                      if (d) {
+                        const diff = differenceInCalendarDays(startOfDay(d), startOfDay(new Date()));
+                        setDischargeDays(diff >= 0 ? String(diff) : "");
+                      } else {
+                        setDischargeDays("");
+                      }
+                    }}
+                    disabled={(date) => date < startOfDay(new Date())}
+                    locale={ptBR}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Digite os dias para ver a data, ou escolha a data para calcular os dias automaticamente.
+            </p>
           </div>
 
           <div className="space-y-1.5">
