@@ -535,7 +535,7 @@ const AdminDashboardPage = () => {
             medical_record: selectedPatient.medical_record || null,
             phone: selectedPatient.phone || null,
             patient_registry_id: selectedPatient.id,
-            destination_sector: sectorDef.label,
+            destination_sector: SECTOR_KEY_TO_MAP_TITLE[sectorDef.sectorKey!] || sectorDef.label,
             status: "aguardando_leito",
             hospital_unit_id: selectedHospitalId,
             state_id: stateId,
