@@ -118,11 +118,12 @@ function createEmptyEntry(item?: PrescriptionItem | MedicationEntry): Antimicrob
 
 // === Searchable antimicrobial combobox (allows free text + selectable presets) ===
 function AntimicrobialCombobox({
-  value, onSelectMed, onChangeText,
+  value, onSelectMed, onChangeText, options,
 }: {
   value: string;
   onSelectMed: (med: MedicationEntry) => void;
   onChangeText: (text: string) => void;
+  options: MedicationEntry[];
 }) {
   const [open, setOpen] = useState(false);
   return (
