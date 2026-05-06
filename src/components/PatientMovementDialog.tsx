@@ -96,6 +96,7 @@ export function PatientMovementDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [docPayload, setDocPayload] = useState<DischargeDocPayload | null>(null);
   const [docComplete, setDocComplete] = useState(false);
+  const [signerProfile, setSignerProfile] = useState<{ name: string; crm: string }>({ name: "", crm: "" });
 
   const { toast } = useToast();
   const { currentState, currentHospital } = useHospital();
@@ -118,6 +119,27 @@ export function PatientMovementDialog({
     setCategory(null);
     setSubtype(null);
   }, [isOpen, movementType]);
+
+  // Sincroniza médico responsável com o usuário logado (para sumário de alta / óbito)
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, crm")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const name = (data?.full_name || "").toUpperCase();
+      const crm = data?.crm || "";
+      setSignerProfile({ name, crm });
+      setResponsibleDoctor((prev) => prev || name);
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen]);
 
   const subtypeDef: SubtypeDef | null = useMemo(
     () => MOVEMENT_SUBTYPES.find((s) => s.id === subtype) ?? null,
@@ -469,13 +491,15 @@ export function PatientMovementDialog({
               </p>
             </div>
             <DischargeDocumentForm
+              key={`${requiredDocType}-${signerProfile.name}-${signerProfile.crm}`}
               type={requiredDocType}
               initial={{
                 patient_name: patient.name,
                 patient_bed: patient.bedNumber,
                 patient_sector: patient.sector,
                 hospital_name: currentHospital?.name,
-                signed_by_name: responsibleDoctor || undefined,
+                signed_by_name: responsibleDoctor || signerProfile.name || undefined,
+                signed_by_crm: signerProfile.crm || undefined,
               }}
               onChange={(payload, complete) => { setDocPayload(payload); setDocComplete(complete); }}
             />
