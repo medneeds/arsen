@@ -251,9 +251,9 @@ const EvolucaoPage = () => {
       <ClinicalHeader moduleLabel="Evolução Clínica" />
 
       <div className="flex print:hidden">
-        <div className="flex-1 min-w-0 p-4 space-y-4">
+        <div className="flex-1 min-w-0 p-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Page Header */}
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="hidden sm:flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
               <NotebookPen className="h-5 w-5 text-primary" />
@@ -263,11 +263,11 @@ const EvolucaoPage = () => {
               <p className="text-xs text-muted-foreground">Timeline de evoluções do paciente</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 text-xs border-amber-500/40 text-amber-700 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400"
+              className="gap-1.5 text-xs border-amber-500/40 text-amber-700 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400 flex-1 sm:flex-none min-h-9"
               onClick={() => { setShowIntercurrenceForm(true); setIntercurrenceText(""); }}
               disabled={showIntercurrenceForm || showNewForm}
             >
@@ -275,7 +275,7 @@ const EvolucaoPage = () => {
             </Button>
             <Button
               size="sm"
-              className="gap-1.5 text-xs"
+              className="gap-1.5 text-xs flex-1 sm:flex-none min-h-9"
               onClick={handleOpenNewEvolution}
               disabled={showNewForm || showIntercurrenceForm}
             >
