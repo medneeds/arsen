@@ -336,8 +336,6 @@ function ReferralTab({ patient }: { patient: PatientCtx }) {
     medicalRecord: "",
     birthDate: "",
     cns: "",
-    birthDate: "",
-    cns: "",
     // Clinical
     clinicalSummary: "",
     currentMedications: "",
