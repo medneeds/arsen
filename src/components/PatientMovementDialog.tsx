@@ -120,6 +120,27 @@ export function PatientMovementDialog({
     setSubtype(null);
   }, [isOpen, movementType]);
 
+  // Sincroniza médico responsável com o usuário logado (para sumário de alta / óbito)
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, crm")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const name = (data?.full_name || "").toUpperCase();
+      const crm = data?.crm || "";
+      setSignerProfile({ name, crm });
+      setResponsibleDoctor((prev) => prev || name);
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen]);
+
   const subtypeDef: SubtypeDef | null = useMemo(
     () => MOVEMENT_SUBTYPES.find((s) => s.id === subtype) ?? null,
     [subtype],
