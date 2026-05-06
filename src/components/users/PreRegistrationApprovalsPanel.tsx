@@ -81,13 +81,9 @@ const formatPhone = (d: string) =>
     ? d.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
     : d.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
 
-const genTempPassword = () => {
-  // 8 chars: letras + números, fácil de digitar
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let p = "";
-  for (let i = 0; i < 8; i++) p += chars[Math.floor(Math.random() * chars.length)];
-  return p;
-};
+// Senha padrão de PRIMEIRO ACESSO. Todo usuário aprovado recebe esta senha
+// e DEVE trocá-la (e escolher um username) no primeiro login.
+const FIRST_ACCESS_PASSWORD = "123456";
 
 export function PreRegistrationApprovalsPanel() {
   const { user } = useAuth();
