@@ -36,6 +36,7 @@ export interface DischargeDocPayload {
   complications?: string;
   // Discharge specifics
   discharge_type?: string;
+  discharge_summary?: string;
   orientations?: string;
   return_date?: string;
   return_specialty?: string;
@@ -118,6 +119,7 @@ export function buildDischargeDocHTML(type: DischargeDocType, p: DischargeDocPay
   `;
 
   const dischargeBlocks = `
+    ${block("Sumário de alta", p.discharge_summary)}
     ${block("Plano e orientações de alta", p.orientations)}
     ${block("Prescrição de alta", p.prescription)}
     ${block("Restrições", p.restrictions)}

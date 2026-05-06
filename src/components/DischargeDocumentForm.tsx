@@ -26,8 +26,8 @@ export interface DischargeDocFormProps {
 }
 
 const REQUIRED_BY_TYPE: Record<DischargeDocType, (keyof DischargeDocPayload)[]> = {
-  alta_hospitalar: ["final_diagnoses", "evolution_summary", "orientations", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
-  alta_pedido: ["final_diagnoses", "evolution_summary", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
+  alta_hospitalar: ["final_diagnoses", "evolution_summary", "discharge_summary", "orientations", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
+  alta_pedido: ["final_diagnoses", "evolution_summary", "discharge_summary", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
   obito: ["death_date_time", "immediate_cause", "basic_cause", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
 };
 
@@ -198,9 +198,15 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
         </>
       ) : (
         <>
-          <Field label="Plano e orientações de alta *">
+          <Field label="Sumário de alta * (síntese clínica do internamento — diferente das orientações ao paciente)">
+            <Textarea rows={4} className="text-xs" value={form.discharge_summary || ""}
+              onChange={(e) => setField("discharge_summary", upper(e.target.value))}
+              placeholder="MOTIVO DA INTERNAÇÃO, EVOLUÇÃO, EXAMES RELEVANTES, TRATAMENTOS REALIZADOS, CONDIÇÃO CLÍNICA NA ALTA" />
+          </Field>
+          <Field label="Orientações ao paciente / cuidador na alta *">
             <Textarea rows={3} className="text-xs" value={form.orientations || ""}
-              onChange={(e) => setField("orientations", upper(e.target.value))} />
+              onChange={(e) => setField("orientations", upper(e.target.value))}
+              placeholder="CUIDADOS DOMICILIARES, SINAIS DE ALERTA, USO DE MEDICAÇÕES, RETORNO" />
           </Field>
           <Field label="Prescrição de alta">
             <Textarea rows={3} className="text-xs" value={form.prescription || ""}
