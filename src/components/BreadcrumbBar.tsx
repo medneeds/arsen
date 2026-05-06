@@ -53,7 +53,7 @@ export function BreadcrumbBar({
     <nav
       aria-label="Hierarquia do setor"
       className={cn(
-        "print:hidden flex items-center justify-between gap-2 flex-wrap px-2 sm:px-3 py-1.5 shadow-sm rounded-xl backdrop-blur-sm",
+        "print:hidden flex items-center justify-between gap-1.5 sm:gap-2 flex-wrap px-1.5 sm:px-3 py-1 sm:py-1.5 shadow-sm rounded-lg sm:rounded-xl backdrop-blur-sm",
         isInstitutional
           ? "border border-primary/30 text-primary-foreground"
           : "border border-border/60 bg-card/60",
