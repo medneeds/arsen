@@ -18,8 +18,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   BedDouble, Shield, Thermometer, Heart, Brain, Wind,
-  AlertTriangle, Loader2, User, Calendar, Activity, Droplets
+  AlertTriangle, Loader2, User, Calendar, Activity, Droplets, CalendarIcon
 } from "lucide-react";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format, addDays, differenceInCalendarDays, startOfDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 
@@ -93,7 +97,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [selectedSector, setSelectedSector] = useState("");
   const [selectedBed, setSelectedBed] = useState("");
   const [admissionNotes, setAdmissionNotes] = useState("");
-  const [dischargePrediction, setDischargePrediction] = useState("");
+  const [dischargeDays, setDischargeDays] = useState<string>("");
+  const [dischargeDate, setDischargeDate] = useState<Date | undefined>(undefined);
   const [availableBeds, setAvailableBeds] = useState<string[]>([]);
   const [occupiedBeds, setOccupiedBeds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -116,6 +121,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     setExtraBedRequested(false);
     setSectorFullAlert(false);
     setBedsLoaded(false);
+    setDischargeDays("");
+    setDischargeDate(undefined);
 
     if (!currentHospital?.id || !currentState?.id || !preAdmission?.id) return;
 
@@ -283,7 +290,9 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         diagnoses: fullData.chief_complaint || null,
         medical_history: fullData.allergies ? `Alergias: ${fullData.allergies}` : null,
         pendencies: admissionNotes || null,
-        uti_discharge_prediction: dischargePrediction || null,
+        uti_discharge_prediction: dischargeDate
+          ? `${format(dischargeDate, "dd/MM/yyyy")}${dischargeDays ? ` (${dischargeDays} dias)` : ""}`
+          : (dischargeDays ? `${dischargeDays} dias` : null),
       });
 
       if (patientError) throw patientError;
@@ -578,12 +587,68 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
           <div className="space-y-1.5">
             <Label className="text-xs">Previsão de alta</Label>
-            <Input
-              value={dischargePrediction}
-              onChange={(e) => setDischargePrediction(e.target.value)}
-              placeholder="Ex: 5-7 dias, 48h, Sem previsão..."
-              className="h-9 text-xs"
-            />
+            <div className="flex gap-2">
+              <div className="relative w-32">
+                <Input
+                  type="number"
+                  min={0}
+                  max={365}
+                  value={dischargeDays}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, "");
+                    setDischargeDays(v);
+                    if (v === "") {
+                      setDischargeDate(undefined);
+                    } else {
+                      const n = parseInt(v, 10);
+                      if (!isNaN(n)) setDischargeDate(addDays(startOfDay(new Date()), n));
+                    }
+                  }}
+                  placeholder="Dias"
+                  className="h-9 text-xs pr-10"
+                />
+                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">dias</span>
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      "h-9 flex-1 justify-start text-left font-normal text-xs",
+                      !dischargeDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {dischargeDate
+                      ? format(dischargeDate, "dd/MM/yyyy (EEE)", { locale: ptBR })
+                      : "Selecionar data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarUI
+                    mode="single"
+                    selected={dischargeDate}
+                    onSelect={(d) => {
+                      setDischargeDate(d);
+                      if (d) {
+                        const diff = differenceInCalendarDays(startOfDay(d), startOfDay(new Date()));
+                        setDischargeDays(diff >= 0 ? String(diff) : "");
+                      } else {
+                        setDischargeDays("");
+                      }
+                    }}
+                    disabled={(date) => date < startOfDay(new Date())}
+                    locale={ptBR}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Digite os dias para ver a data, ou escolha a data para calcular os dias automaticamente.
+            </p>
           </div>
 
           <div className="space-y-1.5">
