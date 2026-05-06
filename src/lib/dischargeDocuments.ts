@@ -46,6 +46,7 @@ export interface DischargeDocPayload {
   // Death specifics
   death_date_time?: string;
   death_place?: string;
+  death_summary?: string; // relatório livre do óbito (substitui causa mortis estruturada)
   immediate_cause?: string;
   intermediate_causes?: string;
   basic_cause?: string;
