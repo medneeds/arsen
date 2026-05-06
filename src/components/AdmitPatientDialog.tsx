@@ -99,6 +99,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [admissionNotes, setAdmissionNotes] = useState("");
   const [dischargeDays, setDischargeDays] = useState<string>("");
   const [dischargeDate, setDischargeDate] = useState<Date | undefined>(undefined);
+  const [noDischargePrediction, setNoDischargePrediction] = useState(false);
   const [availableBeds, setAvailableBeds] = useState<string[]>([]);
   const [occupiedBeds, setOccupiedBeds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -123,6 +124,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     setBedsLoaded(false);
     setDischargeDays("");
     setDischargeDate(undefined);
+    setNoDischargePrediction(false);
 
     if (!currentHospital?.id || !currentState?.id || !preAdmission?.id) return;
 
@@ -290,7 +292,9 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         diagnoses: fullData.chief_complaint || null,
         medical_history: fullData.allergies ? `Alergias: ${fullData.allergies}` : null,
         pendencies: admissionNotes || null,
-        uti_discharge_prediction: dischargeDate
+        uti_discharge_prediction: noDischargePrediction
+          ? "Sem previsão"
+          : dischargeDate
           ? `${format(dischargeDate, "dd/MM/yyyy")}${dischargeDays ? ` (${dischargeDays} dias)` : ""}`
           : (dischargeDays ? `${dischargeDays} dias` : null),
       });
@@ -586,8 +590,26 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           )}
 
           <div className="space-y-1.5">
-            <Label className="text-xs">Previsão de alta</Label>
-            <div className="flex gap-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs">Previsão de alta</Label>
+              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={noDischargePrediction}
+                  onChange={(e) => {
+                    setNoDischargePrediction(e.target.checked);
+                    if (e.target.checked) {
+                      setDischargeDays("");
+                      setDischargeDate(undefined);
+                    }
+                  }}
+                  className="h-3.5 w-3.5 cursor-pointer"
+                />
+                Sem previsão
+              </label>
+            </div>
+            <div className={cn("flex gap-2", noDischargePrediction && "opacity-50 pointer-events-none")}>
+
               <div className="relative w-32">
                 <Input
                   type="number"
