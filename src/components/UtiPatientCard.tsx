@@ -1519,6 +1519,13 @@ export function UtiPatientCard({
         currentUtiUnit={derivedUtiUnit}
         allPatients={allPatients}
       />
+
+      {/* Cadastro de Paciente (a partir de leito vago no mapa) */}
+      <PatientRegistrationDialog
+        open={isRegisterDialogOpen}
+        onOpenChange={setIsRegisterDialogOpen}
+        onSuccess={() => setIsRegisterDialogOpen(false)}
+      />
     </>
   );
 }
