@@ -1178,7 +1178,7 @@ export default function AltaDesfechoPage() {
 
   return (
     <div className="print:p-2">
-      <ClinicalHeader moduleLabel="Alta e Desfecho" />
+      <ClinicalHeader moduleLabel="Alta, Movimentações e Desfechos" />
 
       <div className="flex print:hidden">
         <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4">
@@ -1188,7 +1188,7 @@ export default function AltaDesfechoPage() {
               <ArrowRight className="h-5 w-5 text-primary" />
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg font-bold text-foreground">Alta e Desfecho</h1>
+              <h1 className="text-lg font-bold text-foreground">Alta, Movimentações e Desfechos</h1>
               <p className="text-xs text-muted-foreground truncate">
                 {hasPatient
                   ? `${patientName}${patientBed ? ` • Leito ${patientBed}` : ""}${patientSector ? ` • ${patientSector.toUpperCase()}` : ""}`

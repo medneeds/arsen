@@ -8,7 +8,7 @@ const MODULE_TABS = [
   { label: "Evolução", path: "/evolucao", icon: NotebookPen },
   { label: "Requisições", path: "/requisicoes", icon: FileText },
   { label: "Docs", path: "/documentos", icon: FolderOpen },
-  { label: "Movimentações", path: "/movimentacoes", icon: ArrowLeftRight },
+  { label: "Alta, Movimentações e Desfechos", path: "/alta-desfecho", icon: ArrowLeftRight },
   { label: "Histórico", path: "/historico-paciente", icon: Clock },
 ];
 

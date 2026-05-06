@@ -381,7 +381,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           <DischargeQuickActions
             patientId={patient.id}
             patientName={patient.name}
-            fallback={() => goPatient("/movimentacoes")}
+            fallback={() => goPatient("/alta-desfecho")}
           />
         </div>
 
@@ -862,7 +862,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 )}
               </CockpitSection>
 
-              <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => goPatient("/movimentacoes")} />
+              <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => goPatient("/alta-desfecho")} />
             </TabsContent>
           </ScrollArea>
         </Tabs>
@@ -905,7 +905,7 @@ function DischargeQuickActions({ patientId, patientName, fallback }: { patientId
   }
   return (
     <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5" onClick={fallback}>
-      <ArrowLeftRight className="h-3.5 w-3.5" /> Abrir fluxo de movimentação
+      <ArrowLeftRight className="h-3.5 w-3.5" /> Abrir Alta, Movimentações e Desfechos
     </Button>
   );
 }
