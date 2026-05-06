@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PatientCockpit } from "@/components/PatientCockpit";
+import { ClinicalHeader } from "@/components/ClinicalHeader";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import type { Patient } from "@/types/patient";
 
@@ -1176,19 +1177,24 @@ export default function AltaDesfechoPage() {
   const hasPatient = !!(patientId || patientName);
 
   return (
-    <div className="flex">
-      <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 p-2.5 rounded-xl">
-            <ArrowRight className="h-5 w-5 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-lg font-bold text-foreground">Alta e Desfecho</h1>
-            <p className="text-xs text-muted-foreground truncate">
-              {hasPatient
-                ? `${patientName}${patientBed ? ` • Leito ${patientBed}` : ""}${patientSector ? ` • ${patientSector.toUpperCase()}` : ""}`
-                : "Selecione um paciente pelo cockpit ou painel clínico"}
-            </p>
+    <div className="print:p-2">
+      <ClinicalHeader moduleLabel="Alta e Desfecho" />
+
+      <div className="flex print:hidden">
+        <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <ArrowRight className="h-5 w-5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold text-foreground">Alta e Desfecho</h1>
+              <p className="text-xs text-muted-foreground truncate">
+                {hasPatient
+                  ? `${patientName}${patientBed ? ` • Leito ${patientBed}` : ""}${patientSector ? ` • ${patientSector.toUpperCase()}` : ""}`
+                  : "Selecione um paciente pelo cockpit ou painel clínico"}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -1221,6 +1227,7 @@ export default function AltaDesfechoPage() {
 
       {/* Patient Cockpit — fixed right sidebar */}
       <PatientCockpit patient={cockpitPatient} />
+      </div>
     </div>
   );
 }
