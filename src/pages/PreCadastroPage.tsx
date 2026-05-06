@@ -150,21 +150,47 @@ export default function PreCadastroPage() {
     }
   };
 
+  // Backdrop compartilhado: profundidade com orbs animados + grid sutil
+  const Backdrop = () => (
+    <>
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-32 -left-24 h-96 w-96 rounded-full bg-primary/20 blur-3xl animate-pulse" />
+        <div
+          className="absolute top-1/3 -right-32 h-[28rem] w-[28rem] rounded-full bg-blue-500/15 blur-3xl animate-pulse"
+          style={{ animationDelay: "1.2s", animationDuration: "6s" }}
+        />
+        <div
+          className="absolute -bottom-40 left-1/4 h-96 w-96 rounded-full bg-emerald-500/10 blur-3xl animate-pulse"
+          style={{ animationDelay: "0.6s", animationDuration: "7s" }}
+        />
+      </div>
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.025] dark:opacity-[0.05]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
+          backgroundSize: "44px 44px",
+        }}
+      />
+    </>
+  );
+
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 flex items-center justify-center p-6">
-        <Card className="max-w-lg w-full p-8 text-center space-y-4">
-          <div className="mx-auto h-16 w-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
-            <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+      <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 flex items-center justify-center p-6">
+        <Backdrop />
+        <Card className="relative max-w-lg w-full p-8 text-center space-y-4 backdrop-blur-xl bg-card/70 border-border/60 shadow-2xl shadow-emerald-500/10 animate-in fade-in zoom-in-95 duration-500">
+          <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-emerald-400/20 to-emerald-600/10 ring-1 ring-emerald-500/30 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+            <CheckCircle2 className="h-8 w-8 text-emerald-500" />
           </div>
-          <h1 className="text-2xl font-bold">Pré-cadastro enviado!</h1>
+          <h1 className="text-2xl font-bold tracking-tight">PRÉ-CADASTRO ENVIADO!</h1>
           <p className="text-muted-foreground">
             Sua solicitação foi recebida e entrará na lista de aprovações da equipe
             administrativa. Você receberá um retorno por email assim que o cadastro
             for revisado.
           </p>
           <div className="pt-2">
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" className="backdrop-blur">
               <Link to="/auth">Voltar para o login</Link>
             </Button>
           </div>
@@ -174,20 +200,24 @@ export default function PreCadastroPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 py-10 px-4">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <div className="text-center space-y-2">
-          <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <ShieldCheck className="h-7 w-7 text-primary" />
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900 py-10 px-4">
+      <Backdrop />
+      <div className="relative max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="text-center space-y-3">
+          <div className="mx-auto h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/30 via-primary/15 to-blue-500/20 ring-1 ring-primary/30 flex items-center justify-center shadow-xl shadow-primary/20 transition-transform hover:scale-105">
+            <ShieldCheck className="h-8 w-8 text-primary drop-shadow" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">PRÉ-CADASTRO DE ACESSO</h1>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent">
+            PRÉ-CADASTRO DE ACESSO
+          </h1>
           <p className="text-muted-foreground text-sm max-w-md mx-auto">
             Preencha os dados abaixo para solicitar acesso à plataforma. Sua
             solicitação será revisada pela equipe administrativa.
           </p>
         </div>
 
-        <Card className="p-6 md:p-8 space-y-5">
+        <Card className="relative p-6 md:p-8 space-y-5 backdrop-blur-xl bg-card/70 border-border/60 shadow-2xl shadow-primary/5 overflow-hidden">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="fullName">Nome completo *</Label>
