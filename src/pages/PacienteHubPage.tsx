@@ -31,8 +31,40 @@ export default function PacienteHubPage() {
     navigate(`${path}?${qs.toString()}`);
   };
 
+  // Mapa canônico de setores (chaves internas legadas → rótulo institucional)
+  // Mantém compatibilidade com keys antigas (red/yellow/blue/outside) e aceita
+  // novas chaves padronizadas (uti_01, uti_02, uci_01, uci_02) sem quebrar URLs existentes.
   const sectorLabelMap: Record<string, string> = {
-    red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2", ucc: "UCC",
+    // Terapia intensiva — chaves legadas
+    red: "UTI 1",
+    yellow: "UTI 2",
+    blue: "UCI 1",
+    outside: "UCI 2",
+    // Terapia intensiva — chaves canônicas novas
+    uti_01: "UTI 1",
+    uti_02: "UTI 2",
+    uci_01: "UCI 1",
+    uci_02: "UCI 2",
+    // Cuidados intermediários
+    ucc: "UCC",
+    // Enfermarias
+    neuro_01: "Enfermaria Neuro 01",
+    neuro_02: "Enfermaria Neuro 02",
+    clinica_cirurgica: "Clínica Cirúrgica",
+    enfermaria_transicao: "Enfermaria de Transição",
+    enfermaria_vascular: "Enfermaria Vascular",
+    // Centro Cirúrgico / RIV
+    riv: "RIV",
+    cc_preparo: "CC — Preparo",
+    cc_bloco: "CC — Bloco Cirúrgico",
+    cc_rpa: "CC — RPA",
+    // Triagem / Urgência
+    sala_vermelha: "Sala Vermelha",
+    sala_laranja: "Sala Laranja",
+    ue_vertical: "UE Vertical",
+    ue_horizontal: "UE Horizontal",
+    observacao_clinica: "Observação Clínica",
+    internacao_ue: "Internação UE",
   };
   const sectorLabel = sectorLabelMap[ctx.patientSector] || ctx.patientSector;
 
