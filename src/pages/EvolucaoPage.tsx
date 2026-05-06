@@ -254,7 +254,7 @@ const EvolucaoPage = () => {
         <div className="flex-1 min-w-0 p-4 space-y-4">
         {/* Page Header */}
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
               <NotebookPen className="h-5 w-5 text-primary" />
             </div>
