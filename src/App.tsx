@@ -116,6 +116,10 @@ function ProfileHomeRedirect() {
 const App = () => {
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
 
+  useEffect(() => {
+    startIdlePrefetch();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <PrivacyProvider>
