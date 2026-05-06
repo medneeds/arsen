@@ -229,7 +229,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             "transition-[width] duration-200 ease-out overflow-hidden",
             isExpanded ? "w-80" : "w-12",
           ],
-          variant === "inline" && "w-full bg-card border border-border rounded-lg",
+          variant === "inline" && "w-full h-full bg-card border border-border rounded-lg overflow-hidden",
           "flex-col print:hidden",
           className
         )}
