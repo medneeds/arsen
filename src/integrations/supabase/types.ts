@@ -4341,6 +4341,10 @@ export type Database = {
         Returns: undefined
       }
       unaccent_immutable: { Args: { input: string }; Returns: string }
+      user_in_hospital: {
+        Args: { _hospital_unit_id: string; _user_id: string }
+        Returns: boolean
+      }
       user_is_global: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
