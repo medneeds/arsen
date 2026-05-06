@@ -433,6 +433,14 @@ export default function UserManagementPage() {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="prereg" className="gap-2">
+              <Inbox className="h-4 w-4" /> Pré-cadastros
+              {preRegPending > 0 && (
+                <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-[10px]">
+                  {preRegPending}
+                </Badge>
+              )}
+            </TabsTrigger>
             {(currentUserRole === "admin" || isGestor) && (
               <TabsTrigger value="create" className="gap-2">
                 <UserPlus className="h-4 w-4" /> Cadastrar Usuário
@@ -445,6 +453,10 @@ export default function UserManagementPage() {
 
           <TabsContent value="approvals">
             <UserApprovalsPanel />
+          </TabsContent>
+
+          <TabsContent value="prereg">
+            <PreRegistrationApprovalsPanel />
           </TabsContent>
 
           <TabsContent value="list" className="space-y-6">
