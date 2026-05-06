@@ -18,8 +18,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   BedDouble, Shield, Thermometer, Heart, Brain, Wind,
-  AlertTriangle, Loader2, User, Calendar, Activity, Droplets
+  AlertTriangle, Loader2, User, Calendar, Activity, Droplets, CalendarIcon
 } from "lucide-react";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format, addDays, differenceInCalendarDays, startOfDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 
