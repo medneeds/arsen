@@ -211,12 +211,12 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
         </Tabs>
 
         {/* Footer fixo de aceite */}
-        <div className="border-t bg-muted/30 px-6 py-4 space-y-3">
+        <div className="border-t bg-muted/30 px-4 sm:px-6 py-3 sm:py-4 space-y-3 shrink-0 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
               <strong className="text-foreground">{acceptedCount}/3</strong> seções aceitas
             </p>
-            <div className="h-1.5 w-32 rounded-full bg-muted overflow-hidden">
+            <div className="h-1.5 w-24 sm:w-32 rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full bg-primary transition-all duration-300"
                 style={{ width: `${(acceptedCount / 3) * 100}%` }}
@@ -224,7 +224,7 @@ export function ConsentTermsDialog({ open, onAccept, userId }: ConsentTermsDialo
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <label
               htmlFor="terms-cb"
               className="flex items-center gap-2 rounded-lg border bg-card p-2.5 cursor-pointer hover:border-primary/50 transition-colors"
