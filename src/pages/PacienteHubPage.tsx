@@ -95,11 +95,11 @@ export default function PacienteHubPage() {
                 className={cn(
                   "group relative flex flex-col items-center justify-center gap-3 p-5 sm:p-6 rounded-xl",
                   "bg-card border border-border overflow-hidden",
-                  "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm hover:border-foreground/15 active:translate-y-0",
+                  "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:border-foreground/20 active:translate-y-0",
                 )}
               >
-                {/* Accent superior fino */}
-                <span className={cn("absolute top-0 left-0 right-0 h-px opacity-60 group-hover:opacity-90 transition-opacity", accent)} />
+                {/* Accent superior */}
+                <span className={cn("absolute top-0 left-0 right-0 h-1.5 opacity-80 group-hover:opacity-100 transition-opacity", accent)} />
                 <div className="p-2.5 rounded-lg bg-muted/60 group-hover:bg-muted transition-colors">
                   <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-foreground/80 group-hover:text-foreground transition-colors" strokeWidth={1.75} />
                 </div>
