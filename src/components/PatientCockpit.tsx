@@ -868,6 +868,14 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         </Tabs>
         </div>
       </aside>
+      <MedicalDocumentDialog
+        open={docDialogOpen}
+        onOpenChange={setDocDialogOpen}
+        patientId={patient.id}
+        patientName={patient.name}
+        patientBed={patient.bedNumber}
+        patientSector={patient.sector}
+      />
     </TooltipProvider>
   );
 }
