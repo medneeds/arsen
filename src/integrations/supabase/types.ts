@@ -4345,6 +4345,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_coordenador: { Args: { _user_id: string }; Returns: boolean }
       is_dev_user: { Args: { _user_id: string }; Returns: boolean }
       is_gestor: { Args: { _user_id: string }; Returns: boolean }
       is_global_profile: {
@@ -4437,6 +4438,7 @@ export type Database = {
         | "farmacia"
         | "nir"
         | "dev"
+        | "coordenador"
       audit_action:
         | "INSERT"
         | "UPDATE"
@@ -4579,6 +4581,7 @@ export const Constants = {
         "farmacia",
         "nir",
         "dev",
+        "coordenador",
       ],
       audit_action: ["INSERT", "UPDATE", "DELETE", "SELECT", "LOGIN", "LOGOUT"],
     },
