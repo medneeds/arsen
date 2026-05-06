@@ -544,11 +544,7 @@ function DeathDeclarationSection() {
     deathTime: "",
     deathLocation: "hospital",
     // Causes (DO pattern)
-    causeA: "", // Causa imediata
-    causeB: "", // Condição antecedente
-    causeC: "", // Condição antecedente
-    causeD: "", // Causa básica
-    causePart2: "", // Condições contribuintes
+    deathSummary: "", // Resumo / relatório livre do óbito (substitui causa mortis estruturada)
     // Classification
     deathType: "natural",
     autopsyRequested: false,
