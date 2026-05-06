@@ -211,32 +211,32 @@ export function CareCatalogDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[1100px] w-[96vw] h-[82vh] max-h-[82vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[1100px] w-[calc(100vw-0.5rem)] sm:w-[96vw] h-[100dvh] sm:h-[82vh] max-h-[100dvh] sm:max-h-[82vh] flex flex-col p-0 overflow-hidden rounded-none sm:rounded-lg">
         {/* HEADER */}
-        <DialogHeader className="space-y-2 px-5 pt-5 pb-3 border-b shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-              <ClipboardList className="h-5 w-5 text-amber-500" />
+        <DialogHeader className="space-y-1.5 px-3 sm:px-5 pt-3 sm:pt-5 pb-2 sm:pb-3 border-b shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
+              <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
             </div>
-            <div className="flex-1">
-              <DialogTitle className="text-lg font-bold tracking-wide uppercase">
+            <div className="flex-1 min-w-0">
+              <DialogTitle className="text-sm sm:text-lg font-bold tracking-wide uppercase truncate">
                 Assistente de Cuidados
               </DialogTitle>
               {patientName && (
-                <p className="text-sm font-semibold text-foreground mt-0.5 tracking-wide uppercase">
+                <p className="text-xs sm:text-sm font-semibold text-foreground mt-0.5 tracking-wide uppercase truncate">
                   {patientName}
                 </p>
               )}
             </div>
           </div>
-          <DialogDescription className="text-xs tracking-wider text-muted-foreground">
+          <DialogDescription className="hidden sm:block text-xs tracking-wider text-muted-foreground">
             Escolha um perfil clínico para prescrever em bloco ou use os cuidados rápidos — clique para adicionar direto, ou ative a multi-seleção para enviar vários de uma vez.
           </DialogDescription>
         </DialogHeader>
 
         {/* TABS — sempre visíveis (exceto dentro do checklist de perfil) */}
         {!activeProfile && (
-          <div className="flex gap-1 border-b px-5 shrink-0">
+          <div className="flex gap-1 border-b px-2 sm:px-5 shrink-0 overflow-x-auto">
             <button
               type="button"
               onClick={() => setTab("perfis")}

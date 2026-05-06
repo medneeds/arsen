@@ -53,7 +53,7 @@ export function BreadcrumbBar({
     <nav
       aria-label="Hierarquia do setor"
       className={cn(
-        "print:hidden flex items-center justify-between gap-2 flex-wrap px-2 sm:px-3 py-1.5 shadow-sm rounded-xl backdrop-blur-sm",
+        "print:hidden flex items-center justify-between gap-1.5 sm:gap-2 flex-wrap px-1.5 sm:px-3 py-1 sm:py-1.5 shadow-sm rounded-lg sm:rounded-xl backdrop-blur-sm",
         isInstitutional
           ? "border border-primary/30 text-primary-foreground"
           : "border border-border/60 bg-card/60",
@@ -94,7 +94,7 @@ export function BreadcrumbBar({
 
         <span
           className={cn(
-            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-semibold",
+            "hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border font-semibold",
             isInstitutional
               ? "bg-white/20 text-white border-white/30 backdrop-blur shadow-sm"
               : "bg-muted/60 text-muted-foreground border-border/50",
@@ -106,7 +106,7 @@ export function BreadcrumbBar({
 
         {showSector && (
           <>
-            <ChevronRight className={cn("h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
+            <ChevronRight className={cn("hidden sm:inline-block h-3.5 w-3.5", isInstitutional ? "text-primary-foreground/60" : "text-muted-foreground/50")} />
             <SectorSelector variant={isInstitutional ? "dark" : "light"} />
           </>
         )}
