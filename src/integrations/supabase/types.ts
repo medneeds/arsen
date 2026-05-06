@@ -2884,6 +2884,7 @@ export type Database = {
           full_name: string | null
           id: string
           matricula: string | null
+          must_change_password: boolean
           phone: string | null
           professional_type: string | null
           specialty: string | null
@@ -2891,6 +2892,7 @@ export type Database = {
           terms_accepted_at: string | null
           terms_version: string | null
           updated_at: string
+          username: string | null
         }
         Insert: {
           access_profile?: string | null
@@ -2907,6 +2909,7 @@ export type Database = {
           full_name?: string | null
           id: string
           matricula?: string | null
+          must_change_password?: boolean
           phone?: string | null
           professional_type?: string | null
           specialty?: string | null
@@ -2914,6 +2917,7 @@ export type Database = {
           terms_accepted_at?: string | null
           terms_version?: string | null
           updated_at?: string
+          username?: string | null
         }
         Update: {
           access_profile?: string | null
@@ -2930,6 +2934,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           matricula?: string | null
+          must_change_password?: boolean
           phone?: string | null
           professional_type?: string | null
           specialty?: string | null
@@ -2937,6 +2942,7 @@ export type Database = {
           terms_accepted_at?: string | null
           terms_version?: string | null
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -4343,6 +4349,10 @@ export type Database = {
       is_gestor: { Args: { _user_id: string }; Returns: boolean }
       is_global_profile: {
         Args: { _access_profile: string; _app_role: string }
+        Returns: boolean
+      }
+      is_username_available: {
+        Args: { p_exclude_user?: string; p_username: string }
         Returns: boolean
       }
       merge_unidentified_patient: {

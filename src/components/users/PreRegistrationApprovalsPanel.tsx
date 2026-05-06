@@ -81,13 +81,9 @@ const formatPhone = (d: string) =>
     ? d.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
     : d.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
 
-const genTempPassword = () => {
-  // 8 chars: letras + números, fácil de digitar
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let p = "";
-  for (let i = 0; i < 8; i++) p += chars[Math.floor(Math.random() * chars.length)];
-  return p;
-};
+// Senha padrão de PRIMEIRO ACESSO. Todo usuário aprovado recebe esta senha
+// e DEVE trocá-la (e escolher um username) no primeiro login.
+const FIRST_ACCESS_PASSWORD = "123456";
 
 export function PreRegistrationApprovalsPanel() {
   const { user } = useAuth();
@@ -157,7 +153,7 @@ export function PreRegistrationApprovalsPanel() {
     setTarget(item);
     setDecision(type);
     setNote("");
-    setTempPassword(type === "approve" ? genTempPassword() : "");
+    setTempPassword(type === "approve" ? FIRST_ACCESS_PASSWORD : "");
   };
 
   const close = () => {
@@ -490,26 +486,32 @@ export function PreRegistrationApprovalsPanel() {
               </div>
 
               {decision === "approve" && (
-                <div className="space-y-2">
-                  <Label htmlFor="tempPwd">Senha provisória *</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="tempPwd"
-                      value={tempPassword}
-                      onChange={(e) => setTempPassword(e.target.value)}
-                      placeholder="Mín. 6 caracteres"
-                    />
+                <div className="rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <Label className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                        Senha de primeiro acesso
+                      </Label>
+                      <p className="font-mono text-2xl font-bold tracking-widest text-emerald-700 dark:text-emerald-400">
+                        {FIRST_ACCESS_PASSWORD}
+                      </p>
+                    </div>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setTempPassword(genTempPassword())}
+                      onClick={() => {
+                        navigator.clipboard.writeText(FIRST_ACCESS_PASSWORD);
+                        toast.success("Senha copiada");
+                      }}
                     >
-                      Gerar
+                      <Copy className="h-3.5 w-3.5 mr-1" /> Copiar
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    O usuário será criado com esta senha e deverá trocá-la no primeiro acesso. Repasse-a com segurança.
+                    Padrão institucional. O usuário fará login com CPF ou e-mail + esta senha,
+                    e será obrigado a definir uma <b>nova senha</b> e um <b>nome de usuário</b>{" "}
+                    no primeiro acesso.
                   </p>
                 </div>
               )}

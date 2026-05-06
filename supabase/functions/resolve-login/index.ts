@@ -68,15 +68,28 @@ Deno.serve(async (req) => {
         if (au) profileId = au as string;
       }
     } else {
-      // username interno — converte para email interno padrão
-      const internalEmail = `${identifier.toLowerCase()}@sistema.local`;
-      const { data, error } = await supabase
+      // Identificador alfanumérico: tenta primeiro como username escolhido pelo
+      // próprio usuário, depois cai para o e-mail interno legado
+      // (`<usuario>@sistema.local`).
+      const lowered = identifier.toLowerCase();
+      const { data: byUsername, error: unErr } = await supabase
         .from("profiles")
         .select("id")
-        .eq("email", internalEmail)
+        .ilike("username", lowered)
         .maybeSingle();
-      if (error) throw error;
-      profileId = data?.id ?? null;
+      if (unErr) throw unErr;
+      profileId = byUsername?.id ?? null;
+
+      if (!profileId) {
+        const internalEmail = `${lowered}@sistema.local`;
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", internalEmail)
+          .maybeSingle();
+        if (error) throw error;
+        profileId = data?.id ?? null;
+      }
     }
 
     if (!profileId) {

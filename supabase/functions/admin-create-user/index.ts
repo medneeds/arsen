@@ -143,6 +143,8 @@ Deno.serve(async (req) => {
       status: "approved",
       approved_at: new Date().toISOString(),
       approved_by: caller.id,
+      // Senha provisória ⇒ obriga troca + escolha de username no 1º acesso
+      must_change_password: mode === "password",
     }, { onConflict: "id" });
     if (profErr) console.error("profile upsert", profErr);
 

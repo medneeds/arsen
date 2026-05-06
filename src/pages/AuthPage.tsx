@@ -21,6 +21,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { AuthBackgroundFx } from "@/components/auth/AuthBackgroundFx";
 import { resolveLandingRoute } from "@/config/profileDefaults";
 import { ProfileChooser } from "@/components/auth/ProfileChooser";
+import { FirstAccessSetup } from "@/components/auth/FirstAccessSetup";
 import type { AccessProfile } from "@/config/userProfiles";
 
 /* ─── Shared chrome ─────────────────────────────────────────────── */
@@ -82,6 +83,9 @@ export default function AuthPage() {
   const [chooserAppRole, setChooserAppRole] = useState<string | null>(null);
   const [chooserUserName, setChooserUserName] = useState<string | null>(null);
 
+  // Primeiro acesso (senha padrão 123456 → exige troca + escolha de username)
+  const [firstAccess, setFirstAccess] = useState<{ userId: string; fullName: string | null } | null>(null);
+
   const [loginData, setLoginData] = useState({
     username: "",
     password: "",
@@ -142,10 +146,10 @@ export default function AuthPage() {
         const { data: profileRow } = userId
           ? await supabase
               .from("profiles")
-              .select("id, full_name, access_profile, access_profiles")
+              .select("id, full_name, access_profile, access_profiles, must_change_password")
               .eq("id", userId)
               .maybeSingle()
-          : { data: null as { id?: string; full_name?: string; access_profile?: string; access_profiles?: string[] } | null };
+          : { data: null as { id?: string; full_name?: string; access_profile?: string; access_profiles?: string[]; must_change_password?: boolean } | null };
 
         let appRole: string | null = null;
         if (profileRow?.id) {
@@ -165,6 +169,18 @@ export default function AuthPage() {
           : (accessProfile ? [accessProfile] : []);
 
         setCurrentDepartment("UTI");
+
+        // 🔐 Primeiro acesso: senha padrão 123456 → exige troca + escolha de username
+        const mustChange = (profileRow as { must_change_password?: boolean } | null)?.must_change_password === true;
+        if (mustChange && userId) {
+          toast.success("Bem-vindo(a)! Configure seu acesso.");
+          setFirstAccess({
+            userId,
+            fullName: (profileRow as { full_name?: string } | null)?.full_name ?? null,
+          });
+          setLoading(false);
+          return;
+        }
 
         if (effectiveProfiles.length > 1) {
           // Múltiplos perfis → mostra seletor antes de redirecionar.
@@ -193,6 +209,44 @@ export default function AuthPage() {
       postLoginInFlight.current = false;
     }
   };
+
+  // Primeiro acesso (senha padrão 123456) — bloqueia até concluir
+  if (firstAccess && !showLoadingScreen) {
+    return (
+      <FirstAccessSetup
+        userId={firstAccess.userId}
+        fullName={firstAccess.fullName}
+        onComplete={async () => {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("access_profile, access_profiles")
+            .eq("id", firstAccess.userId)
+            .maybeSingle();
+          const list = (prof as { access_profiles?: string[] } | null)?.access_profiles ?? [];
+          const single = (prof as { access_profile?: string } | null)?.access_profile ?? null;
+          const eff = list.length > 0 ? list : (single ? [single] : []);
+          const { data: roleRow } = await supabase
+            .from("user_roles").select("role").eq("user_id", firstAccess.userId).maybeSingle();
+          const appRole = (roleRow as { role?: string } | null)?.role ?? null;
+          if (eff.length > 1) {
+            setChooserProfiles(eff as AccessProfile[]);
+            setChooserAppRole(appRole);
+            setChooserUserName(firstAccess.fullName);
+            setFirstAccess(null);
+            return;
+          }
+          const chosen = eff[0] ?? null;
+          if (chosen) {
+            localStorage.setItem("access_profile", chosen);
+            sessionStorage.setItem("active_access_profile", chosen);
+          }
+          setRedirectRoute(resolveLandingRoute(chosen, appRole));
+          setFirstAccess(null);
+          setShowLoadingScreen(true);
+        }}
+      />
+    );
+  }
 
   // Tela de escolha de perfil (multi-perfil) — toma a tela inteira após login bem-sucedido
   if (chooserProfiles && chooserProfiles.length > 1 && !showLoadingScreen) {
