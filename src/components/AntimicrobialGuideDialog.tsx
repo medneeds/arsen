@@ -426,6 +426,7 @@ export function AntimicrobialGuideDialog({
                         value={entry.medication}
                         onSelectMed={(med) => updateEntryFromMed(entry.id, med)}
                         onChangeText={(text) => updateEntry(entry.id, "medication", text)}
+                        options={antimicrobialOptions}
                       />
                       {entry.presentation && (
                         <div className="text-[10px] text-muted-foreground mt-0.5 truncate">📦 {entry.presentation}</div>
