@@ -93,6 +93,44 @@ export default function RoundPage() {
   const [saving, setSaving] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [loadingSession, setLoadingSession] = useState(false);
+  const [syncingPatientId, setSyncingPatientId] = useState<string | null>(null);
+
+  const fetchPatients = useCallback(async () => {
+    if (!currentHospital || !currentState) return;
+    const { data } = await supabase
+      .from("patients")
+      .select("id, name, sector, bed_number, age, diagnoses")
+      .eq("hospital_unit_id", currentHospital.id)
+      .eq("state_id", currentState.id)
+      .eq("department", "UTI")
+      .eq("is_vacant", false)
+      .order("sector")
+      .order("bed_number");
+    if (data) setPatients(data.filter((p) => p.name && p.name.trim()));
+  }, [currentHospital, currentState]);
+
+  const handleSyncPatient = useCallback(async (e: React.MouseEvent, patientId: string) => {
+    e.stopPropagation();
+    if (!currentHospital) return;
+    setSyncingPatientId(patientId);
+    try {
+      const { data: fresh, error } = await supabase
+        .from("patients")
+        .select("id, name, sector, bed_number, age, diagnoses")
+        .eq("id", patientId)
+        .maybeSingle();
+      if (error) throw error;
+      if (fresh) {
+        setPatients((prev) => prev.map((p) => (p.id === fresh.id ? (fresh as PatientOption) : p)));
+        if (selectedPatient?.id === fresh.id) setSelectedPatient(fresh as PatientOption);
+      }
+      toast.success("Dados do paciente sincronizados");
+    } catch (err: any) {
+      toast.error("Erro ao sincronizar: " + (err.message || ""));
+    } finally {
+      setSyncingPatientId(null);
+    }
+  }, [currentHospital, selectedPatient?.id]);
 
   // Fetch UTI patients
   useEffect(() => {
