@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { EditPatientDialog } from "./EditPatientDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
 import { UtiReallocationDialog } from "./UtiReallocationDialog";
+import { PatientRegistrationDialog } from "./PatientRegistrationDialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -792,6 +793,7 @@ export function UtiPatientCard({
   const [movementType, setMovementType] = useState<"ALTA" | "ÓBITO" | "TRANSFERÊNCIA" | null>(null);
   const [isMovementDialogOpen, setIsMovementDialogOpen] = useState(false);
   const [isReallocationDialogOpen, setIsReallocationDialogOpen] = useState(false);
+  const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
 
   // Derive current UTI unit from colorVariant if not provided
   const derivedUtiUnit = currentUtiUnit || (colorVariant === 'blue' ? 'UTI 1' : 'UTI 2');
@@ -1005,8 +1007,17 @@ export function UtiPatientCard({
                 <span className="text-sm font-medium italic">Leito Vago</span>
               </div>
             </div>
-            {/* Actions for vacant bed: only deletion (governance). Admission flows through Recepção. */}
+            {/* Actions for vacant bed: cadastrar paciente + excluir leito */}
             <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[11px] gap-1 border-primary/40 text-primary hover:bg-primary/10"
+                onClick={() => setIsRegisterDialogOpen(true)}
+              >
+                <UserPlus className="h-3.5 w-3.5" />
+                Cadastrar Paciente
+              </Button>
               {onDelete && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -1507,6 +1518,13 @@ export function UtiPatientCard({
         onSuccess={handleReallocationSuccess}
         currentUtiUnit={derivedUtiUnit}
         allPatients={allPatients}
+      />
+
+      {/* Cadastro de Paciente (a partir de leito vago no mapa) */}
+      <PatientRegistrationDialog
+        open={isRegisterDialogOpen}
+        onOpenChange={setIsRegisterDialogOpen}
+        onSuccess={() => setIsRegisterDialogOpen(false)}
       />
     </>
   );
