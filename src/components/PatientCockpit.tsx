@@ -373,7 +373,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             size="sm"
             variant="outline"
             className="w-full h-8 text-xs gap-1.5"
-            onClick={() => goPatient("/documentos")}
+            onClick={() => setDocDialogOpen(true)}
           >
             <FileSignature className="h-3.5 w-3.5" />
             Emitir documentos médicos
