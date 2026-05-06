@@ -1327,7 +1327,7 @@ export default function AltaDesfechoPage() {
 
       <div className="flex print:hidden">
         <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4">
-        <div className="flex items-center justify-between gap-4">
+        <div className="hidden sm:flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
               <ArrowRight className="h-5 w-5 text-primary" />
