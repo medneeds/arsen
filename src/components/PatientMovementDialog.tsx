@@ -574,14 +574,32 @@ export function PatientMovementDialog({
         </div>
 
         {step === "form" && (
-          <DialogFooter className="gap-2 sm:gap-2">
-            <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
-              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isSubmitting ? "Registrando..." : "Confirmar"}
-            </Button>
+          <DialogFooter className="gap-2 sm:gap-2 sm:flex-col sm:items-stretch">
+            {requiredDocType && (!docComplete || !responsibleDoctor.trim()) && (
+              <div className="flex items-start gap-2 p-2 rounded-md bg-warning/10 border border-warning/30 text-[11px] text-warning-foreground">
+                <AlertTriangle className="h-3.5 w-3.5 text-warning mt-0.5 shrink-0" />
+                <span>
+                  Para confirmar, é preciso ter o {requiredDocType === "obito" ? "Relatório de Óbito" : "Sumário de Alta"} completo
+                  e o médico responsável sincronizado com o usuário logado.
+                </span>
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={
+                  isSubmitting ||
+                  (!!requiredDocType && (!docComplete || !responsibleDoctor.trim()))
+                }
+                className="gap-2"
+              >
+                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isSubmitting ? "Registrando..." : "Confirmar"}
+              </Button>
+            </div>
           </DialogFooter>
         )}
       </DialogContent>
