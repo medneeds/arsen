@@ -31,6 +31,9 @@ import { Check as CheckIcon, Clock as ClockIcon } from "lucide-react";
 import { usePatientSpecialRequests } from "@/hooks/usePatientSpecialRequests";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { formatDistanceToNow } from "date-fns";
+import { usePatientDischargeDocs } from "@/hooks/usePatientDischargeDocs";
+import { printDischargeDocument, DISCHARGE_DOC_SHORT } from "@/lib/dischargeDocuments";
+import { Skull, FileSignature } from "lucide-react";
 
 interface PatientCockpitProps {
   patient: Patient | null;
@@ -841,15 +844,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 )}
               </CockpitSection>
 
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full h-8 text-xs gap-1.5"
-                onClick={() => goPatient("/alta-desfecho")}
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                Abrir fluxo de alta
-              </Button>
+              <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => goPatient("/alta-desfecho")} />
             </TabsContent>
           </ScrollArea>
         </Tabs>
@@ -860,6 +855,35 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
 }
 
 /* ===== Subcomponentes ===== */
+
+function DischargeQuickActions({ patientId, patientName, fallback }: { patientId: string; patientName: string; fallback: () => void }) {
+  const { data: docs } = usePatientDischargeDocs(patientId, patientName);
+  const latestAlta = docs?.find((d) => d.document_type === "alta_hospitalar" || d.document_type === "alta_pedido");
+  const latestObito = docs?.find((d) => d.document_type === "obito");
+
+  if (latestObito) {
+    return (
+      <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10"
+        onClick={() => printDischargeDocument("obito", latestObito.content)}>
+        <Skull className="h-3.5 w-3.5" /> Ver relatório de óbito
+      </Button>
+    );
+  }
+  if (latestAlta) {
+    return (
+      <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+        onClick={() => printDischargeDocument(latestAlta.document_type, latestAlta.content)}>
+        <FileSignature className="h-3.5 w-3.5" /> Ver alta ({DISCHARGE_DOC_SHORT[latestAlta.document_type]})
+      </Button>
+    );
+  }
+  return (
+    <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5" onClick={fallback}>
+      <LogOut className="h-3.5 w-3.5" /> Abrir fluxo de alta
+    </Button>
+  );
+}
+
 
 function FileCheckIcon() {
   return <ClipboardList className="h-3.5 w-3.5 text-primary shrink-0" />;

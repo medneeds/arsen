@@ -23,7 +23,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useHospital } from "@/contexts/HospitalContext";
-import { ArrowLeft, ArrowRight, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, Loader2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   MOVEMENT_CATEGORIES,
@@ -38,6 +38,12 @@ import {
   type MovementSubtype,
   type SubtypeDef,
 } from "@/data/movementFlow";
+import { DischargeDocumentForm } from "@/components/DischargeDocumentForm";
+import {
+  type DischargeDocType,
+  type DischargeDocPayload,
+  printDischargeDocument,
+} from "@/lib/dischargeDocuments";
 
 interface PatientMovementDialogProps {
   patient: Patient | null;
@@ -88,6 +94,8 @@ export function PatientMovementDialog({
   const [notes, setNotes] = useState("");
   const [responsibleDoctor, setResponsibleDoctor] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [docPayload, setDocPayload] = useState<DischargeDocPayload | null>(null);
+  const [docComplete, setDocComplete] = useState(false);
 
   const { toast } = useToast();
   const { currentState, currentHospital } = useHospital();
@@ -124,6 +132,14 @@ export function PatientMovementDialog({
     return [];
   }, [subtypeDef]);
 
+  const requiredDocType: DischargeDocType | null = useMemo(() => {
+    if (!subtypeDef) return null;
+    if (subtypeDef.id === "ALTA_HOSPITALAR") return "alta_hospitalar";
+    if (subtypeDef.id === "ALTA_PEDIDO") return "alta_pedido";
+    if (subtypeDef.id === "OBITO") return "obito";
+    return null;
+  }, [subtypeDef]);
+
   const handleClose = () => {
     setStep("category");
     setCategory(null);
@@ -132,6 +148,8 @@ export function PatientMovementDialog({
     setCustomDestination("");
     setNotes("");
     setResponsibleDoctor("");
+    setDocPayload(null);
+    setDocComplete(false);
     onClose();
   };
 
@@ -147,6 +165,17 @@ export function PatientMovementDialog({
       return;
     }
 
+    if (requiredDocType && (!docPayload || !docComplete)) {
+      toast({
+        title: "Documento obrigatório",
+        description: requiredDocType === "obito"
+          ? "Preencha o Relatório de Óbito antes de confirmar."
+          : "Preencha o Sumário de Alta antes de confirmar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       if (!currentHospital || !currentState) {
@@ -156,7 +185,8 @@ export function PatientMovementDialog({
       const finalDestination = destination === "OUTRO" ? customDestination : destination;
       const patientDepartment = (patient as any).department || "URGÊNCIA E EMERGÊNCIA ADULTO";
 
-      const { error } = await supabase.from("patient_movements").insert({
+      const { data: movRow, error } = await supabase.from("patient_movements").insert({
+        patient_id: (patient as any).id || null,
         patient_name: patient.name,
         patient_bed: patient.bedNumber,
         patient_sector: patient.sector,
@@ -169,27 +199,47 @@ export function PatientMovementDialog({
         department: patientDepartment,
         state_id: currentState.id,
         hospital_unit_id: currentHospital.id,
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      // Persist discharge/death document linked to movement
+      if (requiredDocType && docPayload) {
+        const finalDoc: DischargeDocPayload = {
+          ...docPayload,
+          patient_name: patient.name,
+          patient_bed: patient.bedNumber,
+          patient_sector: patient.sector,
+          signed_at: new Date().toISOString(),
+        };
+        const { error: docErr } = await supabase.from("discharge_documents").insert({
+          document_type: requiredDocType,
+          patient_id: (patient as any).id || null,
+          patient_name: patient.name,
+          patient_bed: patient.bedNumber,
+          patient_sector: patient.sector,
+          movement_id: movRow?.id ?? null,
+          content: finalDoc as any,
+          signed_by: user?.id,
+          signed_by_name: finalDoc.signed_by_name || null,
+          signed_by_crm: finalDoc.signed_by_crm || null,
+          signed_at: finalDoc.signed_at,
+          hospital_unit_id: currentHospital.id,
+          state_id: currentState.id,
+          department: patientDepartment,
+          created_by: user?.id,
+        });
+        if (docErr) throw docErr;
+
+        // Auto preview the printable Norma Zero document
+        printDischargeDocument(requiredDocType, finalDoc);
+      }
 
       toast({
         title: `${subtypeDef.label} registrado(a)`,
-        description: subtypeDef.linksToDischargeSummary
-          ? "Você pode complementar com o sumário de alta."
+        description: requiredDocType
+          ? "Documento salvo no histórico do paciente."
           : "Movimentação registrada no histórico.",
       });
-
-      // Hybrid flow: offer link to discharge summary
-      if (subtypeDef.linksToDischargeSummary) {
-        const goSummary = window.confirm(
-          "Deseja complementar agora com o Sumário de Alta detalhado?",
-        );
-        if (goSummary) {
-          navigate(
-            `/alta-desfecho?patient=${encodeURIComponent(patient.name)}&bed=${encodeURIComponent(patient.bedNumber)}`,
-          );
-        }
-      }
 
       onSuccess?.();
       handleClose();
@@ -406,14 +456,38 @@ export function PatientMovementDialog({
           />
         </div>
 
-        {/* Hint about discharge summary */}
-        {subtypeDef.linksToDischargeSummary && (
+        {/* Required document for Alta / Óbito */}
+        {requiredDocType && (
+          <div className="space-y-2">
+            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-warning/10 border border-warning/30">
+              <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+              <p className="text-[11px] text-foreground leading-relaxed">
+                {requiredDocType === "obito"
+                  ? "É obrigatório preencher o Relatório de Óbito antes de confirmar."
+                  : "É obrigatório preencher o Sumário de Alta antes de confirmar."}{" "}
+                O documento será arquivado no histórico do paciente e impresso em padrão Norma Zero.
+              </p>
+            </div>
+            <DischargeDocumentForm
+              type={requiredDocType}
+              initial={{
+                patient_name: patient.name,
+                patient_bed: patient.bedNumber,
+                patient_sector: patient.sector,
+                hospital_name: currentHospital?.name,
+                signed_by_name: responsibleDoctor || undefined,
+              }}
+              onChange={(payload, complete) => { setDocPayload(payload); setDocComplete(complete); }}
+            />
+          </div>
+        )}
+
+        {/* Legacy hint (other linked subtypes) */}
+        {!requiredDocType && subtypeDef.linksToDischargeSummary && (
           <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border/60">
             <FileText className="h-4 w-4 text-primary mt-0.5 shrink-0" />
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Após confirmar, você poderá complementar este registro com o{" "}
-              <span className="font-medium text-foreground">Sumário de Alta</span> detalhado
-              (diagnósticos, condutas, prescrição).
+              Documento complementar disponível em <span className="font-medium text-foreground">/alta-desfecho</span>.
             </p>
           </div>
         )}
@@ -427,7 +501,7 @@ export function PatientMovementDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
-      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className={cn("max-h-[92vh] overflow-y-auto", requiredDocType ? "sm:max-w-[760px]" : "sm:max-w-[520px]")}>
         <DialogHeader>
           <div className="flex items-center gap-3 mb-1">
             {HeaderIcon && headerTone && (
