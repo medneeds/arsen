@@ -62,6 +62,8 @@ function DischargeSummaryTab() {
     finalDiagnoses: [""],
     procedures: [""],
     complications: "",
+    // Discharge summary (clinical synthesis - distinct from orientations)
+    dischargeSummary: "",
     // Orientations
     orientations: "",
     returnDate: "",
