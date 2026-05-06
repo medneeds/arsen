@@ -512,7 +512,7 @@ function ReferralTab({ patient }: { patient: PatientCtx }) {
 }
 
 // ── Death & Outcomes Tab ──
-function DeathOutcomeTab() {
+function DeathOutcomeTab({ patient }: { patient: PatientCtx }) {
   const [activeSection, setActiveSection] = useState<"declaracao" | "morte_encefalica" | "cihdott">("declaracao");
 
   return (
