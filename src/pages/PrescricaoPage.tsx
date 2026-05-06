@@ -608,7 +608,8 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
   const [freeText, setFreeText] = useState("");
   const favCount = getFavoriteCount ?? (() => 0);
 
-  const allItems = useMemo(() => Object.values(ALL_ITEMS_BY_CATEGORY).flat(), []);
+  const { byCategory: UNIFIED_BY_CAT } = useUnifiedMedicationCatalog();
+  const allItems = useMemo(() => Object.values(UNIFIED_BY_CAT).flat(), [UNIFIED_BY_CAT]);
 
   const filtered = useMemo(() => {
     // Restringe a busca à categoria selecionada quando o usuário escolhe uma
