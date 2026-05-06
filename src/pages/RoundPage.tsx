@@ -451,16 +451,28 @@ export default function RoundPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
                 {filteredPatients.map((p) => (
-                  <button
+                  <div
                     key={p.id}
-                    onClick={() => setSelectedPatient(p)}
-                    className="text-left p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-all text-sm group"
+                    className="relative group"
                   >
-                    <div className="patient-id font-medium text-foreground group-hover:text-primary transition-colors truncate">{p.name}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      {getSectorLabel(p.sector)} • Leito {p.bed_number} {p.age ? `• ${p.age}` : ""}
-                    </div>
-                  </button>
+                    <button
+                      onClick={() => setSelectedPatient(p)}
+                      className="w-full text-left p-3 pr-10 rounded-lg border border-border hover:border-primary/50 hover:bg-accent/50 transition-all text-sm"
+                    >
+                      <div className="patient-id font-medium text-foreground group-hover:text-primary transition-colors truncate">{p.name}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {getSectorLabel(p.sector)} • Leito {p.bed_number} {p.age ? `• ${p.age}` : ""}
+                      </div>
+                    </button>
+                    <button
+                      onClick={(e) => handleSyncPatient(e, p.id)}
+                      disabled={syncingPatientId === p.id}
+                      title="Sincronizar dados deste paciente"
+                      className="absolute top-2 right-2 p-1.5 rounded-md text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${syncingPatientId === p.id ? "animate-spin" : ""}`} />
+                    </button>
+                  </div>
                 ))}
                 {filteredPatients.length === 0 && (
                   <div className="col-span-full text-center text-sm text-muted-foreground py-6">
