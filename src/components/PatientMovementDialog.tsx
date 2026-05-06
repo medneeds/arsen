@@ -94,6 +94,8 @@ export function PatientMovementDialog({
   const [notes, setNotes] = useState("");
   const [responsibleDoctor, setResponsibleDoctor] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [docPayload, setDocPayload] = useState<DischargeDocPayload | null>(null);
+  const [docComplete, setDocComplete] = useState(false);
 
   const { toast } = useToast();
   const { currentState, currentHospital } = useHospital();
