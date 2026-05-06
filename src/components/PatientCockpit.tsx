@@ -200,6 +200,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
 
   const displayName = maskName(patient.name, namesHidden);
 
+  const location = useLocation();
   const goPatient = (path: string) => {
     const params = new URLSearchParams({
       patientId: patient.id,
@@ -208,7 +209,13 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
       patientSector: patient.sector,
     });
     if (patient.age) params.set("patientAge", patient.age.toString());
-    navigate(`${path}?${params.toString()}`);
+    const target = `${path}?${params.toString()}`;
+    if (location.pathname === path) {
+      navigate(target, { replace: true });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      navigate(target);
+    }
   };
 
   return (
