@@ -153,7 +153,7 @@ export function PreRegistrationApprovalsPanel() {
     setTarget(item);
     setDecision(type);
     setNote("");
-    setTempPassword(type === "approve" ? genTempPassword() : "");
+    setTempPassword(type === "approve" ? FIRST_ACCESS_PASSWORD : "");
   };
 
   const close = () => {
