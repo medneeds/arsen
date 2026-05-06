@@ -132,7 +132,26 @@ export function buildDischargeDocHTML(type: DischargeDocType, p: DischargeDocPay
     ${block("Tipo de morte", p.death_type)}
     ${block("Necropsia", p.necropsy)}
     ${block("Declaração de Óbito (nº)", p.do_number)}
-    ${block("Família notificada por", p.notified_family)}
+  `;
+
+  const satLabel = (s?: string) => {
+    const m: Record<string, string> = {
+      "1": "1 — Muito insatisfeito",
+      "2": "2 — Insatisfeito",
+      "3": "3 — Neutro",
+      "4": "4 — Satisfeito",
+      "5": "5 — Muito satisfeito",
+    };
+    return s ? m[s] || s : "";
+  };
+
+  const familyBlocks = `
+    ${block("Familiar comunicado", [p.family_contact_name, p.family_contact_relation].filter(Boolean).join(" — "))}
+    ${block("Contato do familiar", [p.family_contact_phone, p.family_contact_email].filter(Boolean).join(" • "))}
+    ${block("Modo da comunicação", p.family_communication_mode)}
+    ${block("Comunicado por / em", [p.family_communication_by, fmtDate(p.family_communication_at)].filter(Boolean).join(" • "))}
+    ${block("Grau de satisfação na comunicação médica", satLabel(p.family_satisfaction))}
+    ${block("Observações da comunicação", p.family_communication_notes)}
   `;
 
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"/>
