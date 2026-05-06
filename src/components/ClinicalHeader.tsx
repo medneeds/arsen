@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { BreadcrumbBar } from "@/components/BreadcrumbBar";
+import { AppHeader } from "@/components/AppHeader";
 
 interface ClinicalHeaderProps {
   /** Current module label, e.g. "Prescrição Médica" */
@@ -8,25 +8,38 @@ interface ClinicalHeaderProps {
   showBack?: boolean;
   /** Right-side slot for page-specific actions */
   actions?: ReactNode;
+  /** Inline subtitle hidden on mobile */
+  subtitle?: string;
+  /** Sticky to top of viewport */
+  sticky?: boolean;
 }
 
 /**
- * Header for clinical pages with patient context (Prescrição, Evolução, Requisições, Docs, Ficha).
- * Uses the unified light BreadcrumbBar with patient + modules visible.
+ * Header for clinical pages with patient context (Prescrição, Evolução,
+ * Requisições, Documentos, Ficha de Atendimento, Alta).
+ *
+ * Thin wrapper around the unified `AppHeader` — kept for backwards
+ * compatibility with existing call sites. New pages should prefer
+ * importing `AppHeader` directly.
  */
-export function ClinicalHeader({ moduleLabel, showBack = true, actions }: ClinicalHeaderProps) {
+export function ClinicalHeader({
+  moduleLabel,
+  showBack = true,
+  actions,
+  subtitle,
+  sticky = false,
+}: ClinicalHeaderProps) {
   return (
-    <div className="px-2 sm:px-4 pt-3 print:hidden">
-      <BreadcrumbBar
-        variant="institutional"
-        showSector
-        showNavTabs={false}
-        showPatient
-        showModules
-        showBack={showBack}
-        moduleLabel={moduleLabel}
-        actions={actions}
-      />
-    </div>
+    <AppHeader
+      variant="clinical"
+      showSector
+      showPatient
+      showModules
+      showBack={showBack}
+      moduleLabel={moduleLabel}
+      subtitle={subtitle}
+      actions={actions}
+      sticky={sticky}
+    />
   );
 }
