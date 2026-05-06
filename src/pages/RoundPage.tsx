@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { ClipboardCheck, Search, Save, Printer, ChevronDown, ChevronRight, User, Calendar, BedDouble, Stethoscope, Target, MessageSquare, CheckCircle2, Clock } from "lucide-react";
+import { ClipboardCheck, Search, Save, Printer, ChevronDown, ChevronRight, User, Calendar, BedDouble, Stethoscope, Target, MessageSquare, CheckCircle2, Clock, RefreshCw } from "lucide-react";
 import PrintableRound from "@/components/PrintableRound";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
