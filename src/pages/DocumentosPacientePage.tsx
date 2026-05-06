@@ -130,7 +130,7 @@ const DocumentosPacientePage = () => {
         <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4 max-w-5xl mx-auto">
           {/* Title */}
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="hidden sm:flex items-center gap-3 min-w-0">
               <div className="p-2 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/10 shrink-0">
                 <FolderOpen className="h-4 w-4 text-primary" />
               </div>
