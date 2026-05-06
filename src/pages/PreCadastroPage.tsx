@@ -26,6 +26,59 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { ACCESS_PROFILES } from "@/config/userProfiles";
+import { whitelabel, getInstitutionalHeader } from "@/config/whitelabel";
+import socorraoCross from "@/assets/socorrao-cross-logo.png";
+
+const INSTITUTIONAL_LINES = getInstitutionalHeader();
+const INST_COLORS = whitelabel.theme.institutionalColors;
+
+function NormaZeroHeader() {
+  return (
+    <header className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/80 backdrop-blur-xl shadow-xl">
+      <div className="grid grid-cols-[68px_1fr_68px] items-center gap-3 px-5 py-3">
+        <img
+          src={socorraoCross}
+          alt="Brasão institucional"
+          className="h-[62px] w-[62px] object-contain drop-shadow"
+        />
+        <div className="text-center leading-tight">
+          {INSTITUTIONAL_LINES.map((l, i) => (
+            <div
+              key={i}
+              className={
+                i === 2
+                  ? "text-[12px] md:text-[13px] font-bold tracking-wide text-foreground"
+                  : "text-[10px] md:text-[11px] font-semibold tracking-wider text-muted-foreground uppercase"
+              }
+            >
+              {l}
+            </div>
+          ))}
+        </div>
+        <div />
+      </div>
+      <div className="flex h-1.5 w-full">
+        <div className="flex-1" style={{ background: INST_COLORS.red }} />
+        <div className="flex-1" style={{ background: INST_COLORS.orange }} />
+        <div className="flex-1" style={{ background: INST_COLORS.yellow }} />
+        <div className="flex-1" style={{ background: INST_COLORS.green }} />
+        <div className="flex-1" style={{ background: INST_COLORS.blue }} />
+      </div>
+    </header>
+  );
+}
+
+function NormaZeroFooter() {
+  return (
+    <footer className="text-center text-[10px] uppercase tracking-wider text-muted-foreground/80 space-y-0.5">
+      <div>HMDM · Arsen 1.0 · MAN.05-001 v05 · Conformidade LGPD/CFM</div>
+      <div className="text-muted-foreground/60 normal-case tracking-normal">
+        Seus dados são tratados conforme nossa política de privacidade. A aprovação
+        é feita manualmente pela equipe administrativa.
+      </div>
+    </footer>
+  );
+}
 
 interface HospitalUnit {
   id: string;
