@@ -92,6 +92,7 @@ export default function DevConsolePage() {
                 { v: "ai", icon: Bot, label: "Console IA" },
                 { v: "actions", icon: Users, label: "Ações" },
                 { v: "customization", icon: Sliders, label: "Personalização" },
+                { v: "ip", icon: ShieldCheck, label: "Restrição IP" },
               ].map(({ v, icon: Icon, label }) => (
                 <TabsTrigger
                   key={v}
@@ -110,6 +111,7 @@ export default function DevConsolePage() {
           <TabsContent value="ai"><AiTab /></TabsContent>
           <TabsContent value="actions"><ActionsTab /></TabsContent>
           <TabsContent value="customization"><CustomizationTab /></TabsContent>
+          <TabsContent value="ip"><IpAllowlistPage /></TabsContent>
         </Tabs>
       </main>
     </div>
