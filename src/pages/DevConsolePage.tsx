@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Activity, Database, Users, AlertTriangle, Bot, Send, RefreshCw, ShieldAlert, Terminal, Sliders, ListChecks } from "lucide-react";
+import { Loader2, Activity, Database, Users, AlertTriangle, Bot, Send, RefreshCw, ShieldAlert, Terminal, Sliders, ListChecks, ShieldCheck } from "lucide-react";
 import { CustomizationTab } from "@/components/dev/CustomizationTab";
 import { PendenciesTab } from "@/components/dev/PendenciesTab";
+import IpAllowlistPage from "@/pages/admin/IpAllowlistPage";
 import { toast } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import {
@@ -91,6 +92,7 @@ export default function DevConsolePage() {
                 { v: "ai", icon: Bot, label: "Console IA" },
                 { v: "actions", icon: Users, label: "Ações" },
                 { v: "customization", icon: Sliders, label: "Personalização" },
+                { v: "ip", icon: ShieldCheck, label: "Restrição IP" },
               ].map(({ v, icon: Icon, label }) => (
                 <TabsTrigger
                   key={v}
@@ -109,6 +111,7 @@ export default function DevConsolePage() {
           <TabsContent value="ai"><AiTab /></TabsContent>
           <TabsContent value="actions"><ActionsTab /></TabsContent>
           <TabsContent value="customization"><CustomizationTab /></TabsContent>
+          <TabsContent value="ip"><IpAllowlistPage /></TabsContent>
         </Tabs>
       </main>
     </div>
