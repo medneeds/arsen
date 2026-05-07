@@ -184,8 +184,8 @@ const App = () => {
               <Route path="/evolucao" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><EvolucaoPage /></MainLayout></ProtectedRoute>} />
               <Route path="/movimentacoes" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MovimentacoesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/catalogo-medicamentos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MedicationCatalogPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/painel-gestor" element={<ProtectedRoute><GestorPanelPage /></ProtectedRoute>} />
-              <Route path="/validacao-farmaceutica" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><ValidacaoFarmaceuticaPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/painel-gestor" element={<ProtectedRoute><IpRestricted moduleKey="gestor" moduleLabel="Painel Gestor"><GestorPanelPage /></IpRestricted></ProtectedRoute>} />
+              <Route path="/validacao-farmaceutica" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpRestricted moduleKey="validacao_farmaceutica" moduleLabel="Validação Farmacêutica"><ValidacaoFarmaceuticaPage /></IpRestricted></MainLayout></ProtectedRoute>} />
               <Route path="/setor-imagem" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><SetorImagemPage /></MainLayout></ProtectedRoute>} />
               <Route path="/setor-laboratorio" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><SetorLaboratorioPage /></MainLayout></ProtectedRoute>} />
               <Route path="/saps3" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><Saps3Page /></MainLayout></ProtectedRoute>} />
