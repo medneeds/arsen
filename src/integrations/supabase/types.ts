@@ -1398,6 +1398,39 @@ export type Database = {
           },
         ]
       }
+      ip_access_log: {
+        Row: {
+          allowed: boolean
+          created_at: string
+          id: string
+          ip: unknown
+          module_key: string
+          reason: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          allowed: boolean
+          created_at?: string
+          id?: string
+          ip?: unknown
+          module_key: string
+          reason?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          ip?: unknown
+          module_key?: string
+          reason?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       medical_codes: {
         Row: {
           category: string
@@ -1687,6 +1720,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      module_ip_allowlist: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          enabled: boolean
+          hospital_unit_id: string | null
+          id: string
+          ip_cidr: unknown
+          label: string | null
+          module_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          hospital_unit_id?: string | null
+          id?: string
+          ip_cidr: unknown
+          label?: string | null
+          module_key: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          enabled?: boolean
+          hospital_unit_id?: string | null
+          id?: string
+          ip_cidr?: unknown
+          label?: string | null
+          module_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      module_ip_settings: {
+        Row: {
+          bypass_for_admin: boolean
+          description: string | null
+          enforce: boolean
+          module_key: string
+          updated_at: string
+        }
+        Insert: {
+          bypass_for_admin?: boolean
+          description?: string | null
+          enforce?: boolean
+          module_key: string
+          updated_at?: string
+        }
+        Update: {
+          bypass_for_admin?: boolean
+          description?: string | null
+          enforce?: boolean
+          module_key?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       notes_reminders: {
         Row: {
@@ -4350,6 +4443,10 @@ export type Database = {
       is_gestor: { Args: { _user_id: string }; Returns: boolean }
       is_global_profile: {
         Args: { _access_profile: string; _app_role: string }
+        Returns: boolean
+      }
+      is_ip_allowed_for_module: {
+        Args: { _ip: unknown; _module: string }
         Returns: boolean
       }
       is_username_available: {
