@@ -190,7 +190,7 @@ const App = () => {
               <Route path="/setor-laboratorio" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><SetorLaboratorioPage /></MainLayout></ProtectedRoute>} />
               <Route path="/saps3" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><Saps3Page /></MainLayout></ProtectedRoute>} />
               <Route path="/ccih" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><CcihDashboardPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/nir" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><NirDashboardPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/nir" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpRestricted moduleKey="nir" moduleLabel="NIR / Regulação"><NirDashboardPage /></IpRestricted></MainLayout></ProtectedRoute>} />
               <Route path="/recepcao" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
               <Route path="/triagem-fila" element={<ProtectedRoute><TriageQueuePage /></ProtectedRoute>} />
               <Route path="/triagem-tv" element={<ProtectedRoute><TriageQueueTVPage /></ProtectedRoute>} />
