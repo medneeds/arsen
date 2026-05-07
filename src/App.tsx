@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MainLayout } from "@/components/MainLayout";
+import { IpRestricted } from "@/components/IpRestricted";
 import { PrivacyProvider } from "@/contexts/PrivacyContext";
 import { lazy, Suspense, useState, useEffect } from "react";
 import { FloatingThemeToggle } from "@/components/FloatingThemeToggle";
@@ -80,6 +81,7 @@ const UeHorizontalPage = lazy(() => import("./pages/UeHorizontalPage"));
 const DevConsolePage = lazy(() => import("./pages/DevConsolePage"));
 const HistoricoPacientePage = lazy(() => import("./pages/HistoricoPacientePage"));
 const ApresentacaoPage = lazy(() => import("./pages/ApresentacaoPage"));
+const IpAllowlistPage = lazy(() => import("./pages/admin/IpAllowlistPage"));
 
 // React Query: defaults conservadores para reduzir refetch agressivo
 // e manter UX fluida em máquinas mais fracas / múltiplos usuários simultâneos.
@@ -182,13 +184,13 @@ const App = () => {
               <Route path="/evolucao" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><EvolucaoPage /></MainLayout></ProtectedRoute>} />
               <Route path="/movimentacoes" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MovimentacoesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/catalogo-medicamentos" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MedicationCatalogPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/painel-gestor" element={<ProtectedRoute><GestorPanelPage /></ProtectedRoute>} />
-              <Route path="/validacao-farmaceutica" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><ValidacaoFarmaceuticaPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/painel-gestor" element={<ProtectedRoute><IpRestricted moduleKey="gestor" moduleLabel="Painel Gestor"><GestorPanelPage /></IpRestricted></ProtectedRoute>} />
+              <Route path="/validacao-farmaceutica" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpRestricted moduleKey="validacao_farmaceutica" moduleLabel="Validação Farmacêutica"><ValidacaoFarmaceuticaPage /></IpRestricted></MainLayout></ProtectedRoute>} />
               <Route path="/setor-imagem" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><SetorImagemPage /></MainLayout></ProtectedRoute>} />
               <Route path="/setor-laboratorio" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><SetorLaboratorioPage /></MainLayout></ProtectedRoute>} />
               <Route path="/saps3" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><Saps3Page /></MainLayout></ProtectedRoute>} />
               <Route path="/ccih" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><CcihDashboardPage /></MainLayout></ProtectedRoute>} />
-              <Route path="/nir" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><NirDashboardPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/nir" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpRestricted moduleKey="nir" moduleLabel="NIR / Regulação"><NirDashboardPage /></IpRestricted></MainLayout></ProtectedRoute>} />
               <Route path="/recepcao" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
               <Route path="/triagem-fila" element={<ProtectedRoute><TriageQueuePage /></ProtectedRoute>} />
               <Route path="/triagem-tv" element={<ProtectedRoute><TriageQueueTVPage /></ProtectedRoute>} />
@@ -198,7 +200,8 @@ const App = () => {
               <Route path="/ue-horizontal" element={<ProtectedRoute><UeHorizontalPage /></ProtectedRoute>} />
               <Route path="/ficha-atendimento" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><FichaAtendimentoPage /></MainLayout></ProtectedRoute>} />
               <Route path="/historico-paciente" element={<ProtectedRoute><HistoricoPacientePage /></ProtectedRoute>} />
-              <Route path="/dev-console" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DevConsolePage /></MainLayout></ProtectedRoute>} />
+              <Route path="/dev-console" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpRestricted moduleKey="dev_console" moduleLabel="Console Dev"><DevConsolePage /></IpRestricted></MainLayout></ProtectedRoute>} />
+              <Route path="/admin/ip-allowlist" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpAllowlistPage /></MainLayout></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
