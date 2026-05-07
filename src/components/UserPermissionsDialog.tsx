@@ -144,11 +144,23 @@ export function UserPermissionsDialog({
         if (error) throw error;
       }
 
-      // 2) Update access_profile in profiles
+      // 2) Update access_profile + access_profiles in profiles.
+      // IMPORTANTE: o trigger `sync_primary_access_profile` sobrescreve
+      // `access_profile` com `access_profiles[1]`. Precisamos garantir que o
+      // perfil escolhido seja o primeiro do array (mantendo os demais como
+      // perfis adicionais para o ProfileSwitcher).
+      const { data: currentProfile } = await supabase
+        .from("profiles")
+        .select("access_profiles")
+        .eq("id", userId)
+        .maybeSingle();
+      const existing = ((currentProfile as { access_profiles?: string[] } | null)?.access_profiles ?? []) as string[];
+      const others = existing.filter((p) => p && p !== accessProfile);
+      const nextProfiles = [accessProfile, ...others];
       const { error: profileError } = await supabase
         .from("profiles")
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .update({ access_profile: accessProfile } as any)
+        .update({ access_profile: accessProfile, access_profiles: nextProfiles } as any)
         .eq("id", userId);
       if (profileError) throw profileError;
 
