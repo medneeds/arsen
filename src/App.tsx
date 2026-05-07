@@ -81,6 +81,7 @@ const UeHorizontalPage = lazy(() => import("./pages/UeHorizontalPage"));
 const DevConsolePage = lazy(() => import("./pages/DevConsolePage"));
 const HistoricoPacientePage = lazy(() => import("./pages/HistoricoPacientePage"));
 const ApresentacaoPage = lazy(() => import("./pages/ApresentacaoPage"));
+const IpAllowlistPage = lazy(() => import("./pages/admin/IpAllowlistPage"));
 
 // React Query: defaults conservadores para reduzir refetch agressivo
 // e manter UX fluida em máquinas mais fracas / múltiplos usuários simultâneos.
