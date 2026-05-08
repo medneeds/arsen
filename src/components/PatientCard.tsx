@@ -3709,6 +3709,18 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       <span>História Admissional</span>
                     </DropdownMenuItem>
 
+                    {/* ROUND MULTIPROFISSIONAL */}
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRoundPrintDialogOpen(true);
+                      }}
+                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
+                    >
+                      <ClipboardCheck className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                      <span>Round Multiprofissional</span>
+                    </DropdownMenuItem>
+
                     {/* HISTÓRICO DE CONDUTAS */}
                     <DropdownMenuItem
                       onClick={(e) => {
