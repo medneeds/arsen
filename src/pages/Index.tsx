@@ -11,6 +11,7 @@ import { PrintPatientLayout } from "@/components/PrintPatientLayout";
 import { PrintPatientPreviewDialog } from "@/components/PrintPatientPreviewDialog";
 import { PrintMapPreviewDialog } from "@/components/PrintMapPreviewDialog";
 import { PrintUtiPreviewDialog } from "@/components/PrintUtiPreviewDialog";
+import { RoundSectorPrintDialog } from "@/components/RoundSectorPrintDialog";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { MainLayout } from "@/components/MainLayout";
 import { ShiftReminderDialog } from "@/components/ShiftReminderDialog";
