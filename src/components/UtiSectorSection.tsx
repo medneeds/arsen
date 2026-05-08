@@ -109,6 +109,7 @@ export function UtiSectorSection({
   onDeletePatient,
   onUndeletePatient, 
   onPrintSector, 
+  onPrintRound,
   onAddExtraBed, 
   selectionMode = false, 
   selectedPatients = new Set(), 
