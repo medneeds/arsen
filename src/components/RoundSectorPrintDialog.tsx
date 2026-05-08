@@ -8,7 +8,7 @@ import { Printer, ClipboardCheck } from "lucide-react";
 import { format } from "date-fns";
 import type { Patient } from "@/types/patient";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
-import PrintableRoundMulti, { type RoundPrintItem } from "./PrintableRoundMulti";
+import { printRoundDocument, type RoundPrintItem } from "@/lib/printRound";
 import { toast } from "sonner";
 
 interface Props {
