@@ -260,8 +260,20 @@ export function UtiSectorSection({
                 size="icon"
                 onClick={onPrintSector}
                 className={`h-8 w-8 print:hidden ${buttonClass}`}
+                title="Imprimir mapa do setor"
               >
                 <Printer className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {onPrintRound && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={onPrintRound}
+                className={`h-8 w-8 print:hidden ${buttonClass}`}
+                title="Imprimir Round Multiprofissional do setor"
+              >
+                <ClipboardCheck className="h-3.5 w-3.5" />
               </Button>
             )}
             <div className={`flex items-center justify-center h-8 w-8 backdrop-blur-sm rounded-lg border print:h-6 print:w-6 ${counterClass}`}>
