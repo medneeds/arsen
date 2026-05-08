@@ -35,6 +35,8 @@ import { usePatientDischargeDocs } from "@/hooks/usePatientDischargeDocs";
 import { printDischargeDocument, DISCHARGE_DOC_SHORT } from "@/lib/dischargeDocuments";
 import { Skull, FileSignature, ArrowLeftRight } from "lucide-react";
 import { MedicalDocumentDialog } from "./MedicalDocumentDialog";
+import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
+import { Printer } from "lucide-react";
 
 interface PatientCockpitProps {
   patient: Patient | null;
