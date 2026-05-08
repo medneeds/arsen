@@ -35,6 +35,7 @@ import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { useConductHistory } from "@/hooks/useConductHistory";
 import { ConductHistoryDialog } from "./ConductHistoryDialog";
 import { AdmissionHistoryDialog } from "./AdmissionHistoryDialog";
+import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -652,6 +653,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
   const [dietDialogOpen, setDietDialogOpen] = useState(false);
   const [conductHistoryDialogOpen, setConductHistoryDialogOpen] = useState(false);
   const [admissionHistoryDialogOpen, setAdmissionHistoryDialogOpen] = useState(false);
+  const [roundPrintDialogOpen, setRoundPrintDialogOpen] = useState(false);
   const { history: conductHistory, isLoading: conductHistoryLoading, recordChange } = useConductHistory(patient.id);
   const { role, user } = useAuth();
   const { requests } = useBedAllocationRequests();
@@ -3707,6 +3709,18 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       <span>História Admissional</span>
                     </DropdownMenuItem>
 
+                    {/* ROUND MULTIPROFISSIONAL */}
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRoundPrintDialogOpen(true);
+                      }}
+                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
+                    >
+                      <ClipboardCheck className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                      <span>Round Multiprofissional</span>
+                    </DropdownMenuItem>
+
                     {/* HISTÓRICO DE CONDUTAS */}
                     <DropdownMenuItem
                       onClick={(e) => {
@@ -5064,6 +5078,17 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
         open={admissionHistoryDialogOpen}
         onOpenChange={setAdmissionHistoryDialogOpen}
       />
+      {roundPrintDialogOpen && (
+        <PatientRoundPrintDialog
+          open={roundPrintDialogOpen}
+          onOpenChange={setRoundPrintDialogOpen}
+          patientId={patient.id}
+          patientName={patient.name}
+          patientSector={patient.sector as any}
+          patientBed={patient.bedNumber}
+          patientAge={patient.age}
+        />
+      )}
     </>
   );
 }
