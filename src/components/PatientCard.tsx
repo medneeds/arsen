@@ -5078,6 +5078,17 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
         open={admissionHistoryDialogOpen}
         onOpenChange={setAdmissionHistoryDialogOpen}
       />
+      {roundPrintDialogOpen && (
+        <PatientRoundPrintDialog
+          open={roundPrintDialogOpen}
+          onOpenChange={setRoundPrintDialogOpen}
+          patientId={patient.id}
+          patientName={patient.name}
+          patientSector={patient.sector as any}
+          patientBed={patient.bedNumber}
+          patientAge={patient.age}
+        />
+      )}
     </>
   );
 }
