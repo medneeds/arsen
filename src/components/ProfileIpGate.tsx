@@ -1,5 +1,6 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { IpRestricted } from "./IpRestricted";
 
 /**
@@ -13,13 +14,45 @@ import { IpRestricted } from "./IpRestricted";
  */
 export function ProfileIpGate({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const [activeProfile, setActiveProfile] = useState("");
 
-  const activeProfile =
-    typeof window !== "undefined"
-      ? sessionStorage.getItem("active_access_profile") ||
-        localStorage.getItem("access_profile") ||
-        ""
-      : "";
+  useEffect(() => {
+    if (!user?.id) {
+      setActiveProfile("");
+      return;
+    }
+
+    let cancelled = false;
+    supabase
+      .from("profiles")
+      .select("access_profile, access_profiles")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        const row = data as { access_profile?: string | null; access_profiles?: string[] | null } | null;
+        const profiles = row?.access_profiles?.length
+          ? row.access_profiles.filter(Boolean)
+          : (row?.access_profile ? [row.access_profile] : []);
+        const sessionProfile = typeof window !== "undefined"
+          ? sessionStorage.getItem("active_access_profile")
+          : null;
+        const chosen = sessionProfile && profiles.includes(sessionProfile)
+          ? sessionProfile
+          : (row?.access_profile || profiles[0] || "");
+
+        if (chosen && typeof window !== "undefined") {
+          sessionStorage.setItem("active_access_profile", chosen);
+          sessionStorage.setItem("available_access_profiles", JSON.stringify(profiles));
+          localStorage.setItem("access_profile", chosen);
+        }
+        setActiveProfile(chosen);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   // Sem usuário ou sem perfil definido → não bloqueia (deixa fluxos públicos passarem)
   if (!user || !activeProfile) return <>{children}</>;
