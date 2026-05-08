@@ -904,6 +904,19 @@ const Index = () => {
             onClose={() => setPreviewUtiMapMode(null)}
           />
         )}
+
+        {/* Round do setor — pop-up de seleção de leitos para impressão em branco */}
+        <RoundSectorPrintDialog
+          open={roundSectorDialogOpen}
+          onOpenChange={setRoundSectorDialogOpen}
+          patients={(() => {
+            const map: Record<string, Patient[]> = {
+              red: redPatients, yellow: yellowPatients, blue: bluePatients, outside: outsidePatients,
+            };
+            return map[activeSector] ?? patients.filter((p) => p.sector === activeSector);
+          })()}
+          sectorLabel={activeSector?.toUpperCase()}
+        />
         
         <div className={printMode ? 'print-hide' : ''}>
           {/* Main Content — sem cabeçalho duplicado; ações ficam no BreadcrumbBar */}
