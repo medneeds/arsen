@@ -207,9 +207,6 @@ export function PatientRoundPrintDialog({
         </DialogContent>
       </Dialog>
 
-      {/* Conteúdo de impressão (display:none na tela, visível só em @media print). */}
-      {printing === "blank" && <PrintableRoundMulti items={[blankItem]} blank />}
-      {printing === "filled" && filledItem && <PrintableRoundMulti items={[filledItem]} />}
     </>
   );
 }
