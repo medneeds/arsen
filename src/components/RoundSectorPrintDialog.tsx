@@ -145,16 +145,13 @@ export function RoundSectorPrintDialog({ open, onOpenChange, patients, sectorLab
 
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={handlePrint} disabled={selected.size === 0 || printing}>
+            <Button onClick={handlePrint} disabled={selected.size === 0}>
               <Printer className="h-4 w-4 mr-2" />
               Gerar PDF ({selected.size})
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Render fora do Dialog para que o @media print veja o conteúdo. */}
-      {printing && <PrintableRoundMulti items={items} blank />}
     </>
   );
 }
