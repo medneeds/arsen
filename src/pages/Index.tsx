@@ -1018,6 +1018,7 @@ const Index = () => {
                     onDeletePatient={handleDeletePatient}
                     onUndeletePatient={handleUndeletePatient}
                     onPrintSector={() => handlePrintSector(activeSector)}
+                    onPrintRound={() => setRoundSectorDialogOpen(true)}
                     onAddExtraBed={() => handleAddExtraBed(activeSector as Patient['sector'])}
                     selectionMode={selectionMode}
                     selectedPatients={selectedPatients}
