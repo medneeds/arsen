@@ -70,17 +70,13 @@ export function RoundSectorPrintDialog({ open, onOpenChange, patients, sectorLab
       }));
   }, [eligible, selected, roundDate]);
 
-  const handlePrint = async () => {
+  const handlePrint = () => {
     if (items.length === 0) {
       toast.error("Selecione ao menos um leito para imprimir.");
       return;
     }
-    setPrinting(true);
-    // Aguarda o portal renderizar antes de chamar print
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => setPrinting(false), 500);
-    }, 100);
+    printRoundDocument(items, true);
+    onOpenChange(false);
   };
 
   return (
