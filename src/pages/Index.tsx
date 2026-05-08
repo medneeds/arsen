@@ -933,6 +933,15 @@ const Index = () => {
                         </TooltipTrigger>
                         <TooltipContent><p>Imprimir mapa</p></TooltipContent>
                       </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="icon" onClick={() => setRoundSectorDialogOpen(true)}
+                            className="h-8 w-8 bg-white/95 text-foreground border-white/40 hover:bg-white hover:text-primary shadow-sm">
+                            <ClipboardCheck className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Imprimir Round do Setor</p></TooltipContent>
+                      </Tooltip>
 
                       <div className="h-6 w-px bg-white/30" />
 
