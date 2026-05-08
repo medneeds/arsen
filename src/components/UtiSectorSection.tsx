@@ -2,7 +2,7 @@ import { Patient, SectorType } from "@/types/patient";
 import { ReactNode } from "react";
 import { UtiPatientCard } from "./UtiPatientCard";
 import { EmptySectorState } from "@/components/EmptySectorState";
-import { Printer, Plus, ChevronDown, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { Printer, Plus, ChevronDown, ChevronsDownUp, ChevronsUpDown, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,6 +18,7 @@ interface UtiSectorSectionProps {
   onDeletePatient?: (patientId: string) => void;
   onUndeletePatient?: (patient: Patient) => void;
   onPrintSector?: () => void;
+  onPrintRound?: () => void;
   onAddExtraBed?: () => void;
   selectionMode?: boolean;
   selectedPatients?: Set<string>;
@@ -108,6 +109,7 @@ export function UtiSectorSection({
   onDeletePatient,
   onUndeletePatient, 
   onPrintSector, 
+  onPrintRound,
   onAddExtraBed, 
   selectionMode = false, 
   selectedPatients = new Set(), 
@@ -258,8 +260,20 @@ export function UtiSectorSection({
                 size="icon"
                 onClick={onPrintSector}
                 className={`h-8 w-8 print:hidden ${buttonClass}`}
+                title="Imprimir mapa do setor"
               >
                 <Printer className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {onPrintRound && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={onPrintRound}
+                className={`h-8 w-8 print:hidden ${buttonClass}`}
+                title="Imprimir Round Multiprofissional do setor"
+              >
+                <ClipboardCheck className="h-3.5 w-3.5" />
               </Button>
             )}
             <div className={`flex items-center justify-center h-8 w-8 backdrop-blur-sm rounded-lg border print:h-6 print:w-6 ${counterClass}`}>

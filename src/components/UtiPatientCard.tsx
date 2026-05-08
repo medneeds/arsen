@@ -1,7 +1,7 @@
 import { Patient } from "@/types/patient";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Edit, ChevronDown, ChevronRight, MoreVertical, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, Clock, FileText, FolderOpen, Pill, Activity, Heart, User, Star, Printer, TrendingUp, Skull, ArrowRightLeft, ArrowLeftRight, BedDouble, DoorOpen, UserPlus } from "lucide-react";
+import { Edit, ChevronDown, ChevronRight, MoreVertical, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, ClipboardCheck, Clock, FileText, FolderOpen, Pill, Activity, Heart, User, Star, Printer, TrendingUp, Skull, ArrowRightLeft, ArrowLeftRight, BedDouble, DoorOpen, UserPlus } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -27,6 +27,7 @@ import { EditPatientDialog } from "./EditPatientDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
 import { UtiReallocationDialog } from "./UtiReallocationDialog";
 import { PatientRegistrationDialog } from "./PatientRegistrationDialog";
+import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -794,6 +795,7 @@ export function UtiPatientCard({
   const [isMovementDialogOpen, setIsMovementDialogOpen] = useState(false);
   const [isReallocationDialogOpen, setIsReallocationDialogOpen] = useState(false);
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
+  const [isRoundPrintDialogOpen, setIsRoundPrintDialogOpen] = useState(false);
 
   // Derive current UTI unit from colorVariant if not provided
   const derivedUtiUnit = currentUtiUnit || (colorVariant === 'blue' ? 'UTI 1' : 'UTI 2');
@@ -1306,6 +1308,10 @@ export function UtiPatientCard({
                       Imprimir Caso
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuItem onClick={() => setIsRoundPrintDialogOpen(true)}>
+                    <ClipboardCheck className="h-4 w-4 mr-2 text-violet-600" />
+                    Round Multiprofissional
+                  </DropdownMenuItem>
 
                   {/* Vacancy is automated by the auto_vacate_on_discharge trigger — no manual toggle here. */}
 
@@ -1527,6 +1533,19 @@ export function UtiPatientCard({
         onSuccess={() => setIsRegisterDialogOpen(false)}
         defaultDestinationSector={derivedUtiUnit}
       />
+
+      {/* Round Multiprofissional — impressão em branco ou preenchido */}
+      {isRoundPrintDialogOpen && (
+        <PatientRoundPrintDialog
+          open={isRoundPrintDialogOpen}
+          onOpenChange={setIsRoundPrintDialogOpen}
+          patientId={patient.id}
+          patientName={patient.name || ""}
+          patientSector={patient.sector || derivedUtiUnit}
+          patientBed={patient.bedNumber || ""}
+          patientAge={patient.age}
+        />
+      )}
     </>
   );
 }
