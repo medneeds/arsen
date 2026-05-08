@@ -8,7 +8,7 @@ import { Printer, ClipboardCheck, FileText, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
-import PrintableRoundMulti, { type RoundPrintItem } from "./PrintableRoundMulti";
+import { printRoundDocument, type RoundPrintItem } from "@/lib/printRound";
 import { ROUND_SECTIONS, type RoundStatus } from "@/data/roundChecklistSchema";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
