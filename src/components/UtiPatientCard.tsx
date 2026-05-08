@@ -1533,6 +1533,19 @@ export function UtiPatientCard({
         onSuccess={() => setIsRegisterDialogOpen(false)}
         defaultDestinationSector={derivedUtiUnit}
       />
+
+      {/* Round Multiprofissional — impressão em branco ou preenchido */}
+      {isRoundPrintDialogOpen && (
+        <PatientRoundPrintDialog
+          open={isRoundPrintDialogOpen}
+          onOpenChange={setIsRoundPrintDialogOpen}
+          patientId={patient.id}
+          patientName={patient.name || ""}
+          patientSector={patient.sector || derivedUtiUnit}
+          patientBed={patient.bedNumber || ""}
+          patientAge={patient.age}
+        />
+      )}
     </>
   );
 }
