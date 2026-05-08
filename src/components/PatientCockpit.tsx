@@ -104,6 +104,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const [pinned, setPinned] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [docDialogOpen, setDocDialogOpen] = useState(false);
+  const [roundPrintOpen, setRoundPrintOpen] = useState(false);
   const isExpanded = variant === "inline" || pinned || hovering;
 
   // Live patient data — sync sector, bed, allergies, medical responsibility, etc.
