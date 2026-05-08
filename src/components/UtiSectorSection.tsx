@@ -18,6 +18,7 @@ interface UtiSectorSectionProps {
   onDeletePatient?: (patientId: string) => void;
   onUndeletePatient?: (patient: Patient) => void;
   onPrintSector?: () => void;
+  onPrintRound?: () => void;
   onAddExtraBed?: () => void;
   selectionMode?: boolean;
   selectedPatients?: Set<string>;
