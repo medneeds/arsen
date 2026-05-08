@@ -44,9 +44,7 @@ export function PatientRoundPrintDialog({
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [filledItem, setFilledItem] = useState<RoundPrintItem | null>(null);
   const [loadingFilled, setLoadingFilled] = useState(false);
-  const [printing, setPrinting] = useState<"blank" | "filled" | null>(null);
 
   // Carrega sessões ao abrir
   useEffect(() => {
@@ -71,16 +69,11 @@ export function PatientRoundPrintDialog({
 
   const ageStr = patientAge != null ? String(patientAge) : null;
 
-  const blankItem: RoundPrintItem = useMemo(() => ({
-    patientName, patientSector, patientBed, patientAge: ageStr, roundDate: blankDate,
-  }), [patientName, patientSector, patientBed, ageStr, blankDate]);
-
   const handlePrintBlank = () => {
-    setPrinting("blank");
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => setPrinting(null), 500);
-    }, 100);
+    const item: RoundPrintItem = {
+      patientName, patientSector, patientBed, patientAge: ageStr, roundDate: blankDate,
+    };
+    printRoundDocument([item], true);
   };
 
   const loadAndPrintSession = async (sessionId: string) => {
@@ -101,18 +94,14 @@ export function PatientRoundPrintDialog({
     });
     const goals: Record<string, string> = {};
     (goalData as any[] | null)?.forEach((g) => { goals[g.section_code] = g.goal || ""; });
-    setFilledItem({
+    const item: RoundPrintItem = {
       patientName, patientSector, patientBed, patientAge: ageStr,
       roundDate: session.round_date,
       responses, goals,
       observations: session.observations || "",
-    });
+    };
     setLoadingFilled(false);
-    setPrinting("filled");
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => setPrinting(null), 500);
-    }, 150);
+    printRoundDocument([item], false);
   };
 
   return (
