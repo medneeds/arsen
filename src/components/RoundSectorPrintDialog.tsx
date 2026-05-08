@@ -8,7 +8,7 @@ import { Printer, ClipboardCheck } from "lucide-react";
 import { format } from "date-fns";
 import type { Patient } from "@/types/patient";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
-import PrintableRoundMulti, { type RoundPrintItem } from "./PrintableRoundMulti";
+import { printRoundDocument, type RoundPrintItem } from "@/lib/printRound";
 import { toast } from "sonner";
 
 interface Props {
@@ -28,7 +28,7 @@ interface Props {
 export function RoundSectorPrintDialog({ open, onOpenChange, patients, sectorLabel }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [roundDate, setRoundDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [printing, setPrinting] = useState(false);
+  
 
   // Pacientes elegíveis: têm nome e leito
   const eligible = useMemo(
@@ -70,17 +70,13 @@ export function RoundSectorPrintDialog({ open, onOpenChange, patients, sectorLab
       }));
   }, [eligible, selected, roundDate]);
 
-  const handlePrint = async () => {
+  const handlePrint = () => {
     if (items.length === 0) {
       toast.error("Selecione ao menos um leito para imprimir.");
       return;
     }
-    setPrinting(true);
-    // Aguarda o portal renderizar antes de chamar print
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => setPrinting(false), 500);
-    }, 100);
+    printRoundDocument(items, true);
+    onOpenChange(false);
   };
 
   return (
@@ -149,16 +145,13 @@ export function RoundSectorPrintDialog({ open, onOpenChange, patients, sectorLab
 
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={handlePrint} disabled={selected.size === 0 || printing}>
+            <Button onClick={handlePrint} disabled={selected.size === 0}>
               <Printer className="h-4 w-4 mr-2" />
               Gerar PDF ({selected.size})
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Render fora do Dialog para que o @media print veja o conteúdo. */}
-      {printing && <PrintableRoundMulti items={items} blank />}
     </>
   );
 }

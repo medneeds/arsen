@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +8,7 @@ import { Printer, ClipboardCheck, FileText, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
-import PrintableRoundMulti, { type RoundPrintItem } from "./PrintableRoundMulti";
+import { printRoundDocument, type RoundPrintItem } from "@/lib/printRound";
 import { ROUND_SECTIONS, type RoundStatus } from "@/data/roundChecklistSchema";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -44,9 +44,7 @@ export function PatientRoundPrintDialog({
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [filledItem, setFilledItem] = useState<RoundPrintItem | null>(null);
   const [loadingFilled, setLoadingFilled] = useState(false);
-  const [printing, setPrinting] = useState<"blank" | "filled" | null>(null);
 
   // Carrega sessões ao abrir
   useEffect(() => {
@@ -71,16 +69,11 @@ export function PatientRoundPrintDialog({
 
   const ageStr = patientAge != null ? String(patientAge) : null;
 
-  const blankItem: RoundPrintItem = useMemo(() => ({
-    patientName, patientSector, patientBed, patientAge: ageStr, roundDate: blankDate,
-  }), [patientName, patientSector, patientBed, ageStr, blankDate]);
-
   const handlePrintBlank = () => {
-    setPrinting("blank");
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => setPrinting(null), 500);
-    }, 100);
+    const item: RoundPrintItem = {
+      patientName, patientSector, patientBed, patientAge: ageStr, roundDate: blankDate,
+    };
+    printRoundDocument([item], true);
   };
 
   const loadAndPrintSession = async (sessionId: string) => {
@@ -101,18 +94,14 @@ export function PatientRoundPrintDialog({
     });
     const goals: Record<string, string> = {};
     (goalData as any[] | null)?.forEach((g) => { goals[g.section_code] = g.goal || ""; });
-    setFilledItem({
+    const item: RoundPrintItem = {
       patientName, patientSector, patientBed, patientAge: ageStr,
       roundDate: session.round_date,
       responses, goals,
       observations: session.observations || "",
-    });
+    };
     setLoadingFilled(false);
-    setPrinting("filled");
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => setPrinting(null), 500);
-    }, 150);
+    printRoundDocument([item], false);
   };
 
   return (
@@ -151,7 +140,7 @@ export function PatientRoundPrintDialog({
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-                <Button onClick={handlePrintBlank} disabled={printing !== null}>
+                <Button onClick={handlePrintBlank}>
                   <Printer className="h-4 w-4 mr-2" /> Imprimir em branco
                 </Button>
               </DialogFooter>
@@ -218,9 +207,6 @@ export function PatientRoundPrintDialog({
         </DialogContent>
       </Dialog>
 
-      {/* Conteúdo de impressão (display:none na tela, visível só em @media print). */}
-      {printing === "blank" && <PrintableRoundMulti items={[blankItem]} blank />}
-      {printing === "filled" && filledItem && <PrintableRoundMulti items={[filledItem]} />}
     </>
   );
 }
