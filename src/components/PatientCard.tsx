@@ -35,6 +35,7 @@ import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { useConductHistory } from "@/hooks/useConductHistory";
 import { ConductHistoryDialog } from "./ConductHistoryDialog";
 import { AdmissionHistoryDialog } from "./AdmissionHistoryDialog";
+import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
