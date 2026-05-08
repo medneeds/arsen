@@ -256,6 +256,7 @@ const Index = () => {
   const [previewPatientId, setPreviewPatientId] = useState<string | null>(null);
   const [previewMapMode, setPreviewMapMode] = useState<'compact' | 'detailed' | null>(null);
   const [previewUtiMapMode, setPreviewUtiMapMode] = useState<'compact' | 'detailed' | null>(null);
+  const [roundSectorDialogOpen, setRoundSectorDialogOpen] = useState(false);
   const [showOnlyOccupied, setShowOnlyOccupied] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedPatients, setSelectedPatients] = useState<Set<string>>(new Set());
