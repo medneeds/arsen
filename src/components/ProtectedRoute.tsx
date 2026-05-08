@@ -7,6 +7,7 @@ import { PendingApprovalScreen } from "./PendingApprovalScreen";
 import { ConsentTermsDialog, CURRENT_TERMS_VERSION } from "./ConsentTermsDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { AccessLimitsScreen } from "./AccessLimitsScreen";
+import { ProfileIpGate } from "./ProfileIpGate";
 
 // Logins genéricos que não precisam de aprovação (período de transição)
 const LEGACY_GENERIC_USERS = [
@@ -147,7 +148,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // Envolver com SessionTimeoutProvider para ativar timeout LGPD/CFM
   return (
     <SessionTimeoutProvider>
-      {children}
+      <ProfileIpGate>{children}</ProfileIpGate>
     </SessionTimeoutProvider>
   );
 }
