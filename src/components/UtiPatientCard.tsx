@@ -1308,6 +1308,10 @@ export function UtiPatientCard({
                       Imprimir Caso
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuItem onClick={() => setIsRoundPrintDialogOpen(true)}>
+                    <ClipboardCheck className="h-4 w-4 mr-2 text-violet-600" />
+                    Round Multiprofissional
+                  </DropdownMenuItem>
 
                   {/* Vacancy is automated by the auto_vacate_on_discharge trigger — no manual toggle here. */}
 
