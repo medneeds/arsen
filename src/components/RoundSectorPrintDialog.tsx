@@ -28,7 +28,7 @@ interface Props {
 export function RoundSectorPrintDialog({ open, onOpenChange, patients, sectorLabel }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [roundDate, setRoundDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [printing, setPrinting] = useState(false);
+  
 
   // Pacientes elegíveis: têm nome e leito
   const eligible = useMemo(
