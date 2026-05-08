@@ -148,7 +148,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // Envolver com SessionTimeoutProvider para ativar timeout LGPD/CFM
   return (
     <SessionTimeoutProvider>
-      {children}
+      <ProfileIpGate>{children}</ProfileIpGate>
     </SessionTimeoutProvider>
   );
 }
