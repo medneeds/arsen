@@ -140,7 +140,7 @@ export function PatientRoundPrintDialog({
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-                <Button onClick={handlePrintBlank} disabled={printing !== null}>
+                <Button onClick={handlePrintBlank}>
                   <Printer className="h-4 w-4 mr-2" /> Imprimir em branco
                 </Button>
               </DialogFooter>
