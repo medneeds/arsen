@@ -1701,14 +1701,42 @@ function ExtraPrescriptionDialog({
   onClose,
   onAddItems,
   allMedications,
+  initialCategory = 'all',
+  patient,
+  parentPrescriptionId,
+  parentPrescriptionVersion,
+  hospitalName,
+  doctorName,
+  doctorCrm,
+  sectorLabel,
 }: {
   open: boolean;
   onClose: () => void;
   onAddItems: (items: PrescriptionItem[]) => void;
   allMedications: MedicationEntry[];
+  initialCategory?: PrescriptionCategory | 'all';
+  patient?: PatientHeader;
+  parentPrescriptionId?: string | null;
+  parentPrescriptionVersion?: number | null;
+  hospitalName?: string;
+  doctorName?: string;
+  doctorCrm?: string;
+  sectorLabel?: string;
 }) {
   const [extraItems, setExtraItems] = useState<PrescriptionItem[]>([]);
   const [freeText, setFreeText] = useState("");
+
+  // Filter catalog by chosen category (if not "all")
+  const filteredMedications = useMemo(
+    () => initialCategory === 'all'
+      ? allMedications
+      : allMedications.filter(m => m.category === initialCategory),
+    [allMedications, initialCategory],
+  );
+
+  const categoryConfigLabel = initialCategory !== 'all'
+    ? CATEGORY_CONFIG[initialCategory]?.label
+    : undefined;
 
   const handleClose = () => {
     setExtraItems([]);
