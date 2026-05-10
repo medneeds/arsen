@@ -51,6 +51,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { ShiftRenewalAlert } from "@/components/ShiftRenewalAlert";
 import { PrescriptionDiffDialog } from "@/components/PrescriptionDiffDialog";
+import { NewPrescriptionChoiceDialog } from "@/components/NewPrescriptionChoiceDialog";
+import { ExtraPrescriptionChooserDialog } from "@/components/ExtraPrescriptionChooserDialog";
+import { printExtraPrescription } from "@/lib/printExtraPrescription";
 import { useHospital } from "@/contexts/HospitalContext";
 import {
   DndContext,
@@ -1698,14 +1701,42 @@ function ExtraPrescriptionDialog({
   onClose,
   onAddItems,
   allMedications,
+  initialCategory = 'all',
+  patient,
+  parentPrescriptionId,
+  parentPrescriptionVersion,
+  hospitalName,
+  doctorName,
+  doctorCrm,
+  sectorLabel,
 }: {
   open: boolean;
   onClose: () => void;
   onAddItems: (items: PrescriptionItem[]) => void;
   allMedications: MedicationEntry[];
+  initialCategory?: PrescriptionCategory | 'all';
+  patient?: PatientHeader;
+  parentPrescriptionId?: string | null;
+  parentPrescriptionVersion?: number | null;
+  hospitalName?: string;
+  doctorName?: string;
+  doctorCrm?: string;
+  sectorLabel?: string;
 }) {
   const [extraItems, setExtraItems] = useState<PrescriptionItem[]>([]);
   const [freeText, setFreeText] = useState("");
+
+  // Filter catalog by chosen category (if not "all")
+  const filteredMedications = useMemo(
+    () => initialCategory === 'all'
+      ? allMedications
+      : allMedications.filter(m => m.category === initialCategory),
+    [allMedications, initialCategory],
+  );
+
+  const categoryConfigLabel = initialCategory !== 'all'
+    ? CATEGORY_CONFIG[initialCategory]?.label
+    : undefined;
 
   const handleClose = () => {
     setExtraItems([]);
@@ -1786,6 +1817,52 @@ function ExtraPrescriptionDialog({
   const agoraCount = extraItems.filter(i => i.flags.includes('ag' as PrescriptionFlag)).length;
   const scheduledCount = extraItems.length - agoraCount;
 
+  const handlePrintIsolated = async () => {
+    if (extraItems.length === 0) {
+      toast.error("Adicione pelo menos 1 item antes de imprimir");
+      return;
+    }
+    if (!patient) {
+      toast.error("Contexto do paciente indisponível para impressão");
+      return;
+    }
+    try {
+      await printExtraPrescription({
+        patient: {
+          name: patient.name,
+          bed: patient.bed,
+          unit: patient.unit,
+          age: patient.age,
+          record: patient.record,
+          weight: patient.weight,
+          allergies: patient.allergies,
+        },
+        items: extraItems.map(i => ({
+          id: i.id,
+          name: i.name,
+          presentation: i.presentation,
+          dose: i.dose,
+          route: i.route,
+          posology: i.posology,
+          schedule: i.schedule,
+          instructions: i.instructions,
+          flags: i.flags,
+          highAlert: i.highAlert,
+          category: i.category,
+        })),
+        parentPrescriptionId,
+        parentPrescriptionVersion,
+        hospitalName,
+        sectorLabel: sectorLabel || "Prescrição Médica — Anexo Extra",
+        doctorName,
+        doctorCrm,
+        categoryLabel: categoryConfigLabel,
+      });
+    } catch (err: any) {
+      toast.error("Erro ao gerar PDF da prescrição extra", { description: err?.message });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
@@ -1793,6 +1870,11 @@ function ExtraPrescriptionDialog({
           <DialogTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-orange-500" />
             Prescrição Extra
+            {categoryConfigLabel && (
+              <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-800 ml-1">
+                {categoryConfigLabel}
+              </Badge>
+            )}
           </DialogTitle>
           <DialogDescription>
             Adicione medicações avulsas durante o plantão. Itens marcados como <strong>"Agora"</strong> não serão renovados automaticamente.
@@ -1803,9 +1885,9 @@ function ExtraPrescriptionDialog({
         {/* Search */}
         <div className="space-y-2">
           <MedicationAutocomplete
-            source={allMedications}
+            source={filteredMedications}
             onSelect={addFromAutocomplete}
-            placeholder="Buscar medicação para prescrição extra..."
+            placeholder={categoryConfigLabel ? `Buscar em ${categoryConfigLabel.toLowerCase()}...` : "Buscar medicação para prescrição extra..."}
           />
           <div className="flex gap-2">
             <Input
@@ -1899,8 +1981,18 @@ function ExtraPrescriptionDialog({
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="outline" size="sm" onClick={handleClose}>Cancelar</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrintIsolated}
+            disabled={extraItems.length === 0 || !patient}
+            className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/30"
+            title="Imprime esta prescrição extra como anexo isolado (Norma Zero)"
+          >
+            <Printer className="h-3.5 w-3.5" /> Imprimir Anexo
+          </Button>
           <Button size="sm" onClick={handleConfirm} disabled={extraItems.length === 0} className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white">
             <Zap className="h-3.5 w-3.5" /> Adicionar {extraItems.length} item{extraItems.length !== 1 ? 's' : ''} à prescrição
           </Button>
@@ -2530,6 +2622,11 @@ const PrescricaoPage = () => {
 
   // Phase 7 state — Extra Prescription
   const [extraPrescriptionOpen, setExtraPrescriptionOpen] = useState(false);
+  const [extraChooserOpen, setExtraChooserOpen] = useState(false);
+  const [extraInitialCategory, setExtraInitialCategory] = useState<PrescriptionCategory | 'all'>('all');
+
+  // Pop-up de confirmação para "Nova" prescrição
+  const [newRxChoiceOpen, setNewRxChoiceOpen] = useState(false);
 
   // Antimicrobial Guide & Psychotropic Form
   const [antimicrobialGuideOpen, setAntimicrobialGuideOpen] = useState(false);
@@ -3951,7 +4048,7 @@ const PrescricaoPage = () => {
 
         {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, Psicotrópicos, TEV, Imprimir, Validar, Compacto) */}
         <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-border/40 bg-muted/20 rounded-b-xl">
-          <Button variant="ghost" size="sm" onClick={handleNewPrescription} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
+          <Button variant="ghost" size="sm" onClick={() => setNewRxChoiceOpen(true)} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
             <Plus className="h-3 w-3" /> Nova
           </Button>
           <Button
@@ -3959,7 +4056,7 @@ const PrescricaoPage = () => {
             size="sm"
             onClick={() => {
               if (!canPrescribe) { toast.error("Preencha o peso e as alergias antes de prescrever"); return; }
-              setExtraPrescriptionOpen(true);
+              setExtraChooserOpen(true);
             }}
             className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
           >
@@ -4899,10 +4996,37 @@ const PrescricaoPage = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Pop-up de confirmação para "Nova" prescrição */}
+      <NewPrescriptionChoiceDialog
+        open={newRxChoiceOpen}
+        onClose={() => setNewRxChoiceOpen(false)}
+        hasCurrentItems={items.length > 0}
+        onStartBlank={handleNewPrescription}
+        onCopyPrevious={openRepeatDialog}
+      />
+
+      {/* Seletor de tipo da prescrição extra */}
+      <ExtraPrescriptionChooserDialog
+        open={extraChooserOpen}
+        onClose={() => setExtraChooserOpen(false)}
+        onPick={(cat) => {
+          setExtraInitialCategory(cat);
+          setExtraPrescriptionOpen(true);
+        }}
+      />
+
       {/* Extra Prescription Dialog */}
       <ExtraPrescriptionDialog
         open={extraPrescriptionOpen}
         onClose={() => setExtraPrescriptionOpen(false)}
+        initialCategory={extraInitialCategory}
+        patient={patient}
+        parentPrescriptionId={currentPrescriptionId}
+        parentPrescriptionVersion={versionHistory.find(v => v.id === currentPrescriptionId)?.version ?? null}
+        hospitalName={currentHospital?.name}
+        doctorName={digitalSignature?.doctorName}
+        doctorCrm={digitalSignature?.crm}
+        sectorLabel={`Prescrição Médica — ${patient.unit || 'Anexo Extra'}`}
         onAddItems={(newItems) => {
           setItems(prev => [...prev, ...newItems]);
           const agoraCount = newItems.filter(i => i.flags.includes('ag' as PrescriptionFlag)).length;
@@ -4912,6 +5036,12 @@ const PrescricaoPage = () => {
               ? `${agoraCount} "Agora" (não renovam)${scheduledCount > 0 ? ` + ${scheduledCount} de horário (renovam)` : ''}`
               : `${scheduledCount} de horário (serão incorporados na renovação)`,
           });
+          // Roteia para fluxo especializado de acordo com a categoria escolhida
+          if (extraInitialCategory === 'antimicrobial') {
+            setTimeout(() => setAntimicrobialGuideOpen(true), 250);
+          } else if (extraInitialCategory === 'high_alert') {
+            setTimeout(() => setPsychotropicFormOpen(true), 250);
+          }
         }}
         allMedications={Object.values(UNIFIED_CATALOG).flat()}
       />
