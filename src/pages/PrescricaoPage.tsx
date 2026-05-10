@@ -1817,6 +1817,52 @@ function ExtraPrescriptionDialog({
   const agoraCount = extraItems.filter(i => i.flags.includes('ag' as PrescriptionFlag)).length;
   const scheduledCount = extraItems.length - agoraCount;
 
+  const handlePrintIsolated = async () => {
+    if (extraItems.length === 0) {
+      toast.error("Adicione pelo menos 1 item antes de imprimir");
+      return;
+    }
+    if (!patient) {
+      toast.error("Contexto do paciente indisponível para impressão");
+      return;
+    }
+    try {
+      await printExtraPrescription({
+        patient: {
+          name: patient.name,
+          bed: patient.bed,
+          unit: patient.unit,
+          age: patient.age,
+          record: patient.record,
+          weight: patient.weight,
+          allergies: patient.allergies,
+        },
+        items: extraItems.map(i => ({
+          id: i.id,
+          name: i.name,
+          presentation: i.presentation,
+          dose: i.dose,
+          route: i.route,
+          posology: i.posology,
+          schedule: i.schedule,
+          instructions: i.instructions,
+          flags: i.flags,
+          highAlert: i.highAlert,
+          category: i.category,
+        })),
+        parentPrescriptionId,
+        parentPrescriptionVersion,
+        hospitalName,
+        sectorLabel: sectorLabel || "Prescrição Médica — Anexo Extra",
+        doctorName,
+        doctorCrm,
+        categoryLabel: categoryConfigLabel,
+      });
+    } catch (err: any) {
+      toast.error("Erro ao gerar PDF da prescrição extra", { description: err?.message });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
@@ -1824,6 +1870,11 @@ function ExtraPrescriptionDialog({
           <DialogTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-orange-500" />
             Prescrição Extra
+            {categoryConfigLabel && (
+              <Badge variant="outline" className="text-[10px] bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-800 ml-1">
+                {categoryConfigLabel}
+              </Badge>
+            )}
           </DialogTitle>
           <DialogDescription>
             Adicione medicações avulsas durante o plantão. Itens marcados como <strong>"Agora"</strong> não serão renovados automaticamente.
@@ -1834,9 +1885,9 @@ function ExtraPrescriptionDialog({
         {/* Search */}
         <div className="space-y-2">
           <MedicationAutocomplete
-            source={allMedications}
+            source={filteredMedications}
             onSelect={addFromAutocomplete}
-            placeholder="Buscar medicação para prescrição extra..."
+            placeholder={categoryConfigLabel ? `Buscar em ${categoryConfigLabel.toLowerCase()}...` : "Buscar medicação para prescrição extra..."}
           />
           <div className="flex gap-2">
             <Input
