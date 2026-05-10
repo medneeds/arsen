@@ -2530,6 +2530,11 @@ const PrescricaoPage = () => {
 
   // Phase 7 state — Extra Prescription
   const [extraPrescriptionOpen, setExtraPrescriptionOpen] = useState(false);
+  const [extraChooserOpen, setExtraChooserOpen] = useState(false);
+  const [extraInitialCategory, setExtraInitialCategory] = useState<PrescriptionCategory | 'all'>('all');
+
+  // Pop-up de confirmação para "Nova" prescrição
+  const [newRxChoiceOpen, setNewRxChoiceOpen] = useState(false);
 
   // Antimicrobial Guide & Psychotropic Form
   const [antimicrobialGuideOpen, setAntimicrobialGuideOpen] = useState(false);
