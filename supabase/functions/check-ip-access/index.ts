@@ -73,19 +73,53 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Bypass admin
-    if (bypassAdmin) {
-      const { data: roles } = await admin
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-      const isAdmin = (roles ?? []).some((r: any) => r.role === "admin");
-      if (isAdmin) {
-        return new Response(
-          JSON.stringify({ allowed: true, ip, reason: "admin_bypass" }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
+    // Bypass por privilégio elevado:
+    // - admin (sempre, se bypass_for_admin=true)
+    // - desenvolvedor (sempre — fluxo de desenvolvimento fora do IP do hospital)
+    // - gestor (sempre que o usuário possui o perfil gestor, mesmo logado como médico/outro):
+    //   gestores legitimamente alternam entre perfis e precisam acessar o painel
+    //   clínico fora do IP do hospital para configurar/auditar.
+    const [{ data: roles }, { data: profileRow }] = await Promise.all([
+      admin.from("user_roles").select("role").eq("user_id", user.id),
+      admin
+        .from("profiles")
+        .select("access_profile, access_profiles")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
+    const roleSet = new Set((roles ?? []).map((r: any) => String(r.role)));
+    const profileSet = new Set<string>([
+      ...((profileRow as any)?.access_profiles ?? []).filter(Boolean).map(String),
+      ...((profileRow as any)?.access_profile ? [String((profileRow as any).access_profile)] : []),
+    ]);
+
+    const isAdmin = roleSet.has("admin");
+    const isDev =
+      roleSet.has("dev") ||
+      roleSet.has("desenvolvedor") ||
+      profileSet.has("desenvolvedor") ||
+      profileSet.has("dev");
+    const isGestor =
+      roleSet.has("gestor") ||
+      profileSet.has("gestor");
+
+    if (bypassAdmin && isAdmin) {
+      return new Response(
+        JSON.stringify({ allowed: true, ip, reason: "admin_bypass" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    if (isDev) {
+      return new Response(
+        JSON.stringify({ allowed: true, ip, reason: "dev_bypass" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    if (isGestor) {
+      return new Response(
+        JSON.stringify({ allowed: true, ip, reason: "gestor_bypass" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     if (!ip) {
