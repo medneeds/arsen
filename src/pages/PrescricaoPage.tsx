@@ -1981,8 +1981,18 @@ function ExtraPrescriptionDialog({
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="outline" size="sm" onClick={handleClose}>Cancelar</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrintIsolated}
+            disabled={extraItems.length === 0 || !patient}
+            className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/30"
+            title="Imprime esta prescrição extra como anexo isolado (Norma Zero)"
+          >
+            <Printer className="h-3.5 w-3.5" /> Imprimir Anexo
+          </Button>
           <Button size="sm" onClick={handleConfirm} disabled={extraItems.length === 0} className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white">
             <Zap className="h-3.5 w-3.5" /> Adicionar {extraItems.length} item{extraItems.length !== 1 ? 's' : ''} à prescrição
           </Button>
