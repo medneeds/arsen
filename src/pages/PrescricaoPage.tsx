@@ -4996,10 +4996,37 @@ const PrescricaoPage = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Pop-up de confirmação para "Nova" prescrição */}
+      <NewPrescriptionChoiceDialog
+        open={newRxChoiceOpen}
+        onClose={() => setNewRxChoiceOpen(false)}
+        hasCurrentItems={items.length > 0}
+        onStartBlank={handleNewPrescription}
+        onCopyPrevious={openRepeatDialog}
+      />
+
+      {/* Seletor de tipo da prescrição extra */}
+      <ExtraPrescriptionChooserDialog
+        open={extraChooserOpen}
+        onClose={() => setExtraChooserOpen(false)}
+        onPick={(cat) => {
+          setExtraInitialCategory(cat);
+          setExtraPrescriptionOpen(true);
+        }}
+      />
+
       {/* Extra Prescription Dialog */}
       <ExtraPrescriptionDialog
         open={extraPrescriptionOpen}
         onClose={() => setExtraPrescriptionOpen(false)}
+        initialCategory={extraInitialCategory}
+        patient={patient}
+        parentPrescriptionId={currentPrescriptionId}
+        parentPrescriptionVersion={versionHistory.find(v => v.id === currentPrescriptionId)?.version ?? null}
+        hospitalName={currentHospital?.name}
+        doctorName={digitalSignature?.doctorName}
+        doctorCrm={digitalSignature?.crm}
+        sectorLabel={`Prescrição Médica — ${patient.unit || 'Anexo Extra'}`}
         onAddItems={(newItems) => {
           setItems(prev => [...prev, ...newItems]);
           const agoraCount = newItems.filter(i => i.flags.includes('ag' as PrescriptionFlag)).length;
@@ -5009,6 +5036,12 @@ const PrescricaoPage = () => {
               ? `${agoraCount} "Agora" (não renovam)${scheduledCount > 0 ? ` + ${scheduledCount} de horário (renovam)` : ''}`
               : `${scheduledCount} de horário (serão incorporados na renovação)`,
           });
+          // Roteia para fluxo especializado de acordo com a categoria escolhida
+          if (extraInitialCategory === 'antimicrobial') {
+            setTimeout(() => setAntimicrobialGuideOpen(true), 250);
+          } else if (extraInitialCategory === 'high_alert') {
+            setTimeout(() => setPsychotropicFormOpen(true), 250);
+          }
         }}
         allMedications={Object.values(UNIFIED_CATALOG).flat()}
       />
