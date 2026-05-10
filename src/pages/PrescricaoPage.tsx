@@ -51,6 +51,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { ShiftRenewalAlert } from "@/components/ShiftRenewalAlert";
 import { PrescriptionDiffDialog } from "@/components/PrescriptionDiffDialog";
+import { NewPrescriptionChoiceDialog } from "@/components/NewPrescriptionChoiceDialog";
+import { ExtraPrescriptionChooserDialog } from "@/components/ExtraPrescriptionChooserDialog";
+import { printExtraPrescription } from "@/lib/printExtraPrescription";
 import { useHospital } from "@/contexts/HospitalContext";
 import {
   DndContext,
