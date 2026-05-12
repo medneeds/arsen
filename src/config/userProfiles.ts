@@ -227,6 +227,15 @@ export const ACCESS_PROFILES: AccessProfileConfig[] = [
     skipSectorSelection: true,
   },
   {
+    value: "qualidade",
+    label: "Qualidade / Segurança do Paciente",
+    shortLabel: "Qualidade",
+    description: "Acompanhamento de indicadores assistenciais, eventos adversos e auditorias de qualidade",
+    defaultRoute: "/relatorios",
+    icon: ShieldCheck,
+    skipSectorSelection: true,
+  },
+  {
     value: "desenvolvedor",
     label: "Desenvolvedor",
     shortLabel: "Dev",
