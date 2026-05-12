@@ -362,7 +362,7 @@ export default function PreCadastroPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {ACCESS_PROFILES.filter(
-                      (p) => !["desenvolvedor", "gestor"].includes(p.value),
+                      (p) => !["desenvolvedor"].includes(p.value),
                     ).map((p) => (
                       <SelectItem key={p.value} value={p.value}>
                         {p.label}
