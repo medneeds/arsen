@@ -46,6 +46,7 @@ export type AccessProfile =
   | "coord_medico"
   | "coord_enfermagem"
   | "coord_multi"
+  | "qualidade"
   | "desenvolvedor";
 
 /** Roles do sistema (enum app_role no Postgres). Controla RLS. */
@@ -226,6 +227,15 @@ export const ACCESS_PROFILES: AccessProfileConfig[] = [
     skipSectorSelection: true,
   },
   {
+    value: "qualidade",
+    label: "Qualidade / Segurança do Paciente",
+    shortLabel: "Qualidade",
+    description: "Acompanhamento de indicadores assistenciais, eventos adversos e auditorias de qualidade",
+    defaultRoute: "/relatorios",
+    icon: ShieldCheck,
+    skipSectorSelection: true,
+  },
+  {
     value: "desenvolvedor",
     label: "Desenvolvedor",
     shortLabel: "Dev",
@@ -251,6 +261,7 @@ export const PROFILE_TO_ROLE_HINT: Record<AccessProfile, AppRole> = {
   coord_medico: "coordenador",
   coord_enfermagem: "coordenador",
   coord_multi: "coordenador",
+  qualidade: "admin",
   desenvolvedor: "admin",
 };
 

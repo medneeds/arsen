@@ -143,6 +143,12 @@ export const PROFILE_DEFAULTS: Record<AccessProfile, ProfileDefaults> = {
     landingRoute: "/mapa",
     hint: "Coordenação multiprofissional • leitura clínica completa por unidade; pode validar rounds e liberar leitos",
   },
+  qualidade: {
+    role: "admin",
+    departments: [],
+    landingRoute: "/relatorios",
+    hint: "Qualidade / Segurança do Paciente • indicadores assistenciais e auditorias",
+  },
   desenvolvedor: {
     role: "admin",
     departments: [],
