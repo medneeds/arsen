@@ -261,6 +261,7 @@ export const PROFILE_TO_ROLE_HINT: Record<AccessProfile, AppRole> = {
   coord_medico: "coordenador",
   coord_enfermagem: "coordenador",
   coord_multi: "coordenador",
+  qualidade: "admin",
   desenvolvedor: "admin",
 };
 
