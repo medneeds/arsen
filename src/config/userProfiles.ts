@@ -46,6 +46,7 @@ export type AccessProfile =
   | "coord_medico"
   | "coord_enfermagem"
   | "coord_multi"
+  | "qualidade"
   | "desenvolvedor";
 
 /** Roles do sistema (enum app_role no Postgres). Controla RLS. */
