@@ -106,10 +106,16 @@ Deno.serve(async (req) => {
     if (cpfDigits.length !== 11) return json(400, { error: "CPF inválido" });
     const { data: cpfDup } = await admin
       .from("profiles")
-      .select("id")
+      .select("id, full_name, email, username")
       .eq("cpf", cpfDigits)
       .maybeSingle();
-    if (cpfDup) return json(409, { error: "CPF já cadastrado no sistema." });
+    if (cpfDup) {
+      return json(409, {
+        error: `CPF já cadastrado para ${cpfDup.full_name ?? cpfDup.username ?? cpfDup.email ?? "outro usuário"}${cpfDup.email ? ` (${cpfDup.email})` : ""}.`,
+        existingUser: cpfDup,
+        code: "cpf_already_registered",
+      });
+    }
 
     // 1) Criar usuário no Auth
     let userId: string;
