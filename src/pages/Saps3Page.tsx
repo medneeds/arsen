@@ -865,7 +865,7 @@ export default function Saps3Page() {
                       )}
                     </div>
                     <Button size="sm" onClick={() => startAdmission(req)} className="gap-1.5 ml-3 shrink-0">
-                      <UserCheck className="h-4 w-4" /> Admitir
+                      <UserCheck className="h-4 w-4" /> Pré-admitir
                     </Button>
                   </div>
                 ))}
@@ -1319,11 +1319,11 @@ export default function Saps3Page() {
               className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-400 dark:hover:bg-amber-900/20"
             >
               <Clock className="h-4 w-4" />
-              {saving ? "Admitindo..." : "Admitir com SAPS pendente"}
+              {saving ? "Pré-admitindo..." : "Pré-admitir com SAPS pendente"}
             </Button>
             <Button onClick={() => handleSave(false)} disabled={saving || !selectedBed} className="gap-2">
               <Save className="h-4 w-4" />
-              {saving ? "Admitindo..." : `Admitir no ${selectedBed || "leito"}`}
+              {saving ? "Pré-admitindo..." : `Pré-admitir no ${selectedBed || "leito"}`}
             </Button>
           </div>
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-300">
@@ -1331,7 +1331,7 @@ export default function Saps3Page() {
               <AlertTriangle className="h-4 w-4" /> Exames laboratoriais ainda pendentes?
             </p>
             <p className="text-xs mt-1 text-amber-700 dark:text-amber-400">
-              Utilize "Admitir com SAPS pendente" para alocar o paciente no leito agora e completar a ficha SAPS 3 
+              Utilize "Pré-admitir com SAPS pendente" para alocar o paciente no leito agora e completar a ficha SAPS 3 
               quando os resultados de gasometria, hemograma, função renal e demais exames admissionais estiverem disponíveis. 
               Um cronômetro será ativado para rastrear o tempo de pendência.
             </p>
