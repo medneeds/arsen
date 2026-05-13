@@ -77,6 +77,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
   const [admitTarget, setAdmitTarget] = useState<PreAdmission | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PreAdmission | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
 
