@@ -705,14 +705,64 @@ export default function Saps3Page() {
   // ─── Save: SAPS3 + finalize allocation/admission ───
   const handleSave = async (asPending = false) => {
     if (!patientName.trim()) { toast.error("Nome do paciente é obrigatório"); return; }
-    if (!selectedSector) { toast.error("Selecione o setor da UTI"); return; }
-    if (!selectedBed) { toast.error("Selecione o leito"); return; }
+    // No fluxo "completar SAPS pendente" o paciente já está no leito — não exigimos seleção de setor/leito.
+    if (!completingSapsId) {
+      if (!selectedSector) { toast.error("Selecione o setor da UTI"); return; }
+      if (!selectedBed) { toast.error("Selecione o leito"); return; }
+    }
     if (!hospitalId || !stateId) { toast.error("Hospital/Estado não selecionado"); return; }
     if (!asPending) {
       if (!sedationStatus) { toast.error("Responda a avaliação de consciência (sedoanalgesia/VM)"); return; }
       if (sedationStatus === "no" && (!gcsO || !gcsV || !gcsM)) { toast.error("Preencha O, V e M do Glasgow"); return; }
       if (sedationStatus === "intubated_no_sedation" && (!gcsO || !gcsM)) { toast.error("Preencha Ocular e Motor do Glasgow (Verbal = 1T)"); return; }
       if (sedationStatus === "sedated" && rassScore === "") { toast.error("Selecione a pontuação RASS (-5 a +4)"); return; }
+    }
+
+    // ─── Caminho "Completar SAPS pendente" — apenas atualiza a ficha existente ───
+    if (completingSapsId) {
+      setSaving(true);
+      try {
+        const sapsPayload = buildSapsPayload(asPending ? 'pending' : 'completed');
+        // Em update preservamos created_at original
+        delete (sapsPayload as any).created_by;
+        const { error: updErr } = await supabase
+          .from("saps3_assessments" as any)
+          .update(sapsPayload as any)
+          .eq("id", completingSapsId);
+        if (updErr) throw updErr;
+
+        if (!asPending && completingPatientId) {
+          await supabase
+            .from("patients")
+            .update({
+              saps_pending: false,
+              saps_completed_at: new Date().toISOString(),
+            } as any)
+            .eq("id", completingPatientId);
+        }
+
+        const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector || "—";
+        setConfirmationData({
+          patientName,
+          bedNumber: selectedBed || "—",
+          sectorLabel,
+          totalScore: asPending ? 0 : scores.total,
+          predictedMortality: asPending ? 0 : scores.mortality,
+          patientId: completingPatientId,
+          sectorCode: selectedSector,
+          age: age ? `${age} anos` : null,
+        });
+        setSelectedRequest(null);
+        setCompletingSapsId(null);
+        setCompletingPatientId(null);
+        loadRecords();
+        toast.success(asPending ? "Ficha SAPS 3 mantida como pendente." : "Ficha SAPS 3 concluída.");
+      } catch (err: any) {
+        toast.error("Erro ao salvar: " + err.message);
+      } finally {
+        setSaving(false);
+      }
+      return;
     }
 
     setSaving(true);
