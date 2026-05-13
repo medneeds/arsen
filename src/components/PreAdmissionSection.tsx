@@ -151,6 +151,9 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
 
   const pendingCount = preAdmissions.filter(p => p.status === "pre_admissao").length;
   const classifiedCount = preAdmissions.filter(p => p.status === "classificado").length;
+  // Classificação de risco (Manchester) é atribuição da enfermagem da Urgência e Emergência.
+  // Em setores de internação (qualquer setor com filtro definido), o cadastro vai direto para alocação no leito.
+  const requiresRiskClassification = !sectorFilterLabel;
 
   return (
     <>
@@ -164,7 +167,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
               <Badge variant="secondary" className="text-xs">
                 {preAdmissions.length}
               </Badge>
-              {pendingCount > 0 && (
+              {requiresRiskClassification && pendingCount > 0 && (
                 <Badge variant="destructive" className="text-xs">
                   {pendingCount} sem classificação
                 </Badge>
@@ -223,7 +226,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                       )}
 
                       <div className="flex gap-1 pt-1 border-t">
-                        {!pa.risk_classification && (
+                        {requiresRiskClassification && !pa.risk_classification && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -234,7 +237,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                             Classificar Risco
                           </Button>
                         )}
-                        {pa.risk_classification && (
+                        {(!requiresRiskClassification || pa.risk_classification) && (
                           <Button
                             size="sm"
                             className="flex-1 h-6 text-[10px] gap-1"
