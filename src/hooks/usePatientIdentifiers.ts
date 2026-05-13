@@ -144,6 +144,10 @@ export function usePatientIdentifiers(
           .maybeSingle();
         prontuario = mr?.numero_prontuario || null;
       }
+      // Último fallback: número do PIS gravado em patients.medical_record
+      if (!prontuario && patientMedicalRecord) {
+        prontuario = patientMedicalRecord;
+      }
 
       // 3) Atendimento: latest active patient_encounter
       let atendimento: string | null = null;
