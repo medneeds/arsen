@@ -473,6 +473,28 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
           <DialogDescription className="text-xs text-slate-600">
             Leito <strong>{patient.bed}</strong> • Esta admissão será registrada como <strong>D0</strong> e aparecerá como primeira entrada na linha do tempo (ADMISSÃO HOSPITALAR). Após assinada, só pode ser editada via adendo ou suspensa com justificativa.
           </DialogDescription>
+
+          {/* Faixa de status: rascunho automático + pendências */}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 border border-sky-200 px-2.5 py-1 text-[11px] text-sky-700">
+              <Save className="h-3 w-3" />
+              {draftSavedAt
+                ? <>Rascunho salvo automaticamente às <strong>{draftSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</strong> — você pode sair e continuar depois</>
+                : <>O preenchimento é salvo automaticamente como <strong>rascunho</strong> — só vira admissão após validação</>}
+            </span>
+            {draftSavedAt && (
+              <button type="button" onClick={discardDraft}
+                className="inline-flex items-center gap-1 text-[11px] text-rose-600 hover:text-rose-700 hover:underline">
+                <Trash2 className="h-3 w-3" /> Descartar rascunho
+              </button>
+            )}
+            {attempted && missingList.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-1 text-[11px] text-rose-700">
+                <AlertTriangle className="h-3 w-3" />
+                Faltam: <strong>{missingList.join(" • ")}</strong>
+              </span>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="px-6 py-5">
