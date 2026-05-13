@@ -97,7 +97,7 @@ function enteralRouteLabel(via: string): string {
 // Módulos = aditivos em pó/sachê para enriquecer dieta oral OU diluir e
 // administrar pela sonda enteral.
 // ──────────────────────────────────────────────
-type ProteinRouteKind = "oral" | "enteral";
+type ProteinRouteKind = "oral" | "enteral" | "parenteral";
 interface ProteinSupplementDef {
   key: string;
   label: string;
@@ -108,38 +108,42 @@ interface ProteinSupplementDef {
   note: string;                 // contexto clínico
 }
 
+// Observação clínica: SNOs líquidos podem ser ofertados VO ou, quando indicado,
+// administrados pela sonda enteral (após diluição/checagem de osmolaridade).
+// Módulos (pó/sachê) podem ir VO, pela sonda, e alguns aminoácidos (glutamina,
+// arginina) também podem ser ofertados por via parenteral em formulações específicas.
 const PROTEIN_SUPPLEMENTS: ProteinSupplementDef[] = [
-  // ── SNO (Suplemento Nutricional Oral) ──
-  { key: "sno_hchp",      label: "Suplemento hipercalórico-hiperproteico (HC-HP) — oral",
-    group: "sno", routes: ["oral"],
+  // ── SNO (Suplemento Nutricional Oral / pode ir por sonda) ──
+  { key: "sno_hchp",      label: "Suplemento hipercalórico-hiperproteico (HC-HP)",
+    group: "sno", routes: ["oral", "enteral"],
     defaultDose: "200 mL", defaultPosology: "2x/dia entre refeições",
-    note: "~300 kcal e ~18-20 g proteína por unidade. Ofertar gelado, entre refeições, evitando saciedade na principal." },
-  { key: "sno_hp",        label: "Suplemento hiperproteico concentrado — oral",
-    group: "sno", routes: ["oral"],
+    note: "~300 kcal e ~18-20 g proteína por unidade. VO: gelado entre refeições. Por sonda: diluir e checar osmolaridade." },
+  { key: "sno_hp",        label: "Suplemento hiperproteico concentrado",
+    group: "sno", routes: ["oral", "enteral"],
     defaultDose: "200 mL", defaultPosology: "2x/dia",
     note: "Indicado quando déficit proteico é o principal alvo (sarcopenia, cicatrização, oncológico)." },
-  { key: "sno_dm",        label: "Suplemento oral específico para diabetes",
-    group: "sno", routes: ["oral"],
+  { key: "sno_dm",        label: "Suplemento específico para diabetes",
+    group: "sno", routes: ["oral", "enteral"],
     defaultDose: "200 mL", defaultPosology: "1-2x/dia",
     note: "Baixo índice glicêmico, fibras solúveis. Monitorar glicemia capilar." },
-  { key: "sno_renal_nd",  label: "Suplemento oral para nefropata não-dialítico",
-    group: "sno", routes: ["oral"],
+  { key: "sno_renal_nd",  label: "Suplemento para nefropata não-dialítico",
+    group: "sno", routes: ["oral", "enteral"],
     defaultDose: "200 mL", defaultPosology: "1x/dia",
     note: "Densidade calórica alta, restrição de K/P/Na, proteína moderada." },
-  { key: "sno_renal_d",   label: "Suplemento oral para nefropata em diálise",
-    group: "sno", routes: ["oral"],
+  { key: "sno_renal_d",   label: "Suplemento para nefropata em diálise",
+    group: "sno", routes: ["oral", "enteral"],
     defaultDose: "200 mL", defaultPosology: "2x/dia (preferir nos dias de diálise)",
     note: "Hiperproteico, hipercalórico, com perfil de eletrólitos para HD/DP." },
-  { key: "sno_imuno",     label: "Suplemento oral imunomodulador (oncológico/cirúrgico)",
-    group: "sno", routes: ["oral"],
+  { key: "sno_imuno",     label: "Suplemento imunomodulador (oncológico/cirúrgico)",
+    group: "sno", routes: ["oral", "enteral"],
     defaultDose: "200 mL", defaultPosology: "2-3x/dia por 5-7 dias pré e pós-op",
     note: "Arginina + EPA/DHA + nucleotídeos. Evitar em sepse grave." },
   { key: "sno_disfagia",  label: "Espessante alimentar (disfagia)",
     group: "sno", routes: ["oral"],
     defaultDose: "Conforme consistência (néctar/mel/pudim)", defaultPosology: "Em todos os líquidos",
-    note: "Padronizar consistência conforme avaliação fonoaudiológica (IDDSI)." },
+    note: "Padronizar consistência conforme avaliação fonoaudiológica (IDDSI). Uso exclusivo VO." },
 
-  // ── Módulos (oral ou via sonda) ──
+  // ── Módulos (pó/sachê — VO, sonda, e quando aplicável parenteral) ──
   { key: "mod_whey",      label: "Módulo de proteína do soro do leite (Whey)",
     group: "modular", routes: ["oral", "enteral"],
     defaultDose: "20 g", defaultPosology: "2x/dia",
@@ -152,18 +156,22 @@ const PROTEIN_SUPPLEMENTS: ProteinSupplementDef[] = [
     group: "modular", routes: ["oral", "enteral"],
     defaultDose: "20 g", defaultPosology: "2-3x/dia",
     note: "≥ 90% de proteína por porção. Útil quando meta proteica > 1,5 g/kg/dia." },
-  { key: "mod_glutamina", label: "Módulo de glutamina (L-Glutamina)",
-    group: "modular", routes: ["oral", "enteral"],
-    defaultDose: "10 g", defaultPosology: "3x/dia (30 g/dia)",
-    note: "Trofismo intestinal, estresse metabólico, queimados. Cautela em hepatopatas graves." },
+  { key: "mod_glutamina", label: "Módulo de glutamina (L-Glutamina / Dipeptiven®)",
+    group: "modular", routes: ["oral", "enteral", "parenteral"],
+    defaultDose: "10 g (VO/SNE) ou 0,3-0,5 g/kg/dia (IV — dipeptídeo)", defaultPosology: "3x/dia (VO/SNE) ou infusão contínua (IV)",
+    note: "Trofismo intestinal, estresse metabólico, queimados. IV apenas como dipeptídeo (Ala-Gln). Cautela em hepatopatas graves e IRA." },
   { key: "mod_leucina_hmb", label: "Módulo de leucina enriquecido com HMB",
     group: "modular", routes: ["oral", "enteral"],
     defaultDose: "1 sachê", defaultPosology: "2x/dia",
     note: "Anabólico em sarcopenia/idoso frágil/UTI. Contém ~3 g HMB e leucina." },
   { key: "mod_arginina",  label: "Módulo de arginina",
-    group: "modular", routes: ["oral", "enteral"],
-    defaultDose: "5 g", defaultPosology: "2x/dia",
-    note: "Cicatrização e imunomodulação. Evitar em sepse grave e instabilidade hemodinâmica." },
+    group: "modular", routes: ["oral", "enteral", "parenteral"],
+    defaultDose: "5 g (VO/SNE) ou conforme NPT", defaultPosology: "2x/dia (VO/SNE) ou na bolsa de NPT",
+    note: "Cicatrização e imunomodulação. Parenteral apenas como componente da NPT. Evitar em sepse grave e instabilidade hemodinâmica." },
+  { key: "mod_aa_essenciais", label: "Solução de aminoácidos essenciais (NPT)",
+    group: "modular", routes: ["parenteral"],
+    defaultDose: "Conforme meta proteica (g/kg/dia)", defaultPosology: "Infusão contínua na bolsa de NPT",
+    note: "Componente proteico da nutrição parenteral. Ajustar conforme função renal/hepática e meta calórico-proteica." },
   { key: "mod_fibras",    label: "Módulo de fibras (FOS/prebiótico)",
     group: "modular", routes: ["oral", "enteral"],
     defaultDose: "5 g", defaultPosology: "2x/dia",
@@ -1022,14 +1030,14 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
             <div className="space-y-3 p-1">
               <div className="text-[11px] text-muted-foreground bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/60 rounded-lg px-3 py-2">
                 <span className="font-semibold text-emerald-700 dark:text-emerald-300">Suplementação proteica/calórico-proteica</span> — selecione os produtos a anexar à prescrição.
-                Cada item gera linha própria. Módulos podem ir VO ou via sonda; SNO é VO.
+                Cada item gera linha própria. Vias disponíveis variam por produto: <strong>oral (VO)</strong>, <strong>enteral</strong> (SNG/SOG/SNE/GTT/JTT) e, quando aplicável, <strong>parenteral</strong> (NPT / dipeptídeo IV).
               </div>
 
               {(["sno", "modular"] as const).map(group => {
                 const groupItems = PROTEIN_SUPPLEMENTS.filter(p => p.group === group);
                 const groupLabel = group === "sno"
-                  ? "Suplementos nutricionais orais (SNO)"
-                  : "Módulos (pó/sachê) — oral ou via sonda";
+                  ? "Suplementos nutricionais (VO ou por sonda)"
+                  : "Módulos (pó/sachê / aminoácidos) — VO, sonda ou parenteral";
                 return (
                   <section key={group} className="rounded-lg border border-border/60 p-3 space-y-2">
                     <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{groupLabel}</h3>
@@ -1076,8 +1084,11 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
                                       {p.routes.includes("oral") && <SelectItem value="oral">Oral (VO)</SelectItem>}
                                       {p.routes.includes("enteral") && (
                                         <SelectItem value="enteral">
-                                          Enteral ({ENTERAL_VIAS.find(v => v.key === entVia)?.label || "sonda"})
+                                          Enteral ({ENTERAL_VIAS.find(v => v.key === entVia)?.label || "SNG/SNE/GTT/JTT"})
                                         </SelectItem>
+                                      )}
+                                      {p.routes.includes("parenteral") && (
+                                        <SelectItem value="parenteral">Parenteral (NPT / IV)</SelectItem>
                                       )}
                                     </SelectContent>
                                   </Select>
