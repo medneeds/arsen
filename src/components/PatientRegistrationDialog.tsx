@@ -272,10 +272,13 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
       const { data: userData } = await supabase.auth.getUser();
       const selectedSectors = form.destination_sector.split(", ").filter(Boolean);
       const isUtiDestination = selectedSectors.some(s => s.startsWith("UTI"));
-      // Quando o cadastro nasce de um setor (mapa do painel clínico), entra direto em "aguardando_leito"
+      const hasDestinationSector = selectedSectors.length > 0;
+      // Sempre que houver setor de destino definido (seja vindo do mapa ou escolhido na recepção),
+      // o paciente entra direto em "aguardando_leito" daquele setor.
+      // Classificação de risco fica pendente e pode ser feita depois pelo médico.
       const status = isUtiDestination
         ? "aguardando_leito_uti"
-        : defaultDestinationSector
+        : hasDestinationSector
           ? "aguardando_leito"
           : "pre_admissao";
 
