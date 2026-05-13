@@ -12,11 +12,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
-  Shield, AlertTriangle, Printer, Heart, Activity, Droplets, Check,
-  Info, ChevronRight, RotateCw, FileText,
+  Shield, AlertTriangle, Heart, Activity, Droplets, Check,
+  Info, ChevronRight, RotateCw, FileText, CheckCircle2, Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import type { MedicationEntry } from "@/data/medicationsDatabase";
 
 // ──────────────────────────────────────────────
 // PÁDUA SCORE (clinical patients)
