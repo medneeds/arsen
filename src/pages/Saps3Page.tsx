@@ -660,7 +660,7 @@ export default function Saps3Page() {
         state_id: stateId,
         created_by: user?.id,
         admission_date: new Date().toISOString(),
-        uti_admission_date: format(new Date(), "dd/MM/yyyy"),
+        uti_admission_date: new Date().toISOString(),
         clinical_status: "grave",
         is_vacant: false,
         is_door_patient: false,
