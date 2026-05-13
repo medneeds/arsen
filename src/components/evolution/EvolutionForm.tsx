@@ -157,15 +157,19 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               ].filter(Boolean).join(" • ");
               const examRows = EXAM_FIELDS.filter(f => physicalExam[f.key])
                 .map(f => `<tr><th style="width:130px">${f.label}</th><td>${escape(physicalExam[f.key])}</td></tr>`).join("");
-              const evolucaoTxt = [soap.subjective, soap.assessment].map(t => (t || "").trim()).filter(Boolean).join("\n\n");
+              const evolucaoHtml = [soap.subjective, soap.assessment]
+                .map(t => sanitizeRichHtml(toRichHtml(t)))
+                .filter(Boolean).join("");
+              const objectiveHtml = sanitizeRichHtml(toRichHtml(soap.objective));
+              const planHtml = sanitizeRichHtml(toRichHtml(soap.plan));
               const bodyHtml = `
                 ${vitalsRow ? `<h2 class="nz-section">Sinais Vitais</h2><div style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:9pt">${vitalsRow}</div>` : ""}
                 <h2 class="nz-section">Evolução</h2>
-                <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(evolucaoTxt) || "<em>—</em>"}</div>
+                <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${evolucaoHtml || "<em>—</em>"}</div>
                 ${examRows ? `<h2 class="nz-section">Exame Físico</h2><table class="nz"><tbody>${examRows}</tbody></table>` : ""}
-                ${soap.objective?.trim() ? `<h2 class="nz-section">Exames Complementares</h2><div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(soap.objective)}</div>` : ""}
+                ${richHtmlToPlainText(soap.objective) ? `<h2 class="nz-section">Exames Complementares</h2><div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${objectiveHtml}</div>` : ""}
                 <h2 class="nz-section">Plano</h2>
-                <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(soap.plan) || "<em>—</em>"}</div>
+                <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${planHtml || "<em>—</em>"}</div>
               `;
               const html = buildNormaZeroDocument({
                 title: "Evolução Clínica", subtitle: "Registro de evolução",
