@@ -3600,87 +3600,20 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                     {/* Non-porta users see regular menu */}
                     {role !== 'porta' && (
                       <>
-                    {/* REALOCAÇÃO - Priority Category */}
-                    {onTransfer && (
-                      <Collapsible defaultOpen className="group">
-                        <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold hover:bg-accent/60 transition-all duration-200 group-data-[state=open]:bg-accent/40">
-                          <Shuffle className="h-4 w-4 text-teal-500 dark:text-teal-400" />
-                          <span className="flex-1 text-left text-foreground">Realocação</span>
-                          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-180" />
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="mt-1 space-y-0.5 overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                          {(Object.keys(sectorLabels) as Array<Patient['sector']>).map((sector) => (
-                            sector !== patient.sector && (
-                              <DropdownMenuItem
-                                key={sector}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleTransfer(sector);
-                                }}
-                                className="ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-teal-50 dark:hover:bg-teal-950/30 transition-colors cursor-pointer"
-                              >
-                                <ArrowRightLeft className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
-                                <span>{sectorLabels[sector]}</span>
-                              </DropdownMenuItem>
-                            )
-                          ))}
-                        </CollapsibleContent>
-                      </Collapsible>
-                    )}
-
-                    {/* MOVIMENTAÇÕES - Priority Category with Gradient Accent */}
-                    <Collapsible defaultOpen className="group">
-                      <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold hover:bg-accent/60 transition-all duration-200 group-data-[state=open]:bg-accent/40">
-                        <Activity className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-                        <span className="flex-1 text-left text-foreground">Movimentações</span>
-                        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-180" />
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="mt-1 space-y-0.5 overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMovementType("TRANSFERÊNCIA");
-                            setMovementDialogOpen(true);
-                          }}
-                          className="ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer"
-                        >
-                          <ArrowRightLeft className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                          <span>Transferir</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMovementType("ALTA");
-                            setMovementDialogOpen(true);
-                          }}
-                          className="ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors cursor-pointer"
-                        >
-                          <TrendingUp className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-                          <span>Alta</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMovementType("ÓBITO");
-                            setMovementDialogOpen(true);
-                          }}
-                          className="ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
-                        >
-                          <Skull className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
-                          <span>Óbito</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/resources?patientId=${patient.id}`);
-                          }}
-                          className="ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer"
-                        >
-                          <FileText className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                          <span>Solicitar Internação</span>
-                        </DropdownMenuItem>
-                      </CollapsibleContent>
-                    </Collapsible>
+                    {/* REALOCAÇÃO INTERNA — autonomia médica (mesma lógica do NIR) */}
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReallocationDialogOpen(true);
+                      }}
+                      className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-teal-50 to-transparent dark:from-teal-950/30 hover:from-teal-100 dark:hover:from-teal-950/50 transition-colors cursor-pointer"
+                    >
+                      <Shuffle className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                      <span className="text-teal-700 dark:text-teal-300">Realocar / Permutar leito</span>
+                    </DropdownMenuItem>
+                    <p className="px-3 pb-1 text-[10px] leading-snug text-muted-foreground">
+                      Movimentações de alta, óbito e transferência são realizadas pelo Painel Clínico (Cockpit).
+                    </p>
 
                     {/* VISUALIZAÇÃO RÁPIDA */}
                     {onQuickView && (
