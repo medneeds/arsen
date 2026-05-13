@@ -17,8 +17,10 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
   FileText, History, Loader2, Save, AlertTriangle, IdCard, Upload, FileWarning,
+  ShieldAlert, Trash2,
 } from "lucide-react";
 import { MovementConfirmDialog } from "./MovementConfirmDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Props {
   open: boolean;
@@ -111,7 +113,29 @@ const UPPER_FIELDS = new Set([
 export function MedicalRecordEditDialog({
   open, onOpenChange, patientId, patientName, onSaved,
 }: Props) {
-  const [tab, setTab] = useState<"prontuario" | "ficha" | "historico">("prontuario");
+  const [tab, setTab] = useState<"prontuario" | "ficha" | "historico" | "danger">("prontuario");
+  const { user } = useAuth();
+  const [isDeveloper, setIsDeveloper] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) { setIsDeveloper(false); return; }
+    let cancelled = false;
+    supabase
+      .from("profiles")
+      .select("access_profiles")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        const profiles = (data as any)?.access_profiles as string[] | null;
+        setIsDeveloper(Array.isArray(profiles) && profiles.includes("desenvolvedor"));
+      });
+    return () => { cancelled = true; };
+  }, [user?.id]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -359,6 +383,36 @@ export function MedicalRecordEditDialog({
     }
   }
 
+  // ===== HARD DELETE (perfil desenvolvedor) =====
+  async function executeHardDelete() {
+    if (!isDeveloper) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.rpc("admin_hard_delete_patient" as any, {
+        p_patient_id: patientId,
+        p_registry_id: registry?.id ?? null,
+        p_reason: deleteReason.trim(),
+      });
+      if (error) throw error;
+      toast({
+        title: "🗑️ Paciente excluído permanentemente",
+        description: "Todos os dados foram apagados. Operação registrada nos logs.",
+      });
+      setConfirmDeleteOpen(false);
+      onOpenChange(false);
+      onSaved?.();
+    } catch (e: any) {
+      console.error(e);
+      toast({
+        title: "Falha na exclusão",
+        description: e.message || "Operação negada pelo servidor.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   // ===== Import PIS =====
   async function handlePisFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -426,7 +480,7 @@ export function MedicalRecordEditDialog({
             </div>
           ) : (
             <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
-              <TabsList className="grid grid-cols-3 w-full">
+              <TabsList className={isDeveloper ? "grid grid-cols-4 w-full" : "grid grid-cols-3 w-full"}>
                 <TabsTrigger value="prontuario" className="text-xs gap-1.5">
                   <IdCard className="h-3.5 w-3.5" /> Prontuário
                 </TabsTrigger>
@@ -438,6 +492,14 @@ export function MedicalRecordEditDialog({
                   <History className="h-3.5 w-3.5" /> Histórico
                   <Badge variant="outline" className="ml-1 h-4 px-1 text-[9px]">{mrHistory.length + regHistory.length}</Badge>
                 </TabsTrigger>
+                {isDeveloper && (
+                  <TabsTrigger
+                    value="danger"
+                    className="text-xs gap-1.5 data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground text-destructive"
+                  >
+                    <ShieldAlert className="h-3.5 w-3.5" /> Edição Avançada
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               {/* ============ ABA PRONTUÁRIO ============ */}
@@ -595,6 +657,75 @@ export function MedicalRecordEditDialog({
                   </div>
                 </ScrollArea>
               </TabsContent>
+
+              {/* ============ ABA EDIÇÃO AVANÇADA (DESENVOLVEDOR) ============ */}
+              {isDeveloper && (
+                <TabsContent value="danger" className="flex-1 mt-3 min-h-0">
+                  <ScrollArea className="h-[58vh] pr-2">
+                    <div className="space-y-4">
+                      <section className="p-4 rounded-lg border-2 border-destructive/50 bg-destructive/5 space-y-3">
+                        <div className="flex items-start gap-2">
+                          <ShieldAlert className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <h3 className="text-sm font-bold text-destructive uppercase tracking-wide">
+                              Exclusão administrativa do paciente
+                            </h3>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                              Operação <strong>irreversível</strong> reservada para casos excepcionais
+                              de erro administrativo (cadastro duplicado, paciente inexistente, teste em produção, etc).
+                              Apaga em cascata <strong>todos os dados</strong> deste paciente: prontuário, ficha cadastral,
+                              evoluções, prescrições, exames, culturas, movimentações, atendimentos e históricos de edição.
+                              Esta ação <strong>não pode ser desfeita</strong>.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold">
+                            Motivo da exclusão (mínimo 10 caracteres, obrigatório)
+                          </Label>
+                          <Textarea
+                            value={deleteReason}
+                            onChange={(e) => setDeleteReason(e.target.value)}
+                            rows={3}
+                            placeholder="Ex.: Cadastro duplicado do paciente XYZ — registro correto é o ID abc123. Solicitado por..."
+                            className="text-xs"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold">
+                            Para confirmar, digite exatamente o nome do paciente:
+                          </Label>
+                          <code className="block text-[10px] p-1.5 bg-muted rounded border">{patientName || "—"}</code>
+                          <Input
+                            value={deleteConfirmName}
+                            onChange={(e) => setDeleteConfirmName(e.target.value)}
+                            placeholder="Digite o nome completo do paciente"
+                            className="h-9 text-xs"
+                          />
+                        </div>
+
+                        <div className="flex justify-end pt-2">
+                          <Button
+                            variant="destructive"
+                            disabled={
+                              deleting ||
+                              deleteReason.trim().length < 10 ||
+                              deleteConfirmName.trim().toUpperCase() !== (patientName || "").trim().toUpperCase()
+                            }
+                            onClick={() => setConfirmDeleteOpen(true)}
+                            className="gap-1.5"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Excluir paciente permanentemente
+                          </Button>
+                        </div>
+                      </section>
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+              )}
             </Tabs>
           )}
 
@@ -638,6 +769,32 @@ export function MedicalRecordEditDialog({
           { text: "A alteração não pode ser desfeita por edição direta — apenas por nova alteração também auditada." },
         ]}
         finalNote="Esta operação é registrada permanentemente para fins legais e regulatórios (CFM/COREN/LGPD). Confirme apenas se a justificativa estiver correta."
+      />
+
+      <MovementConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={(v) => !v && setConfirmDeleteOpen(false)}
+        title="Excluir paciente permanentemente"
+        confirmLabel="Sim, excluir todos os dados"
+        onConfirm={executeHardDelete}
+        isSubmitting={deleting}
+        tone="destructive"
+        summary={[
+          { label: "Paciente", value: patientName || "—", fullWidth: true },
+          { label: "ID interno", value: patientId, fullWidth: true },
+          { label: "Motivo", value: deleteReason.trim(), fullWidth: true },
+        ]}
+        warnings={[
+          { label: "Operação irreversível", detail: "Não há cesto de lixo nem rollback. Os dados deixam de existir." },
+          { label: "Restrito ao perfil desenvolvedor", detail: "Apenas usuários com perfil 'desenvolvedor' podem executar." },
+        ]}
+        consequences={[
+          { text: "Apaga prontuário, ficha cadastral, evoluções, prescrições, exames, culturas e movimentações." },
+          { text: "Remove todos os atendimentos, históricos de edição e snapshots de versão." },
+          { text: "Libera CPF/CNS para reuso (caso o paciente seja recadastrado, será novo registro)." },
+          { text: "A operação é registrada nos logs de auditoria do servidor com seu ID e motivo." },
+        ]}
+        finalNote="Use APENAS para erros administrativos excepcionais (cadastro duplicado, paciente inexistente, dados de teste). Para alta clínica use o fluxo de Saída."
       />
     </>
   );
