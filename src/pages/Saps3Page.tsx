@@ -616,10 +616,16 @@ export default function Saps3Page() {
     }
 
     setSaving(true);
+    let createdSapsId: string | null = null;
     try {
       const sapsPayload = buildSapsPayload(asPending ? 'pending' : 'completed');
-      const { error: sapsError } = await supabase.from("saps3_assessments" as any).insert(sapsPayload as any);
+      const { data: sapsRecord, error: sapsError } = await supabase
+        .from("saps3_assessments" as any)
+        .insert(sapsPayload as any)
+        .select("id")
+        .single();
       if (sapsError) throw sapsError;
+      createdSapsId = (sapsRecord as any)?.id || null;
 
       const sectorMeta = UTI_SECTORS.find((sector) => sector.value === selectedSector);
       const destinationSectorLabel = sectorMeta?.label || selectedSector;
@@ -737,6 +743,9 @@ export default function Saps3Page() {
       loadRecords();
       loadOccupiedBeds();
     } catch (err: any) {
+      if (createdSapsId) {
+        await supabase.from("saps3_assessments" as any).delete().eq("id", createdSapsId);
+      }
       toast.error("Erro ao salvar: " + err.message);
     } finally {
       setSaving(false);
