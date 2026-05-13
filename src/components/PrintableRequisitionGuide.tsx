@@ -526,9 +526,9 @@ export async function printRequisitionGuide(
   const itemsCells =
     items.length > 0
       ? items
-          .map((item: any) => {
+          .map((item: any, idx: number) => {
             const name = typeof item === "string" ? item : item?.name || String(item ?? "");
-            return `<div class="req-item"><span class="req-check"></span><span>${escapeHtml(name)}</span></div>`;
+            return `<div class="req-item"><span class="req-num">${idx + 1}.</span><span>${escapeHtml(name)}</span></div>`;
           })
           .join("")
       : `<div class="nz-empty">Nenhum item registrado.</div>`;
