@@ -3107,34 +3107,33 @@ const PrescricaoPage = () => {
   };
 
   // Callback when antimicrobial guide is confirmed — add both guide entry data and the prescription item
-  const handleAntimicrobialConfirm = useCallback((confirmedEntries: Array<{ medication: string; dose: string; route: string; posology: string }>) => {
-    // Find matching MedicationEntry from the database for each confirmed entry
+  const handleAntimicrobialConfirm = useCallback((confirmedEntries: Array<{
+    medication: string; dose: string; route: string; posology: string;
+    startDate?: string; plannedDuration?: string; infectionSite?: string;
+  }>) => {
     const antimicrobialOptions = UNIFIED_CATALOG['antimicrobial'] || [];
     const newItems: PrescriptionItem[] = confirmedEntries.map(entry => {
       const matchedMed = antimicrobialOptions.find(m => m.name === entry.medication);
-      if (matchedMed) {
-        const item = createItem(matchedMed);
-        // Override with values from the guide form
-        item.dose = entry.dose || item.dose;
-        item.route = entry.route || item.route;
-        item.posology = entry.posology || item.posology;
-        return item;
-      }
-      // Fallback: create item from entry data
-      return {
-        id: crypto.randomUUID(),
-        name: entry.medication,
-        presentation: '',
-        dose: entry.dose,
-        route: entry.route,
-        posology: entry.posology,
-        schedule: '',
-        instructions: '',
-        category: 'antimicrobial' as PrescriptionCategory,
-        flags: [] as PrescriptionFlag[],
-        highAlert: false,
-        status: 'active' as const,
-      };
+      const base: PrescriptionItem = matchedMed
+        ? { ...createItem(matchedMed), dose: entry.dose || createItem(matchedMed).dose, route: entry.route || createItem(matchedMed).route, posology: entry.posology || createItem(matchedMed).posology }
+        : {
+            id: crypto.randomUUID(),
+            name: entry.medication,
+            presentation: '',
+            dose: entry.dose,
+            route: entry.route,
+            posology: entry.posology,
+            schedule: '',
+            instructions: '',
+            category: 'antimicrobial' as PrescriptionCategory,
+            flags: [] as PrescriptionFlag[],
+            highAlert: false,
+            status: 'active' as const,
+          };
+      base.atbStartDate = entry.startDate || format(new Date(), 'yyyy-MM-dd');
+      base.atbPlannedDays = entry.plannedDuration || '';
+      base.atbInfectionSite = entry.infectionSite || '';
+      return base;
     });
     setItems(prev => [...prev, ...newItems]);
     setPendingAntimicrobialMed(null);
