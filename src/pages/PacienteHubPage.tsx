@@ -441,6 +441,21 @@ export default function PacienteHubPage() {
           }}
         />
       )}
+
+      {ctx.patientId && (
+        <AdmissionConsultDialog
+          open={consultOpen}
+          onOpenChange={setConsultOpen}
+          patient={{
+            id: ctx.patientId,
+            name: ctx.patientName,
+            bed: ctx.patientBed,
+            sector: ctx.patientSector,
+            age: ctx.patientAge,
+          }}
+          onChanged={fetchStatus}
+        />
+      )}
     </div>
   );
 }
