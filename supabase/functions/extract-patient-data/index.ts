@@ -86,6 +86,7 @@ Se um campo não for encontrado, retorne null. Responda APENAS via tool call.`;
                   neighborhood: { type: "string" },
                   city: { type: "string" },
                   phone: { type: "string" },
+                  medical_record: { type: "string", description: "Número do prontuário (apenas o valor, sem rótulo)" },
                 },
                 required: ["patient_name"],
                 additionalProperties: false,
