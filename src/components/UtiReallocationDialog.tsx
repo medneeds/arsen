@@ -219,6 +219,7 @@ export function UtiReallocationDialog({
       });
 
       onSuccess?.();
+      setConfirmOpen(false);
       handleClose();
     } catch (error) {
       console.error('Error reallocating patient:', error);
@@ -235,6 +236,7 @@ export function UtiReallocationDialog({
   const handleClose = () => {
     setTargetUnit("");
     setTargetBedId("");
+    setConfirmOpen(false);
     onClose();
   };
 
@@ -356,14 +358,44 @@ export function UtiReallocationDialog({
           <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button 
-            onClick={handleSubmit} 
+          <Button
+            onClick={handleOpenConfirm}
             disabled={isSubmitting || !targetBedId || availableBeds.length === 0}
           >
-            {isSubmitting ? "Realocando..." : "Confirmar Realocação"}
+            {isSubmitting ? "Realocando..." : "Revisar e confirmar"}
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {patient && targetBedPatient && (
+        <MovementConfirmDialog
+          open={confirmOpen}
+          onOpenChange={(o) => !isSubmitting && setConfirmOpen(o)}
+          onConfirm={handleSubmit}
+          isSubmitting={isSubmitting}
+          title={targetUnit === currentUtiUnit ? "Confirmar realocação interna na UTI" : "Confirmar transferência entre UTIs"}
+          confirmLabel={targetUnit === currentUtiUnit ? "Confirmar realocação" : "Confirmar transferência"}
+          summary={[
+            { icon: User, label: "Paciente", value: patient.name },
+            { icon: BedDouble, label: "Origem", value: `${currentUtiUnit} • Leito ${patient.bedNumber}` },
+            { icon: MapPin, label: "Destino", value: `${targetUnit} • Leito ${targetBedPatient.bedNumber}` },
+          ]}
+          consequences={[
+            { icon: ArrowRightLeft, text: <>Todos os dados clínicos do paciente (diagnósticos, dispositivos, culturas, condutas, status) serão <strong>copiados para o leito de destino</strong>.</> },
+            { icon: BedDouble, text: <>O leito de origem ficará <strong>limpo e disponível</strong> para nova alocação imediatamente.</> },
+            { icon: ClipboardList, text: <>A movimentação será registrada como <strong>{targetUnit === currentUtiUnit ? "REALOCAÇÃO" : "TRANSFERÊNCIA"}</strong> na linha do tempo do paciente.</> },
+            ...(targetUnit !== currentUtiUnit
+              ? [{ icon: AlertTriangle, text: <>Como há mudança de unidade de UTI, a <strong>responsabilidade médica e a equipe assistencial</strong> serão atualizadas conforme escala da unidade destino.</> }]
+              : []),
+            { icon: Eye, text: <>O paciente continua visível em todos os módulos (mapa, prescrição, evolução, exames).</> },
+            { icon: History, text: <>O histórico clínico longitudinal é preservado integralmente.</> },
+          ]}
+          warnings={targetUnit !== currentUtiUnit
+            ? [{ label: "Mudança de unidade", detail: "verifique a escala médica e o handover com a equipe receptora antes de confirmar." }]
+            : []}
+          finalNote={<>Caso ocorra erro durante a movimentação, repita a operação ou contate o suporte. O sistema mantém integridade transacional.</>}
+        />
+      )}
     </Dialog>
   );
 }
