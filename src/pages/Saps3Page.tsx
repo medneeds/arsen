@@ -692,17 +692,22 @@ export default function Saps3Page() {
         admitted_at: null,
       };
 
+      let admittedPatientId: string | null = null;
       if (existingBedRow?.id) {
         const { error: updateBedError } = await supabase
           .from("patients")
           .update(patientPayload)
           .eq("id", existingBedRow.id);
         if (updateBedError) throw updateBedError;
+        admittedPatientId = existingBedRow.id;
       } else {
-        const { error: insertBedError } = await supabase
+        const { data: insertedRow, error: insertBedError } = await supabase
           .from("patients")
-          .insert(patientPayload as any);
+          .insert(patientPayload as any)
+          .select("id")
+          .single();
         if (insertBedError) throw insertBedError;
+        admittedPatientId = (insertedRow as any)?.id ?? null;
       }
 
       // Origem 1: solicitação de leito (door patient) → marca aprovada e remove a linha "porta"
