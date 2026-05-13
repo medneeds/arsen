@@ -375,7 +375,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         address: form.address?.trim() || null,
         neighborhood: form.neighborhood?.trim() || null,
         city: form.city?.trim() || null,
-        destination_sector: form.destination_sector || null,
+        destination_sector: effectiveDestination || null,
         notes: form.notes?.trim() || null,
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
