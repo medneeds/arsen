@@ -194,78 +194,62 @@ export function EditPatientDialog({
                   </Select>
                 </div>
 
-                {/* Campos UTI: admissão / previsão / origem */}
-                {isUti && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold flex items-center gap-1.5">
-                        <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
-                        Admissão UTI
-                      </Label>
-                      <Input
-                        value={utiAdmissionDate}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            utiAdmissionDate: [e.target.value],
-                          })
-                        }
-                        placeholder="DD/MM/AAAA HH:MM"
-                        className="h-9 text-xs uppercase"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold flex items-center gap-1.5">
-                        <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" />
-                        Previsão de Alta
-                      </Label>
-                      <Input
-                        value={utiDischargePrediction}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            utiDischargePrediction: [e.target.value],
-                          })
-                        }
-                        placeholder="DD/MM/AAAA"
-                        className="h-9 text-xs uppercase"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold">
-                        Setor de Origem
-                      </Label>
-                      <Input
-                        value={utiOriginSector}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            utiOriginSector: [e.target.value],
-                          })
-                        }
-                        placeholder="Ex: EMERGÊNCIA"
-                        className="h-9 text-xs uppercase"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Data de admissão (não-UTI) */}
-                {!isUti && (
+                {/* Datas administrativas — unificado para todos os setores */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold flex items-center gap-1.5">
                       <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
-                      Data de Admissão no Setor
+                      Data de admissão no setor
                     </Label>
                     <Input
-                      value={formData.admissionDate || ""}
+                      value={isUti ? utiAdmissionDate : (formData.admissionDate || "")}
+                      onChange={(e) =>
+                        setFormData(
+                          isUti
+                            ? { ...formData, utiAdmissionDate: [e.target.value] }
+                            : { ...formData, admissionDate: e.target.value }
+                        )
+                      }
+                      placeholder="DD/MM/AAAA HH:MM"
+                      className="h-9 text-xs uppercase"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold flex items-center gap-1.5">
+                      <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" />
+                      Previsão de Alta
+                    </Label>
+                    <Input
+                      value={utiDischargePrediction}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          admissionDate: e.target.value,
+                          utiDischargePrediction: [e.target.value],
                         })
                       }
-                      placeholder="DD/MM/AAAA HH:MM"
+                      placeholder="DD/MM/AAAA"
+                      className="h-9 text-xs uppercase"
+                    />
+                    <p className="text-[10px] text-muted-foreground italic">
+                      Sincronizada com a Evolução Médica. Edite aqui para sobrescrever manualmente.
+                    </p>
+                  </div>
+                </div>
+
+                {isUti && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">
+                      Setor de Origem
+                    </Label>
+                    <Input
+                      value={utiOriginSector}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          utiOriginSector: [e.target.value],
+                        })
+                      }
+                      placeholder="Ex: EMERGÊNCIA"
                       className="h-9 text-xs uppercase"
                     />
                   </div>
