@@ -4348,7 +4348,7 @@ const PrescricaoPage = () => {
           <GlobalPrescriptionSearch
             ref={globalSearchRef}
             onAddItem={addItem}
-            onAddNonStandard={(name: string) => { setNonStdName(name); addNonStandard(); }}
+            onAddNonStandard={(name: string) => { addNonStandard(name); }}
             getFavoriteCount={getFavoriteCount}
             onCategoryPopup={(cat) => {
               if (cat === 'antimicrobial') {
