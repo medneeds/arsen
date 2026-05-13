@@ -33,7 +33,12 @@ const CLASS_PATTERNS: Array<{ class: string; patterns: RegExp[] }> = [
   { class: 'Opióides', patterns: [/morfina/i, /fentanil/i, /tramadol/i, /codeína/i, /oxicodona/i, /metadona/i, /remifentanil/i, /sufentanil/i, /nalbufina/i, /meperidina/i] },
   { class: 'Benzodiazepínicos', patterns: [/midazolam/i, /diazepam/i, /clonazepam/i, /lorazepam/i, /alprazolam/i, /bromazepam/i] },
   { class: 'AINEs', patterns: [/ibuprofeno/i, /diclofenaco/i, /cetoprofeno/i, /naproxeno/i, /tenoxicam/i, /piroxicam/i, /nimesulida/i, /cetorolaco/i, /\bketorolac/i] },
-  { class: 'Paracetamol/Dipirona', patterns: [/dipirona/i, /paracetamol/i, /acetaminofen/i] },
+  // CLASSES SEPARADAS (sem reatividade cruzada entre si):
+  // - Dipirona (metamizol) é pirazolona
+  // - Paracetamol (acetaminofen) é para-aminofenol
+  // Alergia a um NÃO contraindica o outro.
+  { class: 'Pirazolonas (Dipirona)', patterns: [/dipirona/i, /metamizol/i, /novalgina/i, /anador/i, /\bmagnopyrol/i] },
+  { class: 'Para-aminofenóis (Paracetamol)', patterns: [/paracetamol/i, /acetaminofen/i, /tylenol/i] },
   { class: 'Beta-bloqueadores', patterns: [/metoprolol/i, /propranolol/i, /atenolol/i, /carvedilol/i, /esmolol/i, /bisoprolol/i, /nebivolol/i] },
   { class: 'IECA', patterns: [/captopril/i, /enalapril/i, /lisinopril/i, /ramipril/i, /perindopril/i] },
   { class: 'BRA (sartanas)', patterns: [/losartana/i, /valsartana/i, /candesartana/i, /olmesartana/i, /telmisartana/i, /irbesartana/i] },
@@ -50,6 +55,7 @@ const CLASS_PATTERNS: Array<{ class: string; patterns: RegExp[] }> = [
   { class: 'Aminoglicosídeos', patterns: [/gentamicina/i, /amicacina/i, /tobramicina/i, /estreptomicina/i] },
   { class: 'Fluoroquinolonas', patterns: [/ciprofloxac/i, /levofloxac/i, /moxifloxac/i, /norfloxac/i] },
   { class: 'Macrolídeos', patterns: [/azitromicina/i, /claritromicina/i, /eritromicina/i] },
+  { class: 'Sulfonamidas', patterns: [/sulfametoxazol/i, /bactrim/i, /sulfadiazin/i, /sulfassalazin/i, /sulfa\b/i] },
   { class: 'IBP', patterns: [/omeprazol/i, /pantoprazol/i, /esomeprazol/i, /lansoprazol/i, /rabeprazol/i] },
   { class: 'Bloqueadores H2', patterns: [/ranitidina/i, /famotidina/i, /cimetidina/i] },
   { class: 'Estatinas', patterns: [/sinvastatina/i, /atorvastatin/i, /rosuvastatin/i, /pravastatin/i] },
@@ -133,31 +139,49 @@ function detectAllergies(items: MinimalRxItem[], allergiesText: string): Clinica
   const raw = normalize(allergiesText);
   if (!raw || raw === 'ndam' || raw === 'nda' || raw === 'nega' || raw.includes('nega alergia')) return alerts;
 
-  // Split by common separators
+  // Split by common separators (vírgula, ponto-e-vírgula, barra, nova linha, pipe, "+", " e ", " ou ")
   const tokens = raw
     .split(/[,;\/\n|+]| e | ou /g)
     .map(t => t.trim())
     .filter(t => t.length >= 3 && !['ndam', 'nda', 'sem', 'nenhuma', 'nego'].includes(t));
 
-  // Class expansion — if patient is allergic to "penicilina", also flag β-lactâmicos
-  const expanded: Array<{ token: string; matchClass?: string }> = [];
+  // Expansão por classe — CADA token gera apenas as classes farmacologicamente relacionadas.
+  // ⚠️ Dipirona (pirazolona) e Paracetamol (para-aminofenol) NÃO têm reatividade cruzada
+  //    e estão em classes distintas. Cada um expande SOMENTE para sua classe.
+  const expanded: Array<{ token: string; matchClass?: string; nameRegex?: RegExp }> = [];
   for (const t of tokens) {
     expanded.push({ token: t });
+
+    // β-lactâmicos (penicilinas + cefalosporinas + carbapenêmicos têm reatividade cruzada parcial)
     if (/penicil|amoxi|ampici|cefal|β-?lact|beta.?lact/.test(t)) {
       expanded.push({ token: t, matchClass: 'Antibióticos β-lactâmicos' });
       expanded.push({ token: t, matchClass: 'Carbapenêmicos' });
     }
-    if (/dipirona|paracetamol|acetamin/.test(t)) {
-      expanded.push({ token: t, matchClass: 'Paracetamol/Dipirona' });
+
+    // Dipirona / metamizol / nomes comerciais → SOMENTE pirazolonas. NÃO cruza com paracetamol.
+    if (/\b(dipirona|metamizol|novalgina|anador|magnopyrol)\b/.test(t)) {
+      expanded.push({ token: t, matchClass: 'Pirazolonas (Dipirona)' });
     }
-    if (/aas|aspirina|salicil/.test(t)) {
+
+    // Paracetamol / acetaminofen / tylenol → SOMENTE para-aminofenóis. NÃO cruza com dipirona.
+    if (/\b(paracetamol|acetaminofen|tylenol)\b/.test(t)) {
+      expanded.push({ token: t, matchClass: 'Para-aminofenóis (Paracetamol)' });
+    }
+
+    // AAS / ácido acetilsalicílico → AINEs + antiagregantes (Samter / NSAID-ERD).
+    // NÃO inclui dipirona nem paracetamol.
+    if (/\b(aas|aspirina|salicil)/.test(t)) {
       expanded.push({ token: t, matchClass: 'AINEs' });
       expanded.push({ token: t, matchClass: 'Antiagregantes' });
     }
-    if (/sulfa/.test(t)) {
-      // Sulfa cross-reactivity is broad; flag bactrim/sulfameth
+
+    // Sulfa → sulfonamidas
+    if (/\bsulfa/.test(t)) {
+      expanded.push({ token: t, matchClass: 'Sulfonamidas' });
     }
-    if (/aine|antiinflamat|anti.?inflamat|ibupr|diclof|cetop|nimesul/.test(t)) {
+
+    // AINEs genéricos
+    if (/\b(aine|antiinflamat|anti.?inflamat|ibupr|diclof|cetop|nimesul)/.test(t)) {
       expanded.push({ token: t, matchClass: 'AINEs' });
     }
   }
@@ -167,19 +191,22 @@ function detectAllergies(items: MinimalRxItem[], allergiesText: string): Clinica
     const itemNorm = normalize(it.name);
     const itemClass = classifyByName(it.name);
     for (const e of expanded) {
-      const nameMatch = e.token.length >= 4 && itemNorm.includes(e.token);
-      const classMatch = e.matchClass && itemClass === e.matchClass;
+      // Match por nome usa palavra inteira (\b...\b) para evitar coincidências espúrias entre
+      // princípios diferentes (ex.: "dipirona" não pode casar com "paracetamol" e vice-versa).
+      const tokenWordRegex = new RegExp(`\\b${e.token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+      const nameMatch = !e.matchClass && e.token.length >= 4 && tokenWordRegex.test(itemNorm);
+      const classMatch = !!e.matchClass && itemClass === e.matchClass;
       if (nameMatch || classMatch) {
         alerts.push({
           type: 'allergy',
           severity: 'high',
           title: `Possível alergia: ${it.name}`,
           detail: classMatch
-            ? `Paciente refere alergia a "${e.token}" (classe ${e.matchClass}). Item prescrito pertence à mesma classe.`
+            ? `Paciente refere alergia a "${e.token}" (classe ${e.matchClass}). Item prescrito pertence à mesma classe farmacológica.`
             : `Paciente refere alergia a "${e.token}". Item prescrito coincide com o registro.`,
           itemIds: [it.id],
         });
-        break; // one alert per item is enough
+        break; // um alerta por item é suficiente
       }
     }
   }
