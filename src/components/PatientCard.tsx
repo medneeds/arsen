@@ -36,6 +36,7 @@ import { useConductHistory } from "@/hooks/useConductHistory";
 import { ConductHistoryDialog } from "./ConductHistoryDialog";
 import { AdmissionHistoryDialog } from "./AdmissionHistoryDialog";
 import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
+import { BedReallocationDialog } from "./BedReallocationDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -654,6 +655,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
   const [conductHistoryDialogOpen, setConductHistoryDialogOpen] = useState(false);
   const [admissionHistoryDialogOpen, setAdmissionHistoryDialogOpen] = useState(false);
   const [roundPrintDialogOpen, setRoundPrintDialogOpen] = useState(false);
+  const [reallocationDialogOpen, setReallocationDialogOpen] = useState(false);
   const { history: conductHistory, isLoading: conductHistoryLoading, recordChange } = useConductHistory(patient.id);
   const { role, user } = useAuth();
   const { requests } = useBedAllocationRequests();
@@ -3598,87 +3600,20 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                     {/* Non-porta users see regular menu */}
                     {role !== 'porta' && (
                       <>
-                    {/* REALOCAÇÃO - Priority Category */}
-                    {onTransfer && (
-                      <Collapsible defaultOpen className="group">
-                        <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold hover:bg-accent/60 transition-all duration-200 group-data-[state=open]:bg-accent/40">
-                          <Shuffle className="h-4 w-4 text-teal-500 dark:text-teal-400" />
-                          <span className="flex-1 text-left text-foreground">Realocação</span>
-                          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-180" />
-                        </CollapsibleTrigger>
-                        <CollapsibleContent className="mt-1 space-y-0.5 overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                          {(Object.keys(sectorLabels) as Array<Patient['sector']>).map((sector) => (
-                            sector !== patient.sector && (
-                              <DropdownMenuItem
-                                key={sector}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleTransfer(sector);
-                                }}
-                                className="ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-teal-50 dark:hover:bg-teal-950/30 transition-colors cursor-pointer"
-                              >
-                                <ArrowRightLeft className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400" />
-                                <span>{sectorLabels[sector]}</span>
-                              </DropdownMenuItem>
-                            )
-                          ))}
-                        </CollapsibleContent>
-                      </Collapsible>
-                    )}
-
-                    {/* MOVIMENTAÇÕES - Priority Category with Gradient Accent */}
-                    <Collapsible defaultOpen className="group">
-                      <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold hover:bg-accent/60 transition-all duration-200 group-data-[state=open]:bg-accent/40">
-                        <Activity className="h-4 w-4 text-blue-500 dark:text-blue-400" />
-                        <span className="flex-1 text-left text-foreground">Movimentações</span>
-                        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-180" />
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="mt-1 space-y-0.5 overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMovementType("TRANSFERÊNCIA");
-                            setMovementDialogOpen(true);
-                          }}
-                          className="ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors cursor-pointer"
-                        >
-                          <ArrowRightLeft className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-                          <span>Transferir</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMovementType("ALTA");
-                            setMovementDialogOpen(true);
-                          }}
-                          className="ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors cursor-pointer"
-                        >
-                          <TrendingUp className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-                          <span>Alta</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMovementType("ÓBITO");
-                            setMovementDialogOpen(true);
-                          }}
-                          className="ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
-                        >
-                          <Skull className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
-                          <span>Óbito</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/resources?patientId=${patient.id}`);
-                          }}
-                          className="ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer"
-                        >
-                          <FileText className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                          <span>Solicitar Internação</span>
-                        </DropdownMenuItem>
-                      </CollapsibleContent>
-                    </Collapsible>
+                    {/* REALOCAÇÃO INTERNA — autonomia médica (mesma lógica do NIR) */}
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setReallocationDialogOpen(true);
+                      }}
+                      className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-teal-50 to-transparent dark:from-teal-950/30 hover:from-teal-100 dark:hover:from-teal-950/50 transition-colors cursor-pointer"
+                    >
+                      <Shuffle className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                      <span className="text-teal-700 dark:text-teal-300">Realocar / Permutar leito</span>
+                    </DropdownMenuItem>
+                    <p className="px-3 pb-1 text-[10px] leading-snug text-muted-foreground">
+                      Movimentações de alta, óbito e transferência são realizadas pelo Painel Clínico (Cockpit).
+                    </p>
 
                     {/* VISUALIZAÇÃO RÁPIDA */}
                     {onQuickView && (
@@ -3709,18 +3644,6 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       <span>História Admissional</span>
                     </DropdownMenuItem>
 
-                    {/* ROUND MULTIPROFISSIONAL */}
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setRoundPrintDialogOpen(true);
-                      }}
-                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
-                    >
-                      <ClipboardCheck className="h-4 w-4 text-violet-600 dark:text-violet-400" />
-                      <span>Round Multiprofissional</span>
-                    </DropdownMenuItem>
-
                     {/* HISTÓRICO DE CONDUTAS */}
                     <DropdownMenuItem
                       onClick={(e) => {
@@ -3732,20 +3655,6 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       <Clock className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                       <span>Histórico de Condutas</span>
                     </DropdownMenuItem>
-
-                    {/* IMPRIMIR CASO - Independent Action */}
-                    {onPrintPatient && (
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onPrintPatient(patient.id);
-                        }}
-                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors cursor-pointer"
-                      >
-                        <Printer className="h-4 w-4 text-muted-foreground" />
-                        <span>Imprimir Caso</span>
-                      </DropdownMenuItem>
-                    )}
 
                     {/* SOLICITAR EXAME - Navigate to Requisições with patient data */}
                     <DropdownMenuItem
@@ -3897,30 +3806,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       </CollapsibleContent>
                     </Collapsible>
 
-                    {onDelete && (
-                      <>
-                        <div className="h-px bg-gradient-to-r from-transparent via-red-200 dark:via-red-900/50 to-transparent my-2" />
-                        <Collapsible className="group">
-                          <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-200 group-data-[state=open]:bg-red-50/70 dark:group-data-[state=open]:bg-red-950/40">
-                            <AlertTriangle className="h-4 w-4 text-red-500 dark:text-red-400" />
-                            <span className="flex-1 text-left text-red-600 dark:text-red-400">Ações Críticas</span>
-                            <ChevronDown className="h-4 w-4 text-red-500 transition-transform duration-300 group-data-[state=open]:rotate-180" />
-                          </CollapsibleTrigger>
-                          <CollapsibleContent className="mt-1 overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setIsDeleteDialogOpen(true);
-                              }}
-                              className="ml-6 flex items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors cursor-pointer font-semibold"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              <span>Excluir Paciente</span>
-                            </DropdownMenuItem>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      </>
-                    )}
+                    {/* Exclusão de paciente removida — fluxo de saída ocorre no Painel Clínico (Cockpit). */}
+
                       </>
                     )}
                     
@@ -5087,6 +4974,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
           patientSector={patient.sector as any}
           patientBed={patient.bedNumber}
           patientAge={patient.age}
+        />
+      )}
+      {reallocationDialogOpen && (
+        <BedReallocationDialog
+          open={reallocationDialogOpen}
+          onOpenChange={setReallocationDialogOpen}
+          patient={patient}
+          onSuccess={() => onRefetch?.()}
         />
       )}
     </>
