@@ -183,7 +183,7 @@ export function PsychotropicFormDialog({
   const { controlledItems: catalog, findControlledByName, loading: catalogLoading } = useUnifiedMedicationCatalog();
 
   const [entries, setEntries] = useState<PsychotropicEntry[]>([]);
-  const [isPrinting, setIsPrinting] = useState(false);
+  
 
   // Carrega entries quando abre
   useEffect(() => {
