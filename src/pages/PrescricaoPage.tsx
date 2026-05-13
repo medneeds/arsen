@@ -1631,8 +1631,57 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           {item.status === 'active' && item.category === 'hydration' && (
             <HydrationFields item={item} onUpdate={onUpdate} />
           )}
-          {item.status === 'active' && item.category !== 'nutrition' && item.category !== 'hydration' && (
+          {item.status === 'active' && item.category !== 'nutrition' && item.category !== 'hydration' && (() => {
+            const ptype = inferPresentationType(item.presentation, item.route, item.name);
+            const renderInfusion = showInfusionBlock(ptype);
+            const renderDiluent = showDiluentRow(ptype);
+            const evidence = getEvidenceSuggestion(item.name);
+            const applyEvidence = () => {
+              if (!evidence) return;
+              const isEmpty = (v?: string) => !v || !v.trim() || v.trim() === '-';
+              if (evidence.defaultDose && isEmpty(item.dose)) onUpdate(item.id, 'dose', evidence.defaultDose);
+              if (evidence.defaultRoute && isEmpty(item.route)) onUpdate(item.id, 'route', evidence.defaultRoute);
+              if (evidence.defaultPosology && isEmpty(item.posology)) onUpdate(item.id, 'posology', evidence.defaultPosology);
+              if (evidence.diluent && isEmpty(item.diluent)) onUpdate(item.id, 'diluent', evidence.diluent);
+              if (evidence.volumeTotal && isEmpty(item.volumeTotal)) onUpdate(item.id, 'volumeTotal', evidence.volumeTotal);
+              if (evidence.infusionTime && isEmpty(item.infusionTime)) onUpdate(item.id, 'infusionTime', evidence.infusionTime);
+              if (evidence.infusionTimeUnit) onUpdate(item.id, 'infusionTimeUnit', evidence.infusionTimeUnit);
+              toast.success('Sugestão aplicada', { description: `Fonte: ${evidence.source}` });
+            };
+            return (
             <>
+              {evidence && (
+                <div className="flex items-center justify-between gap-2 px-2 py-1 rounded bg-sky-50 border border-sky-200/60 dark:bg-sky-950/20 dark:border-sky-800/40">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-[10px] text-sky-700 dark:text-sky-300 font-medium truncate">
+                        📚 Evidência disponível ({evidence.source})
+                        {evidence.notes ? ` · ${evidence.notes}` : ''}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs">
+                      <div className="space-y-1">
+                        {evidence.defaultDose && <div><b>Dose:</b> {evidence.defaultDose}</div>}
+                        {evidence.defaultRoute && <div><b>Via:</b> {evidence.defaultRoute}</div>}
+                        {evidence.defaultPosology && <div><b>Posologia:</b> {evidence.defaultPosology}</div>}
+                        {evidence.diluent && <div><b>Diluente:</b> {evidence.diluent}</div>}
+                        {evidence.volumeTotal && <div><b>Vol total:</b> {evidence.volumeTotal} mL</div>}
+                        {evidence.infusionTime && <div><b>Tempo:</b> {evidence.infusionTime}{evidence.infusionTimeUnit || 'min'}</div>}
+                        <div className="text-muted-foreground italic pt-1">Fonte: {evidence.source}</div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={applyEvidence}
+                    className="h-6 px-2 text-[10px] border-sky-300 text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:text-sky-300"
+                  >
+                    Sugerir
+                  </Button>
+                </div>
+              )}
               {/* Row 1: Dose + Via + Intervalo */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <Input value={item.dose} onChange={(e) => onUpdate(item.id, "dose", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-24" placeholder="Dose" />
