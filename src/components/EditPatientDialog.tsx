@@ -36,6 +36,8 @@ import { MedicalResponsibilityDialog } from "./MedicalResponsibilityDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
 import { InternmentStatusDialog } from "./InternmentStatusDialog";
 import { AdmissionDateEditor } from "./AdmissionDateEditor";
+import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
+import { FileText } from "lucide-react";
 
 interface EditPatientDialogProps {
   patient: Patient;
