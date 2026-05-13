@@ -602,6 +602,12 @@ export default function Saps3Page() {
     if (!selectedSector) { toast.error("Selecione o setor da UTI"); return; }
     if (!selectedBed) { toast.error("Selecione o leito"); return; }
     if (!hospitalId || !stateId) { toast.error("Hospital/Estado não selecionado"); return; }
+    if (!asPending) {
+      if (!sedationStatus) { toast.error("Responda a avaliação de consciência (sedoanalgesia/VM)"); return; }
+      if (sedationStatus === "no" && (!gcsO || !gcsV || !gcsM)) { toast.error("Preencha O, V e M do Glasgow"); return; }
+      if (sedationStatus === "intubated_no_sedation" && (!gcsO || !gcsM)) { toast.error("Preencha Ocular e Motor do Glasgow (Verbal = 1T)"); return; }
+      if (sedationStatus === "sedated" && rassScore === "") { toast.error("Selecione a pontuação RASS (-5 a +4)"); return; }
+    }
 
     setSaving(true);
     try {
