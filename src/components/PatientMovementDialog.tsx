@@ -304,6 +304,7 @@ export function PatientMovementDialog({
           : "Movimentação registrada no histórico.",
       });
 
+      setConfirmOpen(false);
       onSuccess?.();
       handleClose();
     } catch (error) {
