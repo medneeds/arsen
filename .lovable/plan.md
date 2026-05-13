@@ -1,63 +1,97 @@
-# Validação adaptativa + sugestões evidence-based
 
-## Princípios
+## Objetivo
 
-1. **Vermelho** = somente itens com campo obrigatório faltando, e o conjunto de obrigatórios depende do **tipo de apresentação** da medicação.
-2. **Amarelo** = pendente de validação (default, todos os campos OK).
-3. **Verde** = validado.
-4. Sugestões de posologia/diluição/via baseadas em evidência (UpToDate, AMIB, bulário) para as 50 medicações mais usadas, exibidas inline no card expandido.
+Quando, no momento de importar/cadastrar um paciente (incluindo importação da ficha PIS/PIN administrativa), o **nome ou outros campos** apresentarem indícios de paciente não identificado (NI), o sistema deve:
 
-## Matriz de obrigatórios por apresentação
+1. **Reconhecer automaticamente** que se trata de um NI.
+2. **Sugerir** ativar o fluxo NI completo (gerar código `NI-AAAA-NNNNNN`, marcar `is_unidentified=true`, preservar PIS quando houver).
+3. **Perguntar ao usuário** antes de prosseguir, de forma fluida, sem travar quem realmente quer cadastrar pelo nome.
 
-| Apresentação | Dose | Via | Posologia | Diluente | Volume | Tempo infusão | Obs |
-|---|---|---|---|---|---|---|---|
-| Comprimido / Cápsula / Drágea | ✅ | ✅ (VO/SNG) | ✅ | — | — | — | sem diluição |
-| Solução oral / Xarope | ✅ | ✅ (VO) | ✅ | — | — | — | |
-| Ampola IV bolus | ✅ | ✅ (EV) | ✅ | opcional | opcional | — | bolus lento se aplicável |
-| Ampola IV infusão contínua | ✅ | ✅ (EV-BIC) | ✅ (mL/h ou mcg/kg/min) | ✅ | ✅ | ✅ | ex. noradrenalina, fentanil |
-| Ampola IV intermitente | ✅ | ✅ (EV) | ✅ | ✅ | ✅ | ✅ | ex. ATB diluído |
-| IM / SC | ✅ | ✅ | ✅ | — | — | — | |
-| Inalatório / Nebulização | ✅ | ✅ (INAL) | ✅ | ✅ (SF 0,9%) | ✅ | — | |
-| Tópico / Oftálmico / Otológico | ✅ | ✅ | ✅ | — | — | — | |
-| Supositório / Retal | ✅ | ✅ (RT) | ✅ | — | — | — | |
+## Gatilhos de detecção (heurística + IA)
 
-## Mudanças de código
+### Camada 1 — Heurística instantânea (regex/normalize, zero latência)
+Aplicada no `onBlur`/`onChange` do campo nome no `PatientRegistrationDialog` (e também em `AdmitPatientDialog` quando vier de `pre_admissions`):
 
-### 1. `medicationsDatabase.ts`
-- Adicionar campo `presentationType` (enum) e `requiredFields` (array) em cada apresentação.
-- Adicionar `evidenceSuggestion` opcional: `{ defaultDose, defaultRoute, defaultPosology, defaultDiluent, defaultVolume, defaultInfusionTime, source }`.
+Marcadores que disparam suspeita NI:
+- `NÃO IDENTIFICADO`, `NAO IDENTIFICADO`, `N/I`, `N.I.`, `NI ` (com espaço), `SEM IDENTIFICAÇÃO`, `SEM ID`, `DESCONHECIDO(A)`, `IGNORADO(A)`
+- `TIO`, `TIA` quando isolados ou em padrão típico (ex.: `TIO 1`, `TIA DA EMERGENCIA`)
+- `JOÃO DOE`, `JANE DOE`, `JOHN DOE`, `FULANO`, `BELTRANO`, `SICRANO`
+- `MASC. NI`, `FEM. NI`, `MASCULINO NI`, prefixo `PIS-`, `PIN-`, `NI-AAAA-...`
+- Nome com ≤2 caracteres ou só números/hífens
+- Nome com sinal de placeholder: `???`, `XXXX`, `------`, `A IDENTIFICAR`
 
-### 2. Top 50 medicações com sugestões evidence-based
-Cobertura por classe (referências: UpToDate, AMIB, Sanford, KDIGO, bulários):
-- **ATB**: Ceftriaxona, Piperacilina-Tazobactam, Meropenem, Vancomicina, Cefepime, Ampicilina-Sulbactam, Metronidazol, Azitromicina, Clindamicina, Linezolida
-- **Vasoativos/Sedação (BIC)**: Noradrenalina, Adrenalina, Dobutamina, Vasopressina, Nitroprussiato, Fentanil, Midazolam, Propofol, Dexmedetomidina, Cisatracúrio
-- **Analgesia/Sintomáticos**: Dipirona, Paracetamol, Tramadol, Morfina, Ondansetrona, Bromoprida, Escopolamina, Cetoprofeno
-- **Cardio**: AAS, Clopidogrel, Atorvastatina, Enalapril, Losartana, Anlodipino, Carvedilol, Furosemida, Espironolactona, Hidroclorotiazida
-- **GI/Profilaxia**: Omeprazol, Pantoprazol, Ranitidina, Enoxaparina, Heparina
-- **Endócrino**: Insulina Regular, Insulina NPH, Hidrocortisona, Metilprednisolona, Levotiroxina
-- **Outros**: Salbutamol, Ipratrópio, Budesonida, N-acetilcisteína, KCl 19,1%
+Normalização NFD (já é padrão do projeto) para não falhar com acentos.
 
-### 3. `PrescricaoPage.tsx` / lógica de validação
-- Função `getRequiredFields(item)` retorna lista por `presentationType`.
-- `isItemValid(item)` checa apenas os obrigatórios aplicáveis.
-- Status vermelho **só** quando `!isItemValid(item)`.
-- Bloqueio de validação global: existe ≥1 item vermelho.
+### Camada 2 — IA (Lovable AI) para casos ambíguos
+Quando heurística não dispara mas há sinais (nome muito curto, só sobrenome, padrão atípico), chamar edge function `detect-unidentified-patient` com `google/gemini-3-flash-preview` retornando JSON estruturado:
 
-### 4. Card expandido adaptativo
-- Renderizar somente os campos relevantes ao `presentationType` (ex.: comprimido oculta diluente/volume/tempo).
-- Botão "Sugerir" preenche todos os campos com `evidenceSuggestion` quando disponível, com tooltip indicando a fonte.
-- Badge discreto "📚 Evidência: UpToDate/AMIB" no card quando sugestão aplicada.
+```json
+{ "isUnidentified": true|false, "confidence": 0.0-1.0, "reason": "...", "suggestedSex": "M"|"F"|null }
+```
 
-### 5. Sincronização com Norma Zero (PORT 344)
-- Print-only continua puxando dados já validados; quantidade 24h calculada por `posology × dose`; SOS = 1.
+Só chama IA se: heurística não bateu E (nome ≤ 8 chars OU contém token suspeito não listado OU campo "modo de chegada" indica trauma/inconsciente). Debounce 500ms.
 
-## Arquivos afetados
-- `src/data/medicationsDatabase.ts` (estrutura + 50 entradas enriquecidas)
-- `src/pages/PrescricaoPage.tsx` (validação adaptativa, status vermelho)
-- `src/components/prescription/PrescriptionItemExpanded.tsx` (ou equivalente — render condicional + botão Sugerir)
-- Helper novo: `src/lib/prescriptionValidation.ts` (`getRequiredFields`, `isItemValid`, `getMissingFields`)
+## Diálogo de confirmação (`UnidentifiedSuggestionDialog`)
 
-## Fora de escopo
-- Não altera fluxo de impressão Portaria 344 (já entregue).
-- Não altera ATB Guia (já entregue).
-- Não cria nova tabela no banco — tudo no catálogo client-side.
+Ao detectar (heurística ou IA com confidence ≥ 0.7), abrir popup ANTES de seguir o fluxo padrão:
+
+```
+[ícone alerta âmbar] Paciente possivelmente NÃO IDENTIFICADO
+
+Detectamos indícios de que este pode ser um paciente não identificado:
+  • Motivo: "{reason}"
+
+Recomendamos ativar o fluxo NI:
+  ✓ Gerar código institucional NI-2026-NNNNNN automaticamente
+  ✓ Preservar dados úteis informados (sexo aparente, idade estimada, contato)
+  ✓ Permitir promoção a identificado posteriormente sem perda de histórico
+
+[Sim, ativar fluxo NI]   [Não, é um nome real]   [Cancelar]
+```
+
+- **Sim, ativar NI** → marca `is_unidentified=true`, gera código NI via RPC, preenche `unidentified_features` com o que já tinha (sexo aparente, faixa etária, modo de chegada), e continua o cadastro normalmente.
+- **Não, é nome real** → segue cadastro normal e marca um flag de sessão `userOverroteNiSuggestion=true` para não perguntar de novo no mesmo formulário.
+- **Cancelar** → fecha tudo, volta ao formulário sem alteração.
+
+## Integração com importação de ficha PIS/PIN
+
+No fluxo de importação (`PatientRegistrationDialog` quando recebe dados PIS, e em `AdmitPatientDialog` ao trazer `pre_admission`):
+
+- Se o registro PIS/PIN já tem marcador NI no nome OU campo `is_unidentified` previamente setado, **pular o popup** e ativar o fluxo NI direto, exibindo apenas um toast informativo: "Ficha PIS reconhecida como NI — código NI-2026-XXXXXX gerado".
+- Manter regra já memorizada: em modo `auto`, o número PIS vai para `unidentified_features.pis_medical_record` (auditoria) e o oficial é o número novo gerado; em modo `legacy`, PIS continua sendo o oficial.
+
+## Mudanças por arquivo
+
+### Novos
+- `src/lib/unidentifiedDetector.ts` — função pura `detectUnidentified(name, extras?)` retornando `{ isUnidentified, confidence, reason, source: 'heuristic'|'ai' }`. Lista de tokens + regex centralizados aqui.
+- `src/components/UnidentifiedSuggestionDialog.tsx` — diálogo reutilizável (props: `open`, `detection`, `onConfirm`, `onReject`, `onCancel`).
+- `supabase/functions/detect-unidentified-patient/index.ts` — edge function só para casos ambíguos. Usa Lovable AI Gateway, modelo `google/gemini-3-flash-preview`, structured output, sem auth (verify_jwt=false não é necessário; mantém default).
+
+### Editados
+- `src/components/PatientRegistrationDialog.tsx`:
+  - Hook `useEffect` no campo `name` (debounced 400ms) chama `detectUnidentified`.
+  - Se detecta E usuário não rejeitou ainda nesta sessão E `is_unidentified` ainda não está true → abre `UnidentifiedSuggestionDialog`.
+  - Confirmação ativa NI flow (gera código, marca flag).
+  - Em fluxo de importação PIS, se já vier marcado NI, ativa direto sem popup.
+- `src/components/AdmitPatientDialog.tsx`:
+  - Mesma lógica ao receber `fullData.patient_name` da `pre_admission`. Se detectado, sugere NI antes de prosseguir.
+
+## Detalhes técnicos
+
+- Heurística é **case-insensitive**, normalizada NFD, e bate em **palavras inteiras** (`\b`) para evitar falso-positivo (`NIVALDO` não dispara `NI`).
+- IA roda só quando heurística não bate E há sinal fraco. Custo controlado.
+- Toda detecção é registrada em `console.debug` para auditoria de qualidade.
+- Telemetria mínima: contar quantas vezes a sugestão foi aceita/recusada via tabela de auditoria existente (não cria tabela nova nesta etapa).
+- A IA NUNCA decide sozinha — sempre passa pelo diálogo de confirmação. O usuário tem palavra final.
+
+## Riscos & mitigação
+
+- **Falso-positivo** (nome real curto disparando NI) → diálogo permite "Não, é nome real" e marca `userOverroteNiSuggestion` para o resto do formulário.
+- **Falso-negativo** → usuário ainda pode marcar manualmente o checkbox "Paciente não identificado" existente (não removemos).
+- **Latência IA** → só roda em background; nunca bloqueia digitação. Diálogo só aparece após debounce.
+
+## Fora de escopo desta etapa
+
+- Reescrita do flow de "promoção NI → identificado" (já existe).
+- Mudanças no schema do banco.
+- Treinamento/fine-tuning de modelo.
