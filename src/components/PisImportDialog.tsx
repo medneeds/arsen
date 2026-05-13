@@ -18,6 +18,7 @@ export interface ExtractedPisData {
   address?: string | null;
   neighborhood?: string | null;
   city?: string | null;
+  state?: string | null;
   phone?: string | null;
   medical_record?: string | null;
 }
