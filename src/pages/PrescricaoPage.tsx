@@ -1615,6 +1615,15 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   </p>
                 ) : null;
               })()}
+              {/* ATB day counter (dynamic) */}
+              {item.category === 'antimicrobial' && item.atbStartDate && (() => {
+                const line = buildAtbDayLine(item);
+                return line ? (
+                  <p className="text-[11px] font-semibold px-2.5 py-1 rounded bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/40 text-orange-700 dark:text-orange-300 leading-relaxed">
+                    {line}{item.atbInfectionSite ? ` · ${item.atbInfectionSite}` : ''}
+                  </p>
+                ) : null;
+              })()}
               {/* Additional manual notes */}
               <Input
                 value={item.instructions}
