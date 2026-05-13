@@ -3078,6 +3078,13 @@ const PrescricaoPage = () => {
       toast.error("Nenhum item ativo para validar");
       return;
     }
+    const hasDiet = items.some(i => i.status === 'active' && i.category === 'nutrition');
+    if (!hasDiet) {
+      toast.error("Dieta obrigatória", {
+        description: "Adicione um item de dieta (incluindo 'Dieta zero / jejum' se aplicável) antes de validar a prescrição.",
+      });
+      return;
+    }
     const alerts = runClinicalAlertChecks(items, patient.allergies);
     if (alerts.length > 0) {
       setPendingAlerts(alerts);
