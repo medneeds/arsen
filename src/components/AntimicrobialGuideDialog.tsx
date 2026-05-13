@@ -466,6 +466,14 @@ export function AntimicrobialGuideDialog({
                     <div>
                       <Label className="text-[10px]">Duração Prevista (dias)</Label>
                       <Input value={entry.plannedDuration} onChange={e => updateEntry(entry.id, "plannedDuration", e.target.value)} placeholder="Ex: 7" className="h-8 text-xs" />
+                      {(() => {
+                        const end = computeEndDate(entry.startDate, entry.plannedDuration);
+                        return end ? (
+                          <div className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+                            Previsão de fim: <strong>{end}</strong>
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                     <div>
                       <Label className="text-[10px]">Classe de Restrição</Label>
