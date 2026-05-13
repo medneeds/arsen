@@ -299,11 +299,11 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               </Button>
             </div>
           </div>
-          <Textarea
+          <RichTextEditor
             value={soap.objective}
-            onChange={e => onSOAPChange('objective', e.target.value)}
+            onChange={(html) => onSOAPChange('objective', html)}
             placeholder="Cole resultados laboratoriais ou de imagem, ou use o Examinus AI para extrair automaticamente..."
-            className="min-h-[120px] text-xs"
+            minHeight={120}
           />
         </SectionItem>
 
