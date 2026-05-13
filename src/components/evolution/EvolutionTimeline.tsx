@@ -170,13 +170,16 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
 
   const buildSummary = (evo: EvolutionRecord) => {
     const s = evo.soap_data;
+    const subj = richHtmlToPlainText(s.subjective);
+    const ass = richHtmlToPlainText(s.assessment);
+    const plan = richHtmlToPlainText(s.plan);
     if (isIntercurrence(evo)) {
-      return s.subjective ? `Intercorrência: ${s.subjective.slice(0, 120)}` : "Intercorrência sem descrição";
+      return subj ? `Intercorrência: ${subj.slice(0, 120)}` : "Intercorrência sem descrição";
     }
-    const evolucao = [s.subjective, s.assessment].map(t => (t || "").trim()).filter(Boolean).join(" — ");
+    const evolucao = [subj, ass].filter(Boolean).join(" — ");
     const parts: string[] = [];
     if (evolucao) parts.push(`Evolução: ${evolucao.slice(0, 100)}`);
-    if (s.plan) parts.push(`Plano: ${s.plan.slice(0, 60)}`);
+    if (plan) parts.push(`Plano: ${plan.slice(0, 60)}`);
     return parts.length > 0 ? parts.join(" | ") : "Evolução sem conteúdo";
   };
 
