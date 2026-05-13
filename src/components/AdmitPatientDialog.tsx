@@ -100,6 +100,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [dischargeDays, setDischargeDays] = useState<string>("");
   const [dischargeDate, setDischargeDate] = useState<Date | undefined>(undefined);
   const [noDischargePrediction, setNoDischargePrediction] = useState(false);
+  const [admissionDate, setAdmissionDate] = useState<Date | undefined>(undefined);
   const [availableBeds, setAvailableBeds] = useState<string[]>([]);
   const [occupiedBeds, setOccupiedBeds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -125,6 +126,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     setDischargeDays("");
     setDischargeDate(undefined);
     setNoDischargePrediction(false);
+    // Sugestão automática: agora (editável pelo usuário antes de confirmar)
+    setAdmissionDate(new Date());
 
     if (!currentHospital?.id || !currentState?.id || !preAdmission?.id) return;
 
@@ -320,9 +323,9 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
         created_by: user?.id,
-        admission_date: new Date().toISOString(),
+        admission_date: (admissionDate ?? new Date()).toISOString(),
         // Sincroniza automaticamente a data de admissão exibida no card (DD/MM/AAAA)
-        uti_admission_date: new Date().toISOString(),
+        uti_admission_date: (admissionDate ?? new Date()).toISOString(),
         is_vacant: false,
         clinical_status: fullData.risk_classification === "vermelho" ? "grave" : null,
         diagnoses: fullData.chief_complaint || null,
@@ -682,6 +685,67 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
               )}
             </div>
           )}
+
+          <div className="space-y-1.5">
+            <Label className="text-xs flex items-center gap-1.5">
+              <Calendar className="h-3 w-3" />
+              Data e hora da admissão
+              <span className="text-[10px] font-normal text-muted-foreground">(sugerida — confirme ou edite)</span>
+            </Label>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      "h-9 flex-1 justify-start text-left font-normal text-xs",
+                      !admissionDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {admissionDate
+                      ? format(admissionDate, "dd/MM/yyyy (EEE)", { locale: ptBR })
+                      : "Selecionar data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarUI
+                    mode="single"
+                    selected={admissionDate}
+                    onSelect={(d) => {
+                      if (!d) return;
+                      // Preserva o horário atual do estado (ou agora) ao trocar só a data
+                      const base = admissionDate ?? new Date();
+                      const merged = new Date(d);
+                      merged.setHours(base.getHours(), base.getMinutes(), 0, 0);
+                      setAdmissionDate(merged);
+                    }}
+                    disabled={(date) => date > new Date()}
+                    locale={ptBR}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Input
+                type="time"
+                value={admissionDate ? format(admissionDate, "HH:mm") : ""}
+                onChange={(e) => {
+                  const [hh, mm] = e.target.value.split(":").map((n) => parseInt(n, 10));
+                  if (isNaN(hh) || isNaN(mm)) return;
+                  const base = admissionDate ?? new Date();
+                  const merged = new Date(base);
+                  merged.setHours(hh, mm, 0, 0);
+                  setAdmissionDate(merged);
+                }}
+                className="h-9 w-28 text-xs"
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Por padrão, usamos o momento atual. Ajuste se a admissão efetiva ocorreu em outro horário.
+            </p>
+          </div>
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
