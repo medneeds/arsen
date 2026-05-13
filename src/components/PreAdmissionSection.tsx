@@ -134,6 +134,45 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
     return () => { supabase.removeChannel(channel); };
   }, [currentHospital?.id, currentState?.id, sectorFilterLabel]);
 
+  // Busca no patient_registry com debounce — alimenta a seção "Pacientes do hospital"
+  useEffect(() => {
+    const q = searchTerm.trim();
+    if (q.length < 2 || !currentHospital?.id) {
+      setRegistryResults([]);
+      setIsSearchingRegistry(false);
+      return;
+    }
+    setIsSearchingRegistry(true);
+    const handle = setTimeout(async () => {
+      try {
+        const qDigits = q.replace(/\D/g, "");
+        const qNorm = q.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const ors: string[] = [`full_name_normalized.ilike.%${qNorm}%`];
+        if (qDigits) {
+          ors.push(`cpf.ilike.%${qDigits}%`);
+          ors.push(`medical_record.ilike.%${qDigits}%`);
+          ors.push(`cns.ilike.%${qDigits}%`);
+        }
+        const { data, error } = await supabase
+          .from("patient_registry")
+          .select("id, full_name, social_name, mother_name, birth_date, sex, cpf, cns, medical_record, phone")
+          .eq("hospital_unit_id", currentHospital.id)
+          .is("merged_into_registry_id", null)
+          .or(ors.join(","))
+          .order("full_name", { ascending: true })
+          .limit(10);
+        if (error) throw error;
+        setRegistryResults((data as RegistryPatientLite[]) || []);
+      } catch (err) {
+        console.error("Registry search error:", err);
+        setRegistryResults([]);
+      } finally {
+        setIsSearchingRegistry(false);
+      }
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [searchTerm, currentHospital?.id]);
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
