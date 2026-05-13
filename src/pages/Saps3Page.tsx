@@ -339,7 +339,16 @@ export default function Saps3Page() {
   const scores = useMemo(() => {
     const ageN = age ? parseInt(age) : null;
     const losN = losBeforeIcu ? parseInt(losBeforeIcu) : null;
-    const gcsN = gcs ? parseInt(gcs) : null;
+    // Numeric GCS for SAPS pontuação:
+    //  - sedoanalgesia → usa GCS pré-sedação se informado, senão 15 (sem penalidade)
+    //  - GCS-T (intubado sem sedação) → usa o numérico (parte antes do "T")
+    //  - GCS normal → usa direto
+    let gcsN: number | null = null;
+    if (sedationStatus === "sedated") {
+      gcsN = gcsPreSedation ? parseInt(gcsPreSedation) : 15;
+    } else if (gcs) {
+      gcsN = parseInt(gcs); // parseInt ignora sufixo "T"
+    }
     const hrN = hrHighest ? parseInt(hrHighest) : null;
     const sbpN = sbpLowest ? parseInt(sbpLowest) : null;
     const bilN = bilirubinHighest ? parseFloat(bilirubinHighest) : null;
