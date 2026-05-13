@@ -620,26 +620,6 @@ export function AntimicrobialGuideDialog({
         </DialogContent>
       </Dialog>
 
-      {/* Mandatory print prompt on first prescription */}
-      <AlertDialog open={printPromptOpen} onOpenChange={setPrintPromptOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Printer className="h-5 w-5 text-orange-500" />
-              IMPRIMIR GUIA ATM AGORA?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta é uma <strong>primeira prescrição</strong> de antimicrobiano. Recomenda-se imprimir a Guia de Antimicrobianos (padrão Norma Zero) para envio à CCIH e farmácia. Você poderá reimprimir a qualquer momento pelo botão "Imprimir Guia".
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => finalizeConfirm(false)}>Apenas anexar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => finalizeConfirm(true)} className="bg-orange-600 hover:bg-orange-700 text-white gap-1.5">
-              <Printer className="h-4 w-4" /> Imprimir e anexar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
