@@ -1,0 +1,1 @@
+DELETE FROM public.patients WHERE (sector='blue' AND bed_number IN ('L24','L25','L26')) OR (sector='outside' AND bed_number IN ('L31','L32','L33','L34'));
