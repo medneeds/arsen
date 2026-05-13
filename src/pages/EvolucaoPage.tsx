@@ -151,8 +151,8 @@ const EvolucaoPage = () => {
   };
 
   const handleCreateIntercurrence = async () => {
-    const text = intercurrenceText.trim();
-    if (!text) return;
+    const text = intercurrenceText;
+    if (!richHtmlToPlainText(text)) return;
     setSavingIntercurrence(true);
     const result = await createEvolution(
       patient.name, patient.bed, patient.unit,
