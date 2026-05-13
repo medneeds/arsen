@@ -58,7 +58,8 @@ export type PrescriptionFlag = typeof PRESCRIPTION_FLAGS[number]['key'];
 export const ROUTES: string[] = [
   'Oral', 'Intravenosa', 'Intramuscular', 'Subcutânea', 'Retal',
   'Sublingual', 'Tópica', 'Inalatória', 'Nasal', 'Oftálmica',
-  'Otológica', 'Transdérmica', 'Enteral (SNE/SNG)', 'Gastrostomia',
+  'Otológica', 'Transdérmica', 'Enteral (SNE/SNG)', 'Sonda orogástrica',
+  'Gastrostomia', 'Jejunostomia',
 ];
 
 export const POSOLOGIES: string[] = [

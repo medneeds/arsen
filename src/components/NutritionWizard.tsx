@@ -77,9 +77,102 @@ const ORAL_PROFILES = [
 const ENTERAL_VIAS = [
   { key: "sng", label: "SNG", desc: "Sonda nasogástrica" },
   { key: "sne", label: "SNE", desc: "Sonda nasoentérica" },
+  { key: "sog", label: "SOG", desc: "Sonda orogástrica" },
   { key: "gtt", label: "GTT", desc: "Gastrostomia" },
   { key: "jtt", label: "JTT", desc: "Jejunostomia" },
 ] as const;
+
+// Helper de rótulo de via para defaultRoute das entries enterais
+function enteralRouteLabel(via: string): string {
+  if (via === "gtt") return "Gastrostomia";
+  if (via === "jtt") return "Jejunostomia";
+  if (via === "sog") return "Sonda orogástrica";
+  return "Enteral (SNE/SNG)";
+}
+
+// ──────────────────────────────────────────────
+// APORTE PROTEICO E CALÓRICO-PROTEICO
+// Catálogo genérico (sem marcas) baseado em ESPEN/ASPEN/BRASPEN.
+// SNO = Suplemento Nutricional Oral (líquidos prontos / pudim).
+// Módulos = aditivos em pó/sachê para enriquecer dieta oral OU diluir e
+// administrar pela sonda enteral.
+// ──────────────────────────────────────────────
+type ProteinRouteKind = "oral" | "enteral";
+interface ProteinSupplementDef {
+  key: string;
+  label: string;
+  group: "sno" | "modular";
+  routes: ProteinRouteKind[];   // vias permitidas
+  defaultDose: string;          // dose textual padrão
+  defaultPosology: string;      // frequência padrão
+  note: string;                 // contexto clínico
+}
+
+const PROTEIN_SUPPLEMENTS: ProteinSupplementDef[] = [
+  // ── SNO (Suplemento Nutricional Oral) ──
+  { key: "sno_hchp",      label: "Suplemento hipercalórico-hiperproteico (HC-HP) — oral",
+    group: "sno", routes: ["oral"],
+    defaultDose: "200 mL", defaultPosology: "2x/dia entre refeições",
+    note: "~300 kcal e ~18-20 g proteína por unidade. Ofertar gelado, entre refeições, evitando saciedade na principal." },
+  { key: "sno_hp",        label: "Suplemento hiperproteico concentrado — oral",
+    group: "sno", routes: ["oral"],
+    defaultDose: "200 mL", defaultPosology: "2x/dia",
+    note: "Indicado quando déficit proteico é o principal alvo (sarcopenia, cicatrização, oncológico)." },
+  { key: "sno_dm",        label: "Suplemento oral específico para diabetes",
+    group: "sno", routes: ["oral"],
+    defaultDose: "200 mL", defaultPosology: "1-2x/dia",
+    note: "Baixo índice glicêmico, fibras solúveis. Monitorar glicemia capilar." },
+  { key: "sno_renal_nd",  label: "Suplemento oral para nefropata não-dialítico",
+    group: "sno", routes: ["oral"],
+    defaultDose: "200 mL", defaultPosology: "1x/dia",
+    note: "Densidade calórica alta, restrição de K/P/Na, proteína moderada." },
+  { key: "sno_renal_d",   label: "Suplemento oral para nefropata em diálise",
+    group: "sno", routes: ["oral"],
+    defaultDose: "200 mL", defaultPosology: "2x/dia (preferir nos dias de diálise)",
+    note: "Hiperproteico, hipercalórico, com perfil de eletrólitos para HD/DP." },
+  { key: "sno_imuno",     label: "Suplemento oral imunomodulador (oncológico/cirúrgico)",
+    group: "sno", routes: ["oral"],
+    defaultDose: "200 mL", defaultPosology: "2-3x/dia por 5-7 dias pré e pós-op",
+    note: "Arginina + EPA/DHA + nucleotídeos. Evitar em sepse grave." },
+  { key: "sno_disfagia",  label: "Espessante alimentar (disfagia)",
+    group: "sno", routes: ["oral"],
+    defaultDose: "Conforme consistência (néctar/mel/pudim)", defaultPosology: "Em todos os líquidos",
+    note: "Padronizar consistência conforme avaliação fonoaudiológica (IDDSI)." },
+
+  // ── Módulos (oral ou via sonda) ──
+  { key: "mod_whey",      label: "Módulo de proteína do soro do leite (Whey)",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "20 g", defaultPosology: "2x/dia",
+    note: "Alta digestibilidade, rico em leucina. Diluir em 50-100 mL de água/dieta. Evitar em APLV." },
+  { key: "mod_caseinato", label: "Módulo de caseinato de cálcio",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "15 g", defaultPosology: "2x/dia",
+    note: "Liberação prolongada de aminoácidos. Boa estabilidade térmica." },
+  { key: "mod_proteina_isolada", label: "Módulo de proteína isolada (alta pureza)",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "20 g", defaultPosology: "2-3x/dia",
+    note: "≥ 90% de proteína por porção. Útil quando meta proteica > 1,5 g/kg/dia." },
+  { key: "mod_glutamina", label: "Módulo de glutamina (L-Glutamina)",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "10 g", defaultPosology: "3x/dia (30 g/dia)",
+    note: "Trofismo intestinal, estresse metabólico, queimados. Cautela em hepatopatas graves." },
+  { key: "mod_leucina_hmb", label: "Módulo de leucina enriquecido com HMB",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "1 sachê", defaultPosology: "2x/dia",
+    note: "Anabólico em sarcopenia/idoso frágil/UTI. Contém ~3 g HMB e leucina." },
+  { key: "mod_arginina",  label: "Módulo de arginina",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "5 g", defaultPosology: "2x/dia",
+    note: "Cicatrização e imunomodulação. Evitar em sepse grave e instabilidade hemodinâmica." },
+  { key: "mod_fibras",    label: "Módulo de fibras (FOS/prebiótico)",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "5 g", defaultPosology: "2x/dia",
+    note: "Regulação do trânsito e microbiota. Diluir bem; risco de obstrução de sonda fina." },
+  { key: "mod_tcm",       label: "Módulo de TCM (triglicerídeo de cadeia média)",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "10 mL", defaultPosology: "3x/dia",
+    note: "Aumento de aporte calórico em má absorção/quilotórax. Não usar isolado em deficiência de carnitina." },
+];
 
 const ENTERAL_FORMULAS = [
   { key: "polim_padrao",  label: "Polimérica padrão",       desc: "1.0 kcal/mL — paciente estável" },
@@ -169,6 +262,11 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
   const [zeroHydrate, setZeroHydrate] = useState(true);
   const [zeroCustom, setZeroCustom] = useState("");
 
+  // Aporte proteico (multi-select com overrides por item)
+  interface ProteinOverride { dose: string; posology: string; route: ProteinRouteKind }
+  const [proteinSelected, setProteinSelected] = useState<Set<string>>(new Set());
+  const [proteinOverrides, setProteinOverrides] = useState<Record<string, ProteinOverride>>({});
+
   // Free notes
   const [notes, setNotes] = useState<string>("");
 
@@ -189,7 +287,31 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
     setWaterCorrection(false); setWaterCorrectionVol(""); setWaterCorrectionObs("");
     setParType("central"); setParVolume("1500"); setParKcal(""); setParRate(""); setParObs(""); setParCustom("");
     setZeroReason("preop"); setZeroSince(""); setZeroHydrate(true); setZeroCustom("");
+    setProteinSelected(new Set()); setProteinOverrides({});
     setNotes("");
+  };
+
+  const toggleProtein = (key: string) => {
+    setProteinSelected(prev => {
+      const n = new Set(prev);
+      if (n.has(key)) {
+        n.delete(key);
+        setProteinOverrides(o => { const c = { ...o }; delete c[key]; return c; });
+      } else {
+        n.add(key);
+        const def = PROTEIN_SUPPLEMENTS.find(p => p.key === key)!;
+        // Default route: prioriza enteral se sonda foi selecionada e via oral não.
+        const route: ProteinRouteKind = def.routes.includes("enteral") && modalities.has("enteral") && !modalities.has("oral")
+          ? "enteral"
+          : def.routes[0];
+        setProteinOverrides(o => ({ ...o, [key]: { dose: def.defaultDose, posology: def.defaultPosology, route } }));
+      }
+      return n;
+    });
+  };
+
+  const updateProteinOverride = (key: string, patch: Partial<ProteinOverride>) => {
+    setProteinOverrides(o => ({ ...o, [key]: { ...o[key], ...patch } }));
   };
 
   const toggleModality = (k: NutritionModality) => {
@@ -332,7 +454,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
         name: `${isMixed ? "Dieta mista — Enteral" : "Dieta enteral"} (${sysLabel}) — ${formula} via ${via}`,
         presentation: "-",
         defaultDose: dose,
-        defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : "Enteral (SNE/SNG)",
+        defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : via === "SOG" ? "Sonda orogástrica" : "Enteral (SNE/SNG)",
         defaultPosology: mode,
         defaultSchedule: entMode === "continua" ? "Contínua 24h" : "06h, 10h, 14h, 18h, 22h, 02h",
         instructions: withCustom([
@@ -354,7 +476,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
           name: "Água via sonda — flush de manutenção",
           presentation: "-",
           defaultDose: "30 mL",
-          defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : "Enteral (SNE/SNG)",
+          defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : via === "SOG" ? "Sonda orogástrica" : "Enteral (SNE/SNG)",
           defaultPosology: "Antes/após dieta e medicações",
           defaultSchedule: "ACM",
           instructions: "Manter pérvia a sonda; usar água potável/filtrada à temperatura ambiente",
@@ -368,7 +490,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
           name: "Água via sonda — hidratação programada",
           presentation: "-",
           defaultDose: `${waterVol} mL`,
-          defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : "Enteral (SNE/SNG)",
+          defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : via === "SOG" ? "Sonda orogástrica" : "Enteral (SNE/SNG)",
           defaultPosology: waterFreq,
           defaultSchedule: "Conforme aprazamento",
           instructions: "Hidratação enteral programada — checar aceitação e balanço hídrico",
@@ -382,7 +504,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
           name: "Água via sonda — correção de distúrbio hidroeletrolítico",
           presentation: "-",
           defaultDose: `${waterCorrectionVol || "—"} mL/dia`,
-          defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : "Enteral (SNE/SNG)",
+          defaultRoute: via === "GTT" ? "Gastrostomia" : via === "JTT" ? "Jejunostomia" : via === "SOG" ? "Sonda orogástrica" : "Enteral (SNE/SNG)",
           defaultPosology: "Fracionado conforme prescrição",
           defaultSchedule: "Conforme aprazamento",
           instructions: [
@@ -417,6 +539,35 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       });
     }
 
+    // ── APORTE PROTEICO / SUPLEMENTAÇÃO ──
+    // Cada produto selecionado vira uma linha independente na prescrição.
+    const enteralViaLabel = ENTERAL_VIAS.find(v => v.key === entVia)?.label || "";
+    const enteralRoute = enteralRouteLabel(enteralViaLabel);
+    Array.from(proteinSelected).forEach(key => {
+      const def = PROTEIN_SUPPLEMENTS.find(p => p.key === key);
+      if (!def) return;
+      const ov = proteinOverrides[key] || { dose: def.defaultDose, posology: def.defaultPosology, route: def.routes[0] };
+      const route = ov.route === "enteral" ? enteralRoute : "Oral";
+      const viaLabel = ov.route === "enteral" ? `via ${enteralViaLabel || "sonda"}` : "VO";
+      entries.push({
+        id: `nut-prot-${key}-${uid()}`,
+        name: `${def.label} — ${viaLabel}`,
+        presentation: def.group === "sno" ? "Frasco/sachê pronto" : "Pó / sachê modular",
+        defaultDose: ov.dose,
+        defaultRoute: route,
+        defaultPosology: ov.posology,
+        defaultSchedule: ov.route === "enteral" ? "Conforme aprazamento" : "10h, 16h, 22h",
+        instructions: [
+          def.note,
+          ov.route === "enteral"
+            ? "Diluir em 50-100 mL de água potável; lavar a sonda com 20-30 mL antes e após a administração."
+            : "Ofertar em temperatura agradável; estimular ingesta entre as refeições.",
+          comorbSuffix.trim(),
+        ].filter(Boolean).join(" · "),
+        category: "nutrition",
+      });
+    });
+
     return entries;
   };
 
@@ -426,7 +577,9 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
     entSystem, entVia, entFormula, entMode, entRate, entVolDay, entFractions, entProgression, entCustom,
     waterFlush, waterScheduled, waterVol, waterFreq, waterCorrection, waterCorrectionVol, waterCorrectionObs,
     parType, parVolume, parKcal, parRate, parObs, parCustom,
-    zeroReason, zeroSince, zeroHydrate, zeroCustom, notes,
+    zeroReason, zeroSince, zeroHydrate, zeroCustom,
+    proteinSelected, proteinOverrides,
+    notes,
   ]);
 
   const handleConfirm = () => {
@@ -435,7 +588,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
     onOpenChange(false);
   };
 
-  const STEPS = ["Modalidades", "Detalhes", "Comorbidades", "Revisão"];
+  const STEPS = ["Modalidades", "Detalhes", "Comorbidades", "Aporte proteico", "Revisão"];
   const canAdvance = step === 0 ? modalities.size > 0 : true;
 
   const MODALITY_OPTIONS = [
@@ -864,8 +1017,91 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
             </div>
           )}
 
-          {/* STEP 3 — Revisão */}
+          {/* STEP 3 — Aporte proteico (catálogo genérico) */}
           {step === 3 && (
+            <div className="space-y-3 p-1">
+              <div className="text-[11px] text-muted-foreground bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/60 rounded-lg px-3 py-2">
+                <span className="font-semibold text-emerald-700 dark:text-emerald-300">Suplementação proteica/calórico-proteica</span> — selecione os produtos a anexar à prescrição.
+                Cada item gera linha própria. Módulos podem ir VO ou via sonda; SNO é VO.
+              </div>
+
+              {(["sno", "modular"] as const).map(group => {
+                const groupItems = PROTEIN_SUPPLEMENTS.filter(p => p.group === group);
+                const groupLabel = group === "sno"
+                  ? "Suplementos nutricionais orais (SNO)"
+                  : "Módulos (pó/sachê) — oral ou via sonda";
+                return (
+                  <section key={group} className="rounded-lg border border-border/60 p-3 space-y-2">
+                    <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{groupLabel}</h3>
+                    <div className="space-y-1.5">
+                      {groupItems.map(p => {
+                        const sel = proteinSelected.has(p.key);
+                        const ov = proteinOverrides[p.key];
+                        return (
+                          <div key={p.key} className={cn(
+                            "rounded-md border transition-all",
+                            sel ? "border-emerald-400 bg-emerald-50/30 dark:bg-emerald-950/20" : "border-border/60"
+                          )}>
+                            <button
+                              type="button"
+                              onClick={() => toggleProtein(p.key)}
+                              className="w-full text-left px-3 py-2 flex items-start gap-2"
+                            >
+                              <div className={cn(
+                                "mt-0.5 h-4 w-4 rounded border flex items-center justify-center shrink-0",
+                                sel ? "bg-emerald-500 border-emerald-500" : "border-border bg-background"
+                              )}>
+                                {sel && <Check className="h-2.5 w-2.5 text-white" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-semibold">{p.label}</div>
+                                <div className="text-[10px] text-muted-foreground">{p.note}</div>
+                              </div>
+                            </button>
+                            {sel && ov && (
+                              <div className="px-3 pb-2 pt-0 grid grid-cols-3 gap-2 border-t border-border/40 bg-background/40">
+                                <div>
+                                  <Label className="text-[10px] font-semibold">Dose</Label>
+                                  <Input value={ov.dose} onChange={e => updateProteinOverride(p.key, { dose: e.target.value })} className="mt-1 h-8 text-xs" />
+                                </div>
+                                <div>
+                                  <Label className="text-[10px] font-semibold">Posologia</Label>
+                                  <Input value={ov.posology} onChange={e => updateProteinOverride(p.key, { posology: e.target.value })} className="mt-1 h-8 text-xs" />
+                                </div>
+                                <div>
+                                  <Label className="text-[10px] font-semibold">Via</Label>
+                                  <Select value={ov.route} onValueChange={(v) => updateProteinOverride(p.key, { route: v as ProteinRouteKind })}>
+                                    <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      {p.routes.includes("oral") && <SelectItem value="oral">Oral (VO)</SelectItem>}
+                                      {p.routes.includes("enteral") && (
+                                        <SelectItem value="enteral">
+                                          Enteral ({ENTERAL_VIAS.find(v => v.key === entVia)?.label || "sonda"})
+                                        </SelectItem>
+                                      )}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
+
+              {proteinSelected.size === 0 && (
+                <div className="text-[11px] text-muted-foreground text-center py-2">
+                  Nenhum aporte proteico selecionado — esta etapa é opcional. Avance para revisar.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 4 — Revisão */}
+          {step === 4 && (
             <div className="space-y-2 p-1">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -909,8 +1145,8 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
           </Button>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => { reset(); onOpenChange(false); }}>Cancelar</Button>
-            {step < 3 ? (
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" disabled={!canAdvance} onClick={() => setStep(s => Math.min(3, s + 1))}>
+            {step < 4 ? (
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" disabled={!canAdvance} onClick={() => setStep(s => Math.min(4, s + 1))}>
                 Avançar <ChevronRight className="h-3.5 w-3.5 ml-1" />
               </Button>
             ) : (
