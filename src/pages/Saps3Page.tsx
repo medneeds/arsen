@@ -455,9 +455,8 @@ export default function Saps3Page() {
       const ageYears = Math.floor((Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
       setAge(String(ageYears));
     }
-    // Pre-select sector based on destination
-    if (req.destination_sector === "UTI 1") setSelectedSector("red");
-    else if (req.destination_sector === "UTI 2") setSelectedSector("yellow");
+    // Pre-select sector based on destination (supports UTI/UCI/UCC labels)
+    setSelectedSector(resolveSectorValue(req.destination_sector));
     // Reset rest
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
