@@ -1147,7 +1147,7 @@ export function UtiPatientCard({
 
                   {/* UTI Admission Date */}
                   <div className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
-                    <span className="text-[9px]">Admissão UTI:</span>
+                    <span className="text-[9px]">{admissionLabel}:</span>
                     <InlineEditableField
                       value={patient.utiAdmissionDate?.[0] || ""}
                       onUpdate={(v) => handleUpdateField("utiAdmissionDate", v ? [v] : [])}
@@ -1160,7 +1160,7 @@ export function UtiPatientCard({
                   <div className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
                     <span className="text-[9px]">Previsão de Alta:</span>
                     <InlineEditableField
-                      value={previsaoAlta[0] || ""}
+                      value={previsaoAltaDate}
                       onUpdate={(v) => handleUpdateField("utiDischargePrediction", v ? [v] : [])}
                       placeholder="DD/MM/AAAA"
                       className="text-[10px] font-medium w-20"
