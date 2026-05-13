@@ -3231,24 +3231,51 @@ const PrescricaoPage = () => {
     setNonStdName("");
   };
 
+  // Guarda compartilhada: itens validados (e ainda dentro da janela do dia)
+  // não podem ser editados, removidos ou ter flags alteradas.
+  // Para alterar, é preciso suspender e re-prescrever, ou aguardar o corte das 05h
+  // que devolve o item ao estado "pendente de revalidação".
+  const isItemEditLocked = useCallback((item: PrescriptionItem) => {
+    return isItemValidatedToday(item);
+  }, [isItemValidatedToday]);
+
   const updateItem = useCallback((id: string, field: keyof PrescriptionItem, value: string) => {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
-  }, []);
+    setItems((prev) => prev.map((item) => {
+      if (item.id !== id) return item;
+      if (isItemEditLocked(item)) {
+        toast.error("Item validado", { description: "Suspenda o item para alterar ou aguarde a renovação 05h." });
+        return item;
+      }
+      return { ...item, [field]: value };
+    }));
+  }, [isItemEditLocked]);
 
   const removeItem = useCallback((id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    setItems((prev) => {
+      const target = prev.find(i => i.id === id);
+      if (target && isItemEditLocked(target)) {
+        toast.error("Item validado não pode ser excluído", { description: "Suspenda o item para retirá-lo da prescrição ativa." });
+        return prev;
+      }
+      return prev.filter((item) => item.id !== id);
+    });
     setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
-  }, []);
+  }, [isItemEditLocked]);
 
   const toggleFlag = useCallback((id: string, flag: PrescriptionFlag) => {
     setItems((prev) => prev.map((item) => {
       if (item.id !== id) return item;
+      if (isItemEditLocked(item)) {
+        toast.error("Item validado", { description: "Flags não podem ser alteradas após validação." });
+        return item;
+      }
       const flags = item.flags.includes(flag)
         ? item.flags.filter(f => f !== flag)
         : [...item.flags, flag];
       return { ...item, flags };
     }));
-  }, []);
+  }, [isItemEditLocked]);
+
 
   // Individual duplicate
   const duplicateItem = useCallback((id: string) => {
