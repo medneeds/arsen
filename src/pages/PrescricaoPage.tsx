@@ -1647,7 +1647,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           {item.status === 'active' && item.category === 'hydration' && (
             <HydrationFields item={item} onUpdate={onUpdate} />
           )}
-          {item.status === 'active' && item.category !== 'nutrition' && item.category !== 'hydration' && (() => {
+          {item.status === 'active' && item.category === 'inhalation' && (
+            <InhalationFields item={item as any} onUpdate={onUpdate} />
+          )}
+          {item.status === 'active' && item.category !== 'nutrition' && item.category !== 'hydration' && item.category !== 'inhalation' && (() => {
             const ptype = inferPresentationType(item.presentation, item.route, item.name);
             const renderInfusion = showInfusionBlock(ptype);
             const renderDiluent = showDiluentRow(ptype);
