@@ -22,11 +22,15 @@ import {
 type CatalogRow = {
   id: string;
   generic_name: string;
+  nome_comercial: string | null;
   therapeutic_class: string | null;
+  pharmacological_group: string | null;
   controlled: boolean | null;
   high_alert: boolean | null;
   requires_dilution: boolean | null;
   notes: string | null;
+  lista: string | null;
+  notification_type: string | null;
 };
 
 type PresentationRow = {
@@ -35,10 +39,48 @@ type PresentationRow = {
   concentration: string | null;
   unit: string | null;
   route: string | null;
+  pharmaceutical_form: string | null;
+  default_route: string | null;
+  default_dose: string | null;
   standard_dilution: string | null;
   max_daily_dose: string | null;
   infusion_time: string | null;
 };
+
+export interface ControlledCatalogItem {
+  catalogId: string;
+  presentationId: string | null;
+  generic_name: string;
+  nome_comercial: string;
+  pharmaceutical_form: string;
+  concentration: string;
+  default_route: string;
+  default_dose: string;
+  notification_type: 'Receita Amarela' | 'Receita Azul' | 'Controle Especial 2 vias' | null;
+  controlled: boolean;
+  high_alert: boolean;
+  pharmacological_group: string | null;
+  lista: string | null;
+  searchKey: string; // NFD lowercased: generic_name + nome_comercial
+  label: string;     // "Nome (princípio) — concentração"
+}
+
+function nfd(s: string): string {
+  return (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+}
+
+function deriveNotificationType(row: CatalogRow): ControlledCatalogItem['notification_type'] {
+  if (row.notification_type === 'Receita Amarela' || row.notification_type === 'Receita Azul' || row.notification_type === 'Controle Especial 2 vias') {
+    return row.notification_type;
+  }
+  const grp = (row.pharmacological_group || '').toLowerCase();
+  const lista = row.lista || '';
+  if (['A1','A2','A3'].includes(lista) || /entorpecente|opi[óo]ide/.test(grp)) return 'Receita Amarela';
+  if (['B1','B2'].includes(lista) || /psicotr[óo]pic|benzodiaze/.test(grp)) return 'Receita Azul';
+  if (lista === 'C1') return 'Controle Especial 2 vias';
+  if (row.controlled) return 'Controle Especial 2 vias';
+  return null;
+}
 
 const ANTIMICROBIAL_CLASS_REGEX =
   /antimicrob|antibi[óo]tic|antifúngic|antifungic|antiviral|antiparasit/i;
@@ -140,11 +182,11 @@ async function loadCatalogOnce() {
     const [{ data: catalog, error: e1 }, { data: pres, error: e2 }] = await Promise.all([
       supabase
         .from("medication_catalog")
-        .select("id, generic_name, therapeutic_class, controlled, high_alert, requires_dilution, notes")
+        .select("id, generic_name, nome_comercial, therapeutic_class, pharmacological_group, controlled, high_alert, requires_dilution, notes, lista, notification_type")
         .order("generic_name"),
       supabase
         .from("medication_presentations")
-        .select("medication_id, form, concentration, unit, route, standard_dilution, max_daily_dose, infusion_time"),
+        .select("medication_id, form, concentration, unit, route, pharmaceutical_form, default_route, default_dose, standard_dilution, max_daily_dose, infusion_time"),
     ]);
     if (e1) throw e1;
     if (e2) throw e2;
@@ -169,6 +211,8 @@ export interface UnifiedCatalog {
   antimicrobials: MedicationEntry[];
   highAlerts: MedicationEntry[];
   medications: MedicationEntry[];
+  controlledItems: ControlledCatalogItem[];
+  findControlledByName: (name: string) => ControlledCatalogItem | undefined;
 }
 
 export function useUnifiedMedicationCatalog(): UnifiedCatalog {
@@ -225,6 +269,71 @@ export function useUnifiedMedicationCatalog(): UnifiedCatalog {
 
   const allItems = useMemo(() => Object.values(byCategory).flat(), [byCategory]);
 
+  const controlledItems = useMemo<ControlledCatalogItem[]>(() => {
+    if (!rows) return [];
+    const presByMed = new Map<string, PresentationRow[]>();
+    for (const p of rows.presentations) {
+      const arr = presByMed.get(p.medication_id) ?? [];
+      arr.push(p);
+      presByMed.set(p.medication_id, arr);
+    }
+    const out: ControlledCatalogItem[] = [];
+    for (const row of rows.catalog) {
+      if (!row.controlled && !row.high_alert) continue;
+      const notif = deriveNotificationType(row);
+      const presList = presByMed.get(row.id) ?? [null as any];
+      const generic = row.generic_name;
+      const comercial = row.nome_comercial || generic;
+      for (const p of presList) {
+        const concentration = p?.concentration?.trim() || '';
+        const form = (p?.pharmaceutical_form || p?.form || '').trim();
+        const route = (p?.default_route || p?.route || '').trim();
+        const dose = (p?.default_dose || '').trim();
+        const labelMain = comercial.toUpperCase() === generic.toUpperCase()
+          ? generic
+          : `${comercial} (${generic})`;
+        const label = concentration ? `${labelMain} — ${concentration}` : labelMain;
+        out.push({
+          catalogId: row.id,
+          presentationId: p ? `${row.id}-${form}-${concentration}-${route}` : null,
+          generic_name: generic,
+          nome_comercial: comercial,
+          pharmaceutical_form: form,
+          concentration,
+          default_route: route,
+          default_dose: dose,
+          notification_type: notif,
+          controlled: !!row.controlled,
+          high_alert: !!row.high_alert,
+          pharmacological_group: row.pharmacological_group,
+          lista: row.lista,
+          searchKey: `${nfd(generic)} ${nfd(comercial)}`,
+          label,
+        });
+      }
+    }
+    return out.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+  }, [rows]);
+
+  const findControlledByName = useMemo(() => {
+    const idx = new Map<string, ControlledCatalogItem>();
+    for (const c of controlledItems) {
+      const k1 = nfd(c.generic_name);
+      const k2 = nfd(c.nome_comercial);
+      if (!idx.has(k1)) idx.set(k1, c);
+      if (!idx.has(k2)) idx.set(k2, c);
+    }
+    return (name: string) => {
+      const n = nfd(name);
+      if (idx.has(n)) return idx.get(n);
+      // Substring fallback
+      for (const c of controlledItems) {
+        if (n && (c.searchKey.includes(n) || n.includes(nfd(c.generic_name)))) return c;
+      }
+      return undefined;
+    };
+  }, [controlledItems]);
+
   return {
     loading,
     error,
@@ -233,5 +342,7 @@ export function useUnifiedMedicationCatalog(): UnifiedCatalog {
     antimicrobials: byCategory.antimicrobial,
     highAlerts: byCategory.high_alert,
     medications: byCategory.medication,
+    controlledItems,
+    findControlledByName,
   };
 }

@@ -1605,7 +1605,10 @@ export type Database = {
           high_alert: boolean
           id: string
           internal_code: string | null
+          lista: string | null
+          nome_comercial: string | null
           notes: string | null
+          notification_type: string | null
           pharmacological_group: string | null
           requires_dilution: boolean
           therapeutic_class: string
@@ -1619,7 +1622,10 @@ export type Database = {
           high_alert?: boolean
           id?: string
           internal_code?: string | null
+          lista?: string | null
+          nome_comercial?: string | null
           notes?: string | null
+          notification_type?: string | null
           pharmacological_group?: string | null
           requires_dilution?: boolean
           therapeutic_class: string
@@ -1633,7 +1639,10 @@ export type Database = {
           high_alert?: boolean
           id?: string
           internal_code?: string | null
+          lista?: string | null
+          nome_comercial?: string | null
           notes?: string | null
+          notification_type?: string | null
           pharmacological_group?: string | null
           requires_dilution?: boolean
           therapeutic_class?: string
@@ -1678,11 +1687,14 @@ export type Database = {
         Row: {
           concentration: string
           created_at: string
+          default_dose: string | null
+          default_route: string | null
           form: string
           id: string
           infusion_time: string | null
           max_daily_dose: string | null
           medication_id: string
+          pharmaceutical_form: string | null
           route: string
           standard_dilution: string | null
           unit: string
@@ -1690,11 +1702,14 @@ export type Database = {
         Insert: {
           concentration: string
           created_at?: string
+          default_dose?: string | null
+          default_route?: string | null
           form: string
           id?: string
           infusion_time?: string | null
           max_daily_dose?: string | null
           medication_id: string
+          pharmaceutical_form?: string | null
           route?: string
           standard_dilution?: string | null
           unit?: string
@@ -1702,11 +1717,14 @@ export type Database = {
         Update: {
           concentration?: string
           created_at?: string
+          default_dose?: string | null
+          default_route?: string | null
           form?: string
           id?: string
           infusion_time?: string | null
           max_daily_dose?: string | null
           medication_id?: string
+          pharmaceutical_form?: string | null
           route?: string
           standard_dilution?: string | null
           unit?: string
