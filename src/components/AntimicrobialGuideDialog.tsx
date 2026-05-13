@@ -211,7 +211,18 @@ export function AntimicrobialGuideDialog({
 
   useEffect(() => {
     if (!open) return;
-    // 1) Try to load saved draft first
+    // Modo "prescribe" (busca de ATB ou nova solicitação via AtmStatusDialog):
+    // SEMPRE seed limpo a partir do parent — nunca usar rascunho antigo do
+    // localStorage, que provocaria anexar o medicamento errado.
+    if (mode === 'prescribe') {
+      if (antimicrobialItems.length > 0) {
+        setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item)));
+      } else {
+        setEntries([createEmptyEntry()]);
+      }
+      return;
+    }
+    // Modo "review": restaura rascunho salvo se existir
     if (draftKey) {
       try {
         const raw = localStorage.getItem(draftKey);
@@ -226,10 +237,10 @@ export function AntimicrobialGuideDialog({
     }
     if (antimicrobialItems.length > 0) {
       setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item)));
-    } else if (entries.length === 0) {
+    } else {
       setEntries([createEmptyEntry()]);
     }
-  }, [open, antimicrobialItems, draftKey]);
+  }, [open, antimicrobialItems, draftKey, mode]);
 
   useEffect(() => {
     if (open && patientId) {
