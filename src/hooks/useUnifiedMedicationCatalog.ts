@@ -267,7 +267,70 @@ export function useUnifiedMedicationCatalog(): UnifiedCatalog {
     };
   }, [rows]);
 
-  const allItems = useMemo(() => Object.values(byCategory).flat(), [byCategory]);
+  const controlledItems = useMemo<ControlledCatalogItem[]>(() => {
+    if (!rows) return [];
+    const presByMed = new Map<string, PresentationRow[]>();
+    for (const p of rows.presentations) {
+      const arr = presByMed.get(p.medication_id) ?? [];
+      arr.push(p);
+      presByMed.set(p.medication_id, arr);
+    }
+    const out: ControlledCatalogItem[] = [];
+    for (const row of rows.catalog) {
+      if (!row.controlled && !row.high_alert) continue;
+      const notif = deriveNotificationType(row);
+      const presList = presByMed.get(row.id) ?? [null as any];
+      const generic = row.generic_name;
+      const comercial = row.nome_comercial || generic;
+      for (const p of presList) {
+        const concentration = p?.concentration?.trim() || '';
+        const form = (p?.pharmaceutical_form || p?.form || '').trim();
+        const route = (p?.default_route || p?.route || '').trim();
+        const dose = (p?.default_dose || '').trim();
+        const labelMain = comercial.toUpperCase() === generic.toUpperCase()
+          ? generic
+          : `${comercial} (${generic})`;
+        const label = concentration ? `${labelMain} — ${concentration}` : labelMain;
+        out.push({
+          catalogId: row.id,
+          presentationId: p ? `${row.id}-${form}-${concentration}-${route}` : null,
+          generic_name: generic,
+          nome_comercial: comercial,
+          pharmaceutical_form: form,
+          concentration,
+          default_route: route,
+          default_dose: dose,
+          notification_type: notif,
+          controlled: !!row.controlled,
+          high_alert: !!row.high_alert,
+          pharmacological_group: row.pharmacological_group,
+          lista: row.lista,
+          searchKey: `${nfd(generic)} ${nfd(comercial)}`,
+          label,
+        });
+      }
+    }
+    return out.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+  }, [rows]);
+
+  const findControlledByName = useMemo(() => {
+    const idx = new Map<string, ControlledCatalogItem>();
+    for (const c of controlledItems) {
+      const k1 = nfd(c.generic_name);
+      const k2 = nfd(c.nome_comercial);
+      if (!idx.has(k1)) idx.set(k1, c);
+      if (!idx.has(k2)) idx.set(k2, c);
+    }
+    return (name: string) => {
+      const n = nfd(name);
+      if (idx.has(n)) return idx.get(n);
+      // Substring fallback
+      for (const c of controlledItems) {
+        if (n && (c.searchKey.includes(n) || n.includes(nfd(c.generic_name)))) return c;
+      }
+      return undefined;
+    };
+  }, [controlledItems]);
 
   return {
     loading,
@@ -277,5 +340,7 @@ export function useUnifiedMedicationCatalog(): UnifiedCatalog {
     antimicrobials: byCategory.antimicrobial,
     highAlerts: byCategory.high_alert,
     medications: byCategory.medication,
+    controlledItems,
+    findControlledByName,
   };
 }
