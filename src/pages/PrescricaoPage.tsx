@@ -2691,6 +2691,7 @@ const PrescricaoPage = () => {
   // Antimicrobial Guide & Psychotropic Form
   const [antimicrobialGuideOpen, setAntimicrobialGuideOpen] = useState(false);
   const [psychotropicFormOpen, setPsychotropicFormOpen] = useState(false);
+  const [psychotropicFormMode, setPsychotropicFormMode] = useState<'edit' | 'print_direct'>('edit');
   const [tevProtocolOpen, setTevProtocolOpen] = useState(false);
   const [pendingAntimicrobialMed, setPendingAntimicrobialMed] = useState<MedicationEntry | null>(null);
   const [highAlertGuideOpen, setHighAlertGuideOpen] = useState(false);
