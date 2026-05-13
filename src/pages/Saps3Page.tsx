@@ -1035,11 +1035,124 @@ export default function Saps3Page() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="space-y-4 pt-0">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <div>
-                      <Label className="flex items-center gap-1"><Brain className="h-3.5 w-3.5" /> Glasgow (GCS)</Label>
-                      <Input type="number" value={gcs} onChange={e => setGcs(e.target.value)} placeholder="3-15" min={3} max={15} />
+                  {/* ── Avaliação de consciência guiada (GCS / GCS-T / RASS) ── */}
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-4">
+                    <div className="flex items-start gap-2">
+                      <Brain className="h-4 w-4 text-primary mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-foreground">Avaliação de consciência</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          O paciente está sob sedoanalgesia contínua e/ou ventilação mecânica?
+                        </p>
+                      </div>
                     </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {([
+                        { v: "no", label: "Não", hint: "Aplicar GCS completo" },
+                        { v: "sedated", label: "Sim — sedoanalgesia ± VM", hint: "Aplicar RASS" },
+                        { v: "intubated_no_sedation", label: "Intubado sem sedação", hint: "GCS com V = 1T" },
+                      ] as const).map(opt => (
+                        <button
+                          key={opt.v}
+                          type="button"
+                          onClick={() => setSedationStatus(opt.v)}
+                          className={`text-left p-3 rounded-md border transition-all ${
+                            sedationStatus === opt.v
+                              ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                              : "border-border bg-card hover:bg-muted/50"
+                          }`}
+                        >
+                          <p className="text-sm font-medium text-foreground">{opt.label}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{opt.hint}</p>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Caminho 1: GCS completo */}
+                    {sedationStatus === "no" && (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 pt-2 border-t border-primary/20">
+                        <div>
+                          <Label className="text-xs">Ocular (1-4)</Label>
+                          <Input type="number" value={gcsO} onChange={e => setGcsO(e.target.value)} min={1} max={4} placeholder="O" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Verbal (1-5)</Label>
+                          <Input type="number" value={gcsV} onChange={e => setGcsV(e.target.value)} min={1} max={5} placeholder="V" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Motor (1-6)</Label>
+                          <Input type="number" value={gcsM} onChange={e => setGcsM(e.target.value)} min={1} max={6} placeholder="M" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">GCS total</Label>
+                          <div className="h-10 px-3 rounded-md border bg-background flex items-center justify-center text-lg font-bold text-primary">
+                            {gcsTotal || "—"}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Caminho 2: Sedoanalgesia → RASS */}
+                    {sedationStatus === "sedated" && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-primary/20">
+                        <div>
+                          <Label className="text-xs">RASS (-5 a +4)</Label>
+                          <Select value={rassScore} onValueChange={setRassScore}>
+                            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                            <SelectContent>
+                              {[-5,-4,-3,-2,-1,0,1,2,3,4].map(n => (
+                                <SelectItem key={n} value={String(n)}>
+                                  {n >= 0 ? `+${n}` : n} — {RASS_LABELS[n]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">GCS pré-sedação (opcional)</Label>
+                          <Input type="number" value={gcsPreSedation} onChange={e => setGcsPreSedation(e.target.value)} min={3} max={15} placeholder="3-15" />
+                        </div>
+                        <div className="sm:col-span-1">
+                          <Label className="text-xs">Motivo</Label>
+                          <Input value={consciousnessReason} onChange={e => setConsciousnessReason(e.target.value)} placeholder="Não aplicável – Sedoanalgesia contínua" />
+                        </div>
+                        <p className="sm:col-span-3 text-[11px] text-muted-foreground">
+                          GCS não será aplicado. Pontuação SAPS usa o GCS pré-sedação se informado; caso contrário assume 15.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Caminho 3: Intubado sem sedação → GCS-T */}
+                    {sedationStatus === "intubated_no_sedation" && (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 pt-2 border-t border-primary/20">
+                        <div>
+                          <Label className="text-xs">Ocular (1-4)</Label>
+                          <Input type="number" value={gcsO} onChange={e => setGcsO(e.target.value)} min={1} max={4} placeholder="O" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Verbal</Label>
+                          <div className="h-10 px-3 rounded-md border border-dashed border-amber-400 bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-sm font-bold text-amber-700 dark:text-amber-300">
+                            1T
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Motor (1-6)</Label>
+                          <Input type="number" value={gcsM} onChange={e => setGcsM(e.target.value)} min={1} max={6} placeholder="M" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">GCS total</Label>
+                          <div className="h-10 px-3 rounded-md border bg-background flex items-center justify-center text-lg font-bold text-primary">
+                            {gcsTotal || "—"}
+                          </div>
+                        </div>
+                        <p className="col-span-3 sm:col-span-4 text-[11px] text-muted-foreground">
+                          Verbal travado em 1T (via aérea artificial). Score exibido com sufixo T.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     <div>
                       <Label className="flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> FC mais alta (bpm)</Label>
                       <Input type="number" value={hrHighest} onChange={e => setHrHighest(e.target.value)} placeholder="Ex: 110" />
