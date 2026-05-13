@@ -86,6 +86,7 @@ Se um campo não for encontrado, retorne null. Responda APENAS via tool call.`;
                   address: { type: "string" },
                   neighborhood: { type: "string" },
                   city: { type: "string" },
+                  state: { type: "string", description: "Sigla UF brasileira em 2 letras maiúsculas (ex.: SP, RJ, PA)" },
                   phone: { type: "string" },
                   medical_record: { type: "string", description: "Número do prontuário (apenas o valor, sem rótulo)" },
                 },
