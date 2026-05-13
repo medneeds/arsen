@@ -137,6 +137,12 @@ interface PrescriptionItem {
   validated?: boolean;
   validatedAt?: string;
   isExtra?: boolean;          // Prescrição extra avulsa
+  // === Diferenciação regulatória (MAV / Portaria 344) ===
+  securityCategory?: 'MAV' | 'PORT_344' | 'MAV_PORT_344';
+  controlled?: boolean;        // Portaria 344/98
+  controlledList?: 'A1' | 'A2' | 'A3' | 'B1' | 'B2' | 'C1' | null;
+  controlledDoc?: 'Receita Amarela' | 'Receita Azul' | 'Receita Especial' | 'Controle Especial 2 vias' | null;
+  doubleCheck?: boolean;       // Exige dupla checagem (MAV)
   // Detailed prescription fields
   quantity?: string;          // Quantidade
   quantityUnit?: string;      // Unidade da quantidade (mL, ampola, frasco-ampola, comp, gota, mg, etc.)
