@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowRightLeft, BedDouble, Loader2, Shuffle, AlertCircle } from "lucide-react";
+import { ArrowRightLeft, BedDouble, Loader2, Shuffle, AlertCircle, User, MapPin, Eye, History, ClipboardList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Patient } from "@/types/patient";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 import { cn } from "@/lib/utils";
+import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
 
 interface SiblingRow {
   id: string;
@@ -37,6 +38,7 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
   const [selectedTarget, setSelectedTarget] = useState<VacantTarget | null>(null);
   const [selectedSwap, setSelectedSwap] = useState<SiblingRow | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const sectorConfig = SECTOR_BED_CONFIG[patient.sector as string];
 
@@ -156,6 +158,11 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
   };
 
   const handleConfirm = () => {
+    if (tab === "realocar" ? !selectedTarget : !selectedSwap) return;
+    setConfirmOpen(true);
+  };
+
+  const doConfirm = () => {
     if (tab === "realocar") {
       if (!selectedTarget) return;
       const otherRow = selectedTarget.kind === "row" ? selectedTarget.row : null;
@@ -164,6 +171,7 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
       if (!selectedSwap) return;
       performMove(selectedSwap, selectedSwap.bed_number);
     }
+    setConfirmOpen(false);
   };
 
   const sectorLabel = sectorConfig?.label ?? patient.sector;
@@ -171,6 +179,10 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
   const confirmLabel = tab === "realocar"
     ? `Confirmar realocação${selectedTarget ? ` para ${selectedTarget.bed_number}` : ""}`
     : `Confirmar permuta${selectedSwap ? ` ${patient.bedNumber} ↔ ${selectedSwap.bed_number}` : ""}`;
+
+  const targetBed = tab === "realocar" ? selectedTarget?.bed_number : selectedSwap?.bed_number;
+  const swapPartner = tab === "permutar" && selectedSwap?.name?.trim() ? selectedSwap.name : null;
+  const isSwap = tab === "permutar";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
