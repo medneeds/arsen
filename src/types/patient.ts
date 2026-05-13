@@ -7,6 +7,9 @@ export interface MedicalResponsibility {
   officeNumber?: string;
   leaderNames?: string;
   portaNames?: string; // Nomes dos médicos porta
+  responsibleDoctorId?: string; // ID do médico responsável (rotineiro do setor)
+  responsibleDoctorName?: string; // Nome do médico responsável
+  responsibleDoctorCrm?: string;
 }
 
 export interface Patient {
