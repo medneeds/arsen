@@ -11,6 +11,9 @@ interface SapsConfirmationProps {
   sectorLabel: string;
   totalScore: number;
   predictedMortality: number;
+  patientId?: string | null;
+  sectorCode?: string;
+  age?: string | null;
   onComplete: () => void;
 }
 
@@ -20,6 +23,9 @@ export function SapsConfirmationScreen({
   sectorLabel,
   totalScore,
   predictedMortality,
+  patientId,
+  sectorCode,
+  age,
   onComplete,
 }: SapsConfirmationProps) {
   const navigate = useNavigate();
@@ -48,7 +54,18 @@ export function SapsConfirmationScreen({
     }, 1000);
 
     const timeout = setTimeout(() => {
-      navigate("/");
+      if (patientId) {
+        const params = new URLSearchParams({
+          patientId,
+          patientName,
+          patientBed: bedNumber,
+        });
+        if (sectorCode) params.set("patientSector", sectorCode);
+        if (age) params.set("patientAge", age);
+        navigate(`/paciente?${params.toString()}`);
+      } else {
+        navigate("/painel-clinico");
+      }
       onComplete();
     }, 3000);
 
@@ -57,7 +74,7 @@ export function SapsConfirmationScreen({
       clearInterval(countdownInterval);
       clearTimeout(timeout);
     };
-  }, [navigate, onComplete]);
+  }, [navigate, onComplete, patientId, patientName, bedNumber, sectorCode, age]);
 
   const getMortalityColor = (m: number) => {
     if (m < 10) return "text-emerald-500";
