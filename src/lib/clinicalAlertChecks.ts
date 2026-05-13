@@ -33,7 +33,12 @@ const CLASS_PATTERNS: Array<{ class: string; patterns: RegExp[] }> = [
   { class: 'Opióides', patterns: [/morfina/i, /fentanil/i, /tramadol/i, /codeína/i, /oxicodona/i, /metadona/i, /remifentanil/i, /sufentanil/i, /nalbufina/i, /meperidina/i] },
   { class: 'Benzodiazepínicos', patterns: [/midazolam/i, /diazepam/i, /clonazepam/i, /lorazepam/i, /alprazolam/i, /bromazepam/i] },
   { class: 'AINEs', patterns: [/ibuprofeno/i, /diclofenaco/i, /cetoprofeno/i, /naproxeno/i, /tenoxicam/i, /piroxicam/i, /nimesulida/i, /cetorolaco/i, /\bketorolac/i] },
-  { class: 'Paracetamol/Dipirona', patterns: [/dipirona/i, /paracetamol/i, /acetaminofen/i] },
+  // CLASSES SEPARADAS (sem reatividade cruzada entre si):
+  // - Dipirona (metamizol) é pirazolona
+  // - Paracetamol (acetaminofen) é para-aminofenol
+  // Alergia a um NÃO contraindica o outro.
+  { class: 'Pirazolonas (Dipirona)', patterns: [/dipirona/i, /metamizol/i, /novalgina/i, /anador/i, /\bmagnopyrol/i] },
+  { class: 'Para-aminofenóis (Paracetamol)', patterns: [/paracetamol/i, /acetaminofen/i, /tylenol/i] },
   { class: 'Beta-bloqueadores', patterns: [/metoprolol/i, /propranolol/i, /atenolol/i, /carvedilol/i, /esmolol/i, /bisoprolol/i, /nebivolol/i] },
   { class: 'IECA', patterns: [/captopril/i, /enalapril/i, /lisinopril/i, /ramipril/i, /perindopril/i] },
   { class: 'BRA (sartanas)', patterns: [/losartana/i, /valsartana/i, /candesartana/i, /olmesartana/i, /telmisartana/i, /irbesartana/i] },
@@ -50,6 +55,7 @@ const CLASS_PATTERNS: Array<{ class: string; patterns: RegExp[] }> = [
   { class: 'Aminoglicosídeos', patterns: [/gentamicina/i, /amicacina/i, /tobramicina/i, /estreptomicina/i] },
   { class: 'Fluoroquinolonas', patterns: [/ciprofloxac/i, /levofloxac/i, /moxifloxac/i, /norfloxac/i] },
   { class: 'Macrolídeos', patterns: [/azitromicina/i, /claritromicina/i, /eritromicina/i] },
+  { class: 'Sulfonamidas', patterns: [/sulfametoxazol/i, /bactrim/i, /sulfadiazin/i, /sulfassalazin/i, /sulfa\b/i] },
   { class: 'IBP', patterns: [/omeprazol/i, /pantoprazol/i, /esomeprazol/i, /lansoprazol/i, /rabeprazol/i] },
   { class: 'Bloqueadores H2', patterns: [/ranitidina/i, /famotidina/i, /cimetidina/i] },
   { class: 'Estatinas', patterns: [/sinvastatina/i, /atorvastatin/i, /rosuvastatin/i, /pravastatin/i] },
