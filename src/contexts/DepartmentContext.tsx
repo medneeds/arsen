@@ -90,7 +90,11 @@ const DepartmentContext = createContext<DepartmentContextType | undefined>(undef
 const STORAGE_KEY = "selected_department";
 
 export function DepartmentProvider({ children }: { children: ReactNode }) {
-  const [currentDepartment, setCurrentDepartmentState] = useState<Department>("UTI");
+  const [currentDepartment, setCurrentDepartmentState] = useState<Department>(() => {
+    if (typeof window === "undefined") return "UTI";
+    const stored = localStorage.getItem(STORAGE_KEY) as Department | null;
+    return stored && DEPARTMENT_TO_SECTOR[stored] ? stored : "UTI";
+  });
 
   const currentSectorCode = DEPARTMENT_TO_SECTOR[currentDepartment] || "";
   const currentSectorLabel = SECTOR_DISPLAY[currentSectorCode] || currentDepartment;
