@@ -130,6 +130,64 @@ export const MedicalResponsibilityDialog = ({
         </DialogHeader>
 
         <div className="space-y-5 py-4">
+          {/* Médico responsável (rotineiro do setor) */}
+          <div className="space-y-2 p-3 rounded-xl border-2 border-dashed bg-muted/30 dark:bg-gray-800/40 dark:border-gray-700">
+            <Label className="text-sm font-semibold flex items-center gap-2 dark:text-white">
+              <UserCheck className="h-4 w-4" style={{ color: sectorColor }} />
+              Médico Responsável
+            </Label>
+            {responsibleDoctorName ? (
+              <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-background dark:bg-gray-900 border">
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-semibold uppercase truncate">{responsibleDoctorName}</span>
+                  {responsibleDoctorCrm && (
+                    <span className="text-[10px] text-muted-foreground">CRM {responsibleDoctorCrm}</span>
+                  )}
+                </div>
+                <Button type="button" variant="ghost" size="sm" onClick={clearDoctor} className="h-7 px-2 text-xs">
+                  <X className="h-3.5 w-3.5 mr-1" /> Trocar
+                </Button>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    value={doctorQuery}
+                    onChange={(e) => { setDoctorQuery(e.target.value); setShowResults(true); }}
+                    onFocus={() => setShowResults(true)}
+                    placeholder="Buscar médico (nome) — mínimo 2 caracteres"
+                    className="pl-8 h-9 text-xs dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                  />
+                </div>
+                {showResults && doctorQuery.length >= 2 && (
+                  <div className="absolute z-50 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border bg-popover shadow-lg dark:bg-gray-900 dark:border-gray-700">
+                    {searching && (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">Buscando…</div>
+                    )}
+                    {!searching && doctorResults.length === 0 && (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">Nenhum médico encontrado</div>
+                    )}
+                    {!searching && doctorResults.map((d) => (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => selectDoctor(d)}
+                        className="w-full text-left px-3 py-2 hover:bg-accent dark:hover:bg-gray-800 border-b last:border-b-0 dark:border-gray-700"
+                      >
+                        <div className="text-xs font-semibold uppercase">{d.full_name}</div>
+                        {d.crm && <div className="text-[10px] text-muted-foreground">CRM {d.crm}</div>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <p className="text-[10px] text-muted-foreground italic">
+              Por padrão, é o médico que admitiu. Use a busca para redefinir para o rotineiro do setor.
+            </p>
+          </div>
+
           <div className="space-y-3">
             <Label className="text-sm font-semibold text-foreground dark:text-white">Selecione o Tipo de Acompanhamento</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
