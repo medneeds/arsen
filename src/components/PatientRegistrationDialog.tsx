@@ -73,9 +73,14 @@ const EMPTY_FORM: PatientFormData = {
 };
 
 const SECTORS = [
-  "UTI 1", "UTI 2", "UCI 1", "UCI 2",
-  "Cuidados Especiais", "Observação Amarela", "Observação Azul",
-  "Enfermaria", "Centro Cirúrgico"
+  "UTI 1", "UTI 2",
+  "UCI 1", "UCI 2",
+  "UCC",
+  "Neuro 01", "Neuro 02",
+  "Clínica Cirúrgica",
+  "Enf. Transição",
+  "Enf. Vascular",
+  "RIV",
 ];
 
 // Format CPF: 000.000.000-00
