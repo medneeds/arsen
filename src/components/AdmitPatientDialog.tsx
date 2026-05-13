@@ -319,6 +319,10 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           : dischargeDate
           ? format(dischargeDate, "dd/MM/yyyy")
           : null,
+        // Fluxo Pré-admissão: paciente fica em pre_admitido até a admissão hospitalar
+        // ser concluída pelo Painel Clínico (formulário de admissão).
+        admission_status: 'pre_admitido',
+        admitted_at: null,
       };
 
       let insertedPatient: { id: string } | null = null;
