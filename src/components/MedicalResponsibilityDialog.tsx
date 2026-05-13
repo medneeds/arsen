@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MedicalResponsibility, MedicalResponsibilityType } from "@/types/patient";
-import { X, Stethoscope, UserCog, UsersRound, Check, Baby, Bone, Scissors } from "lucide-react";
+import { X, Stethoscope, UserCog, UsersRound, Check, Baby, Bone, Scissors, Search, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MedicalResponsibilityDialogProps {
   open: boolean;
