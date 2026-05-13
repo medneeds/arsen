@@ -1285,66 +1285,23 @@ export function UtiPatientCard({
                     <MoreVertical className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-popover border shadow-lg z-50 w-48">
-                  {/* Print option */}
-                  {onPrintPatient && (
-                    <DropdownMenuItem onClick={() => onPrintPatient(patient.id)}>
-                      <Printer className="h-4 w-4 mr-2" />
-                      Imprimir Caso
+                <DropdownMenuContent align="end" className="bg-popover border shadow-lg z-50 w-56">
+                  {/* Único item ativo no card: realocar/permutar (autonomia médica).
+                      Impressão fica no botão geral do setor. Movimentações de alta/transferência/óbito
+                      ocorrem pelo Painel Clínico (Cockpit). Leitos são fixos — não há exclusão. */}
+                  {patient.name ? (
+                    <DropdownMenuItem onClick={() => setIsReallocationDialogOpen(true)}>
+                      <Shuffle className="h-4 w-4 mr-2 text-teal-600" />
+                      Realocar / Permutar leito
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={() => setIsRoundPrintDialogOpen(true)}>
-                    <ClipboardCheck className="h-4 w-4 mr-2 text-violet-600" />
-                    Round Multiprofissional
-                  </DropdownMenuItem>
-
-                  {/* Vacancy is automated by the auto_vacate_on_discharge trigger — no manual toggle here. */}
-
-                  {/* Only show movement options if patient has data */}
-                  {patient.name && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuLabel className="text-xs text-muted-foreground">Realocação</DropdownMenuLabel>
-                      
-                      <DropdownMenuItem onClick={() => setIsReallocationDialogOpen(true)}>
-                        <BedDouble className="h-4 w-4 mr-2 text-blue-500" />
-                        Realocar Leito/UTI
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuSeparator />
-                      <DropdownMenuLabel className="text-xs text-muted-foreground">Movimentações</DropdownMenuLabel>
-                      
-                      <DropdownMenuItem onClick={() => handleMovement("ALTA")}>
-                        <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
-                        Alta
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem onClick={() => handleMovement("TRANSFERÊNCIA")}>
-                        <ArrowLeftRight className="h-4 w-4 mr-2 text-blue-500" />
-                        Transferência
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem onClick={() => handleMovement("ÓBITO")}>
-                        <Skull className="h-4 w-4 mr-2 text-red-500" />
-                        Óbito
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  
-                  {onDelete && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={() => onDelete(patient.id)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Excluir Leito
-                      </DropdownMenuItem>
-                    </>
+                  ) : (
+                    <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
+                      Leito vago — sem ações disponíveis.
+                    </DropdownMenuLabel>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
+
               <CollapsibleTrigger asChild>
                 <Button 
                   variant="ghost" 
