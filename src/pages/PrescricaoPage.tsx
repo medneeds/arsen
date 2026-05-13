@@ -3852,33 +3852,47 @@ const PrescricaoPage = () => {
 
   const confirmSuspend = useCallback((reason: string) => {
     const now = format(new Date(), "dd/MM HH:mm", { locale: ptBR });
+    let nextItems: PrescriptionItem[] = [];
     if (suspendTarget.isBatch) {
-      setItems(prev => prev.map(item =>
-        selectedIds.has(item.id) && item.status === 'active'
-          ? { ...item, status: 'suspended' as const, suspensionReason: reason, suspendedAt: now }
-          : item
-      ));
+      setItems(prev => {
+        nextItems = prev.map(item =>
+          selectedIds.has(item.id) && item.status === 'active'
+            ? { ...item, status: 'suspended' as const, suspensionReason: reason, suspendedAt: now }
+            : item
+        );
+        return nextItems;
+      });
       toast.success(`${selectedIds.size} item(ns) suspenso(s)`);
       setSelectedIds(new Set());
     } else if (suspendTarget.id) {
-      setItems(prev => prev.map(item =>
-        item.id === suspendTarget.id
-          ? { ...item, status: 'suspended' as const, suspensionReason: reason, suspendedAt: now }
-          : item
-      ));
+      setItems(prev => {
+        nextItems = prev.map(item =>
+          item.id === suspendTarget.id
+            ? { ...item, status: 'suspended' as const, suspensionReason: reason, suspendedAt: now }
+            : item
+        );
+        return nextItems;
+      });
       toast.success("Item suspenso");
     }
+    // Persiste imediatamente — suspensão é ato auditável e imutável entre sessões
+    if (nextItems.length) persistItems(nextItems, { mode: 'update', reason });
     setSuspendDialogOpen(false);
     setSuspendTarget({});
-  }, [suspendTarget, selectedIds]);
+  }, [suspendTarget, selectedIds, persistItems]);
 
   // Reactivate
   const reactivateItem = useCallback((id: string) => {
-    setItems(prev => prev.map(item =>
-      item.id === id ? { ...item, status: 'active' as const, suspensionReason: undefined, suspendedAt: undefined } : item
-    ));
+    let nextItems: PrescriptionItem[] = [];
+    setItems(prev => {
+      nextItems = prev.map(item =>
+        item.id === id ? { ...item, status: 'active' as const, suspensionReason: undefined, suspendedAt: undefined } : item
+      );
+      return nextItems;
+    });
+    if (nextItems.length) persistItems(nextItems, { mode: 'update' });
     toast.success("Item reativado");
-  }, []);
+  }, [persistItems]);
 
   // Selection
   const toggleSelect = useCallback((id: string) => {
