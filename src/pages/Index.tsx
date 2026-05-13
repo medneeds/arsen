@@ -231,6 +231,7 @@ const Index = () => {
   const { patients: dbPatients, isLoading: patientsLoading, updatePatient: dbUpdatePatient, createPatient: dbCreatePatient, deletePatient: dbDeletePatient, reorderPatients: dbReorderPatients, refetch } = usePatients(undefined, activeSector);
   const [patients, setPatients] = useState<Patient[]>(dbPatients);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const preAdmissionRef = useRef<PreAdmissionSectionHandle>(null);
   const [history, setHistory] = useState<Patient[][]>(() => {
     const saved = localStorage.getItem(HISTORY_KEY);
     return saved ? JSON.parse(saved) : [];
