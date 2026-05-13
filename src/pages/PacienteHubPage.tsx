@@ -47,6 +47,7 @@ export default function PacienteHubPage() {
   const [admissionStatus, setAdmissionStatus] = useState<AdmissionStatus>(null);
   const [statusLoading, setStatusLoading] = useState(true);
   const [admissionOpen, setAdmissionOpen] = useState(false);
+  const [consultOpen, setConsultOpen] = useState(false);
   const [department, setDepartment] = useState<string | null>(null);
   const [sapsPending, setSapsPending] = useState(false);
   const [sapsSince, setSapsSince] = useState<string | null>(null);
