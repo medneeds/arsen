@@ -696,7 +696,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
               )}
             >
               <Icon className="h-3 w-3" />
-              {config.label}
+              {config.shortLabel ?? config.label}
               {isPopup && <span className="text-[8px] opacity-60 ml-0.5">▸</span>}
             </button>
           );
@@ -4864,6 +4864,7 @@ const PrescricaoPage = () => {
                   <button
                     key={cat}
                     type="button"
+                    title={config.label}
                     onClick={() => document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                     className={cn(
                       "group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm hover:-translate-y-px",
@@ -4875,7 +4876,7 @@ const PrescricaoPage = () => {
                     )}
                   >
                     <Circle className={cn("h-1.5 w-1.5 fill-current", ok ? "text-emerald-500" : "text-amber-500")} />
-                    {config.label.toLowerCase()}
+                    {config.shortLabel ?? config.label.toLowerCase()}
                     <span className="ml-0.5 font-bold">{count}</span>
                   </button>
                 );
@@ -5052,7 +5053,7 @@ const PrescricaoPage = () => {
                       </Tooltip>
                     )}
                     <IconComp className={cn("h-3.5 w-3.5 shrink-0", config.color)} />
-                    <span className="text-xs font-semibold text-foreground whitespace-nowrap">{config.label}</span>
+                    <span className="text-xs font-semibold text-foreground whitespace-nowrap" title={config.label}>{config.shortLabel ?? config.label}</span>
                     <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">{catItems.length}</Badge>
                     {compactView && catItems.length > 0 && !isSimpleCategory(cat) && (
                       <Tooltip>
