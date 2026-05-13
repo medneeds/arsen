@@ -3763,15 +3763,39 @@ const PrescricaoPage = () => {
     }
   };
 
-  // New prescription
-  const handleNewPrescription = () => {
-    setPatient({ name: "", birthDate: "", age: "", sex: "", bed: "", unit: "", record: "", admissionDate: "", utiAdmissionDate: "", weight: "", allergies: "", motherName: "", address: "", city: "", encounterCode: "" });
+  // Nova prescrição (mantém identidade do paciente — apenas zera itens/assinatura/id)
+  const resetPrescriptionForNewDay = useCallback(() => {
     setItems([]);
     setDigitalSignature(null);
     setCurrentPrescriptionId(null);
     setSelectedIds(new Set());
-    toast.info("Nova prescrição iniciada");
+  }, []);
+
+  const handleNewPrescription = () => {
+    if (prescriptionLocked) {
+      toast.error("Já existe uma prescrição validada hoje", {
+        description: "Use revalidação 05h ou aguarde o corte. Não é possível iniciar nova prescrição enquanto a atual estiver validada.",
+      });
+      return;
+    }
+    resetPrescriptionForNewDay();
+    toast.info("Nova prescrição iniciada — em branco");
   };
+
+  const handleCopyPreviousFlow = useCallback(async () => {
+    if (prescriptionLocked) {
+      toast.error("Já existe uma prescrição validada hoje", {
+        description: "Não é possível iniciar nova prescrição enquanto a atual estiver validada.",
+      });
+      return;
+    }
+    if (!patient.name.trim()) {
+      toast.error("Selecione um paciente antes de copiar a prescrição anterior");
+      return;
+    }
+    resetPrescriptionForNewDay();
+    await openRepeatDialog();
+  }, [prescriptionLocked, patient.name, resetPrescriptionForNewDay, openRepeatDialog]);
 
   const [showPrintPortal, setShowPrintPortal] = useState(false);
   const [printGuidesOpen, setPrintGuidesOpen] = useState(false);
