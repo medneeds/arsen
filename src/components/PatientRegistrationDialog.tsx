@@ -380,6 +380,8 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         ? `${niCode} • Prontuário ${prontuario} • Não Identificado`
         : isUtiDestination
         ? `Prontuário ${prontuario} • Solicitação de leito UTI enviada`
+        : hasDestinationSector
+        ? `Prontuário ${prontuario} • Aguardando leito em ${form.destination_sector} (classificação de risco pendente)`
         : `Prontuário ${prontuario} • Aguardando classificação de risco`;
 
       toast({ title: "✅ Paciente cadastrado!", description: successMessage });
