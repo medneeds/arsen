@@ -430,6 +430,15 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
             <User className="h-5 w-5 text-primary" />
             Cadastrar Paciente (Pré-Admissão)
           </DialogTitle>
+          {defaultDestinationSector && (
+            <div className="mt-1 flex items-center gap-2 text-xs">
+              <MapPin className="h-3.5 w-3.5 text-primary" />
+              <span className="text-muted-foreground">Pré-cadastro direcionado para:</span>
+              <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary font-semibold uppercase tracking-wide">
+                {defaultDestinationSector}
+              </span>
+            </div>
+          )}
         </DialogHeader>
 
         {/* NI toggle - sempre visível no topo */}
