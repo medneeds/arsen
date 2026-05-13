@@ -4288,7 +4288,7 @@ const PrescricaoPage = () => {
           </div>
         </div>
 
-        {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, Psicotrópicos, TEV, Imprimir, Validar, Compacto) */}
+        {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, TEV, Validar | Compacto | Imprimir) */}
         <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-border/40 bg-muted/20 rounded-b-xl">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -4345,30 +4345,28 @@ const PrescricaoPage = () => {
           >
             <Zap className="h-3 w-3" /> Interações
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setAntimicrobialGuideOpen(true)} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
-            <Shield className="h-3 w-3" /> Guia ATM
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setPsychotropicFormOpen(true)} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
-            <FileText className="h-3 w-3" /> Psicotrópicos
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setAtmStatusOpen(true)}
+                className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
+              >
+                <Shield className="h-3 w-3" /> Guia ATM
+                {hasActiveAtb && (
+                  <span className="ml-0.5 inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs max-w-[240px]">
+              Acompanhe o status dos antibióticos em curso ou inicie uma nova solicitação (acréscimo / troca).
+            </TooltipContent>
+          </Tooltip>
           <Button variant="ghost" size="sm" onClick={() => setTevProtocolOpen(true)} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
             <Droplets className="h-3 w-3" /> TEV
           </Button>
           <span className="h-5 w-px bg-border/60 mx-0.5" />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              if (!allItemsValidated) {
-                toast.error("Valide a prescrição antes de imprimir", { description: "Use o botão 'Validar prescrição' para validar com sua senha." });
-                return;
-              }
-              handlePrint();
-            }}
-            className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2"
-          >
-            <Printer className="h-3 w-3" /> Imprimir
-          </Button>
           <Button
             variant={prescriptionLocked ? "ghost" : "default"}
             size="sm"
@@ -4397,7 +4395,7 @@ const PrescricaoPage = () => {
               </TooltipContent>
             </Tooltip>
           )}
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -4412,6 +4410,28 @@ const PrescricaoPage = () => {
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">
                 {compactView ? 'Alternar para visualização expandida' : 'Alternar para visualização compacta'}
+              </TooltipContent>
+            </Tooltip>
+            {/* Botão Imprimir destacado — extrema direita */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    if (!allItemsValidated) {
+                      toast.error("Valide a prescrição antes de imprimir", { description: "Use o botão 'Validar prescrição' para validar com sua senha." });
+                      return;
+                    }
+                    handlePrint();
+                  }}
+                  className="gap-1.5 text-xs h-7 px-3 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm font-semibold"
+                >
+                  <Printer className="h-3.5 w-3.5" /> Imprimir
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs max-w-[240px]">
+                Imprimir a prescrição validada e, quando aplicável, as guias regulatórias (ATM / Psicotrópicos).
               </TooltipContent>
             </Tooltip>
           </div>
