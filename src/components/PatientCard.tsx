@@ -1752,9 +1752,26 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                     {(() => {
                       const adm = patient.admissionDate || (patient.utiAdmissionDate || [])[0] || null;
                       const dih = calcDIH(adm);
-                       return (
+                      return (
                         <div className="flex items-center gap-1.5 text-[10px] text-foreground leading-snug py-0.5">
                           <span className="font-medium">{formatAdmissionDateBR(adm)}</span>
+                          {dih !== null && (() => {
+                            const dihColor =
+                              dih <= 7
+                                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                                : dih <= 10
+                                ? "bg-yellow-400/20 text-yellow-800 dark:text-yellow-300 border-yellow-500/40"
+                                : "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30";
+                            return (
+                              <Badge
+                                variant="secondary"
+                                className={`h-4 px-1.5 text-[9px] font-semibold ${dihColor}`}
+                                title="Dia de Internação (D0 = admissão; DIH1 = dia seguinte). Verde ≤7 dias · Amarelo 8–10 · Vermelho >10. Recalcula em transferência de setor."
+                              >
+                                {formatDIHLabel(dih)}
+                              </Badge>
+                            );
+                          })()}
                         </div>
                       );
                     })()}
