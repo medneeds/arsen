@@ -3193,7 +3193,6 @@ const PrescricaoPage = () => {
         if (error) throw error;
         if (data) {
           setCurrentPrescriptionId(data.id);
-          fetchVersionHistory?.(data.id);
         }
         return;
       }
