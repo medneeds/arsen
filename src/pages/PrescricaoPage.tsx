@@ -3308,7 +3308,33 @@ const PrescricaoPage = () => {
       return;
     }
     const newItem = createItem(med);
+    // Garante flag highAlert sempre que o catálogo marcar (mesmo em categoria diferente)
+    if (med.highAlert) newItem.highAlert = true;
     setItems((prev) => [...prev, newItem]);
+
+    // === Reconhecimento automático em "Buscar todas" ===
+    // MAV (alta vigilância): destaca, expande a categoria e avisa o prescritor.
+    if (med.highAlert) {
+      setExpandedCategories(prev => {
+        const n = new Set(prev);
+        n.add(med.category);
+        return n;
+      });
+      toast.warning(`Alta vigilância: ${med.name}`, {
+        description: "Revisar diluição, dose, bomba de infusão e dupla checagem antes da validação.",
+      });
+    }
+    // Psicotrópico / controlado: dispara o formulário de notificação para preenchimento imediato.
+    if (isPsychotropicMedication(med.name)) {
+      toast.warning(`Psicotrópico: ${med.name}`, {
+        description: "Preencha a notificação obrigatória (Receita Amarela/Azul/Controle Especial).",
+      });
+      setTimeout(() => {
+        setPsychotropicFormMode('edit');
+        setPsychotropicFormOpen(true);
+      }, 350);
+    }
+
     // Sugestões: combina protocolos clínicos manuais (sepse, TEV, etc.) com
     // protocolos de evidência farmacêutica do catálogo HMDM 2026 (diluição,
     // dose máx, tempo de infusão). Manuais aparecem primeiro pois costumam
