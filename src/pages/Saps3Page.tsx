@@ -487,7 +487,7 @@ export default function Saps3Page() {
       if (ageStr) setAge(ageStr);
     }
 
-    setSelectedSector(resolveSectorValue(destinationSectorFromContext));
+    setSelectedSector(resolveSectorFromContext(destinationSectorFromContext, currentSectorCode || currentDepartment));
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
     setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
@@ -496,7 +496,7 @@ export default function Saps3Page() {
     setPao2Fio2(""); setIsVentilated(false);
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
     toast.info(`Preencha o SAPS 3 para ${patientNameFromContext}`);
-  }, [location.state, searchParams]);
+  }, [location.state, searchParams, currentDepartment, currentSectorCode]);
 
   // ─── Start admission from pending request ───
   const startAdmission = (req: PendingRequest) => {
@@ -509,7 +509,7 @@ export default function Saps3Page() {
       setAge(String(ageYears));
     }
     // Pre-select sector based on destination (supports UTI/UCI/UCC labels)
-    setSelectedSector(resolveSectorValue(req.destination_sector));
+    setSelectedSector(resolveSectorFromContext(req.destination_sector, currentSectorCode || currentDepartment));
     // Reset rest
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
