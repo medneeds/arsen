@@ -100,6 +100,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [dischargeDays, setDischargeDays] = useState<string>("");
   const [dischargeDate, setDischargeDate] = useState<Date | undefined>(undefined);
   const [noDischargePrediction, setNoDischargePrediction] = useState(false);
+  const [admissionDate, setAdmissionDate] = useState<Date | undefined>(undefined);
   const [availableBeds, setAvailableBeds] = useState<string[]>([]);
   const [occupiedBeds, setOccupiedBeds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
