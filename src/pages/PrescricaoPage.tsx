@@ -5333,12 +5333,18 @@ const PrescricaoPage = () => {
       {/* Psychotropic Form Dialog */}
       <PsychotropicFormDialog
         open={psychotropicFormOpen}
-        onOpenChange={setPsychotropicFormOpen}
+        onOpenChange={(o) => { setPsychotropicFormOpen(o); if (!o) setPsychotropicFormMode('edit'); }}
         patient={patient}
-        controlledItems={items.filter(i => i.status === 'active' && (i.category === 'high_alert' || isPsychotropicMedication(i.name))).map(i => ({ id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology, category: i.category, status: i.status, highAlert: i.highAlert }))}
+        controlledItems={items.filter(i => {
+          if (i.status !== 'active') return false;
+          const cat = findControlledCatalog?.(i.name);
+          if (cat?.controlled) return true;
+          return !cat && (i.category === 'high_alert' || isPsychotropicMedication(i.name));
+        }).map(i => ({ id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology, category: i.category, status: i.status, highAlert: i.highAlert }))}
         doctorName={digitalSignature?.doctorName}
         doctorCrm={digitalSignature?.crm}
         hospitalName={currentHospital?.name}
+        mode={psychotropicFormMode}
       />
 
       {/* Print Guides Dialog */}
