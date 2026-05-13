@@ -678,7 +678,7 @@ export default function Saps3Page() {
       } else {
         const { error: insertBedError } = await supabase
           .from("patients")
-          .insert(patientPayload);
+          .insert(patientPayload as any);
         if (insertBedError) throw insertBedError;
       }
 
