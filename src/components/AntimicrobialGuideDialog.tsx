@@ -75,9 +75,21 @@ interface Props {
   doctorName?: string;
   doctorCrm?: string;
   hospitalName?: string;
-  onConfirm?: (entries: Array<{ medication: string; dose: string; route: string; posology: string }>) => void;
+  onConfirm?: (entries: Array<{
+    medication: string; dose: string; route: string; posology: string;
+    startDate?: string; plannedDuration?: string; infectionSite?: string;
+  }>) => void;
   mode?: 'review' | 'prescribe';
   patientId?: string;
+}
+
+function computeEndDate(startDate: string, days: string): string | null {
+  const n = parseInt(days, 10);
+  if (!startDate || !Number.isFinite(n) || n <= 0) return null;
+  const d = new Date(startDate + "T00:00:00");
+  if (isNaN(d.getTime())) return null;
+  d.setDate(d.getDate() + n - 1);
+  return format(d, "dd/MM/yyyy");
 }
 
 const INFECTION_SITES = [
