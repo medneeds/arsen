@@ -3316,43 +3316,77 @@ const PrescricaoPage = () => {
       return;
     }
     const newItem = createItem(med);
-    // Garante flag highAlert sempre que o catálogo marcar (mesmo em categoria diferente)
-    if (med.highAlert) newItem.highAlert = true;
+
+    // === Diferenciação regulatória (MAV / Portaria 344 / ambos) ===
+    // Consulta o catálogo seed para identificar a categoria de segurança
+    // e enriquece o item com as flags regulatórias correspondentes.
+    const reg = findRegulatoryInfo(med.name);
+    if (reg) {
+      newItem.securityCategory = reg.categoria;
+      newItem.highAlert = reg.high_alert || newItem.highAlert;
+      newItem.controlled = reg.controlled;
+      newItem.controlledList = reg.lista_portaria_344;
+      newItem.controlledDoc = reg.documento_gerado;
+      newItem.doubleCheck = reg.dupla_checagem;
+    } else if (med.highAlert) {
+      // Catálogo HMDM marcou como MAV mas não está no seed regulatório
+      newItem.securityCategory = 'MAV';
+      newItem.highAlert = true;
+      newItem.doubleCheck = true;
+    }
     setItems((prev) => [...prev, newItem]);
 
-    // === Reconhecimento automático em "Buscar todas" ===
-    // MAV (alta vigilância): 1) toast bem visível confirmando a adição,
-    // 2) destaca o item no painel (scroll + ring pulsante por ~2s),
-    // 3) só então abre o fluxo padronizado de prescrição de alta vigilância.
-    if (med.highAlert) {
-      setExpandedCategories(prev => {
-        const n = new Set(prev);
-        n.add(med.category);
-        return n;
-      });
-      toast.success(`✓ MEDICAÇÃO ADICIONADA — ${med.name}`, {
-        description: "ALTA VIGILÂNCIA: aplicando modelo padronizado (diluição, dose, BIC, dupla checagem)...",
-        duration: 4500,
-      });
-      // Scroll + highlight pulsante no card recém-adicionado
+    const isMAV = newItem.highAlert === true;
+    const isControlled = newItem.controlled === true;
+    const docLabel = newItem.controlledDoc;
+
+    // Helper: destaca visualmente o card recém-adicionado (scroll + ring pulsante)
+    const highlightNewItem = (ringClass: string) => {
       setTimeout(() => {
         const el = document.getElementById(`prescription-item-${newItem.id}`);
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          el.classList.add('ring-4', 'ring-red-400', 'ring-offset-2', 'animate-pulse');
+          el.classList.add('ring-4', ringClass, 'ring-offset-2', 'animate-pulse');
           setTimeout(() => {
-            el.classList.remove('ring-4', 'ring-red-400', 'ring-offset-2', 'animate-pulse');
+            el.classList.remove('ring-4', ringClass, 'ring-offset-2', 'animate-pulse');
           }, 2200);
         }
       }, 80);
-      // Abre a guia MAV depois do destaque, para o médico ver primeiro a adição
+    };
+
+    // Sempre garante a categoria expandida no painel
+    setExpandedCategories(prev => {
+      const n = new Set(prev);
+      n.add(med.category);
+      return n;
+    });
+
+    if (isMAV && isControlled) {
+      // ── MAV + Portaria 344 (opioides, midazolam, ketamina) ───────────
+      toast.error(`✓ ADICIONADO — ${med.name}`, {
+        description: `ALTA VIGILÂNCIA + CONTROLADO (${newItem.controlledList ?? '344'}). ${docLabel ?? 'Receita controlada'} será gerada na impressão. Aplicando modelo MAV...`,
+        duration: 5000,
+      });
+      highlightNewItem('ring-red-400');
       setTimeout(() => setHighAlertGuideOpen(true), 1100);
-    }
-    // Psicotrópico / controlado: NÃO abre formulário aqui. Apenas marca e avisa.
-    // A guia de notificação será sugerida automaticamente no momento de imprimir,
-    // já preenchida com base nas medicações prescritas (Receita Amarela/Azul/
-    // Controle Especial conforme catálogo).
-    if (isPsychotropicMedication(med.name)) {
+    } else if (isMAV) {
+      // ── Apenas MAV (insulinas, anticoagulantes, eletrólitos, BNM, aminas) ──
+      toast.success(`✓ ADICIONADO — ${med.name}`, {
+        description: "ALTA VIGILÂNCIA: aplicando modelo padronizado (diluição, dose, BIC, dupla checagem)...",
+        duration: 4500,
+        style: { background: 'hsl(0 84% 60%)', color: 'white' },
+      });
+      highlightNewItem('ring-red-400');
+      setTimeout(() => setHighAlertGuideOpen(true), 1100);
+    } else if (isControlled) {
+      // ── Apenas Portaria 344 (benzo VO, Z-drugs, metilfenidato, tramadol, etc.) ──
+      toast.warning(`✓ ADICIONADO — ${med.name}`, {
+        description: `CONTROLADO Lista ${newItem.controlledList ?? '344'} — ${docLabel ?? 'Receita controlada'} será gerada automaticamente ao imprimir.`,
+        duration: 4500,
+      });
+      highlightNewItem('ring-amber-400');
+    } else if (isPsychotropicMedication(med.name)) {
+      // Fallback (medicação psicotrópica não mapeada no seed regulatório)
       toast.info(`Psicotrópico identificado: ${med.name}`, {
         description: "A guia de notificação será gerada automaticamente ao imprimir.",
       });
