@@ -95,20 +95,16 @@ export const MedicalResponsibilityIndicator = ({
 
   const getLabel = () => {
     switch (responsibility.type) {
-      case 'porta':
-        return 'Médico Porta';
-      case 'lider':
-        return 'Médico Líder';
-      case 'conjunto':
-        return 'Seguimento Conjunto';
-      case 'obstetra':
-        return 'Obstetra';
-      case 'cirurgiao_geral':
-        return 'Cirurgião Geral';
-      case 'traumatologista':
-        return 'Traumatologista';
-      default:
-        return '';
+      case 'rotineiro': return 'Médico Rotineiro';
+      case 'plantonista': return 'Médico Plantonista';
+      case 'intercorrencista': return 'Médico Intercorrencista';
+      case 'porta': return 'Médico Porta';
+      case 'lider': return 'Médico Líder';
+      case 'conjunto': return 'Seguimento Conjunto';
+      case 'obstetra': return 'Obstetra';
+      case 'cirurgiao_geral': return 'Cirurgião Geral';
+      case 'traumatologista': return 'Traumatologista';
+      default: return '';
     }
   };
 
