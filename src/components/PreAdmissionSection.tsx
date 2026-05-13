@@ -284,4 +284,4 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
       </AlertDialog>
     </>
   );
-}
+});
