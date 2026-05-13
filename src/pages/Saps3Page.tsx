@@ -642,7 +642,7 @@ export default function Saps3Page() {
       // Buscamos por setor+leito e normalizamos o department canônico no UPDATE.
       const { data: bedRows, error: bedLookupError } = await supabase
         .from("patients")
-        .select("id, is_vacant, name")
+        .select("id, department, is_vacant, name")
         .eq("hospital_unit_id", hospitalId)
         .eq("state_id", stateId)
         .eq("sector", selectedSector)
@@ -650,7 +650,10 @@ export default function Saps3Page() {
 
       if (bedLookupError) throw bedLookupError;
 
-      const existingBedRow = bedRows?.find((row) => row.is_vacant !== false) || bedRows?.[0] || null;
+      const existingBedRow = bedRows?.find((row) => row.department === destinationDepartment) ||
+        bedRows?.find((row) => row.is_vacant !== false) ||
+        bedRows?.[0] ||
+        null;
 
       if (existingBedRow && existingBedRow.is_vacant === false) {
         throw new Error(`Leito ${selectedBed} já está ocupado. Atualize o mapa e selecione outro leito.`);
