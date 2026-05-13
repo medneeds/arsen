@@ -85,6 +85,14 @@ import {
   type PrescriptionCategory,
   type PrescriptionFlag,
 } from "@/data/medicationsDatabase";
+import {
+  inferPresentationType,
+  getRequiredFields,
+  showInfusionBlock,
+  showDiluentRow,
+  getEvidenceSuggestion,
+  type PresentationType,
+} from "@/lib/prescriptionPresentation";
 import { findRegulatoryInfo } from "@/data/mavPort344Catalog";
 import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
 import { AtmStatusDialog } from "@/components/AtmStatusDialog";
@@ -1623,8 +1631,57 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           {item.status === 'active' && item.category === 'hydration' && (
             <HydrationFields item={item} onUpdate={onUpdate} />
           )}
-          {item.status === 'active' && item.category !== 'nutrition' && item.category !== 'hydration' && (
+          {item.status === 'active' && item.category !== 'nutrition' && item.category !== 'hydration' && (() => {
+            const ptype = inferPresentationType(item.presentation, item.route, item.name);
+            const renderInfusion = showInfusionBlock(ptype);
+            const renderDiluent = showDiluentRow(ptype);
+            const evidence = getEvidenceSuggestion(item.name);
+            const applyEvidence = () => {
+              if (!evidence) return;
+              const isEmpty = (v?: string) => !v || !v.trim() || v.trim() === '-';
+              if (evidence.defaultDose && isEmpty(item.dose)) onUpdate(item.id, 'dose', evidence.defaultDose);
+              if (evidence.defaultRoute && isEmpty(item.route)) onUpdate(item.id, 'route', evidence.defaultRoute);
+              if (evidence.defaultPosology && isEmpty(item.posology)) onUpdate(item.id, 'posology', evidence.defaultPosology);
+              if (evidence.diluent && isEmpty(item.diluent)) onUpdate(item.id, 'diluent', evidence.diluent);
+              if (evidence.volumeTotal && isEmpty(item.volumeTotal)) onUpdate(item.id, 'volumeTotal', evidence.volumeTotal);
+              if (evidence.infusionTime && isEmpty(item.infusionTime)) onUpdate(item.id, 'infusionTime', evidence.infusionTime);
+              if (evidence.infusionTimeUnit) onUpdate(item.id, 'infusionTimeUnit', evidence.infusionTimeUnit);
+              toast.success('Sugestão aplicada', { description: `Fonte: ${evidence.source}` });
+            };
+            return (
             <>
+              {evidence && (
+                <div className="flex items-center justify-between gap-2 px-2 py-1 rounded bg-sky-50 border border-sky-200/60 dark:bg-sky-950/20 dark:border-sky-800/40">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-[10px] text-sky-700 dark:text-sky-300 font-medium truncate">
+                        📚 Evidência disponível ({evidence.source})
+                        {evidence.notes ? ` · ${evidence.notes}` : ''}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs">
+                      <div className="space-y-1">
+                        {evidence.defaultDose && <div><b>Dose:</b> {evidence.defaultDose}</div>}
+                        {evidence.defaultRoute && <div><b>Via:</b> {evidence.defaultRoute}</div>}
+                        {evidence.defaultPosology && <div><b>Posologia:</b> {evidence.defaultPosology}</div>}
+                        {evidence.diluent && <div><b>Diluente:</b> {evidence.diluent}</div>}
+                        {evidence.volumeTotal && <div><b>Vol total:</b> {evidence.volumeTotal} mL</div>}
+                        {evidence.infusionTime && <div><b>Tempo:</b> {evidence.infusionTime}{evidence.infusionTimeUnit || 'min'}</div>}
+                        <div className="text-muted-foreground italic pt-1">Fonte: {evidence.source}</div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={applyEvidence}
+                    className="h-6 px-2 text-[10px] border-sky-300 text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:text-sky-300"
+                  >
+                    Sugerir
+                  </Button>
+                </div>
+              )}
               {/* Row 1: Dose + Via + Intervalo */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <Input value={item.dose} onChange={(e) => onUpdate(item.id, "dose", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-24" placeholder="Dose" />
@@ -1659,6 +1716,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     </SelectContent>
                   </Select>
                 </div>
+                {renderDiluent && <>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Diluente:</span>
                   <Select value={item.diluent || ''} onValueChange={(v) => {
@@ -1692,11 +1750,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   <span className="text-[10px] text-muted-foreground">Vol dil:</span>
                   <Input value={item.diluentVolume || ''} onChange={(e) => {
                     onUpdate(item.id, "diluentVolume", e.target.value);
-                    // Auto-recalculate volume total
                     const tempItem = { ...item, diluentVolume: e.target.value };
                     const autoVol = calcVolumeTotal(tempItem);
                     if (autoVol) onUpdate(item.id, "volumeTotal", autoVol);
-                    // Auto-recalculate concentration
                     const tempItem2 = { ...tempItem, volumeTotal: autoVol || item.volumeTotal || '' };
                     const autoConc = calcConcentration(tempItem2);
                     if (autoConc) onUpdate(item.id, "concentration", autoConc);
@@ -1717,9 +1773,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     </SelectContent>
                   </Select>
                 </div>
+                </>}
               </div>
 
-              {/* Row 3: Infusion — Vol total → Correr em (com unidade) → Gotejamento + Rate | Concentração */}
+              {renderInfusion && (
               <div className="flex items-center gap-2 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
                 <Droplets className="h-3 w-3 text-primary shrink-0" />
                 <div className="flex items-center gap-1">
@@ -1830,6 +1887,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   <span className="text-[10px] text-muted-foreground ml-auto">infusão contínua 24h</span>
                 )}
               </div>
+              )}
 
               {/* Auto-synced preparation description */}
               {(() => {
@@ -1857,7 +1915,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 placeholder="Observações adicionais..."
               />
             </>
-          )}
+            );
+          })()}
           {item.flags.length > 0 && (
             <div className="flex gap-1 flex-wrap">
               {item.flags.map(fk => {
@@ -2994,16 +3053,24 @@ const PrescricaoPage = () => {
   // Categorias que NÃO seguem o esquema dose/via/posologia (têm campos próprios)
   const NON_STANDARD_CATEGORIES = useMemo(() => new Set(['nutrition', 'care', 'nonstandard', 'hydration']), []);
 
-  // Calcula quais campos obrigatórios estão faltando em um item ativo
+  // Calcula quais campos obrigatórios estão faltando em um item ativo.
+  // Os obrigatórios são adaptativos por tipo de apresentação (comprimido vs IV BIC, etc.)
   const getItemMissingFields = useCallback((item: PrescriptionItem): string[] => {
     if (item.status !== 'active') return [];
     const missing: string[] = [];
     const isStandard = !NON_STANDARD_CATEGORIES.has(item.category);
     if (isStandard) {
       const empty = (v?: string) => !v || !v.trim() || v.trim() === '-';
-      if (empty(item.dose)) missing.push('dose');
-      if (empty(item.route)) missing.push('via');
-      if (empty(item.posology)) missing.push('posologia');
+      const ptype = inferPresentationType(item.presentation, item.route, item.name);
+      const required = getRequiredFields(ptype);
+      if (required.includes('dose') && empty(item.dose)) missing.push('dose');
+      if (required.includes('via') && empty(item.route)) missing.push('via');
+      if (required.includes('posologia') && empty(item.posology)) missing.push('posologia');
+      if (required.includes('diluente') && empty(item.diluent)) missing.push('diluente');
+      if (required.includes('volume total') && empty(item.volumeTotal)) missing.push('volume total');
+      if (required.includes('tempo de infusão') && empty(item.infusionTime) && empty(item.infusionRate)) {
+        missing.push('tempo de infusão');
+      }
     }
     // Controlado (Portaria 344) precisa de tipo de notificação resolvido
     const cat = findControlledCatalog?.(item.name);
