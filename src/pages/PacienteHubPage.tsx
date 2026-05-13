@@ -52,6 +52,24 @@ export default function PacienteHubPage() {
   const [sapsPending, setSapsPending] = useState(false);
   const [sapsSince, setSapsSince] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [hasDraft, setHasDraft] = useState(false);
+
+  // Detecta rascunho local de admissão para o paciente atual
+  useEffect(() => {
+    const check = () => {
+      if (!ctx.patientId) { setHasDraft(false); return; }
+      try {
+        setHasDraft(!!localStorage.getItem(`admission_draft:v1:${ctx.patientId}`));
+      } catch { setHasDraft(false); }
+    };
+    check();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key && e.key.includes(ctx.patientId)) check();
+    };
+    window.addEventListener("storage", onStorage);
+    const t = setInterval(check, 1500);
+    return () => { window.removeEventListener("storage", onStorage); clearInterval(t); };
+  }, [ctx.patientId, admissionOpen]);
 
   const fetchStatus = async () => {
     if (!ctx.patientId) { setStatusLoading(false); return; }
