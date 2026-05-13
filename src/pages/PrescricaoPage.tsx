@@ -3183,11 +3183,12 @@ const PrescricaoPage = () => {
     toast.success("Recomendação adicionada");
   };
 
-  const addNonStandard = () => {
-    if (!nonStdName.trim()) return;
+  const addNonStandard = (overrideName?: string) => {
+    const name = (overrideName ?? nonStdName).trim();
+    if (!name) return;
     setItems(prev => [...prev, {
       id: crypto.randomUUID(),
-      name: nonStdName.trim(),
+      name,
       presentation: '-', dose: '-', route: '-',
       posology: '-', schedule: '-', instructions: '',
       category: 'nonstandard', flags: [], highAlert: false, status: 'active',
