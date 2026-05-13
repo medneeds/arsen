@@ -16,7 +16,7 @@ interface Props {
   detection: NiDetection | null;
   /** NI puro: gera código NI, sem dados administrativos */
   onConfirmPure: () => void;
-  /** NI + dados do PIN: marca como NI mas permite preencher prontuário PIN, sexo presumido, observações */
+  /** NI + dados do PIS: marca como NI mas permite preencher prontuário PIS, sexo presumido, observações */
   onConfirmWithPin: () => void;
   /** Rejeita: é nome real, segue cadastro normal */
   onReject: () => void;
@@ -97,7 +97,7 @@ export function UnidentifiedSuggestionDialog({
               </div>
             </button>
 
-            {/* Caminho 2: NI + PIN */}
+            {/* Caminho 2: NI + PIS */}
             <button
               type="button"
               onClick={onConfirmWithPin}
@@ -107,11 +107,11 @@ export function UnidentifiedSuggestionDialog({
                 <FileUp className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                 <div className="flex-1">
                   <div className="text-xs font-semibold text-primary flex items-center gap-1.5">
-                    NI + dados administrativos do PIN
+                    NI + dados administrativos do PIS
                     <Badge variant="outline" className="text-[9px] py-0">recomendado</Badge>
                   </div>
                   <p className="text-[10.5px] text-foreground/80 mt-0.5">
-                    Mantém como Não Identificado, mas permite preencher <strong>nº de prontuário do PIN</strong>,
+                    Mantém como Não Identificado, mas permite preencher <strong>nº de prontuário do PIS</strong>,
                     sexo/idade aparente, local de origem (SAMU, via pública) e observações da recepção.
                   </p>
                 </div>
