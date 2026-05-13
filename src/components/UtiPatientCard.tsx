@@ -1458,15 +1458,14 @@ export function UtiPatientCard({
         onSuccess={handleMovementSuccess}
       />
 
-      {/* Reallocation Dialog */}
-      <UtiReallocationDialog
+      {/* Reallocation Dialog — abas Realocar (leito vago) e Permutar (paciente) */}
+      <BedReallocationDialog
+        open={isReallocationDialogOpen}
+        onOpenChange={(o) => !o && setIsReallocationDialogOpen(false)}
         patient={patient}
-        isOpen={isReallocationDialogOpen}
-        onClose={() => setIsReallocationDialogOpen(false)}
         onSuccess={handleReallocationSuccess}
-        currentUtiUnit={derivedUtiUnit}
-        allPatients={allPatients}
       />
+
 
       {/* Cadastro de Paciente (a partir de leito vago no mapa) */}
       <PatientRegistrationDialog
