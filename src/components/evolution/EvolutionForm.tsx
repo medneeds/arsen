@@ -119,10 +119,12 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   const requiredComplete = completion.evolucao && completion.plan;
 
   const handleImportExams = (newExams: string[]) => {
-    const current = soap.objective?.trim() || "";
-    const block = newExams.filter(Boolean).join("\n");
-    const merged = current ? `${current}\n${block}` : block;
-    onSOAPChange('objective', merged);
+    const currentHtml = sanitizeRichHtml(toRichHtml(soap.objective || ""));
+    const blockHtml = newExams
+      .filter(Boolean)
+      .map(t => `<p>${t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`)
+      .join("");
+    onSOAPChange('objective', currentHtml + blockHtml);
   };
 
   // Autosave (debounced 2s) for editing existing drafts in Timeline
