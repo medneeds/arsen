@@ -5053,7 +5053,7 @@ const PrescricaoPage = () => {
                       </Tooltip>
                     )}
                     <IconComp className={cn("h-3.5 w-3.5 shrink-0", config.color)} />
-                    <span className="text-xs font-semibold text-foreground whitespace-nowrap">{config.label}</span>
+                    <span className="text-xs font-semibold text-foreground whitespace-nowrap" title={config.label}>{config.shortLabel ?? config.label}</span>
                     <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">{catItems.length}</Badge>
                     {compactView && catItems.length > 0 && !isSimpleCategory(cat) && (
                       <Tooltip>
