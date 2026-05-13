@@ -136,6 +136,13 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
     setForm(prev => ({ ...prev, [field]: value as never }));
   };
 
+  // Garante que, ao reabrir o diálogo a partir de uma seção de setor, o destino fique pré-preenchido
+  useEffect(() => {
+    if (open && defaultDestinationSector) {
+      setForm(prev => prev.destination_sector ? prev : { ...prev, destination_sector: defaultDestinationSector });
+    }
+  }, [open, defaultDestinationSector]);
+
   // Toggle NI: limpa campos sensíveis e força sexo='ignorado' inicial
   const toggleUnidentified = (checked: boolean) => {
     setForm(prev => ({
