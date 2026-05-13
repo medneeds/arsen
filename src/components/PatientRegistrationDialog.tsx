@@ -346,7 +346,13 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
       }
 
       // Generate medical record number
+      // Preserva o prontuário vindo do PIS para auditoria, mas em modo auto+NI
+      // sempre gera um novo número oficial interno (PIS vai para unidentified_features).
       let prontuario = form.medical_record?.trim() || null;
+      const pisProntuario = prontuario;
+      if (form.is_unidentified && mrMode === "auto") {
+        prontuario = null;
+      }
       if (!prontuario) {
         const { data: unitRow, error: unitErr } = await supabase
           .from("hospital_units").select("unit_code").eq("id", currentHospital.id).maybeSingle();
@@ -370,6 +376,9 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         skin_color: form.ni_skin_color || null,
         distinctive_marks: form.ni_distinctive_marks || null,
         arrival_circumstance: form.ni_arrival_circumstance || null,
+        // Rastreabilidade: prontuário e nome originais do PIS quando importado
+        pis_medical_record: pisProntuario || null,
+        pis_raw_name: form.medical_record && pisProntuario ? "NÃO IDENTIFICADO (PIS)" : null,
       } : null;
 
       const { data: registry, error: regErr } = await supabase
