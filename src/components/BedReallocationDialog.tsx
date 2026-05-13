@@ -11,10 +11,11 @@ import { Patient } from "@/types/patient";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
 import { cn } from "@/lib/utils";
 
-interface SiblingPatient {
+interface SiblingRow {
   id: string;
   name: string;
   bed_number: string;
+  is_vacant: boolean | null;
   display_order: number | null;
 }
 
@@ -25,17 +26,20 @@ interface BedReallocationDialogProps {
   onSuccess?: () => void;
 }
 
+type VacantTarget =
+  | { kind: "row"; bed_number: string; row: SiblingRow }
+  | { kind: "slot"; bed_number: string };
+
 export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }: BedReallocationDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [siblings, setSiblings] = useState<SiblingPatient[]>([]);
+  const [siblings, setSiblings] = useState<SiblingRow[]>([]);
   const [tab, setTab] = useState<"realocar" | "permutar">("realocar");
-  const [selectedBed, setSelectedBed] = useState<string | null>(null);
-  const [selectedPatient, setSelectedPatient] = useState<SiblingPatient | null>(null);
+  const [selectedTarget, setSelectedTarget] = useState<VacantTarget | null>(null);
+  const [selectedSwap, setSelectedSwap] = useState<SiblingRow | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const sectorConfig = SECTOR_BED_CONFIG[patient.sector as string];
 
-  // Generate all valid bed numbers for the sector
   const allBeds = useMemo(() => {
     if (!sectorConfig) return [] as string[];
     const start = sectorConfig.startNumber ?? 1;
@@ -47,36 +51,53 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
     return beds;
   }, [sectorConfig]);
 
-  const occupiedBedNumbers = useMemo(
-    () => new Set(siblings.map((s) => s.bed_number)),
+  // Realocar = leitos vagos: linhas vagas (is_vacant OU name vazio) + slots fixos sem linha alguma
+  const vacantTargets = useMemo<VacantTarget[]>(() => {
+    const byBed = new Map(siblings.map((s) => [s.bed_number, s] as const));
+    const results: VacantTarget[] = [];
+    for (const bed of allBeds) {
+      if (bed === patient.bedNumber) continue;
+      const row = byBed.get(bed);
+      if (!row) {
+        results.push({ kind: "slot", bed_number: bed });
+      } else if (row.is_vacant === true || !row.name?.trim()) {
+        results.push({ kind: "row", bed_number: bed, row });
+      }
+    }
+    // Inclui também leitos vagos fora do range fixo (ex.: extras) já existentes como linhas
+    for (const s of siblings) {
+      if (allBeds.includes(s.bed_number)) continue;
+      if (s.is_vacant === true || !s.name?.trim()) {
+        results.push({ kind: "row", bed_number: s.bed_number, row: s });
+      }
+    }
+    return results.sort((a, b) => a.bed_number.localeCompare(b.bed_number));
+  }, [allBeds, siblings, patient.bedNumber]);
+
+  // Permutar = qualquer linha de paciente do setor (vaga ou ocupada), exceto a própria
+  const swapCandidates = useMemo(
+    () => [...siblings].sort((a, b) => a.bed_number.localeCompare(b.bed_number)),
     [siblings]
   );
 
-  const availableBeds = useMemo(
-    () => allBeds.filter((b) => !occupiedBedNumbers.has(b) && b !== patient.bedNumber),
-    [allBeds, occupiedBedNumbers, patient.bedNumber]
-  );
-
-  // Load siblings when opening
   useEffect(() => {
     if (!open) return;
-    setSelectedBed(null);
-    setSelectedPatient(null);
+    setSelectedTarget(null);
+    setSelectedSwap(null);
     setTab("realocar");
     let cancel = false;
     (async () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("patients")
-        .select("id, name, bed_number, display_order")
+        .select("id, name, bed_number, is_vacant, display_order")
         .eq("sector", patient.sector)
-        .is("deleted_at", null)
         .neq("id", patient.id);
       if (cancel) return;
       if (error) {
         toast.error("Falha ao carregar leitos do setor");
       } else {
-        setSiblings((data ?? []).filter((p) => !!p.bed_number) as SiblingPatient[]);
+        setSiblings((data ?? []).filter((p) => !!p.bed_number) as SiblingRow[]);
       }
       setLoading(false);
     })();
@@ -85,69 +106,71 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
     };
   }, [open, patient.id, patient.sector]);
 
-  const handleRealocar = async () => {
-    if (!selectedBed) return;
+  // Move atômico: se a outra ponta tem linha, swap pelos bed_numbers; senão, simples update.
+  const performMove = async (otherRow: SiblingRow | null, targetBed: string) => {
     setSubmitting(true);
-    const { error } = await supabase
-      .from("patients")
-      .update({ bed_number: selectedBed, updated_at: new Date().toISOString() })
-      .eq("id", patient.id);
-    setSubmitting(false);
-    if (error) {
-      toast.error("Erro ao realocar paciente: " + error.message);
-      return;
+    try {
+      if (!otherRow) {
+        const { error } = await supabase
+          .from("patients")
+          .update({ bed_number: targetBed, updated_at: new Date().toISOString() })
+          .eq("id", patient.id);
+        if (error) throw error;
+      } else {
+        const tempBed = `__SWAP_${Date.now()}`;
+        // 1) tira o paciente atual do caminho
+        let r = await supabase.from("patients").update({ bed_number: tempBed }).eq("id", patient.id);
+        if (r.error) throw r.error;
+        // 2) move o outro para o leito original
+        r = await supabase
+          .from("patients")
+          .update({ bed_number: patient.bedNumber, updated_at: new Date().toISOString() })
+          .eq("id", otherRow.id);
+        if (r.error) {
+          await supabase.from("patients").update({ bed_number: patient.bedNumber }).eq("id", patient.id);
+          throw r.error;
+        }
+        // 3) coloca o paciente atual no leito alvo
+        r = await supabase
+          .from("patients")
+          .update({ bed_number: targetBed, updated_at: new Date().toISOString() })
+          .eq("id", patient.id);
+        if (r.error) {
+          await supabase.from("patients").update({ bed_number: otherRow.bed_number }).eq("id", otherRow.id);
+          await supabase.from("patients").update({ bed_number: patient.bedNumber }).eq("id", patient.id);
+          throw r.error;
+        }
+      }
+      toast.success(
+        otherRow && otherRow.name?.trim()
+          ? `Permuta concluída: ${patient.bedNumber} ↔ ${targetBed} (com ${otherRow.name})`
+          : `Paciente realocado para ${targetBed}`
+      );
+      onSuccess?.();
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error("Erro ao mover paciente: " + (e?.message ?? e));
+    } finally {
+      setSubmitting(false);
     }
-    toast.success(`Paciente realocado para ${selectedBed}`);
-    onSuccess?.();
-    onOpenChange(false);
   };
 
-  const handlePermutar = async () => {
-    if (!selectedPatient) return;
-    setSubmitting(true);
-    const tempBed = `__SWAP_${Date.now()}`;
-    // 1) Park current patient in temp bed (avoid unique collision if any)
-    const step1 = await supabase
-      .from("patients")
-      .update({ bed_number: tempBed })
-      .eq("id", patient.id);
-    if (step1.error) {
-      setSubmitting(false);
-      toast.error("Erro ao iniciar permuta: " + step1.error.message);
-      return;
+  const handleConfirm = () => {
+    if (tab === "realocar") {
+      if (!selectedTarget) return;
+      const otherRow = selectedTarget.kind === "row" ? selectedTarget.row : null;
+      performMove(otherRow, selectedTarget.bed_number);
+    } else {
+      if (!selectedSwap) return;
+      performMove(selectedSwap, selectedSwap.bed_number);
     }
-    // 2) Move target patient to current's original bed
-    const step2 = await supabase
-      .from("patients")
-      .update({ bed_number: patient.bedNumber, updated_at: new Date().toISOString() })
-      .eq("id", selectedPatient.id);
-    if (step2.error) {
-      // rollback
-      await supabase.from("patients").update({ bed_number: patient.bedNumber }).eq("id", patient.id);
-      setSubmitting(false);
-      toast.error("Erro na permuta: " + step2.error.message);
-      return;
-    }
-    // 3) Move current patient to target's bed
-    const step3 = await supabase
-      .from("patients")
-      .update({ bed_number: selectedPatient.bed_number, updated_at: new Date().toISOString() })
-      .eq("id", patient.id);
-    if (step3.error) {
-      // rollback both
-      await supabase.from("patients").update({ bed_number: selectedPatient.bed_number }).eq("id", selectedPatient.id);
-      await supabase.from("patients").update({ bed_number: patient.bedNumber }).eq("id", patient.id);
-      setSubmitting(false);
-      toast.error("Erro na permuta: " + step3.error.message);
-      return;
-    }
-    setSubmitting(false);
-    toast.success(`Permuta concluída: ${patient.bedNumber} ↔ ${selectedPatient.bed_number}`);
-    onSuccess?.();
-    onOpenChange(false);
   };
 
   const sectorLabel = sectorConfig?.label ?? patient.sector;
+  const canConfirm = tab === "realocar" ? !!selectedTarget : !!selectedSwap;
+  const confirmLabel = tab === "realocar"
+    ? `Confirmar realocação${selectedTarget ? ` para ${selectedTarget.bed_number}` : ""}`
+    : `Confirmar permuta${selectedSwap ? ` ${patient.bedNumber} ↔ ${selectedSwap.bed_number}` : ""}`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -160,7 +183,7 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
           <DialogDescription>
             <span className="font-semibold">{patient.name}</span> · Leito atual{" "}
             <Badge variant="outline" className="font-mono">{patient.bedNumber}</Badge>{" "}
-            · Setor <span className="font-medium">{sectorLabel}</span> (movimentação interna ao setor)
+            · Setor <span className="font-medium">{sectorLabel}</span> (movimentação interna ao setor — leitos são fixos)
           </DialogDescription>
         </DialogHeader>
 
@@ -172,13 +195,13 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
         )}
 
         {sectorConfig && (
-          <Tabs value={tab} onValueChange={(v) => { setTab(v as "realocar" | "permutar"); setSelectedBed(null); setSelectedPatient(null); }}>
+          <Tabs value={tab} onValueChange={(v) => { setTab(v as "realocar" | "permutar"); setSelectedTarget(null); setSelectedSwap(null); }}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="realocar" className="gap-2">
                 <BedDouble className="h-4 w-4" /> Realocar (leito vago)
               </TabsTrigger>
               <TabsTrigger value="permutar" className="gap-2">
-                <ArrowRightLeft className="h-4 w-4" /> Permutar (com paciente)
+                <ArrowRightLeft className="h-4 w-4" /> Permutar (vago ou ocupado)
               </TabsTrigger>
             </TabsList>
 
@@ -187,30 +210,33 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
                 <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando leitos...
                 </div>
-              ) : availableBeds.length === 0 ? (
+              ) : vacantTargets.length === 0 ? (
                 <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
                   Nenhum leito vago neste setor. Use a aba <strong>Permutar</strong> para trocar com outro paciente.
                 </div>
               ) : (
                 <ScrollArea className="h-[280px] pr-2">
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
-                    {availableBeds.map((bed) => (
-                      <button
-                        key={bed}
-                        type="button"
-                        onClick={() => setSelectedBed(bed)}
-                        className={cn(
-                          "rounded-lg border p-3 text-center font-mono text-sm transition-all",
-                          "hover:border-primary hover:bg-primary/5",
-                          selectedBed === bed
-                            ? "border-primary bg-primary/10 ring-2 ring-primary/40 font-semibold"
-                            : "border-border bg-background"
-                        )}
-                      >
-                        <BedDouble className="mx-auto mb-1 h-4 w-4 text-emerald-600" />
-                        {bed}
-                      </button>
-                    ))}
+                    {vacantTargets.map((t) => {
+                      const isSel = selectedTarget?.bed_number === t.bed_number;
+                      return (
+                        <button
+                          key={t.bed_number}
+                          type="button"
+                          onClick={() => setSelectedTarget(t)}
+                          className={cn(
+                            "rounded-lg border p-3 text-center font-mono text-sm transition-all",
+                            "hover:border-primary hover:bg-primary/5",
+                            isSel
+                              ? "border-primary bg-primary/10 ring-2 ring-primary/40 font-semibold"
+                              : "border-border bg-background"
+                          )}
+                        >
+                          <BedDouble className="mx-auto mb-1 h-4 w-4 text-emerald-600" />
+                          {t.bed_number}
+                        </button>
+                      );
+                    })}
                   </div>
                 </ScrollArea>
               )}
@@ -219,35 +245,43 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
             <TabsContent value="permutar" className="mt-3">
               {loading ? (
                 <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando pacientes...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando leitos...
                 </div>
-              ) : siblings.length === 0 ? (
+              ) : swapCandidates.length === 0 ? (
                 <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                  Não há outros pacientes neste setor para permuta.
+                  Não há outros leitos neste setor para permuta.
                 </div>
               ) : (
                 <ScrollArea className="h-[280px] pr-2">
                   <div className="space-y-1.5">
-                    {siblings.map((s) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => setSelectedPatient(s)}
-                        className={cn(
-                          "flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left text-sm transition-all",
-                          "hover:border-primary hover:bg-primary/5",
-                          selectedPatient?.id === s.id
-                            ? "border-primary bg-primary/10 ring-2 ring-primary/40"
-                            : "border-border bg-background"
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Badge variant="outline" className="font-mono">{s.bed_number}</Badge>
-                          <span className="font-medium uppercase">{s.name}</span>
-                        </div>
-                        <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                    ))}
+                    {swapCandidates.map((s) => {
+                      const occupied = !!s.name?.trim();
+                      const isSel = selectedSwap?.id === s.id;
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => setSelectedSwap(s)}
+                          className={cn(
+                            "flex w-full items-center justify-between gap-3 rounded-lg border p-3 text-left text-sm transition-all",
+                            "hover:border-primary hover:bg-primary/5",
+                            isSel
+                              ? "border-primary bg-primary/10 ring-2 ring-primary/40"
+                              : "border-border bg-background"
+                          )}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Badge variant="outline" className="font-mono shrink-0">{s.bed_number}</Badge>
+                            {occupied ? (
+                              <span className="font-medium uppercase truncate">{s.name}</span>
+                            ) : (
+                              <span className="text-emerald-700 dark:text-emerald-400 text-xs uppercase font-semibold">Leito vago</span>
+                            )}
+                          </div>
+                          <ArrowRightLeft className="h-4 w-4 text-muted-foreground shrink-0" />
+                        </button>
+                      );
+                    })}
                   </div>
                 </ScrollArea>
               )}
@@ -259,17 +293,10 @@ export function BedReallocationDialog({ open, onOpenChange, patient, onSuccess }
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancelar
           </Button>
-          {tab === "realocar" ? (
-            <Button onClick={handleRealocar} disabled={!selectedBed || submitting}>
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Confirmar realocação{selectedBed ? ` para ${selectedBed}` : ""}
-            </Button>
-          ) : (
-            <Button onClick={handlePermutar} disabled={!selectedPatient || submitting}>
-              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Confirmar permuta{selectedPatient ? ` ${patient.bedNumber} ↔ ${selectedPatient.bed_number}` : ""}
-            </Button>
-          )}
+          <Button onClick={handleConfirm} disabled={!canConfirm || submitting}>
+            {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {confirmLabel}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
