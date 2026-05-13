@@ -346,7 +346,13 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
       }
 
       // Generate medical record number
+      // Preserva o prontuário vindo do PIS para auditoria, mas em modo auto+NI
+      // sempre gera um novo número oficial interno (PIS vai para unidentified_features).
       let prontuario = form.medical_record?.trim() || null;
+      const pisProntuario = prontuario;
+      if (form.is_unidentified && mrMode === "auto") {
+        prontuario = null;
+      }
       if (!prontuario) {
         const { data: unitRow, error: unitErr } = await supabase
           .from("hospital_units").select("unit_code").eq("id", currentHospital.id).maybeSingle();
