@@ -431,7 +431,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   )}
-                  {evo.status === "validated" && isAuthor && (
+                  {evo.status === "validated" && isAuthor && !isAdmission && (
                     <Button
                       variant="ghost" size="icon" className="h-6 w-6 text-destructive"
                       onClick={e => { e.stopPropagation(); setSuspendDialogId(evo.id); }}
