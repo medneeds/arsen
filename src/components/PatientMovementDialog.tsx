@@ -608,12 +608,11 @@ export function PatientMovementDialog({
 
         {step === "form" && (
           <DialogFooter className="gap-2 sm:gap-2 sm:flex-col sm:items-stretch">
-            {requiredDocType && (!docComplete || !responsibleDoctor.trim()) && (
+            {requiredDocType && dischargeChecklist.blocking.length > 0 && (
               <div className="flex items-start gap-2 p-2 rounded-md bg-warning/10 border border-warning/30 text-[11px] text-warning-foreground">
                 <AlertTriangle className="h-3.5 w-3.5 text-warning mt-0.5 shrink-0" />
                 <span>
-                  Para confirmar, é preciso ter o {requiredDocType === "obito" ? "Relatório de Óbito" : "Sumário de Alta"} completo
-                  e o médico responsável sincronizado com o usuário logado.
+                  Há {dischargeChecklist.blocking.length} pendência(s) obrigatória(s). Você poderá ver o detalhe ao clicar em <strong>Revisar e confirmar</strong>.
                 </span>
               </div>
             )}
@@ -622,20 +621,38 @@ export function PatientMovementDialog({
                 Cancelar
               </Button>
               <Button
-                onClick={handleSubmit}
-                disabled={
-                  isSubmitting ||
-                  (!!requiredDocType && (!docComplete || !responsibleDoctor.trim()))
-                }
+                onClick={handleOpenConfirm}
+                disabled={isSubmitting}
                 className="gap-2"
               >
                 {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isSubmitting ? "Registrando..." : "Confirmar"}
+                {isSubmitting
+                  ? "Registrando..."
+                  : requiredDocType ? "Revisar e confirmar" : "Confirmar"}
               </Button>
             </div>
           </DialogFooter>
         )}
       </DialogContent>
+
+      {/* Popup de confirmação didático para altas/óbito */}
+      {requiredDocType && (
+        <DischargeConfirmDialog
+          open={confirmOpen}
+          onOpenChange={(o) => !isSubmitting && setConfirmOpen(o)}
+          onConfirm={handleSubmit}
+          isSubmitting={isSubmitting}
+          docType={requiredDocType}
+          payload={docPayload}
+          patient={patient ? { name: patient.name, bedNumber: patient.bedNumber, sector: patient.sector } : null}
+          responsibleDoctor={responsibleDoctor}
+          movementLabel={subtypeDef?.label || "Movimentação"}
+          destination={destination === "OUTRO" ? customDestination : destination}
+          notes={notes}
+          blockingMissing={dischargeChecklist.blocking}
+          softMissing={dischargeChecklist.soft}
+        />
+      )}
     </Dialog>
   );
 }
