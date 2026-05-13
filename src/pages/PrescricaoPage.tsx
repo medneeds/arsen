@@ -3143,14 +3143,103 @@ const PrescricaoPage = () => {
     return Math.max(1, Math.ceil((validationSessionExpiresAt - Date.now()) / 60_000));
   }, [isValidationSessionActive, validationSessionExpiresAt, sessionTick]);
 
+  // Persiste o array de itens IMEDIATAMENTE no Supabase.
+  // - mode 'update': atualiza a linha atual (usado para suspensão/reativação/validação intra-dia).
+  // - mode 'newVersion': cria nova linha vinculada via parent_id e bump de version
+  //   (usado quando o ato altera o conteúdo clínico do dia — ex.: revalidação após o corte 05h
+  //   preserva o snapshot do dia anterior para auditoria/CCIH).
+  const persistItems = useCallback(async (
+    nextItems: PrescriptionItem[],
+    opts: { mode?: 'update' | 'newVersion'; reason?: string } = {}
+  ) => {
+    if (!currentHospital || !currentState || !patient.name.trim()) {
+      toast.warning("Alteração local — sem paciente/hospital ativo, não foi persistida.");
+      return;
+    }
+    const mode = opts.mode || 'update';
+    try {
+      const basePayload = {
+        patient_name: patient.name.trim(),
+        patient_data: patient as any,
+        items: nextItems as any,
+        digital_signature: digitalSignature as any,
+        status: digitalSignature ? 'signed' : 'draft',
+        department: 'URGÊNCIA E EMERGÊNCIA ADULTO',
+        hospital_unit_id: currentHospital.id,
+        state_id: currentState.id,
+        created_by: user?.id || null,
+      };
+
+      if (mode === 'newVersion' && currentPrescriptionId) {
+        // Busca version atual para incrementar
+        let nextVersion = 2;
+        try {
+          const { data: parentData } = await supabase
+            .from('prescriptions')
+            .select('version')
+            .eq('id', currentPrescriptionId)
+            .single();
+          nextVersion = ((parentData as any)?.version || 1) + 1;
+        } catch {}
+        const { data, error } = await supabase
+          .from('prescriptions')
+          .insert({
+            ...basePayload,
+            version: nextVersion,
+            parent_id: currentPrescriptionId,
+          } as any)
+          .select('id')
+          .single();
+        if (error) throw error;
+        if (data) {
+          setCurrentPrescriptionId(data.id);
+          fetchVersionHistory?.(data.id);
+        }
+        return;
+      }
+
+      if (currentPrescriptionId) {
+        const { error } = await supabase
+          .from('prescriptions')
+          .update(basePayload)
+          .eq('id', currentPrescriptionId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase
+          .from('prescriptions')
+          .insert(basePayload)
+          .select('id')
+          .single();
+        if (error) throw error;
+        if (data) setCurrentPrescriptionId(data.id);
+      }
+    } catch (err: any) {
+      console.error('[persistItems] persist failed', err);
+      toast.error("Erro ao persistir alteração", {
+        description: "A alteração ficou apenas em memória. Salve manualmente para garantir.",
+      });
+    }
+  }, [currentHospital, currentState, patient, digitalSignature, currentPrescriptionId, user?.id]);
+
   // Aplica a validação a um conjunto (sem pedir senha) — usado tanto pelo caminho rápido
   // quanto pelo executeValidation (após senha).
   // IMPORTANTE: persiste IMEDIATAMENTE no Supabase para garantir imutabilidade
   // entre sessões/setores. Validar = ato definitivo (só pode ser suspenso depois).
+  // Após o corte das 05h, revalidar gera NOVA VERSÃO (parent_id) preservando o
+  // snapshot do dia anterior (auditoria/CCIH).
   const applyValidation = useCallback((action: { type: 'all' } | { type: 'item'; itemId: string }) => {
     const now = new Date().toISOString();
     let nextItems: PrescriptionItem[] = [];
+    let isRevalidationPostCutoff = false;
     setItems(prev => {
+      // Detecta revalidação: pelo menos 1 item afetado já tinha validatedAt anterior ao corte 05h de hoje
+      const cutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
+      const isPast = isAfter(new Date(), cutoff);
+      const affected = action.type === 'all'
+        ? prev.filter(i => i.status === 'active')
+        : prev.filter(i => i.id === action.itemId);
+      isRevalidationPostCutoff = isPast && affected.some(i => i.validated && i.validatedAt && new Date(i.validatedAt) <= cutoff);
+
       nextItems = prev.map(item => {
         if (action.type === 'all') {
           return item.status === 'active' ? { ...item, validated: true, validatedAt: now } : item;
@@ -3161,52 +3250,19 @@ const PrescricaoPage = () => {
     });
 
     // Persistência imediata — best-effort, mas crítico para imutabilidade
-    (async () => {
-      if (!currentHospital || !currentState || !patient.name.trim()) {
-        toast.warning("Validação local — sem paciente/hospital ativo, não foi persistida.");
-        return;
-      }
-      try {
-        const payload = {
-          patient_name: patient.name.trim(),
-          patient_data: patient as any,
-          items: nextItems as any,
-          digital_signature: digitalSignature as any,
-          status: digitalSignature ? 'signed' : 'draft',
-          department: 'URGÊNCIA E EMERGÊNCIA ADULTO',
-          hospital_unit_id: currentHospital.id,
-          state_id: currentState.id,
-          created_by: user?.id || null,
-        };
-        if (currentPrescriptionId) {
-          const { error } = await supabase
-            .from('prescriptions')
-            .update(payload)
-            .eq('id', currentPrescriptionId);
-          if (error) throw error;
-        } else {
-          const { data, error } = await supabase
-            .from('prescriptions')
-            .insert(payload)
-            .select('id')
-            .single();
-          if (error) throw error;
-          if (data) setCurrentPrescriptionId(data.id);
-        }
-      } catch (err: any) {
-        console.error('[applyValidation] persist failed', err);
-        toast.error("Erro ao persistir validação", {
-          description: "A validação ficou apenas em memória. Salve manualmente para garantir.",
-        });
-      }
-    })();
+    persistItems(nextItems, { mode: isRevalidationPostCutoff ? 'newVersion' : 'update' });
 
     if (action.type === 'all') {
-      toast.success("Prescrição validada", { description: "Todos os itens ativos foram validados e registrados." });
+      toast.success(
+        isRevalidationPostCutoff ? "Prescrição revalidada (nova versão)" : "Prescrição validada",
+        { description: isRevalidationPostCutoff
+            ? "Snapshot do dia anterior preservado no histórico."
+            : "Todos os itens ativos foram validados e registrados." }
+      );
     } else {
-      toast.success("Item validado");
+      toast.success(isRevalidationPostCutoff ? "Item revalidado (nova versão)" : "Item validado");
     }
-  }, [currentHospital, currentState, patient, digitalSignature, currentPrescriptionId, user?.id]);
+  }, [persistItems]);
 
   // === Pré-validação clínica: alertas (alergia / interações graves / duplicidade) ===
   // O médico é alertado mas NÃO bloqueado: pode confirmar ciência e prosseguir.
