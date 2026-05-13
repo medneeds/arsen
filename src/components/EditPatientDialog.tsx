@@ -197,24 +197,17 @@ export function EditPatientDialog({
 
                 {/* Datas administrativas — unificado para todos os setores */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold flex items-center gap-1.5">
-                      <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
-                      Data de admissão no setor
-                    </Label>
-                    <Input
-                      value={isUti ? utiAdmissionDate : (formData.admissionDate || "")}
-                      onChange={(e) =>
-                        setFormData(
-                          isUti
-                            ? { ...formData, utiAdmissionDate: [e.target.value] }
-                            : { ...formData, admissionDate: e.target.value }
-                        )
-                      }
-                      placeholder="DD/MM/AAAA HH:MM"
-                      className="h-9 text-xs uppercase"
-                    />
-                  </div>
+                  <AdmissionDateEditor
+                    patientId={patient.id}
+                    value={isUti ? utiAdmissionDate : (formData.admissionDate || "")}
+                    onChange={(newValue) =>
+                      setFormData(
+                        isUti
+                          ? { ...formData, utiAdmissionDate: [newValue] }
+                          : { ...formData, admissionDate: newValue }
+                      )
+                    }
+                  />
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold flex items-center gap-1.5">
                       <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" />
