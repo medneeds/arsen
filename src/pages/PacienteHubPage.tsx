@@ -188,8 +188,10 @@ export default function PacienteHubPage() {
   })();
 
   const AdmissionIcon = isAdmitted ? CheckCircle2 : ClipboardCheck;
+  // Rascunho de admissão salvo libera os demais módulos (sem bloqueio).
+  // SAPS pendente/vencida segue apenas como alerta — não bloqueia evolução/prescrição/etc.
   const lockReason: "preadmission" | "saps_expired" | null =
-    isPreAdmitted ? "preadmission" : sapsExpired ? "saps_expired" : null;
+    isPreAdmitted && !hasDraft ? "preadmission" : null;
   const locked = lockReason !== null;
 
   return (
