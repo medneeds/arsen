@@ -36,12 +36,69 @@ export const MedicalResponsibilityDialog = ({
     currentResponsibility?.portaNames || ""
   );
 
+  const [responsibleDoctorId, setResponsibleDoctorId] = useState<string | undefined>(
+    currentResponsibility?.responsibleDoctorId
+  );
+  const [responsibleDoctorName, setResponsibleDoctorName] = useState<string>(
+    currentResponsibility?.responsibleDoctorName || ""
+  );
+  const [responsibleDoctorCrm, setResponsibleDoctorCrm] = useState<string | undefined>(
+    currentResponsibility?.responsibleDoctorCrm
+  );
+  const [doctorQuery, setDoctorQuery] = useState("");
+  const [doctorResults, setDoctorResults] = useState<Array<{ id: string; full_name: string; crm?: string | null }>>([]);
+  const [searching, setSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+
+  useEffect(() => {
+    if (!doctorQuery || doctorQuery.length < 2) {
+      setDoctorResults([]);
+      return;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      setSearching(true);
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, crm, access_profile, professional_type")
+        .eq("status", "approved")
+        .ilike("full_name", `%${doctorQuery}%`)
+        .limit(10);
+      if (cancelled) return;
+      const filtered = (data || []).filter((p: any) => {
+        const ap = (p.access_profile || "").toLowerCase();
+        const pt = (p.professional_type || "").toLowerCase();
+        return ap.includes("medic") || pt.includes("medic") || pt.includes("médic");
+      });
+      setDoctorResults(filtered as any);
+      setSearching(false);
+    }, 250);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [doctorQuery]);
+
+  const selectDoctor = (d: { id: string; full_name: string; crm?: string | null }) => {
+    setResponsibleDoctorId(d.id);
+    setResponsibleDoctorName(d.full_name);
+    setResponsibleDoctorCrm(d.crm || undefined);
+    setDoctorQuery("");
+    setShowResults(false);
+  };
+
+  const clearDoctor = () => {
+    setResponsibleDoctorId(undefined);
+    setResponsibleDoctorName("");
+    setResponsibleDoctorCrm(undefined);
+  };
+
   const handleSave = () => {
     onSave({
       type,
       officeNumber: type === 'porta' || type === 'conjunto' || type === 'obstetra' || type === 'cirurgiao_geral' || type === 'traumatologista' ? officeNumber : undefined,
       leaderNames: type === 'lider' || type === 'conjunto' ? leaderNames : undefined,
       portaNames: type === 'porta' || type === 'conjunto' || type === 'obstetra' || type === 'cirurgiao_geral' || type === 'traumatologista' ? portaNames : undefined,
+      responsibleDoctorId,
+      responsibleDoctorName: responsibleDoctorName || undefined,
+      responsibleDoctorCrm,
     });
     onOpenChange(false);
   };
@@ -51,6 +108,7 @@ export const MedicalResponsibilityDialog = ({
     setOfficeNumber("");
     setLeaderNames("");
     setPortaNames("");
+    clearDoctor();
   };
 
   return (
