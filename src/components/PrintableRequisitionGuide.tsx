@@ -370,13 +370,16 @@ export function PrintableRequisitionGuide({
               >
                 <span
                   style={{
-                    width: 9,
-                    height: 9,
-                    border: `1px solid ${ink}`,
-                    borderRadius: 1,
+                    minWidth: 16,
+                    fontSize: "8.5pt",
+                    fontWeight: 600,
+                    color: ink,
                     flexShrink: 0,
+                    textAlign: "right",
                   }}
-                />
+                >
+                  {i + 1}.
+                </span>
                 <span>{name}</span>
               </div>
             );
@@ -523,9 +526,9 @@ export async function printRequisitionGuide(
   const itemsCells =
     items.length > 0
       ? items
-          .map((item: any) => {
+          .map((item: any, idx: number) => {
             const name = typeof item === "string" ? item : item?.name || String(item ?? "");
-            return `<div class="req-item"><span class="req-check"></span><span>${escapeHtml(name)}</span></div>`;
+            return `<div class="req-item"><span class="req-num">${idx + 1}.</span><span>${escapeHtml(name)}</span></div>`;
           })
           .join("")
       : `<div class="nz-empty">Nenhum item registrado.</div>`;
@@ -553,7 +556,7 @@ export async function printRequisitionGuide(
     .req-grid { display:grid; grid-template-columns: 1fr 1fr; gap:0; border:0.5pt solid #cbd5e1; border-radius:3pt; overflow:hidden; }
     .req-item { display:flex; align-items:center; gap:5pt; padding:4pt 7pt; font-size:8.5pt; border-bottom:0.5pt solid #e2e8f0; border-right:0.5pt solid #e2e8f0; }
     .req-item:nth-child(2n) { border-right:none; }
-    .req-check { width:8pt; height:8pt; border:1pt solid #0a1628; border-radius:1pt; display:inline-block; flex-shrink:0; }
+    .req-num { min-width:14pt; font-size:8.5pt; font-weight:600; color:#0a1628; text-align:right; flex-shrink:0; }
   `;
 
   const logoDataUrl = await prepareLogo();
