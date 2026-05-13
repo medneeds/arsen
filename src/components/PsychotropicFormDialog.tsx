@@ -239,8 +239,38 @@ export function PsychotropicFormDialog({
 
   const handlePrint = () => {
     if (!canPrint) return;
-    setIsPrinting(true);
-    setTimeout(() => { window.print(); setTimeout(() => setIsPrinting(false), 500); }, 100);
+    const today = format(new Date(), "dd/MM/yyyy", { locale: ptBR });
+    const docCode = `PORT344-${format(new Date(), "yyyyMMdd-HHmm")}`;
+    const formMarkup = renderToStaticMarkup(
+      <PrintablePsychotropicForm
+        patient={patient}
+        grouped={groupedForPrint}
+        doctorName={doctorName}
+        doctorCrm={doctorCrm}
+        doctorSpecialty={doctorSpecialty}
+        hospitalName={hospitalName}
+        hospitalAddress={hospitalAddress}
+        date={today}
+        docCode={docCode}
+      />
+    );
+    const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<title>Receituário Portaria 344 — ${docCode}</title>
+<style>
+  @page { size: A4 portrait; margin: 8mm 12mm; }
+  :root { color-scheme: light only; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; background: #fff; color: #0f172a; font-family: Arial, Helvetica, sans-serif; }
+  @media print {
+    html, body { width: 210mm; }
+  }
+</style>
+</head><body>${formMarkup}
+<script>window.onload = () => { setTimeout(() => { window.focus(); window.print(); }, 350); };</script>
+</body></html>`;
+    openPrintWindow(html, "Preparando receituário Portaria 344…");
+    // Dispara afterprint na janela atual para o orquestrador (PrescricaoPage) seguir o fluxo
+    setTimeout(() => window.dispatchEvent(new Event('afterprint')), 800);
   };
 
   const today = format(new Date(), "dd/MM/yyyy", { locale: ptBR });
