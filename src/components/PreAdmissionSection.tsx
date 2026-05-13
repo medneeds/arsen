@@ -167,7 +167,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
               <Badge variant="secondary" className="text-xs">
                 {preAdmissions.length}
               </Badge>
-              {pendingCount > 0 && (
+              {requiresRiskClassification && pendingCount > 0 && (
                 <Badge variant="destructive" className="text-xs">
                   {pendingCount} sem classificação
                 </Badge>
