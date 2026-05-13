@@ -4943,7 +4943,7 @@ const PrescricaoPage = () => {
         <div className="px-3 py-2 relative z-20">
           <GlobalPrescriptionSearch
             ref={globalSearchRef}
-            onAddItem={addItem}
+            onAddItem={(med) => addItem(med, { fromGlobalSearch: true })}
             onAddNonStandard={(name: string) => { addNonStandard(name); }}
             getFavoriteCount={getFavoriteCount}
             onCategoryPopup={(cat) => {
