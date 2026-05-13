@@ -702,12 +702,26 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
           </Button>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>Cancelar</Button>
-            <Button onClick={handleSubmit} disabled={submitting || (isUti && !sapsAck)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white uppercase">
+            <Button
+              variant="outline"
+              onClick={handleSaveDraft}
+              disabled={submitting}
+              className="gap-2 border-amber-400 text-amber-700 hover:bg-amber-50 uppercase"
+              title="Salva o rascunho e libera os módulos clínicos (evolução, prescrição, requisições, docs e histórico) para preenchimento posterior."
+            >
+              Salvar Rascunho
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting || !canValidate}
+              className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white uppercase"
+            >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
               Assinar e Admitir (D0)
             </Button>
           </div>
         </DialogFooter>
+
       </DialogContent>
     </Dialog>
   );
