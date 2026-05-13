@@ -579,7 +579,14 @@ function MedicationAutocomplete({
                     {med.name}
                     {med.highAlert && <AlertTriangle className="inline h-3 w-3 ml-1 text-red-500" />}
                   </span>
-                  <span className="text-xs text-muted-foreground block truncate">{med.presentation}</span>
+                  <span className="text-xs text-muted-foreground block truncate">
+                    {med.isStandard && (
+                      <Badge variant="outline" className="mr-1 text-[9px] px-1 py-0 h-4 border-emerald-500/60 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10">
+                        PADRÃO HMDM
+                      </Badge>
+                    )}
+                    {med.presentation}
+                  </span>
                 </div>
                 {med.defaultRoute !== '-' && (
                   <Badge variant="outline" className="text-[10px] shrink-0">{med.defaultRoute}</Badge>
