@@ -236,6 +236,19 @@ const COMORBIDITY_OPTIONS = [
   { id: "chemotherapy", label: "Quimioterapia recente" },
 ];
 
+const RASS_LABELS: Record<number, string> = {
+  [-5]: "Não responsivo",
+  [-4]: "Sedação profunda",
+  [-3]: "Sedação moderada",
+  [-2]: "Sedação leve",
+  [-1]: "Sonolento",
+  [0]: "Alerta e calmo",
+  [1]: "Inquieto",
+  [2]: "Agitado",
+  [3]: "Muito agitado",
+  [4]: "Combativo",
+};
+
 // Bed config per critical-care sector (UTI / UCI / UCC)
 const UTI_SECTORS = [
   { value: "red", label: "UTI 1", prefix: "L", start: 1, max: 8, department: "UTI" },
