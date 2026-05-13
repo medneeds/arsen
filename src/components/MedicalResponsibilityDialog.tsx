@@ -93,9 +93,6 @@ export const MedicalResponsibilityDialog = ({
   const handleSave = () => {
     onSave({
       type,
-      officeNumber: type === 'porta' || type === 'conjunto' || type === 'obstetra' || type === 'cirurgiao_geral' || type === 'traumatologista' ? officeNumber : undefined,
-      leaderNames: type === 'lider' || type === 'conjunto' ? leaderNames : undefined,
-      portaNames: type === 'porta' || type === 'conjunto' || type === 'obstetra' || type === 'cirurgiao_geral' || type === 'traumatologista' ? portaNames : undefined,
       responsibleDoctorId,
       responsibleDoctorName: responsibleDoctorName || undefined,
       responsibleDoctorCrm,
