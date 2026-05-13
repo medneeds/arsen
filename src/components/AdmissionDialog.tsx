@@ -288,28 +288,40 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         } as any);
       if (evError) throw evError;
 
+      // Busca o início da pré-admissão para cravar o cronômetro do SAPS
+      let sapsStart: string = now;
       if (isUti) {
-        await supabase
+        const { data: pRow } = await supabase
           .from("patients")
-          .update({
-            uti_admission_reason: admissionReason || null,
-            uti_origin_sector: originSector || null,
-            uti_devices: devices || null,
-            uti_cultures_antibiotics: culturesAtb || null,
-            uti_specialties: specialties || null,
-            uti_allergies: allergies || null,
-            uti_discharge_prediction: dischargePredictionLabel,
-          } as any)
-          .eq("id", patient.id);
-      } else {
-        await supabase
-          .from("patients")
-          .update({
-            hospital_discharge_prediction: null,
-            uti_discharge_prediction: dischargePredictionLabel,
-          } as any)
-          .eq("id", patient.id);
+          .select("created_at")
+          .eq("id", patient.id)
+          .maybeSingle();
+        sapsStart = (pRow as any)?.created_at || now;
       }
+
+      const baseUpdate: Record<string, any> = {
+        admission_status: "admitido",
+        admitted_at: now,
+        uti_discharge_prediction: dischargePredictionLabel,
+      };
+      if (isUti) {
+        Object.assign(baseUpdate, {
+          uti_admission_reason: admissionReason || null,
+          uti_origin_sector: originSector || null,
+          uti_devices: devices || null,
+          uti_cultures_antibiotics: culturesAtb || null,
+          uti_specialties: specialties || null,
+          uti_allergies: allergies || null,
+          saps_pending: true,
+          saps_pending_since: sapsStart,
+          saps_acknowledged_by: user.id,
+          saps_acknowledged_at: now,
+          saps_completed_at: null,
+        });
+      } else {
+        baseUpdate.hospital_discharge_prediction = null;
+      }
+      await supabase.from("patients").update(baseUpdate as any).eq("id", patient.id);
 
       toast.success("ADMISSÃO HOSPITALAR REGISTRADA — paciente ADMITIDO (D0)");
       onOpenChange(false);
