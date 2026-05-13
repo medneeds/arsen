@@ -174,6 +174,7 @@ export function PatientMovementDialog({
     setResponsibleDoctor("");
     setDocPayload(null);
     setDocComplete(false);
+    setConfirmOpen(false);
     onClose();
   };
 
