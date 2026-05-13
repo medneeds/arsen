@@ -73,9 +73,14 @@ const EMPTY_FORM: PatientFormData = {
 };
 
 const SECTORS = [
-  "UTI 1", "UTI 2", "UCI 1", "UCI 2",
-  "Cuidados Especiais", "Observação Amarela", "Observação Azul",
-  "Enfermaria", "Centro Cirúrgico"
+  "UTI 1", "UTI 2",
+  "UCI 1", "UCI 2",
+  "UCC",
+  "Neuro 01", "Neuro 02",
+  "Clínica Cirúrgica",
+  "Enf. Transição",
+  "Enf. Vascular",
+  "RIV",
 ];
 
 // Format CPF: 000.000.000-00
@@ -470,15 +475,17 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         <PisImportDialog open={pisDialogOpen} onOpenChange={setPisDialogOpen} onExtracted={applyPisData} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className={cn("grid w-full", defaultDestinationSector ? "grid-cols-1" : "grid-cols-2")}>
             <TabsTrigger value="dados" className="text-xs gap-1">
               <User className="h-3.5 w-3.5" />
               {form.is_unidentified ? "Características NI" : "Dados do Paciente"}
             </TabsTrigger>
-            <TabsTrigger value="destino" className="text-xs gap-1">
-              <MapPin className="h-3.5 w-3.5" />
-              Pedido de Leito
-            </TabsTrigger>
+            {!defaultDestinationSector && (
+              <TabsTrigger value="destino" className="text-xs gap-1">
+                <MapPin className="h-3.5 w-3.5" />
+                Pedido de Leito
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Tab 2: Patient Data */}
