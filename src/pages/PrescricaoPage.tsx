@@ -1115,8 +1115,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => onRemove(item.id)} className="text-xs gap-2 text-destructive">
-          <Trash2 className="h-3.5 w-3.5" /> Excluir item
+        <DropdownMenuItem
+          onClick={() => onRemove(item.id)}
+          disabled={isLocked}
+          className="text-xs gap-2 text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          {isLocked ? "Excluir (item validado — bloqueado)" : "Excluir item"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
