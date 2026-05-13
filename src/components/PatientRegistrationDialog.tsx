@@ -136,6 +136,13 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
     setForm(prev => ({ ...prev, [field]: value as never }));
   };
 
+  // Garante que, ao reabrir o diálogo a partir de uma seção de setor, o destino fique pré-preenchido
+  useEffect(() => {
+    if (open && defaultDestinationSector) {
+      setForm(prev => prev.destination_sector ? prev : { ...prev, destination_sector: defaultDestinationSector });
+    }
+  }, [open, defaultDestinationSector]);
+
   // Toggle NI: limpa campos sensíveis e força sexo='ignorado' inicial
   const toggleUnidentified = (checked: boolean) => {
     setForm(prev => ({
@@ -270,7 +277,10 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
     setIsSaving(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
-      const selectedSectors = form.destination_sector.split(", ").filter(Boolean);
+      // Fallback: se o usuário não escolheu setor mas o diálogo foi aberto a partir de uma
+      // seção de setor (defaultDestinationSector), assume esse setor.
+      const effectiveDestination = (form.destination_sector || defaultDestinationSector || "").trim();
+      const selectedSectors = effectiveDestination.split(", ").filter(Boolean);
       const isUtiDestination = selectedSectors.some(s => s.startsWith("UTI"));
       const hasDestinationSector = selectedSectors.length > 0;
       // Sempre que houver setor de destino definido (seja vindo do mapa ou escolhido na recepção),
@@ -365,7 +375,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         address: form.address?.trim() || null,
         neighborhood: form.neighborhood?.trim() || null,
         city: form.city?.trim() || null,
-        destination_sector: form.destination_sector || null,
+        destination_sector: effectiveDestination || null,
         notes: form.notes?.trim() || null,
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,

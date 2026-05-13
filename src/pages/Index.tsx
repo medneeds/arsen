@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { SectorSection } from "@/components/SectorSection";
 import { UtiSectorSection } from "@/components/UtiSectorSection";
-import { PreAdmissionSection } from "@/components/PreAdmissionSection";
+import { PreAdmissionSection, type PreAdmissionSectionHandle } from "@/components/PreAdmissionSection";
 import { PatientCard } from "@/components/PatientCard";
 import { PatientSidebar } from "@/components/PatientSidebar";
 import { PrintLayout } from "@/components/PrintLayout";
@@ -231,6 +231,7 @@ const Index = () => {
   const { patients: dbPatients, isLoading: patientsLoading, updatePatient: dbUpdatePatient, createPatient: dbCreatePatient, deletePatient: dbDeletePatient, reorderPatients: dbReorderPatients, refetch } = usePatients(undefined, activeSector);
   const [patients, setPatients] = useState<Patient[]>(dbPatients);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const preAdmissionRef = useRef<PreAdmissionSectionHandle>(null);
   const [history, setHistory] = useState<Patient[][]>(() => {
     const saved = localStorage.getItem(HISTORY_KEY);
     return saved ? JSON.parse(saved) : [];
@@ -743,7 +744,10 @@ const Index = () => {
   const handleRefreshMap = async () => {
     setIsRefreshing(true);
     try {
-      await refetch();
+      await Promise.all([
+        refetch(),
+        preAdmissionRef.current?.refresh(),
+      ]);
       toast({
         title: "Mapa atualizado",
         description: "Os dados foram atualizados com sucesso.",
@@ -1001,6 +1005,7 @@ const Index = () => {
               {/* Pre-admission section — filtra por setor ativo (exceto UE Vertical/Horizontal que mostram todos) */}
               <div className="print:hidden">
                 <PreAdmissionSection
+                  ref={preAdmissionRef}
                   sectorFilterLabel={
                     activeSector === "ue_vertical" || activeSector === "ue_horizontal"
                       ? undefined
