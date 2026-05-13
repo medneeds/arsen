@@ -182,11 +182,11 @@ async function loadCatalogOnce() {
     const [{ data: catalog, error: e1 }, { data: pres, error: e2 }] = await Promise.all([
       supabase
         .from("medication_catalog")
-        .select("id, generic_name, therapeutic_class, controlled, high_alert, requires_dilution, notes")
+        .select("id, generic_name, nome_comercial, therapeutic_class, pharmacological_group, controlled, high_alert, requires_dilution, notes, lista, notification_type")
         .order("generic_name"),
       supabase
         .from("medication_presentations")
-        .select("medication_id, form, concentration, unit, route, standard_dilution, max_daily_dose, infusion_time"),
+        .select("medication_id, form, concentration, unit, route, pharmaceutical_form, default_route, default_dose, standard_dilution, max_daily_dose, infusion_time"),
     ]);
     if (e1) throw e1;
     if (e2) throw e2;
