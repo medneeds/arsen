@@ -1413,7 +1413,55 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           )}
         </div>
         {item.dose !== '-' && <Badge variant="outline" className="text-[10px]">{item.dose}</Badge>}
-        {item.posology !== '-' && <Badge variant="secondary" className="text-[10px]">{item.posology}</Badge>}
+        {isSimple ? (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                disabled={isLocked || item.status === 'suspended'}
+                className={cn(
+                  "shrink-0 inline-flex items-center gap-1 rounded-md border border-border/50 bg-secondary text-secondary-foreground text-[10px] px-1.5 py-0.5 hover:border-primary/50 hover:bg-secondary/80 transition-colors",
+                  (isLocked || item.status === 'suspended') && "opacity-60 cursor-not-allowed"
+                )}
+                title="Ajustar aprazamento"
+              >
+                {item.posology && item.posology !== '-' ? item.posology : 'Aprazar'}
+                <Pencil className="h-2.5 w-2.5 opacity-60" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3" align="end">
+              <p className="text-[11px] font-semibold text-muted-foreground mb-2">Aprazamento</p>
+              <div className="grid grid-cols-3 gap-1.5">
+                {['1/1h','2/2h','4/4h','6/6h','8/8h','12/12h','1x/dia','2x/dia','3x/dia','Contínuo','S/N','ACM'].map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => onUpdate(item.id, 'posology', opt)}
+                    className={cn(
+                      "text-[10px] px-2 py-1 rounded-md border transition-colors",
+                      item.posology === opt
+                        ? "border-primary bg-primary/10 text-primary font-semibold"
+                        : "border-border/50 hover:border-primary/40 hover:bg-muted"
+                    )}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-2.5">
+                <label className="text-[10px] font-medium text-muted-foreground">Personalizado</label>
+                <Input
+                  value={item.posology === '-' ? '' : item.posology}
+                  onChange={(e) => onUpdate(item.id, 'posology', e.target.value || '-')}
+                  placeholder="Ex.: Antes das refeições"
+                  className="h-7 text-xs mt-1"
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
+        ) : (
+          item.posology !== '-' && <Badge variant="secondary" className="text-[10px]">{item.posology}</Badge>
+        )}
         {item.isExtra && (
           <Badge variant="outline" className="text-[9px] px-1.5 bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800">EXTRA</Badge>
         )}
