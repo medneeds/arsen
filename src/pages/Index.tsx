@@ -1005,6 +1005,7 @@ const Index = () => {
               {/* Pre-admission section — filtra por setor ativo (exceto UE Vertical/Horizontal que mostram todos) */}
               <div className="print:hidden">
                 <PreAdmissionSection
+                  ref={preAdmissionRef}
                   sectorFilterLabel={
                     activeSector === "ue_vertical" || activeSector === "ue_horizontal"
                       ? undefined
