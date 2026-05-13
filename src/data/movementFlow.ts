@@ -162,20 +162,32 @@ export function adaptLegacyType(value: AnyMovementType | null): MovementSubtype 
   return LEGACY_TO_SUBTYPE[value as LegacyMovementType] ?? null;
 }
 
+// Lista oficial de setores internos (sincronizada com a estrutura real do hospital)
+// Ver mem://structure/hospital-sectors-and-beds
 export const INTERNAL_TRANSFER_DESTINATIONS = [
-  "UTI 1",
-  "UTI 2",
-  "UCI 1",
-  "UCI 2",
+  // Terapias intensivas
+  "UTI 01",
+  "UTI 02",
+  "UCI 01",
+  "UCI 02",
+  // Enfermarias
   "ENFERMARIA NEURO 01",
   "ENFERMARIA NEURO 02",
+  "ENFERMARIA CLÍNICA CIRÚRGICA",
+  "ENFERMARIA DE TRANSIÇÃO",
+  "UCC (UNIDADE DE CUIDADOS CLÍNICOS)",
+  "ENFERMARIA VASCULAR (ANEXO)",
+  // Cirúrgicos / procedimentos
   "CENTRO CIRÚRGICO",
+  "RIV (REFERÊNCIA DE INTERNAÇÃO VASCULAR)",
   "HEMODINÂMICA",
-  "OBSERVAÇÃO LARANJA",
-  "SALA VERMELHA",
+  // Urgência e Emergência
   "UE VERTICAL",
   "UE HORIZONTAL",
-  "ANEXO",
+  "SALA VERMELHA",
+  "SALA LARANJA",
+  "OBSERVAÇÃO CLÍNICA (UE HORIZONTAL)",
+  "INTERNAÇÃO UE",
 ];
 
 export const EXTERNAL_TRANSFER_DESTINATIONS = [
@@ -185,11 +197,16 @@ export const EXTERNAL_TRANSFER_DESTINATIONS = [
   "OUTRO HOSPITAL",
 ];
 
+// Destinos de internação (a partir da UE / pré-admissão)
 export const INTERNMENT_DESTINATIONS = [
-  "UTI 1",
-  "UTI 2",
-  "UCI 1",
-  "UCI 2",
+  "UTI 01",
+  "UTI 02",
+  "UCI 01",
+  "UCI 02",
   "ENFERMARIA NEURO 01",
   "ENFERMARIA NEURO 02",
+  "ENFERMARIA CLÍNICA CIRÚRGICA",
+  "ENFERMARIA DE TRANSIÇÃO",
+  "UCC (UNIDADE DE CUIDADOS CLÍNICOS)",
+  "ENFERMARIA VASCULAR (ANEXO)",
 ];
