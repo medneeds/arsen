@@ -627,6 +627,75 @@ export function MedicalRecordEditDialog({
                   </div>
                 </ScrollArea>
               </TabsContent>
+
+              {/* ============ ABA EDIÇÃO AVANÇADA (DESENVOLVEDOR) ============ */}
+              {isDeveloper && (
+                <TabsContent value="danger" className="flex-1 mt-3 min-h-0">
+                  <ScrollArea className="h-[58vh] pr-2">
+                    <div className="space-y-4">
+                      <section className="p-4 rounded-lg border-2 border-destructive/50 bg-destructive/5 space-y-3">
+                        <div className="flex items-start gap-2">
+                          <ShieldAlert className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                          <div className="space-y-1">
+                            <h3 className="text-sm font-bold text-destructive uppercase tracking-wide">
+                              Exclusão administrativa do paciente
+                            </h3>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">
+                              Operação <strong>irreversível</strong> reservada para casos excepcionais
+                              de erro administrativo (cadastro duplicado, paciente inexistente, teste em produção, etc).
+                              Apaga em cascata <strong>todos os dados</strong> deste paciente: prontuário, ficha cadastral,
+                              evoluções, prescrições, exames, culturas, movimentações, atendimentos e históricos de edição.
+                              Esta ação <strong>não pode ser desfeita</strong>.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold">
+                            Motivo da exclusão (mínimo 10 caracteres, obrigatório)
+                          </Label>
+                          <Textarea
+                            value={deleteReason}
+                            onChange={(e) => setDeleteReason(e.target.value)}
+                            rows={3}
+                            placeholder="Ex.: Cadastro duplicado do paciente XYZ — registro correto é o ID abc123. Solicitado por..."
+                            className="text-xs"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs font-semibold">
+                            Para confirmar, digite exatamente o nome do paciente:
+                          </Label>
+                          <code className="block text-[10px] p-1.5 bg-muted rounded border">{patientName || "—"}</code>
+                          <Input
+                            value={deleteConfirmName}
+                            onChange={(e) => setDeleteConfirmName(e.target.value)}
+                            placeholder="Digite o nome completo do paciente"
+                            className="h-9 text-xs"
+                          />
+                        </div>
+
+                        <div className="flex justify-end pt-2">
+                          <Button
+                            variant="destructive"
+                            disabled={
+                              deleting ||
+                              deleteReason.trim().length < 10 ||
+                              deleteConfirmName.trim().toUpperCase() !== (patientName || "").trim().toUpperCase()
+                            }
+                            onClick={() => setConfirmDeleteOpen(true)}
+                            className="gap-1.5"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Excluir paciente permanentemente
+                          </Button>
+                        </div>
+                      </section>
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+              )}
             </Tabs>
           )}
 
