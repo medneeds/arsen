@@ -1030,14 +1030,14 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
             <div className="space-y-3 p-1">
               <div className="text-[11px] text-muted-foreground bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/60 rounded-lg px-3 py-2">
                 <span className="font-semibold text-emerald-700 dark:text-emerald-300">Suplementação proteica/calórico-proteica</span> — selecione os produtos a anexar à prescrição.
-                Cada item gera linha própria. Módulos podem ir VO ou via sonda; SNO é VO.
+                Cada item gera linha própria. Vias disponíveis variam por produto: <strong>oral (VO)</strong>, <strong>enteral</strong> (SNG/SOG/SNE/GTT/JTT) e, quando aplicável, <strong>parenteral</strong> (NPT / dipeptídeo IV).
               </div>
 
               {(["sno", "modular"] as const).map(group => {
                 const groupItems = PROTEIN_SUPPLEMENTS.filter(p => p.group === group);
                 const groupLabel = group === "sno"
-                  ? "Suplementos nutricionais orais (SNO)"
-                  : "Módulos (pó/sachê) — oral ou via sonda";
+                  ? "Suplementos nutricionais (VO ou por sonda)"
+                  : "Módulos (pó/sachê / aminoácidos) — VO, sonda ou parenteral";
                 return (
                   <section key={group} className="rounded-lg border border-border/60 p-3 space-y-2">
                     <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{groupLabel}</h3>
