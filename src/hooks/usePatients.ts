@@ -328,42 +328,79 @@ export function usePatients(department?: Department, sector?: string) {
     }
   };
 
+  // IMPORTANT: leitos são fixos. "Excluir" não remove a linha — apenas esvazia o paciente,
+  // mantendo o leito disponível como vago no mapa. Assim, qualquer chamada antiga de
+  // delete simplesmente desaloca o paciente.
   const deletePatient = async (patientId: string, options = { showToast: true, updateLocalState: true }) => {
     try {
-      console.log('Deleting patient:', patientId);
-      
+      console.log('Vacating bed (clearing patient data) for:', patientId);
+
+      const vacantPayload = {
+        name: '',
+        age: null as any,
+        diagnoses: null,
+        medical_history: null,
+        relevant_exams: null,
+        pendencies: null,
+        schedule: null,
+        admission_history: null,
+        admission_date: null,
+        medical_responsibility: null,
+        uti_admission_date: null,
+        uti_discharge_prediction: null,
+        uti_allergies: null,
+        uti_admission_reason: null,
+        uti_current_status: null,
+        uti_devices: null,
+        uti_cultures_antibiotics: null,
+        uti_specialties: null,
+        uti_origin_sector: null,
+        uti_daily_conducts: null,
+        internment_status: null,
+        internment_notes: null,
+        clinical_status: null,
+        is_palliative: false,
+        isolation_precautions: null,
+        hospital_discharge_prediction: null,
+        psm_status: null,
+        allocation_status: null,
+        is_door_patient: false,
+        is_vacant: true,
+        patient_registry_id: null,
+        medical_record: null,
+        updated_at: new Date().toISOString(),
+      };
+
       const { error } = await supabase
         .from('patients')
-        .delete()
+        .update(vacantPayload)
         .eq('id', patientId);
 
       if (error) {
-        console.error('Supabase delete error:', error);
+        console.error('Supabase vacate error:', error);
         throw error;
       }
 
-      console.log('Patient deleted successfully from database');
-
       if (options.updateLocalState) {
-        setPatients(prev => {
-          const filtered = prev.filter(p => p.id !== patientId);
-          console.log('Local state updated, patients count:', filtered.length);
-          return filtered;
-        });
+        setPatients(prev => prev.map(p => (
+          p.id === patientId
+            ? { ...p, name: '', diagnoses: '', medicalHistory: '', relevantExams: '', pendencies: '', schedule: '', admissionHistory: '' } as Patient
+            : p
+        )));
       }
 
       if (options.showToast) {
         toast({
-          title: "Leito deletado",
-          description: "O leito foi removido com sucesso.",
+          title: "Leito desocupado",
+          description: "Os dados do paciente foram removidos. O leito permanece disponível no mapa.",
         });
       }
     } catch (error) {
-      console.error('Error deleting patient:', error);
+      console.error('Error vacating bed:', error);
       if (options.showToast) {
         toast({
-          title: "Erro ao deletar",
-          description: "Não foi possível remover o leito.",
+          title: "Erro ao desocupar",
+          description: "Não foi possível esvaziar o leito.",
           variant: "destructive",
         });
       }
