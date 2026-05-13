@@ -277,34 +277,67 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         finalBed = `EXTRA${nextExtra}`;
       }
 
-      const { data: insertedPatient, error: patientError } = await supabase
+      // Modelo de leitos fixos: cada leito já existe como linha "vaga" em patients.
+      // Procuramos a linha existente do leito e atualizamos (ocupando-a).
+      // Se não existir (ex.: leitos EXTRA dinâmicos), fazemos INSERT.
+      const { data: existingBedRow } = await supabase
         .from("patients")
-        .insert({
-          name: fullData.patient_name,
-          age: age ? `${age}a` : null,
-          bed_number: finalBed,
-          sector: selectedSector,
-          department: currentDepartment,
-          hospital_unit_id: currentHospital.id,
-          state_id: currentState.id,
-          created_by: user?.id,
-          admission_date: new Date().toISOString(),
-          is_vacant: false,
-          clinical_status: fullData.risk_classification === "vermelho" ? "grave" : null,
-          diagnoses: fullData.chief_complaint || null,
-          medical_history: fullData.allergies ? `Alergias: ${fullData.allergies}` : null,
-          pendencies: admissionNotes || null,
-          // Sincronização do prontuário do PIS (legado) e vínculo com o registro
-          medical_record: (fullData as any).medical_record ?? null,
-          patient_registry_id: (fullData as any).patient_registry_id ?? null,
-          uti_discharge_prediction: noDischargePrediction
-            ? "Sem previsão"
-            : dischargeDate
-            ? `${format(dischargeDate, "dd/MM/yyyy")}${dischargeDays ? ` (${dischargeDays} dias)` : ""}`
-            : (dischargeDays ? `${dischargeDays} dias` : null),
-        })
-        .select("id")
-        .single();
+        .select("id, is_vacant")
+        .eq("hospital_unit_id", currentHospital.id)
+        .eq("state_id", currentState.id)
+        .eq("department", currentDepartment)
+        .eq("sector", selectedSector)
+        .eq("bed_number", finalBed)
+        .maybeSingle();
+
+      if (existingBedRow && existingBedRow.is_vacant === false) {
+        throw new Error(`Leito ${finalBed} já está ocupado. Atualize o mapa e selecione outro leito.`);
+      }
+
+      const patientPayload = {
+        name: fullData.patient_name,
+        age: age ? `${age}a` : null,
+        bed_number: finalBed,
+        sector: selectedSector,
+        department: currentDepartment,
+        hospital_unit_id: currentHospital.id,
+        state_id: currentState.id,
+        created_by: user?.id,
+        admission_date: new Date().toISOString(),
+        is_vacant: false,
+        clinical_status: fullData.risk_classification === "vermelho" ? "grave" : null,
+        diagnoses: fullData.chief_complaint || null,
+        medical_history: fullData.allergies ? `Alergias: ${fullData.allergies}` : null,
+        pendencies: admissionNotes || null,
+        medical_record: (fullData as any).medical_record ?? null,
+        patient_registry_id: (fullData as any).patient_registry_id ?? null,
+        uti_discharge_prediction: noDischargePrediction
+          ? "Sem previsão"
+          : dischargeDate
+          ? `${format(dischargeDate, "dd/MM/yyyy")}${dischargeDays ? ` (${dischargeDays} dias)` : ""}`
+          : (dischargeDays ? `${dischargeDays} dias` : null),
+      };
+
+      let insertedPatient: { id: string } | null = null;
+      let patientError: any = null;
+      if (existingBedRow?.id) {
+        const { data, error } = await supabase
+          .from("patients")
+          .update(patientPayload)
+          .eq("id", existingBedRow.id)
+          .select("id")
+          .single();
+        insertedPatient = data as any;
+        patientError = error;
+      } else {
+        const { data, error } = await supabase
+          .from("patients")
+          .insert(patientPayload)
+          .select("id")
+          .single();
+        insertedPatient = data as any;
+        patientError = error;
+      }
 
       if (patientError) throw patientError;
 
