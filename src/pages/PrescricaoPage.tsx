@@ -3183,11 +3183,12 @@ const PrescricaoPage = () => {
     toast.success("Recomendação adicionada");
   };
 
-  const addNonStandard = () => {
-    if (!nonStdName.trim()) return;
+  const addNonStandard = (overrideName?: string) => {
+    const name = (overrideName ?? nonStdName).trim();
+    if (!name) return;
     setItems(prev => [...prev, {
       id: crypto.randomUUID(),
-      name: nonStdName.trim(),
+      name,
       presentation: '-', dose: '-', route: '-',
       posology: '-', schedule: '-', instructions: '',
       category: 'nonstandard', flags: [], highAlert: false, status: 'active',
@@ -4347,7 +4348,7 @@ const PrescricaoPage = () => {
           <GlobalPrescriptionSearch
             ref={globalSearchRef}
             onAddItem={addItem}
-            onAddNonStandard={(name: string) => { setNonStdName(name); addNonStandard(); }}
+            onAddNonStandard={(name: string) => { addNonStandard(name); }}
             getFavoriteCount={getFavoriteCount}
             onCategoryPopup={(cat) => {
               if (cat === 'antimicrobial') {
@@ -4504,7 +4505,7 @@ const PrescricaoPage = () => {
                             placeholder="Adicionar item não padrão..."
                             className="bg-background/60 border-border/50 h-7 text-xs"
                           />
-                          <Button variant="outline" size="sm" onClick={addNonStandard} disabled={!nonStdName.trim()} className="h-7 px-2">
+                          <Button variant="outline" size="sm" onClick={() => addNonStandard()} disabled={!nonStdName.trim()} className="h-7 px-2">
                             <Plus className="h-3 w-3" />
                           </Button>
                         </div>
