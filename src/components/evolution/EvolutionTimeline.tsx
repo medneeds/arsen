@@ -327,8 +327,10 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
           const isExpanded = expandedIds.has(evo.id);
           const config = STATUS_CONFIG[evo.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
           const StatusIcon = config.icon;
+          const isAdmission = (evo as any).evolution_type === "admission";
+          const isVirtualAdmission = isAdmission && evo.id.startsWith("admission:");
           const isAuthor = user?.id === evo.created_by;
-          const isEditable = isAuthor && evo.status === "draft";
+          const isEditable = isAuthor && evo.status === "draft" && !isAdmission;
           const data = getLocalOrOriginal(evo);
           const hasUnsaved = !!localEdits[evo.id];
           const isCurrent = evo.id === currentEvolutionId;
@@ -370,6 +372,11 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       <span className="text-[10px] text-muted-foreground">
                         por <strong className="text-foreground">{evo.created_by_name || "Médico"}</strong>
                       </span>
+                      {isAdmission && (
+                        <Badge className="text-[9px] px-1.5 py-0 h-4 bg-emerald-600 text-white gap-0.5 uppercase tracking-wider">
+                          D0 — Admissão Hospitalar
+                        </Badge>
+                      )}
                       <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0", config.color)}>
                         <StatusIcon className="h-2.5 w-2.5 mr-0.5" />
                         {config.label}
@@ -424,7 +431,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   )}
-                  {evo.status === "validated" && isAuthor && (
+                  {evo.status === "validated" && isAuthor && !isAdmission && (
                     <Button
                       variant="ghost" size="icon" className="h-6 w-6 text-destructive"
                       onClick={e => { e.stopPropagation(); setSuspendDialogId(evo.id); }}

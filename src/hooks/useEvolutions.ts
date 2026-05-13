@@ -37,6 +37,7 @@ export interface EvolutionRecord {
     other: string;
   };
   status: "draft" | "validated" | "suspended";
+  evolution_type?: string;
   validated_at: string | null;
   validated_by: string | null;
   validated_by_name: string | null;
@@ -100,14 +101,60 @@ export function useEvolutions(
       const { data, error } = await query;
 
       if (error) throw error;
-      setEvolutions(
-        (data || []).map((d: any) => ({
-          ...d,
-          soap_data: { ...EMPTY_SOAP, ...(d.soap_data as any) },
-          vital_signs: { ...EMPTY_VITALS, ...(d.vital_signs as any) },
-          physical_exam: { ...EMPTY_EXAM, ...(d.physical_exam as any) },
-        }))
-      );
+
+      const mapped: EvolutionRecord[] = (data || []).map((d: any) => ({
+        ...d,
+        soap_data: { ...EMPTY_SOAP, ...(d.soap_data as any) },
+        vital_signs: { ...EMPTY_VITALS, ...(d.vital_signs as any) },
+        physical_exam: { ...EMPTY_EXAM, ...(d.physical_exam as any) },
+      }));
+
+      // ── Injeta D0 (admission_histories) caso ainda não exista evolução do tipo "admission" ──
+      const hasAdmissionEvo = mapped.some(e => (e as any).evolution_type === "admission");
+      if (!hasAdmissionEvo && safePatientId) {
+        const { data: ah } = await supabase
+          .from("admission_histories")
+          .select("*")
+          .eq("patient_id", safePatientId)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (ah) {
+          const cidLine = [ah.cid_primary, ah.cid_secondary].filter(Boolean).join(" • ");
+          const virtual: EvolutionRecord = {
+            id: `admission:${ah.id}`,
+            patient_id: ah.patient_id,
+            patient_name: fbName || "",
+            patient_bed: fbBed,
+            patient_sector: fbSector,
+            soap_data: {
+              subjective: ah.clinical_history || ah.chief_complaint || "",
+              objective: "",
+              assessment: cidLine || ah.diagnostic_hypothesis || ah.macro_diagnosis || "",
+              plan: ah.initial_conduct || "",
+            },
+            vital_signs: { ...EMPTY_VITALS },
+            physical_exam: { ...EMPTY_EXAM },
+            status: "validated",
+            evolution_type: "admission",
+            validated_at: ah.created_at,
+            validated_by: ah.created_by ?? null,
+            validated_by_name: null,
+            suspended_at: null,
+            suspension_reason: null,
+            created_by: ah.created_by ?? "",
+            created_by_name: null,
+            created_at: ah.created_at,
+            updated_at: ah.updated_at,
+          };
+          mapped.push(virtual);
+        }
+      }
+
+      // Reordena (mais recente primeiro), mantendo D0 na posição cronológica correta
+      mapped.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setEvolutions(mapped);
     } catch (err: any) {
       console.error("Error fetching evolutions:", err);
     } finally {
