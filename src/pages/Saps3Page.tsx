@@ -1331,7 +1331,7 @@ export default function Saps3Page() {
               <AlertTriangle className="h-4 w-4" /> Exames laboratoriais ainda pendentes?
             </p>
             <p className="text-xs mt-1 text-amber-700 dark:text-amber-400">
-              Utilize "Admitir com SAPS pendente" para alocar o paciente no leito agora e completar a ficha SAPS 3 
+              Utilize "Pré-admitir com SAPS pendente" para alocar o paciente no leito agora e completar a ficha SAPS 3 
               quando os resultados de gasometria, hemograma, função renal e demais exames admissionais estiverem disponíveis. 
               Um cronômetro será ativado para rastrear o tempo de pendência.
             </p>
