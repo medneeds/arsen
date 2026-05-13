@@ -4864,6 +4864,7 @@ const PrescricaoPage = () => {
                   <button
                     key={cat}
                     type="button"
+                    title={config.label}
                     onClick={() => document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                     className={cn(
                       "group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm hover:-translate-y-px",
@@ -4875,7 +4876,7 @@ const PrescricaoPage = () => {
                     )}
                   >
                     <Circle className={cn("h-1.5 w-1.5 fill-current", ok ? "text-emerald-500" : "text-amber-500")} />
-                    {config.label.toLowerCase()}
+                    {config.shortLabel ?? config.label.toLowerCase()}
                     <span className="ml-0.5 font-bold">{count}</span>
                   </button>
                 );
