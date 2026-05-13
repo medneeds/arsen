@@ -294,6 +294,9 @@ export default function Saps3Page() {
     sectorLabel: string;
     totalScore: number;
     predictedMortality: number;
+    patientId?: string | null;
+    sectorCode?: string;
+    age?: string | null;
   } | null>(null);
 
   // Allocation
