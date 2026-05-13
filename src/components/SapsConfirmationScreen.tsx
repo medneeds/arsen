@@ -185,7 +185,7 @@ export function SapsConfirmationScreen({
           >
             <Progress value={progress} className="h-1.5" />
             <p className="text-xs text-center text-muted-foreground">
-              Redirecionando para o mapa em {countdown}s...
+              {patientId ? `Abrindo painel clínico em ${countdown}s...` : `Abrindo painel clínico em ${countdown}s...`}
             </p>
           </motion.div>
         </motion.div>
