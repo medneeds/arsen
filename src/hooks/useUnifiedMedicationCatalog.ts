@@ -125,6 +125,7 @@ function rowsToEntries(
   const entries: MedicationEntry[] = [];
   for (const row of catalog) {
     const cat = classifyCategory(row);
+    const isStandard = !!row.notes && /HMDM\s*2026/i.test(row.notes);
     const list = presByMed.get(row.id);
     if (!list || list.length === 0) {
       entries.push({
@@ -138,6 +139,7 @@ function rowsToEntries(
         instructions: buildInstructions(row, {} as PresentationRow),
         category: cat,
         highAlert: !!row.high_alert,
+        isStandard,
       });
       continue;
     }
@@ -153,6 +155,7 @@ function rowsToEntries(
         instructions: buildInstructions(row, p),
         category: cat,
         highAlert: !!row.high_alert,
+        isStandard,
       });
     }
   }
