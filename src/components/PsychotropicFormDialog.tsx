@@ -291,8 +291,8 @@ export function PsychotropicFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("max-w-4xl max-h-[90vh] overflow-y-auto", isPrinting && "print:block")}>
-        <DialogHeader className="print:hidden">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-violet-500" />
             {isPrintDirect ? 'Receituário Portaria 344 — Impressão' : 'Ficha de Medicações Psicotrópicas / Controladas'}
@@ -303,29 +303,6 @@ export function PsychotropicFormDialog({
               : 'Notificação de receita especial conforme Portaria SVS/MS nº 344/98 — ANVISA. Itens agrupados por tipo de receita.'}
           </DialogDescription>
         </DialogHeader>
-
-        {/* PRINT-ONLY scope */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          @media print {
-            body > * { display: none !important; }
-            [data-psychotropic-print] { display: block !important; position: fixed; top: 0; left: 0; width: 100%; z-index: 99999; }
-            @page { size: A4 portrait; margin: 8mm 12mm; }
-          }
-        `}} />
-
-        <div data-psychotropic-print className={cn(!isPrinting && "hidden print:hidden")}>
-          <PrintablePsychotropicForm
-            patient={patient}
-            grouped={groupedForPrint}
-            doctorName={doctorName}
-            doctorCrm={doctorCrm}
-            doctorSpecialty={doctorSpecialty}
-            hospitalName={hospitalName}
-            hospitalAddress={hospitalAddress}
-            date={today}
-            docCode={docCode}
-          />
-        </div>
 
         {/* === MODO PRINT-ONLY (Norma Zero + 344) === */}
         {isPrintDirect ? (
