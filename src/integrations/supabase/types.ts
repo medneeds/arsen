@@ -2370,6 +2370,48 @@ export type Database = {
           },
         ]
       }
+      patient_registry_edit_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          changed_by_email: string | null
+          field_changed: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          patient_id: string | null
+          patient_registry_id: string
+          reason: string
+          source: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          changed_by_email?: string | null
+          field_changed: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          patient_id?: string | null
+          patient_registry_id: string
+          reason: string
+          source?: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          changed_by_email?: string | null
+          field_changed?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          patient_id?: string | null
+          patient_registry_id?: string
+          reason?: string
+          source?: string
+        }
+        Relationships: []
+      }
       patient_versions: {
         Row: {
           created_at: string

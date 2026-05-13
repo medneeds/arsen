@@ -33,9 +33,10 @@ import { usePatientLive } from "@/hooks/usePatientLive";
 import { formatDistanceToNow } from "date-fns";
 import { usePatientDischargeDocs } from "@/hooks/usePatientDischargeDocs";
 import { printDischargeDocument, DISCHARGE_DOC_SHORT } from "@/lib/dischargeDocuments";
-import { Skull, FileSignature, ArrowLeftRight } from "lucide-react";
+import { Skull, FileSignature, ArrowLeftRight, Pencil } from "lucide-react";
 import { MedicalDocumentDialog } from "./MedicalDocumentDialog";
 import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
+import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
 import { Printer } from "lucide-react";
 
 interface PatientCockpitProps {
@@ -101,6 +102,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const navigate = useNavigate();
   const { currentHospital } = useHospital();
   const [showFullId, setShowFullId] = useState(false);
+  const [recordEditOpen, setRecordEditOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [docDialogOpen, setDocDialogOpen] = useState(false);
@@ -350,8 +352,19 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                   Paciente não identificado · {registry.unidentifiedCode || "—"}
                 </div>
               )}
-              <div className="pt-1 border-t border-border/40 text-[10px] text-muted-foreground/80 font-mono break-all">
-                ID interno: {patient.id}
+              <div className="pt-1 border-t border-border/40 flex items-center justify-between gap-2">
+                <span className="text-[10px] text-muted-foreground/80 font-mono break-all">
+                  ID interno: {patient.id}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setRecordEditOpen(true)}
+                  title="Editar prontuário e ficha cadastral (auditado)"
+                  className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/50 hover:bg-muted/40 transition-colors shrink-0"
+                >
+                  <Pencil className="h-2.5 w-2.5" />
+                  Editar
+                </button>
               </div>
             </div>
           )}
@@ -921,6 +934,12 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         patientName={patient.name}
         patientBed={patient.bedNumber}
         patientSector={patient.sector}
+      />
+      <MedicalRecordEditDialog
+        open={recordEditOpen}
+        onOpenChange={setRecordEditOpen}
+        patientId={patient.id}
+        patientName={patient.name}
       />
     </TooltipProvider>
   );
