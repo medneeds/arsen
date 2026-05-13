@@ -317,23 +317,26 @@ export function MedicalRecordEditDialog({
 
       <MovementConfirmDialog
         open={confirmOpen}
+        onOpenChange={(v) => !v && setConfirmOpen(false)}
         title="Alterar dados do prontuário"
-        actionLabel="Confirmar alteração"
+        confirmLabel="Confirmar alteração"
         onConfirm={handleSave}
-        onCancel={() => setConfirmOpen(false)}
-        loading={saving}
+        isSubmitting={saving}
+        tone="warning"
         summary={[
-          { label: "Paciente", value: patientName || "—" },
+          { label: "Paciente", value: patientName || "—", fullWidth: true },
           { label: "Campos a alterar", value: changes.map((c) => FIELD_LABEL[c.field]).join(", ") },
-          { label: "Motivo", value: reason.trim() },
+          { label: "Motivo", value: reason.trim(), fullWidth: true },
         ]}
-        blockers={[]}
-        warnings={changes.map((c) => `${FIELD_LABEL[c.field]}: "${c.oldVal || "vazio"}" → "${c.newVal || "vazio"}"`)}
+        warnings={changes.map((c) => ({
+          label: FIELD_LABEL[c.field],
+          detail: `"${c.oldVal || "vazio"}" → "${c.newVal || "vazio"}"`,
+        }))}
         consequences={[
-          "O número do prontuário será atualizado imediatamente em todo o sistema (mapa de leitos, cockpit, prescrições, exames, evoluções).",
-          "Uma entrada permanente será gravada no histórico de auditoria com seu nome, e-mail, data/hora e motivo informado.",
-          "A sincronização é em tempo real — outros usuários verão o novo número automaticamente.",
-          "A alteração não pode ser desfeita por edição direta — apenas por nova alteração também auditada.",
+          { text: "O número do prontuário será atualizado imediatamente em todo o sistema (mapa de leitos, cockpit, prescrições, exames, evoluções)." },
+          { text: "Uma entrada permanente será gravada no histórico de auditoria com seu nome, e-mail, data/hora e motivo informado." },
+          { text: "A sincronização é em tempo real — outros usuários verão o novo número automaticamente." },
+          { text: "A alteração não pode ser desfeita por edição direta — apenas por nova alteração também auditada." },
         ]}
         finalNote="Esta operação é registrada permanentemente para fins legais e regulatórios (CFM/COREN). Confirme apenas se a justificativa estiver correta."
       />
