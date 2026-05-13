@@ -1,6 +1,17 @@
 export type SectorType = 'red' | 'yellow' | 'blue' | 'outside' | 'ucc' | 'neuro_01' | 'neuro_02' | 'clinica_cirurgica' | 'enfermaria_transicao' | 'enfermaria_vascular' | 'sala_vermelha' | 'sala_laranja' | 'observacao_clinica' | 'internacao_ue' | 'ue_vertical' | 'ue_horizontal' | 'riv' | 'cc_preparo' | 'cc_bloco' | 'cc_rpa' | string;
 
-export type MedicalResponsibilityType = 'porta' | 'lider' | 'conjunto' | 'obstetra' | 'cirurgiao_geral' | 'traumatologista' | null;
+export type MedicalResponsibilityType =
+  | 'rotineiro'
+  | 'plantonista'
+  | 'intercorrencista'
+  // Legacy (mantidos para compatibilidade com registros existentes)
+  | 'porta'
+  | 'lider'
+  | 'conjunto'
+  | 'obstetra'
+  | 'cirurgiao_geral'
+  | 'traumatologista'
+  | null;
 
 export interface MedicalResponsibility {
   type: MedicalResponsibilityType;
