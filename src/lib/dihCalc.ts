@@ -10,15 +10,37 @@
  *   DIH N = N dias após a admissão
  */
 
-export function calcDIH(admissionDateIso: string | null | undefined, now: Date = new Date()): number | null {
-  if (!admissionDateIso) return null;
-  const adm = new Date(admissionDateIso);
-  if (isNaN(adm.getTime())) return null;
+/**
+ * Aceita ISO ("2026-05-13T10:00:00"), BR ("13/05/2026" ou "13/05/2026 10:00")
+ * ou Date. Retorna número de dias decorridos (>= 0) ou null se inválido.
+ * Datas no futuro são clampadas para 0 (D0) — DIH nunca é negativo.
+ */
+export function parseAdmissionDate(value: string | Date | null | undefined): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+  const s = String(value).trim();
+  if (!s) return null;
+  // BR: DD/MM/AAAA [HH:MM]
+  const br = s.match(/^(\d{2})\/(\d{2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if (br) {
+    const [, dd, mm, yyyyRaw, hh = "0", mi = "0"] = br;
+    const yyyy = yyyyRaw.length === 2 ? 2000 + parseInt(yyyyRaw) : parseInt(yyyyRaw);
+    const d = new Date(yyyy, parseInt(mm) - 1, parseInt(dd), parseInt(hh), parseInt(mi));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+export function calcDIH(admissionDate: string | Date | null | undefined, now: Date = new Date()): number | null {
+  const adm = parseAdmissionDate(admissionDate);
+  if (!adm) return null;
   // Normaliza ambas as datas para meia-noite local
   const a = new Date(adm.getFullYear(), adm.getMonth(), adm.getDate());
   const b = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const diff = Math.floor((b.getTime() - a.getTime()) / 86_400_000);
-  return diff < 0 ? null : diff;
+  // Datas no futuro (ex.: erro de digitação) são clampadas para 0 — nunca negativo
+  return diff < 0 ? 0 : diff;
 }
 
 export function formatDIHLabel(dih: number | null): string {
