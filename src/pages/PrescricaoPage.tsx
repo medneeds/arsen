@@ -2291,6 +2291,50 @@ function ExtraPrescriptionDialog({
           flags: i.flags,
           highAlert: i.highAlert,
           category: i.category,
+          // Regulatório
+          securityCategory: i.securityCategory,
+          controlled: i.controlled,
+          controlledList: i.controlledList,
+          doubleCheck: i.doubleCheck,
+          // Quantidade & preparo IV
+          quantity: i.quantity,
+          quantityUnit: i.quantityUnit,
+          diluent: i.diluent,
+          diluentVolume: i.diluentVolume,
+          accessType: i.accessType,
+          infusionTime: i.infusionTime,
+          infusionTimeUnit: i.infusionTimeUnit,
+          infusionMode: i.infusionMode,
+          infusionRate: i.infusionRate,
+          volumeTotal: i.volumeTotal,
+          concentration: i.concentration,
+          // Inalação
+          inhalationMode: i.inhalationMode,
+          nebDose: i.nebDose,
+          nebDoseUnit: i.nebDoseUnit,
+          oxygenFlow: i.oxygenFlow,
+          stageDuration: i.stageDuration,
+          continuousDuration: i.continuousDuration,
+          inhalationInterface: i.inhalationInterface,
+          puffs: i.puffs,
+          spacer: i.spacer,
+          gargle: i.gargle,
+          inhalationOrientation: i.inhalationOrientation,
+          // Nutrição
+          nutVolDay: i.nutVolDay,
+          nutMode: i.nutMode,
+          nutFraction: i.nutFraction,
+          nutNightPause: i.nutNightPause,
+          nutBedHead: i.nutBedHead,
+          nutAccess: i.nutAccess,
+          nutComposition: i.nutComposition,
+          nutMonitoring: i.nutMonitoring,
+          nutResidualCheck: i.nutResidualCheck,
+          nutWaterVolPerAdmin: i.nutWaterVolPerAdmin,
+          nutWaterFreq: i.nutWaterFreq,
+          nutZeroReason: i.nutZeroReason,
+          // Insulinoterapia
+          insulinPlan: i.insulinPlan,
         })),
         parentPrescriptionId,
         parentPrescriptionVersion,
@@ -6742,8 +6786,24 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         const careItems = itemsByCategory['care'].filter(i => i.status === 'active');
 
         const renderItemRow = (item: PrescriptionItem, displayIndex: number, rowBg: string) => {
-          const hasPreparo = item.diluent || item.diluentVolume || item.accessType || item.infusionTime;
-          const slots = parseScheduleSlots(item.schedule);
+          const isInhalation = item.category === 'inhalation';
+          const hasIvPreparo = !isInhalation && (item.diluent || item.diluentVolume || item.accessType || item.infusionTime || item.infusionRate || item.volumeTotal || item.concentration);
+          const inhalationLine = isInhalation ? assembleInhalationInstruction(item as any) : '';
+          const insulinDesc = item.insulinPlan ? describeInsulinPlan(item.insulinPlan) : null;
+
+          // Chip regulatório (MAV / Portaria 344)
+          const sec = item.securityCategory;
+          let regChip: { label: string; bg: string; fg: string; border: string } | null = null;
+          if (sec === 'MAV_PORT_344') {
+            regChip = { label: `MAV + PORT.344${item.controlledList ? ' · ' + item.controlledList : ''}`, bg: '#7e22ce', fg: '#fff', border: '#7e22ce' };
+          } else if (sec === 'MAV') {
+            regChip = { label: 'MAV', bg: '#991b1b', fg: '#fff', border: '#991b1b' };
+          } else if (sec === 'PORT_344' || item.controlled) {
+            regChip = { label: `PORT.344${item.controlledList ? ' · ' + item.controlledList : ''}`, bg: '#1d4ed8', fg: '#fff', border: '#1d4ed8' };
+          } else if (item.highAlert) {
+            regChip = { label: 'MAV', bg: '#991b1b', fg: '#fff', border: '#991b1b' };
+          }
+
           return (
             <tr key={item.id} style={{ pageBreakInside: 'avoid' }}>
               <td style={{ ...cellStyle, width: '22px', textAlign: 'center', backgroundColor: rowBg, verticalAlign: 'top', color: '#0f172a', fontSize: '7.5pt', fontWeight: 800 }}>
@@ -6751,6 +6811,12 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
               </td>
               <td style={{ ...cellStyle, backgroundColor: rowBg }}>
                 <div style={{ fontSize: '8pt', lineHeight: 1.4, color: '#0f172a' }}>
+                  {regChip && (
+                    <span style={{ fontSize: '6pt', fontWeight: 800, marginRight: '4px', color: regChip.fg, backgroundColor: regChip.bg, padding: '0.5px 4px', borderRadius: '2px', border: `0.5px solid ${regChip.border}`, letterSpacing: '0.3px', verticalAlign: 'middle' }}>{regChip.label}</span>
+                  )}
+                  {item.doubleCheck && (
+                    <span style={{ fontSize: '5.5pt', fontWeight: 800, marginRight: '4px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 3px', borderRadius: '2px', letterSpacing: '0.3px', verticalAlign: 'middle' }}>2x CHECK</span>
+                  )}
                   <span style={{ fontWeight: 800 }}>{item.name}</span>
                   {item.presentation && item.presentation !== '-' && (
                     <span style={{ fontWeight: 500, color: '#334155', fontSize: '7.5pt' }}> ({item.presentation})</span>
@@ -6775,7 +6841,29 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     <span style={{ fontSize: '6pt', fontWeight: 700, color: '#fff', backgroundColor: '#dc2626', padding: '0.5px 4px', borderRadius: '2px', marginLeft: '3px' }}>SUSPENSO</span>
                   )}
                 </div>
-                {hasPreparo && (
+
+                {/* Insulinoterapia: bloco estruturado para enfermagem */}
+                {insulinDesc && (
+                  <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '3px', paddingLeft: '8px', borderLeft: '2px solid #991b1b', backgroundColor: '#fef2f2', padding: '3px 6px 3px 8px', borderRadius: '0 2px 2px 0' }}>
+                    <div style={{ fontWeight: 800, fontSize: '7pt', color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '1px' }}>{insulinDesc.headline}</div>
+                    {insulinDesc.lines.map((ln, i) => (
+                      <div key={i} style={{ fontWeight: ln.startsWith('  •') ? 500 : 600, paddingLeft: ln.startsWith('  •') ? '6px' : 0 }}>{ln.replace(/^  •\s*/, '• ')}</div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Inalação: bloco específico (sem campos de infusão IV) */}
+                {isInhalation && inhalationLine && (
+                  <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0891b2', fontWeight: 500 }}>
+                    <span style={{ fontSize: '5.5pt', fontWeight: 800, color: '#fff', backgroundColor: '#0891b2', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px', marginRight: '4px' }}>INALATÓRIO</span>
+                    {inhalationLine}
+                    {item.spacer && <span style={{ marginLeft: '4px', fontStyle: 'italic', color: '#475569' }}>· c/ espaçador</span>}
+                    {item.gargle && <span style={{ marginLeft: '4px', fontStyle: 'italic', color: '#475569' }}>· gargarejo após</span>}
+                  </div>
+                )}
+
+                {/* Preparo IV (medicação / hidratação) */}
+                {hasIvPreparo && !insulinDesc && (
                   <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
                     {[
                       item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'Sem diluição' : null,
@@ -6787,7 +6875,29 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     ].filter(Boolean).join(' · ')}
                   </div>
                 )}
-                {item.instructions && !hasPreparo && (
+
+                {/* Nutrição: campos específicos */}
+                {item.category === 'nutrition' && (item.nutVolDay || item.nutMode || item.nutFraction || item.nutBedHead || item.nutAccess || item.nutComposition) && (
+                  <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #16a34a', fontWeight: 500 }}>
+                    {[
+                      item.nutVolDay ? `Vol/dia: ${item.nutVolDay} mL` : null,
+                      item.nutMode || null,
+                      item.nutFraction ? `Frac: ${item.nutFraction}` : null,
+                      item.nutNightPause ? `Pausa noturna: ${item.nutNightPause}` : null,
+                      item.nutBedHead ? `Cabeceira: ${item.nutBedHead}°` : null,
+                      item.nutAccess ? `Acesso: ${item.nutAccess}` : null,
+                      item.nutComposition || null,
+                      item.nutMonitoring ? `Monit: ${item.nutMonitoring}` : null,
+                      item.nutResidualCheck ? `Resíduo: ${item.nutResidualCheck}` : null,
+                      item.nutWaterVolPerAdmin ? `Água: ${item.nutWaterVolPerAdmin} mL` : null,
+                      item.nutWaterFreq || null,
+                      item.nutZeroReason ? `Motivo jejum: ${item.nutZeroReason}` : null,
+                    ].filter(Boolean).join(' · ')}
+                  </div>
+                )}
+
+                {/* Instruções livres (quando não há preparo/inalação/insulina) */}
+                {item.instructions && !hasIvPreparo && !insulinDesc && !isInhalation && (
                   <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
                     {item.instructions}
                   </div>
