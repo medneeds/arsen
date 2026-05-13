@@ -181,12 +181,12 @@ export const INTERNAL_TRANSFER_DESTINATIONS = [
   "CENTRO CIRÚRGICO",
   "RIV (REFERÊNCIA DE INTERNAÇÃO VASCULAR)",
   "HEMODINÂMICA",
-  // Urgência e Emergência
-  "UE VERTICAL",
-  "UE HORIZONTAL",
+  // Urgência e Emergência (apenas espaços que recebem internação/observação)
+  // UE Vertical e UE Horizontal foram removidas: não são leitos físicos,
+  // são fluxos de atendimento/consulta tratados em módulo próprio.
   "SALA VERMELHA",
   "SALA LARANJA",
-  "OBSERVAÇÃO CLÍNICA (UE HORIZONTAL)",
+  "OBSERVAÇÃO CLÍNICA",
   "INTERNAÇÃO UE",
 ];
 
