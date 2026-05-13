@@ -4,6 +4,7 @@ import { ClinicalHeader } from "@/components/ClinicalHeader";
 
 
 import { PatientCockpit } from "@/components/PatientCockpit";
+import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
