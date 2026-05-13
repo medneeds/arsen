@@ -124,6 +124,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
       address: (data.address || prev.address).toUpperCase(),
       neighborhood: (data.neighborhood || prev.neighborhood).toUpperCase(),
       city: (data.city || prev.city).toUpperCase(),
+      medical_record: (data.medical_record || prev.medical_record || "").toString().trim(),
     }));
     setActiveTab("dados");
   };
@@ -210,6 +211,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
           address: (data.address || prev.address).toUpperCase(),
           neighborhood: (data.neighborhood || prev.neighborhood).toUpperCase(),
           city: (data.city || prev.city).toUpperCase(),
+          medical_record: (data.medical_record || prev.medical_record || "").toString().trim(),
         }));
         setActiveTab("dados");
         toast({ title: "✅ Dados extraídos com sucesso!", description: "Revise os campos preenchidos pela IA" });
