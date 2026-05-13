@@ -490,8 +490,10 @@ export default function Saps3Page() {
       if (ageStr) setAge(ageStr);
     }
 
-    setSelectedSector(resolveSectorFromContext(destinationSectorFromContext, currentSectorCode || currentDepartment));
-    setSelectedBed("");
+    const sectorFromUrl = state?.selectedSector || searchParams.get("selectedSector");
+    const bedFromUrl = state?.selectedBed || searchParams.get("selectedBed");
+    setSelectedSector(sectorFromUrl || resolveSectorFromContext(destinationSectorFromContext, currentSectorCode || currentDepartment));
+    setSelectedBed(bedFromUrl || "");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
     setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
     setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setRassScore(""); setConsciousnessReason(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");

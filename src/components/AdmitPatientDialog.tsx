@@ -232,12 +232,28 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       const destinationSectorLabel = SECTORS.find((sector) => sector.value === selectedSector)?.label || selectedSector;
 
       if (isUtiAdmission) {
+        // Calcula o leito final (incluindo EXTRA dinâmico) já neste pop-up
+        let finalBedUti = selectedBed;
+        if (selectedBed === "EXTRA" || extraBedRequested) {
+          const extraBeds = occupiedBeds
+            .filter(b => b.startsWith("EXTRA"))
+            .map(b => parseInt(b.replace("EXTRA", ""), 10))
+            .filter(n => !isNaN(n));
+          const nextExtra = extraBeds.length > 0 ? Math.max(...extraBeds) + 1 : 1;
+          finalBedUti = `EXTRA${nextExtra}`;
+        }
+        if (!finalBedUti) {
+          toast({ title: "Selecione um leito", description: "Escolha o leito antes de continuar para o SAPS 3.", variant: "destructive" });
+          setIsSubmitting(false);
+          return;
+        }
+
         const { error: updateError } = await supabase
           .from("pre_admissions")
           .update({
             status: "aguardando_leito_uti",
             destination_sector: destinationSectorLabel,
-            destination_bed: extraBedRequested ? "EXTRA" : null,
+            destination_bed: finalBedUti,
             notes: admissionNotes || fullData.notes || null,
           })
           .eq("id", fullData.id);
@@ -250,8 +266,10 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           patientName: fullData.patient_name,
           patientAge: age ? String(age) : "",
           destinationSector: destinationSectorLabel,
+          selectedBed: finalBedUti,
+          selectedSector,
         });
-        if (extraBedRequested) params.set("extraBed", "true");
+        if (extraBedRequested || selectedBed === "EXTRA") params.set("extraBed", "true");
 
         toast({
           title: "Encaminhado para admissão UTI",
@@ -411,7 +429,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BedDouble className="h-5 w-5 text-primary" />
@@ -612,40 +630,71 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             </Card>
           )}
 
-          {/* UTI with beds available — auto proceed to SAPS */}
-          {bedsLoaded && isUtiAdmission && !sectorFullAlert && (
-            <Card className="border-primary/20 bg-primary/5">
-              <CardContent className="p-3 text-xs text-muted-foreground">
-                Leitos disponíveis em <span className="font-medium">{SECTORS.find(s => s.value === selectedSector)?.label}</span>. 
-                O leito será definido após o preenchimento do SAPS 3.
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Non-UTI bed selector (only when beds available) */}
-          {bedsLoaded && !isUtiAdmission && !sectorFullAlert && (
+          {/* Bed grid (UTI + non-UTI unificado) */}
+          {bedsLoaded && !sectorFullAlert && (
             <div className="space-y-1.5">
-              <Label className="text-xs">Leito</Label>
-              <Select value={selectedBed} onValueChange={setSelectedBed}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Selecionar leito" /></SelectTrigger>
-                <SelectContent>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Selecione o leito</Label>
+                {selectedBed && selectedBed !== "EXTRA" && (
+                  <Badge variant="outline" className="text-[10px] border-primary/40 text-primary bg-primary/10">
+                    {selectedBed}
+                  </Badge>
+                )}
+              </div>
+              <div className="rounded-md border bg-muted/30 p-2 max-h-[180px] overflow-y-auto">
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
                   {availableBeds.map(bed => {
-                    const isOccupied = occupiedBeds.includes(bed);
                     if (bed === "EXTRA") {
+                      const isSel = selectedBed === "EXTRA";
                       return (
-                        <SelectItem key="EXTRA" value="EXTRA">
-                          ➕ Leito Extra
-                        </SelectItem>
+                        <button
+                          key="EXTRA"
+                          type="button"
+                          onClick={() => setSelectedBed("EXTRA")}
+                          className={cn(
+                            "rounded-md border px-1.5 py-1.5 text-[10px] font-semibold transition-all flex flex-col items-center gap-0.5",
+                            isSel
+                              ? "border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-400 ring-2 ring-amber-500/30"
+                              : "border-dashed border-amber-500/40 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                          )}
+                        >
+                          <BedDouble className="h-3 w-3" />
+                          EXTRA
+                        </button>
                       );
                     }
+                    const isOccupied = occupiedBeds.includes(bed);
+                    const isSel = selectedBed === bed;
                     return (
-                      <SelectItem key={bed} value={bed} disabled={isOccupied}>
-                        {bed} {isOccupied ? "(Ocupado)" : "✓"}
-                      </SelectItem>
+                      <button
+                        key={bed}
+                        type="button"
+                        disabled={isOccupied}
+                        onClick={() => setSelectedBed(bed)}
+                        className={cn(
+                          "rounded-md border px-1.5 py-1.5 text-[11px] font-semibold transition-all flex flex-col items-center gap-0.5 leading-tight",
+                          isOccupied
+                            ? "border-destructive/30 bg-destructive/10 text-destructive/70 cursor-not-allowed"
+                            : isSel
+                              ? "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 ring-2 ring-emerald-500/30"
+                              : "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/15"
+                        )}
+                      >
+                        <BedDouble className="h-3 w-3" />
+                        {bed}
+                        <span className="text-[9px] font-normal opacity-80">
+                          {isOccupied ? "Ocupado" : "Livre"}
+                        </span>
+                      </button>
                     );
                   })}
-                </SelectContent>
-              </Select>
+                </div>
+              </div>
+              {isUtiAdmission && (
+                <p className="text-[10px] text-muted-foreground">
+                  O leito escolhido será reservado e aparecerá pré-selecionado no SAPS 3.
+                </p>
+              )}
             </div>
           )}
 
@@ -750,7 +799,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           </Button>
           <Button
             onClick={handleAdmit}
-            disabled={!selectedSector || (!isUtiAdmission && !selectedBed) || isSubmitting || (sectorFullAlert && !extraBedRequested)}
+            disabled={!selectedSector || !selectedBed || isSubmitting || (sectorFullAlert && !extraBedRequested)}
             className="gap-1"
           >
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <BedDouble className="h-4 w-4" />}
