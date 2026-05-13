@@ -327,8 +327,10 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
           const isExpanded = expandedIds.has(evo.id);
           const config = STATUS_CONFIG[evo.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
           const StatusIcon = config.icon;
+          const isAdmission = (evo as any).evolution_type === "admission";
+          const isVirtualAdmission = isAdmission && evo.id.startsWith("admission:");
           const isAuthor = user?.id === evo.created_by;
-          const isEditable = isAuthor && evo.status === "draft";
+          const isEditable = isAuthor && evo.status === "draft" && !isAdmission;
           const data = getLocalOrOriginal(evo);
           const hasUnsaved = !!localEdits[evo.id];
           const isCurrent = evo.id === currentEvolutionId;
