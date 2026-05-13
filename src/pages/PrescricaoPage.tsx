@@ -190,6 +190,18 @@ interface PrescriptionItem {
   nutWaterVolPerAdmin?: string; // Água: mL por administração
   nutWaterFreq?: string;      // Água: frequência
   nutZeroReason?: string;     // Motivo do jejum
+  // Inhalation-specific fields
+  inhalationMode?: InhalationMode;
+  nebDose?: string;
+  nebDoseUnit?: 'mg' | 'gts' | 'mL' | 'mcg';
+  oxygenFlow?: string;        // L/min
+  stageDuration?: string;     // min por etapa
+  continuousDuration?: string; // h (nebulização contínua)
+  inhalationInterface?: InhalationInterface;
+  puffs?: string;
+  spacer?: boolean;
+  gargle?: boolean;
+  inhalationOrientation?: string;
 }
 
 // Detect nutrition subtype from wizard-generated item name
