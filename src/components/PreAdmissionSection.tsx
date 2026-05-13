@@ -151,6 +151,9 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
 
   const pendingCount = preAdmissions.filter(p => p.status === "pre_admissao").length;
   const classifiedCount = preAdmissions.filter(p => p.status === "classificado").length;
+  // Classificação de risco (Manchester) é atribuição da enfermagem da Urgência e Emergência.
+  // Em setores de internação (qualquer setor com filtro definido), o cadastro vai direto para alocação no leito.
+  const requiresRiskClassification = !sectorFilterLabel;
 
   return (
     <>
