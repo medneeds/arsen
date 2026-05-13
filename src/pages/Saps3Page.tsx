@@ -763,24 +763,25 @@ export default function Saps3Page() {
                 <Bed className="h-5 w-5 text-primary" />
                 Alocação de Leito
               </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Setor pré-configurado pela origem do pedido. Selecione apenas o leito de destino.
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label>Setor UTI</Label>
-                  <Select value={selectedSector} onValueChange={v => { setSelectedSector(v); setSelectedBed(""); }}>
-                    <SelectTrigger><SelectValue placeholder="Selecione o setor" /></SelectTrigger>
-                    <SelectContent>
-                      {UTI_SECTORS.map(s => (
-                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Setor (auto)</Label>
+                  <div className="mt-1.5 flex items-center justify-between gap-2 h-10 px-3 rounded-md border border-dashed border-primary/40 bg-primary/5">
+                    <span className="text-sm font-semibold text-foreground">
+                      {currentSectorLabel || "—"}
+                    </span>
+                    <Badge variant="outline" className="text-[10px] uppercase">Sincronizado</Badge>
+                  </div>
                 </div>
                 <div>
-                  <Label>Leito</Label>
+                  <Label>Leito de destino</Label>
                   <Select value={selectedBed} onValueChange={setSelectedBed} disabled={!selectedSector}>
-                    <SelectTrigger><SelectValue placeholder={selectedSector ? "Selecione o leito" : "Selecione o setor primeiro"} /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={selectedSector ? "Selecione o leito" : "Setor não definido"} /></SelectTrigger>
                     <SelectContent>
                       {availableBeds.map(b => (
                         <SelectItem key={b.value} value={b.value} disabled={b.occupied}>
@@ -795,7 +796,7 @@ export default function Saps3Page() {
                 <div className="flex items-center gap-2 p-2 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
                   <Bed className="h-4 w-4 text-emerald-600" />
                   <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                    Leito selecionado: {selectedBed} — {UTI_SECTORS.find(s => s.value === selectedSector)?.label}
+                    Leito selecionado: {selectedBed} — {currentSectorLabel}
                   </span>
                 </div>
               )}
