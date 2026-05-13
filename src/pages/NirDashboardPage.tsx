@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { 
   Building2, ArrowLeftRight, Globe, BedDouble, ClipboardPlus, 
   Repeat, LogOut, Lock, FileText, BarChart3, 
-  Clock, CheckCircle2, XCircle, Search, RefreshCw, AlertTriangle, Sparkles, Activity
+  Clock, CheckCircle2, XCircle, Search, RefreshCw, AlertTriangle, Sparkles, Activity, Move, X
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
