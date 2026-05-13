@@ -94,6 +94,9 @@ import {
   type PresentationType,
 } from "@/lib/prescriptionPresentation";
 import { findRegulatoryInfo } from "@/data/mavPort344Catalog";
+import { InhalationFields } from "@/components/prescription/InhalationFields";
+import { getInhalationDefaults, type InhalationMode, type InhalationInterface } from "@/data/inhalationCatalog";
+import { assembleInhalationInstruction } from "@/lib/inhalationInstruction";
 import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
 import { AtmStatusDialog } from "@/components/AtmStatusDialog";
 import { useUnifiedMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
