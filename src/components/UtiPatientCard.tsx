@@ -1145,26 +1145,26 @@ export function UtiPatientCard({
                     )}
                   </div>
 
-                  {/* UTI Admission Date */}
-                  <div className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+                  {/* UTI Admission Date — somente leitura (edite via Edição Avançada) */}
+                  <div
+                    className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded cursor-not-allowed"
+                    title="Edite em Edição Avançada"
+                  >
                     <span className="text-[9px]">{admissionLabel}:</span>
-                    <InlineEditableField
-                      value={patient.utiAdmissionDate?.[0] || ""}
-                      onUpdate={(v) => handleUpdateField("utiAdmissionDate", v ? [v] : [])}
-                      placeholder="DD/MM/AAAA"
-                      className="text-[10px] font-medium w-20"
-                    />
+                    <span className="text-[10px] font-medium w-20 truncate">
+                      {patient.utiAdmissionDate?.[0] || "—"}
+                    </span>
                   </div>
 
-                  {/* Discharge Prediction */}
-                  <div className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+                  {/* Discharge Prediction — somente leitura (edite via Edição Avançada / Evolução) */}
+                  <div
+                    className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded cursor-not-allowed"
+                    title="Edite em Edição Avançada ou via Evolução Médica"
+                  >
                     <span className="text-[9px]">Previsão de Alta:</span>
-                    <InlineEditableField
-                      value={previsaoAltaDate}
-                      onUpdate={(v) => handleUpdateField("utiDischargePrediction", v ? [v] : [])}
-                      placeholder="DD/MM/AAAA"
-                      className="text-[10px] font-medium w-20"
-                    />
+                    <span className="text-[10px] font-medium w-20 truncate">
+                      {previsaoAltaDate || "—"}
+                    </span>
                   </div>
 
                   {/* Critical badge - Only alert when needed */}
@@ -1401,23 +1401,17 @@ export function UtiPatientCard({
                     colorClass="bg-muted/30 border border-border/30"
                     alwaysShowAll
                   />
-                  <div className="bg-muted/30 border border-border/30 rounded-md p-2">
+                  <div className="bg-muted/30 border border-border/30 rounded-md p-2 cursor-not-allowed" title="Edite em Edição Avançada">
                     <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">{admissionLabel}</span>
-                    <InlineEditableField
-                      value={getFieldArray("utiAdmissionDate")[0] || ""}
-                      onUpdate={(v) => handleUpdateField("utiAdmissionDate", v ? [v] : [])}
-                      placeholder="DD/MM/AAAA"
-                      className="text-sm"
-                    />
+                    <span className="text-sm font-medium block min-h-[20px]">
+                      {getFieldArray("utiAdmissionDate")[0] || "—"}
+                    </span>
                   </div>
-                  <div className="bg-muted/30 border border-border/30 rounded-md p-2">
+                  <div className="bg-muted/30 border border-border/30 rounded-md p-2 cursor-not-allowed" title="Edite em Edição Avançada ou via Evolução Médica">
                     <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">Previsão de alta</span>
-                    <InlineEditableField
-                      value={previsaoAltaDate}
-                      onUpdate={(v) => handleUpdateField("utiDischargePrediction", v ? [v] : [])}
-                      placeholder="DD/MM/AAAA"
-                      className="text-sm"
-                    />
+                    <span className="text-sm font-medium block min-h-[20px]">
+                      {previsaoAltaDate || "—"}
+                    </span>
                   </div>
                 </div>
               </div>

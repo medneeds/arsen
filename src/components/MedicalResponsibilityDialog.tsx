@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MedicalResponsibility, MedicalResponsibilityType } from "@/types/patient";
-import { X, Stethoscope, UserCog, UsersRound, Check, Baby, Bone, Scissors } from "lucide-react";
+import { X, Stethoscope, UserCog, UsersRound, Check, Baby, Bone, Scissors, Search, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MedicalResponsibilityDialogProps {
   open: boolean;
@@ -35,12 +36,69 @@ export const MedicalResponsibilityDialog = ({
     currentResponsibility?.portaNames || ""
   );
 
+  const [responsibleDoctorId, setResponsibleDoctorId] = useState<string | undefined>(
+    currentResponsibility?.responsibleDoctorId
+  );
+  const [responsibleDoctorName, setResponsibleDoctorName] = useState<string>(
+    currentResponsibility?.responsibleDoctorName || ""
+  );
+  const [responsibleDoctorCrm, setResponsibleDoctorCrm] = useState<string | undefined>(
+    currentResponsibility?.responsibleDoctorCrm
+  );
+  const [doctorQuery, setDoctorQuery] = useState("");
+  const [doctorResults, setDoctorResults] = useState<Array<{ id: string; full_name: string; crm?: string | null }>>([]);
+  const [searching, setSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+
+  useEffect(() => {
+    if (!doctorQuery || doctorQuery.length < 2) {
+      setDoctorResults([]);
+      return;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      setSearching(true);
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, crm, access_profile, professional_type")
+        .eq("status", "approved")
+        .ilike("full_name", `%${doctorQuery}%`)
+        .limit(10);
+      if (cancelled) return;
+      const filtered = (data || []).filter((p: any) => {
+        const ap = (p.access_profile || "").toLowerCase();
+        const pt = (p.professional_type || "").toLowerCase();
+        return ap.includes("medic") || pt.includes("medic") || pt.includes("médic");
+      });
+      setDoctorResults(filtered as any);
+      setSearching(false);
+    }, 250);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [doctorQuery]);
+
+  const selectDoctor = (d: { id: string; full_name: string; crm?: string | null }) => {
+    setResponsibleDoctorId(d.id);
+    setResponsibleDoctorName(d.full_name);
+    setResponsibleDoctorCrm(d.crm || undefined);
+    setDoctorQuery("");
+    setShowResults(false);
+  };
+
+  const clearDoctor = () => {
+    setResponsibleDoctorId(undefined);
+    setResponsibleDoctorName("");
+    setResponsibleDoctorCrm(undefined);
+  };
+
   const handleSave = () => {
     onSave({
       type,
       officeNumber: type === 'porta' || type === 'conjunto' || type === 'obstetra' || type === 'cirurgiao_geral' || type === 'traumatologista' ? officeNumber : undefined,
       leaderNames: type === 'lider' || type === 'conjunto' ? leaderNames : undefined,
       portaNames: type === 'porta' || type === 'conjunto' || type === 'obstetra' || type === 'cirurgiao_geral' || type === 'traumatologista' ? portaNames : undefined,
+      responsibleDoctorId,
+      responsibleDoctorName: responsibleDoctorName || undefined,
+      responsibleDoctorCrm,
     });
     onOpenChange(false);
   };
@@ -50,6 +108,7 @@ export const MedicalResponsibilityDialog = ({
     setOfficeNumber("");
     setLeaderNames("");
     setPortaNames("");
+    clearDoctor();
   };
 
   return (
@@ -71,6 +130,64 @@ export const MedicalResponsibilityDialog = ({
         </DialogHeader>
 
         <div className="space-y-5 py-4">
+          {/* Médico responsável (rotineiro do setor) */}
+          <div className="space-y-2 p-3 rounded-xl border-2 border-dashed bg-muted/30 dark:bg-gray-800/40 dark:border-gray-700">
+            <Label className="text-sm font-semibold flex items-center gap-2 dark:text-white">
+              <UserCheck className="h-4 w-4" style={{ color: sectorColor }} />
+              Médico Responsável
+            </Label>
+            {responsibleDoctorName ? (
+              <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-background dark:bg-gray-900 border">
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-semibold uppercase truncate">{responsibleDoctorName}</span>
+                  {responsibleDoctorCrm && (
+                    <span className="text-[10px] text-muted-foreground">CRM {responsibleDoctorCrm}</span>
+                  )}
+                </div>
+                <Button type="button" variant="ghost" size="sm" onClick={clearDoctor} className="h-7 px-2 text-xs">
+                  <X className="h-3.5 w-3.5 mr-1" /> Trocar
+                </Button>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    value={doctorQuery}
+                    onChange={(e) => { setDoctorQuery(e.target.value); setShowResults(true); }}
+                    onFocus={() => setShowResults(true)}
+                    placeholder="Buscar médico (nome) — mínimo 2 caracteres"
+                    className="pl-8 h-9 text-xs dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                  />
+                </div>
+                {showResults && doctorQuery.length >= 2 && (
+                  <div className="absolute z-50 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-lg border bg-popover shadow-lg dark:bg-gray-900 dark:border-gray-700">
+                    {searching && (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">Buscando…</div>
+                    )}
+                    {!searching && doctorResults.length === 0 && (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">Nenhum médico encontrado</div>
+                    )}
+                    {!searching && doctorResults.map((d) => (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => selectDoctor(d)}
+                        className="w-full text-left px-3 py-2 hover:bg-accent dark:hover:bg-gray-800 border-b last:border-b-0 dark:border-gray-700"
+                      >
+                        <div className="text-xs font-semibold uppercase">{d.full_name}</div>
+                        {d.crm && <div className="text-[10px] text-muted-foreground">CRM {d.crm}</div>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <p className="text-[10px] text-muted-foreground italic">
+              Por padrão, é o médico que admitiu. Use a busca para redefinir para o rotineiro do setor.
+            </p>
+          </div>
+
           <div className="space-y-3">
             <Label className="text-sm font-semibold text-foreground dark:text-white">Selecione o Tipo de Acompanhamento</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
