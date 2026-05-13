@@ -498,20 +498,6 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             </Card>
           )}
 
-          {/* Airway & Circulation */}
-          <Card>
-            <CardContent className="p-3">
-              <p className="text-xs font-semibold flex items-center gap-1 mb-1">
-                <Wind className="h-3.5 w-3.5 text-sky-500" /> Via Aérea / Circulação
-              </p>
-              <div className="text-[11px] space-y-0.5">
-                <p><span className="text-muted-foreground">VA:</span> {airwayStatus}</p>
-                {pa.peripheral_perfusion && <p><span className="text-muted-foreground">Perfusão:</span> {pa.peripheral_perfusion}</p>}
-                {pa.pulse_quality && <p><span className="text-muted-foreground">Pulso:</span> {pa.pulse_quality}</p>}
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Extras */}
           {(pa.allergies || pa.flu_symptoms || pa.oxygen_therapy || pa.pain_scale !== null) && (
             <Card className="col-span-2">
