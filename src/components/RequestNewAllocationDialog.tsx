@@ -704,17 +704,43 @@ export function RequestNewAllocationDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button 
-              onClick={handleSubmit} 
+            <Button
+              onClick={() => setConfirmOpen(true)}
               disabled={!patientName.trim() || !doctorName.trim() || isSubmitting}
               className="bg-primary"
             >
               <Send className="h-4 w-4 mr-2" />
-              {isSubmitting ? "Enviando..." : "Criar e Solicitar"}
+              {isSubmitting ? "Enviando..." : "Revisar e enviar"}
             </Button>
           </DialogFooter>
         </div>
       </DialogContent>
+
+      <MovementConfirmDialog
+        open={confirmOpen}
+        onOpenChange={(o) => !isSubmitting && setConfirmOpen(o)}
+        onConfirm={handleSubmit}
+        isSubmitting={isSubmitting}
+        title="Confirmar cadastro e pedido de alocação"
+        confirmLabel="Cadastrar e enviar pedido"
+        summary={[
+          { icon: User, label: "Paciente", value: patientName || "—" },
+          { icon: User, label: "Idade", value: patientAge || "—" },
+          { icon: Stethoscope, label: "Médico solicitante", value: doctorName || "—" },
+          { icon: MapPin, label: "Setor solicitado", value: targetSector },
+        ]}
+        consequences={[
+          { icon: User, text: <>Um <strong>novo prontuário</strong> será criado para o paciente, em modo de pré-alocação (não ocupa leito real ainda).</> },
+          { icon: ClipboardList, text: <>Um <strong>pedido de alocação</strong> em <strong>{targetSector}</strong> será enviado ao líder responsável.</> },
+          { icon: Clock, text: <>O paciente entra na <strong>fila de regulação</strong>. A alocação efetiva no leito acontece após aprovação, em etapa separada.</> },
+          { icon: Eye, text: <>Você poderá acompanhar o pedido no painel de regulação e no card do paciente, com status atualizado em tempo real.</> },
+        ]}
+        blockers={[
+          ...(!patientName.trim() ? [{ label: "Nome do paciente", reason: "obrigatório." }] : []),
+          ...(!doctorName.trim() ? [{ label: "Médico solicitante", reason: "obrigatório." }] : []),
+        ]}
+        finalNote={<>O cadastro é registrado mesmo se o pedido for negado depois — não há duplicação. Confirme apenas se os dados estiverem corretos.</>}
+      />
     </Dialog>
   );
 }
