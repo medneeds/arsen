@@ -1402,7 +1402,7 @@ export function UtiPatientCard({
                     alwaysShowAll
                   />
                   <div className="bg-muted/30 border border-border/30 rounded-md p-2">
-                    <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">Admissão UTI</span>
+                    <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">{admissionLabel}</span>
                     <InlineEditableField
                       value={getFieldArray("utiAdmissionDate")[0] || ""}
                       onUpdate={(v) => handleUpdateField("utiAdmissionDate", v ? [v] : [])}
@@ -1413,7 +1413,7 @@ export function UtiPatientCard({
                   <div className="bg-muted/30 border border-border/30 rounded-md p-2">
                     <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">Previsão de alta</span>
                     <InlineEditableField
-                      value={previsaoAlta[0] || ""}
+                      value={previsaoAltaDate}
                       onUpdate={(v) => handleUpdateField("utiDischargePrediction", v ? [v] : [])}
                       placeholder="DD/MM/AAAA"
                       className="text-sm"
