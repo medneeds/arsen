@@ -1,4 +1,5 @@
 import { Patient } from "@/types/patient";
+import { calcDIH } from "@/lib/dihCalc";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit, ChevronDown, ChevronRight, MoreVertical, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, ClipboardCheck, Clock, FileText, FolderOpen, Pill, Activity, Heart, User, Star, Printer, TrendingUp, Skull, ArrowRightLeft, ArrowLeftRight, BedDouble, DoorOpen, UserPlus, Shuffle } from "lucide-react";
@@ -74,22 +75,10 @@ interface UtiPatientCardProps {
 
 // Calculate days in UTI
 function calculateDaysInUti(admissionDate: string[] | undefined): number {
-  if (!admissionDate || admissionDate.length === 0) return 0;
-  const dateStr = admissionDate[0];
+  const dateStr = admissionDate?.[0];
   if (!dateStr) return 0;
-  
-  const parsed = new Date(dateStr);
-  if (isNaN(parsed.getTime())) {
-    const parts = dateStr.split('/');
-    if (parts.length === 3) {
-      const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-      if (!isNaN(d.getTime())) {
-        return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
-      }
-    }
-    return 0;
-  }
-  return Math.floor((Date.now() - parsed.getTime()) / (1000 * 60 * 60 * 24));
+  const dih = calcDIH(dateStr);
+  return dih ?? 0;
 }
 
 // Sortable Item for drag-and-drop with optional highlight
