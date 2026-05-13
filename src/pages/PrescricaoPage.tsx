@@ -1716,6 +1716,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     </SelectContent>
                   </Select>
                 </div>
+                {renderDiluent && <>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Diluente:</span>
                   <Select value={item.diluent || ''} onValueChange={(v) => {
@@ -1749,11 +1750,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   <span className="text-[10px] text-muted-foreground">Vol dil:</span>
                   <Input value={item.diluentVolume || ''} onChange={(e) => {
                     onUpdate(item.id, "diluentVolume", e.target.value);
-                    // Auto-recalculate volume total
                     const tempItem = { ...item, diluentVolume: e.target.value };
                     const autoVol = calcVolumeTotal(tempItem);
                     if (autoVol) onUpdate(item.id, "volumeTotal", autoVol);
-                    // Auto-recalculate concentration
                     const tempItem2 = { ...tempItem, volumeTotal: autoVol || item.volumeTotal || '' };
                     const autoConc = calcConcentration(tempItem2);
                     if (autoConc) onUpdate(item.id, "concentration", autoConc);
@@ -1774,6 +1773,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     </SelectContent>
                   </Select>
                 </div>
+                </>}
               </div>
 
               {/* Row 3: Infusion — Vol total → Correr em (com unidade) → Gotejamento + Rate | Concentração */}
