@@ -512,9 +512,9 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
             <TabsContent value="anamnese" className="space-y-4 mt-4">
               <Section icon={FileText} title="História clínica" tone="slate">
                 <div>
-                  <Label className="text-xs">HDA — História da Doença Atual *</Label>
+                  <ReqLabel missing={attempted && missing.hda}>HDA — História da Doença Atual</ReqLabel>
                   <Textarea value={hda} onChange={e => setHda(e.target.value)} rows={4}
-                    placeholder="Paciente admitido com..." className="mt-1" />
+                    placeholder="Paciente admitido com..." className={cn("mt-1", reqRing(attempted && missing.hda))} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
