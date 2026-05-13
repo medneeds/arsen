@@ -375,24 +375,29 @@ export function AntimicrobialGuideDialog({
     openPrintWindow(html, "Preparando Guia ATM…");
   };
 
-  const handleConfirmClick = () => {
-    const valid = entries.filter(e => e.medication.trim());
-    if (valid.length === 0) return;
-    if (mode === 'prescribe' && onConfirm) {
-      // Show mandatory print prompt first
-      setPendingConfirmEntries(valid);
-      setPrintPromptOpen(true);
-    }
+  const validEntries = () => entries.filter(e => e.medication.trim());
+
+  const doAttach = (close: boolean) => {
+    const valid = validEntries();
+    if (valid.length === 0 || !onConfirm) return;
+    onConfirm(valid.map(e => ({
+      medication: e.medication, dose: e.dose, route: e.route, posology: e.posology,
+      startDate: e.startDate, plannedDuration: e.plannedDuration, infectionSite: e.infectionSite,
+    })));
+    if (draftKey) localStorage.removeItem(draftKey);
+    if (close) onOpenChange(false);
   };
 
-  const finalizeConfirm = async (alsoPrint: boolean) => {
-    if (alsoPrint) await handlePrint(pendingConfirmEntries);
-    onConfirm?.(pendingConfirmEntries.map(e => ({
-      medication: e.medication, dose: e.dose, route: e.route, posology: e.posology,
-    })));
-    setPrintPromptOpen(false);
-    setPendingConfirmEntries([]);
-    onOpenChange(false);
+  const handleAttachOnly = () => doAttach(true);
+  const handlePrintOnly = async () => { await handlePrint(); };
+  const handleAttachAndPrint = async () => { await handlePrint(); doAttach(true); };
+  const handleSaveDraft = () => {
+    if (!draftKey) { toast.error("Sem paciente vinculado para salvar rascunho"); return; }
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(entries));
+      toast.success("Rascunho da Guia ATM salvo");
+      onOpenChange(false);
+    } catch { toast.error("Falha ao salvar rascunho"); }
   };
 
   return (
