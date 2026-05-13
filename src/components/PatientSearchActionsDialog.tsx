@@ -103,7 +103,11 @@ export function PatientSearchActionsDialog({
 
   const goToHistory = () => {
     handleClose(false);
-    navigate(`/historico-paciente?registryId=${patient.id}`);
+    const params = new URLSearchParams({
+      patientRegistryId: patient.id,
+      patientName: patient.full_name,
+    });
+    navigate(`/historico-paciente?${params.toString()}`);
   };
 
   const handleConfirmCreateEncounter = async () => {
