@@ -27,6 +27,7 @@ interface PreAdmission {
   birth_date: string | null;
   sex: string | null;
   medical_record: string | null;
+  cpf: string | null;
   destination_sector: string | null;
   status: string;
   risk_classification: string | null;
