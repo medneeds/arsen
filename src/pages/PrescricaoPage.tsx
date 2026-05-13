@@ -696,7 +696,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
               )}
             >
               <Icon className="h-3 w-3" />
-              {config.label}
+              {config.shortLabel ?? config.label}
               {isPopup && <span className="text-[8px] opacity-60 ml-0.5">▸</span>}
             </button>
           );
