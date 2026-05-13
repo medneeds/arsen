@@ -399,8 +399,9 @@ export default function Saps3Page() {
   useEffect(() => {
     loadPendingRequests();
     loadRecords();
-    loadOccupiedBeds();
   }, [hospitalId, stateId]);
+
+  useEffect(() => { loadOccupiedBeds(); }, [hospitalId, stateId, selectedSector]);
 
   // ─── Pre-fill from allocation navigation / URL ───
   useEffect(() => {
