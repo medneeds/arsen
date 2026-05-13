@@ -445,6 +445,8 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
       await supabase.from("patients").update(baseUpdate as any).eq("id", patient.id);
 
       toast.success("ADMISSÃO HOSPITALAR REGISTRADA — paciente ADMITIDO (D0)");
+      try { localStorage.removeItem(draftKeyFor(patient.id)); } catch {}
+      setDraftSavedAt(null);
       onOpenChange(false);
       onSuccess?.();
     } catch (e: any) {
