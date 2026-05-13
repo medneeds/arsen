@@ -3313,7 +3313,8 @@ const PrescricaoPage = () => {
     setItems((prev) => [...prev, newItem]);
 
     // === Reconhecimento automático em "Buscar todas" ===
-    // MAV (alta vigilância): destaca, expande a categoria e avisa o prescritor.
+    // MAV (alta vigilância): destaca, expande a categoria, avisa o prescritor
+    // e abre o fluxo padronizado de prescrição de alta vigilância.
     if (med.highAlert) {
       setExpandedCategories(prev => {
         const n = new Set(prev);
@@ -3321,18 +3322,18 @@ const PrescricaoPage = () => {
         return n;
       });
       toast.warning(`Alta vigilância: ${med.name}`, {
-        description: "Revisar diluição, dose, bomba de infusão e dupla checagem antes da validação.",
+        description: "Use o modelo padronizado: diluição, dose, BIC e dupla checagem.",
       });
+      setTimeout(() => setHighAlertGuideOpen(true), 250);
     }
-    // Psicotrópico / controlado: dispara o formulário de notificação para preenchimento imediato.
+    // Psicotrópico / controlado: NÃO abre formulário aqui. Apenas marca e avisa.
+    // A guia de notificação será sugerida automaticamente no momento de imprimir,
+    // já preenchida com base nas medicações prescritas (Receita Amarela/Azul/
+    // Controle Especial conforme catálogo).
     if (isPsychotropicMedication(med.name)) {
-      toast.warning(`Psicotrópico: ${med.name}`, {
-        description: "Preencha a notificação obrigatória (Receita Amarela/Azul/Controle Especial).",
+      toast.info(`Psicotrópico identificado: ${med.name}`, {
+        description: "A guia de notificação será gerada automaticamente ao imprimir.",
       });
-      setTimeout(() => {
-        setPsychotropicFormMode('edit');
-        setPsychotropicFormOpen(true);
-      }, 350);
     }
 
     // Sugestões: combina protocolos clínicos manuais (sepse, TEV, etc.) com
