@@ -248,8 +248,24 @@ export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarPr
             <Clock className="h-3.5 w-3.5 mr-1.5" />
             Histórico
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 text-xs"
+            onClick={() => setRecordEditOpen(true)}
+            title="Editar nº do prontuário (auditado)"
+          >
+            <FileText className="h-3.5 w-3.5 mr-1.5" />
+            Prontuário
+          </Button>
         </div>
       </SheetContent>
+      <MedicalRecordEditDialog
+        open={recordEditOpen}
+        onOpenChange={setRecordEditOpen}
+        patientId={patient.id}
+        patientName={patient.name}
+      />
     </Sheet>
   );
 }
