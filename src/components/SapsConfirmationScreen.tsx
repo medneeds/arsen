@@ -11,6 +11,9 @@ interface SapsConfirmationProps {
   sectorLabel: string;
   totalScore: number;
   predictedMortality: number;
+  patientId?: string | null;
+  sectorCode?: string;
+  age?: string | null;
   onComplete: () => void;
 }
 
@@ -20,6 +23,9 @@ export function SapsConfirmationScreen({
   sectorLabel,
   totalScore,
   predictedMortality,
+  patientId,
+  sectorCode,
+  age,
   onComplete,
 }: SapsConfirmationProps) {
   const navigate = useNavigate();
@@ -48,7 +54,18 @@ export function SapsConfirmationScreen({
     }, 1000);
 
     const timeout = setTimeout(() => {
-      navigate("/");
+      if (patientId) {
+        const params = new URLSearchParams({
+          patientId,
+          patientName,
+          patientBed: bedNumber,
+        });
+        if (sectorCode) params.set("patientSector", sectorCode);
+        if (age) params.set("patientAge", age);
+        navigate(`/paciente?${params.toString()}`);
+      } else {
+        navigate("/painel-clinico");
+      }
       onComplete();
     }, 3000);
 
@@ -57,7 +74,7 @@ export function SapsConfirmationScreen({
       clearInterval(countdownInterval);
       clearTimeout(timeout);
     };
-  }, [navigate, onComplete]);
+  }, [navigate, onComplete, patientId, patientName, bedNumber, sectorCode, age]);
 
   const getMortalityColor = (m: number) => {
     if (m < 10) return "text-emerald-500";
@@ -107,7 +124,7 @@ export function SapsConfirmationScreen({
             transition={{ delay: 0.4 }}
             className="text-center"
           >
-            <h2 className="text-2xl font-bold text-foreground">Paciente admitido</h2>
+            <h2 className="text-2xl font-bold text-foreground">Paciente pré-admitido</h2>
             <p className="text-muted-foreground mt-1">{patientName}</p>
           </motion.div>
 
@@ -168,7 +185,7 @@ export function SapsConfirmationScreen({
           >
             <Progress value={progress} className="h-1.5" />
             <p className="text-xs text-center text-muted-foreground">
-              Redirecionando para o mapa em {countdown}s...
+              {patientId ? `Abrindo painel clínico em ${countdown}s...` : `Abrindo painel clínico em ${countdown}s...`}
             </p>
           </motion.div>
         </motion.div>
