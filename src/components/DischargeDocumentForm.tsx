@@ -217,21 +217,22 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
         </>
       )}
 
-      {/* Comunicação à família */}
+      {/* Comunicação à família — OPCIONAL */}
       <div className="space-y-2 pt-2 border-t">
         <div className="flex items-center gap-2">
           <FileSignature className="h-3.5 w-3.5 text-primary" />
           <span className="text-[11px] uppercase tracking-wider font-semibold">
-            Comunicação à família <span className="text-destructive">*</span>
+            Comunicação à família
           </span>
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground">(opcional)</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <Field label="Familiar comunicado *">
+          <Field label="Familiar comunicado">
             <Input className="h-8 text-xs uppercase" value={form.family_contact_name || ""}
               onChange={(e) => setField("family_contact_name", upper(e.target.value))}
               placeholder="NOME COMPLETO" />
           </Field>
-          <Field label="Grau de parentesco *">
+          <Field label="Grau de parentesco">
             <Select value={form.family_contact_relation || ""} onValueChange={(v) => setField("family_contact_relation", v)}>
               <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="SELECIONE" /></SelectTrigger>
               <SelectContent>
@@ -241,7 +242,7 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <Field label="Telefone *">
+          <Field label="Telefone">
             <Input className="h-8 text-xs" value={form.family_contact_phone || ""}
               onChange={(e) => setField("family_contact_phone", e.target.value)}
               placeholder="(00) 00000-0000" />
@@ -252,7 +253,7 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
           </Field>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <Field label="Modo *">
+          <Field label="Modo">
             <Select value={form.family_communication_mode || ""} onValueChange={(v) => setField("family_communication_mode", v)}>
               <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="SELECIONE" /></SelectTrigger>
               <SelectContent>
@@ -274,7 +275,7 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
               onChange={(e) => setField("family_communication_at", e.target.value)} />
           </Field>
         </div>
-        <Field label="Grau de satisfação na comunicação médica *">
+        <Field label="Grau de satisfação na comunicação médica">
           <div className="flex gap-1">
             {[1,2,3,4,5].map((n) => {
               const selected = form.family_satisfaction === String(n);
