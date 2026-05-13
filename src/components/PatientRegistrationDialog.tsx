@@ -277,7 +277,10 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
     setIsSaving(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
-      const selectedSectors = form.destination_sector.split(", ").filter(Boolean);
+      // Fallback: se o usuário não escolheu setor mas o diálogo foi aberto a partir de uma
+      // seção de setor (defaultDestinationSector), assume esse setor.
+      const effectiveDestination = (form.destination_sector || defaultDestinationSector || "").trim();
+      const selectedSectors = effectiveDestination.split(", ").filter(Boolean);
       const isUtiDestination = selectedSectors.some(s => s.startsWith("UTI"));
       const hasDestinationSector = selectedSectors.length > 0;
       // Sempre que houver setor de destino definido (seja vindo do mapa ou escolhido na recepção),
