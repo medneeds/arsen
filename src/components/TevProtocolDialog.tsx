@@ -582,8 +582,32 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
             {step === "result" && (
               <>
                 <Button variant="outline" size="sm" onClick={() => setStep("bleeding")} className="text-xs">Voltar</Button>
-                <Button size="sm" onClick={handlePrint} className="text-xs gap-1.5 bg-blue-600 hover:bg-blue-700">
-                  <Printer className="h-3.5 w-3.5" /> Imprimir Protocolo
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleFinalize("prophylactic")}
+                  disabled={hasMajorBleedingRisk || !onAddToPrescription}
+                  className="text-xs gap-1.5"
+                  title={hasMajorBleedingRisk ? "Contraindicado: risco maior de sangramento" : "Anexar enoxaparina 40 mg SC 1x/dia"}
+                >
+                  <Plus className="h-3.5 w-3.5" /> Anexar Profilática
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleFinalize("full")}
+                  disabled={hasMajorBleedingRisk || !onAddToPrescription}
+                  className="text-xs gap-1.5"
+                  title={hasMajorBleedingRisk ? "Contraindicado: risco maior de sangramento" : "Anexar enoxaparina 1 mg/kg SC 12/12h"}
+                >
+                  <Plus className="h-3.5 w-3.5" /> Anexar Plena
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => handleFinalize("none")}
+                  className="text-xs gap-1.5 bg-blue-600 hover:bg-blue-700"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Finalizar Protocolo
                 </Button>
               </>
             )}
