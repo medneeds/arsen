@@ -1031,22 +1031,38 @@ const RequisicaoUnificadaPage = () => {
           </div>
 
           {/* Submit */}
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={resetForm} disabled={submitting}>Limpar</Button>
-            <Button
-              onClick={handleSubmitRequest}
-              disabled={
-                submitting ||
-                formSelectedItems.length === 0 ||
-                !formPatientName.trim() ||
-                (requiresExtraJustification && formExtraJustification.trim().length < 10)
-              }
-              className="gap-2"
-            >
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Enviar Requisição
-            </Button>
-          </div>
+          {(() => {
+            const missing: string[] = [];
+            if (!formPatientName.trim()) missing.push("identificar o paciente");
+            if (formSelectedItems.length === 0) missing.push(`selecionar pelo menos 1 ${activeCategory === "parecer" ? "especialidade" : "exame"}`);
+            if (!formIndication.trim()) missing.push("preencher a justificativa clínica");
+            if (requiresExtraJustification && formExtraJustification.trim().length < 10) missing.push("justificar exames fora da rotina (mín. 10 caracteres)");
+            const blocked = missing.length > 0;
+            return (
+              <div className="flex flex-col items-end gap-2 pt-2">
+                {blocked && (
+                  <div className="w-full rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/30 px-3 py-2 text-[11px] text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                    <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                    <span>
+                      Para enviar, falta: <strong>{missing.join(" · ")}</strong>.
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={resetForm} disabled={submitting}>Limpar</Button>
+                  <Button
+                    onClick={handleSubmitRequest}
+                    disabled={submitting || blocked}
+                    className="gap-2"
+                    title={blocked ? `Falta: ${missing.join(" · ")}` : "Enviar requisição"}
+                  >
+                    {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    Enviar Requisição
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
         </TabsContent>
 
         {/* ════════════════════════════════════════════ */}
