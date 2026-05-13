@@ -7,23 +7,12 @@ interface PrintableUtiPatientCardProps {
   colorVariant?: 'blue' | 'yellow';
 }
 
+import { calcDIH } from "@/lib/dihCalc";
+
 function calculateDaysInUti(admissionDate: string[] | undefined): number {
-  if (!admissionDate || admissionDate.length === 0) return 0;
-  const dateStr = admissionDate[0];
+  const dateStr = admissionDate?.[0];
   if (!dateStr) return 0;
-  
-  const parsed = new Date(dateStr);
-  if (isNaN(parsed.getTime())) {
-    const parts = dateStr.split('/');
-    if (parts.length === 3) {
-      const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-      if (!isNaN(d.getTime())) {
-        return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
-      }
-    }
-    return 0;
-  }
-  return Math.floor((Date.now() - parsed.getTime()) / (1000 * 60 * 60 * 24));
+  return calcDIH(dateStr) ?? 0;
 }
 
 const colors = {
