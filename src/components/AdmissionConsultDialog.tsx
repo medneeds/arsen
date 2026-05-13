@@ -57,7 +57,7 @@ interface AdmissionHistory {
   initial_conduct: string | null;
 }
 
-const UTI_SECTORS = ["red", "yellow", "blue", "outside", "uti_01", "uti_02", "uci_01", "uci_02"];
+const UTI_SECTORS = ["red", "yellow", "outside", "uti_01", "uti_02", "uci_02"];
 
 const fmtDateTime = (iso?: string | null) => {
   if (!iso) return "—";

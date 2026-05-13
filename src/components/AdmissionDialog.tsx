@@ -23,7 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
 
-const UTI_SECTORS = ["red", "yellow", "blue", "outside", "uti_01", "uti_02", "uci_01", "uci_02"];
+const UTI_SECTORS = ["red", "yellow", "outside", "uti_01", "uti_02", "uci_02"];
 
 /** Chave do rascunho local por paciente */
 const draftKeyFor = (patientId: string) => `admission_draft:v1:${patientId}`;
