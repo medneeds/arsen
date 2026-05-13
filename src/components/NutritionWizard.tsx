@@ -262,6 +262,11 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
   const [zeroHydrate, setZeroHydrate] = useState(true);
   const [zeroCustom, setZeroCustom] = useState("");
 
+  // Aporte proteico (multi-select com overrides por item)
+  interface ProteinOverride { dose: string; posology: string; route: ProteinRouteKind }
+  const [proteinSelected, setProteinSelected] = useState<Set<string>>(new Set());
+  const [proteinOverrides, setProteinOverrides] = useState<Record<string, ProteinOverride>>({});
+
   // Free notes
   const [notes, setNotes] = useState<string>("");
 
