@@ -747,6 +747,15 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                   const base = admissionDate ?? new Date();
                   const merged = new Date(base);
                   merged.setHours(hh, mm, 0, 0);
+                  // Bloqueia horário futuro
+                  if (merged.getTime() > Date.now()) {
+                    toast({
+                      title: "Horário inválido",
+                      description: "Não é permitido informar horário futuro de admissão.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
                   setAdmissionDate(merged);
                 }}
                 className="h-9 w-28 text-xs"
