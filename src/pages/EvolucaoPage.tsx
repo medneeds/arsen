@@ -307,11 +307,11 @@ const EvolucaoPage = () => {
                 Cancelar
               </Button>
             </div>
-            <Textarea
+            <RichTextEditor
               value={intercurrenceText}
-              onChange={e => setIntercurrenceText(e.target.value)}
+              onChange={setIntercurrenceText}
               placeholder="Descreva a intercorrência (ex.: queda da própria altura às 14h, sem perda de consciência; novo episódio de hipotensão, PA 80x40 às 03h; dessaturação após mobilização...)"
-              className="min-h-[140px] text-sm resize-y"
+              minHeight={140}
               autoFocus
             />
             <div className="flex items-center justify-between">
