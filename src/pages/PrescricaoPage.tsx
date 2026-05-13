@@ -1413,6 +1413,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               </p>
             </div>
           )}
+          <div
+            {...(isLocked ? ({ inert: '' } as any) : {})}
+            className={cn(isLocked && "opacity-80")}
+            aria-disabled={isLocked || undefined}
+          >
           {item.status === 'active' && item.category === 'nutrition' && (
             <NutritionFields item={item} onUpdate={onUpdate} />
           )}
