@@ -343,7 +343,7 @@ export default function PacienteHubPage() {
                   </span>
                   {isPreAdmitted && (
                     <span className="text-[9px] font-semibold text-amber-600 tracking-widest uppercase mt-1">
-                      Pendente
+                      {hasDraft ? "Rascunho em andamento" : "Pendente"}
                     </span>
                   )}
                   {isAdmitted && (
