@@ -384,7 +384,7 @@ export function usePatients(department?: Department, sector?: string) {
       if (options.updateLocalState) {
         setPatients(prev => prev.map(p => (
           p.id === patientId
-            ? { ...p, name: '', diagnoses: '', medicalHistory: '', relevantExams: '', pendencies: '', schedule: '', admissionHistory: '' } as Patient
+            ? ({ ...p, name: '', diagnoses: [], medicalHistory: [], relevantExams: [], pendencies: [], schedule: [], admissionHistory: '' } as unknown as Patient)
             : p
         )));
       }
