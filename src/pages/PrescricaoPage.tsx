@@ -2990,6 +2990,41 @@ const PrescricaoPage = () => {
     return items.some(i => i.status === 'active' && isItemValidatedToday(i));
   }, [items, isItemValidatedToday]);
 
+  // Categorias que NÃO seguem o esquema dose/via/posologia (têm campos próprios)
+  const NON_STANDARD_CATEGORIES = useMemo(() => new Set(['nutrition', 'care', 'nonstandard', 'hydration']), []);
+
+  // Calcula quais campos obrigatórios estão faltando em um item ativo
+  const getItemMissingFields = useCallback((item: PrescriptionItem): string[] => {
+    if (item.status !== 'active') return [];
+    const missing: string[] = [];
+    const isStandard = !NON_STANDARD_CATEGORIES.has(item.category);
+    if (isStandard) {
+      const empty = (v?: string) => !v || !v.trim() || v.trim() === '-';
+      if (empty(item.dose)) missing.push('dose');
+      if (empty(item.route)) missing.push('via');
+      if (empty(item.posology)) missing.push('posologia');
+    }
+    // Controlado (Portaria 344) precisa de tipo de notificação resolvido
+    const cat = findControlledCatalog?.(item.name);
+    if (cat?.controlled && !cat.notification_type) missing.push('tipo de notificação');
+    return missing;
+  }, [NON_STANDARD_CATEGORIES, findControlledCatalog]);
+
+  // Mapa id → campos faltando, recomputado quando items mudam
+  const itemMissingMap = useMemo(() => {
+    const m = new Map<string, string[]>();
+    items.forEach(i => {
+      const miss = getItemMissingFields(i);
+      if (miss.length > 0) m.set(i.id, miss);
+    });
+    return m;
+  }, [items, getItemMissingFields]);
+
+  const blockedValidationItems = useMemo(
+    () => items.filter(i => itemMissingMap.has(i.id)),
+    [items, itemMissingMap]
+  );
+
   // All items validated check (todos os ativos validados hoje)
   const allItemsValidated = useMemo(() => {
     const activeItems = items.filter(i => i.status === 'active');
