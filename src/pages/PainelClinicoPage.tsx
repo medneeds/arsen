@@ -153,7 +153,7 @@ export default function PainelClinicoPage() {
   });
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [sidebarTab, setSidebarTab] = useState("resumo");
-  const [sapsScores, setSapsScores] = useState<Record<string, { score: number; mortality: number; status: string; pending_since: string | null }>>({});
+  const [sapsScores, setSapsScores] = useState<Record<string, { id: string; score: number; mortality: number; status: string; pending_since: string | null }>>({});
 
   useEffect(() => {
     if (currentSectorCode) setSectorFilter(currentSectorCode);
@@ -164,13 +164,13 @@ export default function PainelClinicoPage() {
     const fetchSaps = async () => {
       const { data } = await supabase
         .from("saps3_assessments" as any)
-        .select("patient_name, total_score, predicted_mortality, status, pending_since")
+        .select("id, patient_name, total_score, predicted_mortality, status, pending_since")
         .order("created_at", { ascending: false });
       if (data) {
-        const map: Record<string, { score: number; mortality: number; status: string; pending_since: string | null }> = {};
+        const map: Record<string, { id: string; score: number; mortality: number; status: string; pending_since: string | null }> = {};
         (data as any[]).forEach((r: any) => {
           if (!map[r.patient_name]) {
-            map[r.patient_name] = { score: r.total_score ?? 0, mortality: r.predicted_mortality ?? 0, status: r.status ?? 'completed', pending_since: r.pending_since ?? null };
+            map[r.patient_name] = { id: r.id, score: r.total_score ?? 0, mortality: r.predicted_mortality ?? 0, status: r.status ?? 'completed', pending_since: r.pending_since ?? null };
           }
         });
         setSapsScores(map);
@@ -395,6 +395,8 @@ export default function PainelClinicoPage() {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const params = new URLSearchParams();
+                                  params.set("completeSapsId", sapsScores[patient.name].id);
+                                  params.set("fromAllocation", "true");
                                   params.set("patientName", patient.name);
                                   if (patient.id) params.set("patientId", patient.id);
                                   if (patient.bedNumber) params.set("patientBed", patient.bedNumber);
