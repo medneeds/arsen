@@ -641,6 +641,14 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
 
         <PisImportDialog open={pisDialogOpen} onOpenChange={setPisDialogOpen} onExtracted={applyPisData} />
 
+        <UnidentifiedSuggestionDialog
+          open={niSuggestionOpen}
+          detection={niSuggestion}
+          onConfirm={handleAcceptNiSuggestion}
+          onReject={handleRejectNiSuggestion}
+          onCancel={handleCancelNiSuggestion}
+        />
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className={cn("grid w-full", defaultDestinationSector ? "grid-cols-1" : "grid-cols-2")}>
             <TabsTrigger value="dados" className="text-xs gap-1">
