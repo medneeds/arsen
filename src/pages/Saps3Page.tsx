@@ -236,6 +236,19 @@ const COMORBIDITY_OPTIONS = [
   { id: "chemotherapy", label: "Quimioterapia recente" },
 ];
 
+const RASS_LABELS: Record<number, string> = {
+  [-5]: "Não responsivo",
+  [-4]: "Sedação profunda",
+  [-3]: "Sedação moderada",
+  [-2]: "Sedação leve",
+  [-1]: "Sonolento",
+  [0]: "Alerta e calmo",
+  [1]: "Inquieto",
+  [2]: "Agitado",
+  [3]: "Muito agitado",
+  [4]: "Combativo",
+};
+
 // Bed config per critical-care sector (UTI / UCI / UCC)
 const UTI_SECTORS = [
   { value: "red", label: "UTI 1", prefix: "L", start: 1, max: 8, department: "UTI" },
@@ -296,8 +309,30 @@ export default function Saps3Page() {
   const [surgeryType, setSurgeryType] = useState<string>("");
   const [infectionAtAdmission, setInfectionAtAdmission] = useState<string>("");
 
-  // Box III
-  const [gcs, setGcs] = useState<string>("");
+  // Box III — Avaliação de consciência guiada
+  // sedationStatus: "" (não respondido) | "no" | "sedated" | "intubated_no_sedation"
+  const [sedationStatus, setSedationStatus] = useState<"" | "no" | "sedated" | "intubated_no_sedation">("");
+  const [gcsO, setGcsO] = useState<string>("");
+  const [gcsV, setGcsV] = useState<string>("");
+  const [gcsM, setGcsM] = useState<string>("");
+  const [rassScore, setRassScore] = useState<string>("");
+  const [consciousnessReason, setConsciousnessReason] = useState<string>("");
+  const [gcsPreSedation, setGcsPreSedation] = useState<string>("");
+
+  // Derived GCS total ("8T" if intubated_no_sedation, numeric otherwise, "" if RASS)
+  const gcsTotal = useMemo(() => {
+    if (sedationStatus === "sedated") return "";
+    const o = parseInt(gcsO) || 0;
+    const m = parseInt(gcsM) || 0;
+    if (sedationStatus === "intubated_no_sedation") {
+      const sum = o + 1 + m;
+      return o && m ? `${sum}T` : "";
+    }
+    const v = parseInt(gcsV) || 0;
+    return o && v && m ? String(o + v + m) : "";
+  }, [sedationStatus, gcsO, gcsV, gcsM]);
+  const gcs = gcsTotal; // legacy var name kept for downstream use
+
   const [hrHighest, setHrHighest] = useState<string>("");
   const [sbpLowest, setSbpLowest] = useState<string>("");
   const [bilirubinHighest, setBilirubinHighest] = useState<string>("");
@@ -317,7 +352,16 @@ export default function Saps3Page() {
   const scores = useMemo(() => {
     const ageN = age ? parseInt(age) : null;
     const losN = losBeforeIcu ? parseInt(losBeforeIcu) : null;
-    const gcsN = gcs ? parseInt(gcs) : null;
+    // Numeric GCS for SAPS pontuação:
+    //  - sedoanalgesia → usa GCS pré-sedação se informado, senão 15 (sem penalidade)
+    //  - GCS-T (intubado sem sedação) → usa o numérico (parte antes do "T")
+    //  - GCS normal → usa direto
+    let gcsN: number | null = null;
+    if (sedationStatus === "sedated") {
+      gcsN = gcsPreSedation ? parseInt(gcsPreSedation) : 15;
+    } else if (gcs) {
+      gcsN = parseInt(gcs); // parseInt ignora sufixo "T"
+    }
     const hrN = hrHighest ? parseInt(hrHighest) : null;
     const sbpN = sbpLowest ? parseInt(sbpLowest) : null;
     const bilN = bilirubinHighest ? parseFloat(bilirubinHighest) : null;
@@ -344,7 +388,8 @@ export default function Saps3Page() {
     const total = box1 + box2 + box3;
     return { box1, box2, box3, total, mortality: predictMortality(total) };
   }, [age, comorbidities, losBeforeIcu, admissionSource, plannedAdmission, admissionReason,
-    surgicalStatus, infectionAtAdmission, gcs, hrHighest, sbpLowest, bilirubinHighest,
+    surgicalStatus, infectionAtAdmission, gcs, sedationStatus, gcsPreSedation,
+    hrHighest, sbpLowest, bilirubinHighest,
     tempLowest, creatinineHighest, leukocytes, phLowest, plateletsLowest, pao2Fio2, isVentilated]);
 
   // ─── Available beds for selected sector ───
@@ -440,7 +485,7 @@ export default function Saps3Page() {
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
     setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
-    setInfectionAtAdmission(""); setGcs(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
+    setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setRassScore(""); setConsciousnessReason(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
     setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
     setPao2Fio2(""); setIsVentilated(false);
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
@@ -463,10 +508,55 @@ export default function Saps3Page() {
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
     setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
-    setInfectionAtAdmission(""); setGcs(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
+    setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setRassScore(""); setConsciousnessReason(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
     setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
     setPao2Fio2(""); setIsVentilated(false);
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
+  };
+
+  // ─── Build escala_consciencia (estrutura obrigatória) ───
+  const buildEscalaConsciencia = () => {
+    if (sedationStatus === "no") {
+      const O = parseInt(gcsO) || null;
+      const V = parseInt(gcsV) || null;
+      const M = parseInt(gcsM) || null;
+      const total = O && V && M ? O + V + M : null;
+      return {
+        tipo: "GCS" as const,
+        glasgow_score: total,
+        glasgow_parciais: O && V && M ? { O, V, M } : null,
+        rass_score: null,
+        glasgow_nao_aplicavel: false,
+        motivo: null,
+        gcs_pre_sedacao: null,
+      };
+    }
+    if (sedationStatus === "intubated_no_sedation") {
+      const O = parseInt(gcsO) || null;
+      const M = parseInt(gcsM) || null;
+      const total = O && M ? O + 1 + M : null;
+      return {
+        tipo: "GCS-T" as const,
+        glasgow_score: total,
+        glasgow_parciais: O && M ? { O, V: 1, M } : null,
+        rass_score: null,
+        glasgow_nao_aplicavel: false,
+        motivo: "Via aérea artificial — Verbal = 1T",
+        gcs_pre_sedacao: null,
+      };
+    }
+    if (sedationStatus === "sedated") {
+      return {
+        tipo: "RASS" as const,
+        glasgow_score: null,
+        glasgow_parciais: null,
+        rass_score: rassScore !== "" ? parseInt(rassScore) : null,
+        glasgow_nao_aplicavel: true,
+        motivo: consciousnessReason || "Não aplicável – Sedoanalgesia contínua",
+        gcs_pre_sedacao: gcsPreSedation ? parseInt(gcsPreSedation) : null,
+      };
+    }
+    return null;
   };
 
   // ─── Build SAPS payload ───
@@ -485,7 +575,8 @@ export default function Saps3Page() {
     surgical_status: surgicalStatus || null,
     surgery_type: surgeryType || null,
     infection_at_admission: infectionAtAdmission || null,
-    gcs_score: gcs ? parseInt(gcs) : null,
+    gcs_score: gcs ? parseInt(gcs) : (sedationStatus === "sedated" && gcsPreSedation ? parseInt(gcsPreSedation) : null),
+    escala_consciencia: buildEscalaConsciencia(),
     heart_rate_highest: hrHighest ? parseInt(hrHighest) : null,
     systolic_bp_lowest: sbpLowest ? parseInt(sbpLowest) : null,
     bilirubin_highest: bilirubinHighest ? parseFloat(bilirubinHighest) : null,
@@ -511,6 +602,12 @@ export default function Saps3Page() {
     if (!selectedSector) { toast.error("Selecione o setor da UTI"); return; }
     if (!selectedBed) { toast.error("Selecione o leito"); return; }
     if (!hospitalId || !stateId) { toast.error("Hospital/Estado não selecionado"); return; }
+    if (!asPending) {
+      if (!sedationStatus) { toast.error("Responda a avaliação de consciência (sedoanalgesia/VM)"); return; }
+      if (sedationStatus === "no" && (!gcsO || !gcsV || !gcsM)) { toast.error("Preencha O, V e M do Glasgow"); return; }
+      if (sedationStatus === "intubated_no_sedation" && (!gcsO || !gcsM)) { toast.error("Preencha Ocular e Motor do Glasgow (Verbal = 1T)"); return; }
+      if (sedationStatus === "sedated" && rassScore === "") { toast.error("Selecione a pontuação RASS (-5 a +4)"); return; }
+    }
 
     setSaving(true);
     try {
@@ -1003,11 +1100,124 @@ export default function Saps3Page() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <CardContent className="space-y-4 pt-0">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <div>
-                      <Label className="flex items-center gap-1"><Brain className="h-3.5 w-3.5" /> Glasgow (GCS)</Label>
-                      <Input type="number" value={gcs} onChange={e => setGcs(e.target.value)} placeholder="3-15" min={3} max={15} />
+                  {/* ── Avaliação de consciência guiada (GCS / GCS-T / RASS) ── */}
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-4">
+                    <div className="flex items-start gap-2">
+                      <Brain className="h-4 w-4 text-primary mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-foreground">Avaliação de consciência</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          O paciente está sob sedoanalgesia contínua e/ou ventilação mecânica?
+                        </p>
+                      </div>
                     </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {([
+                        { v: "no", label: "Não", hint: "Aplicar GCS completo" },
+                        { v: "sedated", label: "Sim — sedoanalgesia ± VM", hint: "Aplicar RASS" },
+                        { v: "intubated_no_sedation", label: "Intubado sem sedação", hint: "GCS com V = 1T" },
+                      ] as const).map(opt => (
+                        <button
+                          key={opt.v}
+                          type="button"
+                          onClick={() => setSedationStatus(opt.v)}
+                          className={`text-left p-3 rounded-md border transition-all ${
+                            sedationStatus === opt.v
+                              ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                              : "border-border bg-card hover:bg-muted/50"
+                          }`}
+                        >
+                          <p className="text-sm font-medium text-foreground">{opt.label}</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">{opt.hint}</p>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Caminho 1: GCS completo */}
+                    {sedationStatus === "no" && (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 pt-2 border-t border-primary/20">
+                        <div>
+                          <Label className="text-xs">Ocular (1-4)</Label>
+                          <Input type="number" value={gcsO} onChange={e => setGcsO(e.target.value)} min={1} max={4} placeholder="O" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Verbal (1-5)</Label>
+                          <Input type="number" value={gcsV} onChange={e => setGcsV(e.target.value)} min={1} max={5} placeholder="V" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Motor (1-6)</Label>
+                          <Input type="number" value={gcsM} onChange={e => setGcsM(e.target.value)} min={1} max={6} placeholder="M" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">GCS total</Label>
+                          <div className="h-10 px-3 rounded-md border bg-background flex items-center justify-center text-lg font-bold text-primary">
+                            {gcsTotal || "—"}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Caminho 2: Sedoanalgesia → RASS */}
+                    {sedationStatus === "sedated" && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-primary/20">
+                        <div>
+                          <Label className="text-xs">RASS (-5 a +4)</Label>
+                          <Select value={rassScore} onValueChange={setRassScore}>
+                            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                            <SelectContent>
+                              {[-5,-4,-3,-2,-1,0,1,2,3,4].map(n => (
+                                <SelectItem key={n} value={String(n)}>
+                                  {n >= 0 ? `+${n}` : n} — {RASS_LABELS[n]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">GCS pré-sedação (opcional)</Label>
+                          <Input type="number" value={gcsPreSedation} onChange={e => setGcsPreSedation(e.target.value)} min={3} max={15} placeholder="3-15" />
+                        </div>
+                        <div className="sm:col-span-1">
+                          <Label className="text-xs">Motivo</Label>
+                          <Input value={consciousnessReason} onChange={e => setConsciousnessReason(e.target.value)} placeholder="Não aplicável – Sedoanalgesia contínua" />
+                        </div>
+                        <p className="sm:col-span-3 text-[11px] text-muted-foreground">
+                          GCS não será aplicado. Pontuação SAPS usa o GCS pré-sedação se informado; caso contrário assume 15.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Caminho 3: Intubado sem sedação → GCS-T */}
+                    {sedationStatus === "intubated_no_sedation" && (
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 pt-2 border-t border-primary/20">
+                        <div>
+                          <Label className="text-xs">Ocular (1-4)</Label>
+                          <Input type="number" value={gcsO} onChange={e => setGcsO(e.target.value)} min={1} max={4} placeholder="O" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Verbal</Label>
+                          <div className="h-10 px-3 rounded-md border border-dashed border-amber-400 bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-sm font-bold text-amber-700 dark:text-amber-300">
+                            1T
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Motor (1-6)</Label>
+                          <Input type="number" value={gcsM} onChange={e => setGcsM(e.target.value)} min={1} max={6} placeholder="M" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">GCS total</Label>
+                          <div className="h-10 px-3 rounded-md border bg-background flex items-center justify-center text-lg font-bold text-primary">
+                            {gcsTotal || "—"}
+                          </div>
+                        </div>
+                        <p className="col-span-3 sm:col-span-4 text-[11px] text-muted-foreground">
+                          Verbal travado em 1T (via aérea artificial). Score exibido com sufixo T.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     <div>
                       <Label className="flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> FC mais alta (bpm)</Label>
                       <Input type="number" value={hrHighest} onChange={e => setHrHighest(e.target.value)} placeholder="Ex: 110" />

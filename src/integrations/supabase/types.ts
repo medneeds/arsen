@@ -3536,6 +3536,7 @@ export type Database = {
           created_by: string | null
           creatinine_highest: number | null
           department: string
+          escala_consciencia: Json | null
           gcs_score: number | null
           heart_rate_highest: number | null
           hospital_los_before_icu: number | null
@@ -3575,6 +3576,7 @@ export type Database = {
           created_by?: string | null
           creatinine_highest?: number | null
           department?: string
+          escala_consciencia?: Json | null
           gcs_score?: number | null
           heart_rate_highest?: number | null
           hospital_los_before_icu?: number | null
@@ -3614,6 +3616,7 @@ export type Database = {
           created_by?: string | null
           creatinine_highest?: number | null
           department?: string
+          escala_consciencia?: Json | null
           gcs_score?: number | null
           heart_rate_highest?: number | null
           hospital_los_before_icu?: number | null
