@@ -90,6 +90,7 @@ import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog"
 import { AtmStatusDialog } from "@/components/AtmStatusDialog";
 import { useUnifiedMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
 import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/PsychotropicFormDialog";
+import { usePatientCid } from "@/hooks/usePatientCid";
 import { TevProtocolDialog } from "@/components/TevProtocolDialog";
 import { HighAlertGuideDialog } from "@/components/HighAlertGuideDialog";
 import { fuzzySearch } from "@/lib/fuzzySearch";
