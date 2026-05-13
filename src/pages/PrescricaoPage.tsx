@@ -1570,7 +1570,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           {item.status === 'active' && item.category === 'nutrition' && (
             <NutritionFields item={item} onUpdate={onUpdate} />
           )}
-          {item.status === 'active' && item.category !== 'nutrition' && (
+          {item.status === 'active' && item.category === 'hydration' && (
+            <HydrationFields item={item} onUpdate={onUpdate} />
+          )}
+          {item.status === 'active' && item.category !== 'nutrition' && item.category !== 'hydration' && (
             <>
               {/* Row 1: Dose + Via + Intervalo */}
               <div className="flex items-center gap-1.5 flex-wrap">
