@@ -514,6 +514,51 @@ export default function Saps3Page() {
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
   };
 
+  // ─── Build escala_consciencia (estrutura obrigatória) ───
+  const buildEscalaConsciencia = () => {
+    if (sedationStatus === "no") {
+      const O = parseInt(gcsO) || null;
+      const V = parseInt(gcsV) || null;
+      const M = parseInt(gcsM) || null;
+      const total = O && V && M ? O + V + M : null;
+      return {
+        tipo: "GCS" as const,
+        glasgow_score: total,
+        glasgow_parciais: O && V && M ? { O, V, M } : null,
+        rass_score: null,
+        glasgow_nao_aplicavel: false,
+        motivo: null,
+        gcs_pre_sedacao: null,
+      };
+    }
+    if (sedationStatus === "intubated_no_sedation") {
+      const O = parseInt(gcsO) || null;
+      const M = parseInt(gcsM) || null;
+      const total = O && M ? O + 1 + M : null;
+      return {
+        tipo: "GCS-T" as const,
+        glasgow_score: total,
+        glasgow_parciais: O && M ? { O, V: 1, M } : null,
+        rass_score: null,
+        glasgow_nao_aplicavel: false,
+        motivo: "Via aérea artificial — Verbal = 1T",
+        gcs_pre_sedacao: null,
+      };
+    }
+    if (sedationStatus === "sedated") {
+      return {
+        tipo: "RASS" as const,
+        glasgow_score: null,
+        glasgow_parciais: null,
+        rass_score: rassScore !== "" ? parseInt(rassScore) : null,
+        glasgow_nao_aplicavel: true,
+        motivo: consciousnessReason || "Não aplicável – Sedoanalgesia contínua",
+        gcs_pre_sedacao: gcsPreSedation ? parseInt(gcsPreSedation) : null,
+      };
+    }
+    return null;
+  };
+
   // ─── Build SAPS payload ───
   const buildSapsPayload = (statusVal: 'completed' | 'pending') => ({
     patient_name: patientName,
@@ -530,7 +575,8 @@ export default function Saps3Page() {
     surgical_status: surgicalStatus || null,
     surgery_type: surgeryType || null,
     infection_at_admission: infectionAtAdmission || null,
-    gcs_score: gcs ? parseInt(gcs) : null,
+    gcs_score: gcs ? parseInt(gcs) : (sedationStatus === "sedated" && gcsPreSedation ? parseInt(gcsPreSedation) : null),
+    escala_consciencia: buildEscalaConsciencia(),
     heart_rate_highest: hrHighest ? parseInt(hrHighest) : null,
     systolic_bp_lowest: sbpLowest ? parseInt(sbpLowest) : null,
     bilirubin_highest: bilirubinHighest ? parseFloat(bilirubinHighest) : null,
