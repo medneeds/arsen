@@ -232,12 +232,28 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       const destinationSectorLabel = SECTORS.find((sector) => sector.value === selectedSector)?.label || selectedSector;
 
       if (isUtiAdmission) {
+        // Calcula o leito final (incluindo EXTRA dinâmico) já neste pop-up
+        let finalBedUti = selectedBed;
+        if (selectedBed === "EXTRA" || extraBedRequested) {
+          const extraBeds = occupiedBeds
+            .filter(b => b.startsWith("EXTRA"))
+            .map(b => parseInt(b.replace("EXTRA", ""), 10))
+            .filter(n => !isNaN(n));
+          const nextExtra = extraBeds.length > 0 ? Math.max(...extraBeds) + 1 : 1;
+          finalBedUti = `EXTRA${nextExtra}`;
+        }
+        if (!finalBedUti) {
+          toast({ title: "Selecione um leito", description: "Escolha o leito antes de continuar para o SAPS 3.", variant: "destructive" });
+          setIsSubmitting(false);
+          return;
+        }
+
         const { error: updateError } = await supabase
           .from("pre_admissions")
           .update({
             status: "aguardando_leito_uti",
             destination_sector: destinationSectorLabel,
-            destination_bed: extraBedRequested ? "EXTRA" : null,
+            destination_bed: finalBedUti,
             notes: admissionNotes || fullData.notes || null,
           })
           .eq("id", fullData.id);
@@ -250,8 +266,10 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           patientName: fullData.patient_name,
           patientAge: age ? String(age) : "",
           destinationSector: destinationSectorLabel,
+          selectedBed: finalBedUti,
+          selectedSector,
         });
-        if (extraBedRequested) params.set("extraBed", "true");
+        if (extraBedRequested || selectedBed === "EXTRA") params.set("extraBed", "true");
 
         toast({
           title: "Encaminhado para admissão UTI",
