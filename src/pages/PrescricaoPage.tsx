@@ -104,6 +104,8 @@ import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/P
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { TevProtocolDialog } from "@/components/TevProtocolDialog";
 import { HighAlertGuideDialog } from "@/components/HighAlertGuideDialog";
+import { InsulinTherapyDialog } from "@/components/prescription/InsulinTherapyDialog";
+import { isInsulinMedication, describeInsulinPlan, type InsulinPlan } from "@/lib/insulinTherapy";
 import { fuzzySearch } from "@/lib/fuzzySearch";
 import { useMedicationFavorites } from "@/hooks/useMedicationFavorites";
 import { useQuickPrescriptionTemplates, type QuickPrescriptionTemplate, type QuickTemplateItem } from "@/hooks/useQuickPrescriptionTemplates";
