@@ -1262,6 +1262,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   onReactivate: (id: string) => void;
   onToggleValidation: (id: string) => void;
   onAssistant?: (id: string) => void;
+  onEditInsulin?: (id: string) => void;
   isPastRenewalTime: boolean;
   prescriptionLocked: boolean;
   missingFields?: string[];
