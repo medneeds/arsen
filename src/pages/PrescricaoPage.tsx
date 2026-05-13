@@ -4191,9 +4191,34 @@ const PrescricaoPage = () => {
 
         {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, Psicotrópicos, TEV, Imprimir, Validar, Compacto) */}
         <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-border/40 bg-muted/20 rounded-b-xl">
-          <Button variant="ghost" size="sm" onClick={() => setNewRxChoiceOpen(true)} className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2">
-            <Plus className="h-3 w-3" /> Nova
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (prescriptionLocked) {
+                      toast.error("Prescrição validada hoje", {
+                        description: "Não é possível iniciar uma nova enquanto houver prescrição validada do dia. Use revalidação após o corte 05h.",
+                      });
+                      return;
+                    }
+                    setNewRxChoiceOpen(true);
+                  }}
+                  disabled={prescriptionLocked}
+                  className="gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2 disabled:opacity-50"
+                >
+                  <Plus className="h-3 w-3" /> Nova
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {prescriptionLocked && (
+              <TooltipContent side="bottom" className="text-xs max-w-[220px]">
+                Bloqueado: já existe prescrição validada hoje. Aguarde corte 05h ou use renovação.
+              </TooltipContent>
+            )}
+          </Tooltip>
           <Button
             variant="ghost"
             size="sm"
