@@ -5769,6 +5769,7 @@ const PrescricaoPage = () => {
         doctorCrm={digitalSignature?.crm}
         hospitalName={currentHospital?.name}
         mode={psychotropicFormMode}
+        cidPrimary={admissionCidPrimary}
       />
 
       {/* Print Guides Dialog */}
