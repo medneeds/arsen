@@ -395,6 +395,8 @@ export default function PainelClinicoPage() {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const params = new URLSearchParams();
+                                  params.set("completeSapsId", sapsScores[patient.name].id);
+                                  params.set("fromAllocation", "true");
                                   params.set("patientName", patient.name);
                                   if (patient.id) params.set("patientId", patient.id);
                                   if (patient.bedNumber) params.set("patientBed", patient.bedNumber);
