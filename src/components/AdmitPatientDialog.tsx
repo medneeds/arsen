@@ -372,7 +372,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
       if (updateError) throw updateError;
 
-      toast({ title: "Paciente admitido", description: `${fullData.patient_name} → Leito ${finalBed}` });
+      toast({ title: "Paciente PRÉ-ADMITIDO", description: `${fullData.patient_name} → Leito ${finalBed}. Conclua a admissão hospitalar pelo Painel Clínico.` });
       onOpenChange(false);
       onSuccess();
       setSelectedSector("");
