@@ -682,6 +682,11 @@ export default function Saps3Page() {
         allocation_status: "approved",
         diagnoses,
         medical_history: medicalHistory,
+        // Fluxo Pré-admissão → Admissão Hospitalar:
+        // SAPS3 finalizado aloca o paciente no leito UTI/UCI mas a admissão clínica
+        // (HDA, exame físico, plano) ainda é feita pelo Painel Clínico.
+        admission_status: 'pre_admitido',
+        admitted_at: null,
       };
 
       if (existingBedRow?.id) {

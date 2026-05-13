@@ -52,4 +52,8 @@ export interface Patient {
   clinicalStatus?: 'gravissimo' | 'grave' | 'grave_estavel' | 'potencialmente_grave' | 'regular' | 'paliativado' | null;
   // UTI bed vacancy status
   isVacant?: boolean;
+  // Hospital admission lifecycle: 'pre_admitido' (alocado em leito, aguardando admissão clínica),
+  // 'admitido' (admissão hospitalar concluída — D0), 'suspenso' (admissão suspensa)
+  admissionStatus?: 'pre_admitido' | 'admitido' | 'suspenso';
+  admittedAt?: string | null;
 }

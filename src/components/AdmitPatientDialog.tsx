@@ -319,6 +319,10 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           : dischargeDate
           ? format(dischargeDate, "dd/MM/yyyy")
           : null,
+        // Fluxo Pré-admissão: paciente fica em pre_admitido até a admissão hospitalar
+        // ser concluída pelo Painel Clínico (formulário de admissão).
+        admission_status: 'pre_admitido',
+        admitted_at: null,
       };
 
       let insertedPatient: { id: string } | null = null;
@@ -368,7 +372,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
 
       if (updateError) throw updateError;
 
-      toast({ title: "Paciente admitido", description: `${fullData.patient_name} → Leito ${finalBed}` });
+      toast({ title: "Paciente PRÉ-ADMITIDO", description: `${fullData.patient_name} → Leito ${finalBed}. Conclua a admissão hospitalar pelo Painel Clínico.` });
       onOpenChange(false);
       onSuccess();
       setSelectedSector("");
@@ -411,10 +415,10 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BedDouble className="h-5 w-5 text-primary" />
-            Admissão em Leito
+            Pré-admissão em Leito
           </DialogTitle>
           <DialogDescription>
-            Revise os dados da triagem e selecione o setor e leito para internação.
+            Aloca o paciente no leito e prepara o SAPS 3 quando indicado. A admissão hospitalar (HDA, exame físico, plano) é feita depois pelo Painel Clínico.
           </DialogDescription>
         </DialogHeader>
 
@@ -750,7 +754,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             className="gap-1"
           >
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <BedDouble className="h-4 w-4" />}
-            {isUtiAdmission ? "Continuar para SAPS 3" : "Confirmar Admissão"}
+            {isUtiAdmission ? "Continuar para SAPS 3" : "Pré-admitir em Leito"}
           </Button>
         </DialogFooter>
       </DialogContent>

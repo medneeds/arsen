@@ -1,86 +1,112 @@
-# Plano — Fluxo MAV/Psicotrópicos (Autocomplete + Auto-fill + Pop-up)
+# Fluxo Pré-admissão → Admissão Hospitalar
 
-## Resumo executivo
+## Conceito
 
-1. Migration que adiciona `nome_comercial`, `lista` (enum 344/98) e `notification_type` ao `medication_catalog` + colunas `pharmaceutical_form`, `concentration`, `default_route`, `default_dose` em `medication_presentations` para mapear 1:1 com a Portaria 344/98.
-2. Refatorar campo "Medicamento" do `PsychotropicFormDialog` para Combobox alimentado pelo catálogo (controlled OR high_alert), com NFD, autopreenchimento e bloqueio quando vier da prescrição.
-3. Manter `printGuidesOpen` atual (prescrição + ATM + Psy) e reforçar:
-   - Só oferece Guia Psicotrópicos se houver item `controlled = true`
-   - Fluxo `print → afterprint → abrir PsychotropicFormDialog` em modo `print_direct`
-   - Bloqueio de assinatura/impressão quando item controlled está sem `tipo_notificacao`
+Separar dois momentos hoje fundidos em "admitir":
 
-## Mudanças no banco (migration única)
+1. **Pré-admissão** (Mapa de Pacientes): aloca o paciente no leito + inicia SAPS 3 (quando UTI/UCI). Status: `pre_admitido`.
+2. **Admissão Hospitalar** (Painel Clínico): médico assistente preenche a admissão clínica completa. Status: `admitido`. Conta como **D0** de internação.
 
-```text
-ALTER medication_catalog
-  ADD nome_comercial text,
-  ADD lista text CHECK (lista IN ('A1','A2','A3','B1','B2','C1','C2','C3','C4','C5')),
-  ADD notification_type text CHECK (notification_type IN
-       ('Receita Amarela','Receita Azul','Controle Especial 2 vias'));
+## 1. Mapa de Pacientes — renomear
 
-ALTER medication_presentations
-  ADD pharmaceutical_form text,   -- alias semântico (preserva form)
-  ADD default_route text,
-  ADD default_dose  text;
+- Botão/ação "Admitir em leito" → **"Pré-admitir em leito"**
+- Dialog mantém escolha de leito + abre SAPS 3 parcial se setor ∈ {UTI, UCI, Neuro}
+- Ao confirmar: cria registro com `admission_status = 'pre_admitido'`, sem D0, sem liberar prescrição/evolução de rotina
+- Toast: "Paciente PRÉ-ADMITIDO no leito X. Conclua a admissão pelo Painel Clínico."
 
--- Backfill automático no próprio migration:
---  nome_comercial   ← generic_name quando NULL
---  default_route    ← route
---  pharmaceutical_form ← form
---  notification_type derivado:
---    pharmacological_group ~* 'entorpecente' OR lista IN ('A1','A2') → Receita Amarela
---    pharmacological_group ~* 'psicotr[oó]pico' OR lista IN ('B1','B2') → Receita Azul
---    lista = 'C1' → Controle Especial 2 vias
---    controlled=true sem grupo → Controle Especial 2 vias (fallback)
---    high_alert=true AND controlled=false → NULL
+## 2. Painel Clínico — estado pré-admitido
 
--- Índice para busca:
-CREATE INDEX medication_catalog_search_idx
-  ON medication_catalog
-  USING gin (to_tsvector('simple', unaccent(generic_name||' '||coalesce(nome_comercial,''))));
-```
+Quando `admission_status === 'pre_admitido'`:
 
-Sem alteração em RLS (políticas existentes cobrem).
+- **Header sticky**: banner âmbar pulsante "PRÉ-ADMITIDO — admissão hospitalar pendente" + botão primário grande **"ADMITIR PACIENTE"** (verde esmeralda).
+- **Overlay bloqueante** sobre os cards: Prescrição, Diagnósticos, Previsão de alta, Dia de internação, Pendências, Plano terapêutico. Cada card recebe um overlay translúcido com cadeado + texto "Disponível após admissão hospitalar" + CTA "Admitir agora".
+- Permanecem acessíveis: Identidade, SAPS 3 (para finalizar), Documentos (uploads), Sinais vitais admissionais.
+- Tipo de admissão é **derivado do setor do leito**: setor ∈ UTI/UCI → form UTI; demais → form Enfermaria.
 
-## Frontend
+## 3. Formulário de Admissão Hospitalar
 
-### A) `useUnifiedMedicationCatalog`
-- Estender `CatalogRow` com `nome_comercial`, `lista`, `notification_type`.
-- Estender `PresentationRow` com `pharmaceutical_form`, `default_route`, `default_dose`.
-- Propagar esses campos em `MedicationEntry` (campos opcionais novos).
-- Expor helper `getControlledItems()` → filtra `controlled || high_alert` já com label `nome (princípio) — concentração`.
+Aberto pelo botão "ADMITIR PACIENTE". Dialog full-screen com tabs.
 
-### B) `PsychotropicFormDialog.tsx`
-1. Substituir `<Input>` do campo Medicamento por `Command`/`Combobox` (shadcn) alimentado por `getControlledItems()`.
-   - Busca NFD em `generic_name + nome_comercial`.
-   - Mínimo 2 caracteres.
-   - Sem texto livre. Vazio → "Medicamento não encontrado no catálogo. Contate a farmácia para cadastro."
-   - Opção da lista: `nome_comercial (generic_name) — concentração`.
-2. Ao selecionar item, autopreencher `pharmaceuticalForm`, `concentration`, `route`, `dose`, `notificationType` (do catálogo; fallback `detectNotificationType`).
-3. Itens vindos de `controlledItems` (prop) entram já preenchidos com badge "Da prescrição" e Combobox em `readOnly`. Demais campos editáveis com ícone ✨ "autopreenchido" que some no primeiro `onChange`.
-4. `notificationType` agora suporta `'Receita Amarela' | 'Receita Azul' | 'Controle Especial 2 vias'` (mantém compat com 'A','B','B2','C1' via mapper).
-5. Modo novo `mode?: 'edit' | 'print_direct'`: quando `print_direct`, esconde inputs auxiliares e destaca botão "Imprimir Guia"; usa CSS `.print-only-guide` com `@media print` em vez do hack atual.
-6. Agrupamento na impressão: itens agrupados por `notification_type` em páginas separadas (Amarela / Azul / Especial), cabeçalho próprio por grupo.
+### Seções comuns (UTI e Enfermaria)
 
-### C) `PrescricaoPage.tsx`
-1. Em `handlePrint` (linha 3817) manter o diálogo, mas:
-   - `hasActivePsy` passa a ser `items.some(i => i.status==='active' && i.controlled === true)` (lookup pelo catálogo via `useUnifiedMedicationCatalog`).
-   - Item high_alert sem controlled NÃO dispara guia (apenas alerta interno).
-2. Em `executePrintSelection`, no ramo Psy: chamar `window.print()` e usar `window.addEventListener('afterprint', ...)` (com fallback `setTimeout(800)`) antes de abrir `setPsychotropicFormOpen(true)` em `mode='print_direct'`.
-3. Bloquear botão "Assinar/Imprimir" se existir item `controlled=true` cujo `notification_type` resolvido seja `null` → `toast.error("Defina o tipo de notificação do medicamento controlado antes de imprimir")`.
+- Data/hora da admissão (default: agora)
+- HDA — História da Doença Atual
+- AMP — Antecedentes Mórbidos Pessoais
+- MUC — Medicamentos de Uso Contínuo
+- Alergias medicamentosas
+- Antropometria (peso, altura)
+- SSVV admissionais (PA, FC, FR, SatO₂, Tax, Dx)
+- Exame físico dirigido (estado geral, CV, resp, abdome, extremidades)
+- Exames lab/imagem disponíveis na admissão
+- Pareceres
+- Plano terapêutico inicial
+- **CID primário** (obrigatório) + secundários
+- **Previsão de alta** (obrigatório)
+- Responsável médico (auto-preenchido)
 
-### D) Restrições respeitadas
-- Não toca layout/dimensão da página de prescrição.
-- Só edita `PsychotropicFormDialog`, `useUnifiedMedicationCatalog`, `handlePrint`/`executePrintSelection` e o lookup de "controlled".
-- Sem impressão automática sem clique do usuário.
+### Extras UTI/UCI
 
-## Ordem de execução
-1. Migration (banco) — aprovar primeiro.
-2. Atualizar `useUnifiedMedicationCatalog`.
-3. Refatorar `PsychotropicFormDialog` (combobox, autofill, modo print_direct, agrupamento).
-4. Ajustar `handlePrint`/`executePrintSelection` + bloqueio de assinatura.
-5. Verificar build e testar fluxo end-to-end no `/prescricao` atual.
+- Motivo de internação UTI
+- Origem (setor anterior)
+- Dispositivos invasivos
+- Culturas pendentes / antibióticos em curso
+- Especialidades em conjunto
+- Confirmação SAPS 3 finalizado (link para preencher se faltar)
 
-## Pontos de atenção
-- Backfill do `notification_type` é heurístico; itens HMDM 2026 sem `pharmacological_group` claro caem em "Controle Especial 2 vias". Farmácia poderá refinar via tela de catálogo depois.
-- `nome_comercial` começa = `generic_name`; importação real virá em sprint separado.
+### Validações
+
+- Bloqueia salvar sem: HDA, exame físico, plano, CID primário, previsão de alta
+- Em UTI: bloqueia também sem SAPS 3 finalizado
+
+## 4. Persistência da Admissão
+
+Salvar grava em **duas estruturas**:
+
+1. `admission_histories` (estrutura clínica completa para reuso/relatórios) — já existe, ampliar campos JSONB.
+2. `clinical_evolutions` com novo `evolution_type = 'admission'`:
+   - Aparece como **primeiro registro** na timeline
+   - Rótulo: **"ADMISSÃO HOSPITALAR"**
+   - Visual distinto: cor verde-esmeralda, ícone hospital, badge "D0"
+   - Status: `validated` ao assinar
+   - **Pode ser suspensa** com justificativa obrigatória (mesmo padrão das evoluções) → ao suspender, paciente volta para `pre_admitido` e nova admissão pode ser criada
+   - Não-editável após assinar (apenas adendo + suspensão+nova)
+
+Ao salvar com sucesso:
+- `admission_status = 'admitido'`
+- `admission_at = now()` (origem do D0)
+- Overlays liberados, cards normais
+- Toast: "Admissão hospitalar registrada — paciente ADMITIDO."
+
+## 5. Detalhes técnicos
+
+### Banco
+- `bed_census` / patient registry: adicionar coluna `admission_status text default 'pre_admitido'` com check ('pre_admitido','admitido','suspenso')
+- `admission_histories`: adicionar campos JSONB para HDA estruturada, exame físico, antropometria, SSVV admissionais, dispositivos, culturas (compatibilizar com texto livre existente)
+- `clinical_evolutions.soap_data` ganha `evolution_type` ('soap'|'admission'); ou nova coluna dedicada
+- Trigger: ao inserir evolution_type='admission' validated → atualizar admission_status do paciente
+- Trigger: ao suspender evolution_type='admission' → reverter para 'pre_admitido'
+
+### Frontend
+- Novo componente `AdmissionDialog` (form completo, tabs UTI/Enfermaria derivados do setor)
+- Novo componente `PreAdmissionOverlay` para os cards bloqueados
+- `PainelClinicoPage`: ler `admission_status` e ramificar render
+- Renomear textos no Mapa: "Admitir" → "Pré-admitir em leito"
+- Hook `useAdmissionStatus(patientId)` central
+- `EvolutionTimeline`: renderizar tipo "admission" com estilo próprio + badge D0 + ação "Suspender admissão"
+
+### Memória
+- Atualizar `mem://features/admission-workflow-logic` e criar `mem://features/admission-pre-vs-hospitalar` documentando o fluxo em 2 etapas.
+
+## Entregáveis em ordem
+
+1. Migração de schema (admission_status, evolution_type, triggers)
+2. Renomeação no Mapa + ajuste do dialog de pré-admissão
+3. Detecção de status no Painel Clínico + overlays bloqueantes + botão Admitir
+4. AdmissionDialog (UTI + Enfermaria) com persistência dupla
+5. Timeline de evoluções com tipo "admission" + suspensão com justificativa
+6. Atualização de memórias
+
+## Confirmar antes de executar
+
+- OK começar por (1) migração + (2) renomeação como primeiro PR, depois seguir para os demais?
+- Algum campo da admissão que você quer adicionar/remover do que listei acima?

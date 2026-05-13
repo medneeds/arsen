@@ -241,7 +241,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                             onClick={() => setAdmitTarget(pa)}
                           >
                             <BedDouble className="h-3 w-3" />
-                            Admitir em Leito
+                            Pré-admitir em Leito
                           </Button>
                         )}
                         <Button

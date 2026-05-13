@@ -472,6 +472,7 @@ export type Database = {
           created_by: string
           created_by_name: string | null
           department: string
+          evolution_type: string
           hospital_unit_id: string
           id: string
           patient_bed: string | null
@@ -497,6 +498,7 @@ export type Database = {
           created_by: string
           created_by_name?: string | null
           department?: string
+          evolution_type?: string
           hospital_unit_id: string
           id?: string
           patient_bed?: string | null
@@ -522,6 +524,7 @@ export type Database = {
           created_by?: string
           created_by_name?: string | null
           department?: string
+          evolution_type?: string
           hospital_unit_id?: string
           id?: string
           patient_bed?: string | null
@@ -2336,6 +2339,8 @@ export type Database = {
         Row: {
           admission_date: string | null
           admission_history: string | null
+          admission_status: string
+          admitted_at: string | null
           age: string | null
           allocation_status: string | null
           bed_number: string
@@ -2384,6 +2389,8 @@ export type Database = {
         Insert: {
           admission_date?: string | null
           admission_history?: string | null
+          admission_status?: string
+          admitted_at?: string | null
           age?: string | null
           allocation_status?: string | null
           bed_number: string
@@ -2432,6 +2439,8 @@ export type Database = {
         Update: {
           admission_date?: string | null
           admission_history?: string | null
+          admission_status?: string
+          admitted_at?: string | null
           age?: string | null
           allocation_status?: string | null
           bed_number?: string
