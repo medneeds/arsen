@@ -3805,7 +3805,22 @@ const PrescricaoPage = () => {
   const [printGuidePsy, setPrintGuidePsy] = useState(false);
 
   const hasActiveAtb = items.some(i => i.status === 'active' && i.category === 'antimicrobial');
-  const hasActivePsy = items.some(i => i.status === 'active' && (i.category === 'high_alert' || isPsychotropicMedication(i.name)));
+  // Guia de Psicotrópicos só dispara para itens controlled=true (catálogo). high_alert puro NÃO gera receita.
+  const hasActivePsy = items.some(i => {
+    if (i.status !== 'active') return false;
+    const cat = findControlledCatalog?.(i.name);
+    if (cat?.controlled) return true;
+    // Fallback heurístico legado quando o item não está no catálogo
+    return !cat && isPsychotropicMedication(i.name);
+  });
+
+  // Itens controlled sem tipo de notificação resolvido — bloqueiam impressão da guia
+  const controlledWithoutType = items.filter(i => {
+    if (i.status !== 'active') return false;
+    const cat = findControlledCatalog?.(i.name);
+    if (!cat?.controlled) return false;
+    return !cat.notification_type;
+  });
 
   const doPrintPrescription = () => {
     setShowPrintPortal(true);
@@ -3820,6 +3835,12 @@ const PrescricaoPage = () => {
       doPrintPrescription();
       return;
     }
+    if (hasActivePsy && controlledWithoutType.length > 0) {
+      toast.error("Defina o tipo de notificação dos medicamentos controlados antes de imprimir", {
+        description: controlledWithoutType.map(i => i.name).join(', '),
+      });
+      return;
+    }
     setPrintPrescription(true);
     setPrintGuideAtm(hasActiveAtb);
     setPrintGuidePsy(hasActivePsy);
@@ -3828,14 +3849,24 @@ const PrescricaoPage = () => {
 
   const executePrintSelection = () => {
     setPrintGuidesOpen(false);
-    if (printPrescription) doPrintPrescription();
-    // Open guides sequentially so the doctor can click "Imprimir" inside each one.
-    if (printGuideAtm) {
-      setTimeout(() => setAntimicrobialGuideOpen(true), printPrescription ? 800 : 200);
-    }
-    if (printGuidePsy) {
-      const delay = printGuideAtm ? 1200 : (printPrescription ? 800 : 200);
-      setTimeout(() => setPsychotropicFormOpen(true), delay);
+    const openPsy = () => { setPsychotropicFormMode('print_direct'); setPsychotropicFormOpen(true); };
+    const afterPrintHandler = () => {
+      window.removeEventListener('afterprint', afterPrintHandler);
+      if (printGuideAtm) setTimeout(() => setAntimicrobialGuideOpen(true), 200);
+      if (printGuidePsy) setTimeout(openPsy, printGuideAtm ? 1000 : 200);
+    };
+    if (printPrescription) {
+      window.addEventListener('afterprint', afterPrintHandler);
+      // Fallback caso o navegador não dispare afterprint
+      setTimeout(() => {
+        window.removeEventListener('afterprint', afterPrintHandler);
+        if (printGuideAtm && !antimicrobialGuideOpen) setAntimicrobialGuideOpen(true);
+        if (printGuidePsy && !psychotropicFormOpen) openPsy();
+      }, 2500);
+      doPrintPrescription();
+    } else {
+      if (printGuideAtm) setTimeout(() => setAntimicrobialGuideOpen(true), 200);
+      if (printGuidePsy) setTimeout(openPsy, printGuideAtm ? 1000 : 200);
     }
   };
 
