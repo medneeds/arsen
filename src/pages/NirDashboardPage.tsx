@@ -326,17 +326,37 @@ export default function NirDashboardPage() {
                             ring: "border-border",
                             bg: "bg-muted/30",
                           };
+                          const isOrigin = reallocOrigin?.id === bed.id;
+                          const reallocDisabled =
+                            reallocMode &&
+                            (!reallocOrigin
+                              ? bed.status !== "ocupado"
+                              : !isOrigin && !isValidDest(bed.status));
+                          const isSwapTarget =
+                            reallocMode && !!reallocOrigin && !isOrigin && bed.status === "ocupado";
                           return (
                             <button
                               key={bed.id}
                               type="button"
-                              onClick={() => setSelectedBed(bed)}
+                              onClick={() => handleBedClick(bed)}
+                              disabled={reallocDisabled}
                               className={cn(
-                                "relative rounded-lg border-2 p-2 text-center cursor-pointer transition-all hover:shadow-md hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-primary/40",
+                                "relative rounded-lg border-2 p-2 text-center transition-all focus:outline-none focus:ring-2 focus:ring-primary/40",
                                 info.ring,
                                 info.bg,
+                                reallocDisabled
+                                  ? "opacity-40 cursor-not-allowed"
+                                  : "cursor-pointer hover:shadow-md hover:scale-[1.03]",
+                                isOrigin && "ring-2 ring-primary border-primary scale-[1.05] shadow-md",
+                                isSwapTarget && "ring-2 ring-amber-500/70 border-amber-500/70",
+                                reallocMode && !reallocOrigin && bed.status === "ocupado" && "ring-1 ring-primary/40",
+                                reallocMode && !!reallocOrigin && !isOrigin && bed.status === "vago" && "ring-1 ring-emerald-500/60",
                               )}
-                              title={`${bed.bed_number} — ${info.label}${bed.patient_name ? ` — ${bed.patient_name}` : ""}`}
+                              title={
+                                reallocDisabled
+                                  ? `${bed.bed_number} — destino inválido (${info.label})`
+                                  : `${bed.bed_number} — ${info.label}${bed.patient_name ? ` — ${bed.patient_name}` : ""}`
+                              }
                             >
                               <span
                                 className={cn(
