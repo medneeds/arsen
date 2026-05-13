@@ -228,6 +228,16 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     if (!selectedSector || !fullData || !currentHospital?.id || !currentState?.id) return;
     if (!isUtiAdmission && !selectedBed) return;
 
+    // Bloqueia data/hora de admissão futura
+    if (admissionDate && admissionDate.getTime() > Date.now()) {
+      toast({
+        title: "Data de admissão inválida",
+        description: "Não é permitido registrar admissão com data ou horário futuros.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const age = calcAge(fullData.birth_date);
@@ -737,6 +747,15 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
                   const base = admissionDate ?? new Date();
                   const merged = new Date(base);
                   merged.setHours(hh, mm, 0, 0);
+                  // Bloqueia horário futuro
+                  if (merged.getTime() > Date.now()) {
+                    toast({
+                      title: "Horário inválido",
+                      description: "Não é permitido informar horário futuro de admissão.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
                   setAdmissionDate(merged);
                 }}
                 className="h-9 w-28 text-xs"
