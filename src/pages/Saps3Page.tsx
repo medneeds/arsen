@@ -528,7 +528,7 @@ export default function Saps3Page() {
           .select("display_order")
           .eq("hospital_unit_id", hospitalId)
           .eq("state_id", stateId)
-          .eq("department", "UTI")
+          .eq("department", destinationDepartment)
           .eq("sector", selectedSector);
 
         const maxDisplayOrder = (existingPatients || []).reduce((max, patient) => {
