@@ -109,14 +109,14 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [bedsLoaded, setBedsLoaded] = useState(false);
 
   const { currentHospital, currentState } = useHospital();
-  const { currentDepartment } = useDepartment();
+  const { currentDepartment, currentSectorCode } = useDepartment();
   const { user } = useAuth();
   const navigate = useNavigate();
 
   // Fetch everything in parallel on open
   useEffect(() => {
     if (!open) return;
-    const storedSector = localStorage.getItem("selected_sector") || "red";
+    const storedSector = currentSectorCode || localStorage.getItem("selected_sector") || "red";
     setSelectedSector(storedSector);
     setSelectedBed("");
     setExtraBedRequested(false);
@@ -169,7 +169,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       setBedsLoaded(true);
     };
     fetchAll();
-  }, [open, preAdmission?.id, currentHospital?.id, currentState?.id, currentDepartment]);
+  }, [open, preAdmission?.id, currentHospital?.id, currentState?.id, currentDepartment, currentSectorCode]);
 
   // Re-fetch beds when sector changes manually (from the full-alert dropdown)
   const handleSectorChange = async (newSector: string) => {
