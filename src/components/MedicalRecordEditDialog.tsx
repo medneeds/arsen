@@ -113,7 +113,29 @@ const UPPER_FIELDS = new Set([
 export function MedicalRecordEditDialog({
   open, onOpenChange, patientId, patientName, onSaved,
 }: Props) {
-  const [tab, setTab] = useState<"prontuario" | "ficha" | "historico">("prontuario");
+  const [tab, setTab] = useState<"prontuario" | "ficha" | "historico" | "danger">("prontuario");
+  const { user } = useAuth();
+  const [isDeveloper, setIsDeveloper] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) { setIsDeveloper(false); return; }
+    let cancelled = false;
+    supabase
+      .from("profiles")
+      .select("access_profiles")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled) return;
+        const profiles = (data as any)?.access_profiles as string[] | null;
+        setIsDeveloper(Array.isArray(profiles) && profiles.includes("desenvolvedor"));
+      });
+    return () => { cancelled = true; };
+  }, [user?.id]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
