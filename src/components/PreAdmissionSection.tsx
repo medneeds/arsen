@@ -226,7 +226,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                       )}
 
                       <div className="flex gap-1 pt-1 border-t">
-                        {!pa.risk_classification && (
+                        {requiresRiskClassification && !pa.risk_classification && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -237,7 +237,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                             Classificar Risco
                           </Button>
                         )}
-                        {pa.risk_classification && (
+                        {(!requiresRiskClassification || pa.risk_classification) && (
                           <Button
                             size="sm"
                             className="flex-1 h-6 text-[10px] gap-1"
