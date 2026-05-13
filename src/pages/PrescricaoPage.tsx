@@ -1381,29 +1381,54 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   // === COMPACT VIEW (with individual expand) ===
   if (isCompact && !isSimple && !individualExpanded) {
     const compactParts: string[] = [];
-    if (item.dose && item.dose !== '-') compactParts.push(item.dose);
-    if (item.diluent && item.diluent !== 'sem_diluente') {
-      let dil = `diluir em ${item.diluent}`;
-      if (item.diluentVolume) dil += ` ${item.diluentVolume}mL`;
-      compactParts.push(dil);
-    }
-    if (item.volumeTotal) compactParts.push(`vol ${item.volumeTotal}mL`);
-    if (item.infusionTime) {
-      const tUnit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
-      let inf = `correr em ${item.infusionTime}${tUnit}`;
-      if (item.infusionRate) {
-        const rLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
-        inf += ` (${item.infusionRate} ${rLabel})`;
+    const isHydration = item.category === 'hydration';
+
+    if (isHydration) {
+      // Frase única, em corrida, orientada à enfermagem
+      const phases = intervalToPhases(item.posology);
+      const interval = item.posology || '24/24h';
+      const vol = parseFloat(item.volumeTotal || '0') || 0;
+      const total24 = vol * phases;
+      const tVal = item.infusionTime || '';
+      const tUnitH = item.infusionTimeUnit === 'h' ? 'h' : 'min';
+      const rateLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+      const rate = item.infusionRate ? `${item.infusionRate} ${rateLabel}` : '';
+      const access = item.accessType ? `via ${item.accessType}` : '';
+      const phrase = [
+        vol ? `${vol}mL/fase` : '',
+        `${phases} fase${phases > 1 ? 's' : ''} (${interval})`,
+        tVal ? `correr em ${tVal}${tUnitH}` : '',
+        rate ? `(${rate})` : '',
+        access,
+        total24 ? `· total ${total24}mL/24h` : '',
+      ].filter(Boolean).join(' · ');
+      if (phrase) compactParts.push(phrase);
+    } else {
+      if (item.dose && item.dose !== '-') compactParts.push(item.dose);
+      if (item.diluent && item.diluent !== 'sem_diluente') {
+        let dil = `diluir em ${item.diluent}`;
+        if (item.diluentVolume) dil += ` ${item.diluentVolume}mL`;
+        compactParts.push(dil);
       }
-      compactParts.push(inf);
-    } else if (item.infusionRate) {
-      const rLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
-      compactParts.push(`${item.infusionRate} ${rLabel}`);
+      if (item.volumeTotal) compactParts.push(`vol ${item.volumeTotal}mL`);
+      if (item.infusionTime) {
+        const tUnit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
+        let inf = `correr em ${item.infusionTime}${tUnit}`;
+        if (item.infusionRate) {
+          const rLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+          inf += ` (${item.infusionRate} ${rLabel})`;
+        }
+        compactParts.push(inf);
+      } else if (item.infusionRate) {
+        const rLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+        compactParts.push(`${item.infusionRate} ${rLabel}`);
+      }
     }
-    // Route + posology inline
+    // Route + posology inline (skip posology for hydration since interval já está na frase)
     const routePosology: string[] = [];
     if (item.route && item.route !== '-') routePosology.push(item.route);
-    if (item.posology && item.posology !== '-') routePosology.push(item.posology);
+    if (!isHydration && item.posology && item.posology !== '-') routePosology.push(item.posology);
+
 
     return (
       <div
