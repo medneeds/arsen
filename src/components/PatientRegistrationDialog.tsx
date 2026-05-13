@@ -261,6 +261,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
     return () => clearTimeout(handle);
   }, [open, form.patient_name, form.is_unidentified, form.ni_arrival_circumstance, userOverroteNiSuggestion]);
 
+  // Caminho 1: NI puro — limpa tudo, gera só código institucional
   const handleAcceptNiSuggestion = () => {
     setNiSuggestionOpen(false);
     const sex = niSuggestion?.suggestedSex;
@@ -274,11 +275,36 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
       cns: "",
       birth_date: "",
       sex: "",
+      medical_record: "",
       ni_apparent_sex: sex === "M" ? "Masculino" : sex === "F" ? "Feminino" : prev.ni_apparent_sex,
     }));
     toast({
-      title: "Fluxo NI ativado",
-      description: "Código NI-AAAA-NNNNNN será gerado ao salvar. Preencha as características aparentes.",
+      title: "Fluxo NI puro ativado",
+      description: "Código NI-AAAA-NNNNNN será gerado ao salvar. Preencha apenas características aparentes.",
+    });
+  };
+
+  // Caminho 2: NI + dados do PIN — mantém NI mas preserva nº de prontuário do PIN, sexo, observações
+  const handleAcceptNiWithPin = () => {
+    setNiSuggestionOpen(false);
+    const sex = niSuggestion?.suggestedSex;
+    setForm(prev => ({
+      ...prev,
+      is_unidentified: true,
+      // Limpa identificação pessoal mas mantém prontuário PIN, sexo, idade aparente, origem, observações
+      patient_name: "",
+      social_name: "",
+      mother_name: "",
+      cpf: "",
+      cns: "",
+      birth_date: "",
+      sex: "",
+      // Preserva: medical_record (PIN), phone, address, neighborhood, city, state, notes
+      ni_apparent_sex: sex === "M" ? "Masculino" : sex === "F" ? "Feminino" : prev.ni_apparent_sex,
+    }));
+    toast({
+      title: "Fluxo NI + dados do PIN ativado",
+      description: "Marcado como Não Identificado. O nº de prontuário PIN, origem e observações ficam disponíveis para edição.",
     });
   };
 
