@@ -44,6 +44,7 @@ Extraia os seguintes dados do paciente:
 - neighborhood: Bairro
 - city: Cidade
 - phone: Telefone (se disponível)
+- medical_record: Número do prontuário do paciente no documento (também aparece como "Prontuário", "Pront.", "PRONT", "Nº Prontuário", "Registro", "Matrícula", "Ficha", "Atendimento", "RG Hospitalar", "PEP", "PIS Prontuário"). Retorne apenas o número/código (sem rótulo), preservando dígitos, letras e separadores como hífens.
 
 Se um campo não for encontrado, retorne null. Responda APENAS via tool call.`;
 
