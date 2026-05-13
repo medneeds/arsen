@@ -1212,6 +1212,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   onAssistant,
   isPastRenewalTime,
   prescriptionLocked,
+  missingFields = [],
 }: {
   item: PrescriptionItem;
   index: number;
@@ -1229,6 +1230,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   onAssistant?: (id: string) => void;
   isPastRenewalTime: boolean;
   prescriptionLocked: boolean;
+  missingFields?: string[];
 }) {
   const [individualExpanded, setIndividualExpanded] = useState(false);
   const {
