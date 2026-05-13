@@ -2690,10 +2690,13 @@ const PrescricaoPage = () => {
 
   // Antimicrobial Guide & Psychotropic Form
   const [antimicrobialGuideOpen, setAntimicrobialGuideOpen] = useState(false);
+  const [atmStatusOpen, setAtmStatusOpen] = useState(false);
   const [psychotropicFormOpen, setPsychotropicFormOpen] = useState(false);
   const [psychotropicFormMode, setPsychotropicFormMode] = useState<'edit' | 'print_direct'>('edit');
   const [tevProtocolOpen, setTevProtocolOpen] = useState(false);
   const [pendingAntimicrobialMed, setPendingAntimicrobialMed] = useState<MedicationEntry | null>(null);
+  // Modo de nova ATB vindo do AtmStatusDialog ('acrescimo' | 'troca' | 'inicial' | null)
+  const [pendingAtbMode, setPendingAtbMode] = useState<'acrescimo' | 'troca' | 'inicial' | null>(null);
   const [highAlertGuideOpen, setHighAlertGuideOpen] = useState(false);
   const [careCatalogOpen, setCareCatalogOpen] = useState(false);
   const [nutritionWizardOpen, setNutritionWizardOpen] = useState(false);
