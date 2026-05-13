@@ -11,9 +11,10 @@ import { RiskClassificationDialog } from "./RiskClassificationDialog";
 import { AdmitPatientDialog } from "./AdmitPatientDialog";
 import { 
   UserPlus, Shield, Trash2, Edit, ChevronDown, ChevronUp, 
-  Clock, AlertTriangle, User, Calendar, BedDouble
+  Clock, AlertTriangle, User, Calendar, BedDouble, Search, X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -26,6 +27,7 @@ interface PreAdmission {
   birth_date: string | null;
   sex: string | null;
   medical_record: string | null;
+  cpf: string | null;
   destination_sector: string | null;
   status: string;
   risk_classification: string | null;
@@ -75,6 +77,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
   const [admitTarget, setAdmitTarget] = useState<PreAdmission | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PreAdmission | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
 
@@ -149,8 +152,26 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
     return Math.floor((Date.now() - new Date(birthDate + 'T12:00:00').getTime()) / (365.25 * 24 * 60 * 60 * 1000));
   };
 
-  const pendingCount = preAdmissions.filter(p => p.status === "pre_admissao").length;
-  const classifiedCount = preAdmissions.filter(p => p.status === "classificado").length;
+  const normalize = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const onlyDigits = (v: string) => v.replace(/\D/g, "");
+  const filteredPreAdmissions = (() => {
+    const q = searchTerm.trim();
+    if (!q) return preAdmissions;
+    const qNorm = normalize(q);
+    const qDigits = onlyDigits(q);
+    return preAdmissions.filter(p => {
+      if (normalize(p.patient_name || "").includes(qNorm)) return true;
+      if (qDigits) {
+        if (p.cpf && onlyDigits(p.cpf).includes(qDigits)) return true;
+        if (p.medical_record && onlyDigits(p.medical_record).includes(qDigits)) return true;
+      }
+      if (p.medical_record && normalize(p.medical_record).includes(qNorm)) return true;
+      return false;
+    });
+  })();
+
+  const pendingCount = filteredPreAdmissions.filter(p => p.status === "pre_admissao").length;
+  const classifiedCount = filteredPreAdmissions.filter(p => p.status === "classificado").length;
   // Classificação de risco (Manchester) é atribuição da enfermagem da Urgência e Emergência.
   // Em setores de internação (qualquer setor com filtro definido), o cadastro vai direto para alocação no leito.
   const requiresRiskClassification = !sectorFilterLabel;
@@ -158,14 +179,14 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
   return (
     <>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
           <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             <h2 className="text-sm font-bold flex items-center gap-2">
               <Clock className="h-4 w-4 text-primary" />
               Aguardando Pré-admissão (Alocação) em Leito
               <Badge variant="secondary" className="text-xs">
-                {preAdmissions.length}
+                {searchTerm ? `${filteredPreAdmissions.length}/${preAdmissions.length}` : preAdmissions.length}
               </Badge>
               {requiresRiskClassification && pendingCount > 0 && (
                 <Badge variant="destructive" className="text-xs">
@@ -174,22 +195,45 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
               )}
             </h2>
           </CollapsibleTrigger>
-          <Button size="sm" onClick={() => setShowRegistration(true)} className="gap-1 text-xs h-7">
-            <UserPlus className="h-3.5 w-3.5" />
-            Cadastrar Paciente
-          </Button>
+          <div className="flex items-center gap-2 ml-auto">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar por nome, CPF ou prontuário"
+                className="h-7 text-xs pl-7 pr-7 w-64"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Limpar busca"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <Button size="sm" onClick={() => setShowRegistration(true)} className="gap-1 text-xs h-7">
+              <UserPlus className="h-3.5 w-3.5" />
+              Cadastrar Paciente
+            </Button>
+          </div>
         </div>
 
         <CollapsibleContent>
-          {preAdmissions.length === 0 ? (
+          {filteredPreAdmissions.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="p-4 text-center text-sm text-muted-foreground">
-                Nenhum paciente aguardando pré-admissão.
+                {searchTerm
+                  ? `Nenhum paciente encontrado para "${searchTerm}".`
+                  : "Nenhum paciente aguardando pré-admissão."}
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-              {preAdmissions.map(pa => {
+              {filteredPreAdmissions.map(pa => {
                 const age = calcAge(pa.birth_date);
                 return (
                   <Card key={pa.id} className={cn(
