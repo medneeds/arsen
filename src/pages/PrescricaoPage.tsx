@@ -94,6 +94,9 @@ import {
   type PresentationType,
 } from "@/lib/prescriptionPresentation";
 import { findRegulatoryInfo } from "@/data/mavPort344Catalog";
+import { InhalationFields } from "@/components/prescription/InhalationFields";
+import { getInhalationDefaults, type InhalationMode, type InhalationInterface } from "@/data/inhalationCatalog";
+import { assembleInhalationInstruction } from "@/lib/inhalationInstruction";
 import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
 import { AtmStatusDialog } from "@/components/AtmStatusDialog";
 import { useUnifiedMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
@@ -187,6 +190,18 @@ interface PrescriptionItem {
   nutWaterVolPerAdmin?: string; // Água: mL por administração
   nutWaterFreq?: string;      // Água: frequência
   nutZeroReason?: string;     // Motivo do jejum
+  // Inhalation-specific fields
+  inhalationMode?: InhalationMode;
+  nebDose?: string;
+  nebDoseUnit?: 'mg' | 'gts' | 'mL' | 'mcg';
+  oxygenFlow?: string;        // L/min
+  stageDuration?: string;     // min por etapa
+  continuousDuration?: string; // h (nebulização contínua)
+  inhalationInterface?: InhalationInterface;
+  puffs?: string;
+  spacer?: boolean;
+  gargle?: boolean;
+  inhalationOrientation?: string;
 }
 
 // Detect nutrition subtype from wizard-generated item name
@@ -439,6 +454,10 @@ function getPresetsForPosology(posology: string): typeof SCHEDULE_PRESETS[string
 
 // Build synced preparation description from structured fields
 function buildPrepDescription(item: PrescriptionItem): string {
+  // Inhalation items use a dedicated builder (nebulização / pMDI / DPI)
+  if (item.category === 'inhalation') {
+    return assembleInhalationInstruction(item as any);
+  }
   const parts: string[] = [];
   if (item.quantity && item.quantity !== '1' && item.quantityUnit) {
     parts.push(`${item.quantity} ${item.quantityUnit}.`);
@@ -1415,6 +1434,12 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   if (isCompact && !isSimple && !individualExpanded) {
     const compactParts: string[] = [];
     const isHydration = item.category === 'hydration';
+    const isInhalation = item.category === 'inhalation';
+
+    if (isInhalation) {
+      const phrase = assembleInhalationInstruction(item as any);
+      if (phrase) compactParts.push(phrase);
+    } else
 
     if (isHydration) {
       // Frase única, em corrida, orientada à enfermagem
@@ -1459,8 +1484,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     }
     // Route + posology inline (skip posology for hydration since interval já está na frase)
     const routePosology: string[] = [];
-    if (item.route && item.route !== '-') routePosology.push(item.route);
-    if (!isHydration && item.posology && item.posology !== '-') routePosology.push(item.posology);
+    if (item.route && item.route !== '-' && !isInhalation) routePosology.push(item.route);
+    if (!isHydration && !isInhalation && item.posology && item.posology !== '-') routePosology.push(item.posology);
 
 
     return (
@@ -1632,7 +1657,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           {item.status === 'active' && item.category === 'hydration' && (
             <HydrationFields item={item} onUpdate={onUpdate} />
           )}
-          {item.status === 'active' && item.category !== 'nutrition' && item.category !== 'hydration' && (() => {
+          {item.status === 'active' && item.category === 'inhalation' && (
+            <InhalationFields item={item as any} onUpdate={onUpdate} />
+          )}
+          {item.status === 'active' && item.category !== 'nutrition' && item.category !== 'hydration' && item.category !== 'inhalation' && (() => {
             const ptype = inferPresentationType(item.presentation, item.route, item.name);
             const renderInfusion = showInfusionBlock(ptype);
             const renderDiluent = showDiluentRow(ptype);
@@ -3528,7 +3556,7 @@ const PrescricaoPage = () => {
     const autoUnit = detectQuantityUnit(med.presentation, med.defaultDose);
     const autoDefaults = detectDiluentDefaults(med.instructions || '');
     const isIV = isIVRoute(med.defaultRoute);
-    return {
+    const baseItem: PrescriptionItem = {
       id: crypto.randomUUID(),
       name: med.name,
       presentation: med.presentation,
@@ -3552,6 +3580,28 @@ const PrescricaoPage = () => {
       accessType: '',
       concentration: '',
     };
+    // Autofill inhalation defaults from catalog
+    if (med.category === 'inhalation') {
+      const preset = getInhalationDefaults(med.name);
+      if (preset) {
+        baseItem.inhalationMode = preset.mode;
+        if (preset.nebDose !== undefined) baseItem.nebDose = preset.nebDose;
+        if (preset.nebDoseUnit) baseItem.nebDoseUnit = preset.nebDoseUnit;
+        if (preset.diluent !== undefined) baseItem.diluent = preset.diluent;
+        if (preset.diluentVolume !== undefined) baseItem.diluentVolume = preset.diluentVolume;
+        if (preset.oxygenFlow !== undefined) baseItem.oxygenFlow = preset.oxygenFlow;
+        if (preset.stageDuration !== undefined) baseItem.stageDuration = preset.stageDuration;
+        if (preset.inhalationInterface) baseItem.inhalationInterface = preset.inhalationInterface;
+        if (preset.posology) baseItem.posology = preset.posology;
+        if (preset.puffs !== undefined) baseItem.puffs = preset.puffs;
+        if (preset.spacer !== undefined) baseItem.spacer = preset.spacer;
+        if (preset.gargle !== undefined) baseItem.gargle = preset.gargle;
+        if (preset.inhalationOrientation) baseItem.inhalationOrientation = preset.inhalationOrientation;
+      } else {
+        baseItem.inhalationMode = 'nebulization';
+      }
+    }
+    return baseItem;
   };
 
   const addItem = (med: MedicationEntry, opts?: { fromGlobalSearch?: boolean }) => {

@@ -1,97 +1,98 @@
+# Otimização do campo de prescrição de inalatórios
 
-## Objetivo
+## Problema
+Hoje o campo expandido de itens da categoria **Inalatórios** reaproveita os mesmos campos das medicações endovenosas (volume total, diluente, velocidade de infusão em mL/h, BIC/gotejamento). Isso é clinicamente incorreto: na inalação não existe "velocidade de infusão" — o que importa é **dose da droga, diluente, fluxo de O2/Ar e o esquema de etapas**. Além disso, sprays (pMDI) e pó seco (DPI) têm campos completamente diferentes (puffs, espaçador, técnica).
 
-Quando, no momento de importar/cadastrar um paciente (incluindo importação da ficha PIS/PIN administrativa), o **nome ou outros campos** apresentarem indícios de paciente não identificado (NI), o sistema deve:
+## Escopo
 
-1. **Reconhecer automaticamente** que se trata de um NI.
-2. **Sugerir** ativar o fluxo NI completo (gerar código `NI-AAAA-NNNNNN`, marcar `is_unidentified=true`, preservar PIS quando houver).
-3. **Perguntar ao usuário** antes de prosseguir, de forma fluida, sem travar quem realmente quer cadastrar pelo nome.
+### 1. Detecção da modalidade (4 modos)
+Cada item de Inalatórios passa a ter um seletor segmentado **`inhalationMode`** no topo do painel expandido:
 
-## Gatilhos de detecção (heurística + IA)
+- **Nebulização** (jato/ultrassônica) — padrão
+- **Nebulização contínua** (crise grave de asma)
+- **Spray pressurizado (pMDI)** — puffs
+- **Pó seco (DPI)** — inalações/cápsulas
 
-### Camada 1 — Heurística instantânea (regex/normalize, zero latência)
-Aplicada no `onBlur`/`onChange` do campo nome no `PatientRegistrationDialog` (e também em `AdmitPatientDialog` quando vier de `pre_admissions`):
+Ao trocar a modalidade, os campos abaixo se adaptam automaticamente.
 
-Marcadores que disparam suspeita NI:
-- `NÃO IDENTIFICADO`, `NAO IDENTIFICADO`, `N/I`, `N.I.`, `NI ` (com espaço), `SEM IDENTIFICAÇÃO`, `SEM ID`, `DESCONHECIDO(A)`, `IGNORADO(A)`
-- `TIO`, `TIA` quando isolados ou em padrão típico (ex.: `TIO 1`, `TIA DA EMERGENCIA`)
-- `JOÃO DOE`, `JANE DOE`, `JOHN DOE`, `FULANO`, `BELTRANO`, `SICRANO`
-- `MASC. NI`, `FEM. NI`, `MASCULINO NI`, prefixo `PIS-`, `PIN-`, `NI-AAAA-...`
-- Nome com ≤2 caracteres ou só números/hífens
-- Nome com sinal de placeholder: `???`, `XXXX`, `------`, `A IDENTIFICAR`
+### 2. Campos por modalidade
 
-Normalização NFD (já é padrão do projeto) para não falhar com acentos.
-
-### Camada 2 — IA (Lovable AI) para casos ambíguos
-Quando heurística não dispara mas há sinais (nome muito curto, só sobrenome, padrão atípico), chamar edge function `detect-unidentified-patient` com `google/gemini-3-flash-preview` retornando JSON estruturado:
-
-```json
-{ "isUnidentified": true|false, "confidence": 0.0-1.0, "reason": "...", "suggestedSex": "M"|"F"|null }
+**Nebulização (jato/ultrassônica):**
+```
+[Dose] [Unidade: mg | gts | mL]   [Diluente: SF 0,9% | Água destilada | SF 3%]   [Volume diluente: mL]
+[Fluxo O2/Ar: L/min] (padrão 6-8)   [Interface: máscara | traqueostomia | peça T | circuito VM]
+[Tempo por etapa: min] (padrão 10)   [Frequência: 6/6h, 8/8h, 12/12h, SOS]
 ```
 
-Só chama IA se: heurística não bateu E (nome ≤ 8 chars OU contém token suspeito não listado OU campo "modo de chegada" indica trauma/inconsciente). Debounce 500ms.
-
-## Diálogo de confirmação (`UnidentifiedSuggestionDialog`)
-
-Ao detectar (heurística ou IA com confidence ≥ 0.7), abrir popup ANTES de seguir o fluxo padrão:
-
+**Nebulização contínua:**
 ```
-[ícone alerta âmbar] Paciente possivelmente NÃO IDENTIFICADO
-
-Detectamos indícios de que este pode ser um paciente não identificado:
-  • Motivo: "{reason}"
-
-Recomendamos ativar o fluxo NI:
-  ✓ Gerar código institucional NI-2026-NNNNNN automaticamente
-  ✓ Preservar dados úteis informados (sexo aparente, idade estimada, contato)
-  ✓ Permitir promoção a identificado posteriormente sem perda de histórico
-
-[Sim, ativar fluxo NI]   [Não, é um nome real]   [Cancelar]
+[Dose por hora]   [Diluente + volume]   [Fluxo O2/Ar]
+[Duração total: h]   [Interface]
 ```
 
-- **Sim, ativar NI** → marca `is_unidentified=true`, gera código NI via RPC, preenche `unidentified_features` com o que já tinha (sexo aparente, faixa etária, modo de chegada), e continua o cadastro normalmente.
-- **Não, é nome real** → segue cadastro normal e marca um flag de sessão `userOverroteNiSuggestion=true` para não perguntar de novo no mesmo formulário.
-- **Cancelar** → fecha tudo, volta ao formulário sem alteração.
+**Spray pressurizado (pMDI):**
+```
+[Nº de puffs/jatos]   [Frequência]
+[☐ Com espaçador]   [☐ Gargarejar após (corticoide)]
+```
 
-## Integração com importação de ficha PIS/PIN
+**Pó seco (DPI):**
+```
+[Nº de inalações/cápsulas]   [Frequência]
+[Orientação livre]
+```
 
-No fluxo de importação (`PatientRegistrationDialog` quando recebe dados PIS, e em `AdmitPatientDialog` ao trazer `pre_admission`):
+### 3. Catálogo padrão com autofill
+Novo arquivo `src/data/inhalationCatalog.ts` com drogas mais usadas e seus presets (dose / diluente / fluxo / espaçador):
 
-- Se o registro PIS/PIN já tem marcador NI no nome OU campo `is_unidentified` previamente setado, **pular o popup** e ativar o fluxo NI direto, exibindo apenas um toast informativo: "Ficha PIS reconhecida como NI — código NI-2026-XXXXXX gerado".
-- Manter regra já memorizada: em modo `auto`, o número PIS vai para `unidentified_features.pis_medical_record` (auditoria) e o oficial é o número novo gerado; em modo `legacy`, PIS continua sendo o oficial.
+| Droga | Modo padrão | Dose padrão | Diluente | Fluxo |
+|---|---|---|---|---|
+| Berotec (fenoterol) | Nebulização | 10 gts | SF 0,9% 3 mL | 6 L/min |
+| Atrovent (ipratrópio) | Nebulização | 20 gts | SF 0,9% 3 mL | 6 L/min |
+| Berotec + Atrovent | Nebulização | 10+20 gts | SF 0,9% 3 mL | 6 L/min |
+| Salbutamol nebulização | Nebulização | 2,5 mg (10 gts) | SF 0,9% 3 mL | 6 L/min |
+| Budesonida nebulização | Nebulização | 0,5 mg (1 amp) | SF 0,9% 3 mL | 6 L/min |
+| Adrenalina nebulizada | Nebulização | 5 mg (5 mL) | puro | 6 L/min |
+| NaCl 3% (hipertônico) | Nebulização | 4 mL | puro | 6 L/min |
+| N-acetilcisteína | Nebulização | 300 mg | SF 0,9% 3 mL | 6 L/min |
+| Salbutamol spray | pMDI | 2 puffs | — | espaçador ON |
+| Beclometasona spray | pMDI | 2 puffs | — | espaçador ON, gargarejar ON |
+| Formoterol DPI | DPI | 1 inalação | — | — |
+| Tiotrópio DPI | DPI | 1 cápsula | — | — |
 
-## Mudanças por arquivo
+Ao escolher a droga via combobox de prescrição, o sistema:
+- Define `inhalationMode` automaticamente
+- Preenche dose, diluente, fluxo, espaçador
+- Médico pode editar tudo livremente
 
-### Novos
-- `src/lib/unidentifiedDetector.ts` — função pura `detectUnidentified(name, extras?)` retornando `{ isUnidentified, confidence, reason, source: 'heuristic'|'ai' }`. Lista de tokens + regex centralizados aqui.
-- `src/components/UnidentifiedSuggestionDialog.tsx` — diálogo reutilizável (props: `open`, `detection`, `onConfirm`, `onReject`, `onCancel`).
-- `supabase/functions/detect-unidentified-patient/index.ts` — edge function só para casos ambíguos. Usa Lovable AI Gateway, modelo `google/gemini-3-flash-preview`, structured output, sem auth (verify_jwt=false não é necessário; mantém default).
+### 4. Geração da instrução clínica (impressão e cockpit)
+Substituir `assembleInstructionFromFields` para itens de inalação por uma função dedicada `assembleInhalationInstruction(item)` que monta linha humana:
 
-### Editados
-- `src/components/PatientRegistrationDialog.tsx`:
-  - Hook `useEffect` no campo `name` (debounced 400ms) chama `detectUnidentified`.
-  - Se detecta E usuário não rejeitou ainda nesta sessão E `is_unidentified` ainda não está true → abre `UnidentifiedSuggestionDialog`.
-  - Confirmação ativa NI flow (gera código, marca flag).
-  - Em fluxo de importação PIS, se já vier marcado NI, ativa direto sem popup.
-- `src/components/AdmitPatientDialog.tsx`:
-  - Mesma lógica ao receber `fullData.patient_name` da `pre_admission`. Se detectado, sugere NI antes de prosseguir.
+- Nebulização: `"Berotec 10gts + Atrovent 20gts diluído em SF 0,9% 3mL — nebulizar com fluxo de O2 6 L/min por 10 min, 6/6h via máscara facial."`
+- pMDI com espaçador: `"Beclometasona spray — 2 puffs com espaçador, 12/12h. Gargarejar após uso."`
+- DPI: `"Tiotrópio DPI — 1 cápsula inalada 1x/dia (manhã)."`
+- Contínua: `"Salbutamol nebulização contínua 7,5 mg/h + SF 0,9% — fluxo O2 8 L/min, máscara, por 4 horas."`
 
-## Detalhes técnicos
+### 5. Validação clínica (sem regressão)
+- O bloco de checagem de alergias (`clinicalAlertChecks`) já trata cada droga isoladamente — continua funcionando para inalatórios (salbutamol, fenoterol, ipratrópio, etc).
+- Adicionar interações específicas se já existirem no detector (mantido — não é foco desta sprint).
 
-- Heurística é **case-insensitive**, normalizada NFD, e bate em **palavras inteiras** (`\b`) para evitar falso-positivo (`NIVALDO` não dispara `NI`).
-- IA roda só quando heurística não bate E há sinal fraco. Custo controlado.
-- Toda detecção é registrada em `console.debug` para auditoria de qualidade.
-- Telemetria mínima: contar quantas vezes a sugestão foi aceita/recusada via tabela de auditoria existente (não cria tabela nova nesta etapa).
-- A IA NUNCA decide sozinha — sempre passa pelo diálogo de confirmação. O usuário tem palavra final.
+## Implementação técnica
+- **Tipo**: estender `PrescriptionItem` em `PrescricaoPage.tsx` com campos opcionais: `inhalationMode`, `nebDose`, `nebDoseUnit`, `oxygenFlow`, `stageDuration`, `stagesPerDay` (frequência reaproveita `posology`), `inhalationInterface`, `puffs`, `spacer`, `gargle`, `inhalationOrientation`.
+- **Componente novo**: `InhalationExpandedFields` em arquivo separado para manter `PrescricaoPage.tsx` enxuto.
+- **Roteamento de render**: no painel expandido (linha 1635+), quando `item.category === 'inhalation'`, renderizar `<InhalationExpandedFields>` **em vez** dos campos de infusão IV.
+- **Catálogo**: `src/data/inhalationCatalog.ts` exportando lista + helper `getInhalationDefaults(name)`. Engatado no `addItem`/autofill quando categoria detectada = `inhalation`.
+- **Helper de string**: `src/lib/inhalationInstruction.ts` com `assembleInhalationInstruction(item)`.
+- **Persistência**: campos novos viajam dentro do JSONB existente (`prescriptions.payload`) — sem migration.
+- **Impressão**: o builder de PDF usa a string gerada por `assembleInhalationInstruction` quando `category === 'inhalation'`.
 
-## Riscos & mitigação
+## O que **não** muda
+- Categorias não-inalatórias seguem com os mesmos campos atuais (zero regressão em IV/hidratação).
+- Sem alteração de schema do banco.
+- Layout geral da página de prescrição preservado.
 
-- **Falso-positivo** (nome real curto disparando NI) → diálogo permite "Não, é nome real" e marca `userOverroteNiSuggestion` para o resto do formulário.
-- **Falso-negativo** → usuário ainda pode marcar manualmente o checkbox "Paciente não identificado" existente (não removemos).
-- **Latência IA** → só roda em background; nunca bloqueia digitação. Diálogo só aparece após debounce.
-
-## Fora de escopo desta etapa
-
-- Reescrita do flow de "promoção NI → identificado" (já existe).
-- Mudanças no schema do banco.
-- Treinamento/fine-tuning de modelo.
+## Confirmação solicitada
+Confirma este escopo? Em particular:
+1. Os 4 modos (Nebulização / Contínua / pMDI / DPI) cobrem o que você precisa?
+2. A lista do catálogo inicial cobre o essencial — devo incluir mais alguma droga (lidocaína nebulizada, DNase, colistina inalada, tobramicina inalada, iloprost)?
+3. O esquema de impressão proposto está adequado para o farmacêutico e o enfermeiro executarem?
