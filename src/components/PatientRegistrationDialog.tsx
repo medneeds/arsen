@@ -119,21 +119,56 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
 
   const formatCPFLocal = (s: string) => s.replace(/\D/g, "").replace(/(\d{3})(\d{3})(\d{3})(\d{2}).*/, "$1.$2.$3-$4");
   const applyPisData = (data: ExtractedPisData) => {
-    setForm(prev => ({
-      ...prev,
-      patient_name: (data.patient_name || prev.patient_name).toUpperCase(),
-      mother_name: (data.mother_name || prev.mother_name).toUpperCase(),
-      birth_date: data.birth_date || prev.birth_date,
-      sex: data.sex || prev.sex,
-      cpf: data.cpf ? formatCPFLocal(data.cpf) : prev.cpf,
-      cns: data.cns || prev.cns,
-      phone: data.phone || prev.phone,
-      address: (data.address || prev.address).toUpperCase(),
-      neighborhood: (data.neighborhood || prev.neighborhood).toUpperCase(),
-      city: (data.city || prev.city).toUpperCase(),
-      state: data.state ? data.state.toUpperCase().slice(0, 2) : prev.state,
-      medical_record: (data.medical_record || prev.medical_record || "").toString().trim(),
-    }));
+    // Detecta paciente "Não Identificado" vindo do PIS (variações: NAO IDENTIFICADO, N/I, S/N, DESCONHECIDO, em branco mas com outros dados)
+    const rawName = (data.patient_name || "").trim();
+    const normalizedName = rawName
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toUpperCase();
+    const looksUnidentified =
+      !!rawName &&
+      (/^N[\s.\-/]*A[\s.\-/]*O\s+IDENTIFICAD[OA]/.test(normalizedName) ||
+        /^(N\s*\/\s*I|S\s*\/\s*N|S\s*\/\s*I)\b/.test(normalizedName) ||
+        /\b(DESCONHECID[OA]|IGNORAD[OA]|NAO\s+INFORMAD[OA])\b/.test(normalizedName) ||
+        normalizedName === "NI");
+
+    setForm(prev => {
+      const becomingNI = looksUnidentified || prev.is_unidentified;
+      // Mapeia sexo do PIS para o campo "sexo aparente" quando NI
+      const sexFromPis = (data.sex || "").toString().toUpperCase();
+      const apparentSex = sexFromPis.startsWith("M")
+        ? "Masculino"
+        : sexFromPis.startsWith("F")
+        ? "Feminino"
+        : prev.ni_apparent_sex;
+
+      return {
+        ...prev,
+        is_unidentified: becomingNI,
+        // Se for NI: não preenche nome real, mãe, CPF, CNS, data de nascimento — mas mantém demais dados úteis
+        patient_name: becomingNI ? "" : (data.patient_name || prev.patient_name).toUpperCase(),
+        mother_name: becomingNI ? "" : (data.mother_name || prev.mother_name).toUpperCase(),
+        birth_date: becomingNI ? "" : (data.birth_date || prev.birth_date),
+        sex: becomingNI ? "" : (data.sex || prev.sex),
+        cpf: becomingNI ? "" : (data.cpf ? formatCPFLocal(data.cpf) : prev.cpf),
+        cns: becomingNI ? "" : (data.cns || prev.cns),
+        // Características NI herdadas do PIS quando aplicável
+        ni_apparent_sex: becomingNI ? apparentSex : prev.ni_apparent_sex,
+        // Dados de contato/endereço/prontuário são preservados em ambos os fluxos
+        phone: data.phone || prev.phone,
+        address: (data.address || prev.address).toUpperCase(),
+        neighborhood: (data.neighborhood || prev.neighborhood).toUpperCase(),
+        city: (data.city || prev.city).toUpperCase(),
+        state: data.state ? data.state.toUpperCase().slice(0, 2) : prev.state,
+        medical_record: (data.medical_record || prev.medical_record || "").toString().trim(),
+      };
+    });
+    if (looksUnidentified) {
+      toast({
+        title: "Paciente NÃO IDENTIFICADO detectado",
+        description: "Modo NI ativado automaticamente. Endereço, contato e prontuário do PIS foram preservados.",
+      });
+    }
     setActiveTab("dados");
   };
   const { currentHospital, currentState } = useHospital();
