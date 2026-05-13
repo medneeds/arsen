@@ -593,8 +593,10 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
             {/* ───── Plano / CID ───── */}
             <TabsContent value="plano" className="space-y-4 mt-4">
               <Section icon={Pill} title="Plano terapêutico" tone="slate">
+                <ReqLabel missing={attempted && missing.plan}>Conduta inicial</ReqLabel>
                 <Textarea value={plan} onChange={e => setPlan(e.target.value)} rows={5}
-                  placeholder={"• Monitorização\n• Suporte clínico\n• Antibioticoterapia\n• ..."} />
+                  placeholder={"• Monitorização\n• Suporte clínico\n• Antibioticoterapia\n• ..."}
+                  className={cn("mt-1", reqRing(attempted && missing.plan))} />
               </Section>
 
               <Section icon={FileText} title="Diagnóstico (CID-10)" hint="Busca por código ou descrição" tone="blue">
