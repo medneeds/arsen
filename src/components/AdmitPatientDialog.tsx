@@ -126,6 +126,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
     setDischargeDays("");
     setDischargeDate(undefined);
     setNoDischargePrediction(false);
+    // Sugestão automática: agora (editável pelo usuário antes de confirmar)
+    setAdmissionDate(new Date());
 
     if (!currentHospital?.id || !currentState?.id || !preAdmission?.id) return;
 
