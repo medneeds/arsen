@@ -302,24 +302,45 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     prediction: !noPrediction && !predictionDate,
     sapsAck: isUti && !sapsAck,
   };
+  // Itens obrigatórios para VALIDAR a admissão (CID/previsão são recomendados, não bloqueantes)
   const missingList = [
     missing.hda && "HDA",
-    missing.exam && "Exame físico (estado geral)",
-    missing.plan && "Plano terapêutico",
-    missing.cidPrimary && "CID primário",
-    missing.prediction && "Previsão de alta",
+    missing.examGeneral && "Estado geral (exame físico)",
+    missing.plan && "Conduta inicial",
     missing.sapsAck && "Ciência da SAPS 3",
   ].filter(Boolean) as string[];
 
   const validate = (): string | null => {
     if (missing.hda) return "História da Doença Atual (HDA) é obrigatória";
-    if (missing.exam) return "Exame físico é obrigatório";
-    if (missing.plan) return "Plano terapêutico é obrigatório";
-    if (missing.cidPrimary) return "CID primário é obrigatório";
-    if (missing.prediction) return "Previsão de alta é obrigatória";
+    if (missing.examGeneral) return "Estado geral (exame físico) é obrigatório";
+    if (missing.plan) return "Conduta inicial é obrigatória";
     if (missing.sapsAck) return "Declare ciência de que a ficha SAPS 3 está pendente (24h)";
     return null;
   };
+
+  const canValidate = !missing.hda && !missing.examGeneral && !missing.plan && !missing.sapsAck;
+
+  const handleSaveDraft = () => {
+    try {
+      const payload = {
+        hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
+        physGeneral, physCv, physResp, physAbd, physExt,
+        plan, cidPrimary, cidSecondary,
+        noPrediction, predictionDate, predictionDays,
+        admissionReason, originSector, devices, culturesAtb, specialties,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(draftKeyFor(patient.id), JSON.stringify(payload));
+      setDraftSavedAt(new Date());
+      toast.success("Rascunho salvo", {
+        description: "Você pode prosseguir com evolução, prescrição, requisições e demais módulos.",
+      });
+      onOpenChange(false);
+    } catch {
+      toast.error("Não foi possível salvar o rascunho");
+    }
+  };
+
 
   const buildPrintPayload = () => ({
     patient: { name: patient.name, bed: patient.bed, sector: patient.sector, age: patient.age },
