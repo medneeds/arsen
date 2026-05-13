@@ -86,6 +86,7 @@ import {
   type PrescriptionFlag,
 } from "@/data/medicationsDatabase";
 import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
+import { AtmStatusDialog } from "@/components/AtmStatusDialog";
 import { useUnifiedMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
 import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/PsychotropicFormDialog";
 import { TevProtocolDialog } from "@/components/TevProtocolDialog";
