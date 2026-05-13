@@ -123,6 +123,12 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pisDialogOpen, setPisDialogOpen] = useState(false);
 
+  // Detecção inteligente de paciente NI (heurística + IA)
+  const [niSuggestion, setNiSuggestion] = useState<NiDetection | null>(null);
+  const [niSuggestionOpen, setNiSuggestionOpen] = useState(false);
+  const [userOverroteNiSuggestion, setUserOverroteNiSuggestion] = useState(false);
+  const lastDetectedNameRef = useRef<string>("");
+
   const formatCPFLocal = (s: string) => s.replace(/\D/g, "").replace(/(\d{3})(\d{3})(\d{3})(\d{2}).*/, "$1.$2.$3-$4");
   const applyPisData = (data: ExtractedPisData) => {
     // Detecta paciente "Não Identificado" vindo do PIS (variações: NAO IDENTIFICADO, N/I, S/N, DESCONHECIDO, em branco mas com outros dados)
