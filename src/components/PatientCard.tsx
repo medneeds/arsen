@@ -31,6 +31,7 @@ import { useBedAllocationRequests } from "@/hooks/useBedAllocationRequests";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
 import { differenceInDays, differenceInHours, differenceInMinutes, parseISO, isValid, parse } from "date-fns";
 import { useSectorStayTimer } from "@/hooks/useSectorStayTimer";
+import { calcDIH, formatDIHLabel, formatAdmissionDateBR } from "@/lib/dihCalc";
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { useConductHistory } from "@/hooks/useConductHistory";
 import { ConductHistoryDialog } from "./ConductHistoryDialog";
@@ -1743,186 +1744,61 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                     </DndContext>
                   </div>
 
-                  {/* Admissão UTI */}
+                  {/* Admissão no Setor (read-only — sincronizada com a alocação no leito) */}
                   <div className="flex flex-col md:col-span-2">
-                  <span className="text-xs md:text-[9px] font-medium text-muted-foreground mb-0">Admissão UTI</span>
-                      <ol className="text-xs text-foreground space-y-0 print:text-[7.5px] list-none pl-0">
-                        {(patient.utiAdmissionDate || []).map((item, idx) => (
-                          <li key={`uti-admission-date-${idx}`} className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5">
-                            {editingField === "utiAdmissionDate" && editingArrayIndex === idx ? (
-                              <>
-                                <div className="flex items-center gap-1 flex-1">
-                                  <span className="font-semibold text-muted-foreground flex-shrink-0">{idx + 1}.</span>
-                                  <Input
-                                    ref={dateInputRef}
-                                    value={editValue}
-                                    onChange={(e) => setEditValue(formatDateInput(e.target.value))}
-                                    onKeyDown={handleKeyDown}
-                                    className="h-5 text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0"
-                                    placeholder="DD/MM/AAAA"
-                                    maxLength={10}
-                                  />
-                                </div>
-                                <div className="flex items-center gap-0.5 flex-shrink-0">
-                                  <Button size="icon" variant="ghost" onClick={saveInlineEdit} className="h-4 w-4 text-green-600 hover:bg-green-100 p-0">
-                                    <Check className="h-2.5 w-2.5" />
-                                  </Button>
-                                  <Button size="icon" variant="ghost" onClick={cancelEditing} className="h-4 w-4 text-red-600 hover:bg-red-100 p-0">
-                                    <X className="h-2.5 w-2.5" />
-                                  </Button>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div className="flex items-center gap-1 flex-1">
-                                  <span className="font-semibold text-muted-foreground flex-shrink-0">{idx + 1}.</span>
-                                  <span className="break-words">{item}</span>
-                                </div>
-                                <div className="flex items-center gap-0.5 flex-shrink-0">
-                                  <Button size="icon" variant="ghost" onClick={() => startEditing("utiAdmissionDate", item, idx)} className="h-4 w-4 text-primary hover:bg-primary/10 print:hidden p-0">
-                                    <Pencil className="h-2.5 w-2.5" />
-                                  </Button>
-                                  <Button size="icon" variant="ghost" onClick={() => removeArrayItem("utiAdmissionDate", idx)} className="h-4 w-4 text-destructive hover:bg-destructive/10 print:hidden p-0">
-                                    <X className="h-2.5 w-2.5" />
-                                  </Button>
-                                  {idx === (patient.utiAdmissionDate || []).length - 1 && (
-                                    <Button size="icon" variant="ghost" onClick={() => startEditing("utiAdmissionDate", "", -2)} className="h-4 w-4 text-primary hover:bg-primary/10 print:hidden p-0">
-                                      <Plus className="h-2.5 w-2.5" />
-                                    </Button>
-                                  )}
-                                </div>
-                              </>
-                            )}
-                          </li>
-                        ))}
-                      </ol>
-                    {editingField === "utiAdmissionDate" && editingArrayIndex === -2 && (
-                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
-                        <div className="flex items-center gap-1 flex-1">
-                          <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiAdmissionDate || []).length + 1}.</span>
-                          <Input
-                            ref={dateInputRef}
-                            value={editValue}
-                            onChange={(e) => {
-                              const formatted = formatDateInput(e.target.value);
-                              setEditValue(formatted);
-                            }}
-                            onKeyDown={handleKeyDown}
-                            className="h-5 text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0"
-                            placeholder="DD/MM/AAAA"
-                            maxLength={10}
-                          />
+                    <span className="text-xs md:text-[9px] font-medium text-muted-foreground mb-0">
+                      Admissão no Setor
+                    </span>
+                    {(() => {
+                      const adm = patient.admissionDate || (patient.utiAdmissionDate || [])[0] || null;
+                      const dih = calcDIH(adm);
+                      return (
+                        <div className="flex items-center gap-1.5 text-[10px] text-foreground leading-snug py-0.5">
+                          <span className="font-medium">{formatAdmissionDateBR(adm)}</span>
+                          {dih !== null && (
+                            <Badge
+                              variant="secondary"
+                              className="h-4 px-1.5 text-[9px] font-semibold bg-primary/10 text-primary border-primary/20"
+                              title="Dia de Internação (D0 = admissão; DIH1 = dia seguinte). Recalcula em transferência de setor."
+                            >
+                              {formatDIHLabel(dih)}
+                            </Badge>
+                          )}
                         </div>
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
-                          <Button size="icon" variant="ghost" onClick={saveInlineEdit} className="h-4 w-4 text-green-600 hover:bg-green-100 p-0">
-                            <Check className="h-2.5 w-2.5" />
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={cancelEditing} className="h-4 w-4 text-red-600 hover:bg-red-100 p-0">
-                            <X className="h-2.5 w-2.5" />
-                          </Button>
-                        </div>
-                      </li>
-                    )}
-                    {(patient.utiAdmissionDate || []).length === 0 && editingField !== "utiAdmissionDate" && (
-                      <Button size="icon" variant="ghost" onClick={() => startEditing("utiAdmissionDate", "", -2)} className="h-5 w-5 text-muted-foreground hover:text-primary print:hidden" title="Adicionar">
-                        <span className="text-xs">+</span>
-                      </Button>
-                    )}
+                      );
+                    })()}
                   </div>
 
-                  {/* Previsão de Alta */}
+                  {/* Previsão de Alta (read-only — atualizada exclusivamente via Evolução Médica) */}
                   <div className="flex flex-col md:col-span-4">
-                  <span className="text-xs md:text-[9px] font-medium text-muted-foreground mb-0">Previsão de Alta</span>
-                      <ol className="text-xs text-foreground space-y-0 print:text-[7.5px] list-none pl-0">
-                        {(patient.utiDischargePrediction || []).map((item, idx) => {
-                          const daysCalculation = calculateDaysUntilDischarge(item);
-                          return (
-                            <li key={`uti-discharge-${idx}`} className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5">
-                              {editingField === "utiDischargePrediction" && editingArrayIndex === idx ? (
-                                <>
-                                  <div className="flex items-center gap-1 flex-1">
-                                    <span className="font-semibold text-muted-foreground flex-shrink-0">{idx + 1}.</span>
-                                    <Input
-                                      ref={dateInputRef}
-                                      value={editValue}
-                                      onChange={(e) => setEditValue(formatDateInput(e.target.value))}
-                                      onKeyDown={handleKeyDown}
-                                      className="h-5 text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0"
-                                      placeholder="DD/MM/AAAA"
-                                      maxLength={10}
-                                    />
-                                  </div>
-                                  <div className="flex items-center gap-0.5 flex-shrink-0">
-                                    <Button size="icon" variant="ghost" onClick={saveInlineEdit} className="h-4 w-4 text-green-600 hover:bg-green-100 p-0">
-                                      <Check className="h-2.5 w-2.5" />
-                                    </Button>
-                                    <Button size="icon" variant="ghost" onClick={cancelEditing} className="h-4 w-4 text-red-600 hover:bg-red-100 p-0">
-                                      <X className="h-2.5 w-2.5" />
-                                    </Button>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="flex items-center gap-1 flex-1">
-                                    <span className="font-semibold text-muted-foreground flex-shrink-0">{idx + 1}.</span>
-                                    <span className="break-words">
-                                      {item}
-                                      {daysCalculation && (
-                                        <span className="ml-1 text-muted-foreground">{daysCalculation}</span>
-                                      )}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-0.5 flex-shrink-0">
-                                    <Button size="icon" variant="ghost" onClick={() => startEditing("utiDischargePrediction", item, idx)} className="h-4 w-4 text-primary hover:bg-primary/10 print:hidden p-0">
-                                      <Pencil className="h-2.5 w-2.5" />
-                                    </Button>
-                                    <Button size="icon" variant="ghost" onClick={() => removeArrayItem("utiDischargePrediction", idx)} className="h-4 w-4 text-destructive hover:bg-destructive/10 print:hidden p-0">
-                                      <X className="h-2.5 w-2.5" />
-                                    </Button>
-                                    {idx === (patient.utiDischargePrediction || []).length - 1 && (
-                                      <Button size="icon" variant="ghost" onClick={() => startEditing("utiDischargePrediction", "", -2)} className="h-4 w-4 text-primary hover:bg-primary/10 print:hidden p-0">
-                                        <Plus className="h-2.5 w-2.5" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </>
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ol>
-                    {editingField === "utiDischargePrediction" && editingArrayIndex === -2 && (
-                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
-                        <div className="flex items-center gap-1 flex-1">
-                          <span className="font-semibold text-muted-foreground flex-shrink-0">{(patient.utiDischargePrediction || []).length + 1}.</span>
-                          <Input
-                            ref={dateInputRef}
-                            value={editValue}
-                            onChange={(e) => {
-                              const formatted = formatDateInput(e.target.value);
-                              setEditValue(formatted);
-                            }}
-                            onKeyDown={handleKeyDown}
-                            className="h-5 text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0"
-                            placeholder="DD/MM/AAAA"
-                            maxLength={10}
-                          />
+                    <span className="text-xs md:text-[9px] font-medium text-muted-foreground mb-0">
+                      Previsão de Alta
+                    </span>
+                    {(() => {
+                      const pred = (patient.utiDischargePrediction || [])[0] || "";
+                      if (!pred) {
+                        return (
+                          <span
+                            className="text-[10px] text-muted-foreground italic py-0.5"
+                            title="Definida na Admissão e atualizada apenas via Evolução Médica."
+                          >
+                            — (atualize via Evolução)
+                          </span>
+                        );
+                      }
+                      const daysCalculation = calculateDaysUntilDischarge(pred);
+                      return (
+                        <div
+                          className="text-[10px] text-foreground leading-snug py-0.5 break-words"
+                          title="Atualize esta previsão dentro da Evolução Médica."
+                        >
+                          <span className="font-medium">{pred}</span>
+                          {daysCalculation && (
+                            <span className="ml-1 text-muted-foreground">{daysCalculation}</span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
-                          <Button size="icon" variant="ghost" onClick={saveInlineEdit} className="h-4 w-4 text-green-600 hover:bg-green-100 p-0">
-                            <Check className="h-2.5 w-2.5" />
-                          </Button>
-                          <Button size="icon" variant="ghost" onClick={cancelEditing} className="h-4 w-4 text-red-600 hover:bg-red-100 p-0">
-                            <X className="h-2.5 w-2.5" />
-                          </Button>
-                        </div>
-                      </li>
-                    )}
-                    {(patient.utiDischargePrediction || []).length === 0 && editingField !== "utiDischargePrediction" && (
-                      <Button size="icon" variant="ghost" onClick={() => startEditing("utiDischargePrediction", "", -2)} className="h-5 w-5 text-muted-foreground hover:text-primary print:hidden" title="Adicionar">
-                        <span className="text-xs">+</span>
-                      </Button>
-                    )}
+                      );
+                    })()}
                   </div>
 
                   {/* Alergias */}
