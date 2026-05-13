@@ -109,7 +109,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [bedsLoaded, setBedsLoaded] = useState(false);
 
   const { currentHospital, currentState } = useHospital();
-  const { currentDepartment } = useDepartment();
+  const { currentDepartment, currentSectorCode } = useDepartment();
   const { user } = useAuth();
   const navigate = useNavigate();
 
