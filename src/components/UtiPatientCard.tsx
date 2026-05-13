@@ -977,6 +977,10 @@ export function UtiPatientCard({
   const antecedentes = getFieldArray("medicalHistory");
   const pendencias = getFieldArray("pendencies");
   const previsaoAlta = getFieldArray("utiDischargePrediction");
+  // Exibe somente a data; remove sufixo "(N dias)" quando presente
+  const previsaoAltaDate = (previsaoAlta[0] || "").replace(/\s*\(.*?\)\s*$/, "");
+  // Rótulo de admissão dinâmico por setor (ex.: "Admissão UCC", "Admissão UTI 1")
+  const admissionLabel = `Admissão ${derivedUtiUnit}`;
   const condutasDia = getFieldArray("utiDailyConducts");
   const dispositivos = getFieldArray("utiDevices");
   const culturasAtb = getFieldArray("utiCulturesAntibiotics");
