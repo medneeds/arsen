@@ -3325,12 +3325,14 @@ const PrescricaoPage = () => {
     };
   };
 
-  const addItem = (med: MedicationEntry) => {
+  const addItem = (med: MedicationEntry, opts?: { fromGlobalSearch?: boolean }) => {
+    const fromGlobalSearch = opts?.fromGlobalSearch === true;
     // Track usage for favorites/ranking (best-effort, non-blocking)
     if (med.id && med.category !== 'nonstandard') {
       trackMedicationUse(med.id, med.name, med.category);
     }
-    // Antimicrobials must go through the Antimicrobial Guide first
+    // Antimicrobials ALWAYS go through the Antimicrobial Guide first
+    // (único caminho que abre pop-up automático mesmo via busca "Todas")
     if (med.category === 'antimicrobial') {
       setPendingAntimicrobialMed(med);
       setAntimicrobialGuideOpen(true);
