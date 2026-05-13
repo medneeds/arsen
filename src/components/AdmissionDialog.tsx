@@ -197,7 +197,26 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     if (!plan.trim()) return "Plano terapêutico é obrigatório";
     if (!cidPrimary.trim()) return "CID primário é obrigatório";
     if (!noPrediction && !predictionDate) return "Previsão de alta é obrigatória";
+    if (isUti && !sapsAck) return "Declare ciência de que a ficha SAPS 3 está pendente (24h)";
     return null;
+  };
+
+  const buildPrintPayload = () => ({
+    patient: { name: patient.name, bed: patient.bed, sector: patient.sector, age: patient.age },
+    hospitalName: currentHospital?.name,
+    doctorName: user?.user_metadata?.full_name || user?.email || "Médico Assistente",
+    isUti,
+    hda, amp, muc, allergies, weight, height, imc,
+    vitals: { pa, fc, fr, spo2, tax, dx },
+    exam: { general: physGeneral, cv: physCv, resp: physResp, abd: physAbd, ext: physExt },
+    plan, cidPrimary, cidSecondary,
+    dischargePredictionLabel,
+    uti: isUti ? { admissionReason, originSector, devices, culturesAtb, specialties } : undefined,
+    sapsPending: isUti && sapsAck,
+  });
+
+  const handlePrint = () => {
+    void printAdmissionNormaZero(buildPrintPayload());
   };
 
   const handleSubmit = async () => {
