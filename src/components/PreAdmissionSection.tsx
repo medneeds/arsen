@@ -20,6 +20,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { PatientSearchActionsDialog, type RegistryPatientLite } from "./PatientSearchActionsDialog";
 
 interface PreAdmission {
   id: string;
