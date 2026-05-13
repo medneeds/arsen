@@ -1497,6 +1497,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     <div
       ref={setNodeRef}
       style={style}
+      id={`prescription-item-${item.id}`}
       className={cn(
         "group relative rounded-lg border transition-all",
         item.status === 'suspended'
