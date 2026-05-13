@@ -1145,8 +1145,8 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
           </Button>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => { reset(); onOpenChange(false); }}>Cancelar</Button>
-            {step < 3 ? (
-              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" disabled={!canAdvance} onClick={() => setStep(s => Math.min(3, s + 1))}>
+            {step < 4 ? (
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700" disabled={!canAdvance} onClick={() => setStep(s => Math.min(4, s + 1))}>
                 Avançar <ChevronRight className="h-3.5 w-3.5 ml-1" />
               </Button>
             ) : (
