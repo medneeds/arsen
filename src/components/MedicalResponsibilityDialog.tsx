@@ -190,224 +190,46 @@ export const MedicalResponsibilityDialog = ({
 
           <div className="space-y-3">
             <Label className="text-sm font-semibold text-foreground dark:text-white">Selecione o Tipo de Acompanhamento</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              <button
-                type="button"
-                onClick={() => setType(null)}
-                className={cn(
-                  "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all hover:shadow-md dark:hover:shadow-gray-700/50",
-                  type === null
-                    ? 'border-gray-400 bg-gray-50 dark:bg-gray-800 dark:border-gray-500 shadow-sm'
-                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800/50'
-                )}
-              >
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700">
-                  <X className="h-5 w-5 text-gray-500 dark:text-gray-300" />
-                </div>
-                <span className="font-semibold text-xs dark:text-white">Nenhum</span>
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setType('porta')}
-                className={cn(
-                  "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all hover:shadow-md dark:hover:shadow-lg animate-fade-in",
-                  type === 'porta' && 'shadow-md dark:shadow-lg',
-                  type !== 'porta' && 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50'
-                )}
-                style={{
-                  borderColor: type === 'porta' ? sectorColor : undefined,
-                  backgroundColor: type === 'porta' ? `${sectorColor}20` : undefined,
-                }}
-              >
-                <div 
-                  className="flex items-center justify-center w-10 h-10 rounded-full transition-transform hover:scale-110"
-                  style={{ backgroundColor: `${sectorColor}25` }}
-                >
-                  <Stethoscope className="h-5 w-5" style={{ color: sectorColor }} />
-                </div>
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="font-semibold text-xs dark:text-white">Porta</span>
-                  <span className="text-[10px] text-muted-foreground dark:text-gray-400 text-center leading-tight">Consultório</span>
-                </div>
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setType('lider')}
-                className={cn(
-                  "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all hover:shadow-md dark:hover:shadow-lg animate-fade-in",
-                  type === 'lider' && 'shadow-md dark:shadow-lg',
-                  type !== 'lider' && 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50'
-                )}
-                style={{
-                  borderColor: type === 'lider' ? sectorColor : undefined,
-                  backgroundColor: type === 'lider' ? `${sectorColor}20` : undefined,
-                }}
-              >
-                <div 
-                  className="flex items-center justify-center w-10 h-10 rounded-full transition-transform hover:scale-110"
-                  style={{ backgroundColor: `${sectorColor}25` }}
-                >
-                  <UserCog className="h-5 w-5" style={{ color: sectorColor }} />
-                </div>
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="font-semibold text-xs dark:text-white">Líder</span>
-                  <span className="text-[10px] text-muted-foreground dark:text-gray-400 text-center leading-tight">100% do caso</span>
-                </div>
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => setType('conjunto')}
-                className={cn(
-                  "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all hover:shadow-md dark:hover:shadow-lg animate-fade-in",
-                  type === 'conjunto' && 'shadow-md dark:shadow-lg',
-                  type !== 'conjunto' && 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50'
-                )}
-                style={{
-                  borderColor: type === 'conjunto' ? sectorColor : undefined,
-                  backgroundColor: type === 'conjunto' ? `${sectorColor}20` : undefined,
-                }}
-              >
-                <div 
-                  className="flex items-center justify-center w-10 h-10 rounded-full transition-transform hover:scale-110"
-                  style={{ backgroundColor: `${sectorColor}25` }}
-                >
-                  <UsersRound className="h-5 w-5" style={{ color: sectorColor }} />
-                </div>
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="font-semibold text-xs dark:text-white">Conjunto</span>
-                  <span className="text-[10px] text-muted-foreground dark:text-gray-400 text-center leading-tight">Líder + Porta</span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setType('obstetra')}
-                className={cn(
-                  "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all hover:shadow-md dark:hover:shadow-lg animate-fade-in",
-                  type === 'obstetra' && 'shadow-md dark:shadow-lg',
-                  type !== 'obstetra' && 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50'
-                )}
-                style={{
-                  borderColor: type === 'obstetra' ? sectorColor : undefined,
-                  backgroundColor: type === 'obstetra' ? `${sectorColor}20` : undefined,
-                }}
-              >
-                <div 
-                  className="flex items-center justify-center w-10 h-10 rounded-full transition-transform hover:scale-110"
-                  style={{ backgroundColor: `${sectorColor}25` }}
-                >
-                  <Baby className="h-5 w-5" style={{ color: sectorColor }} />
-                </div>
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="font-semibold text-xs dark:text-white">Obstetra</span>
-                  <span className="text-[10px] text-muted-foreground dark:text-gray-400 text-center leading-tight">Especialista</span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setType('cirurgiao_geral')}
-                className={cn(
-                  "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all hover:shadow-md dark:hover:shadow-lg animate-fade-in",
-                  type === 'cirurgiao_geral' && 'shadow-md dark:shadow-lg',
-                  type !== 'cirurgiao_geral' && 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50'
-                )}
-                style={{
-                  borderColor: type === 'cirurgiao_geral' ? sectorColor : undefined,
-                  backgroundColor: type === 'cirurgiao_geral' ? `${sectorColor}20` : undefined,
-                }}
-              >
-                <div 
-                  className="flex items-center justify-center w-10 h-10 rounded-full transition-transform hover:scale-110"
-                  style={{ backgroundColor: `${sectorColor}25` }}
-                >
-                  <Scissors className="h-5 w-5" style={{ color: sectorColor, strokeWidth: 2.5 }} />
-                </div>
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="font-semibold text-xs dark:text-white">Cirurgião</span>
-                  <span className="text-[10px] text-muted-foreground dark:text-gray-400 text-center leading-tight">Geral</span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setType('traumatologista')}
-                className={cn(
-                  "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all hover:shadow-md dark:hover:shadow-lg animate-fade-in",
-                  type === 'traumatologista' && 'shadow-md dark:shadow-lg',
-                  type !== 'traumatologista' && 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50'
-                )}
-                style={{
-                  borderColor: type === 'traumatologista' ? sectorColor : undefined,
-                  backgroundColor: type === 'traumatologista' ? `${sectorColor}20` : undefined,
-                }}
-              >
-                <div 
-                  className="flex items-center justify-center w-10 h-10 rounded-full transition-transform hover:scale-110"
-                  style={{ backgroundColor: `${sectorColor}25` }}
-                >
-                  <Bone className="h-5 w-5" style={{ color: sectorColor }} />
-                </div>
-                <div className="flex flex-col items-center gap-0.5">
-                  <span className="font-semibold text-xs dark:text-white">Traumato</span>
-                  <span className="text-[10px] text-muted-foreground dark:text-gray-400 text-center leading-tight">Ortopedista</span>
-                </div>
-              </button>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {([
+                { key: null,              label: 'Nenhum',          sub: '',                  Icon: X },
+                { key: 'rotineiro',       label: 'Rotineiro',       sub: 'Diarista do setor', Icon: CalendarClock },
+                { key: 'plantonista',     label: 'Plantonista',     sub: 'Plantão fechado',   Icon: Moon },
+                { key: 'intercorrencista', label: 'Intercorrencista', sub: 'Sob demanda',      Icon: Siren },
+              ] as Array<{ key: MedicalResponsibilityType; label: string; sub: string; Icon: any }>).map(({ key, label, sub, Icon }) => {
+                const selected = type === key;
+                return (
+                  <button
+                    key={String(key)}
+                    type="button"
+                    onClick={() => setType(key)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all hover:shadow-md dark:hover:shadow-lg animate-fade-in",
+                      selected && 'shadow-md dark:shadow-lg',
+                      !selected && 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50'
+                    )}
+                    style={{
+                      borderColor: selected && key !== null ? sectorColor : undefined,
+                      backgroundColor: selected && key !== null ? `${sectorColor}20` : undefined,
+                    }}
+                  >
+                    <div
+                      className="flex items-center justify-center w-10 h-10 rounded-full transition-transform hover:scale-110"
+                      style={{ backgroundColor: key === null ? undefined : `${sectorColor}25` }}
+                    >
+                      <Icon className="h-5 w-5" style={{ color: key === null ? undefined : sectorColor }} />
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="font-semibold text-xs dark:text-white">{label}</span>
+                      {sub && (
+                        <span className="text-[10px] text-muted-foreground dark:text-gray-400 text-center leading-tight">{sub}</span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
-
-          {(type === 'porta' || type === 'conjunto' || type === 'obstetra' || type === 'cirurgiao_geral' || type === 'traumatologista') && (
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="office" className="text-sm font-semibold flex items-center gap-2 dark:text-white">
-                  <Stethoscope className="h-4 w-4" style={{ color: sectorColor }} />
-                  Número do Consultório
-                </Label>
-                <Input
-                  id="office"
-                  value={officeNumber}
-                  onChange={(e) => setOfficeNumber(e.target.value)}
-                  placeholder="Ex: 3, 5A, etc."
-                  className="border-2 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                  style={{ borderColor: `${sectorColor}40` }}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="portaNames" className="text-sm font-semibold flex items-center gap-2 dark:text-white">
-                  <Stethoscope className="h-4 w-4" style={{ color: sectorColor }} />
-                  {type === 'porta' || type === 'conjunto' ? 'Nomes dos Médicos Porta' : 'Nomes dos Médicos Especialistas'}
-                </Label>
-                <Input
-                  id="portaNames"
-                  value={portaNames}
-                  onChange={(e) => setPortaNames(e.target.value)}
-                  placeholder="Ex: Dr. Carlos, Dra. Ana"
-                  className="border-2 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                  style={{ borderColor: `${sectorColor}40` }}
-                />
-              </div>
-            </div>
-          )}
-
-          {(type === 'lider' || type === 'conjunto') && (
-            <div className="space-y-2">
-              <Label htmlFor="leaders" className="text-sm font-semibold flex items-center gap-2 dark:text-white">
-                <UserCog className="h-4 w-4" style={{ color: sectorColor }} />
-                Nomes dos Médicos Líderes
-              </Label>
-              <Input
-                id="leaders"
-                value={leaderNames}
-                onChange={(e) => setLeaderNames(e.target.value)}
-                placeholder="Ex: Dr. João, Dra. Maria"
-                className="border-2 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                style={{ borderColor: `${sectorColor}40` }}
-              />
-            </div>
-          )}
         </div>
 
         <div className="flex justify-between gap-3 pt-2">
