@@ -1070,12 +1070,20 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     isDragging,
   } = useSortable({ id: item.id });
 
+  // Compute lock state for the row (mirrors ValidationDot logic).
+  // Once an item is validated within the current 05h window, the row is read-only:
+  // dose/route/posology/instructions/flags/deletion are blocked.
+  const renewalCutoffNow = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
+  const validatedAfterCutoffNow = !!(item.validatedAt && new Date(item.validatedAt) > renewalCutoffNow);
+  const isLocked = !!item.validated && (!isPastRenewalTime || validatedAfterCutoffNow);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : undefined,
     opacity: isDragging ? 0.8 : undefined,
   };
+
 
   const ItemActions = () => (
     <DropdownMenu>
@@ -1107,8 +1115,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => onRemove(item.id)} className="text-xs gap-2 text-destructive">
-          <Trash2 className="h-3.5 w-3.5" /> Excluir item
+        <DropdownMenuItem
+          onClick={() => onRemove(item.id)}
+          disabled={isLocked}
+          className="text-xs gap-2 text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          {isLocked ? "Excluir (item validado — bloqueado)" : "Excluir item"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -1374,6 +1387,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             {item.status === 'suspended' && (
               <Badge variant="destructive" className="text-[9px] px-1.5">Suspenso</Badge>
             )}
+            {isLocked && item.status !== 'suspended' && (
+              <Badge variant="outline" className="text-[9px] px-1.5 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800">
+                VALIDADO · BLOQUEADO
+              </Badge>
+            )}
             <div className="flex gap-0.5 ml-auto">
               {PRESCRIPTION_FLAGS.map(f => (
                 <FlagToggle
@@ -1395,6 +1413,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               </p>
             </div>
           )}
+          <div
+            {...(isLocked ? ({ inert: '' } as any) : {})}
+            className={cn(isLocked && "opacity-80")}
+            aria-disabled={isLocked || undefined}
+          >
           {item.status === 'active' && item.category === 'nutrition' && (
             <NutritionFields item={item} onUpdate={onUpdate} />
           )}
@@ -1645,6 +1668,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               })}
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>
@@ -3231,24 +3255,51 @@ const PrescricaoPage = () => {
     setNonStdName("");
   };
 
+  // Guarda compartilhada: itens validados (e ainda dentro da janela do dia)
+  // não podem ser editados, removidos ou ter flags alteradas.
+  // Para alterar, é preciso suspender e re-prescrever, ou aguardar o corte das 05h
+  // que devolve o item ao estado "pendente de revalidação".
+  const isItemEditLocked = useCallback((item: PrescriptionItem) => {
+    return isItemValidatedToday(item);
+  }, [isItemValidatedToday]);
+
   const updateItem = useCallback((id: string, field: keyof PrescriptionItem, value: string) => {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
-  }, []);
+    setItems((prev) => prev.map((item) => {
+      if (item.id !== id) return item;
+      if (isItemEditLocked(item)) {
+        toast.error("Item validado", { description: "Suspenda o item para alterar ou aguarde a renovação 05h." });
+        return item;
+      }
+      return { ...item, [field]: value };
+    }));
+  }, [isItemEditLocked]);
 
   const removeItem = useCallback((id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    setItems((prev) => {
+      const target = prev.find(i => i.id === id);
+      if (target && isItemEditLocked(target)) {
+        toast.error("Item validado não pode ser excluído", { description: "Suspenda o item para retirá-lo da prescrição ativa." });
+        return prev;
+      }
+      return prev.filter((item) => item.id !== id);
+    });
     setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
-  }, []);
+  }, [isItemEditLocked]);
 
   const toggleFlag = useCallback((id: string, flag: PrescriptionFlag) => {
     setItems((prev) => prev.map((item) => {
       if (item.id !== id) return item;
+      if (isItemEditLocked(item)) {
+        toast.error("Item validado", { description: "Flags não podem ser alteradas após validação." });
+        return item;
+      }
       const flags = item.flags.includes(flag)
         ? item.flags.filter(f => f !== flag)
         : [...item.flags, flag];
       return { ...item, flags };
     }));
-  }, []);
+  }, [isItemEditLocked]);
+
 
   // Individual duplicate
   const duplicateItem = useCallback((id: string) => {
