@@ -18,8 +18,10 @@ import { CidSearchInput } from "@/components/CidSearchInput";
 import {
   Stethoscope, Loader2, AlertTriangle, ClipboardCheck,
   HeartPulse, Activity, FileText, Pill, CalendarDays, Hash,
+  Printer, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { printAdmissionNormaZero } from "@/lib/printAdmission";
 
 const UTI_SECTORS = ["red", "yellow", "blue", "outside", "uti_01", "uti_02", "uci_01", "uci_02"];
 
