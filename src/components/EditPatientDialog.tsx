@@ -376,6 +376,12 @@ export function EditPatientDialog({
           onOpenChange(false);
         }}
       />
+      <MedicalRecordEditDialog
+        open={recordEditOpen}
+        onOpenChange={setRecordEditOpen}
+        patientId={patient.id}
+        patientName={patient.name}
+      />
     </>
   );
 }
