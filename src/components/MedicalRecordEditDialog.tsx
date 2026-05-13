@@ -17,8 +17,10 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
   FileText, History, Loader2, Save, AlertTriangle, IdCard, Upload, FileWarning,
+  ShieldAlert, Trash2,
 } from "lucide-react";
 import { MovementConfirmDialog } from "./MovementConfirmDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Props {
   open: boolean;
