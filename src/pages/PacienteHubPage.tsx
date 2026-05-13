@@ -188,8 +188,10 @@ export default function PacienteHubPage() {
   })();
 
   const AdmissionIcon = isAdmitted ? CheckCircle2 : ClipboardCheck;
+  // Rascunho de admissão salvo libera os demais módulos (sem bloqueio).
+  // SAPS pendente/vencida segue apenas como alerta — não bloqueia evolução/prescrição/etc.
   const lockReason: "preadmission" | "saps_expired" | null =
-    isPreAdmitted ? "preadmission" : sapsExpired ? "saps_expired" : null;
+    isPreAdmitted && !hasDraft ? "preadmission" : null;
   const locked = lockReason !== null;
 
   return (
@@ -380,23 +382,16 @@ export default function PacienteHubPage() {
                   "relative flex flex-col items-center justify-center aspect-square rounded-lg overflow-hidden transition-all",
                   "bg-slate-50 border",
                   locked
-                    ? lockReason === "saps_expired"
-                      ? "opacity-60 border-red-200 cursor-not-allowed"
-                      : "opacity-40 grayscale border-slate-200 cursor-not-allowed"
+                    ? "opacity-40 grayscale border-slate-200 cursor-not-allowed"
                     : "bg-white border-slate-200 hover:scale-[1.02] hover:shadow-md cursor-pointer",
                 )}>
                   <span className={cn(
                     "absolute top-0 left-0 right-0 h-1",
-                    locked
-                      ? lockReason === "saps_expired" ? "bg-red-400" : "bg-slate-300"
-                      : "bg-blue-400",
+                    locked ? "bg-slate-300" : "bg-blue-400",
                   )} />
                   {locked && (
                     <span className="absolute top-2 right-2">
-                      <Lock className={cn(
-                        "w-3.5 h-3.5",
-                        lockReason === "saps_expired" ? "text-red-500" : "text-slate-400"
-                      )} strokeWidth={2} />
+                      <Lock className="w-3.5 h-3.5 text-slate-400" strokeWidth={2} />
                     </span>
                   )}
                   <div className={cn(
@@ -406,9 +401,7 @@ export default function PacienteHubPage() {
                     <Icon
                       className={cn(
                         "w-7 h-7",
-                        locked
-                          ? lockReason === "saps_expired" ? "text-red-400" : "text-slate-400"
-                          : "text-slate-600 group-hover:text-blue-600 transition-colors",
+                        locked ? "text-slate-400" : "text-slate-600 group-hover:text-blue-600 transition-colors",
                       )}
                       strokeWidth={1.5}
                     />
@@ -419,11 +412,6 @@ export default function PacienteHubPage() {
                   )}>
                     {label}
                   </span>
-                  {lockReason === "saps_expired" && (
-                    <span className="text-[9px] font-semibold text-red-600 tracking-widest uppercase mt-1">
-                      SAPS Vencida
-                    </span>
-                  )}
                 </div>
               </button>
             ))}
