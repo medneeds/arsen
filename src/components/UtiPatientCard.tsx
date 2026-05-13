@@ -1125,12 +1125,10 @@ export function UtiPatientCard({
                           {daysInUti}
                         </span>
                         {dihLevel === "red" ? (
-                          <span title="Longa permanência">
-                            <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
+                          <span title="Longa permanência" className="sr-only">
+                            DIH crítico
                           </span>
-                        ) : (
-                          <span className="w-3" />
-                        )}
+                        ) : null}
                       </div>
                     );
                   })()}
