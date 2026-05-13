@@ -43,6 +43,7 @@ Extraia os seguintes dados do paciente:
 - address: Endereço completo (logradouro + número)
 - neighborhood: Bairro
 - city: Cidade
+- state: Estado / UF brasileira (sigla de 2 letras maiúsculas — ex.: SP, RJ, MG, BA, PA, AM). Se vier por extenso ("São Paulo", "Pará"), converta para a sigla. Se não houver, retorne null.
 - phone: Telefone (se disponível)
 - medical_record: Número do prontuário do paciente no documento (também aparece como "Prontuário", "Pront.", "PRONT", "Nº Prontuário", "Registro", "Matrícula", "Ficha", "Atendimento", "RG Hospitalar", "PEP", "PIS Prontuário"). Retorne apenas o número/código (sem rótulo), preservando dígitos, letras e separadores como hífens.
 
