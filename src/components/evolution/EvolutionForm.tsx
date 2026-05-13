@@ -251,7 +251,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
         >
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] text-muted-foreground">
-              {evolucaoText.trim().length}/10+ caracteres
+              {richHtmlToPlainText(evolucaoText).length}/10+ caracteres
             </span>
             <FieldTemplates
               scope="evolution.subjective"
@@ -260,11 +260,11 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               hospitalUnitId={hospitalId}
             />
           </div>
-          <Textarea
+          <RichTextEditor
             value={evolucaoText}
-            onChange={e => handleEvolucaoChange(e.target.value)}
+            onChange={(html) => handleEvolucaoChange(html)}
             placeholder="Relato clínico do plantão: sinais vitais relevantes, exame físico dirigido, queixas, evolução percebida, hipóteses diagnósticas, raciocínio clínico..."
-            className="min-h-[220px] text-xs"
+            minHeight={220}
           />
         </SectionItem>
 
