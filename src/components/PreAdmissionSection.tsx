@@ -160,7 +160,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
             {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             <h2 className="text-sm font-bold flex items-center gap-2">
               <Clock className="h-4 w-4 text-primary" />
-              Aguardando Admissão em Leito
+              Aguardando Pré-admissão (Alocação) em Leito
               <Badge variant="secondary" className="text-xs">
                 {preAdmissions.length}
               </Badge>
