@@ -186,6 +186,7 @@ interface TevProtocolDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   patient: { name: string; age?: string; bed?: string; sector?: string; weight?: string } | null;
+  onAddToPrescription?: (med: MedicationEntry) => void;
 }
 
 export function TevProtocolDialog({ open, onOpenChange, patient }: TevProtocolDialogProps) {
