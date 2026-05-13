@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Brain, Printer, Plus, Trash2, AlertTriangle, Sparkles, Search, Lock, ShieldAlert, X } from "lucide-react";
@@ -12,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { useUnifiedMedicationCatalog, type ControlledCatalogItem } from "@/hooks/useUnifiedMedicationCatalog";
+import { openPrintWindow } from "@/lib/printNormaZero";
 
 export type NotificationType = 'Receita Amarela' | 'Receita Azul' | 'Controle Especial 2 vias';
 
