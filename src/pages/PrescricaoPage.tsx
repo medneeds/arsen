@@ -5338,20 +5338,49 @@ const PrescricaoPage = () => {
         open={antimicrobialGuideOpen}
         onOpenChange={(open) => {
           setAntimicrobialGuideOpen(open);
-          if (!open) setPendingAntimicrobialMed(null);
+          if (!open) { setPendingAntimicrobialMed(null); setPendingAtbMode(null); }
         }}
         patient={patient}
         antimicrobialItems={
           pendingAntimicrobialMed
             ? [{ id: 'pending', name: pendingAntimicrobialMed.name, dose: pendingAntimicrobialMed.defaultDose, route: pendingAntimicrobialMed.defaultRoute, posology: pendingAntimicrobialMed.defaultPosology, category: 'antimicrobial', status: 'active' }]
-            : items.filter(i => i.category === 'antimicrobial').map(i => ({ id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology, category: i.category, status: i.status }))
+            : pendingAtbMode
+              ? [] // Nova ATB do zero (acréscimo / troca / inicial)
+              : items.filter(i => i.category === 'antimicrobial').map(i => ({ id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology, category: i.category, status: i.status }))
         }
         doctorName={digitalSignature?.doctorName}
         doctorCrm={digitalSignature?.crm}
         hospitalName={currentHospital?.name}
         onConfirm={handleAntimicrobialConfirm}
-        mode={pendingAntimicrobialMed ? 'prescribe' : 'review'}
+        mode={(pendingAntimicrobialMed || pendingAtbMode) ? 'prescribe' : 'review'}
         patientId={searchParams.get('patientId') || undefined}
+      />
+
+      {/* ATM Status Dialog — acompanhamento + nova solicitação */}
+      <AtmStatusDialog
+        open={atmStatusOpen}
+        onOpenChange={setAtmStatusOpen}
+        activeItems={items
+          .filter(i => i.category === 'antimicrobial' && i.status === 'active')
+          .map(i => ({
+            id: i.id, name: i.name, dose: i.dose, route: i.route, posology: i.posology,
+            status: i.status, atbStartDate: i.atbStartDate, atbPlannedDays: i.atbPlannedDays,
+            atbInfectionSite: i.atbInfectionSite,
+          }))
+        }
+        onSuspendItem={(id) => {
+          setItems(prev => prev.map(it => it.id === id ? { ...it, status: 'suspended' } : it));
+          toast.success("Antibiótico suspenso");
+        }}
+        onStartNew={(mode, suspendIds) => {
+          if (mode === 'troca' && suspendIds.length > 0) {
+            setItems(prev => prev.map(it => suspendIds.includes(it.id) ? { ...it, status: 'suspended' } : it));
+            toast.info(`${suspendIds.length} antibiótico(s) suspenso(s) — preencha o substituto na Guia ATM.`);
+          }
+          setPendingAtbMode(mode);
+          setPendingAntimicrobialMed(null);
+          setTimeout(() => setAntimicrobialGuideOpen(true), 150);
+        }}
       />
 
       {/* Psychotropic Form Dialog */}
