@@ -9,6 +9,7 @@ import { printEvolution } from "@/lib/printEvolution";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -169,13 +170,16 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
 
   const buildSummary = (evo: EvolutionRecord) => {
     const s = evo.soap_data;
+    const subj = richHtmlToPlainText(s.subjective);
+    const ass = richHtmlToPlainText(s.assessment);
+    const plan = richHtmlToPlainText(s.plan);
     if (isIntercurrence(evo)) {
-      return s.subjective ? `Intercorrência: ${s.subjective.slice(0, 120)}` : "Intercorrência sem descrição";
+      return subj ? `Intercorrência: ${subj.slice(0, 120)}` : "Intercorrência sem descrição";
     }
-    const evolucao = [s.subjective, s.assessment].map(t => (t || "").trim()).filter(Boolean).join(" — ");
+    const evolucao = [subj, ass].filter(Boolean).join(" — ");
     const parts: string[] = [];
     if (evolucao) parts.push(`Evolução: ${evolucao.slice(0, 100)}`);
-    if (s.plan) parts.push(`Plano: ${s.plan.slice(0, 60)}`);
+    if (plan) parts.push(`Plano: ${plan.slice(0, 60)}`);
     return parts.length > 0 ? parts.join(" | ") : "Evolução sem conteúdo";
   };
 
@@ -460,12 +464,11 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           <Zap className="h-3.5 w-3.5 text-amber-600" />
                           <span className="text-xs font-semibold text-foreground">Descritivo da Intercorrência</span>
                         </div>
-                        <Textarea
+                        <RichTextEditor
                           value={data.soap.subjective || ""}
-                          onChange={e => updateLocal(evo.id, "soap", "subjective", e.target.value)}
+                          onChange={(html) => updateLocal(evo.id, "soap", "subjective", html)}
                           placeholder="Descreva a intercorrência..."
-                          className="min-h-[120px] text-sm resize-y"
-                          readOnly={!isEditable}
+                          minHeight={120}
                           disabled={!isEditable}
                         />
                         {isEditable && (

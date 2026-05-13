@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor, richHtmlToPlainText, sanitizeRichHtml, toRichHtml } from "@/components/ui/rich-text-editor";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ExaminusAIDialog } from "@/components/ExaminusAIDialog";
@@ -110,18 +111,20 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   // Sinais vitais e exame físico foram removidos do formulário (médico relata dentro
   // do corpo da Evolução). Exames complementares permanecem como campo opcional.
   const completion = useMemo(() => ({
-    evolucao: evolucaoText.trim().length >= 10,
-    complementares: soap.objective.trim().length > 0,
-    plan: soap.plan.trim().length >= 10,
+    evolucao: richHtmlToPlainText(evolucaoText).length >= 10,
+    complementares: richHtmlToPlainText(soap.objective).length > 0,
+    plan: richHtmlToPlainText(soap.plan).length >= 10,
   }), [soap.objective, soap.plan, evolucaoText]);
 
   const requiredComplete = completion.evolucao && completion.plan;
 
   const handleImportExams = (newExams: string[]) => {
-    const current = soap.objective?.trim() || "";
-    const block = newExams.filter(Boolean).join("\n");
-    const merged = current ? `${current}\n${block}` : block;
-    onSOAPChange('objective', merged);
+    const currentHtml = sanitizeRichHtml(toRichHtml(soap.objective || ""));
+    const blockHtml = newExams
+      .filter(Boolean)
+      .map(t => `<p>${t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`)
+      .join("");
+    onSOAPChange('objective', currentHtml + blockHtml);
   };
 
   // Autosave (debounced 2s) for editing existing drafts in Timeline
@@ -156,15 +159,19 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               ].filter(Boolean).join(" • ");
               const examRows = EXAM_FIELDS.filter(f => physicalExam[f.key])
                 .map(f => `<tr><th style="width:130px">${f.label}</th><td>${escape(physicalExam[f.key])}</td></tr>`).join("");
-              const evolucaoTxt = [soap.subjective, soap.assessment].map(t => (t || "").trim()).filter(Boolean).join("\n\n");
+              const evolucaoHtml = [soap.subjective, soap.assessment]
+                .map(t => sanitizeRichHtml(toRichHtml(t)))
+                .filter(Boolean).join("");
+              const objectiveHtml = sanitizeRichHtml(toRichHtml(soap.objective));
+              const planHtml = sanitizeRichHtml(toRichHtml(soap.plan));
               const bodyHtml = `
                 ${vitalsRow ? `<h2 class="nz-section">Sinais Vitais</h2><div style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:9pt">${vitalsRow}</div>` : ""}
                 <h2 class="nz-section">Evolução</h2>
-                <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(evolucaoTxt) || "<em>—</em>"}</div>
+                <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${evolucaoHtml || "<em>—</em>"}</div>
                 ${examRows ? `<h2 class="nz-section">Exame Físico</h2><table class="nz"><tbody>${examRows}</tbody></table>` : ""}
-                ${soap.objective?.trim() ? `<h2 class="nz-section">Exames Complementares</h2><div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(soap.objective)}</div>` : ""}
+                ${richHtmlToPlainText(soap.objective) ? `<h2 class="nz-section">Exames Complementares</h2><div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${objectiveHtml}</div>` : ""}
                 <h2 class="nz-section">Plano</h2>
-                <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(soap.plan) || "<em>—</em>"}</div>
+                <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${planHtml || "<em>—</em>"}</div>
               `;
               const html = buildNormaZeroDocument({
                 title: "Evolução Clínica", subtitle: "Registro de evolução",
@@ -250,7 +257,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
         >
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] text-muted-foreground">
-              {evolucaoText.trim().length}/10+ caracteres
+              {richHtmlToPlainText(evolucaoText).length}/10+ caracteres
             </span>
             <FieldTemplates
               scope="evolution.subjective"
@@ -259,11 +266,11 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               hospitalUnitId={hospitalId}
             />
           </div>
-          <Textarea
+          <RichTextEditor
             value={evolucaoText}
-            onChange={e => handleEvolucaoChange(e.target.value)}
+            onChange={(html) => handleEvolucaoChange(html)}
             placeholder="Relato clínico do plantão: sinais vitais relevantes, exame físico dirigido, queixas, evolução percebida, hipóteses diagnósticas, raciocínio clínico..."
-            className="min-h-[220px] text-xs"
+            minHeight={220}
           />
         </SectionItem>
 
@@ -298,11 +305,11 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               </Button>
             </div>
           </div>
-          <Textarea
+          <RichTextEditor
             value={soap.objective}
-            onChange={e => onSOAPChange('objective', e.target.value)}
+            onChange={(html) => onSOAPChange('objective', html)}
             placeholder="Cole resultados laboratoriais ou de imagem, ou use o Examinus AI para extrair automaticamente..."
-            className="min-h-[120px] text-xs"
+            minHeight={120}
           />
         </SectionItem>
 
@@ -317,7 +324,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
         >
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] text-muted-foreground">
-              {soap.plan.trim().length}/10+ caracteres
+              {richHtmlToPlainText(soap.plan).length}/10+ caracteres
             </span>
             <FieldTemplates
               scope="evolution.plan"
@@ -326,11 +333,11 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               hospitalUnitId={hospitalId}
             />
           </div>
-          <Textarea
+          <RichTextEditor
             value={soap.plan}
-            onChange={e => onSOAPChange('plan', e.target.value)}
+            onChange={(html) => onSOAPChange('plan', html)}
             placeholder="Condutas, solicitações, ajustes terapêuticos, metas para próximas 24h..."
-            className="min-h-[120px] text-xs"
+            minHeight={120}
           />
         </SectionItem>
 
@@ -408,7 +415,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
       <ExaminusAIDialog
         open={examinusOpen}
         onOpenChange={setExaminusOpen}
-        currentExams={soap.objective ? soap.objective.split("\n").filter(Boolean) : []}
+        currentExams={richHtmlToPlainText(soap.objective).split("\n").filter(Boolean)}
         onImportExams={handleImportExams}
       />
     </div>
@@ -476,15 +483,20 @@ const ReadOnlyView: React.FC<{ soap: SOAPData; vitals: VitalSigns; physicalExam:
           </p>
         </div>
       )}
-      {(soap.subjective || soap.assessment) && (
+      {(richHtmlToPlainText(soap.subjective) || richHtmlToPlainText(soap.assessment)) && (
         <div>
           <strong className="text-blue-500">Evolução:</strong>{" "}
-          <span className="text-foreground whitespace-pre-wrap">
-            {[soap.subjective, soap.assessment].map(t => (t || "").trim()).filter(Boolean).join("\n\n")}
-          </span>
+          <span
+            className="prose prose-sm max-w-none text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{
+              __html: [soap.subjective, soap.assessment]
+                .map(t => sanitizeRichHtml(toRichHtml(t)))
+                .filter(Boolean).join(""),
+            }}
+          />
         </div>
       )}
-      {(hasExam || soap.objective) && (
+      {(hasExam || richHtmlToPlainText(soap.objective)) && (
         <div>
           <strong className="text-emerald-500">Objetivo:</strong>
           {hasExam && (
@@ -494,11 +506,22 @@ const ReadOnlyView: React.FC<{ soap: SOAPData; vitals: VitalSigns; physicalExam:
               ))}
             </ul>
           )}
-          {soap.objective && <p className="mt-1 text-foreground whitespace-pre-wrap">{soap.objective}</p>}
+          {richHtmlToPlainText(soap.objective) && (
+            <div
+              className="prose prose-sm max-w-none mt-1 text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(toRichHtml(soap.objective)) }}
+            />
+          )}
         </div>
       )}
-      {soap.plan && (
-        <div><strong className="text-purple-500">Plano:</strong> <span className="text-foreground whitespace-pre-wrap">{soap.plan}</span></div>
+      {richHtmlToPlainText(soap.plan) && (
+        <div>
+          <strong className="text-purple-500">Plano:</strong>{" "}
+          <span
+            className="prose prose-sm max-w-none text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(toRichHtml(soap.plan)) }}
+          />
+        </div>
       )}
     </div>
   );

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -150,8 +151,8 @@ const EvolucaoPage = () => {
   };
 
   const handleCreateIntercurrence = async () => {
-    const text = intercurrenceText.trim();
-    if (!text) return;
+    const text = intercurrenceText;
+    if (!richHtmlToPlainText(text)) return;
     setSavingIntercurrence(true);
     const result = await createEvolution(
       patient.name, patient.bed, patient.unit,
@@ -306,11 +307,11 @@ const EvolucaoPage = () => {
                 Cancelar
               </Button>
             </div>
-            <Textarea
+            <RichTextEditor
               value={intercurrenceText}
-              onChange={e => setIntercurrenceText(e.target.value)}
+              onChange={setIntercurrenceText}
               placeholder="Descreva a intercorrência (ex.: queda da própria altura às 14h, sem perda de consciência; novo episódio de hipotensão, PA 80x40 às 03h; dessaturação após mobilização...)"
-              className="min-h-[140px] text-sm resize-y"
+              minHeight={140}
               autoFocus
             />
             <div className="flex items-center justify-between">
@@ -321,7 +322,7 @@ const EvolucaoPage = () => {
                 size="sm"
                 className="gap-1.5 text-xs"
                 onClick={handleCreateIntercurrence}
-                disabled={savingIntercurrence || !intercurrenceText.trim()}
+                disabled={savingIntercurrence || !richHtmlToPlainText(intercurrenceText)}
               >
                 {savingIntercurrence ? (
                   <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando...</>
