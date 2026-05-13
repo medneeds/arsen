@@ -1084,8 +1084,11 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
                                       {p.routes.includes("oral") && <SelectItem value="oral">Oral (VO)</SelectItem>}
                                       {p.routes.includes("enteral") && (
                                         <SelectItem value="enteral">
-                                          Enteral ({ENTERAL_VIAS.find(v => v.key === entVia)?.label || "sonda"})
+                                          Enteral ({ENTERAL_VIAS.find(v => v.key === entVia)?.label || "SNG/SNE/GTT/JTT"})
                                         </SelectItem>
+                                      )}
+                                      {p.routes.includes("parenteral") && (
+                                        <SelectItem value="parenteral">Parenteral (NPT / IV)</SelectItem>
                                       )}
                                     </SelectContent>
                                   </Select>
