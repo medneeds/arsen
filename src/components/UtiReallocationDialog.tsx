@@ -21,8 +21,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
-import { ArrowRightLeft, BedDouble, Check } from "lucide-react";
+import { ArrowRightLeft, BedDouble, Check, User, MapPin, ClipboardList, Eye, History, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
 
 interface UtiReallocationDialogProps {
   patient: Patient | null;
@@ -44,6 +45,7 @@ export function UtiReallocationDialog({
   const [targetUnit, setTargetUnit] = useState<string>("");
   const [targetBedId, setTargetBedId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const { toast } = useToast();
   const { currentState, currentHospital } = useHospital();
   const { currentDepartment } = useDepartment();
@@ -94,26 +96,21 @@ export function UtiReallocationDialog({
     return allPatients.find(p => p.id === targetBedId);
   }, [allPatients, targetBedId]);
 
+  const handleOpenConfirm = () => {
+    if (!patient || !targetBedPatient) return;
+    if (!targetUnit) {
+      toast({ title: "Campo obrigatório", description: "Selecione a unidade de destino.", variant: "destructive" });
+      return;
+    }
+    if (!targetBedId) {
+      toast({ title: "Campo obrigatório", description: "Selecione o leito de destino.", variant: "destructive" });
+      return;
+    }
+    setConfirmOpen(true);
+  };
+
   const handleSubmit = async () => {
     if (!patient || !targetBedPatient) return;
-
-    if (!targetUnit) {
-      toast({
-        title: "Campo obrigatório",
-        description: "Por favor, selecione a unidade de destino.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!targetBedId) {
-      toast({
-        title: "Campo obrigatório",
-        description: "Por favor, selecione o leito de destino.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     setIsSubmitting(true);
 
