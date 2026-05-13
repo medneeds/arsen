@@ -340,6 +340,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   };
 
   const handleSubmit = async () => {
+    setAttempted(true);
     const err = validate();
     if (err) { toast.error(err); return; }
     if (!currentHospital || !currentState || !user) { toast.error("Contexto não disponível"); return; }
