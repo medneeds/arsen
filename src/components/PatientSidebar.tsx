@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Patient } from "@/types/patient";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ import { formatAgeDisplay } from "@/utils/ageDisplay";
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
 
 interface PatientSidebarProps {
   patient: Patient | null;
