@@ -93,9 +93,6 @@ export const MedicalResponsibilityDialog = ({
 
   const handleClear = () => {
     setType(null);
-    setOfficeNumber("");
-    setLeaderNames("");
-    setPortaNames("");
     clearDoctor();
   };
 
