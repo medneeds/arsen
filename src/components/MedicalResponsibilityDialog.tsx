@@ -26,15 +26,6 @@ export const MedicalResponsibilityDialog = ({
   const [type, setType] = useState<MedicalResponsibilityType>(
     currentResponsibility?.type || null
   );
-  const [officeNumber, setOfficeNumber] = useState(
-    currentResponsibility?.officeNumber || ""
-  );
-  const [leaderNames, setLeaderNames] = useState(
-    currentResponsibility?.leaderNames || ""
-  );
-  const [portaNames, setPortaNames] = useState(
-    currentResponsibility?.portaNames || ""
-  );
 
   const [responsibleDoctorId, setResponsibleDoctorId] = useState<string | undefined>(
     currentResponsibility?.responsibleDoctorId
