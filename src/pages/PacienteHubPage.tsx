@@ -4,6 +4,7 @@ import { Pill, Stethoscope, ClipboardList, FolderOpen, History, ArrowLeft, Clipb
 import { Button } from "@/components/ui/button";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import { AdmissionDialog } from "@/components/AdmissionDialog";
+import { AdmissionConsultDialog } from "@/components/AdmissionConsultDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
