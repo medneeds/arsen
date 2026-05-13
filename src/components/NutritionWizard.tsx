@@ -77,9 +77,102 @@ const ORAL_PROFILES = [
 const ENTERAL_VIAS = [
   { key: "sng", label: "SNG", desc: "Sonda nasogástrica" },
   { key: "sne", label: "SNE", desc: "Sonda nasoentérica" },
+  { key: "sog", label: "SOG", desc: "Sonda orogástrica" },
   { key: "gtt", label: "GTT", desc: "Gastrostomia" },
   { key: "jtt", label: "JTT", desc: "Jejunostomia" },
 ] as const;
+
+// Helper de rótulo de via para defaultRoute das entries enterais
+function enteralRouteLabel(via: string): string {
+  if (via === "gtt") return "Gastrostomia";
+  if (via === "jtt") return "Jejunostomia";
+  if (via === "sog") return "Sonda orogástrica";
+  return "Enteral (SNE/SNG)";
+}
+
+// ──────────────────────────────────────────────
+// APORTE PROTEICO E CALÓRICO-PROTEICO
+// Catálogo genérico (sem marcas) baseado em ESPEN/ASPEN/BRASPEN.
+// SNO = Suplemento Nutricional Oral (líquidos prontos / pudim).
+// Módulos = aditivos em pó/sachê para enriquecer dieta oral OU diluir e
+// administrar pela sonda enteral.
+// ──────────────────────────────────────────────
+type ProteinRouteKind = "oral" | "enteral";
+interface ProteinSupplementDef {
+  key: string;
+  label: string;
+  group: "sno" | "modular";
+  routes: ProteinRouteKind[];   // vias permitidas
+  defaultDose: string;          // dose textual padrão
+  defaultPosology: string;      // frequência padrão
+  note: string;                 // contexto clínico
+}
+
+const PROTEIN_SUPPLEMENTS: ProteinSupplementDef[] = [
+  // ── SNO (Suplemento Nutricional Oral) ──
+  { key: "sno_hchp",      label: "Suplemento hipercalórico-hiperproteico (HC-HP) — oral",
+    group: "sno", routes: ["oral"],
+    defaultDose: "200 mL", defaultPosology: "2x/dia entre refeições",
+    note: "~300 kcal e ~18-20 g proteína por unidade. Ofertar gelado, entre refeições, evitando saciedade na principal." },
+  { key: "sno_hp",        label: "Suplemento hiperproteico concentrado — oral",
+    group: "sno", routes: ["oral"],
+    defaultDose: "200 mL", defaultPosology: "2x/dia",
+    note: "Indicado quando déficit proteico é o principal alvo (sarcopenia, cicatrização, oncológico)." },
+  { key: "sno_dm",        label: "Suplemento oral específico para diabetes",
+    group: "sno", routes: ["oral"],
+    defaultDose: "200 mL", defaultPosology: "1-2x/dia",
+    note: "Baixo índice glicêmico, fibras solúveis. Monitorar glicemia capilar." },
+  { key: "sno_renal_nd",  label: "Suplemento oral para nefropata não-dialítico",
+    group: "sno", routes: ["oral"],
+    defaultDose: "200 mL", defaultPosology: "1x/dia",
+    note: "Densidade calórica alta, restrição de K/P/Na, proteína moderada." },
+  { key: "sno_renal_d",   label: "Suplemento oral para nefropata em diálise",
+    group: "sno", routes: ["oral"],
+    defaultDose: "200 mL", defaultPosology: "2x/dia (preferir nos dias de diálise)",
+    note: "Hiperproteico, hipercalórico, com perfil de eletrólitos para HD/DP." },
+  { key: "sno_imuno",     label: "Suplemento oral imunomodulador (oncológico/cirúrgico)",
+    group: "sno", routes: ["oral"],
+    defaultDose: "200 mL", defaultPosology: "2-3x/dia por 5-7 dias pré e pós-op",
+    note: "Arginina + EPA/DHA + nucleotídeos. Evitar em sepse grave." },
+  { key: "sno_disfagia",  label: "Espessante alimentar (disfagia)",
+    group: "sno", routes: ["oral"],
+    defaultDose: "Conforme consistência (néctar/mel/pudim)", defaultPosology: "Em todos os líquidos",
+    note: "Padronizar consistência conforme avaliação fonoaudiológica (IDDSI)." },
+
+  // ── Módulos (oral ou via sonda) ──
+  { key: "mod_whey",      label: "Módulo de proteína do soro do leite (Whey)",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "20 g", defaultPosology: "2x/dia",
+    note: "Alta digestibilidade, rico em leucina. Diluir em 50-100 mL de água/dieta. Evitar em APLV." },
+  { key: "mod_caseinato", label: "Módulo de caseinato de cálcio",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "15 g", defaultPosology: "2x/dia",
+    note: "Liberação prolongada de aminoácidos. Boa estabilidade térmica." },
+  { key: "mod_proteina_isolada", label: "Módulo de proteína isolada (alta pureza)",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "20 g", defaultPosology: "2-3x/dia",
+    note: "≥ 90% de proteína por porção. Útil quando meta proteica > 1,5 g/kg/dia." },
+  { key: "mod_glutamina", label: "Módulo de glutamina (L-Glutamina)",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "10 g", defaultPosology: "3x/dia (30 g/dia)",
+    note: "Trofismo intestinal, estresse metabólico, queimados. Cautela em hepatopatas graves." },
+  { key: "mod_leucina_hmb", label: "Módulo de leucina enriquecido com HMB",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "1 sachê", defaultPosology: "2x/dia",
+    note: "Anabólico em sarcopenia/idoso frágil/UTI. Contém ~3 g HMB e leucina." },
+  { key: "mod_arginina",  label: "Módulo de arginina",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "5 g", defaultPosology: "2x/dia",
+    note: "Cicatrização e imunomodulação. Evitar em sepse grave e instabilidade hemodinâmica." },
+  { key: "mod_fibras",    label: "Módulo de fibras (FOS/prebiótico)",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "5 g", defaultPosology: "2x/dia",
+    note: "Regulação do trânsito e microbiota. Diluir bem; risco de obstrução de sonda fina." },
+  { key: "mod_tcm",       label: "Módulo de TCM (triglicerídeo de cadeia média)",
+    group: "modular", routes: ["oral", "enteral"],
+    defaultDose: "10 mL", defaultPosology: "3x/dia",
+    note: "Aumento de aporte calórico em má absorção/quilotórax. Não usar isolado em deficiência de carnitina." },
+];
 
 const ENTERAL_FORMULAS = [
   { key: "polim_padrao",  label: "Polimérica padrão",       desc: "1.0 kcal/mL — paciente estável" },
