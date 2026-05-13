@@ -739,6 +739,23 @@ export default function Saps3Page() {
         if (updatePreAdmissionError) throw updatePreAdmissionError;
       }
 
+      // Caso paciente já admitido com SAPS pendente: libera o gate clínico
+      if (!asPending) {
+        const targetPatientId =
+          admittedPatientId ||
+          (selectedRequest as any)?.patient_id ||
+          searchParams.get("patientId");
+        if (targetPatientId) {
+          await supabase
+            .from("patients")
+            .update({
+              saps_pending: false,
+              saps_completed_at: new Date().toISOString(),
+            } as any)
+            .eq("id", targetPatientId);
+        }
+      }
+
       if (asPending) {
         toast.success(`Paciente pré-admitido no leito ${selectedBed}. SAPS 3 ficou como pendente — aguardando resultados laboratoriais.`);
       }

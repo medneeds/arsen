@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Pill, Stethoscope, ClipboardList, FolderOpen, History, ArrowLeft, ClipboardCheck, Lock, CheckCircle2 } from "lucide-react";
+import { Pill, Stethoscope, ClipboardList, FolderOpen, History, ArrowLeft, ClipboardCheck, Lock, CheckCircle2, AlertTriangle, Printer, ShieldCheck, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import { AdmissionDialog } from "@/components/AdmissionDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { printAdmissionNormaZero } from "@/lib/printAdmission";
+import { useHospital } from "@/contexts/HospitalContext";
 
 type AdmissionStatus = "pre_admitido" | "admitido" | "suspenso" | null;
+
+const SAPS_DEADLINE_MS = 24 * 60 * 60 * 1000;
 
 const CLINICAL_ACTIONS = [
   { key: "prescricao", label: "Prescrição", icon: Pill, path: "/prescricao" },
@@ -18,9 +22,18 @@ const CLINICAL_ACTIONS = [
   { key: "historico", label: "Histórico", icon: History, path: "/historico-paciente" },
 ];
 
+const formatElapsed = (ms: number) => {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+};
+
 export default function PacienteHubPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const { currentHospital } = useHospital();
 
   const ctx = useMemo(() => ({
     patientId: params.get("patientId") || "",
@@ -34,24 +47,42 @@ export default function PacienteHubPage() {
   const [statusLoading, setStatusLoading] = useState(true);
   const [admissionOpen, setAdmissionOpen] = useState(false);
   const [department, setDepartment] = useState<string | null>(null);
+  const [sapsPending, setSapsPending] = useState(false);
+  const [sapsSince, setSapsSince] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
 
   const fetchStatus = async () => {
     if (!ctx.patientId) { setStatusLoading(false); return; }
     setStatusLoading(true);
     const { data } = await supabase
       .from("patients")
-      .select("admission_status, department")
+      .select("admission_status, department, saps_pending, saps_pending_since, saps_completed_at")
       .eq("id", ctx.patientId)
       .maybeSingle();
-    setAdmissionStatus(((data as any)?.admission_status as AdmissionStatus) ?? "admitido");
-    setDepartment((data as any)?.department ?? null);
+    const row: any = data || {};
+    setAdmissionStatus((row.admission_status as AdmissionStatus) ?? "admitido");
+    setDepartment(row.department ?? null);
+    setSapsPending(!!row.saps_pending && !row.saps_completed_at);
+    setSapsSince(row.saps_pending_since ?? null);
     setStatusLoading(false);
   };
 
   useEffect(() => { fetchStatus(); }, [ctx.patientId]);
 
+  // Cronômetro vivo
+  useEffect(() => {
+    if (!sapsPending) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [sapsPending]);
+
   const isPreAdmitted = admissionStatus === "pre_admitido";
   const isAdmitted = admissionStatus === "admitido";
+
+  // Cálculo SAPS
+  const sapsElapsedMs = sapsSince ? now - new Date(sapsSince).getTime() : 0;
+  const sapsExpired = sapsPending && sapsElapsedMs > SAPS_DEADLINE_MS;
+  const sapsRemainingMs = SAPS_DEADLINE_MS - sapsElapsedMs;
 
   const goTo = (path: string) => {
     const qs = new URLSearchParams();
@@ -59,9 +90,60 @@ export default function PacienteHubPage() {
     navigate(`${path}?${qs.toString()}`);
   };
 
-  const handleLockedClick = () => {
-    toast.warning("Conclua a admissão hospitalar para liberar este módulo", {
-      description: "Clique em ADMISSÃO para iniciar o registro D0.",
+  const handleLockedClick = (reason: "preadmission" | "saps_expired") => {
+    if (reason === "preadmission") {
+      toast.warning("Conclua a admissão hospitalar para liberar este módulo", {
+        description: "Clique em ADMISSÃO para iniciar o registro D0.",
+      });
+    } else {
+      toast.error("Ficha SAPS 3 vencida — módulos clínicos bloqueados", {
+        description: "Finalize a SAPS 3 para reabrir prescrição, evolução, requisições, docs e histórico.",
+      });
+    }
+  };
+
+  const handleGoSaps = () => {
+    const qs = new URLSearchParams();
+    Object.entries(ctx).forEach(([k, v]) => v && qs.set(k, v));
+    navigate(`/saps3?${qs.toString()}`);
+  };
+
+  const handlePrintAdmission = async () => {
+    if (!ctx.patientId) return;
+    const { data: ev } = await supabase
+      .from("clinical_evolutions")
+      .select("soap_data, vital_signs, physical_exam, validated_by_name, created_at")
+      .eq("patient_id", ctx.patientId)
+      .eq("evolution_type", "admission")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const { data: ah } = await supabase
+      .from("admission_histories")
+      .select("cid_primary, cid_secondary, clinical_history, initial_conduct")
+      .eq("patient_id", ctx.patientId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const soap: any = (ev as any)?.soap_data || {};
+    const vs: any = (ev as any)?.vital_signs || {};
+    const pe: any = (ev as any)?.physical_exam || {};
+    const a: any = ah || {};
+
+    await printAdmissionNormaZero({
+      patient: { name: ctx.patientName, bed: ctx.patientBed, sector: ctx.patientSector, age: ctx.patientAge },
+      hospitalName: currentHospital?.name,
+      doctorName: (ev as any)?.validated_by_name || "Médico Assistente",
+      isUti: ["red", "yellow", "blue", "outside", "uti_01", "uti_02", "uci_01", "uci_02"].includes(ctx.patientSector),
+      hda: a.clinical_history || soap.subjective || "",
+      vitals: { pa: vs.pa, fc: vs.fc, fr: vs.fr, spo2: vs.spo2, tax: vs.temp, dx: vs.dx },
+      exam: { general: pe.general, cv: pe.cardiovascular, resp: pe.respiratory, abd: pe.abdomen, ext: pe.extremities },
+      plan: a.initial_conduct || soap.plan || "",
+      cidPrimary: a.cid_primary || "",
+      cidSecondary: a.cid_secondary,
+      dischargePredictionLabel: "—",
+      sapsPending,
     });
   };
 
@@ -86,7 +168,9 @@ export default function PacienteHubPage() {
   })();
 
   const AdmissionIcon = isAdmitted ? CheckCircle2 : ClipboardCheck;
-  const locked = isPreAdmitted;
+  const lockReason: "preadmission" | "saps_expired" | null =
+    isPreAdmitted ? "preadmission" : sapsExpired ? "saps_expired" : null;
+  const locked = lockReason !== null;
 
   return (
     <div className="flex flex-col h-full bg-slate-50">
@@ -94,10 +178,18 @@ export default function PacienteHubPage() {
         <BreadcrumbBar
           variant="institutional"
           actions={
-            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5 bg-white/95"
-              onClick={() => navigate("/painel-clinico")}>
-              <ArrowLeft className="h-3.5 w-3.5" /> Painel Clínico
-            </Button>
+            <div className="flex items-center gap-1.5">
+              {isAdmitted && (
+                <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5 bg-white/95"
+                  onClick={handlePrintAdmission}>
+                  <Printer className="h-3.5 w-3.5" /> Imprimir Admissão
+                </Button>
+              )}
+              <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5 bg-white/95"
+                onClick={() => navigate("/painel-clinico")}>
+                <ArrowLeft className="h-3.5 w-3.5" /> Painel Clínico
+              </Button>
+            </div>
           }
         />
       </div>
@@ -142,6 +234,50 @@ export default function PacienteHubPage() {
                 <span className="font-bold uppercase text-xs">Paciente Pré-Admitido.</span>{" "}
                 Conclua a <span className="font-semibold underline decoration-amber-300 decoration-2 underline-offset-2">admissão hospitalar</span> para liberar prescrição, evolução, requisições, docs e histórico.
               </p>
+            </div>
+          )}
+
+          {/* Banner SAPS pendente */}
+          {isAdmitted && sapsPending && !statusLoading && (
+            <div className={cn(
+              "rounded-lg border p-4 flex flex-col sm:flex-row sm:items-center gap-3 shadow-sm",
+              sapsExpired
+                ? "bg-red-50/80 border-red-300"
+                : "bg-amber-50/80 border-amber-300"
+            )}>
+              <div className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-md shrink-0",
+                sapsExpired ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+              )}>
+                {sapsExpired ? <AlertTriangle className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={cn(
+                  "text-sm font-bold uppercase tracking-wide",
+                  sapsExpired ? "text-red-800" : "text-amber-900"
+                )}>
+                  Ficha SAPS 3 — {sapsExpired ? "PRAZO EXPIRADO" : "Pendente"}
+                </p>
+                <p className={cn(
+                  "text-xs flex items-center gap-1.5 mt-0.5",
+                  sapsExpired ? "text-red-700" : "text-amber-800"
+                )}>
+                  <Timer className="h-3.5 w-3.5" />
+                  {sapsExpired ? (
+                    <>Pendente há <strong className="font-mono">{formatElapsed(sapsElapsedMs)}</strong> — módulos clínicos bloqueados até a finalização.</>
+                  ) : (
+                    <>Pendente há <strong className="font-mono">{formatElapsed(sapsElapsedMs)}</strong> • restam <strong className="font-mono">{formatElapsed(Math.max(0, sapsRemainingMs))}</strong> do prazo de 24 h.</>
+                  )}
+                </p>
+              </div>
+              <Button size="sm" onClick={handleGoSaps}
+                className={cn(
+                  "gap-1.5 uppercase tracking-wide text-xs",
+                  sapsExpired ? "bg-red-600 hover:bg-red-700" : "bg-amber-600 hover:bg-amber-700",
+                  "text-white"
+                )}>
+                <ShieldCheck className="h-3.5 w-3.5" /> Finalizar SAPS 3
+              </Button>
             </div>
           )}
 
@@ -201,24 +337,31 @@ export default function PacienteHubPage() {
             {CLINICAL_ACTIONS.map(({ key, label, icon: Icon, path }) => (
               <button
                 key={key}
-                onClick={() => locked ? handleLockedClick() : goTo(path)}
+                onClick={() => locked ? handleLockedClick(lockReason!) : goTo(path)}
                 aria-disabled={locked}
                 className="relative group text-left"
               >
                 <div className={cn(
                   "relative flex flex-col items-center justify-center aspect-square rounded-lg overflow-hidden transition-all",
-                  "bg-slate-50 border border-slate-200",
+                  "bg-slate-50 border",
                   locked
-                    ? "opacity-40 grayscale cursor-not-allowed"
-                    : "bg-white hover:scale-[1.02] hover:shadow-md cursor-pointer",
+                    ? lockReason === "saps_expired"
+                      ? "opacity-60 border-red-200 cursor-not-allowed"
+                      : "opacity-40 grayscale border-slate-200 cursor-not-allowed"
+                    : "bg-white border-slate-200 hover:scale-[1.02] hover:shadow-md cursor-pointer",
                 )}>
                   <span className={cn(
                     "absolute top-0 left-0 right-0 h-1",
-                    locked ? "bg-slate-300" : "bg-blue-400",
+                    locked
+                      ? lockReason === "saps_expired" ? "bg-red-400" : "bg-slate-300"
+                      : "bg-blue-400",
                   )} />
                   {locked && (
                     <span className="absolute top-2 right-2">
-                      <Lock className="w-3.5 h-3.5 text-slate-400" strokeWidth={2} />
+                      <Lock className={cn(
+                        "w-3.5 h-3.5",
+                        lockReason === "saps_expired" ? "text-red-500" : "text-slate-400"
+                      )} strokeWidth={2} />
                     </span>
                   )}
                   <div className={cn(
@@ -228,7 +371,9 @@ export default function PacienteHubPage() {
                     <Icon
                       className={cn(
                         "w-7 h-7",
-                        locked ? "text-slate-400" : "text-slate-600 group-hover:text-blue-600 transition-colors",
+                        locked
+                          ? lockReason === "saps_expired" ? "text-red-400" : "text-slate-400"
+                          : "text-slate-600 group-hover:text-blue-600 transition-colors",
                       )}
                       strokeWidth={1.5}
                     />
@@ -239,6 +384,11 @@ export default function PacienteHubPage() {
                   )}>
                     {label}
                   </span>
+                  {lockReason === "saps_expired" && (
+                    <span className="text-[9px] font-semibold text-red-600 tracking-widest uppercase mt-1">
+                      SAPS Vencida
+                    </span>
+                  )}
                 </div>
               </button>
             ))}
@@ -248,6 +398,8 @@ export default function PacienteHubPage() {
           <p className="text-center text-[10px] uppercase tracking-[0.3em] font-semibold text-slate-400">
             {isPreAdmitted
               ? "Inicie pela admissão para liberar os demais módulos"
+              : sapsExpired
+              ? "Finalize a ficha SAPS 3 para reabrir os módulos clínicos"
               : "Selecione uma ação para acessar o módulo"}
           </p>
         </div>

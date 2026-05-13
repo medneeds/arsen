@@ -18,8 +18,10 @@ import { CidSearchInput } from "@/components/CidSearchInput";
 import {
   Stethoscope, Loader2, AlertTriangle, ClipboardCheck,
   HeartPulse, Activity, FileText, Pill, CalendarDays, Hash,
+  Printer, ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { printAdmissionNormaZero } from "@/lib/printAdmission";
 
 const UTI_SECTORS = ["red", "yellow", "blue", "outside", "uti_01", "uti_02", "uci_01", "uci_02"];
 
@@ -128,6 +130,9 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   const { user } = useAuth();
   const isUti = useMemo(() => UTI_SECTORS.includes(patient.sector), [patient.sector]);
 
+  // SAPS 3 acknowledgement (apenas UTI/UCI)
+  const [sapsAck, setSapsAck] = useState(false);
+
   // Common fields
   const [hda, setHda] = useState("");
   const [amp, setAmp] = useState("");
@@ -192,7 +197,26 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     if (!plan.trim()) return "Plano terapêutico é obrigatório";
     if (!cidPrimary.trim()) return "CID primário é obrigatório";
     if (!noPrediction && !predictionDate) return "Previsão de alta é obrigatória";
+    if (isUti && !sapsAck) return "Declare ciência de que a ficha SAPS 3 está pendente (24h)";
     return null;
+  };
+
+  const buildPrintPayload = () => ({
+    patient: { name: patient.name, bed: patient.bed, sector: patient.sector, age: patient.age },
+    hospitalName: currentHospital?.name,
+    doctorName: user?.user_metadata?.full_name || user?.email || "Médico Assistente",
+    isUti,
+    hda, amp, muc, allergies, weight, height, imc,
+    vitals: { pa, fc, fr, spo2, tax, dx },
+    exam: { general: physGeneral, cv: physCv, resp: physResp, abd: physAbd, ext: physExt },
+    plan, cidPrimary, cidSecondary,
+    dischargePredictionLabel,
+    uti: isUti ? { admissionReason, originSector, devices, culturesAtb, specialties } : undefined,
+    sapsPending: isUti && sapsAck,
+  });
+
+  const handlePrint = () => {
+    void printAdmissionNormaZero(buildPrintPayload());
   };
 
   const handleSubmit = async () => {
@@ -264,28 +288,40 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         } as any);
       if (evError) throw evError;
 
+      // Busca o início da pré-admissão para cravar o cronômetro do SAPS
+      let sapsStart: string = now;
       if (isUti) {
-        await supabase
+        const { data: pRow } = await supabase
           .from("patients")
-          .update({
-            uti_admission_reason: admissionReason || null,
-            uti_origin_sector: originSector || null,
-            uti_devices: devices || null,
-            uti_cultures_antibiotics: culturesAtb || null,
-            uti_specialties: specialties || null,
-            uti_allergies: allergies || null,
-            uti_discharge_prediction: dischargePredictionLabel,
-          } as any)
-          .eq("id", patient.id);
-      } else {
-        await supabase
-          .from("patients")
-          .update({
-            hospital_discharge_prediction: null,
-            uti_discharge_prediction: dischargePredictionLabel,
-          } as any)
-          .eq("id", patient.id);
+          .select("created_at")
+          .eq("id", patient.id)
+          .maybeSingle();
+        sapsStart = (pRow as any)?.created_at || now;
       }
+
+      const baseUpdate: Record<string, any> = {
+        admission_status: "admitido",
+        admitted_at: now,
+        uti_discharge_prediction: dischargePredictionLabel,
+      };
+      if (isUti) {
+        Object.assign(baseUpdate, {
+          uti_admission_reason: admissionReason || null,
+          uti_origin_sector: originSector || null,
+          uti_devices: devices || null,
+          uti_cultures_antibiotics: culturesAtb || null,
+          uti_specialties: specialties || null,
+          uti_allergies: allergies || null,
+          saps_pending: true,
+          saps_pending_since: sapsStart,
+          saps_acknowledged_by: user.id,
+          saps_acknowledged_at: now,
+          saps_completed_at: null,
+        });
+      } else {
+        baseUpdate.hospital_discharge_prediction = null;
+      }
+      await supabase.from("patients").update(baseUpdate as any).eq("id", patient.id);
 
       toast.success("ADMISSÃO HOSPITALAR REGISTRADA — paciente ADMITIDO (D0)");
       onOpenChange(false);
@@ -471,19 +507,38 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                   <div><Label className="text-xs">Dispositivos invasivos</Label><Textarea value={devices} onChange={e => setDevices(e.target.value)} rows={2} placeholder="IOT, CVC, SVD, ..." className="mt-1" /></div>
                   <div><Label className="text-xs">Culturas pendentes / ATB em curso</Label><Textarea value={culturesAtb} onChange={e => setCulturesAtb(e.target.value)} rows={2} className="mt-1" /></div>
                   <div><Label className="text-xs">Especialidades em conjunto</Label><Input value={specialties} onChange={e => setSpecialties(e.target.value)} className="mt-1" /></div>
-                  <p className="text-xs text-amber-700 flex items-center gap-1"><AlertTriangle className="h-3 w-3" />Confirme o SAPS 3 finalizado antes de assinar a admissão UTI.</p>
+                </Section>
+
+                <Section icon={ShieldCheck} title="Ficha SAPS 3 — Ciência" tone="amber">
+                  <p className="text-[11px] text-slate-700 leading-relaxed">
+                    A admissão UTI/UCI exige a <strong>Ficha SAPS 3</strong>. O preenchimento pode ser concluído em até{" "}
+                    <strong className="text-amber-700">24 horas</strong> a partir da pré-admissão (janela operacional / AMIB).
+                    Após esse prazo, prescrição, evolução, requisições, docs e histórico serão <strong>bloqueados</strong> até a finalização.
+                  </p>
+                  <label className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50/70 p-3 cursor-pointer select-none">
+                    <Checkbox checked={sapsAck} onCheckedChange={v => setSapsAck(v === true)} className="mt-0.5" />
+                    <span className="text-xs text-slate-800">
+                      <strong className="uppercase tracking-wide text-amber-800">Declaro ciência</strong> de que a ficha SAPS 3 está pendente
+                      e me comprometo a finalizá-la <strong>dentro de 24 h</strong> a partir da pré-admissão.
+                    </span>
+                  </label>
                 </Section>
               </TabsContent>
             )}
           </Tabs>
         </div>
 
-        <DialogFooter className="px-6 py-4 border-t bg-slate-50/60 gap-2">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={submitting} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white uppercase">
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
-            Assinar e Admitir (D0)
+        <DialogFooter className="px-6 py-4 border-t bg-slate-50/60 gap-2 sm:justify-between">
+          <Button variant="outline" onClick={handlePrint} disabled={submitting} className="gap-2">
+            <Printer className="h-4 w-4" /> Imprimir Admissão (Norma Zero)
           </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>Cancelar</Button>
+            <Button onClick={handleSubmit} disabled={submitting || (isUti && !sapsAck)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white uppercase">
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
+              Assinar e Admitir (D0)
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
