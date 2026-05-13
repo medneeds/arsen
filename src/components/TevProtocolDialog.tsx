@@ -12,11 +12,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
-  Shield, AlertTriangle, Printer, Heart, Activity, Droplets, Check,
-  Info, ChevronRight, RotateCw, FileText,
+  Shield, AlertTriangle, Heart, Activity, Droplets, Check,
+  Info, ChevronRight, RotateCw, FileText, CheckCircle2, Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import type { MedicationEntry } from "@/data/medicationsDatabase";
 
 // ──────────────────────────────────────────────
 // PÁDUA SCORE (clinical patients)
@@ -185,9 +186,10 @@ interface TevProtocolDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   patient: { name: string; age?: string; bed?: string; sector?: string; weight?: string } | null;
+  onAddToPrescription?: (med: MedicationEntry) => void;
 }
 
-export function TevProtocolDialog({ open, onOpenChange, patient }: TevProtocolDialogProps) {
+export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescription }: TevProtocolDialogProps) {
   const [scoreType, setScoreType] = useState<"padua" | "caprini">("padua");
   const [selectedFactors, setSelectedFactors] = useState<Set<string>>(new Set());
   const [bleedingFactors, setBleedingFactors] = useState<Set<string>>(new Set());
@@ -234,104 +236,57 @@ export function TevProtocolDialog({ open, onOpenChange, patient }: TevProtocolDi
     setStep("score");
   };
 
-  const handlePrint = () => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
+  // Builds a MedicationEntry-like payload for the chosen anticoagulation regimen
+  const buildAnticoagulationEntry = (regimen: "prophylactic" | "full"): MedicationEntry => {
+    const weightKg = Number((patient?.weight || "").toString().replace(",", ".")) || 0;
+    if (regimen === "prophylactic") {
+      return {
+        id: `tev-prof-${Date.now()}`,
+        name: "Enoxaparina",
+        presentation: "Seringa 40 mg/0,4 mL",
+        defaultDose: "40 mg",
+        defaultRoute: "Subcutânea",
+        defaultPosology: "1x ao dia",
+        defaultSchedule: "22h",
+        instructions: `Profilaxia de TEV — Protocolo ${scoreType === "padua" ? "Pádua" : "Caprini"} ${currentScore} pts (${riskLevel.label}). Reavaliar diariamente função renal e risco de sangramento.`,
+        category: "high_alert",
+        highAlert: true,
+      };
+    }
+    // Full / therapeutic dose: 1 mg/kg SC 12/12h
+    const doseMg = weightKg > 0 ? Math.round(weightKg * 1) : 0;
+    return {
+      id: `tev-full-${Date.now()}`,
+      name: "Enoxaparina",
+      presentation: "Seringa multidose",
+      defaultDose: doseMg > 0 ? `${doseMg} mg` : "1 mg/kg",
+      defaultRoute: "Subcutânea",
+      defaultPosology: "12/12h",
+      defaultSchedule: "10h - 22h",
+      instructions: `Anticoagulação plena — Protocolo TEV ${scoreType === "padua" ? "Pádua" : "Caprini"} ${currentScore} pts. ${weightKg > 0 ? `Peso ${weightKg} kg → 1 mg/kg.` : "Ajustar conforme peso (1 mg/kg)."} Monitorar sangramento e função renal (ajuste se ClCr < 30).`,
+      category: "high_alert",
+      highAlert: true,
+    };
+  };
 
-    const selectedRiskFactors = scoreType === "padua"
-      ? PADUA_FACTORS.filter(f => selectedFactors.has(f.id))
-      : CAPRINI_SECTIONS.flatMap(s => s.items.filter(i => selectedFactors.has(i.id)).map(i => ({ ...i, points: s.points })));
-
-    const selectedBleedingFactors = BLEEDING_FACTORS.filter(f => bleedingFactors.has(f.id));
-
-    printWindow.document.write(`<!DOCTYPE html><html><head><title>Protocolo TEV</title>
-      <style>
-        @page { size: A4 portrait; margin: 12mm; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { font-size: 9pt; color: #1a1a1a; padding: 8mm; }
-        .header { text-align: center; border-bottom: 2px solid #1e40af; padding-bottom: 6px; margin-bottom: 10px; }
-        .header h1 { font-size: 14pt; color: #1e40af; }
-        .header p { font-size: 8pt; color: #666; }
-        .patient-info { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: #f1f5f9; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 8.5pt; }
-        .patient-info span { font-weight: bold; }
-        .section { margin-bottom: 10px; }
-        .section h2 { font-size: 10pt; color: #1e40af; border-bottom: 1px solid #ddd; padding-bottom: 3px; margin-bottom: 6px; }
-        .score-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 11pt; color: white; }
-        .score-high { background: #dc2626; }
-        .score-moderate { background: #f59e0b; }
-        .score-low { background: #22c55e; }
-        .factors-list { list-style: none; padding: 0; }
-        .factors-list li { padding: 2px 0; font-size: 8.5pt; display: flex; align-items: center; gap: 4px; }
-        .factors-list li::before { content: "✓"; color: #1e40af; font-weight: bold; }
-        .bleeding li::before { content: "⚠"; color: #dc2626; }
-        .recommendation-box { border: 2px solid #1e40af; border-radius: 6px; padding: 10px; margin-top: 8px; }
-        .rec-row { display: flex; gap: 6px; margin-bottom: 4px; font-size: 8.5pt; }
-        .rec-label { font-weight: bold; min-width: 120px; color: #1e40af; }
-        .contra { color: #dc2626; font-weight: bold; }
-        .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 30px; padding-top: 10px; }
-        .sig-line { border-top: 1px solid #333; padding-top: 4px; text-align: center; font-size: 8pt; }
-        .obs { border: 1px solid #ddd; padding: 6px; border-radius: 4px; min-height: 40px; font-size: 8.5pt; white-space: pre-wrap; }
-        .date-line { text-align: right; font-size: 8pt; color: #666; margin-top: 6px; }
-      </style></head><body>
-      <div class="header">
-        <h1>PROTOCOLO DE PREVENÇÃO DE TROMBOEMBOLISMO VENOSO (TEV)</h1>
-        <p>Escala: ${scoreType === "padua" ? "Escore de Pádua (Pacientes Clínicos)" : "Escore de Caprini (Pacientes Cirúrgicos)"}</p>
-      </div>
-
-      <div class="patient-info">
-        <div><span>Paciente:</span> ${patient?.name || "—"}</div>
-        <div><span>Idade:</span> ${patient?.age || "—"}</div>
-        <div><span>Leito:</span> ${patient?.bed || "—"}</div>
-        <div><span>Peso:</span> ${patient?.weight || "—"} kg</div>
-      </div>
-
-      <div class="section">
-        <h2>Classificação de Risco Trombótico</h2>
-        <p>Pontuação: <span class="score-badge ${riskLevel.level === "baixo" ? "score-low" : riskLevel.level === "moderado" ? "score-moderate" : "score-high"}">${currentScore} pts — ${riskLevel.label}</span></p>
-        <p style="font-size:8pt;color:#666;margin-top:3px;">${riskLevel.description}</p>
-      </div>
-
-      <div class="section">
-        <h2>Fatores de Risco Identificados</h2>
-        <ul class="factors-list">
-          ${selectedRiskFactors.map((f: any) => `<li>${f.label} (${f.points || ""}pt${(f.points || 0) > 1 ? "s" : ""})</li>`).join("")}
-          ${selectedRiskFactors.length === 0 ? "<li style='color:#999'>Nenhum fator identificado</li>" : ""}
-        </ul>
-      </div>
-
-      ${selectedBleedingFactors.length > 0 ? `
-      <div class="section">
-        <h2>Fatores de Risco de Sangramento</h2>
-        <ul class="factors-list bleeding">
-          ${selectedBleedingFactors.map(f => `<li>${f.label}${f.major ? " (MAIOR)" : ""}</li>`).join("")}
-        </ul>
-      </div>` : ""}
-
-      <div class="section">
-        <h2>Recomendação de Profilaxia</h2>
-        <div class="recommendation-box">
-          <div class="rec-row"><span class="rec-label">Farmacológica:</span> <span class="${hasMajorBleedingRisk ? "contra" : ""}">${recommendation.pharmacological || "Não indicada"}</span></div>
-          <div class="rec-row"><span class="rec-label">Mecânica:</span> ${recommendation.mechanical}</div>
-          <div class="rec-row"><span class="rec-label">Observações:</span> ${recommendation.notes}</div>
-        </div>
-      </div>
-
-      ${observations ? `
-      <div class="section">
-        <h2>Observações Adicionais</h2>
-        <div class="obs">${observations}</div>
-      </div>` : ""}
-
-      <div class="date-line">Data: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</div>
-
-      <div class="signatures">
-        <div class="sig-line">Médico Prescritor<br/><small>CRM / Assinatura</small></div>
-        <div class="sig-line">Enfermeiro Responsável<br/><small>COREN / Assinatura</small></div>
-      </div>
-
-      <script>window.onload=()=>{window.print();}</script>
-      </body></html>`);
-    printWindow.document.close();
+  const handleFinalize = (regimen: "none" | "prophylactic" | "full") => {
+    if (regimen !== "none") {
+      if (!onAddToPrescription) {
+        toast.error("Não foi possível anexar à prescrição neste contexto.");
+        return;
+      }
+      const entry = buildAnticoagulationEntry(regimen);
+      onAddToPrescription(entry);
+      toast.success(
+        regimen === "prophylactic"
+          ? "Anticoagulação profilática anexada à prescrição"
+          : "Anticoagulação plena anexada à prescrição"
+      );
+    } else {
+      toast.success("Protocolo TEV finalizado");
+    }
+    handleReset();
+    onOpenChange(false);
   };
 
   return (
@@ -627,8 +582,32 @@ export function TevProtocolDialog({ open, onOpenChange, patient }: TevProtocolDi
             {step === "result" && (
               <>
                 <Button variant="outline" size="sm" onClick={() => setStep("bleeding")} className="text-xs">Voltar</Button>
-                <Button size="sm" onClick={handlePrint} className="text-xs gap-1.5 bg-blue-600 hover:bg-blue-700">
-                  <Printer className="h-3.5 w-3.5" /> Imprimir Protocolo
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleFinalize("prophylactic")}
+                  disabled={hasMajorBleedingRisk || !onAddToPrescription}
+                  className="text-xs gap-1.5"
+                  title={hasMajorBleedingRisk ? "Contraindicado: risco maior de sangramento" : "Anexar enoxaparina 40 mg SC 1x/dia"}
+                >
+                  <Plus className="h-3.5 w-3.5" /> Anexar Profilática
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleFinalize("full")}
+                  disabled={hasMajorBleedingRisk || !onAddToPrescription}
+                  className="text-xs gap-1.5"
+                  title={hasMajorBleedingRisk ? "Contraindicado: risco maior de sangramento" : "Anexar enoxaparina 1 mg/kg SC 12/12h"}
+                >
+                  <Plus className="h-3.5 w-3.5" /> Anexar Plena
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => handleFinalize("none")}
+                  className="text-xs gap-1.5 bg-blue-600 hover:bg-blue-700"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Finalizar Protocolo
                 </Button>
               </>
             )}

@@ -5199,6 +5199,7 @@ const PrescricaoPage = () => {
         open={tevProtocolOpen}
         onOpenChange={setTevProtocolOpen}
         patient={patient ? { name: patient.name, age: patient.age, bed: patient.bed, weight: patient.weight } : null}
+        onAddToPrescription={(med) => addItem(med)}
       />
 
       {/* MAV — High-Alert Medications Guide */}
