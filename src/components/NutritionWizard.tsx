@@ -287,7 +287,31 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
     setWaterCorrection(false); setWaterCorrectionVol(""); setWaterCorrectionObs("");
     setParType("central"); setParVolume("1500"); setParKcal(""); setParRate(""); setParObs(""); setParCustom("");
     setZeroReason("preop"); setZeroSince(""); setZeroHydrate(true); setZeroCustom("");
+    setProteinSelected(new Set()); setProteinOverrides({});
     setNotes("");
+  };
+
+  const toggleProtein = (key: string) => {
+    setProteinSelected(prev => {
+      const n = new Set(prev);
+      if (n.has(key)) {
+        n.delete(key);
+        setProteinOverrides(o => { const c = { ...o }; delete c[key]; return c; });
+      } else {
+        n.add(key);
+        const def = PROTEIN_SUPPLEMENTS.find(p => p.key === key)!;
+        // Default route: prioriza enteral se sonda foi selecionada e via oral não.
+        const route: ProteinRouteKind = def.routes.includes("enteral") && modalities.has("enteral") && !modalities.has("oral")
+          ? "enteral"
+          : def.routes[0];
+        setProteinOverrides(o => ({ ...o, [key]: { dose: def.defaultDose, posology: def.defaultPosology, route } }));
+      }
+      return n;
+    });
+  };
+
+  const updateProteinOverride = (key: string, patch: Partial<ProteinOverride>) => {
+    setProteinOverrides(o => ({ ...o, [key]: { ...o[key], ...patch } }));
   };
 
   const toggleModality = (k: NutritionModality) => {
