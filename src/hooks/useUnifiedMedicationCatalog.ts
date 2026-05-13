@@ -22,11 +22,15 @@ import {
 type CatalogRow = {
   id: string;
   generic_name: string;
+  nome_comercial: string | null;
   therapeutic_class: string | null;
+  pharmacological_group: string | null;
   controlled: boolean | null;
   high_alert: boolean | null;
   requires_dilution: boolean | null;
   notes: string | null;
+  lista: string | null;
+  notification_type: string | null;
 };
 
 type PresentationRow = {
@@ -35,10 +39,48 @@ type PresentationRow = {
   concentration: string | null;
   unit: string | null;
   route: string | null;
+  pharmaceutical_form: string | null;
+  default_route: string | null;
+  default_dose: string | null;
   standard_dilution: string | null;
   max_daily_dose: string | null;
   infusion_time: string | null;
 };
+
+export interface ControlledCatalogItem {
+  catalogId: string;
+  presentationId: string | null;
+  generic_name: string;
+  nome_comercial: string;
+  pharmaceutical_form: string;
+  concentration: string;
+  default_route: string;
+  default_dose: string;
+  notification_type: 'Receita Amarela' | 'Receita Azul' | 'Controle Especial 2 vias' | null;
+  controlled: boolean;
+  high_alert: boolean;
+  pharmacological_group: string | null;
+  lista: string | null;
+  searchKey: string; // NFD lowercased: generic_name + nome_comercial
+  label: string;     // "Nome (princípio) — concentração"
+}
+
+function nfd(s: string): string {
+  return (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+}
+
+function deriveNotificationType(row: CatalogRow): ControlledCatalogItem['notification_type'] {
+  if (row.notification_type === 'Receita Amarela' || row.notification_type === 'Receita Azul' || row.notification_type === 'Controle Especial 2 vias') {
+    return row.notification_type;
+  }
+  const grp = (row.pharmacological_group || '').toLowerCase();
+  const lista = row.lista || '';
+  if (['A1','A2','A3'].includes(lista) || /entorpecente|opi[óo]ide/.test(grp)) return 'Receita Amarela';
+  if (['B1','B2'].includes(lista) || /psicotr[óo]pic|benzodiaze/.test(grp)) return 'Receita Azul';
+  if (lista === 'C1') return 'Controle Especial 2 vias';
+  if (row.controlled) return 'Controle Especial 2 vias';
+  return null;
+}
 
 const ANTIMICROBIAL_CLASS_REGEX =
   /antimicrob|antibi[óo]tic|antifúngic|antifungic|antiviral|antiparasit/i;
