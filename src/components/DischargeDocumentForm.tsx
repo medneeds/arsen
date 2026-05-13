@@ -25,10 +25,11 @@ export interface DischargeDocFormProps {
   onChange: (payload: DischargeDocPayload, isComplete: boolean) => void;
 }
 
+// Comunicação à família é opcional — registro deve fluir mesmo sem contato familiar
 const REQUIRED_BY_TYPE: Record<DischargeDocType, (keyof DischargeDocPayload)[]> = {
-  alta_hospitalar: ["final_diagnoses", "evolution_summary", "discharge_summary", "orientations", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
-  alta_pedido: ["final_diagnoses", "evolution_summary", "discharge_summary", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
-  obito: ["death_date_time", "death_summary", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
+  alta_hospitalar: ["final_diagnoses", "evolution_summary", "discharge_summary", "orientations", "signed_by_name", "signed_by_crm"],
+  alta_pedido: ["final_diagnoses", "evolution_summary", "discharge_summary", "signed_by_name", "signed_by_crm"],
+  obito: ["death_date_time", "death_summary", "signed_by_name", "signed_by_crm"],
 };
 
 const RELATION_OPTIONS = [
@@ -51,12 +52,9 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
 
   const isComplete = useMemo(() => {
     const req = REQUIRED_BY_TYPE[type];
-    const minOne: (keyof DischargeDocPayload)[] = [
-      "family_satisfaction", "family_communication_mode", "family_contact_relation",
-    ];
     return req.every((k) => {
       const v = String((form as any)[k] ?? "").trim();
-      return minOne.includes(k) ? v.length >= 1 : v.length > 2;
+      return v.length > 2;
     });
   }, [form, type]);
 
