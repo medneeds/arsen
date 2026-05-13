@@ -1434,6 +1434,12 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   if (isCompact && !isSimple && !individualExpanded) {
     const compactParts: string[] = [];
     const isHydration = item.category === 'hydration';
+    const isInhalation = item.category === 'inhalation';
+
+    if (isInhalation) {
+      const phrase = assembleInhalationInstruction(item as any);
+      if (phrase) compactParts.push(phrase);
+    } else
 
     if (isHydration) {
       // Frase única, em corrida, orientada à enfermagem
