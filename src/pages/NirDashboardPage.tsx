@@ -135,9 +135,57 @@ export default function NirDashboardPage() {
   const [filters, setFilters] = useState<NirFilters>({ period: "today", sectorScope: "all", priority: "all" });
   const [selectedBed, setSelectedBed] = useState<any | null>(null);
   const [censusGroup, setCensusGroup] = useState<string>("Todos");
+  const [reallocMode, setReallocMode] = useState(false);
+  const [reallocOrigin, setReallocOrigin] = useState<any | null>(null);
+  const [reallocDest, setReallocDest] = useState<any | null>(null);
+  const [reallocBusy, setReallocBusy] = useState(false);
+  const { transferBed, swapBeds } = useBedCensusActions();
 
   const { isLoading, refetch, beds, requests, metrics, historical, heatmap, flow } = useNirMetrics(currentHospital?.id, filters);
   const { data: predictions = [] } = useDischargePredictions(currentHospital?.id);
+
+  // Status válidos como destino na realocação
+  const VALID_DEST = new Set(["vago", "reservado", "ocupado"]);
+  const isValidDest = (s: string) => VALID_DEST.has(s);
+
+  const handleBedClick = (bed: any) => {
+    if (!reallocMode) {
+      setSelectedBed(bed);
+      return;
+    }
+    if (!reallocOrigin) {
+      if (bed.status !== "ocupado") return;
+      setReallocOrigin(bed);
+      return;
+    }
+    if (bed.id === reallocOrigin.id) {
+      setReallocOrigin(null);
+      return;
+    }
+    if (!isValidDest(bed.status)) return;
+    setReallocDest(bed);
+  };
+
+  const cancelRealloc = () => {
+    setReallocMode(false);
+    setReallocOrigin(null);
+    setReallocDest(null);
+  };
+
+  const confirmRealloc = async () => {
+    if (!reallocOrigin || !reallocDest) return;
+    setReallocBusy(true);
+    const ok = reallocDest.status === "ocupado"
+      ? await swapBeds(reallocOrigin.id, reallocDest.id)
+      : await transferBed(reallocOrigin.id, reallocDest.id);
+    setReallocBusy(false);
+    if (ok) {
+      setReallocDest(null);
+      setReallocOrigin(null);
+      setReallocMode(false);
+      refetch();
+    }
+  };
 
   const bedsBySector = useMemo(
     () =>
