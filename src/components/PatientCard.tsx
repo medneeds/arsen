@@ -4976,6 +4976,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
           patientAge={patient.age}
         />
       )}
+      {reallocationDialogOpen && (
+        <BedReallocationDialog
+          open={reallocationDialogOpen}
+          onOpenChange={setReallocationDialogOpen}
+          patient={patient}
+          onSuccess={() => onRefetch?.()}
+        />
+      )}
     </>
   );
 }
