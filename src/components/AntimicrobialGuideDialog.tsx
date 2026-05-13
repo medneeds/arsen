@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -75,9 +76,21 @@ interface Props {
   doctorName?: string;
   doctorCrm?: string;
   hospitalName?: string;
-  onConfirm?: (entries: Array<{ medication: string; dose: string; route: string; posology: string }>) => void;
+  onConfirm?: (entries: Array<{
+    medication: string; dose: string; route: string; posology: string;
+    startDate?: string; plannedDuration?: string; infectionSite?: string;
+  }>) => void;
   mode?: 'review' | 'prescribe';
   patientId?: string;
+}
+
+function computeEndDate(startDate: string, days: string): string | null {
+  const n = parseInt(days, 10);
+  if (!startDate || !Number.isFinite(n) || n <= 0) return null;
+  const d = new Date(startDate + "T00:00:00");
+  if (isNaN(d.getTime())) return null;
+  d.setDate(d.getDate() + n - 1);
+  return format(d, "dd/MM/yyyy");
 }
 
 const INFECTION_SITES = [
@@ -194,18 +207,29 @@ export function AntimicrobialGuideDialog({
   const [entries, setEntries] = useState<AntimicrobialEntry[]>([]);
   const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | 'cultures' | null>>({});
   const [availableCultures, setAvailableCultures] = useState<Array<{ id: string; culture_type: string; collection_date: string | null; status: string; microorganism: string | null; antibiogram: string | null; sensitivity_profile: string | null; result_text: string | null; created_at: string }>>([]);
-  const [printPromptOpen, setPrintPromptOpen] = useState(false);
-  const [pendingConfirmEntries, setPendingConfirmEntries] = useState<AntimicrobialEntry[]>([]);
+  const draftKey = patientId ? `atb-draft-${patientId}` : null;
 
   useEffect(() => {
-    if (open) {
-      if (antimicrobialItems.length > 0) {
-        setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item)));
-      } else if (entries.length === 0) {
-        setEntries([createEmptyEntry()]);
-      }
+    if (!open) return;
+    // 1) Try to load saved draft first
+    if (draftKey) {
+      try {
+        const raw = localStorage.getItem(draftKey);
+        if (raw) {
+          const parsed = JSON.parse(raw) as AntimicrobialEntry[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setEntries(parsed);
+            return;
+          }
+        }
+      } catch {/* ignore */}
     }
-  }, [open, antimicrobialItems]);
+    if (antimicrobialItems.length > 0) {
+      setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item)));
+    } else if (entries.length === 0) {
+      setEntries([createEmptyEntry()]);
+    }
+  }, [open, antimicrobialItems, draftKey]);
 
   useEffect(() => {
     if (open && patientId) {
@@ -352,24 +376,29 @@ export function AntimicrobialGuideDialog({
     openPrintWindow(html, "Preparando Guia ATM…");
   };
 
-  const handleConfirmClick = () => {
-    const valid = entries.filter(e => e.medication.trim());
-    if (valid.length === 0) return;
-    if (mode === 'prescribe' && onConfirm) {
-      // Show mandatory print prompt first
-      setPendingConfirmEntries(valid);
-      setPrintPromptOpen(true);
-    }
+  const validEntries = () => entries.filter(e => e.medication.trim());
+
+  const doAttach = (close: boolean) => {
+    const valid = validEntries();
+    if (valid.length === 0 || !onConfirm) return;
+    onConfirm(valid.map(e => ({
+      medication: e.medication, dose: e.dose, route: e.route, posology: e.posology,
+      startDate: e.startDate, plannedDuration: e.plannedDuration, infectionSite: e.infectionSite,
+    })));
+    if (draftKey) localStorage.removeItem(draftKey);
+    if (close) onOpenChange(false);
   };
 
-  const finalizeConfirm = async (alsoPrint: boolean) => {
-    if (alsoPrint) await handlePrint(pendingConfirmEntries);
-    onConfirm?.(pendingConfirmEntries.map(e => ({
-      medication: e.medication, dose: e.dose, route: e.route, posology: e.posology,
-    })));
-    setPrintPromptOpen(false);
-    setPendingConfirmEntries([]);
-    onOpenChange(false);
+  const handleAttachOnly = () => doAttach(true);
+  const handlePrintOnly = async () => { await handlePrint(); };
+  const handleAttachAndPrint = async () => { await handlePrint(); doAttach(true); };
+  const handleSaveDraft = () => {
+    if (!draftKey) { toast.error("Sem paciente vinculado para salvar rascunho"); return; }
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(entries));
+      toast.success("Rascunho da Guia ATM salvo");
+      onOpenChange(false);
+    } catch { toast.error("Falha ao salvar rascunho"); }
   };
 
   return (
@@ -454,6 +483,14 @@ export function AntimicrobialGuideDialog({
                     <div>
                       <Label className="text-[10px]">Duração Prevista (dias)</Label>
                       <Input value={entry.plannedDuration} onChange={e => updateEntry(entry.id, "plannedDuration", e.target.value)} placeholder="Ex: 7" className="h-8 text-xs" />
+                      {(() => {
+                        const end = computeEndDate(entry.startDate, entry.plannedDuration);
+                        return end ? (
+                          <div className="text-[10px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+                            Previsão de fim: <strong>{end}</strong>
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                     <div>
                       <Label className="text-[10px]">Classe de Restrição</Label>
@@ -556,43 +593,33 @@ export function AntimicrobialGuideDialog({
             <div className="text-[11px] text-muted-foreground self-center">
               {entries.filter(e => e.medication.trim()).length} antimicrobiano(s) preenchido(s)
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
               <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
                 {mode === 'prescribe' ? 'Cancelar' : 'Fechar'}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handlePrint()} className="gap-1.5">
-                <Printer className="h-3.5 w-3.5" /> Imprimir Guia (Norma Zero)
+              {mode === 'prescribe' && draftKey && (
+                <Button variant="ghost" size="sm" onClick={handleSaveDraft} className="gap-1.5 text-xs">
+                  Salvar rascunho
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={handlePrintOnly} className="gap-1.5">
+                <Printer className="h-3.5 w-3.5" /> Imprimir somente a Guia
               </Button>
               {mode === 'prescribe' && onConfirm && (
-                <Button size="sm" onClick={handleConfirmClick} className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white">
-                  <Shield className="h-3.5 w-3.5" /> Confirmar e Anexar à Prescrição
-                </Button>
+                <>
+                  <Button variant="outline" size="sm" onClick={handleAttachOnly} className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400">
+                    <Shield className="h-3.5 w-3.5" /> Anexar antibióticos à prescrição
+                  </Button>
+                  <Button size="sm" onClick={handleAttachAndPrint} className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white">
+                    <Printer className="h-3.5 w-3.5" /> Anexar + Imprimir Guia
+                  </Button>
+                </>
               )}
             </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Mandatory print prompt on first prescription */}
-      <AlertDialog open={printPromptOpen} onOpenChange={setPrintPromptOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Printer className="h-5 w-5 text-orange-500" />
-              IMPRIMIR GUIA ATM AGORA?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta é uma <strong>primeira prescrição</strong> de antimicrobiano. Recomenda-se imprimir a Guia de Antimicrobianos (padrão Norma Zero) para envio à CCIH e farmácia. Você poderá reimprimir a qualquer momento pelo botão "Imprimir Guia".
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => finalizeConfirm(false)}>Apenas anexar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => finalizeConfirm(true)} className="bg-orange-600 hover:bg-orange-700 text-white gap-1.5">
-              <Printer className="h-4 w-4" /> Imprimir e anexar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

@@ -158,6 +158,10 @@ interface PrescriptionItem {
   nutProgression?: string;    // Esquema de progressão
   nutBedHead?: string;        // Cabeceira (graus)
   nutResidualCheck?: string;  // Checagem de resíduo gástrico
+  // Antimicrobial-specific (Guia ATM)
+  atbStartDate?: string;      // YYYY-MM-DD
+  atbPlannedDays?: string;    // ex: "7"
+  atbInfectionSite?: string;
   nutConsistency?: string;    // IDDSI / textura (oral)
   nutAccess?: string;         // NPT: CVC / PICC / Periférico
   nutComposition?: string;    // NPT: composição resumida
@@ -761,6 +765,29 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
     </div>
   );
 });
+
+// Compute ATB day text dynamically (D{n} — DD/MM/AAAA (início … previsão …))
+function buildAtbDayLine(item: PrescriptionItem): string | null {
+  if (!item.atbStartDate) return null;
+  const start = new Date(item.atbStartDate + 'T00:00:00');
+  if (isNaN(start.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const startMid = new Date(start);
+  startMid.setHours(0, 0, 0, 0);
+  const dayN = Math.max(1, Math.floor((today.getTime() - startMid.getTime()) / 86400000) + 1);
+  const days = parseInt(item.atbPlannedDays || '', 10);
+  const fmt = (d: Date) => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  let endStr = '—';
+  let suffix = '';
+  if (Number.isFinite(days) && days > 0) {
+    const end = new Date(startMid);
+    end.setDate(end.getDate() + days - 1);
+    endStr = fmt(end);
+    suffix = `/${days}`;
+  }
+  return `D${dayN}${suffix} — ${fmt(today)} (início ${fmt(startMid)}, previsão ${endStr})`;
+}
 
 
 // --- Nutrition fields (specific structured controls per nutrition subtype) ---
@@ -1585,6 +1612,15 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 return autoDesc ? (
                   <p className="text-[11px] text-muted-foreground italic px-2.5 py-1 rounded bg-muted/20 border border-border/20 leading-relaxed">
                     {autoDesc}
+                  </p>
+                ) : null;
+              })()}
+              {/* ATB day counter (dynamic) */}
+              {item.category === 'antimicrobial' && item.atbStartDate && (() => {
+                const line = buildAtbDayLine(item);
+                return line ? (
+                  <p className="text-[11px] font-semibold px-2.5 py-1 rounded bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/40 text-orange-700 dark:text-orange-300 leading-relaxed">
+                    {line}{item.atbInfectionSite ? ` · ${item.atbInfectionSite}` : ''}
                   </p>
                 ) : null;
               })()}
@@ -3103,34 +3139,33 @@ const PrescricaoPage = () => {
   };
 
   // Callback when antimicrobial guide is confirmed — add both guide entry data and the prescription item
-  const handleAntimicrobialConfirm = useCallback((confirmedEntries: Array<{ medication: string; dose: string; route: string; posology: string }>) => {
-    // Find matching MedicationEntry from the database for each confirmed entry
+  const handleAntimicrobialConfirm = useCallback((confirmedEntries: Array<{
+    medication: string; dose: string; route: string; posology: string;
+    startDate?: string; plannedDuration?: string; infectionSite?: string;
+  }>) => {
     const antimicrobialOptions = UNIFIED_CATALOG['antimicrobial'] || [];
     const newItems: PrescriptionItem[] = confirmedEntries.map(entry => {
       const matchedMed = antimicrobialOptions.find(m => m.name === entry.medication);
-      if (matchedMed) {
-        const item = createItem(matchedMed);
-        // Override with values from the guide form
-        item.dose = entry.dose || item.dose;
-        item.route = entry.route || item.route;
-        item.posology = entry.posology || item.posology;
-        return item;
-      }
-      // Fallback: create item from entry data
-      return {
-        id: crypto.randomUUID(),
-        name: entry.medication,
-        presentation: '',
-        dose: entry.dose,
-        route: entry.route,
-        posology: entry.posology,
-        schedule: '',
-        instructions: '',
-        category: 'antimicrobial' as PrescriptionCategory,
-        flags: [] as PrescriptionFlag[],
-        highAlert: false,
-        status: 'active' as const,
-      };
+      const base: PrescriptionItem = matchedMed
+        ? { ...createItem(matchedMed), dose: entry.dose || createItem(matchedMed).dose, route: entry.route || createItem(matchedMed).route, posology: entry.posology || createItem(matchedMed).posology }
+        : {
+            id: crypto.randomUUID(),
+            name: entry.medication,
+            presentation: '',
+            dose: entry.dose,
+            route: entry.route,
+            posology: entry.posology,
+            schedule: '',
+            instructions: '',
+            category: 'antimicrobial' as PrescriptionCategory,
+            flags: [] as PrescriptionFlag[],
+            highAlert: false,
+            status: 'active' as const,
+          };
+      base.atbStartDate = entry.startDate || format(new Date(), 'yyyy-MM-dd');
+      base.atbPlannedDays = entry.plannedDuration || '';
+      base.atbInfectionSite = entry.infectionSite || '';
+      return base;
     });
     setItems(prev => [...prev, ...newItems]);
     setPendingAntimicrobialMed(null);
@@ -3688,12 +3723,44 @@ const PrescricaoPage = () => {
   };
 
   const [showPrintPortal, setShowPrintPortal] = useState(false);
-  const handlePrint = () => {
+  const [printGuidesOpen, setPrintGuidesOpen] = useState(false);
+  const [printPrescription, setPrintPrescription] = useState(true);
+  const [printGuideAtm, setPrintGuideAtm] = useState(false);
+  const [printGuidePsy, setPrintGuidePsy] = useState(false);
+
+  const hasActiveAtb = items.some(i => i.status === 'active' && i.category === 'antimicrobial');
+  const hasActivePsy = items.some(i => i.status === 'active' && (i.category === 'high_alert' || isPsychotropicMedication(i.name)));
+
+  const doPrintPrescription = () => {
     setShowPrintPortal(true);
     setTimeout(() => {
       window.print();
       setShowPrintPortal(false);
     }, 300);
+  };
+
+  const handlePrint = () => {
+    if (!hasActiveAtb && !hasActivePsy) {
+      doPrintPrescription();
+      return;
+    }
+    setPrintPrescription(true);
+    setPrintGuideAtm(hasActiveAtb);
+    setPrintGuidePsy(hasActivePsy);
+    setPrintGuidesOpen(true);
+  };
+
+  const executePrintSelection = () => {
+    setPrintGuidesOpen(false);
+    if (printPrescription) doPrintPrescription();
+    // Open guides sequentially so the doctor can click "Imprimir" inside each one.
+    if (printGuideAtm) {
+      setTimeout(() => setAntimicrobialGuideOpen(true), printPrescription ? 800 : 200);
+    }
+    if (printGuidePsy) {
+      const delay = printGuideAtm ? 1200 : (printPrescription ? 800 : 200);
+      setTimeout(() => setPsychotropicFormOpen(true), delay);
+    }
   };
 
   // Sign prescription
@@ -5078,6 +5145,54 @@ const PrescricaoPage = () => {
         doctorCrm={digitalSignature?.crm}
         hospitalName={currentHospital?.name}
       />
+
+      {/* Print Guides Dialog */}
+      <Dialog open={printGuidesOpen} onOpenChange={setPrintGuidesOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Printer className="h-5 w-5 text-primary" />
+              Imprimir prescrição
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Esta prescrição contém itens com guias regulatórias associadas. Selecione o que deseja imprimir.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <label className="flex items-start gap-2.5 p-2.5 rounded-md border border-border hover:bg-muted/30 cursor-pointer">
+              <Checkbox checked={printPrescription} onCheckedChange={(v) => setPrintPrescription(!!v)} className="mt-0.5" />
+              <div className="text-xs">
+                <div className="font-semibold">Prescrição médica</div>
+                <div className="text-muted-foreground">Documento principal validado.</div>
+              </div>
+            </label>
+            {hasActiveAtb && (
+              <label className="flex items-start gap-2.5 p-2.5 rounded-md border border-orange-200 dark:border-orange-800/40 bg-orange-50/40 dark:bg-orange-950/10 hover:bg-orange-50/80 cursor-pointer">
+                <Checkbox checked={printGuideAtm} onCheckedChange={(v) => setPrintGuideAtm(!!v)} className="mt-0.5" />
+                <div className="text-xs">
+                  <div className="font-semibold text-orange-700 dark:text-orange-400">Guia de Antimicrobianos (CCIH / Norma Zero)</div>
+                  <div className="text-muted-foreground">Abre a Guia ATM com seus antibióticos.</div>
+                </div>
+              </label>
+            )}
+            {hasActivePsy && (
+              <label className="flex items-start gap-2.5 p-2.5 rounded-md border border-purple-200 dark:border-purple-800/40 bg-purple-50/40 dark:bg-purple-950/10 hover:bg-purple-50/80 cursor-pointer">
+                <Checkbox checked={printGuidePsy} onCheckedChange={(v) => setPrintGuidePsy(!!v)} className="mt-0.5" />
+                <div className="text-xs">
+                  <div className="font-semibold text-purple-700 dark:text-purple-400">Guia de Psicotrópicos (Portaria 344)</div>
+                  <div className="text-muted-foreground">Abre a Guia de psicotrópicos para impressão.</div>
+                </div>
+              </label>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setPrintGuidesOpen(false)}>Cancelar</Button>
+            <Button size="sm" onClick={executePrintSelection} className="gap-1.5" disabled={!printPrescription && !printGuideAtm && !printGuidePsy}>
+              <Printer className="h-3.5 w-3.5" /> Imprimir selecionados
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* TEV Protocol Dialog */}
       <TevProtocolDialog
