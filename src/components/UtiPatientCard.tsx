@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { EditPatientDialog } from "./EditPatientDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
 import { UtiReallocationDialog } from "./UtiReallocationDialog";
+import { BedReallocationDialog } from "./BedReallocationDialog";
 import { PatientRegistrationDialog } from "./PatientRegistrationDialog";
 import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
