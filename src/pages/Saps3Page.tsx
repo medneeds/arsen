@@ -267,9 +267,14 @@ function resolveSectorValue(input: string | null | undefined): string {
   return direct?.value ?? "";
 }
 
+function resolveSectorFromContext(input: string | null | undefined, fallbackSector: string): string {
+  return resolveSectorValue(input) || resolveSectorValue(fallbackSector) || "";
+}
+
 export default function Saps3Page() {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
+  const { currentDepartment, currentSectorCode } = useDepartment();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
