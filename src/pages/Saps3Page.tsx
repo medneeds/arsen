@@ -740,7 +740,7 @@ export default function Saps3Page() {
       }
 
       if (asPending) {
-        toast.success(`Paciente admitido no leito ${selectedBed}. SAPS 3 ficou como pendente — aguardando resultados laboratoriais.`);
+        toast.success(`Paciente pré-admitido no leito ${selectedBed}. SAPS 3 ficou como pendente — aguardando resultados laboratoriais.`);
       }
 
       const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector;
@@ -750,6 +750,9 @@ export default function Saps3Page() {
         sectorLabel,
         totalScore: asPending ? 0 : scores.total,
         predictedMortality: asPending ? 0 : scores.mortality,
+        patientId: admittedPatientId,
+        sectorCode: selectedSector,
+        age: age ? `${age} anos` : null,
       });
       setSelectedRequest(null);
       loadPendingRequests();
