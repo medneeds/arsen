@@ -114,6 +114,7 @@ import { getProtocolsFor, type PosologyProtocol } from "@/lib/posologyProtocols"
 import { PosologySuggestionsBar } from "@/components/PosologySuggestionsBar";
 import { useMedicationProtocols } from "@/hooks/useMedicationProtocols";
 import { PatientCockpit } from "@/components/PatientCockpit";
+import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 import { NutritionWizard } from "@/components/NutritionWizard";
 import { HydrationWizard } from "@/components/HydrationWizard";
 import { ReplacementWizard } from "@/components/ReplacementWizard";
@@ -4557,6 +4558,12 @@ const PrescricaoPage = () => {
       <ClinicalHeader moduleLabel="Prescrição Médica" />
       <div className="flex print:block">
         <div className="flex-1 min-w-0 max-w-6xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-5">
+        <SapsPendingAlert
+          patientName={patient.name}
+          patientId={searchParams.get('patientId')}
+          patientBed={patient.bed}
+          patientSector={initialPatientSector}
+        />
       {/* Print styles — hide everything except portal */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {

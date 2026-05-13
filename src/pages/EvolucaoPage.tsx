@@ -4,6 +4,7 @@ import { ClinicalHeader } from "@/components/ClinicalHeader";
 
 
 import { PatientCockpit } from "@/components/PatientCockpit";
+import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
@@ -252,6 +253,12 @@ const EvolucaoPage = () => {
 
       <div className="flex print:hidden">
         <div className="flex-1 min-w-0 p-3 sm:p-4 space-y-3 sm:space-y-4">
+        <SapsPendingAlert
+          patientName={patient.name}
+          patientId={initialPatientId}
+          patientBed={patient.bed}
+          patientSector={initialPatientSector}
+        />
         {/* Page Header */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="hidden sm:flex items-center gap-3">

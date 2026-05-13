@@ -3,6 +3,7 @@ import { useLocation, useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
 
 import { PatientCockpit } from "@/components/PatientCockpit";
+import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 import { useCockpitPatient } from "@/hooks/useCockpitPatient";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -501,6 +502,12 @@ const RequisicaoUnificadaPage = () => {
       </div>
       <div className="flex print:block">
         <div className="flex-1 min-w-0 p-4 md:p-6 space-y-4 max-w-6xl mx-auto print:p-0 print:m-0">
+        <SapsPendingAlert
+          patientName={formPatientName}
+          patientId={formPatientId}
+          patientBed={formPatientBed}
+          patientSector={formPatientSector}
+        />
       {/* Header */}
       <div className="hidden sm:block print:hidden">
         <div className="flex items-center gap-3 mb-1">
