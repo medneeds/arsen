@@ -140,6 +140,91 @@ const RequisicaoImagensPage = () => {
     load();
   }, [user]);
 
+  // Auto-hydrate patient data from URL params (patientId) + patient_registry (prontuário real)
+  useEffect(() => {
+    const patientId = searchParams.get("patientId");
+    const urlName = searchParams.get("patientName");
+    const urlBed = searchParams.get("patientBed");
+    const urlSector = searchParams.get("patientSector");
+
+    // Pre-fill name from URL even before async fetch (instant UX)
+    if (urlName && !patientName) setPatientName(urlName.toUpperCase());
+
+    if (!patientId || hydratedFromRegistry) return;
+
+    const hydrate = async () => {
+      try {
+        // 1) Fetch patient + linked registry in a single round trip
+        const { data: pat, error } = await supabase
+          .from("patients")
+          .select(`
+            id, name, bed_number, sector, medical_record, patient_registry_id,
+            patient_registry:patient_registry_id (
+              full_name, social_name, medical_record, cns, cpf,
+              birth_date, sex, mother_name, phone,
+              address, neighborhood, city, state
+            )
+          `)
+          .eq("id", patientId)
+          .maybeSingle();
+
+        if (error || !pat) {
+          // Silent fail — keep URL values
+          if (urlBed) toast.info(`Leito ${urlBed}${urlSector ? ` · ${urlSector}` : ""}`);
+          return;
+        }
+
+        const reg: any = (pat as any).patient_registry || null;
+
+        // Name: prefer registry social_name → registry full_name → patient.name → URL
+        const fullName =
+          reg?.social_name?.trim() ||
+          reg?.full_name?.trim() ||
+          pat.name?.trim() ||
+          urlName ||
+          "";
+        if (fullName) setPatientName(fullName.toUpperCase());
+
+        // Medical record: prefer patient.medical_record (current encounter) → registry.medical_record
+        const mr = (pat.medical_record || reg?.medical_record || "").toString();
+        if (mr) setPatientRecord(mr);
+
+        // Registry-only fields
+        if (reg?.cns) setPatientCNS(reg.cns);
+        if (reg?.birth_date) setPatientDOB(reg.birth_date); // YYYY-MM-DD
+        if (reg?.sex) {
+          const s = String(reg.sex).toUpperCase().trim();
+          if (s.startsWith("M")) setPatientSex("M");
+          else if (s.startsWith("F")) setPatientSex("F");
+        }
+        if (reg?.mother_name) setPatientMotherName(reg.mother_name.toUpperCase());
+        if (reg?.phone) setPatientPhone(reg.phone);
+
+        // Address: concatenate street + neighborhood for printed field
+        const addrParts = [reg?.address, reg?.neighborhood].filter(Boolean);
+        if (addrParts.length) setPatientAddress(addrParts.join(", ").toUpperCase());
+        if (reg?.city) setPatientCity(String(reg.city));
+        if (reg?.state) setPatientUF(String(reg.state).toUpperCase().slice(0, 2));
+
+        setHydratedFromRegistry(true);
+
+        // Notify when key SUS field is missing — APAC requires CNS
+        if (!reg?.cns) {
+          toast.warning("CNS ausente no prontuário", {
+            description: "Preencha manualmente ou atualize o cadastro do paciente para impressão APAC válida.",
+          });
+        } else {
+          toast.success("Dados do paciente sincronizados do prontuário");
+        }
+      } catch (err) {
+        console.error("[APAC] hydrate error", err);
+      }
+    };
+
+    hydrate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const addProcedure = (proc: Procedure) => {
     if (selectedProcedures.find((p) => p.code === proc.code)) {
       toast.info("Procedimento já adicionado");
