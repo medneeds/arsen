@@ -80,20 +80,16 @@ export const MedicalResponsibilityIndicator = ({
 
   const getAbbreviation = () => {
     switch (responsibility.type) {
-      case 'porta':
-        return 'PORTA';
-      case 'lider':
-        return 'LÍDER';
-      case 'conjunto':
-        return 'CONJUNTO';
-      case 'obstetra':
-        return 'OBS';
-      case 'cirurgiao_geral':
-        return 'CIRURG.';
-      case 'traumatologista':
-        return 'ORTOP';
-      default:
-        return '';
+      case 'rotineiro': return 'ROTIN.';
+      case 'plantonista': return 'PLANT.';
+      case 'intercorrencista': return 'INTERC.';
+      case 'porta': return 'PORTA';
+      case 'lider': return 'LÍDER';
+      case 'conjunto': return 'CONJUNTO';
+      case 'obstetra': return 'OBS';
+      case 'cirurgiao_geral': return 'CIRURG.';
+      case 'traumatologista': return 'ORTOP';
+      default: return '';
     }
   };
 
