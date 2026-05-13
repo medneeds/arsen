@@ -6087,6 +6087,50 @@ const PrescricaoPage = () => {
         onAddItem={(med) => { addItem(med); }}
       />
 
+      {/* Insulinoterapia — Assistente inteligente */}
+      <InsulinTherapyDialog
+        open={insulinDialogOpen}
+        onOpenChange={(v) => {
+          setInsulinDialogOpen(v);
+          if (!v) { setPendingInsulinMed(null); setEditingInsulinItemId(null); }
+        }}
+        medicationName={pendingInsulinMed?.name ?? (editingInsulinItemId ? (items.find(i => i.id === editingInsulinItemId)?.name ?? '') : '')}
+        initialWeightKg={patient?.weight ? Number(String(patient.weight).replace(',', '.')) || undefined : undefined}
+        existingPlan={editingInsulinItemId ? items.find(i => i.id === editingInsulinItemId)?.insulinPlan : undefined}
+        onConfirm={(plan) => {
+          const desc = describeInsulinPlan(plan);
+          if (editingInsulinItemId) {
+            setItems(prev => prev.map(it => it.id === editingInsulinItemId
+              ? { ...it, insulinPlan: plan, instructions: [desc.headline, ...desc.lines].join(' | ') }
+              : it
+            ));
+            toast.success('Plano de insulinoterapia atualizado');
+          } else if (pendingInsulinMed) {
+            const baseItem = createItem(pendingInsulinMed);
+            const grouped: PrescriptionItem = {
+              ...baseItem,
+              name: `Insulinoterapia — ${desc.headline}`,
+              dose: plan.totalDailyDose ? `${plan.totalDailyDose} U/dia` : (baseItem.dose || 'conforme esquema'),
+              route: plan.scheme === 'iv_continuous' ? 'Intravenosa' : 'Subcutânea',
+              posology: plan.scheme === 'iv_continuous' ? 'BIC' : (plan.hgtFrequency ?? 'conforme esquema'),
+              schedule: plan.scheme === 'iv_continuous' ? 'contínuo' : 'múltiplos horários',
+              instructions: [desc.headline, ...desc.lines].join(' | '),
+              insulinPlan: plan,
+              highAlert: true,
+              securityCategory: 'MAV',
+              doubleCheck: true,
+              flags: plan.scheme === 'iv_continuous' ? ['bi' as PrescriptionFlag] : baseItem.flags,
+            };
+            setItems(prev => [...prev, grouped]);
+            toast.success(`✓ ${desc.headline}`, {
+              description: 'ALTA VIGILÂNCIA · esquema completo gerado para enfermagem.',
+              duration: 4000,
+            });
+            setExpandedCategories(prev => { const n = new Set(prev); n.add('high_alert'); return n; });
+          }
+        }}
+      />
+
       {/* Care Catalog Dialog — só cuidados de suporte (sinais vitais, decúbito, fisio, fono, curativos) */}
       <CareCatalogDialog
         open={careCatalogOpen}
