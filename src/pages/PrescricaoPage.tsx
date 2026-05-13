@@ -1668,6 +1668,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               })}
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>
