@@ -322,7 +322,7 @@ const EvolucaoPage = () => {
                 size="sm"
                 className="gap-1.5 text-xs"
                 onClick={handleCreateIntercurrence}
-                disabled={savingIntercurrence || !intercurrenceText.trim()}
+                disabled={savingIntercurrence || !richHtmlToPlainText(intercurrenceText)}
               >
                 {savingIntercurrence ? (
                   <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando...</>
