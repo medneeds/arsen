@@ -518,7 +518,9 @@ export default function Saps3Page() {
       const { error: sapsError } = await supabase.from("saps3_assessments" as any).insert(sapsPayload as any);
       if (sapsError) throw sapsError;
 
-      const destinationSectorLabel = UTI_SECTORS.find((sector) => sector.value === selectedSector)?.label || selectedSector;
+      const sectorMeta = UTI_SECTORS.find((sector) => sector.value === selectedSector);
+      const destinationSectorLabel = sectorMeta?.label || selectedSector;
+      const destinationDepartment = sectorMeta?.department || "UTI";
 
       if (selectedRequest?.allocation_request_id && selectedRequest.patient_id) {
         const { data: existingPatients } = await supabase
