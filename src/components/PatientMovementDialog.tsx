@@ -39,6 +39,7 @@ import {
   type SubtypeDef,
 } from "@/data/movementFlow";
 import { DischargeDocumentForm } from "@/components/DischargeDocumentForm";
+import { DischargeConfirmDialog } from "@/components/DischargeConfirmDialog";
 import {
   type DischargeDocType,
   type DischargeDocPayload,
@@ -97,6 +98,7 @@ export function PatientMovementDialog({
   const [docPayload, setDocPayload] = useState<DischargeDocPayload | null>(null);
   const [docComplete, setDocComplete] = useState(false);
   const [signerProfile, setSignerProfile] = useState<{ name: string; crm: string }>({ name: "", crm: "" });
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { toast } = useToast();
   const { currentState, currentHospital } = useHospital();
@@ -172,12 +174,48 @@ export function PatientMovementDialog({
     setResponsibleDoctor("");
     setDocPayload(null);
     setDocComplete(false);
+    setConfirmOpen(false);
     onClose();
   };
 
-  const handleSubmit = async () => {
-    if (!patient || !subtypeDef) return;
+  // Calcula pendências para o popup de confirmação (apenas docs de alta/óbito)
+  const dischargeChecklist = useMemo(() => {
+    if (!requiredDocType) return { blocking: [], soft: [] };
+    const blocking: { label: string; reason: string }[] = [];
+    const soft: { label: string }[] = [];
+    const p = docPayload || ({} as Partial<DischargeDocPayload>);
+    const empty = (v: any) => !String(v ?? "").trim();
 
+    if (!responsibleDoctor.trim()) {
+      blocking.push({ label: "Médico responsável", reason: "precisa estar sincronizado com o usuário logado." });
+    }
+    if (requiredDocType === "obito") {
+      if (empty(p.death_date_time)) blocking.push({ label: "Data/hora do óbito", reason: "campo obrigatório." });
+      if (empty(p.death_summary)) blocking.push({ label: "Resumo do óbito", reason: "relatório clínico obrigatório." });
+    } else {
+      if (empty(p.final_diagnoses)) blocking.push({ label: "Diagnósticos finais (CID)", reason: "obrigatórios para a alta." });
+      if (empty(p.evolution_summary)) blocking.push({ label: "Resumo da evolução", reason: "obrigatório." });
+      if (empty(p.discharge_summary)) blocking.push({ label: "Sumário de alta", reason: "síntese clínica obrigatória." });
+      if (requiredDocType === "alta_hospitalar" && empty(p.orientations)) {
+        blocking.push({ label: "Orientações ao paciente", reason: "obrigatórias na alta hospitalar." });
+      }
+    }
+    if (empty(p.signed_by_name)) blocking.push({ label: "Médico assinante", reason: "nome do responsável obrigatório." });
+    if (empty(p.signed_by_crm)) blocking.push({ label: "CRM", reason: "registro profissional obrigatório." });
+
+    // Soft (opcionais — comunicação à família)
+    if (empty(p.family_contact_name)) soft.push({ label: "Familiar comunicado" });
+    if (empty(p.family_contact_relation)) soft.push({ label: "Grau de parentesco" });
+    if (empty(p.family_contact_phone)) soft.push({ label: "Telefone do familiar" });
+    if (empty(p.family_communication_mode)) soft.push({ label: "Modo de comunicação" });
+    if (empty(p.family_satisfaction)) soft.push({ label: "Grau de satisfação na comunicação" });
+    if (empty(p.family_communication_notes)) soft.push({ label: "Observações da comunicação" });
+
+    return { blocking, soft };
+  }, [requiredDocType, docPayload, responsibleDoctor]);
+
+  const handleOpenConfirm = () => {
+    if (!patient || !subtypeDef) return;
     if (subtypeDef.needsDestination && !destination && !customDestination) {
       toast({
         title: "Campo obrigatório",
@@ -186,26 +224,20 @@ export function PatientMovementDialog({
       });
       return;
     }
+    // Sempre abrir o popup — a validação visual e o bloqueio acontecem dentro dele
+    setConfirmOpen(true);
+  };
 
-    if (requiredDocType) {
-      if (!responsibleDoctor.trim()) {
-        toast({
-          title: "Médico responsável obrigatório",
-          description: "O médico responsável precisa estar identificado (sincronizado com o usuário logado).",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (!docPayload || !docComplete) {
-        toast({
-          title: "Documento obrigatório",
-          description: requiredDocType === "obito"
-            ? "Preencha o Relatório de Óbito antes de confirmar."
-            : "Preencha o Sumário de Alta antes de confirmar.",
-          variant: "destructive",
-        });
-        return;
-      }
+  const handleSubmit = async () => {
+    if (!patient || !subtypeDef) return;
+    // Revalida no submit (defesa em profundidade)
+    if (requiredDocType && dischargeChecklist.blocking.length > 0) {
+      toast({
+        title: "Pendências obrigatórias",
+        description: dischargeChecklist.blocking[0].label + " — " + dischargeChecklist.blocking[0].reason,
+        variant: "destructive",
+      });
+      return;
     }
 
     setIsSubmitting(true);
@@ -273,6 +305,7 @@ export function PatientMovementDialog({
           : "Movimentação registrada no histórico.",
       });
 
+      setConfirmOpen(false);
       onSuccess?.();
       handleClose();
     } catch (error) {
@@ -575,12 +608,11 @@ export function PatientMovementDialog({
 
         {step === "form" && (
           <DialogFooter className="gap-2 sm:gap-2 sm:flex-col sm:items-stretch">
-            {requiredDocType && (!docComplete || !responsibleDoctor.trim()) && (
+            {requiredDocType && dischargeChecklist.blocking.length > 0 && (
               <div className="flex items-start gap-2 p-2 rounded-md bg-warning/10 border border-warning/30 text-[11px] text-warning-foreground">
                 <AlertTriangle className="h-3.5 w-3.5 text-warning mt-0.5 shrink-0" />
                 <span>
-                  Para confirmar, é preciso ter o {requiredDocType === "obito" ? "Relatório de Óbito" : "Sumário de Alta"} completo
-                  e o médico responsável sincronizado com o usuário logado.
+                  Há {dischargeChecklist.blocking.length} pendência(s) obrigatória(s). Você poderá ver o detalhe ao clicar em <strong>Revisar e confirmar</strong>.
                 </span>
               </div>
             )}
@@ -589,20 +621,38 @@ export function PatientMovementDialog({
                 Cancelar
               </Button>
               <Button
-                onClick={handleSubmit}
-                disabled={
-                  isSubmitting ||
-                  (!!requiredDocType && (!docComplete || !responsibleDoctor.trim()))
-                }
+                onClick={handleOpenConfirm}
+                disabled={isSubmitting}
                 className="gap-2"
               >
                 {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isSubmitting ? "Registrando..." : "Confirmar"}
+                {isSubmitting
+                  ? "Registrando..."
+                  : requiredDocType ? "Revisar e confirmar" : "Confirmar"}
               </Button>
             </div>
           </DialogFooter>
         )}
       </DialogContent>
+
+      {/* Popup de confirmação didático para altas/óbito */}
+      {requiredDocType && (
+        <DischargeConfirmDialog
+          open={confirmOpen}
+          onOpenChange={(o) => !isSubmitting && setConfirmOpen(o)}
+          onConfirm={handleSubmit}
+          isSubmitting={isSubmitting}
+          docType={requiredDocType}
+          payload={docPayload}
+          patient={patient ? { name: patient.name, bedNumber: patient.bedNumber, sector: patient.sector } : null}
+          responsibleDoctor={responsibleDoctor}
+          movementLabel={subtypeDef?.label || "Movimentação"}
+          destination={destination === "OUTRO" ? customDestination : destination}
+          notes={notes}
+          blockingMissing={dischargeChecklist.blocking}
+          softMissing={dischargeChecklist.soft}
+        />
+      )}
     </Dialog>
   );
 }

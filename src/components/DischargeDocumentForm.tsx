@@ -25,10 +25,11 @@ export interface DischargeDocFormProps {
   onChange: (payload: DischargeDocPayload, isComplete: boolean) => void;
 }
 
+// Comunicação à família é opcional — registro deve fluir mesmo sem contato familiar
 const REQUIRED_BY_TYPE: Record<DischargeDocType, (keyof DischargeDocPayload)[]> = {
-  alta_hospitalar: ["final_diagnoses", "evolution_summary", "discharge_summary", "orientations", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
-  alta_pedido: ["final_diagnoses", "evolution_summary", "discharge_summary", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
-  obito: ["death_date_time", "death_summary", "signed_by_name", "signed_by_crm", "family_contact_name", "family_contact_relation", "family_contact_phone", "family_communication_mode", "family_satisfaction"],
+  alta_hospitalar: ["final_diagnoses", "evolution_summary", "discharge_summary", "orientations", "signed_by_name", "signed_by_crm"],
+  alta_pedido: ["final_diagnoses", "evolution_summary", "discharge_summary", "signed_by_name", "signed_by_crm"],
+  obito: ["death_date_time", "death_summary", "signed_by_name", "signed_by_crm"],
 };
 
 const RELATION_OPTIONS = [
@@ -51,12 +52,9 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
 
   const isComplete = useMemo(() => {
     const req = REQUIRED_BY_TYPE[type];
-    const minOne: (keyof DischargeDocPayload)[] = [
-      "family_satisfaction", "family_communication_mode", "family_contact_relation",
-    ];
     return req.every((k) => {
       const v = String((form as any)[k] ?? "").trim();
-      return minOne.includes(k) ? v.length >= 1 : v.length > 2;
+      return v.length > 2;
     });
   }, [form, type]);
 
@@ -219,21 +217,22 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
         </>
       )}
 
-      {/* Comunicação à família */}
+      {/* Comunicação à família — OPCIONAL */}
       <div className="space-y-2 pt-2 border-t">
         <div className="flex items-center gap-2">
           <FileSignature className="h-3.5 w-3.5 text-primary" />
           <span className="text-[11px] uppercase tracking-wider font-semibold">
-            Comunicação à família <span className="text-destructive">*</span>
+            Comunicação à família
           </span>
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground">(opcional)</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <Field label="Familiar comunicado *">
+          <Field label="Familiar comunicado">
             <Input className="h-8 text-xs uppercase" value={form.family_contact_name || ""}
               onChange={(e) => setField("family_contact_name", upper(e.target.value))}
               placeholder="NOME COMPLETO" />
           </Field>
-          <Field label="Grau de parentesco *">
+          <Field label="Grau de parentesco">
             <Select value={form.family_contact_relation || ""} onValueChange={(v) => setField("family_contact_relation", v)}>
               <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="SELECIONE" /></SelectTrigger>
               <SelectContent>
@@ -243,7 +242,7 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
           </Field>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <Field label="Telefone *">
+          <Field label="Telefone">
             <Input className="h-8 text-xs" value={form.family_contact_phone || ""}
               onChange={(e) => setField("family_contact_phone", e.target.value)}
               placeholder="(00) 00000-0000" />
@@ -254,7 +253,7 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
           </Field>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <Field label="Modo *">
+          <Field label="Modo">
             <Select value={form.family_communication_mode || ""} onValueChange={(v) => setField("family_communication_mode", v)}>
               <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="SELECIONE" /></SelectTrigger>
               <SelectContent>
@@ -276,7 +275,7 @@ export function DischargeDocumentForm({ type, initial, onChange }: DischargeDocF
               onChange={(e) => setField("family_communication_at", e.target.value)} />
           </Field>
         </div>
-        <Field label="Grau de satisfação na comunicação médica *">
+        <Field label="Grau de satisfação na comunicação médica">
           <div className="flex gap-1">
             {[1,2,3,4,5].map((n) => {
               const selected = form.family_satisfaction === String(n);
