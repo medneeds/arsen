@@ -766,6 +766,29 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
   );
 });
 
+// Compute ATB day text dynamically (D{n} — DD/MM/AAAA (início … previsão …))
+function buildAtbDayLine(item: PrescriptionItem): string | null {
+  if (!item.atbStartDate) return null;
+  const start = new Date(item.atbStartDate + 'T00:00:00');
+  if (isNaN(start.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const startMid = new Date(start);
+  startMid.setHours(0, 0, 0, 0);
+  const dayN = Math.max(1, Math.floor((today.getTime() - startMid.getTime()) / 86400000) + 1);
+  const days = parseInt(item.atbPlannedDays || '', 10);
+  const fmt = (d: Date) => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  let endStr = '—';
+  let suffix = '';
+  if (Number.isFinite(days) && days > 0) {
+    const end = new Date(startMid);
+    end.setDate(end.getDate() + days - 1);
+    endStr = fmt(end);
+    suffix = `/${days}`;
+  }
+  return `D${dayN}${suffix} — ${fmt(today)} (início ${fmt(startMid)}, previsão ${endStr})`;
+}
+
 
 // --- Nutrition fields (specific structured controls per nutrition subtype) ---
 // Renderizado no modo expandido para itens da categoria 'nutrition' no lugar
