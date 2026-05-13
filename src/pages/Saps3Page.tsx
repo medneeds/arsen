@@ -639,18 +639,18 @@ export default function Saps3Page() {
       }
 
       // Modelo de leitos fixos: o leito alvo já existe como linha "vaga" em patients.
-      // Buscamos a linha do leito de destino (department + sector + bed_number).
-      const { data: existingBedRow, error: bedLookupError } = await supabase
+      // Buscamos por setor+leito e normalizamos o department canônico no UPDATE.
+      const { data: bedRows, error: bedLookupError } = await supabase
         .from("patients")
         .select("id, is_vacant, name")
         .eq("hospital_unit_id", hospitalId)
         .eq("state_id", stateId)
-        .eq("department", destinationDepartment)
         .eq("sector", selectedSector)
-        .eq("bed_number", selectedBed)
-        .maybeSingle();
+        .eq("bed_number", selectedBed);
 
       if (bedLookupError) throw bedLookupError;
+
+      const existingBedRow = bedRows?.find((row) => row.is_vacant !== false) || bedRows?.[0] || null;
 
       if (existingBedRow && existingBedRow.is_vacant === false) {
         throw new Error(`Leito ${selectedBed} já está ocupado. Atualize o mapa e selecione outro leito.`);
