@@ -90,7 +90,9 @@ interface SelectedProcedure {
 
 const RequisicaoImagensPage = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const printRef = useRef<HTMLDivElement>(null);
+  const [hydratedFromRegistry, setHydratedFromRegistry] = useState(false);
 
   // Doctor data from profile
   const [doctorName, setDoctorName] = useState("");
