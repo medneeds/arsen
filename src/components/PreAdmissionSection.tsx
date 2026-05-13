@@ -181,7 +181,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
           {preAdmissions.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="p-4 text-center text-sm text-muted-foreground">
-                Nenhum paciente aguardando admissão.
+                Nenhum paciente aguardando pré-admissão.
               </CardContent>
             </Card>
           ) : (
