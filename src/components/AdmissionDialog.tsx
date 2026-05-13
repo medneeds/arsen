@@ -193,8 +193,84 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   const [specialties, setSpecialties] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+  const [attempted, setAttempted] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
+  const [draftHydrated, setDraftHydrated] = useState(false);
 
   const imc = useMemo(() => computeImc(weight, height), [weight, height]);
+
+  /* ───────── Rascunho automático (localStorage) ───────── */
+  // Restaura ao abrir
+  useEffect(() => {
+    if (!open) return;
+    try {
+      const raw = localStorage.getItem(draftKeyFor(patient.id));
+      if (raw) {
+        const d = JSON.parse(raw);
+        setHda(d.hda ?? ""); setAmp(d.amp ?? ""); setMuc(d.muc ?? "");
+        setAllergies(d.allergies ?? ""); setWeight(d.weight ?? ""); setHeight(d.height ?? "");
+        setPa(d.pa ?? ""); setFc(d.fc ?? ""); setFr(d.fr ?? ""); setSpo2(d.spo2 ?? "");
+        setTax(d.tax ?? ""); setDx(d.dx ?? "");
+        setPhysGeneral(d.physGeneral ?? ""); setPhysCv(d.physCv ?? "");
+        setPhysResp(d.physResp ?? ""); setPhysAbd(d.physAbd ?? ""); setPhysExt(d.physExt ?? "");
+        setPlan(d.plan ?? ""); setCidPrimary(d.cidPrimary ?? ""); setCidSecondary(d.cidSecondary ?? "");
+        setNoPrediction(!!d.noPrediction);
+        if (d.predictionDate) setPredictionDate(d.predictionDate);
+        if (d.predictionDays) setPredictionDays(d.predictionDays);
+        setAdmissionReason(d.admissionReason ?? ""); setOriginSector(d.originSector ?? "");
+        setDevices(d.devices ?? ""); setCulturesAtb(d.culturesAtb ?? "");
+        setSpecialties(d.specialties ?? "");
+        if (d.savedAt) setDraftSavedAt(new Date(d.savedAt));
+      }
+    } catch {}
+    setDraftHydrated(true);
+    return () => { setDraftHydrated(false); setAttempted(false); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, patient.id]);
+
+  // Salva (debounced) a cada mudança
+  useEffect(() => {
+    if (!open || !draftHydrated) return;
+    const t = setTimeout(() => {
+      try {
+        const payload = {
+          hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
+          physGeneral, physCv, physResp, physAbd, physExt,
+          plan, cidPrimary, cidSecondary,
+          noPrediction, predictionDate, predictionDays,
+          admissionReason, originSector, devices, culturesAtb, specialties,
+          savedAt: new Date().toISOString(),
+        };
+        // só persiste se houver algum conteúdo
+        const hasContent = Object.values(payload).some(v => typeof v === "string" && v.trim().length > 0);
+        if (hasContent) {
+          localStorage.setItem(draftKeyFor(patient.id), JSON.stringify(payload));
+          setDraftSavedAt(new Date());
+        }
+      } catch {}
+    }, 600);
+    return () => clearTimeout(t);
+  }, [
+    open, draftHydrated, patient.id,
+    hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
+    physGeneral, physCv, physResp, physAbd, physExt,
+    plan, cidPrimary, cidSecondary,
+    noPrediction, predictionDate, predictionDays,
+    admissionReason, originSector, devices, culturesAtb, specialties,
+  ]);
+
+  const discardDraft = () => {
+    try { localStorage.removeItem(draftKeyFor(patient.id)); } catch {}
+    setDraftSavedAt(null);
+    setHda(""); setAmp(""); setMuc(""); setAllergies(""); setWeight(""); setHeight("");
+    setPa(""); setFc(""); setFr(""); setSpo2(""); setTax(""); setDx("");
+    setPhysGeneral(""); setPhysCv(""); setPhysResp(""); setPhysAbd(""); setPhysExt("");
+    setPlan(""); setCidPrimary(""); setCidSecondary("");
+    setAdmissionReason(""); setOriginSector(""); setDevices(""); setCulturesAtb(""); setSpecialties("");
+    setNoPrediction(false);
+    setPredictionDate(toIsoDate(daysFromToday(5))); setPredictionDays("5");
+    toast.success("Rascunho descartado");
+  };
 
   // Sincronização dias -> data
   const handleDaysChange = (v: string) => {
@@ -216,13 +292,32 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     ? "Sem previsão"
     : `${formatBr(predictionDate)} (D+${predictionDays})`;
 
+  // Mapa de campos obrigatórios (para realce visual)
+  const missing = {
+    hda: !hda.trim(),
+    exam: !physGeneral.trim() && !physCv.trim() && !physResp.trim(),
+    examGeneral: !physGeneral.trim(),
+    plan: !plan.trim(),
+    cidPrimary: !cidPrimary.trim(),
+    prediction: !noPrediction && !predictionDate,
+    sapsAck: isUti && !sapsAck,
+  };
+  const missingList = [
+    missing.hda && "HDA",
+    missing.exam && "Exame físico (estado geral)",
+    missing.plan && "Plano terapêutico",
+    missing.cidPrimary && "CID primário",
+    missing.prediction && "Previsão de alta",
+    missing.sapsAck && "Ciência da SAPS 3",
+  ].filter(Boolean) as string[];
+
   const validate = (): string | null => {
-    if (!hda.trim()) return "História da Doença Atual (HDA) é obrigatória";
-    if (!physGeneral.trim() && !physCv.trim() && !physResp.trim()) return "Exame físico é obrigatório";
-    if (!plan.trim()) return "Plano terapêutico é obrigatório";
-    if (!cidPrimary.trim()) return "CID primário é obrigatório";
-    if (!noPrediction && !predictionDate) return "Previsão de alta é obrigatória";
-    if (isUti && !sapsAck) return "Declare ciência de que a ficha SAPS 3 está pendente (24h)";
+    if (missing.hda) return "História da Doença Atual (HDA) é obrigatória";
+    if (missing.exam) return "Exame físico é obrigatório";
+    if (missing.plan) return "Plano terapêutico é obrigatório";
+    if (missing.cidPrimary) return "CID primário é obrigatório";
+    if (missing.prediction) return "Previsão de alta é obrigatória";
+    if (missing.sapsAck) return "Declare ciência de que a ficha SAPS 3 está pendente (24h)";
     return null;
   };
 
