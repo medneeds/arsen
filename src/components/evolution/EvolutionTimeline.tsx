@@ -372,6 +372,11 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       <span className="text-[10px] text-muted-foreground">
                         por <strong className="text-foreground">{evo.created_by_name || "Médico"}</strong>
                       </span>
+                      {isAdmission && (
+                        <Badge className="text-[9px] px-1.5 py-0 h-4 bg-emerald-600 text-white gap-0.5 uppercase tracking-wider">
+                          D0 — Admissão Hospitalar
+                        </Badge>
+                      )}
                       <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0", config.color)}>
                         <StatusIcon className="h-2.5 w-2.5 mr-0.5" />
                         {config.label}
