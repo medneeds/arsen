@@ -602,9 +602,9 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
               <Section icon={FileText} title="Diagnóstico (CID-10)" hint="Busca por código ou descrição" tone="blue">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs">CID primário *</Label>
+                    <ReqLabel missing={attempted && missing.cidPrimary}>CID primário</ReqLabel>
                     <CidSearchInput value={cidPrimary} onChange={setCidPrimary}
-                      placeholder="Ex.: J18, pneumonia..." className="mt-1" />
+                      placeholder="Ex.: J18, pneumonia..." className={cn("mt-1", reqRing(attempted && missing.cidPrimary))} />
                   </div>
                   <div>
                     <Label className="text-xs">CID secundário</Label>
