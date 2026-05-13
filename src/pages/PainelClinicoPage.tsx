@@ -381,12 +381,30 @@ export default function PainelClinicoPage() {
                       <TableCell className="text-center">
                         {sapsScores[patient.name] ? (
                           sapsScores[patient.name].status === 'pending' ? (
-                            <div className="flex flex-col items-center gap-0.5">
+                            <div className="flex flex-col items-center gap-1">
                               <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                                 <Clock className="h-3.5 w-3.5 animate-pulse" />
                                 <span className="text-[10px] font-semibold">Pendente</span>
                               </div>
                               <SapsPendingMiniTimer pendingSince={sapsScores[patient.name].pending_since} />
+                              <Button
+                                size="sm"
+                                variant="default"
+                                className="h-6 px-2 text-[10px] gap-1 bg-amber-600 hover:bg-amber-700 text-white"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const params = new URLSearchParams();
+                                  params.set("patientName", patient.name);
+                                  if (patient.id) params.set("patientId", patient.id);
+                                  if (patient.bedNumber) params.set("patientBed", patient.bedNumber);
+                                  if (patient.sector) params.set("patientSector", patient.sector);
+                                  navigate(`/saps3?${params.toString()}`);
+                                }}
+                                title="Completar ficha SAPS 3"
+                              >
+                                <ClipboardList className="h-3 w-3" />
+                                Completar
+                              </Button>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center gap-0.5">
