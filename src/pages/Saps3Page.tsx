@@ -654,8 +654,11 @@ export default function Saps3Page() {
 
   const isFormMode = !!selectedRequest;
 
+  const currentSectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label;
+  const headerSectorLabel = currentSectorLabel || selectedRequest?.destination_sector || "UTI";
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-6xl px-4 md:px-8 lg:px-10 py-6 space-y-6">
       {confirmationData && (
         <SapsConfirmationScreen
           patientName={confirmationData.patientName}
@@ -670,7 +673,7 @@ export default function Saps3Page() {
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <Calculator className="h-6 w-6 text-primary" />
-          Admissão UTI — SAPS 3
+          Admissão {headerSectorLabel} — SAPS 3
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Fluxo admissional: Solicitação → Avaliação médica → Alocação de leito + SAPS 3
