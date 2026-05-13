@@ -3723,12 +3723,44 @@ const PrescricaoPage = () => {
   };
 
   const [showPrintPortal, setShowPrintPortal] = useState(false);
-  const handlePrint = () => {
+  const [printGuidesOpen, setPrintGuidesOpen] = useState(false);
+  const [printPrescription, setPrintPrescription] = useState(true);
+  const [printGuideAtm, setPrintGuideAtm] = useState(false);
+  const [printGuidePsy, setPrintGuidePsy] = useState(false);
+
+  const hasActiveAtb = items.some(i => i.status === 'active' && i.category === 'antimicrobial');
+  const hasActivePsy = items.some(i => i.status === 'active' && (i.category === 'high_alert' || isPsychotropicMedication(i.name)));
+
+  const doPrintPrescription = () => {
     setShowPrintPortal(true);
     setTimeout(() => {
       window.print();
       setShowPrintPortal(false);
     }, 300);
+  };
+
+  const handlePrint = () => {
+    if (!hasActiveAtb && !hasActivePsy) {
+      doPrintPrescription();
+      return;
+    }
+    setPrintPrescription(true);
+    setPrintGuideAtm(hasActiveAtb);
+    setPrintGuidePsy(hasActivePsy);
+    setPrintGuidesOpen(true);
+  };
+
+  const executePrintSelection = () => {
+    setPrintGuidesOpen(false);
+    if (printPrescription) doPrintPrescription();
+    // Open guides sequentially so the doctor can click "Imprimir" inside each one.
+    if (printGuideAtm) {
+      setTimeout(() => setAntimicrobialGuideOpen(true), printPrescription ? 800 : 200);
+    }
+    if (printGuidePsy) {
+      const delay = printGuideAtm ? 1200 : (printPrescription ? 800 : 200);
+      setTimeout(() => setPsychotropicFormOpen(true), delay);
+    }
   };
 
   // Sign prescription
