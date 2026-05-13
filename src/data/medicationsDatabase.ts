@@ -25,6 +25,7 @@ export interface MedicationEntry {
   category: PrescriptionCategory;
   highAlert?: boolean;
   aliases?: string[]; // Nomes alternativos para busca
+  isStandard?: boolean; // Padronizado HMDM 2026 (catálogo institucional)
 }
 
 export const CATEGORY_CONFIG: Record<PrescriptionCategory, {
