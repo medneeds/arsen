@@ -415,10 +415,10 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BedDouble className="h-5 w-5 text-primary" />
-            Admissão em Leito
+            Pré-admissão em Leito
           </DialogTitle>
           <DialogDescription>
-            Revise os dados da triagem e selecione o setor e leito para internação.
+            Aloca o paciente no leito e prepara o SAPS 3 quando indicado. A admissão hospitalar (HDA, exame físico, plano) é feita depois pelo Painel Clínico.
           </DialogDescription>
         </DialogHeader>
 
