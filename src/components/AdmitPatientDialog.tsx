@@ -687,6 +687,67 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
           )}
 
           <div className="space-y-1.5">
+            <Label className="text-xs flex items-center gap-1.5">
+              <Calendar className="h-3 w-3" />
+              Data e hora da admissão
+              <span className="text-[10px] font-normal text-muted-foreground">(sugerida — confirme ou edite)</span>
+            </Label>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      "h-9 flex-1 justify-start text-left font-normal text-xs",
+                      !admissionDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {admissionDate
+                      ? format(admissionDate, "dd/MM/yyyy (EEE)", { locale: ptBR })
+                      : "Selecionar data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarUI
+                    mode="single"
+                    selected={admissionDate}
+                    onSelect={(d) => {
+                      if (!d) return;
+                      // Preserva o horário atual do estado (ou agora) ao trocar só a data
+                      const base = admissionDate ?? new Date();
+                      const merged = new Date(d);
+                      merged.setHours(base.getHours(), base.getMinutes(), 0, 0);
+                      setAdmissionDate(merged);
+                    }}
+                    disabled={(date) => date > new Date()}
+                    locale={ptBR}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Input
+                type="time"
+                value={admissionDate ? format(admissionDate, "HH:mm") : ""}
+                onChange={(e) => {
+                  const [hh, mm] = e.target.value.split(":").map((n) => parseInt(n, 10));
+                  if (isNaN(hh) || isNaN(mm)) return;
+                  const base = admissionDate ?? new Date();
+                  const merged = new Date(base);
+                  merged.setHours(hh, mm, 0, 0);
+                  setAdmissionDate(merged);
+                }}
+                className="h-9 w-28 text-xs"
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Por padrão, usamos o momento atual. Ajuste se a admissão efetiva ocorreu em outro horário.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label className="text-xs">Previsão de alta</Label>
               <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
