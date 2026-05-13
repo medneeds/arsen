@@ -60,9 +60,28 @@ export function usePatientIdentifiers(
 
       // 1) Find patient_registry by patient_id (via medical_records) or by name+unit
       let registryRow: any = null;
+      let patientMedicalRecord: string | null = null;
 
-      // Try by medical_records.patient_id
+      // 1a) Read patients.patient_registry_id / medical_record (vínculo direto da admissão)
       if (patientId) {
+        const { data: pat } = await supabase
+          .from("patients")
+          .select("patient_registry_id, medical_record")
+          .eq("id", patientId)
+          .maybeSingle();
+        if (pat?.medical_record) patientMedicalRecord = pat.medical_record;
+        if (pat?.patient_registry_id) {
+          const { data: reg } = await supabase
+            .from("patient_registry")
+            .select("*")
+            .eq("id", pat.patient_registry_id)
+            .maybeSingle();
+          if (reg) registryRow = reg;
+        }
+      }
+
+      // 1b) Try by medical_records.patient_id
+      if (!registryRow && patientId) {
         const { data: mr } = await supabase
           .from("medical_records")
           .select("patient_registry_id, numero_prontuario")
@@ -81,7 +100,17 @@ export function usePatientIdentifiers(
         }
       }
 
-      // Fallback: by full name + hospital_unit_id
+      // 1c) Fallback por medical_record (prontuário PIS/legado) → registry
+      if (!registryRow && patientMedicalRecord) {
+        const { data: reg } = await supabase
+          .from("patient_registry")
+          .select("*")
+          .eq("medical_record", patientMedicalRecord)
+          .maybeSingle();
+        if (reg) registryRow = reg;
+      }
+
+      // 1d) Fallback: by full name + hospital_unit_id
       if (!registryRow && patientName && hospitalUnitId) {
         const { data } = await supabase
           .from("patient_registry")
@@ -114,6 +143,10 @@ export function usePatientIdentifiers(
           .limit(1)
           .maybeSingle();
         prontuario = mr?.numero_prontuario || null;
+      }
+      // Último fallback: número do PIS gravado em patients.medical_record
+      if (!prontuario && patientMedicalRecord) {
+        prontuario = patientMedicalRecord;
       }
 
       // 3) Atendimento: latest active patient_encounter
