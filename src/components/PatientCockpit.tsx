@@ -102,6 +102,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const navigate = useNavigate();
   const { currentHospital } = useHospital();
   const [showFullId, setShowFullId] = useState(false);
+  const [recordEditOpen, setRecordEditOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [docDialogOpen, setDocDialogOpen] = useState(false);
