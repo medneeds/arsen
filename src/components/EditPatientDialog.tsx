@@ -70,6 +70,7 @@ export function EditPatientDialog({
   const [responsibilityOpen, setResponsibilityOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [movementOpen, setMovementOpen] = useState(false);
+  const [recordEditOpen, setRecordEditOpen] = useState(false);
   const [movementType, setMovementType] = useState<
     "ALTA" | "ÓBITO" | "TRANSFERÊNCIA" | null
   >(null);
