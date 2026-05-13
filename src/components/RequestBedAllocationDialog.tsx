@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bed, Send } from "lucide-react";
+import { Bed, Send, User, MapPin, ClipboardList, Eye, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,6 +19,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useBedAllocationRequests } from "@/hooks/useBedAllocationRequests";
 import { Patient } from "@/types/patient";
+import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
 
 interface RequestBedAllocationDialogProps {
   open: boolean;
@@ -33,6 +34,7 @@ export function RequestBedAllocationDialog({
 }: RequestBedAllocationDialogProps) {
   const [selectedSector, setSelectedSector] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const { createRequest } = useBedAllocationRequests();
 
   const sectors = [
@@ -49,6 +51,7 @@ export function RequestBedAllocationDialog({
     try {
       const result = await createRequest(patient.id, selectedSector);
       if (result) {
+        setConfirmOpen(false);
         onOpenChange(false);
         setSelectedSector("");
       }
@@ -123,18 +126,42 @@ export function RequestBedAllocationDialog({
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button 
-                onClick={handleSubmit} 
+              <Button
+                onClick={() => setConfirmOpen(true)}
                 disabled={!selectedSector || isSubmitting}
                 className="bg-primary"
               >
                 <Send className="h-4 w-4 mr-2" />
-                {isSubmitting ? "Enviando..." : "Enviar Solicitação"}
+                {isSubmitting ? "Enviando..." : "Revisar e enviar"}
               </Button>
             </DialogFooter>
           </>
         )}
       </DialogContent>
+
+      <MovementConfirmDialog
+        open={confirmOpen}
+        onOpenChange={(o) => !isSubmitting && setConfirmOpen(o)}
+        onConfirm={handleSubmit}
+        isSubmitting={isSubmitting}
+        title="Confirmar pedido de alocação de leito"
+        confirmLabel="Enviar pedido"
+        summary={[
+          { icon: User, label: "Paciente", value: patient.name },
+          { icon: Bed, label: "Leito atual", value: `${patient.bedNumber || "—"} • ${patient.sector || "—"}` },
+          { icon: MapPin, label: "Setor solicitado", value: selectedSector || "—" },
+        ]}
+        consequences={[
+          { icon: ClipboardList, text: <>Será criado um <strong>pedido de alocação</strong> no NIR/regulação para o setor <strong>{selectedSector}</strong>.</> },
+          { icon: Clock, text: <>O paciente <strong>NÃO é movido agora</strong>. Ele permanece no leito atual e entra na <strong>fila de regulação</strong>, aguardando aprovação do líder do setor destino.</> },
+          { icon: Eye, text: <>Você poderá acompanhar o status (pendente / em discussão / aprovado / negado) no card do paciente e no painel NIR.</> },
+          { icon: User, text: <>Quando o pedido for aprovado, a alocação efetiva no leito será feita por etapa separada pela equipe de regulação.</> },
+        ]}
+        warnings={!patient.admissionHistory
+          ? [{ label: "História admissional não preenchida", detail: "recomenda-se preencher antes de enviar para facilitar a análise do líder." }]
+          : []}
+        finalNote={<>O pedido pode ser cancelado enquanto estiver pendente. Confirme apenas se o setor solicitado estiver correto.</>}
+      />
     </Dialog>
   );
 }

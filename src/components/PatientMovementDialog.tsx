@@ -23,7 +23,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useHospital } from "@/contexts/HospitalContext";
-import { ArrowLeft, ArrowRight, FileText, Loader2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, Loader2, AlertTriangle, User, Bed, Stethoscope, MapPin, Info, ArrowRightLeft, Building2, ClipboardList, Eye, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   MOVEMENT_CATEGORIES,
@@ -40,6 +40,7 @@ import {
 } from "@/data/movementFlow";
 import { DischargeDocumentForm } from "@/components/DischargeDocumentForm";
 import { DischargeConfirmDialog } from "@/components/DischargeConfirmDialog";
+import { MovementConfirmDialog, type MovementConsequence, type MovementSummaryItem } from "@/components/MovementConfirmDialog";
 import {
   type DischargeDocType,
   type DischargeDocPayload,
@@ -635,7 +636,7 @@ export function PatientMovementDialog({
         )}
       </DialogContent>
 
-      {/* Popup de confirmação didático para altas/óbito */}
+      {/* Popup didático para alta/óbito (com checklist clínico do documento) */}
       {requiredDocType && (
         <DischargeConfirmDialog
           open={confirmOpen}
@@ -651,6 +652,70 @@ export function PatientMovementDialog({
           notes={notes}
           blockingMissing={dischargeChecklist.blocking}
           softMissing={dischargeChecklist.soft}
+        />
+      )}
+
+      {/* Popup didático genérico para transferências e demais movimentações */}
+      {!requiredDocType && subtypeDef && (
+        <MovementConfirmDialog
+          open={confirmOpen}
+          onOpenChange={(o) => !isSubmitting && setConfirmOpen(o)}
+          onConfirm={handleSubmit}
+          isSubmitting={isSubmitting}
+          tone={subtypeDef.id === "EVASAO" ? "destructive" : "primary"}
+          title={`Confirmar ${subtypeDef.label}`}
+          confirmLabel={`Confirmar ${subtypeDef.label}`}
+          summary={[
+            { icon: User, label: "Paciente", value: patient.name },
+            { icon: Bed, label: "Leito atual / Setor", value: `${patient.bedNumber} • ${patient.sector}` },
+            ...(subtypeDef.needsDestination
+              ? [{ icon: MapPin, label: "Destino", value: (destination === "OUTRO" ? customDestination : destination) || "—" } as MovementSummaryItem]
+              : []),
+            { icon: Stethoscope, label: "Médico responsável", value: responsibleDoctor || "—" },
+            ...(notes ? [{ icon: Info, label: "Observações", value: notes, fullWidth: true } as MovementSummaryItem] : []),
+          ]}
+          consequences={(() => {
+            const base: MovementConsequence[] = [
+              { icon: ClipboardList, text: <>A movimentação <strong>"{subtypeDef.label}"</strong> será gravada na <strong>linha do tempo do paciente</strong> e na auditoria do hospital, com seu usuário como responsável.</> },
+            ];
+            if (subtypeDef.id === "TRANSFERENCIA_INTERNA") {
+              base.push(
+                { icon: ArrowRightLeft, text: <>O paciente será marcado como em <strong>trânsito interno</strong> para o setor destino. O leito atual <strong>permanece reservado</strong> até a confirmação administrativa de chegada.</> },
+                { icon: Bed, text: <>A liberação do leito de origem e a alocação efetiva no leito de destino são feitas em <strong>etapa separada</strong> pela equipe NIR/regulação.</> },
+              );
+            } else if (subtypeDef.id === "TRANSFERENCIA_EXTERNA") {
+              base.push(
+                { icon: Building2, text: <>O paciente será marcado como <strong>transferido para outra instituição</strong>. O censo do hospital reflete a saída assistencial, mas o registro permanece consultável.</> },
+                { icon: Bed, text: <>O leito vai para <strong>limpeza/disponibilização</strong> conforme rotina do setor administrativo — não é apagado neste momento.</> },
+              );
+            } else if (subtypeDef.id === "EVASAO") {
+              base.push(
+                { icon: AlertTriangle, text: <>Esta é uma <strong>saída sem alta médica</strong>. Recomenda-se descrever nas observações o contexto (local, horário, ciência da equipe e família, se houver).</> },
+                { icon: Bed, text: <>O leito será liberado pela equipe administrativa em etapa posterior. O prontuário continua disponível para auditoria.</> },
+              );
+            }
+            base.push(
+              { icon: Eye, text: <><strong>O paciente continua visível no sistema</strong> — esta ação não remove nem apaga o registro. Ele permanece em buscas, relatórios e no histórico longitudinal.</> },
+              { icon: History, text: <>Você pode consultar todas as movimentações deste paciente em <strong>Histórico do Paciente</strong>.</> },
+            );
+            return base;
+          })()}
+          warnings={
+            subtypeDef.needsDestination && !(destination === "OUTRO" ? customDestination : destination)
+              ? []
+              : !notes
+              ? [{ label: "Observações em branco", detail: "recomendamos descrever o motivo da movimentação para auditoria." }]
+              : []
+          }
+          blockers={[
+            ...(subtypeDef.needsDestination && !(destination === "OUTRO" ? customDestination : destination)
+              ? [{ label: "Destino", reason: "selecione o destino antes de confirmar." }]
+              : []),
+            ...(!responsibleDoctor.trim()
+              ? [{ label: "Médico responsável", reason: "informe o profissional responsável pela movimentação." }]
+              : []),
+          ]}
+          finalNote={<>Esta ação é <strong className="text-foreground">reversível apenas via auditoria administrativa</strong>. Confirme apenas se todos os dados estiverem corretos.</>}
         />
       )}
     </Dialog>

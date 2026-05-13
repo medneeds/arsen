@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
-import { Bed, Send, ChevronDown, User, Stethoscope, FileText, Plus, X } from "lucide-react";
+import { Bed, Send, ChevronDown, User, Stethoscope, FileText, Plus, X, MapPin, ClipboardList, Eye, Clock, AlertTriangle } from "lucide-react";
+import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -136,6 +137,7 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
   const [admissionHistory, setAdmissionHistory] = useState("");
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   // Refs for focus management
@@ -581,12 +583,41 @@ export function RequestUtiAllocationDialog({ open, onOpenChange }: RequestUtiAll
           <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
+          <Button onClick={() => setConfirmOpen(true)} disabled={isSubmitting || !patientName.trim()} className="gap-2">
             <Send className="h-4 w-4" />
-            {isSubmitting ? "Enviando..." : "Solicitar Leito"}
+            {isSubmitting ? "Enviando..." : "Revisar e solicitar"}
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <MovementConfirmDialog
+        open={confirmOpen}
+        onOpenChange={(o) => !isSubmitting && setConfirmOpen(o)}
+        onConfirm={handleSubmit}
+        isSubmitting={isSubmitting}
+        title="Confirmar pedido de leito de UTI"
+        confirmLabel="Enviar pedido de UTI"
+        tone="warning"
+        summary={[
+          { icon: User, label: "Paciente", value: patientName || "—" },
+          { icon: User, label: "Idade / Sexo", value: `${patientAge || "—"} • ${patientSex || "—"}` },
+          { icon: Stethoscope, label: "Médico solicitante", value: requestingDoctorName || "—" },
+          { icon: MapPin, label: "UTI alvo", value: targetUti },
+          { icon: FileText, label: "Setor de origem", value: originSector || "—" },
+        ]}
+        consequences={[
+          { icon: AlertTriangle, text: <>O pedido será enviado ao <strong>líder/regulação da {targetUti}</strong>. Pacientes graves devem ser priorizados — verifique escore de gravidade na evolução.</> },
+          { icon: ClipboardList, text: <>Um prontuário em <strong>pré-UTI</strong> será criado e ficará na <strong>fila de regulação</strong> até aprovação.</> },
+          { icon: Clock, text: <>O paciente <strong>NÃO ocupa leito de UTI agora</strong>. A alocação efetiva acontece após o líder aceitar e indicar o leito.</> },
+          { icon: Eye, text: <>Você acompanha o status do pedido em tempo real no painel da {targetUti} e no card do paciente.</> },
+          { icon: Bed, text: <>Caso a {targetUti} esteja sem vaga, o paciente entra em fila de espera com priorização clínica.</> },
+        ]}
+        blockers={!patientName.trim() ? [{ label: "Nome do paciente", reason: "obrigatório." }] : []}
+        warnings={!requestingDoctorName.trim()
+          ? [{ label: "Médico solicitante em branco", detail: "recomendado para rastreabilidade." }]
+          : []}
+        finalNote={<>Pedidos de UTI são auditados pela CCIH/regulação. Confirme apenas se a indicação clínica estiver descrita.</>}
+      />
     </Dialog>
   );
 }
