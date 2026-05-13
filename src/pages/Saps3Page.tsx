@@ -805,6 +805,9 @@ export default function Saps3Page() {
           sectorLabel={confirmationData.sectorLabel}
           totalScore={confirmationData.totalScore}
           predictedMortality={confirmationData.predictedMortality}
+          patientId={confirmationData.patientId}
+          sectorCode={confirmationData.sectorCode}
+          age={confirmationData.age}
           onComplete={() => setConfirmationData(null)}
         />
       )}
