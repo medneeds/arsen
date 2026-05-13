@@ -3122,6 +3122,19 @@ const PrescricaoPage = () => {
       });
       return;
     }
+    // Bloqueia validação se houver itens com campos obrigatórios faltando
+    if (blockedValidationItems.length > 0) {
+      const lines = blockedValidationItems.slice(0, 4).map(i => {
+        const miss = itemMissingMap.get(i.id) || [];
+        return `• ${i.name}: ${miss.join(', ')}`;
+      });
+      const extra = blockedValidationItems.length > 4 ? `\n+ ${blockedValidationItems.length - 4} outro(s)` : '';
+      toast.error("Validação bloqueada — campos obrigatórios faltando", {
+        description: lines.join('\n') + extra,
+        duration: 6000,
+      });
+      return;
+    }
     const alerts = runClinicalAlertChecks(items, patient.allergies);
     if (alerts.length > 0) {
       setPendingAlerts(alerts);
@@ -3130,10 +3143,17 @@ const PrescricaoPage = () => {
       return;
     }
     proceedValidation({ type: 'all' });
-  }, [items, patient.allergies, proceedValidation]);
+  }, [items, patient.allergies, proceedValidation, blockedValidationItems, itemMissingMap]);
 
   // Solicita validação individual — checa alertas relativos ao item
   const requestValidateItem = useCallback((id: string) => {
+    const miss = itemMissingMap.get(id);
+    if (miss && miss.length > 0) {
+      toast.error("Validação bloqueada — preencha os campos obrigatórios", {
+        description: miss.join(', '),
+      });
+      return;
+    }
     const alerts = runClinicalAlertChecks(items, patient.allergies, { onlyItemId: id });
     if (alerts.length > 0) {
       setPendingAlerts(alerts);
@@ -3142,7 +3162,7 @@ const PrescricaoPage = () => {
       return;
     }
     proceedValidation({ type: 'item', itemId: id });
-  }, [items, patient.allergies, proceedValidation]);
+  }, [items, patient.allergies, proceedValidation, itemMissingMap]);
 
   // Após o médico confirmar ciência dos alertas → continua o fluxo
   const handleAlertAcknowledged = useCallback(() => {
