@@ -1,7 +1,7 @@
 import { Patient } from "@/types/patient";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Edit, ChevronDown, ChevronRight, MoreVertical, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, ClipboardCheck, Clock, FileText, FolderOpen, Pill, Activity, Heart, User, Star, Printer, TrendingUp, Skull, ArrowRightLeft, ArrowLeftRight, BedDouble, DoorOpen, UserPlus } from "lucide-react";
+import { Edit, ChevronDown, ChevronRight, MoreVertical, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, ClipboardCheck, Clock, FileText, FolderOpen, Pill, Activity, Heart, User, Star, Printer, TrendingUp, Skull, ArrowRightLeft, ArrowLeftRight, BedDouble, DoorOpen, UserPlus, Shuffle } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { EditPatientDialog } from "./EditPatientDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
 import { UtiReallocationDialog } from "./UtiReallocationDialog";
+import { BedReallocationDialog } from "./BedReallocationDialog";
 import { PatientRegistrationDialog } from "./PatientRegistrationDialog";
 import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -1020,24 +1021,8 @@ export function UtiPatientCard({
                 <UserPlus className="h-3.5 w-3.5" />
                 Cadastrar Paciente
               </Button>
-              {onDelete && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-foreground">
-                      <MoreVertical className="h-3 w-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-popover border shadow-lg z-50 w-40">
-                    <DropdownMenuItem
-                      onClick={() => onDelete(patient.id)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Excluir Leito
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+              {/* Leitos são fixos — exclusão removida. Realocação só ocorre quando há paciente no leito. */}
+
             </div>
           </div>
         ) : (
@@ -1300,66 +1285,23 @@ export function UtiPatientCard({
                     <MoreVertical className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-popover border shadow-lg z-50 w-48">
-                  {/* Print option */}
-                  {onPrintPatient && (
-                    <DropdownMenuItem onClick={() => onPrintPatient(patient.id)}>
-                      <Printer className="h-4 w-4 mr-2" />
-                      Imprimir Caso
+                <DropdownMenuContent align="end" className="bg-popover border shadow-lg z-50 w-56">
+                  {/* Único item ativo no card: realocar/permutar (autonomia médica).
+                      Impressão fica no botão geral do setor. Movimentações de alta/transferência/óbito
+                      ocorrem pelo Painel Clínico (Cockpit). Leitos são fixos — não há exclusão. */}
+                  {patient.name ? (
+                    <DropdownMenuItem onClick={() => setIsReallocationDialogOpen(true)}>
+                      <Shuffle className="h-4 w-4 mr-2 text-teal-600" />
+                      Realocar / Permutar leito
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={() => setIsRoundPrintDialogOpen(true)}>
-                    <ClipboardCheck className="h-4 w-4 mr-2 text-violet-600" />
-                    Round Multiprofissional
-                  </DropdownMenuItem>
-
-                  {/* Vacancy is automated by the auto_vacate_on_discharge trigger — no manual toggle here. */}
-
-                  {/* Only show movement options if patient has data */}
-                  {patient.name && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuLabel className="text-xs text-muted-foreground">Realocação</DropdownMenuLabel>
-                      
-                      <DropdownMenuItem onClick={() => setIsReallocationDialogOpen(true)}>
-                        <BedDouble className="h-4 w-4 mr-2 text-blue-500" />
-                        Realocar Leito/UTI
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuSeparator />
-                      <DropdownMenuLabel className="text-xs text-muted-foreground">Movimentações</DropdownMenuLabel>
-                      
-                      <DropdownMenuItem onClick={() => handleMovement("ALTA")}>
-                        <TrendingUp className="h-4 w-4 mr-2 text-green-500" />
-                        Alta
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem onClick={() => handleMovement("TRANSFERÊNCIA")}>
-                        <ArrowLeftRight className="h-4 w-4 mr-2 text-blue-500" />
-                        Transferência
-                      </DropdownMenuItem>
-                      
-                      <DropdownMenuItem onClick={() => handleMovement("ÓBITO")}>
-                        <Skull className="h-4 w-4 mr-2 text-red-500" />
-                        Óbito
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  
-                  {onDelete && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={() => onDelete(patient.id)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Excluir Leito
-                      </DropdownMenuItem>
-                    </>
+                  ) : (
+                    <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
+                      Leito vago — sem ações disponíveis.
+                    </DropdownMenuLabel>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
+
               <CollapsibleTrigger asChild>
                 <Button 
                   variant="ghost" 
@@ -1516,15 +1458,14 @@ export function UtiPatientCard({
         onSuccess={handleMovementSuccess}
       />
 
-      {/* Reallocation Dialog */}
-      <UtiReallocationDialog
+      {/* Reallocation Dialog — abas Realocar (leito vago) e Permutar (paciente) */}
+      <BedReallocationDialog
+        open={isReallocationDialogOpen}
+        onOpenChange={(o) => !o && setIsReallocationDialogOpen(false)}
         patient={patient}
-        isOpen={isReallocationDialogOpen}
-        onClose={() => setIsReallocationDialogOpen(false)}
         onSuccess={handleReallocationSuccess}
-        currentUtiUnit={derivedUtiUnit}
-        allPatients={allPatients}
       />
+
 
       {/* Cadastro de Paciente (a partir de leito vago no mapa) */}
       <PatientRegistrationDialog
