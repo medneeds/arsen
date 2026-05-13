@@ -303,6 +303,10 @@ export default function Saps3Page() {
   const [selectedSector, setSelectedSector] = useState<string>("");
   const [selectedBed, setSelectedBed] = useState<string>("");
 
+  // Modo "completar SAPS pendente" (paciente já admitido) — carregado via URL
+  const [completingSapsId, setCompletingSapsId] = useState<string | null>(null);
+  const [completingPatientId, setCompletingPatientId] = useState<string | null>(null);
+
   // Box I
   const [patientName, setPatientName] = useState("");
   const [age, setAge] = useState<string>("");
