@@ -415,7 +415,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
       <ExaminusAIDialog
         open={examinusOpen}
         onOpenChange={setExaminusOpen}
-        currentExams={soap.objective ? soap.objective.split("\n").filter(Boolean) : []}
+        currentExams={richHtmlToPlainText(soap.objective).split("\n").filter(Boolean)}
         onImportExams={handleImportExams}
       />
     </div>
