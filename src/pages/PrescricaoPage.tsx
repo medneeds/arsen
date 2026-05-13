@@ -1914,7 +1914,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 placeholder="Observações adicionais..."
               />
             </>
-          )}
+            );
+          })()}
           {item.flags.length > 0 && (
             <div className="flex gap-1 flex-wrap">
               {item.flags.map(fk => {
