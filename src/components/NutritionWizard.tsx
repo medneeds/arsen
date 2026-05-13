@@ -588,7 +588,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
     onOpenChange(false);
   };
 
-  const STEPS = ["Modalidades", "Detalhes", "Comorbidades", "Revisão"];
+  const STEPS = ["Modalidades", "Detalhes", "Comorbidades", "Aporte proteico", "Revisão"];
   const canAdvance = step === 0 ? modalities.size > 0 : true;
 
   const MODALITY_OPTIONS = [
