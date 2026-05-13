@@ -5145,7 +5145,7 @@ const PrescricaoPage = () => {
         onClose={() => setNewRxChoiceOpen(false)}
         hasCurrentItems={items.length > 0}
         onStartBlank={handleNewPrescription}
-        onCopyPrevious={openRepeatDialog}
+        onCopyPrevious={handleCopyPreviousFlow}
       />
 
       {/* Seletor de tipo da prescrição extra */}
