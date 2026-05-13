@@ -670,7 +670,8 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         <UnidentifiedSuggestionDialog
           open={niSuggestionOpen}
           detection={niSuggestion}
-          onConfirm={handleAcceptNiSuggestion}
+          onConfirmPure={handleAcceptNiSuggestion}
+          onConfirmWithPin={handleAcceptNiWithPin}
           onReject={handleRejectNiSuggestion}
           onCancel={handleCancelNiSuggestion}
         />
