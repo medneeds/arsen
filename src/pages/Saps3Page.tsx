@@ -236,11 +236,22 @@ const COMORBIDITY_OPTIONS = [
   { id: "chemotherapy", label: "Quimioterapia recente" },
 ];
 
-// Bed config per UTI sector
+// Bed config per critical-care sector (UTI / UCI / UCC)
 const UTI_SECTORS = [
-  { value: "red", label: "UTI 1", prefix: "L", start: 1, max: 8 },
-  { value: "yellow", label: "UTI 2", prefix: "L", start: 9, max: 10 },
+  { value: "red", label: "UTI 1", prefix: "L", start: 1, max: 8, department: "UTI" },
+  { value: "yellow", label: "UTI 2", prefix: "L", start: 9, max: 10, department: "UTI" },
+  { value: "blue", label: "UCI 1", prefix: "L", start: 1, max: 6, department: "n" },
+  { value: "outside", label: "UCI 2", prefix: "L", start: 7, max: 8, department: "UCI 2" },
+  { value: "ucc", label: "UCC", prefix: "L", start: 1, max: 37, department: "UCC" },
 ];
+
+// Map any incoming label/value/alias to internal sector value
+function resolveSectorValue(input: string | null | undefined): string {
+  if (!input) return "";
+  const v = String(input).trim();
+  const direct = UTI_SECTORS.find(s => s.value === v || s.label.toLowerCase() === v.toLowerCase());
+  return direct?.value ?? "";
+}
 
 export default function Saps3Page() {
   const { user } = useAuth();
@@ -374,21 +385,23 @@ export default function Saps3Page() {
   };
 
   const loadOccupiedBeds = async () => {
-    if (!hospitalId || !stateId) return;
+    if (!hospitalId || !stateId || !selectedSector) { setOccupiedBeds([]); return; }
     const { data } = await supabase
       .from("patients")
       .select("bed_number")
       .eq("hospital_unit_id", hospitalId)
       .eq("state_id", stateId)
-      .eq("department", "UTI");
+      .eq("sector", selectedSector)
+      .eq("is_vacant", false);
     if (data) setOccupiedBeds(data.map(p => p.bed_number));
   };
 
   useEffect(() => {
     loadPendingRequests();
     loadRecords();
-    loadOccupiedBeds();
   }, [hospitalId, stateId]);
+
+  useEffect(() => { loadOccupiedBeds(); }, [hospitalId, stateId, selectedSector]);
 
   // ─── Pre-fill from allocation navigation / URL ───
   useEffect(() => {
@@ -423,10 +436,7 @@ export default function Saps3Page() {
       if (ageStr) setAge(ageStr);
     }
 
-    if (destinationSectorFromContext === "UTI 1") setSelectedSector("red");
-    else if (destinationSectorFromContext === "UTI 2") setSelectedSector("yellow");
-    else setSelectedSector("");
-
+    setSelectedSector(resolveSectorValue(destinationSectorFromContext));
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
     setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
@@ -447,9 +457,8 @@ export default function Saps3Page() {
       const ageYears = Math.floor((Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
       setAge(String(ageYears));
     }
-    // Pre-select sector based on destination
-    if (req.destination_sector === "UTI 1") setSelectedSector("red");
-    else if (req.destination_sector === "UTI 2") setSelectedSector("yellow");
+    // Pre-select sector based on destination (supports UTI/UCI/UCC labels)
+    setSelectedSector(resolveSectorValue(req.destination_sector));
     // Reset rest
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
@@ -509,7 +518,9 @@ export default function Saps3Page() {
       const { error: sapsError } = await supabase.from("saps3_assessments" as any).insert(sapsPayload as any);
       if (sapsError) throw sapsError;
 
-      const destinationSectorLabel = UTI_SECTORS.find((sector) => sector.value === selectedSector)?.label || selectedSector;
+      const sectorMeta = UTI_SECTORS.find((sector) => sector.value === selectedSector);
+      const destinationSectorLabel = sectorMeta?.label || selectedSector;
+      const destinationDepartment = sectorMeta?.department || "UTI";
 
       if (selectedRequest?.allocation_request_id && selectedRequest.patient_id) {
         const { data: existingPatients } = await supabase
@@ -517,7 +528,7 @@ export default function Saps3Page() {
           .select("display_order")
           .eq("hospital_unit_id", hospitalId)
           .eq("state_id", stateId)
-          .eq("department", "UTI")
+          .eq("department", destinationDepartment)
           .eq("sector", selectedSector);
 
         const maxDisplayOrder = (existingPatients || []).reduce((max, patient) => {
@@ -544,7 +555,7 @@ export default function Saps3Page() {
             sector: selectedSector,
             bed_number: selectedBed,
             display_order: maxDisplayOrder + 1,
-            department: "UTI",
+            department: destinationDepartment,
           })
           .eq("id", selectedRequest.patient_id);
 
@@ -568,7 +579,7 @@ export default function Saps3Page() {
           name: patientName,
           bed_number: selectedBed,
           sector: selectedSector,
-          department: "UTI",
+          department: destinationDepartment,
           age: age ? `${age} anos` : null,
           hospital_unit_id: hospitalId,
           state_id: stateId,
@@ -643,8 +654,11 @@ export default function Saps3Page() {
 
   const isFormMode = !!selectedRequest;
 
+  const currentSectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label;
+  const headerSectorLabel = currentSectorLabel || selectedRequest?.destination_sector || "UTI";
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-6xl px-4 md:px-8 lg:px-10 py-6 space-y-6">
       {confirmationData && (
         <SapsConfirmationScreen
           patientName={confirmationData.patientName}
@@ -659,7 +673,7 @@ export default function Saps3Page() {
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <Calculator className="h-6 w-6 text-primary" />
-          Admissão UTI — SAPS 3
+          Admissão {headerSectorLabel} — SAPS 3
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Fluxo admissional: Solicitação → Avaliação médica → Alocação de leito + SAPS 3
@@ -749,24 +763,25 @@ export default function Saps3Page() {
                 <Bed className="h-5 w-5 text-primary" />
                 Alocação de Leito
               </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Setor pré-configurado pela origem do pedido. Selecione apenas o leito de destino.
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label>Setor UTI</Label>
-                  <Select value={selectedSector} onValueChange={v => { setSelectedSector(v); setSelectedBed(""); }}>
-                    <SelectTrigger><SelectValue placeholder="Selecione o setor" /></SelectTrigger>
-                    <SelectContent>
-                      {UTI_SECTORS.map(s => (
-                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Setor (auto)</Label>
+                  <div className="mt-1.5 flex items-center justify-between gap-2 h-10 px-3 rounded-md border border-dashed border-primary/40 bg-primary/5">
+                    <span className="text-sm font-semibold text-foreground">
+                      {currentSectorLabel || "—"}
+                    </span>
+                    <Badge variant="outline" className="text-[10px] uppercase">Sincronizado</Badge>
+                  </div>
                 </div>
                 <div>
-                  <Label>Leito</Label>
+                  <Label>Leito de destino</Label>
                   <Select value={selectedBed} onValueChange={setSelectedBed} disabled={!selectedSector}>
-                    <SelectTrigger><SelectValue placeholder={selectedSector ? "Selecione o leito" : "Selecione o setor primeiro"} /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={selectedSector ? "Selecione o leito" : "Setor não definido"} /></SelectTrigger>
                     <SelectContent>
                       {availableBeds.map(b => (
                         <SelectItem key={b.value} value={b.value} disabled={b.occupied}>
@@ -781,7 +796,7 @@ export default function Saps3Page() {
                 <div className="flex items-center gap-2 p-2 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
                   <Bed className="h-4 w-4 text-emerald-600" />
                   <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                    Leito selecionado: {selectedBed} — {UTI_SECTORS.find(s => s.value === selectedSector)?.label}
+                    Leito selecionado: {selectedBed} — {currentSectorLabel}
                   </span>
                 </div>
               )}
