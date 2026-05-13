@@ -539,6 +539,35 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       });
     }
 
+    // ── APORTE PROTEICO / SUPLEMENTAÇÃO ──
+    // Cada produto selecionado vira uma linha independente na prescrição.
+    const enteralViaLabel = ENTERAL_VIAS.find(v => v.key === entVia)?.label || "";
+    const enteralRoute = enteralRouteLabel(enteralViaLabel);
+    Array.from(proteinSelected).forEach(key => {
+      const def = PROTEIN_SUPPLEMENTS.find(p => p.key === key);
+      if (!def) return;
+      const ov = proteinOverrides[key] || { dose: def.defaultDose, posology: def.defaultPosology, route: def.routes[0] };
+      const route = ov.route === "enteral" ? enteralRoute : "Oral";
+      const viaLabel = ov.route === "enteral" ? `via ${enteralViaLabel || "sonda"}` : "VO";
+      entries.push({
+        id: `nut-prot-${key}-${uid()}`,
+        name: `${def.label} — ${viaLabel}`,
+        presentation: def.group === "sno" ? "Frasco/sachê pronto" : "Pó / sachê modular",
+        defaultDose: ov.dose,
+        defaultRoute: route,
+        defaultPosology: ov.posology,
+        defaultSchedule: ov.route === "enteral" ? "Conforme aprazamento" : "10h, 16h, 22h",
+        instructions: [
+          def.note,
+          ov.route === "enteral"
+            ? "Diluir em 50-100 mL de água potável; lavar a sonda com 20-30 mL antes e após a administração."
+            : "Ofertar em temperatura agradável; estimular ingesta entre as refeições.",
+          comorbSuffix.trim(),
+        ].filter(Boolean).join(" · "),
+        category: "nutrition",
+      });
+    });
+
     return entries;
   };
 
@@ -548,7 +577,9 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
     entSystem, entVia, entFormula, entMode, entRate, entVolDay, entFractions, entProgression, entCustom,
     waterFlush, waterScheduled, waterVol, waterFreq, waterCorrection, waterCorrectionVol, waterCorrectionObs,
     parType, parVolume, parKcal, parRate, parObs, parCustom,
-    zeroReason, zeroSince, zeroHydrate, zeroCustom, notes,
+    zeroReason, zeroSince, zeroHydrate, zeroCustom,
+    proteinSelected, proteinOverrides,
+    notes,
   ]);
 
   const handleConfirm = () => {
