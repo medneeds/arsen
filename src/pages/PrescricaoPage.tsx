@@ -1887,6 +1887,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   <span className="text-[10px] text-muted-foreground ml-auto">infusão contínua 24h</span>
                 )}
               </div>
+              )}
 
               {/* Auto-synced preparation description */}
               {(() => {
