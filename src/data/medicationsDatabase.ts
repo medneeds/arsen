@@ -30,6 +30,7 @@ export interface MedicationEntry {
 
 export const CATEGORY_CONFIG: Record<PrescriptionCategory, {
   label: string;
+  shortLabel?: string;
   icon: string;
   color: string;
   bgColor: string;
@@ -38,8 +39,8 @@ export const CATEGORY_CONFIG: Record<PrescriptionCategory, {
   hydration:     { label: 'Hidratação',         icon: 'Droplets',       color: 'text-blue-500',     bgColor: 'bg-blue-500/10' },
   replacement:   { label: 'Reposição',          icon: 'FlaskConical',   color: 'text-sky-500',      bgColor: 'bg-sky-500/10' },
   medication:    { label: 'Medicamentos',      icon: 'Pill',           color: 'text-primary',      bgColor: 'bg-primary/10' },
-  antimicrobial: { label: 'Antimicrobianos',   icon: 'Shield',         color: 'text-orange-500',   bgColor: 'bg-orange-500/10' },
-  high_alert:    { label: 'Alta Vigilância',   icon: 'AlertTriangle',  color: 'text-red-500',      bgColor: 'bg-red-500/10' },
+  antimicrobial: { label: 'Antimicrobianos',   shortLabel: 'ATB', icon: 'Shield',         color: 'text-orange-500',   bgColor: 'bg-orange-500/10' },
+  high_alert:    { label: 'Alta Vigilância',   shortLabel: 'MAV', icon: 'AlertTriangle',  color: 'text-red-500',      bgColor: 'bg-red-500/10' },
   inhalation:    { label: 'Inalação',          icon: 'Wind',           color: 'text-cyan-500',     bgColor: 'bg-cyan-500/10' },
   hemotherapy:   { label: 'Hemoterapia',       icon: 'TestTube',       color: 'text-rose-500',     bgColor: 'bg-rose-500/10' },
   care:          { label: 'Cuidados',          icon: 'ClipboardList',  color: 'text-amber-500',    bgColor: 'bg-amber-500/10' },
