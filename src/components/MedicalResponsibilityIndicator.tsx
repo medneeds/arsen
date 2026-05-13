@@ -1,4 +1,4 @@
-import { Stethoscope, UserCog, UsersRound, Baby, Bone, Scissors } from "lucide-react";
+import { Stethoscope, UserCog, UsersRound, Baby, Bone, Scissors, CalendarClock, Moon, Siren } from "lucide-react";
 import { MedicalResponsibility } from "@/types/patient";
 import { cn } from "@/lib/utils";
 
