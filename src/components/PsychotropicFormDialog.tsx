@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Brain, Printer, Plus, Trash2, AlertTriangle, Sparkles, Search, Lock, ShieldAlert, X } from "lucide-react";
@@ -12,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { useUnifiedMedicationCatalog, type ControlledCatalogItem } from "@/hooks/useUnifiedMedicationCatalog";
+import { openPrintWindow } from "@/lib/printNormaZero";
 
 export type NotificationType = 'Receita Amarela' | 'Receita Azul' | 'Controle Especial 2 vias';
 
@@ -181,7 +183,7 @@ export function PsychotropicFormDialog({
   const { controlledItems: catalog, findControlledByName, loading: catalogLoading } = useUnifiedMedicationCatalog();
 
   const [entries, setEntries] = useState<PsychotropicEntry[]>([]);
-  const [isPrinting, setIsPrinting] = useState(false);
+  
 
   // Carrega entries quando abre
   useEffect(() => {
@@ -237,8 +239,38 @@ export function PsychotropicFormDialog({
 
   const handlePrint = () => {
     if (!canPrint) return;
-    setIsPrinting(true);
-    setTimeout(() => { window.print(); setTimeout(() => setIsPrinting(false), 500); }, 100);
+    const today = format(new Date(), "dd/MM/yyyy", { locale: ptBR });
+    const docCode = `PORT344-${format(new Date(), "yyyyMMdd-HHmm")}`;
+    const formMarkup = renderToStaticMarkup(
+      <PrintablePsychotropicForm
+        patient={patient}
+        grouped={groupedForPrint}
+        doctorName={doctorName}
+        doctorCrm={doctorCrm}
+        doctorSpecialty={doctorSpecialty}
+        hospitalName={hospitalName}
+        hospitalAddress={hospitalAddress}
+        date={today}
+        docCode={docCode}
+      />
+    );
+    const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<title>Receituário Portaria 344 — ${docCode}</title>
+<style>
+  @page { size: A4 portrait; margin: 8mm 12mm; }
+  :root { color-scheme: light only; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; background: #fff; color: #0f172a; font-family: Arial, Helvetica, sans-serif; }
+  @media print {
+    html, body { width: 210mm; }
+  }
+</style>
+</head><body>${formMarkup}
+<script>window.onload = () => { setTimeout(() => { window.focus(); window.print(); }, 350); };</script>
+</body></html>`;
+    openPrintWindow(html, "Preparando receituário Portaria 344…");
+    // Dispara afterprint na janela atual para o orquestrador (PrescricaoPage) seguir o fluxo
+    setTimeout(() => window.dispatchEvent(new Event('afterprint')), 800);
   };
 
   const today = format(new Date(), "dd/MM/yyyy", { locale: ptBR });
@@ -259,8 +291,8 @@ export function PsychotropicFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn("max-w-4xl max-h-[90vh] overflow-y-auto", isPrinting && "print:block")}>
-        <DialogHeader className="print:hidden">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-violet-500" />
             {isPrintDirect ? 'Receituário Portaria 344 — Impressão' : 'Ficha de Medicações Psicotrópicas / Controladas'}
@@ -271,29 +303,6 @@ export function PsychotropicFormDialog({
               : 'Notificação de receita especial conforme Portaria SVS/MS nº 344/98 — ANVISA. Itens agrupados por tipo de receita.'}
           </DialogDescription>
         </DialogHeader>
-
-        {/* PRINT-ONLY scope */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          @media print {
-            body > * { display: none !important; }
-            [data-psychotropic-print] { display: block !important; position: fixed; top: 0; left: 0; width: 100%; z-index: 99999; }
-            @page { size: A4 portrait; margin: 8mm 12mm; }
-          }
-        `}} />
-
-        <div data-psychotropic-print className={cn(!isPrinting && "hidden print:hidden")}>
-          <PrintablePsychotropicForm
-            patient={patient}
-            grouped={groupedForPrint}
-            doctorName={doctorName}
-            doctorCrm={doctorCrm}
-            doctorSpecialty={doctorSpecialty}
-            hospitalName={hospitalName}
-            hospitalAddress={hospitalAddress}
-            date={today}
-            docCode={docCode}
-          />
-        </div>
 
         {/* === MODO PRINT-ONLY (Norma Zero + 344) === */}
         {isPrintDirect ? (
