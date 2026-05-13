@@ -4,6 +4,7 @@ import { Pill, Stethoscope, ClipboardList, FolderOpen, History, ArrowLeft, Clipb
 import { Button } from "@/components/ui/button";
 import { BreadcrumbBar } from "@/components/BreadcrumbBar";
 import { AdmissionDialog } from "@/components/AdmissionDialog";
+import { AdmissionConsultDialog } from "@/components/AdmissionConsultDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,7 @@ export default function PacienteHubPage() {
   const [admissionStatus, setAdmissionStatus] = useState<AdmissionStatus>(null);
   const [statusLoading, setStatusLoading] = useState(true);
   const [admissionOpen, setAdmissionOpen] = useState(false);
+  const [consultOpen, setConsultOpen] = useState(false);
   const [department, setDepartment] = useState<string | null>(null);
   const [sapsPending, setSapsPending] = useState(false);
   const [sapsSince, setSapsSince] = useState<string | null>(null);
@@ -284,54 +286,69 @@ export default function PacienteHubPage() {
           {/* Action grid — 6 cards aspect-square, harmônicos */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {/* ADMISSÃO — gate */}
-            <button
-              onClick={() => setAdmissionOpen(true)}
-              disabled={statusLoading}
-              className="relative group cursor-pointer text-left disabled:cursor-wait"
-            >
-              {isPreAdmitted && (
-                <span className="absolute -inset-0.5 bg-amber-400 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-700 animate-pulse pointer-events-none" />
-              )}
-              <div className={cn(
-                "relative flex flex-col items-center justify-center aspect-square rounded-lg overflow-hidden transition-transform",
-                "bg-white",
-                isPreAdmitted
-                  ? "border-2 border-amber-400 shadow-lg group-hover:scale-[1.02]"
-                  : isAdmitted
-                  ? "border border-emerald-300 group-hover:scale-[1.02] group-hover:shadow-md"
-                  : "border border-slate-200 group-hover:scale-[1.02] group-hover:shadow-md",
-              )}>
-                <span className={cn(
-                  "absolute top-0 left-0 right-0 h-1",
-                  isPreAdmitted ? "bg-amber-400" : isAdmitted ? "bg-emerald-400" : "bg-slate-300",
-                )} />
-                <div className={cn(
-                  "p-3 rounded-xl mb-3",
-                  isPreAdmitted ? "bg-amber-50" : isAdmitted ? "bg-emerald-50" : "bg-slate-100",
-                )}>
-                  <AdmissionIcon
-                    className={cn(
-                      "w-7 h-7",
-                      isPreAdmitted ? "text-amber-600" : isAdmitted ? "text-emerald-600" : "text-slate-500",
-                    )}
-                    strokeWidth={1.75}
-                  />
-                </div>
-                <span className="text-[11px] font-bold text-slate-900 tracking-[0.15em] uppercase">
-                  Admissão
-                </span>
+            <div className="relative group">
+              <button
+                onClick={() => isAdmitted ? setConsultOpen(true) : setAdmissionOpen(true)}
+                disabled={statusLoading}
+                className="relative w-full text-left disabled:cursor-wait"
+              >
                 {isPreAdmitted && (
-                  <span className="text-[9px] font-semibold text-amber-600 tracking-widest uppercase mt-1">
-                    Pendente
-                  </span>
+                  <span className="absolute -inset-0.5 bg-amber-400 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-700 animate-pulse pointer-events-none" />
                 )}
-                {isAdmitted && (
-                  <span className="text-[9px] font-semibold text-emerald-600 tracking-widest uppercase mt-1">
-                    Concluída
+                <div className={cn(
+                  "relative flex flex-col items-center justify-center aspect-square rounded-lg overflow-hidden transition-transform",
+                  "bg-white",
+                  isPreAdmitted
+                    ? "border-2 border-amber-400 shadow-lg group-hover:scale-[1.02]"
+                    : isAdmitted
+                    ? "border border-emerald-300 group-hover:scale-[1.02] group-hover:shadow-md"
+                    : "border border-slate-200 group-hover:scale-[1.02] group-hover:shadow-md",
+                )}>
+                  <span className={cn(
+                    "absolute top-0 left-0 right-0 h-1",
+                    isPreAdmitted ? "bg-amber-400" : isAdmitted ? "bg-emerald-400" : "bg-slate-300",
+                  )} />
+                  <div className={cn(
+                    "p-3 rounded-xl mb-3",
+                    isPreAdmitted ? "bg-amber-50" : isAdmitted ? "bg-emerald-50" : "bg-slate-100",
+                  )}>
+                    <AdmissionIcon
+                      className={cn(
+                        "w-7 h-7",
+                        isPreAdmitted ? "text-amber-600" : isAdmitted ? "text-emerald-600" : "text-slate-500",
+                      )}
+                      strokeWidth={1.75}
+                    />
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-900 tracking-[0.15em] uppercase">
+                    Admissão
                   </span>
-                )}
-              </div>
-            </button>
+                  {isPreAdmitted && (
+                    <span className="text-[9px] font-semibold text-amber-600 tracking-widest uppercase mt-1">
+                      Pendente
+                    </span>
+                  )}
+                  {isAdmitted && (
+                    <span className="text-[9px] font-semibold text-emerald-600 tracking-widest uppercase mt-1">
+                      Concluída
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              {/* Atalho rápido: imprimir admissão direto pelo card */}
+              {isAdmitted && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handlePrintAdmission(); }}
+                  title="Imprimir admissão (Norma Zero)"
+                  aria-label="Imprimir admissão"
+                  className="absolute top-2 right-2 z-10 inline-flex items-center justify-center h-7 w-7 rounded-md bg-white/95 border border-emerald-200 text-emerald-700 shadow-sm hover:bg-emerald-50 hover:scale-105 transition"
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
 
             {/* Demais ações */}
             {CLINICAL_ACTIONS.map(({ key, label, icon: Icon, path }) => (
@@ -422,6 +439,21 @@ export default function PacienteHubPage() {
             fetchStatus();
             toast.success("Admissão hospitalar registrada. Módulos clínicos liberados.");
           }}
+        />
+      )}
+
+      {ctx.patientId && (
+        <AdmissionConsultDialog
+          open={consultOpen}
+          onOpenChange={setConsultOpen}
+          patient={{
+            id: ctx.patientId,
+            name: ctx.patientName,
+            bed: ctx.patientBed,
+            sector: ctx.patientSector,
+            age: ctx.patientAge,
+          }}
+          onChanged={fetchStatus}
         />
       )}
     </div>
