@@ -461,12 +461,11 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           <Zap className="h-3.5 w-3.5 text-amber-600" />
                           <span className="text-xs font-semibold text-foreground">Descritivo da Intercorrência</span>
                         </div>
-                        <Textarea
+                        <RichTextEditor
                           value={data.soap.subjective || ""}
-                          onChange={e => updateLocal(evo.id, "soap", "subjective", e.target.value)}
+                          onChange={(html) => updateLocal(evo.id, "soap", "subjective", html)}
                           placeholder="Descreva a intercorrência..."
-                          className="min-h-[120px] text-sm resize-y"
-                          readOnly={!isEditable}
+                          minHeight={120}
                           disabled={!isEditable}
                         />
                         {isEditable && (
