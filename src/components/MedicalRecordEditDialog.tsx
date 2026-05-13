@@ -383,6 +383,36 @@ export function MedicalRecordEditDialog({
     }
   }
 
+  // ===== HARD DELETE (perfil desenvolvedor) =====
+  async function executeHardDelete() {
+    if (!isDeveloper) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.rpc("admin_hard_delete_patient" as any, {
+        p_patient_id: patientId,
+        p_registry_id: registry?.id ?? null,
+        p_reason: deleteReason.trim(),
+      });
+      if (error) throw error;
+      toast({
+        title: "🗑️ Paciente excluído permanentemente",
+        description: "Todos os dados foram apagados. Operação registrada nos logs.",
+      });
+      setConfirmDeleteOpen(false);
+      onOpenChange(false);
+      onSaved?.();
+    } catch (e: any) {
+      console.error(e);
+      toast({
+        title: "Falha na exclusão",
+        description: e.message || "Operação negada pelo servidor.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   // ===== Import PIS =====
   async function handlePisFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
