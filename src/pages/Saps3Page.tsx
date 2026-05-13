@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
+import { useDepartment } from "@/contexts/DepartmentContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -251,9 +252,9 @@ const RASS_LABELS: Record<number, string> = {
 
 // Bed config per critical-care sector (UTI / UCI / UCC)
 const UTI_SECTORS = [
-  { value: "red", label: "UTI 1", prefix: "L", start: 1, max: 8, department: "UTI" },
-  { value: "yellow", label: "UTI 2", prefix: "L", start: 9, max: 10, department: "UTI" },
-  { value: "blue", label: "UCI 1", prefix: "L", start: 1, max: 6, department: "n" },
+  { value: "red", label: "UTI 1", prefix: "L", start: 1, max: 8, department: "UTI 1" },
+  { value: "yellow", label: "UTI 2", prefix: "L", start: 9, max: 10, department: "UTI 2" },
+  { value: "blue", label: "UCI 1", prefix: "L", start: 1, max: 6, department: "UCI 1" },
   { value: "outside", label: "UCI 2", prefix: "L", start: 7, max: 8, department: "UCI 2" },
   { value: "ucc", label: "UCC", prefix: "L", start: 1, max: 37, department: "UCC" },
 ];
@@ -266,9 +267,14 @@ function resolveSectorValue(input: string | null | undefined): string {
   return direct?.value ?? "";
 }
 
+function resolveSectorFromContext(input: string | null | undefined, fallbackSector: string): string {
+  return resolveSectorValue(input) || resolveSectorValue(fallbackSector) || "";
+}
+
 export default function Saps3Page() {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
+  const { currentDepartment, currentSectorCode } = useDepartment();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -481,7 +487,7 @@ export default function Saps3Page() {
       if (ageStr) setAge(ageStr);
     }
 
-    setSelectedSector(resolveSectorValue(destinationSectorFromContext));
+    setSelectedSector(resolveSectorFromContext(destinationSectorFromContext, currentSectorCode || currentDepartment));
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
     setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
@@ -490,7 +496,7 @@ export default function Saps3Page() {
     setPao2Fio2(""); setIsVentilated(false);
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
     toast.info(`Preencha o SAPS 3 para ${patientNameFromContext}`);
-  }, [location.state, searchParams]);
+  }, [location.state, searchParams, currentDepartment, currentSectorCode]);
 
   // ─── Start admission from pending request ───
   const startAdmission = (req: PendingRequest) => {
@@ -503,7 +509,7 @@ export default function Saps3Page() {
       setAge(String(ageYears));
     }
     // Pre-select sector based on destination (supports UTI/UCI/UCC labels)
-    setSelectedSector(resolveSectorValue(req.destination_sector));
+    setSelectedSector(resolveSectorFromContext(req.destination_sector, currentSectorCode || currentDepartment));
     // Reset rest
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
@@ -610,10 +616,16 @@ export default function Saps3Page() {
     }
 
     setSaving(true);
+    let createdSapsId: string | null = null;
     try {
       const sapsPayload = buildSapsPayload(asPending ? 'pending' : 'completed');
-      const { error: sapsError } = await supabase.from("saps3_assessments" as any).insert(sapsPayload as any);
+      const { data: sapsRecord, error: sapsError } = await supabase
+        .from("saps3_assessments" as any)
+        .insert(sapsPayload as any)
+        .select("id")
+        .single();
       if (sapsError) throw sapsError;
+      createdSapsId = (sapsRecord as any)?.id || null;
 
       const sectorMeta = UTI_SECTORS.find((sector) => sector.value === selectedSector);
       const destinationSectorLabel = sectorMeta?.label || selectedSector;
@@ -633,18 +645,21 @@ export default function Saps3Page() {
       }
 
       // Modelo de leitos fixos: o leito alvo já existe como linha "vaga" em patients.
-      // Buscamos a linha do leito de destino (department + sector + bed_number).
-      const { data: existingBedRow, error: bedLookupError } = await supabase
+      // Buscamos por setor+leito e normalizamos o department canônico no UPDATE.
+      const { data: bedRows, error: bedLookupError } = await supabase
         .from("patients")
-        .select("id, is_vacant, name")
+        .select("id, department, is_vacant, name")
         .eq("hospital_unit_id", hospitalId)
         .eq("state_id", stateId)
-        .eq("department", destinationDepartment)
         .eq("sector", selectedSector)
-        .eq("bed_number", selectedBed)
-        .maybeSingle();
+        .eq("bed_number", selectedBed);
 
       if (bedLookupError) throw bedLookupError;
+
+      const existingBedRow = bedRows?.find((row) => row.department === destinationDepartment) ||
+        bedRows?.find((row) => row.is_vacant !== false) ||
+        bedRows?.[0] ||
+        null;
 
       if (existingBedRow && existingBedRow.is_vacant === false) {
         throw new Error(`Leito ${selectedBed} já está ocupado. Atualize o mapa e selecione outro leito.`);
@@ -728,6 +743,9 @@ export default function Saps3Page() {
       loadRecords();
       loadOccupiedBeds();
     } catch (err: any) {
+      if (createdSapsId) {
+        await supabase.from("saps3_assessments" as any).delete().eq("id", createdSapsId);
+      }
       toast.error("Erro ao salvar: " + err.message);
     } finally {
       setSaving(false);
