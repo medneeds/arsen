@@ -178,7 +178,8 @@ export const HEMOTHERAPY_OPTIONS: MedicationEntry[] = [
 // assistente de cuidados para agrupar visualmente as opções rápidas.
 export const CARE_OPTIONS: (MedicationEntry & { group?: string })[] = [
   // ===== Monitorização =====
-  { id: 'c1',   group: 'Monitorização',  name: 'Sinais vitais',                              presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '4/4h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c1',   group: 'Monitorização',  name: 'Sinais vitais',                              presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '6/6h',     defaultSchedule: '-', category: 'care' },
+  { id: 'c1a',  group: 'Monitorização',  name: 'Sinais vitais',                              presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '4/4h',     defaultSchedule: '-', category: 'care' },
   { id: 'c1b',  group: 'Monitorização',  name: 'Sinais vitais',                              presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '2/2h',     defaultSchedule: '-', category: 'care' },
   { id: 'c1c',  group: 'Monitorização',  name: 'Sinais vitais',                              presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: '1/1h',     defaultSchedule: '-', category: 'care' },
   { id: 'c1d',  group: 'Monitorização',  name: 'Monitorização cardíaca contínua',            presentation: '-', defaultDose: '-', defaultRoute: '-', defaultPosology: 'Contínuo', defaultSchedule: '-', category: 'care' },
