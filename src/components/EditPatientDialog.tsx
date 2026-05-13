@@ -35,6 +35,7 @@ import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { MedicalResponsibilityDialog } from "./MedicalResponsibilityDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
 import { InternmentStatusDialog } from "./InternmentStatusDialog";
+import { AdmissionDateEditor } from "./AdmissionDateEditor";
 
 interface EditPatientDialogProps {
   patient: Patient;
