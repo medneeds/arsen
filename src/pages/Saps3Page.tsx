@@ -434,10 +434,7 @@ export default function Saps3Page() {
       if (ageStr) setAge(ageStr);
     }
 
-    if (destinationSectorFromContext === "UTI 1") setSelectedSector("red");
-    else if (destinationSectorFromContext === "UTI 2") setSelectedSector("yellow");
-    else setSelectedSector("");
-
+    setSelectedSector(resolveSectorValue(destinationSectorFromContext));
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
     setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
