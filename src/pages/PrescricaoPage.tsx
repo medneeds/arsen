@@ -5590,6 +5590,7 @@ const PrescricaoPage = () => {
                           onRequestSuspend={requestSuspendItem}
                           onReactivate={reactivateItem}
                           onAssistant={(id) => setItemAssistantTargetId(id)}
+                          onEditInsulin={(id) => { setEditingInsulinItemId(id); setPendingInsulinMed(null); setInsulinDialogOpen(true); }}
                           onToggleValidation={requestValidateItem}
                           isPastRenewalTime={isPastRenewalTime}
                           prescriptionLocked={prescriptionLocked}
