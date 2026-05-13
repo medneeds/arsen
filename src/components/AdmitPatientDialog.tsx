@@ -277,29 +277,49 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         finalBed = `EXTRA${nextExtra}`;
       }
 
-      const { error: patientError } = await supabase.from("patients").insert({
-        name: fullData.patient_name,
-        age: age ? `${age}a` : null,
-        bed_number: finalBed,
-        sector: selectedSector,
-        department: currentDepartment,
-        hospital_unit_id: currentHospital.id,
-        state_id: currentState.id,
-        created_by: user?.id,
-        admission_date: new Date().toISOString(),
-        is_vacant: false,
-        clinical_status: fullData.risk_classification === "vermelho" ? "grave" : null,
-        diagnoses: fullData.chief_complaint || null,
-        medical_history: fullData.allergies ? `Alergias: ${fullData.allergies}` : null,
-        pendencies: admissionNotes || null,
-        uti_discharge_prediction: noDischargePrediction
-          ? "Sem previsão"
-          : dischargeDate
-          ? `${format(dischargeDate, "dd/MM/yyyy")}${dischargeDays ? ` (${dischargeDays} dias)` : ""}`
-          : (dischargeDays ? `${dischargeDays} dias` : null),
-      });
+      const { data: insertedPatient, error: patientError } = await supabase
+        .from("patients")
+        .insert({
+          name: fullData.patient_name,
+          age: age ? `${age}a` : null,
+          bed_number: finalBed,
+          sector: selectedSector,
+          department: currentDepartment,
+          hospital_unit_id: currentHospital.id,
+          state_id: currentState.id,
+          created_by: user?.id,
+          admission_date: new Date().toISOString(),
+          is_vacant: false,
+          clinical_status: fullData.risk_classification === "vermelho" ? "grave" : null,
+          diagnoses: fullData.chief_complaint || null,
+          medical_history: fullData.allergies ? `Alergias: ${fullData.allergies}` : null,
+          pendencies: admissionNotes || null,
+          // Sincronização do prontuário do PIS (legado) e vínculo com o registro
+          medical_record: (fullData as any).medical_record ?? null,
+          patient_registry_id: (fullData as any).patient_registry_id ?? null,
+          uti_discharge_prediction: noDischargePrediction
+            ? "Sem previsão"
+            : dischargeDate
+            ? `${format(dischargeDate, "dd/MM/yyyy")}${dischargeDays ? ` (${dischargeDays} dias)` : ""}`
+            : (dischargeDays ? `${dischargeDays} dias` : null),
+        })
+        .select("id")
+        .single();
 
       if (patientError) throw patientError;
+
+      // Vincula medical_records (prontuário legado/PIS) ao patients.id recém-admitido
+      const newPatientId = insertedPatient?.id;
+      const registryId = (fullData as any).patient_registry_id ?? null;
+      const recordNumber = (fullData as any).medical_record ?? null;
+      if (newPatientId && (registryId || recordNumber)) {
+        const mrQuery = supabase.from("medical_records").update({ patient_id: newPatientId });
+        if (registryId) {
+          await mrQuery.eq("patient_registry_id", registryId).is("patient_id", null);
+        } else if (recordNumber) {
+          await mrQuery.eq("numero_prontuario", recordNumber).is("patient_id", null);
+        }
+      }
 
       const { error: updateError } = await supabase
         .from("pre_admissions")
