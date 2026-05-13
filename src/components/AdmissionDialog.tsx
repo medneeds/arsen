@@ -18,12 +18,37 @@ import { CidSearchInput } from "@/components/CidSearchInput";
 import {
   Stethoscope, Loader2, AlertTriangle, ClipboardCheck,
   HeartPulse, Activity, FileText, Pill, CalendarDays, Hash,
-  Printer, ShieldCheck,
+  Printer, ShieldCheck, Save, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
 
 const UTI_SECTORS = ["red", "yellow", "blue", "outside", "uti_01", "uti_02", "uci_01", "uci_02"];
+
+/** Chave do rascunho local por paciente */
+const draftKeyFor = (patientId: string) => `admission_draft:v1:${patientId}`;
+
+/** Label com sinalização forte de obrigatoriedade */
+const ReqLabel = ({ children, missing }: { children: React.ReactNode; missing?: boolean }) => (
+  <Label className={cn(
+    "text-xs flex items-center gap-1.5",
+    missing ? "text-rose-700" : "text-slate-700"
+  )}>
+    <span>{children}</span>
+    <span className={cn(
+      "inline-flex items-center gap-0.5 rounded px-1 py-px text-[9px] font-bold uppercase tracking-wider",
+      missing
+        ? "bg-rose-100 text-rose-700 ring-1 ring-rose-300"
+        : "bg-rose-50 text-rose-600 ring-1 ring-rose-200"
+    )}>
+      <span className="leading-none">*</span> Obrigatório
+    </span>
+  </Label>
+);
+
+/** Classe utilitária pra realçar campo faltante após tentativa de submit */
+const reqRing = (missing?: boolean) =>
+  missing ? "ring-2 ring-rose-300 border-rose-400 focus-visible:ring-rose-400" : "";
 
 interface AdmissionDialogProps {
   open: boolean;
@@ -168,8 +193,84 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   const [specialties, setSpecialties] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+  const [attempted, setAttempted] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
+  const [draftHydrated, setDraftHydrated] = useState(false);
 
   const imc = useMemo(() => computeImc(weight, height), [weight, height]);
+
+  /* ───────── Rascunho automático (localStorage) ───────── */
+  // Restaura ao abrir
+  useEffect(() => {
+    if (!open) return;
+    try {
+      const raw = localStorage.getItem(draftKeyFor(patient.id));
+      if (raw) {
+        const d = JSON.parse(raw);
+        setHda(d.hda ?? ""); setAmp(d.amp ?? ""); setMuc(d.muc ?? "");
+        setAllergies(d.allergies ?? ""); setWeight(d.weight ?? ""); setHeight(d.height ?? "");
+        setPa(d.pa ?? ""); setFc(d.fc ?? ""); setFr(d.fr ?? ""); setSpo2(d.spo2 ?? "");
+        setTax(d.tax ?? ""); setDx(d.dx ?? "");
+        setPhysGeneral(d.physGeneral ?? ""); setPhysCv(d.physCv ?? "");
+        setPhysResp(d.physResp ?? ""); setPhysAbd(d.physAbd ?? ""); setPhysExt(d.physExt ?? "");
+        setPlan(d.plan ?? ""); setCidPrimary(d.cidPrimary ?? ""); setCidSecondary(d.cidSecondary ?? "");
+        setNoPrediction(!!d.noPrediction);
+        if (d.predictionDate) setPredictionDate(d.predictionDate);
+        if (d.predictionDays) setPredictionDays(d.predictionDays);
+        setAdmissionReason(d.admissionReason ?? ""); setOriginSector(d.originSector ?? "");
+        setDevices(d.devices ?? ""); setCulturesAtb(d.culturesAtb ?? "");
+        setSpecialties(d.specialties ?? "");
+        if (d.savedAt) setDraftSavedAt(new Date(d.savedAt));
+      }
+    } catch {}
+    setDraftHydrated(true);
+    return () => { setDraftHydrated(false); setAttempted(false); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, patient.id]);
+
+  // Salva (debounced) a cada mudança
+  useEffect(() => {
+    if (!open || !draftHydrated) return;
+    const t = setTimeout(() => {
+      try {
+        const payload = {
+          hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
+          physGeneral, physCv, physResp, physAbd, physExt,
+          plan, cidPrimary, cidSecondary,
+          noPrediction, predictionDate, predictionDays,
+          admissionReason, originSector, devices, culturesAtb, specialties,
+          savedAt: new Date().toISOString(),
+        };
+        // só persiste se houver algum conteúdo
+        const hasContent = Object.values(payload).some(v => typeof v === "string" && v.trim().length > 0);
+        if (hasContent) {
+          localStorage.setItem(draftKeyFor(patient.id), JSON.stringify(payload));
+          setDraftSavedAt(new Date());
+        }
+      } catch {}
+    }, 600);
+    return () => clearTimeout(t);
+  }, [
+    open, draftHydrated, patient.id,
+    hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
+    physGeneral, physCv, physResp, physAbd, physExt,
+    plan, cidPrimary, cidSecondary,
+    noPrediction, predictionDate, predictionDays,
+    admissionReason, originSector, devices, culturesAtb, specialties,
+  ]);
+
+  const discardDraft = () => {
+    try { localStorage.removeItem(draftKeyFor(patient.id)); } catch {}
+    setDraftSavedAt(null);
+    setHda(""); setAmp(""); setMuc(""); setAllergies(""); setWeight(""); setHeight("");
+    setPa(""); setFc(""); setFr(""); setSpo2(""); setTax(""); setDx("");
+    setPhysGeneral(""); setPhysCv(""); setPhysResp(""); setPhysAbd(""); setPhysExt("");
+    setPlan(""); setCidPrimary(""); setCidSecondary("");
+    setAdmissionReason(""); setOriginSector(""); setDevices(""); setCulturesAtb(""); setSpecialties("");
+    setNoPrediction(false);
+    setPredictionDate(toIsoDate(daysFromToday(5))); setPredictionDays("5");
+    toast.success("Rascunho descartado");
+  };
 
   // Sincronização dias -> data
   const handleDaysChange = (v: string) => {
@@ -191,13 +292,32 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     ? "Sem previsão"
     : `${formatBr(predictionDate)} (D+${predictionDays})`;
 
+  // Mapa de campos obrigatórios (para realce visual)
+  const missing = {
+    hda: !hda.trim(),
+    exam: !physGeneral.trim() && !physCv.trim() && !physResp.trim(),
+    examGeneral: !physGeneral.trim(),
+    plan: !plan.trim(),
+    cidPrimary: !cidPrimary.trim(),
+    prediction: !noPrediction && !predictionDate,
+    sapsAck: isUti && !sapsAck,
+  };
+  const missingList = [
+    missing.hda && "HDA",
+    missing.exam && "Exame físico (estado geral)",
+    missing.plan && "Plano terapêutico",
+    missing.cidPrimary && "CID primário",
+    missing.prediction && "Previsão de alta",
+    missing.sapsAck && "Ciência da SAPS 3",
+  ].filter(Boolean) as string[];
+
   const validate = (): string | null => {
-    if (!hda.trim()) return "História da Doença Atual (HDA) é obrigatória";
-    if (!physGeneral.trim() && !physCv.trim() && !physResp.trim()) return "Exame físico é obrigatório";
-    if (!plan.trim()) return "Plano terapêutico é obrigatório";
-    if (!cidPrimary.trim()) return "CID primário é obrigatório";
-    if (!noPrediction && !predictionDate) return "Previsão de alta é obrigatória";
-    if (isUti && !sapsAck) return "Declare ciência de que a ficha SAPS 3 está pendente (24h)";
+    if (missing.hda) return "História da Doença Atual (HDA) é obrigatória";
+    if (missing.exam) return "Exame físico é obrigatório";
+    if (missing.plan) return "Plano terapêutico é obrigatório";
+    if (missing.cidPrimary) return "CID primário é obrigatório";
+    if (missing.prediction) return "Previsão de alta é obrigatória";
+    if (missing.sapsAck) return "Declare ciência de que a ficha SAPS 3 está pendente (24h)";
     return null;
   };
 
@@ -220,6 +340,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   };
 
   const handleSubmit = async () => {
+    setAttempted(true);
     const err = validate();
     if (err) { toast.error(err); return; }
     if (!currentHospital || !currentState || !user) { toast.error("Contexto não disponível"); return; }
@@ -324,6 +445,8 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
       await supabase.from("patients").update(baseUpdate as any).eq("id", patient.id);
 
       toast.success("ADMISSÃO HOSPITALAR REGISTRADA — paciente ADMITIDO (D0)");
+      try { localStorage.removeItem(draftKeyFor(patient.id)); } catch {}
+      setDraftSavedAt(null);
       onOpenChange(false);
       onSuccess?.();
     } catch (e: any) {
@@ -350,6 +473,28 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
           <DialogDescription className="text-xs text-slate-600">
             Leito <strong>{patient.bed}</strong> • Esta admissão será registrada como <strong>D0</strong> e aparecerá como primeira entrada na linha do tempo (ADMISSÃO HOSPITALAR). Após assinada, só pode ser editada via adendo ou suspensa com justificativa.
           </DialogDescription>
+
+          {/* Faixa de status: rascunho automático + pendências */}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 border border-sky-200 px-2.5 py-1 text-[11px] text-sky-700">
+              <Save className="h-3 w-3" />
+              {draftSavedAt
+                ? <>Rascunho salvo automaticamente às <strong>{draftSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</strong> — você pode sair e continuar depois</>
+                : <>O preenchimento é salvo automaticamente como <strong>rascunho</strong> — só vira admissão após validação</>}
+            </span>
+            {draftSavedAt && (
+              <button type="button" onClick={discardDraft}
+                className="inline-flex items-center gap-1 text-[11px] text-rose-600 hover:text-rose-700 hover:underline">
+                <Trash2 className="h-3 w-3" /> Descartar rascunho
+              </button>
+            )}
+            {attempted && missingList.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-1 text-[11px] text-rose-700">
+                <AlertTriangle className="h-3 w-3" />
+                Faltam: <strong>{missingList.join(" • ")}</strong>
+              </span>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="px-6 py-5">
@@ -367,9 +512,9 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
             <TabsContent value="anamnese" className="space-y-4 mt-4">
               <Section icon={FileText} title="História clínica" tone="slate">
                 <div>
-                  <Label className="text-xs">HDA — História da Doença Atual *</Label>
+                  <ReqLabel missing={attempted && missing.hda}>HDA — História da Doença Atual</ReqLabel>
                   <Textarea value={hda} onChange={e => setHda(e.target.value)} rows={4}
-                    placeholder="Paciente admitido com..." className="mt-1" />
+                    placeholder="Paciente admitido com..." className={cn("mt-1", reqRing(attempted && missing.hda))} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -433,8 +578,8 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
             <TabsContent value="exame" className="space-y-4 mt-4">
               <Section icon={Stethoscope} title="Exame físico segmentar" tone="slate">
                 <div>
-                  <Label className="text-xs">Estado geral *</Label>
-                  <Textarea value={physGeneral} onChange={e => setPhysGeneral(e.target.value)} rows={2} className="mt-1" />
+                  <ReqLabel missing={attempted && missing.examGeneral}>Estado geral</ReqLabel>
+                  <Textarea value={physGeneral} onChange={e => setPhysGeneral(e.target.value)} rows={2} className={cn("mt-1", reqRing(attempted && missing.examGeneral))} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label className="text-xs">Cardiovascular</Label><Textarea value={physCv} onChange={e => setPhysCv(e.target.value)} rows={2} className="mt-1" /></div>
@@ -448,16 +593,18 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
             {/* ───── Plano / CID ───── */}
             <TabsContent value="plano" className="space-y-4 mt-4">
               <Section icon={Pill} title="Plano terapêutico" tone="slate">
+                <ReqLabel missing={attempted && missing.plan}>Conduta inicial</ReqLabel>
                 <Textarea value={plan} onChange={e => setPlan(e.target.value)} rows={5}
-                  placeholder={"• Monitorização\n• Suporte clínico\n• Antibioticoterapia\n• ..."} />
+                  placeholder={"• Monitorização\n• Suporte clínico\n• Antibioticoterapia\n• ..."}
+                  className={cn("mt-1", reqRing(attempted && missing.plan))} />
               </Section>
 
               <Section icon={FileText} title="Diagnóstico (CID-10)" hint="Busca por código ou descrição" tone="blue">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs">CID primário *</Label>
+                    <ReqLabel missing={attempted && missing.cidPrimary}>CID primário</ReqLabel>
                     <CidSearchInput value={cidPrimary} onChange={setCidPrimary}
-                      placeholder="Ex.: J18, pneumonia..." className="mt-1" />
+                      placeholder="Ex.: J18, pneumonia..." className={cn("mt-1", reqRing(attempted && missing.cidPrimary))} />
                   </div>
                   <div>
                     <Label className="text-xs">CID secundário</Label>
