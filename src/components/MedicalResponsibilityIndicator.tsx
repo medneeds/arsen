@@ -20,6 +20,12 @@ export const MedicalResponsibilityIndicator = ({
   const getIcon = () => {
     const iconStyle = { color: sectorColor };
     switch (responsibility.type) {
+      case 'rotineiro':
+        return <CalendarClock className={cn(compact ? "h-3.5 w-3.5" : "h-4 w-4")} style={iconStyle} />;
+      case 'plantonista':
+        return <Moon className={cn(compact ? "h-3.5 w-3.5" : "h-4 w-4")} style={iconStyle} />;
+      case 'intercorrencista':
+        return <Siren className={cn(compact ? "h-3.5 w-3.5" : "h-4 w-4")} style={iconStyle} />;
       case 'porta':
         return <Stethoscope className={cn(compact ? "h-3.5 w-3.5" : "h-4 w-4")} style={iconStyle} />;
       case 'lider':
