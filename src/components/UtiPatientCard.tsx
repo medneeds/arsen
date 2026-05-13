@@ -1010,20 +1010,7 @@ export function UtiPatientCard({
                 <span className="text-sm font-medium italic">Leito Vago</span>
               </div>
             </div>
-            {/* Actions for vacant bed: cadastrar paciente + excluir leito */}
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-[11px] gap-1 border-primary/40 text-primary hover:bg-primary/10"
-                onClick={() => setIsRegisterDialogOpen(true)}
-              >
-                <UserPlus className="h-3.5 w-3.5" />
-                Cadastrar Paciente
-              </Button>
-              {/* Leitos são fixos — exclusão removida. Realocação só ocorre quando há paciente no leito. */}
-
-            </div>
+            {/* Leito vago — sem ações. Cadastro/admissão ocorre pelo fluxo da cockpit. */}
           </div>
         ) : (
           /* OCCUPIED BED VIEW - Normal card */
