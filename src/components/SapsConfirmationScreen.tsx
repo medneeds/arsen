@@ -124,7 +124,7 @@ export function SapsConfirmationScreen({
             transition={{ delay: 0.4 }}
             className="text-center"
           >
-            <h2 className="text-2xl font-bold text-foreground">Paciente admitido</h2>
+            <h2 className="text-2xl font-bold text-foreground">Paciente pré-admitido</h2>
             <p className="text-muted-foreground mt-1">{patientName}</p>
           </motion.div>
 
