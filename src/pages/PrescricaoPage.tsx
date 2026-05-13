@@ -2217,6 +2217,36 @@ function ExtraPrescriptionDialog({
     setExtraItems(prev => prev.filter(i => i.id !== id));
   };
 
+  const duplicateExtraItem = (id: string) => {
+    setExtraItems(prev => {
+      const idx = prev.findIndex(i => i.id === id);
+      if (idx < 0) return prev;
+      const src = prev[idx];
+      const copy: PrescriptionItem = { ...src, id: crypto.randomUUID() };
+      const next = [...prev];
+      next.splice(idx + 1, 0, copy);
+      return next;
+    });
+  };
+
+  const reorderExtraItems = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setExtraItems(prev => {
+      const oldIndex = prev.findIndex(i => i.id === active.id);
+      const newIndex = prev.findIndex(i => i.id === over.id);
+      if (oldIndex < 0 || newIndex < 0) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  };
+
+  const extraSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const noop = () => {};
+
   const handleConfirm = () => {
     if (extraItems.length === 0) {
       toast.error("Adicione pelo menos 1 item à prescrição extra");
@@ -2277,7 +2307,7 @@ function ExtraPrescriptionDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-orange-500" />
@@ -2315,8 +2345,9 @@ function ExtraPrescriptionDialog({
           </div>
         </div>
 
-        {/* Items list */}
-        <div className="flex-1 overflow-y-auto min-h-0 space-y-2">
+        {/* Items list — usa o MESMO row do corpo principal para respeitar campos
+            específicos por categoria (nutrição, hidratação, inalação, MAV, meds IV...) */}
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-2 pr-1">
           {extraItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
               <Syringe className="h-8 w-8 mb-2 opacity-30" />
@@ -2324,52 +2355,40 @@ function ExtraPrescriptionDialog({
               <p className="text-xs">Use a busca acima para adicionar medicações</p>
             </div>
           ) : (
-            extraItems.map((item, idx) => (
-              <div key={item.id} className="rounded-lg border border-border/50 bg-card/50 p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-muted-foreground w-5">{idx + 1}.</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">
-                      {item.highAlert && <AlertTriangle className="inline h-3 w-3 mr-1 text-red-500" />}
-                      {item.name}
-                      {item.presentation !== '-' && <span className="font-normal text-muted-foreground ml-1">({item.presentation})</span>}
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="text-[9px] bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800 shrink-0">
-                    EXTRA
-                  </Badge>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeExtraItem(item.id)}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+            <DndContext
+              sensors={extraSensors}
+              collisionDetection={closestCenter}
+              onDragEnd={reorderExtraItems}
+            >
+              <SortableContext
+                items={extraItems.map(i => i.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-1.5">
+                  {extraItems.map((item, idx) => (
+                    <SortablePrescriptionItemRow
+                      key={item.id}
+                      item={item}
+                      index={idx}
+                      onUpdate={updateExtraItem}
+                      onRemove={removeExtraItem}
+                      onToggleFlag={toggleExtraFlag}
+                      isSimple={false}
+                      isCompact={false}
+                      selected={false}
+                      onToggleSelect={noop}
+                      onDuplicate={duplicateExtraItem}
+                      onRequestSuspend={noop}
+                      onReactivate={noop}
+                      onToggleValidation={noop}
+                      isPastRenewalTime={false}
+                      prescriptionLocked={false}
+                      missingFields={[]}
+                    />
+                  ))}
                 </div>
-                {/* Row: Dose, Via, Posologia, Flags */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <Input value={item.dose} onChange={(e) => updateExtraItem(item.id, "dose", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-24" placeholder="Dose" />
-                  <Select value={item.route} onValueChange={(v) => updateExtraItem(item.id, "route", v)}>
-                    <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-28"><SelectValue /></SelectTrigger>
-                    <SelectContent>{ROUTES.map(r => <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <Select value={item.posology} onValueChange={(v) => updateExtraItem(item.id, "posology", v)}>
-                    <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-24"><SelectValue /></SelectTrigger>
-                    <SelectContent>{POSOLOGIES.map(p => <SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>)}</SelectContent>
-                  </Select>
-                  <div className="flex gap-0.5 ml-auto">
-                    {PRESCRIPTION_FLAGS.map(f => (
-                      <FlagToggle
-                        key={f.key}
-                        flag={f}
-                        active={item.flags.includes(f.key)}
-                        onToggle={() => toggleExtraFlag(item.id, f.key)}
-                      />
-                    ))}
-                  </div>
-                </div>
-                {/* Row: Observações */}
-                <div className="flex items-center gap-1.5">
-                  <Input value={item.instructions} onChange={(e) => updateExtraItem(item.id, "instructions", e.target.value)} className="h-7 text-[11px] bg-muted/10 border-border/20 flex-1 text-muted-foreground italic" placeholder="Observações..." />
-                </div>
-              </div>
-            ))
+              </SortableContext>
+            </DndContext>
           )}
         </div>
 
