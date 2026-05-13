@@ -464,19 +464,110 @@ export default function Saps3Page() {
   // ─── Pre-fill from allocation navigation / URL ───
   useEffect(() => {
     const state = location.state as any;
+    const completeSapsIdParam = state?.completeSapsId || searchParams.get("completeSapsId");
     const fromAllocation = Boolean(state?.fromAllocation || searchParams.get("fromAllocation") === "true");
     const patientNameFromContext = state?.patientName || searchParams.get("patientName");
 
-    if (!fromAllocation || !patientNameFromContext) return;
+    // Não dispara se não há contexto algum
+    if (!completeSapsIdParam && !fromAllocation && !patientNameFromContext) return;
 
     const patientAgeFromContext = state?.patientAge || searchParams.get("patientAge");
     const destinationSectorFromContext = state?.destinationSector || searchParams.get("destinationSector");
     const preAdmissionId = state?.preAdmissionId || searchParams.get("preAdmissionId");
     const allocationRequestId = state?.allocationRequestId || searchParams.get("allocationRequestId");
-    const patientId = state?.patientId || searchParams.get("patientId");
+    const patientIdParam = state?.patientId || searchParams.get("patientId");
+    const patientBedParam = state?.patientBed || searchParams.get("patientBed") || searchParams.get("selectedBed");
+    const patientSectorParam = state?.patientSector || searchParams.get("patientSector") || searchParams.get("selectedSector");
 
+    // Caminho A — Completar SAPS pendente de paciente JÁ ADMITIDO.
+    // Carrega o registro SAPS existente e hidrata o formulário; não passa pelo fluxo de alocação.
+    if (completeSapsIdParam) {
+      setCompletingSapsId(completeSapsIdParam);
+      setCompletingPatientId(patientIdParam || null);
+
+      (async () => {
+        const { data: sapsRow, error } = await supabase
+          .from("saps3_assessments" as any)
+          .select("*")
+          .eq("id", completeSapsIdParam)
+          .maybeSingle();
+
+        if (error || !sapsRow) {
+          toast.error("Não foi possível carregar a ficha SAPS pendente.");
+          return;
+        }
+
+        const r: any = sapsRow;
+        const namePref = patientNameFromContext || r.patient_name || "";
+        setSelectedRequest({
+          id: completeSapsIdParam,
+          patient_name: namePref,
+          birth_date: null,
+          sex: null,
+          destination_sector: destinationSectorFromContext || patientSectorParam || null,
+          notes: null,
+          created_at: r.created_at || new Date().toISOString(),
+          medical_record: null,
+          patient_id: patientIdParam || null,
+          allocation_request_id: null,
+        });
+
+        setPatientName(namePref);
+        setAge(r.age != null ? String(r.age) : (patientAgeFromContext ? String(patientAgeFromContext).replace(/\D/g, "") : ""));
+        setComorbidities(Array.isArray(r.comorbidities) ? r.comorbidities : []);
+        setLosBeforeIcu(r.hospital_los_before_icu != null ? String(r.hospital_los_before_icu) : "");
+        setAdmissionSource(r.icu_admission_source || "");
+        setPlannedAdmission(!!r.planned_admission);
+        setAdmissionReason(r.admission_reason || "");
+        setAdmissionReasonDetail(r.admission_reason_detail || "");
+        setSurgicalStatus(r.surgical_status || "");
+        setSurgeryType(r.surgery_type || "");
+        setInfectionAtAdmission(r.infection_at_admission || "");
+
+        // Hidrata avaliação de consciência a partir de escala_consciencia se disponível
+        const ec = r.escala_consciencia || {};
+        if (ec?.tipo === "RASS") {
+          setSedationStatus("sedated");
+          setRassScore(ec.rass_score != null ? String(ec.rass_score) : "");
+          setConsciousnessReason(ec.motivo || "");
+          setGcsPreSedation(ec.gcs_pre_sedacao != null ? String(ec.gcs_pre_sedacao) : "");
+        } else if (ec?.tipo === "GCS-T") {
+          setSedationStatus("intubated_no_sedation");
+          setGcsO(ec.glasgow_parciais?.O != null ? String(ec.glasgow_parciais.O) : "");
+          setGcsM(ec.glasgow_parciais?.M != null ? String(ec.glasgow_parciais.M) : "");
+        } else if (ec?.tipo === "GCS") {
+          setSedationStatus("no");
+          setGcsO(ec.glasgow_parciais?.O != null ? String(ec.glasgow_parciais.O) : "");
+          setGcsV(ec.glasgow_parciais?.V != null ? String(ec.glasgow_parciais.V) : "");
+          setGcsM(ec.glasgow_parciais?.M != null ? String(ec.glasgow_parciais.M) : "");
+        }
+
+        setHrHighest(r.heart_rate_highest != null ? String(r.heart_rate_highest) : "");
+        setSbpLowest(r.systolic_bp_lowest != null ? String(r.systolic_bp_lowest) : "");
+        setBilirubinHighest(r.bilirubin_highest != null ? String(r.bilirubin_highest) : "");
+        setTempLowest(r.temperature_lowest != null ? String(r.temperature_lowest) : "");
+        setCreatinineHighest(r.creatinine_highest != null ? String(r.creatinine_highest) : "");
+        setLeukocytes(r.leukocytes != null ? String(r.leukocytes) : "");
+        setPhLowest(r.ph_lowest != null ? String(r.ph_lowest) : "");
+        setPlateletsLowest(r.platelets_lowest != null ? String(r.platelets_lowest) : "");
+        setPao2Fio2(r.oxygenation_pao2_fio2 != null ? String(r.oxygenation_pao2_fio2) : "");
+        setIsVentilated(!!r.is_mechanically_ventilated);
+
+        setSelectedSector(resolveSectorFromContext(patientSectorParam, currentSectorCode || currentDepartment));
+        setSelectedBed(patientBedParam || "");
+        setBox1Open(true); setBox2Open(true); setBox3Open(true);
+        toast.info(`Complete a ficha SAPS 3 de ${namePref}`);
+      })();
+      return;
+    }
+
+    // Caminho B — Fluxo de alocação tradicional (admissão nova vinda de pré-admissão/leito)
+    if (!fromAllocation || !patientNameFromContext) return;
+
+    setCompletingSapsId(null);
+    setCompletingPatientId(null);
     setSelectedRequest({
-      id: preAdmissionId || allocationRequestId || patientId || patientNameFromContext,
+      id: preAdmissionId || allocationRequestId || patientIdParam || patientNameFromContext,
       patient_name: patientNameFromContext,
       birth_date: null,
       sex: null,
@@ -484,7 +575,7 @@ export default function Saps3Page() {
       notes: null,
       created_at: new Date().toISOString(),
       medical_record: null,
-      patient_id: patientId,
+      patient_id: patientIdParam,
       allocation_request_id: allocationRequestId,
     });
 
