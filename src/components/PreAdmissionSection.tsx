@@ -179,14 +179,14 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
   return (
     <>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
           <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             <h2 className="text-sm font-bold flex items-center gap-2">
               <Clock className="h-4 w-4 text-primary" />
               Aguardando Pré-admissão (Alocação) em Leito
               <Badge variant="secondary" className="text-xs">
-                {preAdmissions.length}
+                {searchTerm ? `${filteredPreAdmissions.length}/${preAdmissions.length}` : preAdmissions.length}
               </Badge>
               {requiresRiskClassification && pendingCount > 0 && (
                 <Badge variant="destructive" className="text-xs">
@@ -195,22 +195,45 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
               )}
             </h2>
           </CollapsibleTrigger>
-          <Button size="sm" onClick={() => setShowRegistration(true)} className="gap-1 text-xs h-7">
-            <UserPlus className="h-3.5 w-3.5" />
-            Cadastrar Paciente
-          </Button>
+          <div className="flex items-center gap-2 ml-auto">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar por nome, CPF ou prontuário"
+                className="h-7 text-xs pl-7 pr-7 w-64"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label="Limpar busca"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+            <Button size="sm" onClick={() => setShowRegistration(true)} className="gap-1 text-xs h-7">
+              <UserPlus className="h-3.5 w-3.5" />
+              Cadastrar Paciente
+            </Button>
+          </div>
         </div>
 
         <CollapsibleContent>
-          {preAdmissions.length === 0 ? (
+          {filteredPreAdmissions.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="p-4 text-center text-sm text-muted-foreground">
-                Nenhum paciente aguardando pré-admissão.
+                {searchTerm
+                  ? `Nenhum paciente encontrado para "${searchTerm}".`
+                  : "Nenhum paciente aguardando pré-admissão."}
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-              {preAdmissions.map(pa => {
+              {filteredPreAdmissions.map(pa => {
                 const age = calcAge(pa.birth_date);
                 return (
                   <Card key={pa.id} className={cn(
