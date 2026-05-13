@@ -318,7 +318,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
         >
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] text-muted-foreground">
-              {soap.plan.trim().length}/10+ caracteres
+              {richHtmlToPlainText(soap.plan).length}/10+ caracteres
             </span>
             <FieldTemplates
               scope="evolution.plan"
@@ -327,11 +327,11 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               hospitalUnitId={hospitalId}
             />
           </div>
-          <Textarea
+          <RichTextEditor
             value={soap.plan}
-            onChange={e => onSOAPChange('plan', e.target.value)}
+            onChange={(html) => onSOAPChange('plan', html)}
             placeholder="Condutas, solicitações, ajustes terapêuticos, metas para próximas 24h..."
-            className="min-h-[120px] text-xs"
+            minHeight={120}
           />
         </SectionItem>
 
