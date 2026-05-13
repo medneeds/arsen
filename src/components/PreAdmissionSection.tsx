@@ -110,6 +110,23 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
     fetchPreAdmissions();
   }, [currentHospital?.id, currentState?.id, sectorFilterLabel]);
 
+  // Expor refresh imperativo (ex.: para o botão "Atualizar mapa")
+  useImperativeHandle(ref, () => ({ refresh: fetchPreAdmissions }), [currentHospital?.id, currentState?.id, sectorFilterLabel]);
+
+  // Realtime: novo cadastro/alteração em pre_admissions já reflete na lista, sem refresh manual
+  useEffect(() => {
+    if (!currentHospital?.id || !currentState?.id) return;
+    const channel = supabase
+      .channel(`pre_admissions_${currentHospital.id}_${sectorFilterLabel || "all"}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pre_admissions", filter: `hospital_unit_id=eq.${currentHospital.id}` },
+        () => fetchPreAdmissions()
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentHospital?.id, currentState?.id, sectorFilterLabel]);
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
