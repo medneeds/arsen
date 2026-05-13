@@ -85,6 +85,7 @@ import {
   type PrescriptionCategory,
   type PrescriptionFlag,
 } from "@/data/medicationsDatabase";
+import { findRegulatoryInfo } from "@/data/mavPort344Catalog";
 import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
 import { AtmStatusDialog } from "@/components/AtmStatusDialog";
 import { useUnifiedMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
