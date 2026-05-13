@@ -370,13 +370,16 @@ export function PrintableRequisitionGuide({
               >
                 <span
                   style={{
-                    width: 9,
-                    height: 9,
-                    border: `1px solid ${ink}`,
-                    borderRadius: 1,
+                    minWidth: 16,
+                    fontSize: "8.5pt",
+                    fontWeight: 600,
+                    color: ink,
                     flexShrink: 0,
+                    textAlign: "right",
                   }}
-                />
+                >
+                  {i + 1}.
+                </span>
                 <span>{name}</span>
               </div>
             );
