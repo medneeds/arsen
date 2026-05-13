@@ -152,8 +152,26 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
     return Math.floor((Date.now() - new Date(birthDate + 'T12:00:00').getTime()) / (365.25 * 24 * 60 * 60 * 1000));
   };
 
-  const pendingCount = preAdmissions.filter(p => p.status === "pre_admissao").length;
-  const classifiedCount = preAdmissions.filter(p => p.status === "classificado").length;
+  const normalize = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const onlyDigits = (v: string) => v.replace(/\D/g, "");
+  const filteredPreAdmissions = (() => {
+    const q = searchTerm.trim();
+    if (!q) return preAdmissions;
+    const qNorm = normalize(q);
+    const qDigits = onlyDigits(q);
+    return preAdmissions.filter(p => {
+      if (normalize(p.patient_name || "").includes(qNorm)) return true;
+      if (qDigits) {
+        if (p.cpf && onlyDigits(p.cpf).includes(qDigits)) return true;
+        if (p.medical_record && onlyDigits(p.medical_record).includes(qDigits)) return true;
+      }
+      if (p.medical_record && normalize(p.medical_record).includes(qNorm)) return true;
+      return false;
+    });
+  })();
+
+  const pendingCount = filteredPreAdmissions.filter(p => p.status === "pre_admissao").length;
+  const classifiedCount = filteredPreAdmissions.filter(p => p.status === "classificado").length;
   // Classificação de risco (Manchester) é atribuição da enfermagem da Urgência e Emergência.
   // Em setores de internação (qualquer setor com filtro definido), o cadastro vai direto para alocação no leito.
   const requiresRiskClassification = !sectorFilterLabel;
