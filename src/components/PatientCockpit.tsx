@@ -935,6 +935,12 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         patientBed={patient.bedNumber}
         patientSector={patient.sector}
       />
+      <MedicalRecordEditDialog
+        open={recordEditOpen}
+        onOpenChange={setRecordEditOpen}
+        patientId={patient.id}
+        patientName={patient.name}
+      />
     </TooltipProvider>
   );
 }
