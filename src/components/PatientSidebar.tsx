@@ -93,6 +93,7 @@ function InfoSection({ icon: Icon, title, items, emptyText = "Nenhum registro" }
 
 export function PatientSidebar({ patient, open, onOpenChange }: PatientSidebarProps) {
   const { namesHidden } = usePrivacy();
+  const [recordEditOpen, setRecordEditOpen] = useState(false);
   const navigate = useNavigate();
 
   if (!patient) return null;
