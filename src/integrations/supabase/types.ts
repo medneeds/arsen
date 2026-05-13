@@ -2371,6 +2371,11 @@ export type Database = {
           pendencies: string | null
           psm_status: string | null
           relevant_exams: string | null
+          saps_acknowledged_at: string | null
+          saps_acknowledged_by: string | null
+          saps_completed_at: string | null
+          saps_pending: boolean
+          saps_pending_since: string | null
           schedule: string | null
           sector: string
           state_id: string
@@ -2421,6 +2426,11 @@ export type Database = {
           pendencies?: string | null
           psm_status?: string | null
           relevant_exams?: string | null
+          saps_acknowledged_at?: string | null
+          saps_acknowledged_by?: string | null
+          saps_completed_at?: string | null
+          saps_pending?: boolean
+          saps_pending_since?: string | null
           schedule?: string | null
           sector: string
           state_id: string
@@ -2471,6 +2481,11 @@ export type Database = {
           pendencies?: string | null
           psm_status?: string | null
           relevant_exams?: string | null
+          saps_acknowledged_at?: string | null
+          saps_acknowledged_by?: string | null
+          saps_completed_at?: string | null
+          saps_pending?: boolean
+          saps_pending_since?: string | null
           schedule?: string | null
           sector?: string
           state_id?: string
