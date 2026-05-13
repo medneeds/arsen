@@ -323,9 +323,9 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
         created_by: user?.id,
-        admission_date: new Date().toISOString(),
+        admission_date: (admissionDate ?? new Date()).toISOString(),
         // Sincroniza automaticamente a data de admissão exibida no card (DD/MM/AAAA)
-        uti_admission_date: new Date().toISOString(),
+        uti_admission_date: (admissionDate ?? new Date()).toISOString(),
         is_vacant: false,
         clinical_status: fullData.risk_classification === "vermelho" ? "grave" : null,
         diagnoses: fullData.chief_complaint || null,
