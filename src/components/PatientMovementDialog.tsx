@@ -177,9 +177,44 @@ export function PatientMovementDialog({
     onClose();
   };
 
-  const handleSubmit = async () => {
-    if (!patient || !subtypeDef) return;
+  // Calcula pendências para o popup de confirmação (apenas docs de alta/óbito)
+  const dischargeChecklist = useMemo(() => {
+    if (!requiredDocType) return { blocking: [], soft: [] };
+    const blocking: { label: string; reason: string }[] = [];
+    const soft: { label: string }[] = [];
+    const p = docPayload || ({} as Partial<DischargeDocPayload>);
+    const empty = (v: any) => !String(v ?? "").trim();
 
+    if (!responsibleDoctor.trim()) {
+      blocking.push({ label: "Médico responsável", reason: "precisa estar sincronizado com o usuário logado." });
+    }
+    if (requiredDocType === "obito") {
+      if (empty(p.death_date_time)) blocking.push({ label: "Data/hora do óbito", reason: "campo obrigatório." });
+      if (empty(p.death_summary)) blocking.push({ label: "Resumo do óbito", reason: "relatório clínico obrigatório." });
+    } else {
+      if (empty(p.final_diagnoses)) blocking.push({ label: "Diagnósticos finais (CID)", reason: "obrigatórios para a alta." });
+      if (empty(p.evolution_summary)) blocking.push({ label: "Resumo da evolução", reason: "obrigatório." });
+      if (empty(p.discharge_summary)) blocking.push({ label: "Sumário de alta", reason: "síntese clínica obrigatória." });
+      if (requiredDocType === "alta_hospitalar" && empty(p.orientations)) {
+        blocking.push({ label: "Orientações ao paciente", reason: "obrigatórias na alta hospitalar." });
+      }
+    }
+    if (empty(p.signed_by_name)) blocking.push({ label: "Médico assinante", reason: "nome do responsável obrigatório." });
+    if (empty(p.signed_by_crm)) blocking.push({ label: "CRM", reason: "registro profissional obrigatório." });
+
+    // Soft (opcionais — comunicação à família)
+    if (empty(p.family_contact_name)) soft.push({ label: "Familiar comunicado" });
+    if (empty(p.family_contact_relation)) soft.push({ label: "Grau de parentesco" });
+    if (empty(p.family_contact_phone)) soft.push({ label: "Telefone do familiar" });
+    if (empty(p.family_communication_mode)) soft.push({ label: "Modo de comunicação" });
+    if (empty(p.family_satisfaction)) soft.push({ label: "Grau de satisfação na comunicação" });
+    if (empty(p.family_communication_notes)) soft.push({ label: "Observações da comunicação" });
+
+    return { blocking, soft };
+  }, [requiredDocType, docPayload, responsibleDoctor]);
+
+  const handleOpenConfirm = () => {
+    if (!patient || !subtypeDef) return;
     if (subtypeDef.needsDestination && !destination && !customDestination) {
       toast({
         title: "Campo obrigatório",
@@ -188,26 +223,20 @@ export function PatientMovementDialog({
       });
       return;
     }
+    // Sempre abrir o popup — a validação visual e o bloqueio acontecem dentro dele
+    setConfirmOpen(true);
+  };
 
-    if (requiredDocType) {
-      if (!responsibleDoctor.trim()) {
-        toast({
-          title: "Médico responsável obrigatório",
-          description: "O médico responsável precisa estar identificado (sincronizado com o usuário logado).",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (!docPayload || !docComplete) {
-        toast({
-          title: "Documento obrigatório",
-          description: requiredDocType === "obito"
-            ? "Preencha o Relatório de Óbito antes de confirmar."
-            : "Preencha o Sumário de Alta antes de confirmar.",
-          variant: "destructive",
-        });
-        return;
-      }
+  const handleSubmit = async () => {
+    if (!patient || !subtypeDef) return;
+    // Revalida no submit (defesa em profundidade)
+    if (requiredDocType && dischargeChecklist.blocking.length > 0) {
+      toast({
+        title: "Pendências obrigatórias",
+        description: dischargeChecklist.blocking[0].label + " — " + dischargeChecklist.blocking[0].reason,
+        variant: "destructive",
+      });
+      return;
     }
 
     setIsSubmitting(true);
