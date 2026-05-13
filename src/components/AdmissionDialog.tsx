@@ -507,19 +507,38 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                   <div><Label className="text-xs">Dispositivos invasivos</Label><Textarea value={devices} onChange={e => setDevices(e.target.value)} rows={2} placeholder="IOT, CVC, SVD, ..." className="mt-1" /></div>
                   <div><Label className="text-xs">Culturas pendentes / ATB em curso</Label><Textarea value={culturesAtb} onChange={e => setCulturesAtb(e.target.value)} rows={2} className="mt-1" /></div>
                   <div><Label className="text-xs">Especialidades em conjunto</Label><Input value={specialties} onChange={e => setSpecialties(e.target.value)} className="mt-1" /></div>
-                  <p className="text-xs text-amber-700 flex items-center gap-1"><AlertTriangle className="h-3 w-3" />Confirme o SAPS 3 finalizado antes de assinar a admissão UTI.</p>
+                </Section>
+
+                <Section icon={ShieldCheck} title="Ficha SAPS 3 — Ciência" tone="amber">
+                  <p className="text-[11px] text-slate-700 leading-relaxed">
+                    A admissão UTI/UCI exige a <strong>Ficha SAPS 3</strong>. O preenchimento pode ser concluído em até{" "}
+                    <strong className="text-amber-700">24 horas</strong> a partir da pré-admissão (janela operacional / AMIB).
+                    Após esse prazo, prescrição, evolução, requisições, docs e histórico serão <strong>bloqueados</strong> até a finalização.
+                  </p>
+                  <label className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50/70 p-3 cursor-pointer select-none">
+                    <Checkbox checked={sapsAck} onCheckedChange={v => setSapsAck(v === true)} className="mt-0.5" />
+                    <span className="text-xs text-slate-800">
+                      <strong className="uppercase tracking-wide text-amber-800">Declaro ciência</strong> de que a ficha SAPS 3 está pendente
+                      e me comprometo a finalizá-la <strong>dentro de 24 h</strong> a partir da pré-admissão.
+                    </span>
+                  </label>
                 </Section>
               </TabsContent>
             )}
           </Tabs>
         </div>
 
-        <DialogFooter className="px-6 py-4 border-t bg-slate-50/60 gap-2">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={submitting} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white uppercase">
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
-            Assinar e Admitir (D0)
+        <DialogFooter className="px-6 py-4 border-t bg-slate-50/60 gap-2 sm:justify-between">
+          <Button variant="outline" onClick={handlePrint} disabled={submitting} className="gap-2">
+            <Printer className="h-4 w-4" /> Imprimir Admissão (Norma Zero)
           </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>Cancelar</Button>
+            <Button onClick={handleSubmit} disabled={submitting || (isUti && !sapsAck)} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white uppercase">
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardCheck className="h-4 w-4" />}
+              Assinar e Admitir (D0)
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
