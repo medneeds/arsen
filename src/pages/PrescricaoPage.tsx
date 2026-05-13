@@ -1434,6 +1434,62 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     );
   }
 
+  // === INSULIN PLAN VIEW (always grouped block, even in compact mode) ===
+  if (item.insulinPlan && !individualExpanded) {
+    const desc = describeInsulinPlan(item.insulinPlan);
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        id={`prescription-item-${item.id}`}
+        className={cn(
+          "rounded-lg border-2 transition-all overflow-hidden",
+          item.status === 'suspended'
+            ? "border-destructive/30 bg-destructive/5 opacity-60"
+            : "border-red-300/60 bg-red-50/40 dark:bg-red-950/10 hover:border-red-400/60",
+          selected && "ring-2 ring-primary/40",
+        )}
+      >
+        <div className="flex items-start gap-2 px-2.5 py-2">
+          <ValidationDot />
+          <button className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground shrink-0 touch-none mt-0.5" {...attributes} {...listeners}>
+            <GripVertical className="h-3.5 w-3.5" />
+          </button>
+          <Checkbox checked={selected} onCheckedChange={() => onToggleSelect(item.id)} className="shrink-0 mt-0.5" />
+          <span className="text-[10px] font-mono text-muted-foreground w-5 text-right shrink-0 mt-0.5">{index + 1}.</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <AlertTriangle className="h-3 w-3 text-red-600 shrink-0" />
+              <span className={cn("text-xs font-bold text-foreground", item.status === 'suspended' && "line-through")}>
+                INSULINOTERAPIA — {desc.headline}
+              </span>
+              <Badge variant="outline" className="text-[8px] px-1 bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300">MAV</Badge>
+              {item.insulinPlan.scheme === 'iv_continuous' && (
+                <Badge variant="outline" className="text-[8px] px-1 bg-amber-100 text-amber-700 border-amber-300">BIC</Badge>
+              )}
+              <button
+                type="button"
+                onClick={() => { setEditingInsulinItemId(item.id); setPendingInsulinMed(null); setInsulinDialogOpen(true); }}
+                className="ml-auto text-[10px] text-primary hover:underline"
+              >
+                EDITAR ESQUEMA
+              </button>
+            </div>
+            <ul className="mt-1.5 space-y-0.5">
+              {desc.lines.map((l, i) => (
+                <li key={i} className={cn(
+                  "text-[11px] leading-snug",
+                  l.startsWith('  •') ? "pl-4 text-muted-foreground" : "pl-2 border-l-2 border-red-400/40 text-foreground"
+                )}>{l.replace(/^ {2}• /, '• ')}</li>
+              ))}
+            </ul>
+          </div>
+          <ItemActions />
+        </div>
+      </div>
+    );
+  }
+
   // === COMPACT VIEW (with individual expand) ===
   if (isCompact && !isSimple && !individualExpanded) {
     const compactParts: string[] = [];
