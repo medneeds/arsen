@@ -3625,6 +3625,14 @@ const PrescricaoPage = () => {
       setAntimicrobialGuideOpen(true);
       return;
     }
+    // Insulinas: abrem o Assistente de Insulinoterapia (pop-up dentro de Medicações)
+    // O item só é incorporado à prescrição após o usuário concluir o wizard.
+    if (isInsulinMedication(med.name)) {
+      setPendingInsulinMed(med);
+      setEditingInsulinItemId(null);
+      setInsulinDialogOpen(true);
+      return;
+    }
     const newItem = createItem(med);
 
     // === Diferenciação regulatória (MAV / Portaria 344 / ambos) ===
