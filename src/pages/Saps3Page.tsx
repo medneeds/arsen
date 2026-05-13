@@ -1319,11 +1319,11 @@ export default function Saps3Page() {
               className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-400 dark:hover:bg-amber-900/20"
             >
               <Clock className="h-4 w-4" />
-              {saving ? "Admitindo..." : "Admitir com SAPS pendente"}
+              {saving ? "Pré-admitindo..." : "Pré-admitir com SAPS pendente"}
             </Button>
             <Button onClick={() => handleSave(false)} disabled={saving || !selectedBed} className="gap-2">
               <Save className="h-4 w-4" />
-              {saving ? "Admitindo..." : `Admitir no ${selectedBed || "leito"}`}
+              {saving ? "Pré-admitindo..." : `Pré-admitir no ${selectedBed || "leito"}`}
             </Button>
           </div>
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-300">
