@@ -1017,8 +1017,91 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
             </div>
           )}
 
-          {/* STEP 3 — Revisão */}
+          {/* STEP 3 — Aporte proteico (catálogo genérico) */}
           {step === 3 && (
+            <div className="space-y-3 p-1">
+              <div className="text-[11px] text-muted-foreground bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/60 rounded-lg px-3 py-2">
+                <span className="font-semibold text-emerald-700 dark:text-emerald-300">Suplementação proteica/calórico-proteica</span> — selecione os produtos a anexar à prescrição.
+                Cada item gera linha própria. Módulos podem ir VO ou via sonda; SNO é VO.
+              </div>
+
+              {(["sno", "modular"] as const).map(group => {
+                const groupItems = PROTEIN_SUPPLEMENTS.filter(p => p.group === group);
+                const groupLabel = group === "sno"
+                  ? "Suplementos nutricionais orais (SNO)"
+                  : "Módulos (pó/sachê) — oral ou via sonda";
+                return (
+                  <section key={group} className="rounded-lg border border-border/60 p-3 space-y-2">
+                    <h3 className="text-xs font-bold text-emerald-700 dark:text-emerald-300">{groupLabel}</h3>
+                    <div className="space-y-1.5">
+                      {groupItems.map(p => {
+                        const sel = proteinSelected.has(p.key);
+                        const ov = proteinOverrides[p.key];
+                        return (
+                          <div key={p.key} className={cn(
+                            "rounded-md border transition-all",
+                            sel ? "border-emerald-400 bg-emerald-50/30 dark:bg-emerald-950/20" : "border-border/60"
+                          )}>
+                            <button
+                              type="button"
+                              onClick={() => toggleProtein(p.key)}
+                              className="w-full text-left px-3 py-2 flex items-start gap-2"
+                            >
+                              <div className={cn(
+                                "mt-0.5 h-4 w-4 rounded border flex items-center justify-center shrink-0",
+                                sel ? "bg-emerald-500 border-emerald-500" : "border-border bg-background"
+                              )}>
+                                {sel && <Check className="h-2.5 w-2.5 text-white" />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-semibold">{p.label}</div>
+                                <div className="text-[10px] text-muted-foreground">{p.note}</div>
+                              </div>
+                            </button>
+                            {sel && ov && (
+                              <div className="px-3 pb-2 pt-0 grid grid-cols-3 gap-2 border-t border-border/40 bg-background/40">
+                                <div>
+                                  <Label className="text-[10px] font-semibold">Dose</Label>
+                                  <Input value={ov.dose} onChange={e => updateProteinOverride(p.key, { dose: e.target.value })} className="mt-1 h-8 text-xs" />
+                                </div>
+                                <div>
+                                  <Label className="text-[10px] font-semibold">Posologia</Label>
+                                  <Input value={ov.posology} onChange={e => updateProteinOverride(p.key, { posology: e.target.value })} className="mt-1 h-8 text-xs" />
+                                </div>
+                                <div>
+                                  <Label className="text-[10px] font-semibold">Via</Label>
+                                  <Select value={ov.route} onValueChange={(v) => updateProteinOverride(p.key, { route: v as ProteinRouteKind })}>
+                                    <SelectTrigger className="mt-1 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      {p.routes.includes("oral") && <SelectItem value="oral">Oral (VO)</SelectItem>}
+                                      {p.routes.includes("enteral") && (
+                                        <SelectItem value="enteral">
+                                          Enteral ({ENTERAL_VIAS.find(v => v.key === entVia)?.label || "sonda"})
+                                        </SelectItem>
+                                      )}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
+
+              {proteinSelected.size === 0 && (
+                <div className="text-[11px] text-muted-foreground text-center py-2">
+                  Nenhum aporte proteico selecionado — esta etapa é opcional. Avance para revisar.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 4 — Revisão */}
+          {step === 4 && (
             <div className="space-y-2 p-1">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
