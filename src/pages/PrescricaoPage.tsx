@@ -454,6 +454,10 @@ function getPresetsForPosology(posology: string): typeof SCHEDULE_PRESETS[string
 
 // Build synced preparation description from structured fields
 function buildPrepDescription(item: PrescriptionItem): string {
+  // Inhalation items use a dedicated builder (nebulização / pMDI / DPI)
+  if (item.category === 'inhalation') {
+    return assembleInhalationInstruction(item as any);
+  }
   const parts: string[] = [];
   if (item.quantity && item.quantity !== '1' && item.quantityUnit) {
     parts.push(`${item.quantity} ${item.quantityUnit}.`);
