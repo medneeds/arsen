@@ -1471,7 +1471,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               )}
               <button
                 type="button"
-                onClick={() => { setEditingInsulinItemId(item.id); setPendingInsulinMed(null); setInsulinDialogOpen(true); }}
+                onClick={() => onEditInsulin?.(item.id)}
                 className="ml-auto text-[10px] text-primary hover:underline"
               >
                 EDITAR ESQUEMA
