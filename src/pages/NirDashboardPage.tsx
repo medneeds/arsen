@@ -3,13 +3,14 @@ import { useSearchParams } from "react-router-dom";
 import { 
   Building2, ArrowLeftRight, Globe, BedDouble, ClipboardPlus, 
   Repeat, LogOut, Lock, FileText, BarChart3, 
-  Clock, CheckCircle2, XCircle, Search, RefreshCw, AlertTriangle, Sparkles, Activity
+  Clock, CheckCircle2, XCircle, Search, RefreshCw, AlertTriangle, Sparkles, Activity, Move, X
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { useBedCensusActions } from "@/hooks/useBedCensusActions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PlatformHeader } from "@/components/layout/PlatformHeader";
@@ -134,9 +135,57 @@ export default function NirDashboardPage() {
   const [filters, setFilters] = useState<NirFilters>({ period: "today", sectorScope: "all", priority: "all" });
   const [selectedBed, setSelectedBed] = useState<any | null>(null);
   const [censusGroup, setCensusGroup] = useState<string>("Todos");
+  const [reallocMode, setReallocMode] = useState(false);
+  const [reallocOrigin, setReallocOrigin] = useState<any | null>(null);
+  const [reallocDest, setReallocDest] = useState<any | null>(null);
+  const [reallocBusy, setReallocBusy] = useState(false);
+  const { transferBed, swapBeds } = useBedCensusActions();
 
   const { isLoading, refetch, beds, requests, metrics, historical, heatmap, flow } = useNirMetrics(currentHospital?.id, filters);
   const { data: predictions = [] } = useDischargePredictions(currentHospital?.id);
+
+  // Status válidos como destino na realocação
+  const VALID_DEST = new Set(["vago", "reservado", "ocupado"]);
+  const isValidDest = (s: string) => VALID_DEST.has(s);
+
+  const handleBedClick = (bed: any) => {
+    if (!reallocMode) {
+      setSelectedBed(bed);
+      return;
+    }
+    if (!reallocOrigin) {
+      if (bed.status !== "ocupado") return;
+      setReallocOrigin(bed);
+      return;
+    }
+    if (bed.id === reallocOrigin.id) {
+      setReallocOrigin(null);
+      return;
+    }
+    if (!isValidDest(bed.status)) return;
+    setReallocDest(bed);
+  };
+
+  const cancelRealloc = () => {
+    setReallocMode(false);
+    setReallocOrigin(null);
+    setReallocDest(null);
+  };
+
+  const confirmRealloc = async () => {
+    if (!reallocOrigin || !reallocDest) return;
+    setReallocBusy(true);
+    const ok = reallocDest.status === "ocupado"
+      ? await swapBeds(reallocOrigin.id, reallocDest.id)
+      : await transferBed(reallocOrigin.id, reallocDest.id);
+    setReallocBusy(false);
+    if (ok) {
+      setReallocDest(null);
+      setReallocOrigin(null);
+      setReallocMode(false);
+      refetch();
+    }
+  };
 
   const bedsBySector = useMemo(
     () =>
@@ -194,10 +243,29 @@ export default function NirDashboardPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-lg font-semibold text-foreground">Censo de Leitos — Tempo Real</h3>
-              <Button variant="outline" size="sm" onClick={refetch}>
-                <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={reallocMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => (reallocMode ? cancelRealloc() : setReallocMode(true))}
+                >
+                  {reallocMode ? <X className="h-4 w-4 mr-1" /> : <Move className="h-4 w-4 mr-1" />}
+                  {reallocMode ? "Cancelar realocação" : "Realocar paciente"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={refetch}>
+                  <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
+                </Button>
+              </div>
             </div>
+
+            {reallocMode && (
+              <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground flex items-center gap-2">
+                <Move className="h-3.5 w-3.5 text-primary" />
+                {!reallocOrigin
+                  ? "Passo 1: clique no leito do paciente que será movido (apenas leitos ocupados)."
+                  : `Passo 2: clique no leito de destino. Origem: ${reallocOrigin.bed_number} · ${reallocOrigin.patient_name}. Destino ocupado faz permuta automática.`}
+              </div>
+            )}
 
             {/* Tabs de grupo de setores (substitui filtro plano) */}
             <div className="flex flex-wrap gap-1.5">
@@ -258,17 +326,37 @@ export default function NirDashboardPage() {
                             ring: "border-border",
                             bg: "bg-muted/30",
                           };
+                          const isOrigin = reallocOrigin?.id === bed.id;
+                          const reallocDisabled =
+                            reallocMode &&
+                            (!reallocOrigin
+                              ? bed.status !== "ocupado"
+                              : !isOrigin && !isValidDest(bed.status));
+                          const isSwapTarget =
+                            reallocMode && !!reallocOrigin && !isOrigin && bed.status === "ocupado";
                           return (
                             <button
                               key={bed.id}
                               type="button"
-                              onClick={() => setSelectedBed(bed)}
+                              onClick={() => handleBedClick(bed)}
+                              disabled={reallocDisabled}
                               className={cn(
-                                "relative rounded-lg border-2 p-2 text-center cursor-pointer transition-all hover:shadow-md hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-primary/40",
+                                "relative rounded-lg border-2 p-2 text-center transition-all focus:outline-none focus:ring-2 focus:ring-primary/40",
                                 info.ring,
                                 info.bg,
+                                reallocDisabled
+                                  ? "opacity-40 cursor-not-allowed"
+                                  : "cursor-pointer hover:shadow-md hover:scale-[1.03]",
+                                isOrigin && "ring-2 ring-primary border-primary scale-[1.05] shadow-md",
+                                isSwapTarget && "ring-2 ring-amber-500/70 border-amber-500/70",
+                                reallocMode && !reallocOrigin && bed.status === "ocupado" && "ring-1 ring-primary/40",
+                                reallocMode && !!reallocOrigin && !isOrigin && bed.status === "vago" && "ring-1 ring-emerald-500/60",
                               )}
-                              title={`${bed.bed_number} — ${info.label}${bed.patient_name ? ` — ${bed.patient_name}` : ""}`}
+                              title={
+                                reallocDisabled
+                                  ? `${bed.bed_number} — destino inválido (${info.label})`
+                                  : `${bed.bed_number} — ${info.label}${bed.patient_name ? ` — ${bed.patient_name}` : ""}`
+                              }
                             >
                               <span
                                 className={cn(
@@ -522,6 +610,53 @@ export default function NirDashboardPage() {
         open={!!selectedBed}
         onOpenChange={(o) => !o && setSelectedBed(null)}
       />
+
+      {/* Confirmação de realocação / permuta */}
+      <Dialog open={!!reallocDest} onOpenChange={(o) => !o && setReallocDest(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {reallocDest?.status === "ocupado" ? "Confirmar permuta de pacientes" : "Confirmar realocação"}
+            </DialogTitle>
+            <DialogDescription>
+              {reallocDest?.status === "ocupado"
+                ? "Os dois pacientes trocarão de leito. Nenhum leito vai para higienização."
+                : "O paciente será movido. O leito de origem irá para higienização."}
+            </DialogDescription>
+          </DialogHeader>
+          {reallocOrigin && reallocDest && (
+            <div className="space-y-3 text-sm">
+              <div className="rounded-md border p-3 bg-muted/30">
+                <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Origem</p>
+                <p className="font-semibold">{reallocOrigin.patient_name}</p>
+                <p className="text-xs text-muted-foreground">
+                  Leito {reallocOrigin.bed_number} · {sectorLabelFromCode(reallocOrigin.sector)}
+                </p>
+              </div>
+              <div className="flex justify-center text-muted-foreground">
+                <ArrowLeftRight className="h-4 w-4" />
+              </div>
+              <div className="rounded-md border p-3 bg-muted/30">
+                <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Destino</p>
+                <p className="font-semibold">
+                  {reallocDest.patient_name ?? <span className="italic text-muted-foreground">Leito vago</span>}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Leito {reallocDest.bed_number} · {sectorLabelFromCode(reallocDest.sector)} · {BED_STATUS_LABELS[reallocDest.status]?.label ?? reallocDest.status}
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReallocDest(null)} disabled={reallocBusy}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmRealloc} disabled={reallocBusy}>
+              {reallocBusy ? "Processando..." : reallocDest?.status === "ocupado" ? "Confirmar permuta" : "Confirmar realocação"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </div>
     </>
   );
