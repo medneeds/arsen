@@ -116,7 +116,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   // Fetch everything in parallel on open
   useEffect(() => {
     if (!open) return;
-    const storedSector = localStorage.getItem("selected_sector") || "red";
+    const storedSector = currentSectorCode || localStorage.getItem("selected_sector") || "red";
     setSelectedSector(storedSector);
     setSelectedBed("");
     setExtraBedRequested(false);
