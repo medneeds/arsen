@@ -481,15 +481,20 @@ const ReadOnlyView: React.FC<{ soap: SOAPData; vitals: VitalSigns; physicalExam:
           </p>
         </div>
       )}
-      {(soap.subjective || soap.assessment) && (
+      {(richHtmlToPlainText(soap.subjective) || richHtmlToPlainText(soap.assessment)) && (
         <div>
           <strong className="text-blue-500">Evolução:</strong>{" "}
-          <span className="text-foreground whitespace-pre-wrap">
-            {[soap.subjective, soap.assessment].map(t => (t || "").trim()).filter(Boolean).join("\n\n")}
-          </span>
+          <span
+            className="prose prose-sm max-w-none text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{
+              __html: [soap.subjective, soap.assessment]
+                .map(t => sanitizeRichHtml(toRichHtml(t)))
+                .filter(Boolean).join(""),
+            }}
+          />
         </div>
       )}
-      {(hasExam || soap.objective) && (
+      {(hasExam || richHtmlToPlainText(soap.objective)) && (
         <div>
           <strong className="text-emerald-500">Objetivo:</strong>
           {hasExam && (
@@ -499,11 +504,22 @@ const ReadOnlyView: React.FC<{ soap: SOAPData; vitals: VitalSigns; physicalExam:
               ))}
             </ul>
           )}
-          {soap.objective && <p className="mt-1 text-foreground whitespace-pre-wrap">{soap.objective}</p>}
+          {richHtmlToPlainText(soap.objective) && (
+            <div
+              className="prose prose-sm max-w-none mt-1 text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+              dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(toRichHtml(soap.objective)) }}
+            />
+          )}
         </div>
       )}
-      {soap.plan && (
-        <div><strong className="text-purple-500">Plano:</strong> <span className="text-foreground whitespace-pre-wrap">{soap.plan}</span></div>
+      {richHtmlToPlainText(soap.plan) && (
+        <div>
+          <strong className="text-purple-500">Plano:</strong>{" "}
+          <span
+            className="prose prose-sm max-w-none text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(toRichHtml(soap.plan)) }}
+          />
+        </div>
       )}
     </div>
   );
