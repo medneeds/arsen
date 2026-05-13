@@ -3387,20 +3387,30 @@ const PrescricaoPage = () => {
     if (isMAV && isControlled) {
       // ── MAV + Portaria 344 (opioides, midazolam, ketamina) ───────────
       toast.error(`✓ ADICIONADO — ${med.name}`, {
-        description: `ALTA VIGILÂNCIA + CONTROLADO (${newItem.controlledList ?? '344'}). ${docLabel ?? 'Receita controlada'} será gerada na impressão. Aplicando modelo MAV...`,
+        description: fromGlobalSearch
+          ? `ALTA VIGILÂNCIA + CONTROLADO (${newItem.controlledList ?? '344'}). ${docLabel ?? 'Receita controlada'} será gerada na impressão.`
+          : `ALTA VIGILÂNCIA + CONTROLADO (${newItem.controlledList ?? '344'}). ${docLabel ?? 'Receita controlada'} será gerada na impressão. Aplicando modelo MAV...`,
         duration: 5000,
       });
       highlightNewItem('ring-red-400');
-      setTimeout(() => setHighAlertGuideOpen(true), 1100);
+      // Auto-abre o guia MAV apenas no caminho da categoria MAV
+      // (não dispara quando a medicação é selecionada via "Todas")
+      if (!fromGlobalSearch) {
+        setTimeout(() => setHighAlertGuideOpen(true), 1100);
+      }
     } else if (isMAV) {
       // ── Apenas MAV (insulinas, anticoagulantes, eletrólitos, BNM, aminas) ──
       toast.success(`✓ ADICIONADO — ${med.name}`, {
-        description: "ALTA VIGILÂNCIA: aplicando modelo padronizado (diluição, dose, BIC, dupla checagem)...",
+        description: fromGlobalSearch
+          ? "ALTA VIGILÂNCIA: dose, diluição e dupla checagem ficam sob sua responsabilidade."
+          : "ALTA VIGILÂNCIA: aplicando modelo padronizado (diluição, dose, BIC, dupla checagem)...",
         duration: 4500,
         style: { background: 'hsl(0 84% 60%)', color: 'white' },
       });
       highlightNewItem('ring-red-400');
-      setTimeout(() => setHighAlertGuideOpen(true), 1100);
+      if (!fromGlobalSearch) {
+        setTimeout(() => setHighAlertGuideOpen(true), 1100);
+      }
     } else if (isControlled) {
       // ── Apenas Portaria 344 (benzo VO, Z-drugs, metilfenidato, tramadol, etc.) ──
       toast.warning(`✓ ADICIONADO — ${med.name}`, {
