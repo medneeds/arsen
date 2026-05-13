@@ -16,6 +16,12 @@ import { Camera, Upload, User, MapPin, Loader2, Sparkles, AlertCircle, ShieldAle
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { PisImportDialog, ExtractedPisData } from "./PisImportDialog";
+import { UnidentifiedSuggestionDialog } from "./UnidentifiedSuggestionDialog";
+import {
+  detectUnidentified,
+  shouldEscalateToAi,
+  type NiDetection,
+} from "@/lib/unidentifiedDetector";
 
 interface PatientRegistrationDialogProps {
   open: boolean;
