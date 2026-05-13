@@ -450,7 +450,7 @@ export function MedicalRecordEditDialog({
             </div>
           ) : (
             <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
-              <TabsList className="grid grid-cols-3 w-full">
+              <TabsList className={isDeveloper ? "grid grid-cols-4 w-full" : "grid grid-cols-3 w-full"}>
                 <TabsTrigger value="prontuario" className="text-xs gap-1.5">
                   <IdCard className="h-3.5 w-3.5" /> Prontuário
                 </TabsTrigger>
@@ -462,6 +462,14 @@ export function MedicalRecordEditDialog({
                   <History className="h-3.5 w-3.5" /> Histórico
                   <Badge variant="outline" className="ml-1 h-4 px-1 text-[9px]">{mrHistory.length + regHistory.length}</Badge>
                 </TabsTrigger>
+                {isDeveloper && (
+                  <TabsTrigger
+                    value="danger"
+                    className="text-xs gap-1.5 data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground text-destructive"
+                  >
+                    <ShieldAlert className="h-3.5 w-3.5" /> Edição Avançada
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               {/* ============ ABA PRONTUÁRIO ============ */}
