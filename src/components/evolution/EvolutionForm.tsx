@@ -111,9 +111,9 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   // Sinais vitais e exame físico foram removidos do formulário (médico relata dentro
   // do corpo da Evolução). Exames complementares permanecem como campo opcional.
   const completion = useMemo(() => ({
-    evolucao: evolucaoText.trim().length >= 10,
-    complementares: soap.objective.trim().length > 0,
-    plan: soap.plan.trim().length >= 10,
+    evolucao: richHtmlToPlainText(evolucaoText).length >= 10,
+    complementares: richHtmlToPlainText(soap.objective).length > 0,
+    plan: richHtmlToPlainText(soap.plan).length >= 10,
   }), [soap.objective, soap.plan, evolucaoText]);
 
   const requiredComplete = completion.evolucao && completion.plan;
