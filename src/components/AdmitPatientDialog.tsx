@@ -305,7 +305,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         created_by: user?.id,
         admission_date: new Date().toISOString(),
         // Sincroniza automaticamente a data de admissão exibida no card (DD/MM/AAAA)
-        uti_admission_date: format(new Date(), "dd/MM/yyyy"),
+        uti_admission_date: new Date().toISOString(),
         is_vacant: false,
         clinical_status: fullData.risk_classification === "vermelho" ? "grave" : null,
         diagnoses: fullData.chief_complaint || null,
