@@ -90,6 +90,7 @@ import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog"
 import { AtmStatusDialog } from "@/components/AtmStatusDialog";
 import { useUnifiedMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
 import { PsychotropicFormDialog, isPsychotropicMedication } from "@/components/PsychotropicFormDialog";
+import { usePatientCid } from "@/hooks/usePatientCid";
 import { TevProtocolDialog } from "@/components/TevProtocolDialog";
 import { HighAlertGuideDialog } from "@/components/HighAlertGuideDialog";
 import { fuzzySearch } from "@/lib/fuzzySearch";
@@ -1212,6 +1213,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   onAssistant,
   isPastRenewalTime,
   prescriptionLocked,
+  missingFields = [],
 }: {
   item: PrescriptionItem;
   index: number;
@@ -1229,6 +1231,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   onAssistant?: (id: string) => void;
   isPastRenewalTime: boolean;
   prescriptionLocked: boolean;
+  missingFields?: string[];
 }) {
   const [individualExpanded, setIndividualExpanded] = useState(false);
   const {
@@ -1302,13 +1305,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     const renewalCutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
     const validatedAfterCutoff = !!(item.validatedAt && new Date(item.validatedAt) > renewalCutoff);
     const isValidated = !!item.validated && (!isPastRenewalTime || validatedAfterCutoff);
+    const isBlocked = !isValidated && missingFields.length > 0;
 
-    // Regras: prescrição ainda não validada como um todo → desabilita clique individual
-    // (validação só pode ocorrer em bloco). Item já validado → não pode ser desvalidado.
-    // Item novo (pendente) em prescrição já validada → pode validar individualmente (com senha).
-    const canClick = !isValidated && prescriptionLocked;
+    const canClick = !isValidated && !isBlocked && prescriptionLocked;
     const tooltipMsg = isValidated
       ? "Validado — para retirar, suspenda o item"
+      : isBlocked
+      ? `Bloqueado — preencha: ${missingFields.join(', ')}`
       : prescriptionLocked
       ? "Pendente — clique para validar com senha"
       : "Use 'Validar prescrição' para validar todos os itens";
@@ -1323,12 +1326,12 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             className={cn(
               "shrink-0 transition-transform",
               canClick ? "hover:scale-125 cursor-pointer" : "cursor-not-allowed",
-              isValidated && "cursor-default"
+              (isValidated || isBlocked) && "cursor-default"
             )}
           >
             <Circle className={cn(
               "h-3 w-3 fill-current",
-              isValidated ? "text-emerald-500" : "text-amber-500"
+              isValidated ? "text-emerald-500" : isBlocked ? "text-red-500 animate-pulse" : "text-amber-500"
             )} />
           </button>
         </TooltipTrigger>
@@ -2988,6 +2991,41 @@ const PrescricaoPage = () => {
     return items.some(i => i.status === 'active' && isItemValidatedToday(i));
   }, [items, isItemValidatedToday]);
 
+  // Categorias que NÃO seguem o esquema dose/via/posologia (têm campos próprios)
+  const NON_STANDARD_CATEGORIES = useMemo(() => new Set(['nutrition', 'care', 'nonstandard', 'hydration']), []);
+
+  // Calcula quais campos obrigatórios estão faltando em um item ativo
+  const getItemMissingFields = useCallback((item: PrescriptionItem): string[] => {
+    if (item.status !== 'active') return [];
+    const missing: string[] = [];
+    const isStandard = !NON_STANDARD_CATEGORIES.has(item.category);
+    if (isStandard) {
+      const empty = (v?: string) => !v || !v.trim() || v.trim() === '-';
+      if (empty(item.dose)) missing.push('dose');
+      if (empty(item.route)) missing.push('via');
+      if (empty(item.posology)) missing.push('posologia');
+    }
+    // Controlado (Portaria 344) precisa de tipo de notificação resolvido
+    const cat = findControlledCatalog?.(item.name);
+    if (cat?.controlled && !cat.notification_type) missing.push('tipo de notificação');
+    return missing;
+  }, [NON_STANDARD_CATEGORIES, findControlledCatalog]);
+
+  // Mapa id → campos faltando, recomputado quando items mudam
+  const itemMissingMap = useMemo(() => {
+    const m = new Map<string, string[]>();
+    items.forEach(i => {
+      const miss = getItemMissingFields(i);
+      if (miss.length > 0) m.set(i.id, miss);
+    });
+    return m;
+  }, [items, getItemMissingFields]);
+
+  const blockedValidationItems = useMemo(
+    () => items.filter(i => itemMissingMap.has(i.id)),
+    [items, itemMissingMap]
+  );
+
   // All items validated check (todos os ativos validados hoje)
   const allItemsValidated = useMemo(() => {
     const activeItems = items.filter(i => i.status === 'active');
@@ -3085,6 +3123,19 @@ const PrescricaoPage = () => {
       });
       return;
     }
+    // Bloqueia validação se houver itens com campos obrigatórios faltando
+    if (blockedValidationItems.length > 0) {
+      const lines = blockedValidationItems.slice(0, 4).map(i => {
+        const miss = itemMissingMap.get(i.id) || [];
+        return `• ${i.name}: ${miss.join(', ')}`;
+      });
+      const extra = blockedValidationItems.length > 4 ? `\n+ ${blockedValidationItems.length - 4} outro(s)` : '';
+      toast.error("Validação bloqueada — campos obrigatórios faltando", {
+        description: lines.join('\n') + extra,
+        duration: 6000,
+      });
+      return;
+    }
     const alerts = runClinicalAlertChecks(items, patient.allergies);
     if (alerts.length > 0) {
       setPendingAlerts(alerts);
@@ -3093,10 +3144,17 @@ const PrescricaoPage = () => {
       return;
     }
     proceedValidation({ type: 'all' });
-  }, [items, patient.allergies, proceedValidation]);
+  }, [items, patient.allergies, proceedValidation, blockedValidationItems, itemMissingMap]);
 
   // Solicita validação individual — checa alertas relativos ao item
   const requestValidateItem = useCallback((id: string) => {
+    const miss = itemMissingMap.get(id);
+    if (miss && miss.length > 0) {
+      toast.error("Validação bloqueada — preencha os campos obrigatórios", {
+        description: miss.join(', '),
+      });
+      return;
+    }
     const alerts = runClinicalAlertChecks(items, patient.allergies, { onlyItemId: id });
     if (alerts.length > 0) {
       setPendingAlerts(alerts);
@@ -3105,7 +3163,7 @@ const PrescricaoPage = () => {
       return;
     }
     proceedValidation({ type: 'item', itemId: id });
-  }, [items, patient.allergies, proceedValidation]);
+  }, [items, patient.allergies, proceedValidation, itemMissingMap]);
 
   // Após o médico confirmar ciência dos alertas → continua o fluxo
   const handleAlertAcknowledged = useCallback(() => {
@@ -4285,6 +4343,8 @@ const PrescricaoPage = () => {
   // Fonte única: patients.uti_allergies (lista, separada por \n). Aqui exibimos como string
   // com vírgulas para edição amigável e convertemos nos dois sentidos.
   const allergiesPatientId = searchParams.get('patientId');
+  // CID-10 primário do paciente (puxado da admissão) — usado pelo receituário Portaria 344
+  const { cidPrimary: admissionCidPrimary } = usePatientCid(allergiesPatientId);
   const lastSyncedAllergiesRef = useRef<string | null>(null); // formato canônico (\n)
   const allergiesHydratedRef = useRef(false);
 
@@ -5223,6 +5283,7 @@ const PrescricaoPage = () => {
                           onToggleValidation={requestValidateItem}
                           isPastRenewalTime={isPastRenewalTime}
                           prescriptionLocked={prescriptionLocked}
+                          missingFields={itemMissingMap.get(item.id) || []}
                         />
                       ))}
                     </div>
@@ -5708,6 +5769,7 @@ const PrescricaoPage = () => {
         doctorCrm={digitalSignature?.crm}
         hospitalName={currentHospital?.name}
         mode={psychotropicFormMode}
+        cidPrimary={admissionCidPrimary}
       />
 
       {/* Print Guides Dialog */}
