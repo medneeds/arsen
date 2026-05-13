@@ -1387,6 +1387,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             {item.status === 'suspended' && (
               <Badge variant="destructive" className="text-[9px] px-1.5">Suspenso</Badge>
             )}
+            {isLocked && item.status !== 'suspended' && (
+              <Badge variant="outline" className="text-[9px] px-1.5 bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800">
+                VALIDADO · BLOQUEADO
+              </Badge>
+            )}
             <div className="flex gap-0.5 ml-auto">
               {PRESCRIPTION_FLAGS.map(f => (
                 <FlagToggle
