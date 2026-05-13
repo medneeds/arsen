@@ -1025,6 +1025,154 @@ function FlagToggle({ flag, active, onToggle }: {
   );
 }
 
+// --- Hydration optimized fields (expanded view) ---
+const HYDRATION_PHASE_OPTIONS: Array<{ phases: number; interval: string }> = [
+  { phases: 1, interval: '24/24h' },
+  { phases: 2, interval: '12/12h' },
+  { phases: 3, interval: '8/8h' },
+  { phases: 4, interval: '6/6h' },
+  { phases: 6, interval: '4/4h' },
+  { phases: 8, interval: '3/3h' },
+  { phases: 12, interval: '2/2h' },
+  { phases: 24, interval: '1/1h' },
+];
+const HYDRATION_DRIP_FACTOR = 20; // macrogotas/mL
+
+function intervalToPhases(interval?: string): number {
+  const m = HYDRATION_PHASE_OPTIONS.find(o => o.interval === interval);
+  return m ? m.phases : 1;
+}
+
+function HydrationFields({
+  item,
+  onUpdate,
+}: {
+  item: PrescriptionItem;
+  onUpdate: (id: string, field: keyof PrescriptionItem, value: string) => void;
+}) {
+  const FieldLabel = ({ children }: { children: React.ReactNode }) => (
+    <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">{children}</span>
+  );
+
+  const phases = intervalToPhases(item.posology);
+  const interval = item.posology || '24/24h';
+  const volPhase = parseFloat(item.volumeTotal || '0') || 0;
+  const tValue = parseFloat(item.infusionTime || '0') || 0;
+  const tUnit: 'h' | 'min' = (item.infusionTimeUnit as 'h' | 'min') || 'h';
+  const tempoMin = tValue * (tUnit === 'h' ? 60 : 1);
+  const mlh = tempoMin > 0 ? volPhase / (tempoMin / 60) : 0;
+  const gtt = tempoMin > 0 ? (volPhase * HYDRATION_DRIP_FACTOR) / tempoMin : 0;
+  const dripMode: 'BIC' | 'gts' = (item.infusionMode as 'BIC' | 'gts') || 'BIC';
+  const dripVal = dripMode === 'BIC' ? mlh : gtt;
+  const volTotal24 = volPhase * phases;
+
+  // Auto-sync calculated drip rate into infusionRate
+  const calcRateStr = isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '';
+  if (calcRateStr && calcRateStr !== item.infusionRate) {
+    // schedule on next tick to avoid setState during render
+    queueMicrotask(() => onUpdate(item.id, 'infusionRate', calcRateStr));
+  }
+
+  const handlePhasesChange = (v: string) => {
+    const opt = HYDRATION_PHASE_OPTIONS.find(o => String(o.phases) === v);
+    if (opt) onUpdate(item.id, 'posology', opt.interval);
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1.5 flex-wrap px-2 py-1.5 rounded-md bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/40">
+        <Droplets className="h-3 w-3 text-blue-600 shrink-0" />
+
+        <FieldLabel>Volume / fase:</FieldLabel>
+        <Input
+          type="number"
+          value={item.volumeTotal || ''}
+          onChange={(e) => onUpdate(item.id, 'volumeTotal', e.target.value)}
+          className="h-6 text-[11px] bg-background border-border/40 w-16 text-center font-medium"
+          placeholder="mL"
+        />
+        <span className="text-[10px] text-muted-foreground">mL</span>
+
+        <span className="text-muted-foreground/40">│</span>
+
+        <FieldLabel>Fases / intervalo:</FieldLabel>
+        <Select value={String(phases)} onValueChange={handlePhasesChange}>
+          <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-36"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {HYDRATION_PHASE_OPTIONS.map(o => (
+              <SelectItem key={o.phases} value={String(o.phases)} className="text-xs">
+                {o.phases} fase{o.phases > 1 ? 's' : ''} ({o.interval})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <span className="text-muted-foreground/40">│</span>
+
+        <FieldLabel>Tempo / fase:</FieldLabel>
+        <Input
+          type="number"
+          value={item.infusionTime || ''}
+          onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)}
+          className="h-6 text-[11px] bg-background border-border/40 w-14 text-center"
+          placeholder="—"
+        />
+        <Select value={tUnit} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
+          <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-16"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="h" className="text-xs">h</SelectItem>
+            <SelectItem value="min" className="text-xs">min</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <span className="text-muted-foreground/40">│</span>
+
+        <FieldLabel>Gotejamento:</FieldLabel>
+        <div className="h-6 px-2 flex items-center rounded-md border border-border/40 bg-background text-[11px] font-semibold w-16 justify-center">
+          {isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '—'}
+        </div>
+        <Select value={dripMode} onValueChange={(v) => onUpdate(item.id, 'infusionMode', v)}>
+          <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-20"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="BIC" className="text-xs">mL/h</SelectItem>
+            <SelectItem value="gts" className="text-xs">gts/min</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <span className="text-muted-foreground/40">│</span>
+
+        <FieldLabel>Acesso:</FieldLabel>
+        <Select value={item.accessType || ''} onValueChange={(v) => onUpdate(item.id, 'accessType', v)}>
+          <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-32"><SelectValue placeholder="—" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Periférico" className="text-xs">Periférico</SelectItem>
+            <SelectItem value="Central" className="text-xs">Central (CVC)</SelectItem>
+            <SelectItem value="PICC" className="text-xs">PICC</SelectItem>
+            <SelectItem value="Port-a-cath" className="text-xs">Port-a-cath</SelectItem>
+            <SelectItem value="Intraósseo" className="text-xs">Intraósseo</SelectItem>
+            <SelectItem value="Hipodermóclise" className="text-xs">Hipodermóclise</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <span className="ml-auto text-[10px] font-medium text-blue-700 dark:text-blue-300">
+          Total: {volTotal24}mL / 24h
+        </span>
+      </div>
+
+      <div>
+        <FieldLabel>Recomendações para a enfermagem:</FieldLabel>
+        <Textarea
+          value={item.instructions || ''}
+          onChange={(e) => onUpdate(item.id, 'instructions', e.target.value)}
+          className="min-h-[56px] text-[11px] bg-muted/10 border-border/30 mt-0.5"
+          placeholder="Ex.: manter acesso pérvio; observar sinais de sobrecarga; reavaliar em 24h; trocar equipo a cada 72h..."
+        />
+      </div>
+    </div>
+  );
+}
+
+
 // --- Sortable Prescription Item Row ---
 const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItemRow({
   item,
@@ -1233,29 +1381,54 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   // === COMPACT VIEW (with individual expand) ===
   if (isCompact && !isSimple && !individualExpanded) {
     const compactParts: string[] = [];
-    if (item.dose && item.dose !== '-') compactParts.push(item.dose);
-    if (item.diluent && item.diluent !== 'sem_diluente') {
-      let dil = `diluir em ${item.diluent}`;
-      if (item.diluentVolume) dil += ` ${item.diluentVolume}mL`;
-      compactParts.push(dil);
-    }
-    if (item.volumeTotal) compactParts.push(`vol ${item.volumeTotal}mL`);
-    if (item.infusionTime) {
-      const tUnit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
-      let inf = `correr em ${item.infusionTime}${tUnit}`;
-      if (item.infusionRate) {
-        const rLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
-        inf += ` (${item.infusionRate} ${rLabel})`;
+    const isHydration = item.category === 'hydration';
+
+    if (isHydration) {
+      // Frase única, em corrida, orientada à enfermagem
+      const phases = intervalToPhases(item.posology);
+      const interval = item.posology || '24/24h';
+      const vol = parseFloat(item.volumeTotal || '0') || 0;
+      const total24 = vol * phases;
+      const tVal = item.infusionTime || '';
+      const tUnitH = item.infusionTimeUnit === 'h' ? 'h' : 'min';
+      const rateLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+      const rate = item.infusionRate ? `${item.infusionRate} ${rateLabel}` : '';
+      const access = item.accessType ? `via ${item.accessType}` : '';
+      const phrase = [
+        vol ? `${vol}mL/fase` : '',
+        `${phases} fase${phases > 1 ? 's' : ''} (${interval})`,
+        tVal ? `correr em ${tVal}${tUnitH}` : '',
+        rate ? `(${rate})` : '',
+        access,
+        total24 ? `· total ${total24}mL/24h` : '',
+      ].filter(Boolean).join(' · ');
+      if (phrase) compactParts.push(phrase);
+    } else {
+      if (item.dose && item.dose !== '-') compactParts.push(item.dose);
+      if (item.diluent && item.diluent !== 'sem_diluente') {
+        let dil = `diluir em ${item.diluent}`;
+        if (item.diluentVolume) dil += ` ${item.diluentVolume}mL`;
+        compactParts.push(dil);
       }
-      compactParts.push(inf);
-    } else if (item.infusionRate) {
-      const rLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
-      compactParts.push(`${item.infusionRate} ${rLabel}`);
+      if (item.volumeTotal) compactParts.push(`vol ${item.volumeTotal}mL`);
+      if (item.infusionTime) {
+        const tUnit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
+        let inf = `correr em ${item.infusionTime}${tUnit}`;
+        if (item.infusionRate) {
+          const rLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+          inf += ` (${item.infusionRate} ${rLabel})`;
+        }
+        compactParts.push(inf);
+      } else if (item.infusionRate) {
+        const rLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
+        compactParts.push(`${item.infusionRate} ${rLabel}`);
+      }
     }
-    // Route + posology inline
+    // Route + posology inline (skip posology for hydration since interval já está na frase)
     const routePosology: string[] = [];
     if (item.route && item.route !== '-') routePosology.push(item.route);
-    if (item.posology && item.posology !== '-') routePosology.push(item.posology);
+    if (!isHydration && item.posology && item.posology !== '-') routePosology.push(item.posology);
+
 
     return (
       <div
@@ -1422,7 +1595,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           {item.status === 'active' && item.category === 'nutrition' && (
             <NutritionFields item={item} onUpdate={onUpdate} />
           )}
-          {item.status === 'active' && item.category !== 'nutrition' && (
+          {item.status === 'active' && item.category === 'hydration' && (
+            <HydrationFields item={item} onUpdate={onUpdate} />
+          )}
+          {item.status === 'active' && item.category !== 'nutrition' && item.category !== 'hydration' && (
             <>
               {/* Row 1: Dose + Via + Intervalo */}
               <div className="flex items-center gap-1.5 flex-wrap">
