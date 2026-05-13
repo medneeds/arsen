@@ -4262,29 +4262,43 @@ const PrescricaoPage = () => {
     setPatient((prev) => ({ ...prev, [field]: value }));
   };
 
-  // ===== Sincroniza ALERGIAS com a Cockpit (patients.uti_allergies) =====
-  // Carrega ao entrar, escuta mudanças remotas (realtime) e persiste edições locais (debounced).
+  // ===== Sincroniza ALERGIAS com a Cockpit (patients.uti_allergies) — espelhamento bidirecional =====
+  // Fonte única: patients.uti_allergies (lista, separada por \n). Aqui exibimos como string
+  // com vírgulas para edição amigável e convertemos nos dois sentidos.
   const allergiesPatientId = searchParams.get('patientId');
-  const lastSyncedAllergiesRef = useRef<string | null>(null);
+  const lastSyncedAllergiesRef = useRef<string | null>(null); // formato canônico (\n)
   const allergiesHydratedRef = useRef(false);
 
-  // 1) Hidratação inicial + realtime: lê DB → estado local (sem sobrescrever digitação em curso).
+  // Conversões canônico (\n) ↔ display (", ")
+  const canonicalToDisplay = (raw: string | null | undefined) =>
+    (raw ?? '')
+      .toString()
+      .split(/\r?\n/)
+      .map(s => s.trim())
+      .filter(Boolean)
+      .join(', ');
+  const displayToCanonical = (val: string) =>
+    val
+      .split(/[,\n;]/)
+      .map(s => s.trim())
+      .filter(Boolean)
+      .join('\n');
+
+  // 1) Hidratação inicial + realtime: DB → estado local.
+  //    Aceita o remoto sempre que ele divergir do último valor que nós mesmos sincronizamos
+  //    (ou seja, é uma alteração feita na Cockpit / outro módulo).
   useEffect(() => {
     if (!allergiesPatientId) return;
     let cancelled = false;
     const applyRemote = (raw: string | null | undefined) => {
-      const remote = (raw ?? '').toString();
       if (cancelled) return;
-      lastSyncedAllergiesRef.current = remote;
-      setPatient(prev => {
-        // Não sobrescreve se o usuário já digitou algo diferente do último sincronizado
-        // (a menos que ainda não tenha sido hidratado uma única vez).
-        if (allergiesHydratedRef.current && prev.allergies && prev.allergies !== remote) {
-          return prev;
-        }
-        allergiesHydratedRef.current = true;
-        return prev.allergies === remote ? prev : { ...prev, allergies: remote };
-      });
+      const remoteCanonical = (raw ?? '').toString();
+      // Se o remoto é exatamente o que acabamos de gravar, ignora (evita loop).
+      if (allergiesHydratedRef.current && remoteCanonical === (lastSyncedAllergiesRef.current ?? '')) return;
+      lastSyncedAllergiesRef.current = remoteCanonical;
+      allergiesHydratedRef.current = true;
+      const display = canonicalToDisplay(remoteCanonical);
+      setPatient(prev => (prev.allergies === display ? prev : { ...prev, allergies: display }));
     };
 
     (async () => {
@@ -4294,6 +4308,7 @@ const PrescricaoPage = () => {
         .eq('id', allergiesPatientId)
         .maybeSingle();
       if (!error) applyRemote(data?.uti_allergies as string | null);
+      else allergiesHydratedRef.current = true; // libera write mesmo sem registro inicial
     })();
 
     const channel = supabase
@@ -4305,25 +4320,26 @@ const PrescricaoPage = () => {
     return () => { cancelled = true; supabase.removeChannel(channel); };
   }, [allergiesPatientId]);
 
-  // 2) Persistência local → DB (debounced 600ms). Evita loop comparando com lastSynced.
+  // 2) Persistência local → DB (debounced 500ms). Converte para formato canônico.
   useEffect(() => {
     if (!allergiesPatientId || !allergiesHydratedRef.current) return;
-    const next = (patient.allergies ?? '').toString();
-    if (next === (lastSyncedAllergiesRef.current ?? '')) return;
+    const nextCanonical = displayToCanonical(patient.allergies ?? '');
+    if (nextCanonical === (lastSyncedAllergiesRef.current ?? '')) return;
     const handle = setTimeout(async () => {
       const { error } = await supabase
         .from('patients')
-        .update({ uti_allergies: next })
+        .update({ uti_allergies: nextCanonical || null })
         .eq('id', allergiesPatientId);
       if (!error) {
-        lastSyncedAllergiesRef.current = next;
+        lastSyncedAllergiesRef.current = nextCanonical;
       } else {
         console.error('Falha ao sincronizar alergias com Cockpit:', error);
         toast.error('Não foi possível sincronizar alergias com a Cockpit', { description: error.message });
       }
-    }, 600);
+    }, 500);
     return () => clearTimeout(handle);
   }, [patient.allergies, allergiesPatientId]);
+
 
   const isSimpleCategory = (cat: PrescriptionCategory) => ['care'].includes(cat);
   const canPrescribe = patient.weight.trim() !== '' && patient.allergies.trim() !== '';
