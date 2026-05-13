@@ -593,17 +593,27 @@ export function AntimicrobialGuideDialog({
             <div className="text-[11px] text-muted-foreground self-center">
               {entries.filter(e => e.medication.trim()).length} antimicrobiano(s) preenchido(s)
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
               <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
                 {mode === 'prescribe' ? 'Cancelar' : 'Fechar'}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => handlePrint()} className="gap-1.5">
-                <Printer className="h-3.5 w-3.5" /> Imprimir Guia (Norma Zero)
+              {mode === 'prescribe' && draftKey && (
+                <Button variant="ghost" size="sm" onClick={handleSaveDraft} className="gap-1.5 text-xs">
+                  Salvar rascunho
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={handlePrintOnly} className="gap-1.5">
+                <Printer className="h-3.5 w-3.5" /> Imprimir somente a Guia
               </Button>
               {mode === 'prescribe' && onConfirm && (
-                <Button size="sm" onClick={handleConfirmClick} className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white">
-                  <Shield className="h-3.5 w-3.5" /> Confirmar e Anexar à Prescrição
-                </Button>
+                <>
+                  <Button variant="outline" size="sm" onClick={handleAttachOnly} className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400">
+                    <Shield className="h-3.5 w-3.5" /> Anexar antibióticos à prescrição
+                  </Button>
+                  <Button size="sm" onClick={handleAttachAndPrint} className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white">
+                    <Printer className="h-3.5 w-3.5" /> Anexar + Imprimir Guia
+                  </Button>
+                </>
               )}
             </div>
           </DialogFooter>
