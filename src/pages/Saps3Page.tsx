@@ -472,7 +472,7 @@ export default function Saps3Page() {
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
     setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
-    setInfectionAtAdmission(""); setGcs(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
+    setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setRassScore(""); setConsciousnessReason(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
     setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
     setPao2Fio2(""); setIsVentilated(false);
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
@@ -495,7 +495,7 @@ export default function Saps3Page() {
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
     setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
-    setInfectionAtAdmission(""); setGcs(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
+    setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setRassScore(""); setConsciousnessReason(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
     setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
     setPao2Fio2(""); setIsVentilated(false);
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
