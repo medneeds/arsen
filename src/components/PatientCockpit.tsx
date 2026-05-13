@@ -352,8 +352,19 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                   Paciente não identificado · {registry.unidentifiedCode || "—"}
                 </div>
               )}
-              <div className="pt-1 border-t border-border/40 text-[10px] text-muted-foreground/80 font-mono break-all">
-                ID interno: {patient.id}
+              <div className="pt-1 border-t border-border/40 flex items-center justify-between gap-2">
+                <span className="text-[10px] text-muted-foreground/80 font-mono break-all">
+                  ID interno: {patient.id}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setRecordEditOpen(true)}
+                  title="Editar prontuário e ficha cadastral (auditado)"
+                  className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/50 hover:bg-muted/40 transition-colors shrink-0"
+                >
+                  <Pencil className="h-2.5 w-2.5" />
+                  Editar
+                </button>
               </div>
             </div>
           )}
