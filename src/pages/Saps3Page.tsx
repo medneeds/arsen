@@ -555,7 +555,7 @@ export default function Saps3Page() {
             sector: selectedSector,
             bed_number: selectedBed,
             display_order: maxDisplayOrder + 1,
-            department: "UTI",
+            department: destinationDepartment,
           })
           .eq("id", selectedRequest.patient_id);
 
@@ -579,7 +579,7 @@ export default function Saps3Page() {
           name: patientName,
           bed_number: selectedBed,
           sector: selectedSector,
-          department: "UTI",
+          department: destinationDepartment,
           age: age ? `${age} anos` : null,
           hospital_unit_id: hospitalId,
           state_id: stateId,
