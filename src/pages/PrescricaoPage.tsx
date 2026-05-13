@@ -158,6 +158,10 @@ interface PrescriptionItem {
   nutProgression?: string;    // Esquema de progressão
   nutBedHead?: string;        // Cabeceira (graus)
   nutResidualCheck?: string;  // Checagem de resíduo gástrico
+  // Antimicrobial-specific (Guia ATM)
+  atbStartDate?: string;      // YYYY-MM-DD
+  atbPlannedDays?: string;    // ex: "7"
+  atbInfectionSite?: string;
   nutConsistency?: string;    // IDDSI / textura (oral)
   nutAccess?: string;         // NPT: CVC / PICC / Periférico
   nutComposition?: string;    // NPT: composição resumida
