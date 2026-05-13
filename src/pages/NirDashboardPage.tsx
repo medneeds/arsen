@@ -243,10 +243,29 @@ export default function NirDashboardPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-lg font-semibold text-foreground">Censo de Leitos — Tempo Real</h3>
-              <Button variant="outline" size="sm" onClick={refetch}>
-                <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={reallocMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => (reallocMode ? cancelRealloc() : setReallocMode(true))}
+                >
+                  {reallocMode ? <X className="h-4 w-4 mr-1" /> : <Move className="h-4 w-4 mr-1" />}
+                  {reallocMode ? "Cancelar realocação" : "Realocar paciente"}
+                </Button>
+                <Button variant="outline" size="sm" onClick={refetch}>
+                  <RefreshCw className="h-4 w-4 mr-1" /> Atualizar
+                </Button>
+              </div>
             </div>
+
+            {reallocMode && (
+              <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground flex items-center gap-2">
+                <Move className="h-3.5 w-3.5 text-primary" />
+                {!reallocOrigin
+                  ? "Passo 1: clique no leito do paciente que será movido (apenas leitos ocupados)."
+                  : `Passo 2: clique no leito de destino. Origem: ${reallocOrigin.bed_number} · ${reallocOrigin.patient_name}. Destino ocupado faz permuta automática.`}
+              </div>
+            )}
 
             {/* Tabs de grupo de setores (substitui filtro plano) */}
             <div className="flex flex-wrap gap-1.5">
