@@ -744,7 +744,10 @@ const Index = () => {
   const handleRefreshMap = async () => {
     setIsRefreshing(true);
     try {
-      await refetch();
+      await Promise.all([
+        refetch(),
+        preAdmissionRef.current?.refresh(),
+      ]);
       toast({
         title: "Mapa atualizado",
         description: "Os dados foram atualizados com sucesso.",
