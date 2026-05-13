@@ -2217,6 +2217,36 @@ function ExtraPrescriptionDialog({
     setExtraItems(prev => prev.filter(i => i.id !== id));
   };
 
+  const duplicateExtraItem = (id: string) => {
+    setExtraItems(prev => {
+      const idx = prev.findIndex(i => i.id === id);
+      if (idx < 0) return prev;
+      const src = prev[idx];
+      const copy: PrescriptionItem = { ...src, id: crypto.randomUUID() };
+      const next = [...prev];
+      next.splice(idx + 1, 0, copy);
+      return next;
+    });
+  };
+
+  const reorderExtraItems = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setExtraItems(prev => {
+      const oldIndex = prev.findIndex(i => i.id === active.id);
+      const newIndex = prev.findIndex(i => i.id === over.id);
+      if (oldIndex < 0 || newIndex < 0) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  };
+
+  const extraSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const noop = () => {};
+
   const handleConfirm = () => {
     if (extraItems.length === 0) {
       toast.error("Adicione pelo menos 1 item à prescrição extra");
