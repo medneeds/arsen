@@ -778,7 +778,7 @@ export function MedicalRecordEditDialog({
         confirmLabel="Sim, excluir todos os dados"
         onConfirm={executeHardDelete}
         isSubmitting={deleting}
-        tone="danger"
+        tone="destructive"
         summary={[
           { label: "Paciente", value: patientName || "—", fullWidth: true },
           { label: "ID interno", value: patientId, fullWidth: true },
