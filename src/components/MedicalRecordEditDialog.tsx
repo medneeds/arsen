@@ -204,7 +204,7 @@ export function MedicalRecordEditDialog({
           .eq("patient_registry_id", regRow.id)
           .order("changed_at", { ascending: false })
           .limit(80);
-        setRegHistory((rh as RegHistoryRow[]) || []);
+        setRegHistory((rh as unknown as RegHistoryRow[]) || []);
       } else {
         setRegHistory([]);
       }
