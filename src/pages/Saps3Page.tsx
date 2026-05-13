@@ -865,7 +865,7 @@ export default function Saps3Page() {
                       )}
                     </div>
                     <Button size="sm" onClick={() => startAdmission(req)} className="gap-1.5 ml-3 shrink-0">
-                      <UserCheck className="h-4 w-4" /> Admitir
+                      <UserCheck className="h-4 w-4" /> Pré-admitir
                     </Button>
                   </div>
                 ))}
