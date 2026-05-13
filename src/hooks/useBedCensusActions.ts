@@ -189,6 +189,7 @@ export function useBedCensusActions() {
     reserveBed,
     releaseReservation,
     transferBed,
+    swapBeds,
     updateBed,
   };
 }
