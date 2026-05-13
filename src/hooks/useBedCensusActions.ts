@@ -96,6 +96,60 @@ export function useBedCensusActions() {
   const releaseReservation = (bedId: string) =>
     updateBed(bedId, { status: "vago", reserved_for: null, reserved_until: null }, "Reserva liberada");
 
+  /**
+   * Permuta os pacientes entre dois leitos OCUPADOS.
+   * Usa um leito-pivô (em memória) para evitar conflito de unique de paciente.
+   */
+  const swapBeds = async (bedAId: string, bedBId: string) => {
+    if (bedAId === bedBId) return false;
+    const { data: rows, error: eFetch } = await supabase
+      .from("bed_census")
+      .select("id, patient_id, patient_name, status")
+      .in("id", [bedAId, bedBId]);
+    if (eFetch || !rows || rows.length !== 2) {
+      toast({ title: "Erro", description: "Não foi possível ler os leitos.", variant: "destructive" });
+      return false;
+    }
+    const a = rows.find((r) => r.id === bedAId)!;
+    const b = rows.find((r) => r.id === bedBId)!;
+    if (!a.patient_name || !b.patient_name) {
+      toast({ title: "Permuta exige dois leitos ocupados", variant: "destructive" });
+      return false;
+    }
+    // Etapa 1: limpa A para liberar o paciente (evita colisão se houver unique)
+    const { error: e1 } = await supabase
+      .from("bed_census")
+      .update({ patient_id: null, patient_name: null, updated_by: user?.id ?? null })
+      .eq("id", bedAId);
+    if (e1) {
+      toast({ title: "Erro na permuta", description: e1.message, variant: "destructive" });
+      return false;
+    }
+    // Etapa 2: B recebe paciente de A
+    const { error: e2 } = await supabase
+      .from("bed_census")
+      .update({ status: "ocupado", patient_id: a.patient_id, patient_name: a.patient_name, updated_by: user?.id ?? null })
+      .eq("id", bedBId);
+    if (e2) {
+      // rollback A
+      await supabase.from("bed_census").update({ status: "ocupado", patient_id: a.patient_id, patient_name: a.patient_name }).eq("id", bedAId);
+      toast({ title: "Erro na permuta", description: e2.message, variant: "destructive" });
+      return false;
+    }
+    // Etapa 3: A recebe paciente de B
+    const { error: e3 } = await supabase
+      .from("bed_census")
+      .update({ status: "ocupado", patient_id: b.patient_id, patient_name: b.patient_name, updated_by: user?.id ?? null })
+      .eq("id", bedAId);
+    if (e3) {
+      toast({ title: "Erro na permuta (etapa final)", description: e3.message, variant: "destructive" });
+      return false;
+    }
+    toast({ title: "Permuta realizada", description: `${a.patient_name} ↔ ${b.patient_name}` });
+    invalidate();
+    return true;
+  };
+
   const transferBed = async (originBedId: string, destinationBedId: string) => {
     // Buscar paciente do origem
     const { data: origin, error: e1 } = await supabase
