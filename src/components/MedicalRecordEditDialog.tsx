@@ -770,6 +770,32 @@ export function MedicalRecordEditDialog({
         ]}
         finalNote="Esta operação é registrada permanentemente para fins legais e regulatórios (CFM/COREN/LGPD). Confirme apenas se a justificativa estiver correta."
       />
+
+      <MovementConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={(v) => !v && setConfirmDeleteOpen(false)}
+        title="Excluir paciente permanentemente"
+        confirmLabel="Sim, excluir todos os dados"
+        onConfirm={executeHardDelete}
+        isSubmitting={deleting}
+        tone="danger"
+        summary={[
+          { label: "Paciente", value: patientName || "—", fullWidth: true },
+          { label: "ID interno", value: patientId, fullWidth: true },
+          { label: "Motivo", value: deleteReason.trim(), fullWidth: true },
+        ]}
+        warnings={[
+          { label: "Operação irreversível", detail: "Não há cesto de lixo nem rollback. Os dados deixam de existir." },
+          { label: "Restrito ao perfil desenvolvedor", detail: "Apenas usuários com perfil 'desenvolvedor' podem executar." },
+        ]}
+        consequences={[
+          { text: "Apaga prontuário, ficha cadastral, evoluções, prescrições, exames, culturas e movimentações." },
+          { text: "Remove todos os atendimentos, históricos de edição e snapshots de versão." },
+          { text: "Libera CPF/CNS para reuso (caso o paciente seja recadastrado, será novo registro)." },
+          { text: "A operação é registrada nos logs de auditoria do servidor com seu ID e motivo." },
+        ]}
+        finalNote="Use APENAS para erros administrativos excepcionais (cadastro duplicado, paciente inexistente, dados de teste). Para alta clínica use o fluxo de Saída."
+      />
     </>
   );
 }
