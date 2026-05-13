@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
+import { useDepartment } from "@/contexts/DepartmentContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -251,9 +252,9 @@ const RASS_LABELS: Record<number, string> = {
 
 // Bed config per critical-care sector (UTI / UCI / UCC)
 const UTI_SECTORS = [
-  { value: "red", label: "UTI 1", prefix: "L", start: 1, max: 8, department: "UTI" },
-  { value: "yellow", label: "UTI 2", prefix: "L", start: 9, max: 10, department: "UTI" },
-  { value: "blue", label: "UCI 1", prefix: "L", start: 1, max: 6, department: "n" },
+  { value: "red", label: "UTI 1", prefix: "L", start: 1, max: 8, department: "UTI 1" },
+  { value: "yellow", label: "UTI 2", prefix: "L", start: 9, max: 10, department: "UTI 2" },
+  { value: "blue", label: "UCI 1", prefix: "L", start: 1, max: 6, department: "UCI 1" },
   { value: "outside", label: "UCI 2", prefix: "L", start: 7, max: 8, department: "UCI 2" },
   { value: "ucc", label: "UCC", prefix: "L", start: 1, max: 37, department: "UCC" },
 ];
