@@ -4367,21 +4367,6 @@ const PrescricaoPage = () => {
             <Droplets className="h-3 w-3" /> TEV
           </Button>
           <span className="h-5 w-px bg-border/60 mx-0.5" />
-          <Button
-            variant={prescriptionLocked ? "ghost" : "default"}
-            size="sm"
-            onClick={requestValidateAll}
-            disabled={allItemsValidated}
-            className={cn(
-              "gap-1 text-xs h-7 px-2",
-              prescriptionLocked
-                ? "text-muted-foreground hover:text-foreground"
-                : "bg-emerald-600 hover:bg-emerald-700 text-white"
-            )}
-          >
-            <ShieldCheck className="h-3 w-3" />
-            {allItemsValidated ? "Prescrição validada" : prescriptionLocked ? "Validar pendentes" : "Validar prescrição"}
-          </Button>
           {isValidationSessionActive && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -4405,13 +4390,29 @@ const PrescricaoPage = () => {
                   className={cn("gap-1 text-xs h-7 px-2", compactView ? "text-primary" : "text-muted-foreground hover:text-foreground")}
                 >
                   {compactView ? <AlignJustify className="h-3 w-3" /> : <List className="h-3 w-3" />}
-                  {compactView ? 'Expandido' : 'Compacto'}
+                {compactView ? 'Expandido' : 'Compacto'}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">
                 {compactView ? 'Alternar para visualização expandida' : 'Alternar para visualização compacta'}
               </TooltipContent>
             </Tooltip>
+            {/* Validar — entre Expandido e Imprimir */}
+            <Button
+              variant={prescriptionLocked ? "ghost" : "default"}
+              size="sm"
+              onClick={requestValidateAll}
+              disabled={allItemsValidated}
+              className={cn(
+                "gap-1 text-xs h-7 px-2",
+                prescriptionLocked
+                  ? "text-muted-foreground hover:text-foreground"
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+              )}
+            >
+              <ShieldCheck className="h-3 w-3" />
+              {allItemsValidated ? "Validada" : prescriptionLocked ? "Validar pendentes" : "Validar"}
+            </Button>
             {/* Botão Imprimir destacado — extrema direita */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -4420,7 +4421,7 @@ const PrescricaoPage = () => {
                   size="sm"
                   onClick={() => {
                     if (!allItemsValidated) {
-                      toast.error("Valide a prescrição antes de imprimir", { description: "Use o botão 'Validar prescrição' para validar com sua senha." });
+                      toast.error("Valide a prescrição antes de imprimir", { description: "Use o botão 'Validar' para validar com sua senha." });
                       return;
                     }
                     handlePrint();
