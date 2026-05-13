@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Brain, Printer, Plus, Trash2, AlertTriangle, Sparkles, Search, Lock } from "lucide-react";
+import { Brain, Printer, Plus, Trash2, AlertTriangle, Sparkles, Search, Lock, ShieldAlert, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,8 +72,10 @@ interface Props {
   doctorSpecialty?: string;
   hospitalName?: string;
   hospitalAddress?: string;
-  /** print_direct = abre já em modo "imprimir guia" (chamada após window.print da prescrição) */
+  /** print_direct = abre direto em modo somente-leitura para impressão (Norma Zero + Portaria 344) */
   mode?: 'edit' | 'print_direct';
+  /** CID-10 primário do paciente puxado da admissão (usado no modo print_direct) */
+  cidPrimary?: string;
 }
 
 const NOTIFICATION_META: Record<NotificationType, { label: string; description: string; color: string; bg: string }> = {
@@ -104,6 +106,33 @@ function legacyDetect(name: string): NotificationType {
   return 'Controle Especial 2 vias';
 }
 
+/**
+ * Calcula a quantidade necessária para 24h baseado em dose × frequência diária.
+ * Posologias SOS / "se necessário" caem para quantidade mínima 1.
+ */
+function calc24hQuantity(dose: string, posology: string): { qty: string; qtyText: string } {
+  const p = (posology || '').toLowerCase();
+  // SOS / se necessário → quantidade mínima 1
+  if (/sos|s\/?n|se necess|se preciso|caso necess/.test(p)) {
+    return { qty: '1', qtyText: 'um (mínimo, SOS)' };
+  }
+  let freq = 1;
+  const interval = p.match(/(\d+)\s*\/\s*\d+\s*h/);
+  if (interval) {
+    freq = Math.max(1, Math.round(24 / parseInt(interval[1], 10)));
+  } else {
+    const xDay = p.match(/(\d+)\s*x\s*(?:\/|ao|por)?\s*dia/);
+    if (xDay) freq = parseInt(xDay[1], 10);
+    else if (/24\s*\/\s*24h|1x|uma vez|noite|manh[ãa]|dormir/.test(p)) freq = 1;
+  }
+  const numMatch = (dose || '').replace(',', '.').match(/[\d.]+/);
+  const num = numMatch ? parseFloat(numMatch[0]) : 0;
+  if (!num) return { qty: String(freq), qtyText: `${freq}× em 24h` };
+  const total = +(num * freq).toFixed(2);
+  const unit = (dose || '').replace(/[\d.,\s]/g, '').slice(0, 10) || '';
+  return { qty: `${total}${unit ? ' ' + unit : ''}`, qtyText: `${freq}× em 24h` };
+}
+
 function emptyEntry(): PsychotropicEntry {
   return {
     id: crypto.randomUUID(),
@@ -114,21 +143,26 @@ function emptyEntry(): PsychotropicEntry {
   };
 }
 
-function entryFromCatalog(cat: ControlledCatalogItem, opts: { locked: boolean; sourceItem?: PrescriptionItem }): PsychotropicEntry {
+function entryFromCatalog(cat: ControlledCatalogItem, opts: { locked: boolean; sourceItem?: PrescriptionItem; cidPrimary?: string }): PsychotropicEntry {
   const auto = new Set<keyof PsychotropicEntry>(['medication', 'pharmaceuticalForm', 'concentration', 'route', 'dose', 'notificationType']);
+  const dose = opts.sourceItem?.dose || cat.default_dose;
+  const posology = opts.sourceItem?.posology || '';
+  const calc = calc24hQuantity(dose, posology);
   return {
     id: crypto.randomUUID(),
     catalogId: cat.catalogId,
     medication: cat.label,
     pharmaceuticalForm: cat.pharmaceutical_form,
     concentration: cat.concentration,
-    quantity: '', quantityText: '',
-    dose: opts.sourceItem?.dose || cat.default_dose,
+    quantity: calc.qty,
+    quantityText: calc.qtyText,
+    dose,
     route: opts.sourceItem?.route || cat.default_route,
-    posology: opts.sourceItem?.posology || '',
-    treatmentDuration: '',
+    posology,
+    treatmentDuration: '24h',
     notificationType: cat.notification_type ?? legacyDetect(cat.generic_name),
-    cid10: '', clinicalIndication: '',
+    cid10: opts.cidPrimary || '',
+    clinicalIndication: '',
     locked: opts.locked,
     autoFilled: auto,
   };
@@ -137,7 +171,7 @@ function entryFromCatalog(cat: ControlledCatalogItem, opts: { locked: boolean; s
 export function PsychotropicFormDialog({
   open, onOpenChange, patient, controlledItems = [],
   doctorName: doctorNameProp = '', doctorCrm: doctorCrmProp = '', doctorSpecialty: doctorSpecialtyProp = '',
-  hospitalName = '', hospitalAddress = '', mode = 'edit',
+  hospitalName = '', hospitalAddress = '', mode = 'edit', cidPrimary = '',
 }: Props) {
   const currentDoctor = useCurrentDoctor();
   const doctorName = doctorNameProp || currentDoctor.fullName;
@@ -157,7 +191,7 @@ export function PsychotropicFormDialog({
         .filter(i => i.status === 'active')
         .map(item => {
           const cat = findControlledByName(item.name);
-          if (cat) return entryFromCatalog(cat, { locked: true, sourceItem: item });
+          if (cat) return entryFromCatalog(cat, { locked: true, sourceItem: item, cidPrimary });
           // Fallback sem catálogo: cria entry locked com dados crus
           const e = emptyEntry();
           e.medication = item.name;
@@ -165,6 +199,11 @@ export function PsychotropicFormDialog({
           e.route = item.route;
           e.posology = item.posology;
           e.notificationType = legacyDetect(item.name);
+          e.cid10 = cidPrimary || '';
+          e.treatmentDuration = '24h';
+          const calc = calc24hQuantity(item.dose, item.posology);
+          e.quantity = calc.qty;
+          e.quantityText = calc.qtyText;
           e.locked = true;
           return e;
         });
@@ -172,7 +211,7 @@ export function PsychotropicFormDialog({
     } else {
       setEntries([emptyEntry()]);
     }
-  }, [open, controlledItems, findControlledByName]);
+  }, [open, controlledItems, findControlledByName, cidPrimary]);
 
   const updateEntry = (id: string, field: keyof PsychotropicEntry, value: any) => {
     setEntries(prev => prev.map(e => {
@@ -186,7 +225,7 @@ export function PsychotropicFormDialog({
   };
 
   const selectFromCatalog = (id: string, cat: ControlledCatalogItem) => {
-    setEntries(prev => prev.map(e => e.id === id ? entryFromCatalog(cat, { locked: false }) : e));
+    setEntries(prev => prev.map(e => e.id === id ? entryFromCatalog(cat, { locked: false, cidPrimary }) : e));
   };
 
   const addEntry = () => setEntries(prev => [...prev, emptyEntry()]);
@@ -203,6 +242,7 @@ export function PsychotropicFormDialog({
   };
 
   const today = format(new Date(), "dd/MM/yyyy", { locale: ptBR });
+  const docCode = useMemo(() => `PORT344-${format(new Date(), "yyyyMMdd-HHmm")}`, [open]);
 
   // Agrupa por tipo para impressão
   const groupedForPrint = useMemo(() => {
@@ -215,16 +255,20 @@ export function PsychotropicFormDialog({
     return groups;
   }, [entries]);
 
+  const isPrintDirect = mode === 'print_direct';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={cn("max-w-4xl max-h-[90vh] overflow-y-auto", isPrinting && "print:block")}>
         <DialogHeader className="print:hidden">
           <DialogTitle className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-violet-500" />
-            {mode === 'print_direct' ? 'Imprimir Guia de Psicotrópicos' : 'Ficha de Medicações Psicotrópicas / Controladas'}
+            {isPrintDirect ? 'Receituário Portaria 344 — Impressão' : 'Ficha de Medicações Psicotrópicas / Controladas'}
           </DialogTitle>
           <DialogDescription>
-            Notificação de receita especial conforme Portaria SVS/MS nº 344/98 — ANVISA. Itens agrupados por tipo de receita.
+            {isPrintDirect
+              ? 'Documento gerado automaticamente em formato Norma Zero (MAN.05-001) conforme Portaria SVS/MS nº 344/98 — ANVISA. Edições devem ser feitas no corpo da prescrição.'
+              : 'Notificação de receita especial conforme Portaria SVS/MS nº 344/98 — ANVISA. Itens agrupados por tipo de receita.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -247,176 +291,252 @@ export function PsychotropicFormDialog({
             hospitalName={hospitalName}
             hospitalAddress={hospitalAddress}
             date={today}
+            docCode={docCode}
           />
         </div>
 
-        <div className="space-y-4 print:hidden">
-          {/* Patient Summary */}
-          <div className="rounded-lg border border-violet-200 bg-violet-50/50 dark:bg-violet-950/10 dark:border-violet-800/30 p-3">
-            <div className="grid grid-cols-4 gap-2 text-xs">
-              <div><span className="text-muted-foreground">Paciente:</span> <strong>{patient.name}</strong></div>
-              <div><span className="text-muted-foreground">Leito:</span> <strong>{patient.bed}</strong></div>
-              <div><span className="text-muted-foreground">Prontuário:</span> <strong>{patient.record || '—'}</strong></div>
-              <div><span className="text-muted-foreground">Idade:</span> <strong>{patient.age || '—'}</strong></div>
-            </div>
-          </div>
-
-          {/* Legend */}
-          <div className="flex flex-wrap gap-2">
-            {(Object.keys(NOTIFICATION_META) as NotificationType[]).map(k => (
-              <Badge key={k} variant="outline" className={cn("text-[10px]", NOTIFICATION_META[k].bg)}>
-                {NOTIFICATION_META[k].label} — {NOTIFICATION_META[k].description}
-              </Badge>
-            ))}
-          </div>
-
-          {blockingEntries.length > 0 && (
-            <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
-              <AlertTriangle className="h-4 w-4 mt-0.5" />
-              <span>{blockingEntries.length} medicamento(s) sem tipo de notificação definido. Selecione antes de imprimir.</span>
-            </div>
-          )}
-
-          {/* Entries */}
-          {entries.map((entry) => {
-            const meta = entry.notificationType ? NOTIFICATION_META[entry.notificationType] : null;
-            return (
-              <div key={entry.id} className={cn("rounded-lg border p-4 space-y-3", meta?.bg || 'border-border')}>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold flex items-center gap-2">
-                    {meta && (
-                      <Badge variant="outline" className={cn("text-xs", meta.bg)}>{meta.label}</Badge>
-                    )}
-                    {entry.locked && (
-                      <Badge variant="outline" className="text-[10px] bg-violet-100 text-violet-700 border-violet-300 gap-1">
-                        <Lock className="h-2.5 w-2.5" /> Da prescrição
-                      </Badge>
-                    )}
-                    <span className="truncate max-w-[280px]">{entry.medication || 'Novo medicamento'}</span>
-                  </h3>
-                  {entries.length > 1 && !entry.locked && (
-                    <Button variant="ghost" size="sm" onClick={() => removeEntry(entry.id)} className="h-7 text-destructive">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
-
-                {/* Row 1: Medication combobox */}
-                <div className="grid grid-cols-4 gap-2">
-                  <div className="col-span-2">
-                    <Label className="text-[10px] flex items-center gap-1">
-                      Medicamento (DCB / Comercial)
-                      {entry.autoFilled.has('medication') && <Sparkles className="h-2.5 w-2.5 text-violet-500" />}
-                    </Label>
-                    <MedicationCombobox
-                      value={entry.medication}
-                      readOnly={entry.locked}
-                      catalog={catalog}
-                      loading={catalogLoading}
-                      onSelect={(cat) => selectFromCatalog(entry.id, cat)}
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-[10px] flex items-center gap-1">
-                      Forma Farmacêutica
-                      {entry.autoFilled.has('pharmaceuticalForm') && <Sparkles className="h-2.5 w-2.5 text-violet-500" />}
-                    </Label>
-                    <Input value={entry.pharmaceuticalForm} onChange={e => updateEntry(entry.id, 'pharmaceuticalForm', e.target.value)} placeholder="Comprimido, Ampola..." className="h-8 text-xs" />
-                  </div>
-                  <div>
-                    <Label className="text-[10px] flex items-center gap-1">
-                      Concentração
-                      {entry.autoFilled.has('concentration') && <Sparkles className="h-2.5 w-2.5 text-violet-500" />}
-                    </Label>
-                    <Input value={entry.concentration} onChange={e => updateEntry(entry.id, 'concentration', e.target.value)} placeholder="5mg, 10mg/mL..." className="h-8 text-xs" />
-                  </div>
-                </div>
-
-                {/* Row 2 */}
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <Label className="text-[10px]">Quantidade (número)</Label>
-                    <Input value={entry.quantity} onChange={e => updateEntry(entry.id, 'quantity', e.target.value)} placeholder="30" className="h-8 text-xs" />
-                  </div>
-                  <div>
-                    <Label className="text-[10px]">Quantidade (extenso)</Label>
-                    <Input value={entry.quantityText} onChange={e => updateEntry(entry.id, 'quantityText', e.target.value)} placeholder="trinta" className="h-8 text-xs" />
-                  </div>
-                  <div>
-                    <Label className="text-[10px] flex items-center gap-1">
-                      Tipo de Notificação
-                      {entry.autoFilled.has('notificationType') && <Sparkles className="h-2.5 w-2.5 text-violet-500" />}
-                    </Label>
-                    <Select value={entry.notificationType ?? ''} onValueChange={v => updateEntry(entry.id, 'notificationType', v as NotificationType)}>
-                      <SelectTrigger className={cn("h-8 text-xs", !entry.notificationType && "border-destructive/60")}>
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(NOTIFICATION_META) as NotificationType[]).map(k => (
-                          <SelectItem key={k} value={k} className="text-xs">{NOTIFICATION_META[k].label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-[10px]">CID-10</Label>
-                    <Input value={entry.cid10} onChange={e => updateEntry(entry.id, 'cid10', e.target.value)} placeholder="F32.1" className="h-8 text-xs" />
-                  </div>
-                </div>
-
-                {/* Row 3 */}
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <Label className="text-[10px] flex items-center gap-1">
-                      Dose {entry.autoFilled.has('dose') && <Sparkles className="h-2.5 w-2.5 text-violet-500" />}
-                    </Label>
-                    <Input value={entry.dose} onChange={e => updateEntry(entry.id, 'dose', e.target.value)} className="h-8 text-xs" />
-                  </div>
-                  <div>
-                    <Label className="text-[10px] flex items-center gap-1">
-                      Via {entry.autoFilled.has('route') && <Sparkles className="h-2.5 w-2.5 text-violet-500" />}
-                    </Label>
-                    <Input value={entry.route} onChange={e => updateEntry(entry.id, 'route', e.target.value)} className="h-8 text-xs" />
-                  </div>
-                  <div>
-                    <Label className="text-[10px]">Posologia</Label>
-                    <Input value={entry.posology} onChange={e => updateEntry(entry.id, 'posology', e.target.value)} className="h-8 text-xs" />
-                  </div>
-                  <div>
-                    <Label className="text-[10px]">Duração</Label>
-                    <Input value={entry.treatmentDuration} onChange={e => updateEntry(entry.id, 'treatmentDuration', e.target.value)} placeholder="30 dias" className="h-8 text-xs" />
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-[10px]">Indicação Clínica / Justificativa</Label>
-                  <Textarea value={entry.clinicalIndication} onChange={e => updateEntry(entry.id, 'clinicalIndication', e.target.value)} placeholder="Indicação clínica para uso desta medicação controlada..." className="text-xs min-h-[50px] resize-none" />
-                </div>
+        {/* === MODO PRINT-ONLY (Norma Zero + 344) === */}
+        {isPrintDirect ? (
+          <div className="space-y-3 print:hidden">
+            {/* Aviso de modo somente-leitura */}
+            <div className="rounded-md border border-violet-200 bg-violet-50/60 dark:bg-violet-950/20 dark:border-violet-800/40 p-3 flex items-start gap-2">
+              <ShieldAlert className="h-4 w-4 text-violet-600 mt-0.5 shrink-0" />
+              <div className="text-xs text-violet-900 dark:text-violet-200">
+                <strong>Modo somente-impressão.</strong> CID puxado da admissão · Quantidade calculada para 24h ·
+                Indicação clínica e duração não se aplicam (validade fixa de 24h). Para ajustes, edite o item no corpo da prescrição.
               </div>
-            );
-          })}
+            </div>
 
-          {mode !== 'print_direct' && (
+            {blockingEntries.length > 0 && (
+              <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+                <AlertTriangle className="h-4 w-4 mt-0.5" />
+                <span>{blockingEntries.length} medicamento(s) sem tipo de notificação resolvido — não podem ser impressos.</span>
+              </div>
+            )}
+
+            {/* Preview cards agrupados por tipo de receita */}
+            <ReadOnlyPreview
+              grouped={groupedForPrint}
+              cidPrimary={cidPrimary}
+            />
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t">
+              <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="gap-1.5">
+                <X className="h-3.5 w-3.5" /> Fechar
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handlePrint}
+                disabled={!canPrint}
+                className="gap-1.5 bg-violet-600 hover:bg-violet-700"
+              >
+                <Printer className="h-3.5 w-3.5" /> Imprimir Receituário
+              </Button>
+            </div>
+          </div>
+        ) : (
+          /* === MODO EDIÇÃO COMPLETO (legado, aberto manualmente) === */
+          <div className="space-y-4 print:hidden">
+            <div className="rounded-lg border border-violet-200 bg-violet-50/50 dark:bg-violet-950/10 dark:border-violet-800/30 p-3">
+              <div className="grid grid-cols-4 gap-2 text-xs">
+                <div><span className="text-muted-foreground">Paciente:</span> <strong>{patient.name}</strong></div>
+                <div><span className="text-muted-foreground">Leito:</span> <strong>{patient.bed}</strong></div>
+                <div><span className="text-muted-foreground">Prontuário:</span> <strong>{patient.record || '—'}</strong></div>
+                <div><span className="text-muted-foreground">Idade:</span> <strong>{patient.age || '—'}</strong></div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(NOTIFICATION_META) as NotificationType[]).map(k => (
+                <Badge key={k} variant="outline" className={cn("text-[10px]", NOTIFICATION_META[k].bg)}>
+                  {NOTIFICATION_META[k].label} — {NOTIFICATION_META[k].description}
+                </Badge>
+              ))}
+            </div>
+
+            {blockingEntries.length > 0 && (
+              <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+                <AlertTriangle className="h-4 w-4 mt-0.5" />
+                <span>{blockingEntries.length} medicamento(s) sem tipo de notificação definido. Selecione antes de imprimir.</span>
+              </div>
+            )}
+
+            {entries.map((entry) => {
+              const meta = entry.notificationType ? NOTIFICATION_META[entry.notificationType] : null;
+              return (
+                <div key={entry.id} className={cn("rounded-lg border p-4 space-y-3", meta?.bg || 'border-border')}>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold flex items-center gap-2">
+                      {meta && (
+                        <Badge variant="outline" className={cn("text-xs", meta.bg)}>{meta.label}</Badge>
+                      )}
+                      {entry.locked && (
+                        <Badge variant="outline" className="text-[10px] bg-violet-100 text-violet-700 border-violet-300 gap-1">
+                          <Lock className="h-2.5 w-2.5" /> Da prescrição
+                        </Badge>
+                      )}
+                      <span className="truncate max-w-[280px]">{entry.medication || 'Novo medicamento'}</span>
+                    </h3>
+                    {entries.length > 1 && !entry.locked && (
+                      <Button variant="ghost" size="sm" onClick={() => removeEntry(entry.id)} className="h-7 text-destructive">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="col-span-2">
+                      <Label className="text-[10px] flex items-center gap-1">
+                        Medicamento (DCB / Comercial)
+                        {entry.autoFilled.has('medication') && <Sparkles className="h-2.5 w-2.5 text-violet-500" />}
+                      </Label>
+                      <MedicationCombobox
+                        value={entry.medication}
+                        readOnly={entry.locked}
+                        catalog={catalog}
+                        loading={catalogLoading}
+                        onSelect={(cat) => selectFromCatalog(entry.id, cat)}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">Forma Farmacêutica</Label>
+                      <Input value={entry.pharmaceuticalForm} onChange={e => updateEntry(entry.id, 'pharmaceuticalForm', e.target.value)} placeholder="Comprimido, Ampola..." className="h-8 text-xs" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">Concentração</Label>
+                      <Input value={entry.concentration} onChange={e => updateEntry(entry.id, 'concentration', e.target.value)} placeholder="5mg, 10mg/mL..." className="h-8 text-xs" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2">
+                    <div>
+                      <Label className="text-[10px]">Quantidade</Label>
+                      <Input value={entry.quantity} onChange={e => updateEntry(entry.id, 'quantity', e.target.value)} placeholder="30" className="h-8 text-xs" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">Quantidade (extenso)</Label>
+                      <Input value={entry.quantityText} onChange={e => updateEntry(entry.id, 'quantityText', e.target.value)} placeholder="trinta" className="h-8 text-xs" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">Tipo de Notificação</Label>
+                      <Select value={entry.notificationType ?? ''} onValueChange={v => updateEntry(entry.id, 'notificationType', v as NotificationType)}>
+                        <SelectTrigger className={cn("h-8 text-xs", !entry.notificationType && "border-destructive/60")}>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(NOTIFICATION_META) as NotificationType[]).map(k => (
+                            <SelectItem key={k} value={k} className="text-xs">{NOTIFICATION_META[k].label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">CID-10</Label>
+                      <Input value={entry.cid10} onChange={e => updateEntry(entry.id, 'cid10', e.target.value)} placeholder="F32.1" className="h-8 text-xs" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2">
+                    <div>
+                      <Label className="text-[10px]">Dose</Label>
+                      <Input value={entry.dose} onChange={e => updateEntry(entry.id, 'dose', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">Via</Label>
+                      <Input value={entry.route} onChange={e => updateEntry(entry.id, 'route', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">Posologia</Label>
+                      <Input value={entry.posology} onChange={e => updateEntry(entry.id, 'posology', e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px]">Duração</Label>
+                      <Input value={entry.treatmentDuration} onChange={e => updateEntry(entry.id, 'treatmentDuration', e.target.value)} placeholder="30 dias" className="h-8 text-xs" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-[10px]">Indicação Clínica / Justificativa</Label>
+                    <Textarea value={entry.clinicalIndication} onChange={e => updateEntry(entry.id, 'clinicalIndication', e.target.value)} placeholder="Indicação clínica para uso desta medicação controlada..." className="text-xs min-h-[50px] resize-none" />
+                  </div>
+                </div>
+              );
+            })}
+
             <Button variant="outline" size="sm" onClick={addEntry} className="gap-1.5 w-full text-xs">
               <Plus className="h-3.5 w-3.5" /> Adicionar Medicação
             </Button>
-          )}
 
-          <div className="flex items-center justify-end gap-2 pt-2 border-t">
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Fechar</Button>
-            <Button
-              variant={mode === 'print_direct' ? 'default' : 'outline'}
-              size="sm"
-              onClick={handlePrint}
-              disabled={!canPrint}
-              className={cn("gap-1.5", mode === 'print_direct' && "bg-violet-600 hover:bg-violet-700")}
-            >
-              <Printer className="h-3.5 w-3.5" /> Imprimir Guia
-            </Button>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t">
+              <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Fechar</Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrint}
+                disabled={!canPrint}
+                className="gap-1.5"
+              >
+                <Printer className="h-3.5 w-3.5" /> Imprimir Guia
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+// === Preview somente-leitura agrupado por tipo (modo print_direct) ===
+function ReadOnlyPreview({
+  grouped, cidPrimary,
+}: {
+  grouped: Record<NotificationType, PsychotropicEntry[]>;
+  cidPrimary?: string;
+}) {
+  const groupOrder: NotificationType[] = ['Receita Amarela', 'Receita Azul', 'Controle Especial 2 vias'];
+  const hasAny = groupOrder.some(t => grouped[t].length > 0);
+  if (!hasAny) {
+    return (
+      <div className="rounded-md border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+        Nenhum item controlado/psicotrópico ativo na prescrição.
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      {groupOrder.map(type => {
+        const list = grouped[type];
+        if (!list.length) return null;
+        const meta = NOTIFICATION_META[type];
+        return (
+          <div key={type} className={cn("rounded-md border", meta.bg)}>
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-current/10">
+              <span className="text-xs font-bold uppercase tracking-wide" style={{ color: meta.color }}>
+                {meta.label}
+              </span>
+              <span className="text-[10px] text-muted-foreground">{list.length} item(s)</span>
+            </div>
+            <div className="divide-y divide-current/10">
+              {list.map(e => (
+                <div key={e.id} className="px-3 py-2 grid grid-cols-12 gap-2 text-[11px]">
+                  <div className="col-span-4 font-semibold truncate" title={e.medication}>{e.medication}</div>
+                  <div className="col-span-2 text-muted-foreground">{e.concentration || '—'}</div>
+                  <div className="col-span-2"><span className="text-muted-foreground">Dose: </span>{e.dose || '—'}</div>
+                  <div className="col-span-1"><span className="text-muted-foreground">Via: </span>{e.route || '—'}</div>
+                  <div className="col-span-2"><span className="text-muted-foreground">Posol.: </span>{e.posology || '—'}</div>
+                  <div className="col-span-1 text-right"><span className="text-muted-foreground">24h: </span><strong>{e.quantity || '—'}</strong></div>
+                  <div className="col-span-12 text-[10px] text-muted-foreground flex gap-3">
+                    <span>CID-10: <strong className="text-foreground">{e.cid10 || (cidPrimary ? cidPrimary : '⚠ não definido na admissão')}</strong></span>
+                    <span>Validade: <strong className="text-foreground">24h</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -495,14 +615,14 @@ function MedicationCombobox({
   );
 }
 
-// === PRINT LAYOUT ===
+// === PRINT LAYOUT (Norma Zero + Portaria 344) ===
 function PrintablePsychotropicForm({
-  patient, grouped, doctorName, doctorCrm, doctorSpecialty, hospitalName, hospitalAddress, date,
+  patient, grouped, doctorName, doctorCrm, doctorSpecialty, hospitalName, hospitalAddress, date, docCode,
 }: {
   patient: PatientData;
   grouped: Record<NotificationType, PsychotropicEntry[]>;
   doctorName: string; doctorCrm: string; doctorSpecialty: string;
-  hospitalName: string; hospitalAddress: string; date: string;
+  hospitalName: string; hospitalAddress: string; date: string; docCode: string;
 }) {
   const cellStyle: React.CSSProperties = { border: '0.5px solid #94a3b8', padding: '3px 6px', fontSize: '7.5pt', lineHeight: 1.3, verticalAlign: 'top' };
   const headerCellStyle: React.CSSProperties = { ...cellStyle, fontWeight: 700, fontSize: '6.5pt', backgroundColor: '#f1f5f9', color: '#334155', textTransform: 'uppercase' as const, letterSpacing: '0.3px' };
@@ -517,15 +637,34 @@ function PrintablePsychotropicForm({
         const meta = NOTIFICATION_META[page.type];
         return (
           <div key={page.type} style={{ pageBreakAfter: pageIdx < pages.length - 1 ? 'always' : 'auto' }}>
-            <div style={{ border: `2px solid ${meta.color}`, borderBottom: 'none', padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: `${meta.color}10` }}>
-              <div>
-                <div style={{ fontSize: '11pt', fontWeight: 800, color: '#0c4a6e' }}>{hospitalName || 'HOSPITAL MUNICIPAL'}</div>
-                <div style={{ fontSize: '6.5pt', color: '#64748b' }}>{hospitalAddress || 'Endereço da unidade hospitalar'}</div>
+            {/* === Norma Zero institutional header === */}
+            <div style={{ borderBottom: '1px solid #0f172a', paddingBottom: '4px', marginBottom: '4px', textAlign: 'center' }}>
+              <div style={{ fontSize: '6.5pt', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Prefeitura Municipal · Secretaria Municipal de Saúde</div>
+              <div style={{ fontSize: '10pt', fontWeight: 800, color: '#0c4a6e', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{hospitalName || 'HOSPITAL MUNICIPAL'}</div>
+              <div style={{ fontSize: '6pt', color: '#64748b' }}>{hospitalAddress || 'Endereço da unidade hospitalar'}</div>
+              {/* Faixa cruz colorida institucional */}
+              <div style={{ display: 'flex', height: '3px', marginTop: '4px' }}>
+                <div style={{ flex: 1, backgroundColor: '#dc2626' }} />
+                <div style={{ flex: 1, backgroundColor: '#ea580c' }} />
+                <div style={{ flex: 1, backgroundColor: '#facc15' }} />
+                <div style={{ flex: 1, backgroundColor: '#16a34a' }} />
+                <div style={{ flex: 1, backgroundColor: '#0054a6' }} />
               </div>
+            </div>
+
+            {/* Doc-bar */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '6pt', color: '#64748b', marginBottom: '6px', padding: '2px 4px', backgroundColor: '#f1f5f9' }}>
+              <span><strong>Doc:</strong> {docCode}</span>
+              <span><strong>Setor:</strong> {patient.unit || '—'}</span>
+              <span><strong>Emissão:</strong> {date}</span>
+            </div>
+
+            {/* Faixa do tipo de receita */}
+            <div style={{ border: `2px solid ${meta.color}`, borderBottom: 'none', padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: `${meta.color}10` }}>
+              <div style={{ fontSize: '10pt', fontWeight: 800, color: meta.color, textTransform: 'uppercase' }}>{meta.label}</div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '10pt', fontWeight: 800, color: meta.color, textTransform: 'uppercase' }}>{meta.label}</div>
-                <div style={{ fontSize: '6pt', color: '#64748b' }}>Portaria SVS/MS nº 344/98 — ANVISA</div>
-                <div style={{ fontSize: '6pt', color: '#94a3b8' }}>1ª Via — Retenção pela Farmácia</div>
+                <div style={{ fontSize: '6.5pt', color: '#64748b' }}>Portaria SVS/MS nº 344/98 — ANVISA</div>
+                <div style={{ fontSize: '6pt', color: '#94a3b8' }}>Validade: 24h · 1ª Via — Retenção pela Farmácia</div>
               </div>
             </div>
 
@@ -589,19 +728,15 @@ function PrintablePsychotropicForm({
                     <td style={headerCellStyle}>Dose</td>
                     <td style={cellStyle}>{entry.dose || '—'}</td>
                     <td style={headerCellStyle}>Posologia</td>
-                    <td style={cellStyle}>{entry.posology || '—'}</td>
-                    <td style={headerCellStyle}>Duração</td>
-                    <td style={cellStyle}>{entry.treatmentDuration || '—'}</td>
+                    <td style={cellStyle} colSpan={3}>{entry.posology || '—'}</td>
                   </tr>
                   <tr>
-                    <td style={headerCellStyle}>Quantidade</td>
-                    <td style={cellStyle}>{entry.quantity || '—'} ({entry.quantityText || 'por extenso'})</td>
+                    <td style={headerCellStyle}>Quantidade (24h)</td>
+                    <td style={{ ...cellStyle, fontWeight: 700 }}>{entry.quantity || '—'}</td>
                     <td style={headerCellStyle}>CID-10</td>
-                    <td style={cellStyle} colSpan={3}>{entry.cid10 || '—'}</td>
-                  </tr>
-                  <tr>
-                    <td style={headerCellStyle}>Indicação Clínica</td>
-                    <td style={cellStyle} colSpan={5}>{entry.clinicalIndication || '—'}</td>
+                    <td style={cellStyle}>{entry.cid10 || '—'}</td>
+                    <td style={headerCellStyle}>Validade</td>
+                    <td style={cellStyle}>24 horas</td>
                   </tr>
                 </tbody>
               </table>
@@ -621,11 +756,11 @@ function PrintablePsychotropicForm({
             </div>
 
             <div style={{ marginTop: '8px', padding: '4px 8px', border: '0.5px solid #e2e8f0', fontSize: '5.5pt', color: '#64748b', lineHeight: 1.4 }}>
-              <strong>ATENÇÃO:</strong> Este receituário é válido por 30 dias a contar da data de emissão. A quantidade prescrita é limitada a 60 dias de tratamento. Uso exclusivo em ambiente hospitalar conforme Portaria SVS/MS nº 344/98 e RDC nº 58/2007.
+              <strong>ATENÇÃO:</strong> Receituário hospitalar emitido conforme Portaria SVS/MS nº 344/98 e RDC nº 58/2007 — uso restrito ao ambiente hospitalar. Validade desta prescrição: <strong>24 horas</strong> (renovação diária no corpo da prescrição médica). CID-10 puxado da admissão do paciente; quantidade calculada para 24h baseada em dose × posologia.
             </div>
 
-            <div style={{ marginTop: '6px', fontSize: '5.5pt', color: '#94a3b8', textAlign: 'center' }}>
-              Documento gerado pelo sistema BigHelp Map — {date}
+            <div style={{ marginTop: '6px', fontSize: '5.5pt', color: '#94a3b8', textAlign: 'center', borderTop: '0.5px solid #e2e8f0', paddingTop: '3px' }}>
+              {hospitalName || 'HMDM'} · Arsen 1.0 · MAN.05-001 v05 · Conformidade LGPD/CFM · {date} · {docCode}
             </div>
           </div>
         );
