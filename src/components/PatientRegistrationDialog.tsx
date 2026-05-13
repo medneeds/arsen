@@ -284,14 +284,14 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
     });
   };
 
-  // Caminho 2: NI + dados do PIN — mantém NI mas preserva nº de prontuário do PIN, sexo, observações
+  // Caminho 2: NI + dados do PIS — mantém NI mas preserva nº de prontuário do PIS, sexo, observações
   const handleAcceptNiWithPin = () => {
     setNiSuggestionOpen(false);
     const sex = niSuggestion?.suggestedSex;
     setForm(prev => ({
       ...prev,
       is_unidentified: true,
-      // Limpa identificação pessoal mas mantém prontuário PIN, sexo, idade aparente, origem, observações
+      // Limpa identificação pessoal mas mantém prontuário PIS, sexo, idade aparente, origem, observações
       patient_name: "",
       social_name: "",
       mother_name: "",
@@ -299,12 +299,12 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
       cns: "",
       birth_date: "",
       sex: "",
-      // Preserva: medical_record (PIN), phone, address, neighborhood, city, state, notes
+      // Preserva: medical_record (PIS), phone, address, neighborhood, city, state, notes
       ni_apparent_sex: sex === "M" ? "Masculino" : sex === "F" ? "Feminino" : prev.ni_apparent_sex,
     }));
     toast({
-      title: "Fluxo NI + dados do PIN ativado",
-      description: "Marcado como Não Identificado. O nº de prontuário PIN, origem e observações ficam disponíveis para edição.",
+      title: "Fluxo NI + dados do PIS ativado",
+      description: "Marcado como Não Identificado. O nº de prontuário PIS, origem e observações ficam disponíveis para edição.",
     });
   };
 
@@ -731,23 +731,23 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                     placeholder="Ex: SAMU – encontrado em via pública; trazido pela polícia..." rows={2} />
                 </div>
 
-                {/* Bloco NI + dados administrativos do PIN (sempre visível em modo NI; opcional) */}
+                {/* Bloco NI + dados administrativos do PIS (sempre visível em modo NI; opcional) */}
                 <div className="col-span-2 mt-2 p-3 rounded-md border-2 border-primary/30 bg-primary/5 space-y-2">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
                     <FileUp className="h-3.5 w-3.5" />
-                    Dados Administrativos do PIN (opcional)
+                    Dados Administrativos do PIS (opcional)
                   </div>
                   <p className="text-[10px] text-muted-foreground">
-                    Quando a recepção já gerou ficha PIN para o paciente NI, você pode preservar o número
-                    do prontuário PIN e observações abaixo. Não desfaz o status de NI.
+                    Quando a recepção já gerou ficha PIS para o paciente NI, você pode preservar o número
+                    do prontuário PIS e observações abaixo. Não desfaz o status de NI.
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="col-span-2">
-                      <Label className="text-[11px]">Nº Prontuário PIN / sistema externo</Label>
+                      <Label className="text-[11px]">Nº Prontuário PIS / sistema externo</Label>
                       <Input
                         value={form.medical_record}
                         onChange={e => updateField("medical_record", e.target.value)}
-                        placeholder="Ex: 123456 (será preservado como nº legado/PIN)"
+                        placeholder="Ex: 123456 (será preservado como nº legado/PIS)"
                         className="h-8 text-xs uppercase"
                       />
                     </div>
