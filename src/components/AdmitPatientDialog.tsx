@@ -754,7 +754,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
             className="gap-1"
           >
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <BedDouble className="h-4 w-4" />}
-            {isUtiAdmission ? "Continuar para SAPS 3" : "Confirmar Admissão"}
+            {isUtiAdmission ? "Continuar para SAPS 3" : "Pré-admitir em Leito"}
           </Button>
         </DialogFooter>
       </DialogContent>
