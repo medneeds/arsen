@@ -189,7 +189,7 @@ interface TevProtocolDialogProps {
   onAddToPrescription?: (med: MedicationEntry) => void;
 }
 
-export function TevProtocolDialog({ open, onOpenChange, patient }: TevProtocolDialogProps) {
+export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescription }: TevProtocolDialogProps) {
   const [scoreType, setScoreType] = useState<"padua" | "caprini">("padua");
   const [selectedFactors, setSelectedFactors] = useState<Set<string>>(new Set());
   const [bleedingFactors, setBleedingFactors] = useState<Set<string>>(new Set());
