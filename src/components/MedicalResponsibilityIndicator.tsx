@@ -1,4 +1,4 @@
-import { Stethoscope, UserCog, UsersRound, Baby, Bone, Scissors } from "lucide-react";
+import { Stethoscope, UserCog, UsersRound, Baby, Bone, Scissors, CalendarClock, Moon, Siren } from "lucide-react";
 import { MedicalResponsibility } from "@/types/patient";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +20,12 @@ export const MedicalResponsibilityIndicator = ({
   const getIcon = () => {
     const iconStyle = { color: sectorColor };
     switch (responsibility.type) {
+      case 'rotineiro':
+        return <CalendarClock className={cn(compact ? "h-3.5 w-3.5" : "h-4 w-4")} style={iconStyle} />;
+      case 'plantonista':
+        return <Moon className={cn(compact ? "h-3.5 w-3.5" : "h-4 w-4")} style={iconStyle} />;
+      case 'intercorrencista':
+        return <Siren className={cn(compact ? "h-3.5 w-3.5" : "h-4 w-4")} style={iconStyle} />;
       case 'porta':
         return <Stethoscope className={cn(compact ? "h-3.5 w-3.5" : "h-4 w-4")} style={iconStyle} />;
       case 'lider':
@@ -39,51 +45,33 @@ export const MedicalResponsibilityIndicator = ({
 
   const getText = () => {
     const parts: string[] = [];
-    
+
+    if (responsibility.type === 'rotineiro') return 'Rotineiro';
+    if (responsibility.type === 'plantonista') return 'Plantonista';
+    if (responsibility.type === 'intercorrencista') return 'Intercorrencista';
+
     if (responsibility.type === 'porta') {
-      if (responsibility.portaNames) {
-        parts.push(responsibility.portaNames);
-      }
-      if (responsibility.officeNumber) {
-        parts.push(`C${responsibility.officeNumber}`);
-      }
+      if (responsibility.portaNames) parts.push(responsibility.portaNames);
+      if (responsibility.officeNumber) parts.push(`C${responsibility.officeNumber}`);
       return parts.join(' • ') || 'Porta';
     } else if (responsibility.type === 'lider' && responsibility.leaderNames) {
       return responsibility.leaderNames;
     } else if (responsibility.type === 'conjunto') {
-      if (responsibility.portaNames) {
-        parts.push(responsibility.portaNames);
-      }
-      if (responsibility.officeNumber) {
-        parts.push(`C${responsibility.officeNumber}`);
-      }
-      if (responsibility.leaderNames) {
-        parts.push(responsibility.leaderNames);
-      }
+      if (responsibility.portaNames) parts.push(responsibility.portaNames);
+      if (responsibility.officeNumber) parts.push(`C${responsibility.officeNumber}`);
+      if (responsibility.leaderNames) parts.push(responsibility.leaderNames);
       return parts.join(' • ');
     } else if (responsibility.type === 'obstetra') {
-      if (responsibility.portaNames) {
-        parts.push(responsibility.portaNames);
-      }
-      if (responsibility.officeNumber) {
-        parts.push(`C${responsibility.officeNumber}`);
-      }
+      if (responsibility.portaNames) parts.push(responsibility.portaNames);
+      if (responsibility.officeNumber) parts.push(`C${responsibility.officeNumber}`);
       return parts.join(' • ') || 'Obstetra';
     } else if (responsibility.type === 'cirurgiao_geral') {
-      if (responsibility.portaNames) {
-        parts.push(responsibility.portaNames);
-      }
-      if (responsibility.officeNumber) {
-        parts.push(`C${responsibility.officeNumber}`);
-      }
+      if (responsibility.portaNames) parts.push(responsibility.portaNames);
+      if (responsibility.officeNumber) parts.push(`C${responsibility.officeNumber}`);
       return parts.join(' • ') || 'Cirurgião Geral';
     } else if (responsibility.type === 'traumatologista') {
-      if (responsibility.portaNames) {
-        parts.push(responsibility.portaNames);
-      }
-      if (responsibility.officeNumber) {
-        parts.push(`C${responsibility.officeNumber}`);
-      }
+      if (responsibility.portaNames) parts.push(responsibility.portaNames);
+      if (responsibility.officeNumber) parts.push(`C${responsibility.officeNumber}`);
       return parts.join(' • ') || 'Traumatologista';
     }
 
@@ -92,39 +80,31 @@ export const MedicalResponsibilityIndicator = ({
 
   const getAbbreviation = () => {
     switch (responsibility.type) {
-      case 'porta':
-        return 'PORTA';
-      case 'lider':
-        return 'LÍDER';
-      case 'conjunto':
-        return 'CONJUNTO';
-      case 'obstetra':
-        return 'OBS';
-      case 'cirurgiao_geral':
-        return 'CIRURG.';
-      case 'traumatologista':
-        return 'ORTOP';
-      default:
-        return '';
+      case 'rotineiro': return 'ROTIN.';
+      case 'plantonista': return 'PLANT.';
+      case 'intercorrencista': return 'INTERC.';
+      case 'porta': return 'PORTA';
+      case 'lider': return 'LÍDER';
+      case 'conjunto': return 'CONJUNTO';
+      case 'obstetra': return 'OBS';
+      case 'cirurgiao_geral': return 'CIRURG.';
+      case 'traumatologista': return 'ORTOP';
+      default: return '';
     }
   };
 
   const getLabel = () => {
     switch (responsibility.type) {
-      case 'porta':
-        return 'Médico Porta';
-      case 'lider':
-        return 'Médico Líder';
-      case 'conjunto':
-        return 'Seguimento Conjunto';
-      case 'obstetra':
-        return 'Obstetra';
-      case 'cirurgiao_geral':
-        return 'Cirurgião Geral';
-      case 'traumatologista':
-        return 'Traumatologista';
-      default:
-        return '';
+      case 'rotineiro': return 'Médico Rotineiro';
+      case 'plantonista': return 'Médico Plantonista';
+      case 'intercorrencista': return 'Médico Intercorrencista';
+      case 'porta': return 'Médico Porta';
+      case 'lider': return 'Médico Líder';
+      case 'conjunto': return 'Seguimento Conjunto';
+      case 'obstetra': return 'Obstetra';
+      case 'cirurgiao_geral': return 'Cirurgião Geral';
+      case 'traumatologista': return 'Traumatologista';
+      default: return '';
     }
   };
 
