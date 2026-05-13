@@ -1910,6 +1910,39 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_admission_date_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          changed_by_name: string | null
+          id: string
+          new_value: string
+          old_value: string | null
+          patient_id: string
+          reason: string | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          id?: string
+          new_value: string
+          old_value?: string | null
+          patient_id: string
+          reason?: string | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          id?: string
+          new_value?: string
+          old_value?: string | null
+          patient_id?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       patient_encounters: {
         Row: {
           admission_date: string | null
