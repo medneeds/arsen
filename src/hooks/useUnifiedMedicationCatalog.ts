@@ -211,6 +211,8 @@ export interface UnifiedCatalog {
   antimicrobials: MedicationEntry[];
   highAlerts: MedicationEntry[];
   medications: MedicationEntry[];
+  controlledItems: ControlledCatalogItem[];
+  findControlledByName: (name: string) => ControlledCatalogItem | undefined;
 }
 
 export function useUnifiedMedicationCatalog(): UnifiedCatalog {
