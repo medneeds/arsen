@@ -3314,18 +3314,32 @@ const PrescricaoPage = () => {
     setItems((prev) => [...prev, newItem]);
 
     // === Reconhecimento automático em "Buscar todas" ===
-    // MAV (alta vigilância): destaca, expande a categoria, avisa o prescritor
-    // e abre o fluxo padronizado de prescrição de alta vigilância.
+    // MAV (alta vigilância): 1) toast bem visível confirmando a adição,
+    // 2) destaca o item no painel (scroll + ring pulsante por ~2s),
+    // 3) só então abre o fluxo padronizado de prescrição de alta vigilância.
     if (med.highAlert) {
       setExpandedCategories(prev => {
         const n = new Set(prev);
         n.add(med.category);
         return n;
       });
-      toast.warning(`Alta vigilância: ${med.name}`, {
-        description: "Use o modelo padronizado: diluição, dose, BIC e dupla checagem.",
+      toast.success(`✓ MEDICAÇÃO ADICIONADA — ${med.name}`, {
+        description: "ALTA VIGILÂNCIA: aplicando modelo padronizado (diluição, dose, BIC, dupla checagem)...",
+        duration: 4500,
       });
-      setTimeout(() => setHighAlertGuideOpen(true), 250);
+      // Scroll + highlight pulsante no card recém-adicionado
+      setTimeout(() => {
+        const el = document.getElementById(`prescription-item-${newItem.id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-4', 'ring-red-400', 'ring-offset-2', 'animate-pulse');
+          setTimeout(() => {
+            el.classList.remove('ring-4', 'ring-red-400', 'ring-offset-2', 'animate-pulse');
+          }, 2200);
+        }
+      }, 80);
+      // Abre a guia MAV depois do destaque, para o médico ver primeiro a adição
+      setTimeout(() => setHighAlertGuideOpen(true), 1100);
     }
     // Psicotrópico / controlado: NÃO abre formulário aqui. Apenas marca e avisa.
     // A guia de notificação será sugerida automaticamente no momento de imprimir,
