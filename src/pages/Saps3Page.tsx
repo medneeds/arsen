@@ -296,8 +296,30 @@ export default function Saps3Page() {
   const [surgeryType, setSurgeryType] = useState<string>("");
   const [infectionAtAdmission, setInfectionAtAdmission] = useState<string>("");
 
-  // Box III
-  const [gcs, setGcs] = useState<string>("");
+  // Box III — Avaliação de consciência guiada
+  // sedationStatus: "" (não respondido) | "no" | "sedated" | "intubated_no_sedation"
+  const [sedationStatus, setSedationStatus] = useState<"" | "no" | "sedated" | "intubated_no_sedation">("");
+  const [gcsO, setGcsO] = useState<string>("");
+  const [gcsV, setGcsV] = useState<string>("");
+  const [gcsM, setGcsM] = useState<string>("");
+  const [rassScore, setRassScore] = useState<string>("");
+  const [consciousnessReason, setConsciousnessReason] = useState<string>("");
+  const [gcsPreSedation, setGcsPreSedation] = useState<string>("");
+
+  // Derived GCS total ("8T" if intubated_no_sedation, numeric otherwise, "" if RASS)
+  const gcsTotal = useMemo(() => {
+    if (sedationStatus === "sedated") return "";
+    const o = parseInt(gcsO) || 0;
+    const m = parseInt(gcsM) || 0;
+    if (sedationStatus === "intubated_no_sedation") {
+      const sum = o + 1 + m;
+      return o && m ? `${sum}T` : "";
+    }
+    const v = parseInt(gcsV) || 0;
+    return o && v && m ? String(o + v + m) : "";
+  }, [sedationStatus, gcsO, gcsV, gcsM]);
+  const gcs = gcsTotal; // legacy var name kept for downstream use
+
   const [hrHighest, setHrHighest] = useState<string>("");
   const [sbpLowest, setSbpLowest] = useState<string>("");
   const [bilirubinHighest, setBilirubinHighest] = useState<string>("");
