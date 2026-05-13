@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
-import { Bed, Send, ChevronDown, User, Stethoscope, FileText, Plus, X } from "lucide-react";
+import { Bed, Send, ChevronDown, User, Stethoscope, FileText, Plus, X, MapPin, ClipboardList, Eye, Clock } from "lucide-react";
+import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -155,6 +156,7 @@ export function RequestNewAllocationDialog({
   const [clinicalOpen, setClinicalOpen] = useState(false);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const { createRequest } = useBedAllocationRequests();
   const { createPatient } = usePatients();
   const { currentDepartment } = useDepartment();
