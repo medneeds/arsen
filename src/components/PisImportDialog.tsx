@@ -19,6 +19,7 @@ export interface ExtractedPisData {
   neighborhood?: string | null;
   city?: string | null;
   phone?: string | null;
+  medical_record?: string | null;
 }
 
 interface PisImportDialogProps {
