@@ -2992,6 +2992,10 @@ const PrescricaoPage = () => {
   // Modo de nova ATB vindo do AtmStatusDialog ('acrescimo' | 'troca' | 'inicial' | null)
   const [pendingAtbMode, setPendingAtbMode] = useState<'acrescimo' | 'troca' | 'inicial' | null>(null);
   const [highAlertGuideOpen, setHighAlertGuideOpen] = useState(false);
+  // Insulin therapy assistant
+  const [insulinDialogOpen, setInsulinDialogOpen] = useState(false);
+  const [pendingInsulinMed, setPendingInsulinMed] = useState<MedicationEntry | null>(null);
+  const [editingInsulinItemId, setEditingInsulinItemId] = useState<string | null>(null);
   const [careCatalogOpen, setCareCatalogOpen] = useState(false);
   const [nutritionWizardOpen, setNutritionWizardOpen] = useState(false);
   const [hydrationWizardOpen, setHydrationWizardOpen] = useState(false);
