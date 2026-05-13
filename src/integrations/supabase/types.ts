@@ -1464,6 +1464,56 @@ export type Database = {
         }
         Relationships: []
       }
+      medical_record_edit_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          changed_by_email: string | null
+          field_changed: string
+          id: string
+          medical_record_id: string | null
+          new_value: string | null
+          old_value: string | null
+          patient_id: string | null
+          patient_registry_id: string | null
+          reason: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          changed_by_email?: string | null
+          field_changed: string
+          id?: string
+          medical_record_id?: string | null
+          new_value?: string | null
+          old_value?: string | null
+          patient_id?: string | null
+          patient_registry_id?: string | null
+          reason: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          changed_by_email?: string | null
+          field_changed?: string
+          id?: string
+          medical_record_id?: string | null
+          new_value?: string | null
+          old_value?: string | null
+          patient_id?: string | null
+          patient_registry_id?: string | null
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_record_edit_history_medical_record_id_fkey"
+            columns: ["medical_record_id"]
+            isOneToOne: false
+            referencedRelation: "medical_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       medical_record_sequences: {
         Row: {
           id: string

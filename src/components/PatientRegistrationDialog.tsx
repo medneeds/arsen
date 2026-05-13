@@ -261,6 +261,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
     return () => clearTimeout(handle);
   }, [open, form.patient_name, form.is_unidentified, form.ni_arrival_circumstance, userOverroteNiSuggestion]);
 
+  // Caminho 1: NI puro — limpa tudo, gera só código institucional
   const handleAcceptNiSuggestion = () => {
     setNiSuggestionOpen(false);
     const sex = niSuggestion?.suggestedSex;
@@ -274,11 +275,36 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
       cns: "",
       birth_date: "",
       sex: "",
+      medical_record: "",
       ni_apparent_sex: sex === "M" ? "Masculino" : sex === "F" ? "Feminino" : prev.ni_apparent_sex,
     }));
     toast({
-      title: "Fluxo NI ativado",
-      description: "Código NI-AAAA-NNNNNN será gerado ao salvar. Preencha as características aparentes.",
+      title: "Fluxo NI puro ativado",
+      description: "Código NI-AAAA-NNNNNN será gerado ao salvar. Preencha apenas características aparentes.",
+    });
+  };
+
+  // Caminho 2: NI + dados do PIN — mantém NI mas preserva nº de prontuário do PIN, sexo, observações
+  const handleAcceptNiWithPin = () => {
+    setNiSuggestionOpen(false);
+    const sex = niSuggestion?.suggestedSex;
+    setForm(prev => ({
+      ...prev,
+      is_unidentified: true,
+      // Limpa identificação pessoal mas mantém prontuário PIN, sexo, idade aparente, origem, observações
+      patient_name: "",
+      social_name: "",
+      mother_name: "",
+      cpf: "",
+      cns: "",
+      birth_date: "",
+      sex: "",
+      // Preserva: medical_record (PIN), phone, address, neighborhood, city, state, notes
+      ni_apparent_sex: sex === "M" ? "Masculino" : sex === "F" ? "Feminino" : prev.ni_apparent_sex,
+    }));
+    toast({
+      title: "Fluxo NI + dados do PIN ativado",
+      description: "Marcado como Não Identificado. O nº de prontuário PIN, origem e observações ficam disponíveis para edição.",
     });
   };
 
@@ -644,7 +670,8 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         <UnidentifiedSuggestionDialog
           open={niSuggestionOpen}
           detection={niSuggestion}
-          onConfirm={handleAcceptNiSuggestion}
+          onConfirmPure={handleAcceptNiSuggestion}
+          onConfirmWithPin={handleAcceptNiWithPin}
           onReject={handleRejectNiSuggestion}
           onCancel={handleCancelNiSuggestion}
         />
@@ -702,6 +729,39 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                   <Label className="text-xs">Circunstância de Chegada</Label>
                   <Textarea value={form.ni_arrival_circumstance} onChange={e => updateField("ni_arrival_circumstance", e.target.value)}
                     placeholder="Ex: SAMU – encontrado em via pública; trazido pela polícia..." rows={2} />
+                </div>
+
+                {/* Bloco NI + dados administrativos do PIN (sempre visível em modo NI; opcional) */}
+                <div className="col-span-2 mt-2 p-3 rounded-md border-2 border-primary/30 bg-primary/5 space-y-2">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-primary">
+                    <FileUp className="h-3.5 w-3.5" />
+                    Dados Administrativos do PIN (opcional)
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">
+                    Quando a recepção já gerou ficha PIN para o paciente NI, você pode preservar o número
+                    do prontuário PIN e observações abaixo. Não desfaz o status de NI.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="col-span-2">
+                      <Label className="text-[11px]">Nº Prontuário PIN / sistema externo</Label>
+                      <Input
+                        value={form.medical_record}
+                        onChange={e => updateField("medical_record", e.target.value)}
+                        placeholder="Ex: 123456 (será preservado como nº legado/PIN)"
+                        className="h-8 text-xs uppercase"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Label className="text-[11px]">Observações administrativas</Label>
+                      <Textarea
+                        value={form.notes}
+                        onChange={e => updateField("notes", e.target.value)}
+                        placeholder="Anotações da recepção, pulseira, acompanhante, etc."
+                        rows={2}
+                        className="text-xs"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (

@@ -36,6 +36,8 @@ import { MedicalResponsibilityDialog } from "./MedicalResponsibilityDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
 import { InternmentStatusDialog } from "./InternmentStatusDialog";
 import { AdmissionDateEditor } from "./AdmissionDateEditor";
+import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
+import { FileText } from "lucide-react";
 
 interface EditPatientDialogProps {
   patient: Patient;
@@ -68,6 +70,7 @@ export function EditPatientDialog({
   const [responsibilityOpen, setResponsibilityOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [movementOpen, setMovementOpen] = useState(false);
+  const [recordEditOpen, setRecordEditOpen] = useState(false);
   const [movementType, setMovementType] = useState<
     "ALTA" | "ÓBITO" | "TRANSFERÊNCIA" | null
   >(null);
@@ -131,10 +134,24 @@ export function EditPatientDialog({
                     </p>
                   </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground italic">
-                  Nome, prontuário e código de atendimento são definidos no
-                  fluxo de admissão e não podem ser editados aqui.
-                </p>
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <p className="text-[10px] text-muted-foreground italic flex-1">
+                    Nome e código de atendimento são definidos no fluxo de admissão. O
+                    número do prontuário pode ser editado abaixo (auditado).
+                  </p>
+                  {patient.name && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setRecordEditOpen(true)}
+                      className="h-8 text-[11px] gap-1.5 shrink-0"
+                    >
+                      <FileText className="h-3.5 w-3.5 text-primary" />
+                      Editar Prontuário
+                    </Button>
+                  )}
+                </div>
               </section>
 
               {/* Bloco 2: Dados Administrativos */}
@@ -358,6 +375,12 @@ export function EditPatientDialog({
           setMovementType(null);
           onOpenChange(false);
         }}
+      />
+      <MedicalRecordEditDialog
+        open={recordEditOpen}
+        onOpenChange={setRecordEditOpen}
+        patientId={patient.id}
+        patientName={patient.name}
       />
     </>
   );
