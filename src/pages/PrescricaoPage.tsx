@@ -1070,12 +1070,20 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     isDragging,
   } = useSortable({ id: item.id });
 
+  // Compute lock state for the row (mirrors ValidationDot logic).
+  // Once an item is validated within the current 05h window, the row is read-only:
+  // dose/route/posology/instructions/flags/deletion are blocked.
+  const renewalCutoffNow = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
+  const validatedAfterCutoffNow = !!(item.validatedAt && new Date(item.validatedAt) > renewalCutoffNow);
+  const isLocked = !!item.validated && (!isPastRenewalTime || validatedAfterCutoffNow);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : undefined,
     opacity: isDragging ? 0.8 : undefined,
   };
+
 
   const ItemActions = () => (
     <DropdownMenu>
