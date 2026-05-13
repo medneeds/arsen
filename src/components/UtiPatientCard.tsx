@@ -1097,42 +1097,43 @@ export function UtiPatientCard({
                   </Select>
 
                   {/* Days in UTI - Fixed width for consistent alignment */}
-                  <div className={cn(
-                    "shrink-0 flex items-center justify-center gap-1 w-[70px] md:w-[80px] px-2 py-0.5 rounded-md border",
-                    daysInUti > 4 
-                      ? "bg-red-100 dark:bg-red-900/40 border-red-400/50 dark:border-red-600/50" 
-                      : colorVariant === 'yellow' 
-                        ? "bg-amber-100 dark:bg-amber-900/30 border-amber-300/50 dark:border-amber-600/40" 
-                        : "bg-primary/15 dark:bg-primary/25 border-primary/30"
-                  )}>
-                    <span className={cn(
-                      "text-[9px] font-bold", 
-                      daysInUti > 4 
-                        ? "text-red-700 dark:text-red-300" 
-                        : colorVariant === 'yellow' 
-                          ? "text-amber-700 dark:text-amber-400" 
-                          : "text-primary"
-                    )}>
-                      DIH:
-                    </span>
-                    <span className={cn(
-                      "text-xs font-bold min-w-[20px] text-center", 
-                      daysInUti > 4 
-                        ? "text-red-700 dark:text-red-300" 
-                        : colorVariant === 'yellow' 
-                          ? "text-amber-700 dark:text-amber-400" 
-                          : "text-primary"
-                    )}>
-                      {daysInUti}
-                    </span>
-                    {daysInUti > 4 ? (
-                      <span title="Longa permanência">
-                        <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
-                      </span>
-                    ) : (
-                      <span className="w-3" /> 
-                    )}
-                  </div>
+                  {(() => {
+                    const dihLevel: "green" | "yellow" | "red" =
+                      daysInUti <= 7 ? "green" : daysInUti <= 10 ? "yellow" : "red";
+                    const containerCls =
+                      dihLevel === "red"
+                        ? "bg-red-100 dark:bg-red-900/40 border-red-400/50 dark:border-red-600/50"
+                        : dihLevel === "yellow"
+                        ? "bg-amber-100 dark:bg-amber-900/30 border-amber-300/50 dark:border-amber-600/40"
+                        : "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-400/50 dark:border-emerald-600/40";
+                    const textCls =
+                      dihLevel === "red"
+                        ? "text-red-700 dark:text-red-300"
+                        : dihLevel === "yellow"
+                        ? "text-amber-700 dark:text-amber-400"
+                        : "text-emerald-700 dark:text-emerald-400";
+                    return (
+                      <div
+                        className={cn(
+                          "shrink-0 flex items-center justify-center gap-1 w-[70px] md:w-[80px] px-2 py-0.5 rounded-md border",
+                          containerCls
+                        )}
+                        title="DIH — Verde ≤7 dias · Amarelo 8–10 · Vermelho >10"
+                      >
+                        <span className={cn("text-[9px] font-bold", textCls)}>DIH:</span>
+                        <span className={cn("text-xs font-bold min-w-[20px] text-center", textCls)}>
+                          {daysInUti}
+                        </span>
+                        {dihLevel === "red" ? (
+                          <span title="Longa permanência">
+                            <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400" />
+                          </span>
+                        ) : (
+                          <span className="w-3" />
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* UTI Admission Date — somente leitura (edite via Edição Avançada) */}
                   <div
