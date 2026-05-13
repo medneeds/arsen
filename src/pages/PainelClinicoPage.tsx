@@ -706,3 +706,70 @@ function SapsPendingMiniTimer({ pendingSince }: { pendingSince: string | null })
     </span>
   );
 }
+
+// Global banner showing all patients with pending SAPS 3 + recurring toast reminder
+function SapsPendingGlobalBanner({
+  patients,
+  sapsScores,
+  onComplete,
+}: {
+  patients: Patient[];
+  sapsScores: Record<string, { score: number; mortality: number; status: string; pending_since: string | null }>;
+  onComplete: (p: Patient) => void;
+}) {
+  const pendingPatients = useMemo(
+    () => patients.filter((p) => sapsScores[p.name]?.status === "pending"),
+    [patients, sapsScores],
+  );
+
+  // Recurring reminder toast (every 5 minutes) when there are pending SAPS.
+  useEffect(() => {
+    if (pendingPatients.length === 0) return;
+    const fire = () => {
+      toast({
+        title: `${pendingPatients.length} ficha${pendingPatients.length > 1 ? "s" : ""} SAPS 3 pendente${pendingPatients.length > 1 ? "s" : ""}`,
+        description: `Complete a${pendingPatients.length > 1 ? "s" : ""} ficha${pendingPatients.length > 1 ? "s" : ""} antes de 24h para evitar travamento do fluxo. Pacientes: ${pendingPatients.slice(0, 3).map((p) => p.name).join(", ")}${pendingPatients.length > 3 ? ` +${pendingPatients.length - 3}` : ""}.`,
+        variant: "destructive" as any,
+      });
+    };
+    fire();
+    const id = window.setInterval(fire, 5 * 60_000);
+    return () => window.clearInterval(id);
+  }, [pendingPatients.length]);
+
+  if (pendingPatients.length === 0) return null;
+
+  return (
+    <div className="px-4 pt-2">
+      <div className="rounded-xl border-l-4 border-amber-500 bg-amber-50 dark:bg-amber-950/30 p-3 shadow-sm">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5 animate-pulse" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+              {pendingPatients.length} ficha{pendingPatients.length > 1 ? "s" : ""} SAPS 3 pendente{pendingPatients.length > 1 ? "s" : ""} — prazo limite de 24h
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              O fluxo clínico será travado se a ficha não for completada dentro do prazo.
+            </p>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {pendingPatients.map((p) => (
+                <Button
+                  key={p.id}
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-xs gap-1.5 border-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                  onClick={() => onComplete(p)}
+                >
+                  <ClipboardList className="h-3 w-3" />
+                  {p.name}
+                  <SapsPendingMiniTimer pendingSince={sapsScores[p.name]?.pending_since ?? null} />
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
