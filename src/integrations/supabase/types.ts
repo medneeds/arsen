@@ -2568,6 +2568,7 @@ export type Database = {
           risk_classified_by: string | null
           sex: string | null
           social_name: string | null
+          state: string | null
           state_id: string
           status: string
           triage_notes: string | null
@@ -2616,6 +2617,7 @@ export type Database = {
           risk_classified_by?: string | null
           sex?: string | null
           social_name?: string | null
+          state?: string | null
           state_id: string
           status?: string
           triage_notes?: string | null
@@ -2664,6 +2666,7 @@ export type Database = {
           risk_classified_by?: string | null
           sex?: string | null
           social_name?: string | null
+          state?: string | null
           state_id?: string
           status?: string
           triage_notes?: string | null

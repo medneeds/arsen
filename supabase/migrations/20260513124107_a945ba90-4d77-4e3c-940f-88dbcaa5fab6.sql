@@ -1,0 +1,1 @@
+ALTER TABLE public.pre_admissions ADD COLUMN IF NOT EXISTS state text;

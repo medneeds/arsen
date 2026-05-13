@@ -38,6 +38,7 @@ interface PatientFormData {
   address: string;
   neighborhood: string;
   city: string;
+  state: string;
   destination_sector: string;
   notes: string;
   // NI fields
@@ -62,6 +63,7 @@ const EMPTY_FORM: PatientFormData = {
   address: "",
   neighborhood: "",
   city: "",
+  state: "",
   destination_sector: "",
   notes: "",
   is_unidentified: false,
@@ -349,6 +351,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
           address: form.address?.trim() || null,
           neighborhood: form.neighborhood?.trim() || null,
           city: form.city?.trim() || null,
+          state: form.state?.trim() || null,
           notes: form.notes?.trim() || null,
           hospital_unit_id: currentHospital.id,
           state_id: currentState.id,
@@ -380,6 +383,7 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
         address: form.address?.trim() || null,
         neighborhood: form.neighborhood?.trim() || null,
         city: form.city?.trim() || null,
+        state: form.state?.trim() || null,
         destination_sector: effectiveDestination || null,
         notes: form.notes?.trim() || null,
         hospital_unit_id: currentHospital.id,
@@ -622,9 +626,21 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
                   <Label className="text-xs">Bairro</Label>
                   <Input value={form.neighborhood} onChange={e => updateField("neighborhood", e.target.value.toUpperCase())} className="uppercase" />
                 </div>
-                <div>
-                  <Label className="text-xs">Cidade</Label>
-                  <Input value={form.city} onChange={e => updateField("city", e.target.value.toUpperCase())} className="uppercase" />
+                <div className="grid grid-cols-[1fr_90px] gap-2">
+                  <div>
+                    <Label className="text-xs">Cidade</Label>
+                    <Input value={form.city} onChange={e => updateField("city", e.target.value.toUpperCase())} className="uppercase" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Estado (UF)</Label>
+                    <Input
+                      value={form.state}
+                      onChange={e => updateField("state", e.target.value.toUpperCase().slice(0, 2))}
+                      maxLength={2}
+                      placeholder="UF"
+                      className="uppercase"
+                    />
+                  </div>
                 </div>
               </div>
             )}
