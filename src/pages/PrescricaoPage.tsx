@@ -3002,16 +3002,24 @@ const PrescricaoPage = () => {
   // Categorias que NÃO seguem o esquema dose/via/posologia (têm campos próprios)
   const NON_STANDARD_CATEGORIES = useMemo(() => new Set(['nutrition', 'care', 'nonstandard', 'hydration']), []);
 
-  // Calcula quais campos obrigatórios estão faltando em um item ativo
+  // Calcula quais campos obrigatórios estão faltando em um item ativo.
+  // Os obrigatórios são adaptativos por tipo de apresentação (comprimido vs IV BIC, etc.)
   const getItemMissingFields = useCallback((item: PrescriptionItem): string[] => {
     if (item.status !== 'active') return [];
     const missing: string[] = [];
     const isStandard = !NON_STANDARD_CATEGORIES.has(item.category);
     if (isStandard) {
       const empty = (v?: string) => !v || !v.trim() || v.trim() === '-';
-      if (empty(item.dose)) missing.push('dose');
-      if (empty(item.route)) missing.push('via');
-      if (empty(item.posology)) missing.push('posologia');
+      const ptype = inferPresentationType(item.presentation, item.route, item.name);
+      const required = getRequiredFields(ptype);
+      if (required.includes('dose') && empty(item.dose)) missing.push('dose');
+      if (required.includes('via') && empty(item.route)) missing.push('via');
+      if (required.includes('posologia') && empty(item.posology)) missing.push('posologia');
+      if (required.includes('diluente') && empty(item.diluent)) missing.push('diluente');
+      if (required.includes('volume total') && empty(item.volumeTotal)) missing.push('volume total');
+      if (required.includes('tempo de infusão') && empty(item.infusionTime) && empty(item.infusionRate)) {
+        missing.push('tempo de infusão');
+      }
     }
     // Controlado (Portaria 344) precisa de tipo de notificação resolvido
     const cat = findControlledCatalog?.(item.name);
