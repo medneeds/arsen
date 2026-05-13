@@ -1155,13 +1155,7 @@ export function UtiPatientCard({
                     </span>
                   </div>
 
-                  {/* Critical badge - Only alert when needed */}
-                  {criticalCount > 0 && (
-                    <Badge variant="destructive" className="shrink-0 h-4 gap-0.5 text-[8px] md:text-[9px] px-1">
-                      <AlertTriangle className="h-2 w-2" />
-                      {criticalCount}
-                    </Badge>
-                  )}
+                  {/* Critical badge removido — alertas críticos tratados em outro local */}
                 </div>
               </div>
 
