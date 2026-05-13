@@ -9,10 +9,14 @@ interface PrintablePatientCardProps {
 
 const getMedicalResponsibilityLabel = (patient: Patient) => {
   if (!patient.medicalResponsibility?.type) return null;
-  
+
   const { type, officeNumber, leaderNames, portaNames } = patient.medicalResponsibility;
   const parts: string[] = [];
-  
+
+  if (type === 'rotineiro') return 'Rotineiro';
+  if (type === 'plantonista') return 'Plantonista';
+  if (type === 'intercorrencista') return 'Intercorrencista';
+
   if (type === 'porta') {
     if (portaNames) parts.push(`${portaNames}`);
     if (officeNumber) parts.push(`C${officeNumber}`);
@@ -25,7 +29,7 @@ const getMedicalResponsibilityLabel = (patient: Patient) => {
     if (leaderNames) parts.push(`Líder: ${leaderNames}`);
     return parts.join(' · ');
   }
-  
+
   return null;
 };
 
