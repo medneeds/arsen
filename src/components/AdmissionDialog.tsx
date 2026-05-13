@@ -18,7 +18,7 @@ import { CidSearchInput } from "@/components/CidSearchInput";
 import {
   Stethoscope, Loader2, AlertTriangle, ClipboardCheck,
   HeartPulse, Activity, FileText, Pill, CalendarDays, Hash,
-  Printer, ShieldCheck, Save, Trash2, AsteriskSquare,
+  Printer, ShieldCheck, Save, Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
