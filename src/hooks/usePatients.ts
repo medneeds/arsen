@@ -86,6 +86,8 @@ export function usePatients(department?: Department, sector?: string) {
         psmStatus: p.psm_status as Patient['psmStatus'],
         clinicalStatus: (p as any).clinical_status as Patient['clinicalStatus'],
         isVacant: (p as any).is_vacant ?? false,
+        admissionStatus: ((p as any).admission_status as Patient['admissionStatus']) ?? 'admitido',
+        admittedAt: (p as any).admitted_at ?? null,
       }));
 
       // Sort by display_order first, then by bed_number as tiebreaker
