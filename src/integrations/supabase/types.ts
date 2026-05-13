@@ -4532,6 +4532,14 @@ export type Database = {
       }
     }
     Functions: {
+      admin_hard_delete_patient: {
+        Args: {
+          p_patient_id: string
+          p_reason?: string
+          p_registry_id?: string
+        }
+        Returns: Json
+      }
       admin_update_user_password: {
         Args: { p_email: string; p_new_password: string }
         Returns: Json
@@ -4613,6 +4621,7 @@ export type Database = {
       }
       is_coordenador: { Args: { _user_id: string }; Returns: boolean }
       is_dev_user: { Args: { _user_id: string }; Returns: boolean }
+      is_developer_profile: { Args: { _user_id: string }; Returns: boolean }
       is_gestor: { Args: { _user_id: string }; Returns: boolean }
       is_global_profile: {
         Args: { _access_profile: string; _app_role: string }
