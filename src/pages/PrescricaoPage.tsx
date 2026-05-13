@@ -1776,7 +1776,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </>}
               </div>
 
-              {/* Row 3: Infusion — Vol total → Correr em (com unidade) → Gotejamento + Rate | Concentração */}
+              {renderInfusion && (
               <div className="flex items-center gap-2 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
                 <Droplets className="h-3 w-3 text-primary shrink-0" />
                 <div className="flex items-center gap-1">
