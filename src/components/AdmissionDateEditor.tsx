@@ -93,6 +93,24 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
       return;
     }
 
+    // Validação: parse DD/MM/AAAA + HH:MM e bloqueia data/hora futura
+    const [dd, mm, yyyy] = editDate.split("/").map((n) => parseInt(n, 10));
+    const [hh = 0, mi = 0] = (editTime || "00:00").split(":").map((n) => parseInt(n, 10));
+    const candidate = new Date(yyyy, (mm || 1) - 1, dd || 1, hh, mi, 0, 0);
+    if (
+      isNaN(candidate.getTime()) ||
+      candidate.getDate() !== dd ||
+      candidate.getMonth() !== (mm || 1) - 1 ||
+      candidate.getFullYear() !== yyyy
+    ) {
+      toast.error("Data inválida. Verifique dia, mês e ano.");
+      return;
+    }
+    if (candidate.getTime() > Date.now()) {
+      toast.error("Não é permitido informar data/hora de admissão futura.");
+      return;
+    }
+
     const newValueDisplay = `${editDate}${editTime ? " " + editTime : ""}`;
     const newValueISO = brToISO(editDate, editTime);
 
