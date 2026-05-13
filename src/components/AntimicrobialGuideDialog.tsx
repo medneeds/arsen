@@ -206,18 +206,29 @@ export function AntimicrobialGuideDialog({
   const [entries, setEntries] = useState<AntimicrobialEntry[]>([]);
   const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | 'cultures' | null>>({});
   const [availableCultures, setAvailableCultures] = useState<Array<{ id: string; culture_type: string; collection_date: string | null; status: string; microorganism: string | null; antibiogram: string | null; sensitivity_profile: string | null; result_text: string | null; created_at: string }>>([]);
-  const [printPromptOpen, setPrintPromptOpen] = useState(false);
-  const [pendingConfirmEntries, setPendingConfirmEntries] = useState<AntimicrobialEntry[]>([]);
+  const draftKey = patientId ? `atb-draft-${patientId}` : null;
 
   useEffect(() => {
-    if (open) {
-      if (antimicrobialItems.length > 0) {
-        setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item)));
-      } else if (entries.length === 0) {
-        setEntries([createEmptyEntry()]);
-      }
+    if (!open) return;
+    // 1) Try to load saved draft first
+    if (draftKey) {
+      try {
+        const raw = localStorage.getItem(draftKey);
+        if (raw) {
+          const parsed = JSON.parse(raw) as AntimicrobialEntry[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setEntries(parsed);
+            return;
+          }
+        }
+      } catch {/* ignore */}
     }
-  }, [open, antimicrobialItems]);
+    if (antimicrobialItems.length > 0) {
+      setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item)));
+    } else if (entries.length === 0) {
+      setEntries([createEmptyEntry()]);
+    }
+  }, [open, antimicrobialItems, draftKey]);
 
   useEffect(() => {
     if (open && patientId) {
