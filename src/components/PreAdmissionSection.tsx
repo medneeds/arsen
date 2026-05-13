@@ -60,7 +60,14 @@ interface PreAdmissionSectionProps {
   sectorFilterLabel?: string;
 }
 
-export function PreAdmissionSection({ sectorFilterLabel }: PreAdmissionSectionProps = {}) {
+export interface PreAdmissionSectionHandle {
+  refresh: () => Promise<void>;
+}
+
+export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmissionSectionProps>(function PreAdmissionSection(
+  { sectorFilterLabel }: PreAdmissionSectionProps,
+  ref
+) {
   const [preAdmissions, setPreAdmissions] = useState<PreAdmission[]>([]);
   const [isOpen, setIsOpen] = useState(true);
   const [showRegistration, setShowRegistration] = useState(false);
