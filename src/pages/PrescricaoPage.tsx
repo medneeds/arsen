@@ -4343,6 +4343,8 @@ const PrescricaoPage = () => {
   // Fonte única: patients.uti_allergies (lista, separada por \n). Aqui exibimos como string
   // com vírgulas para edição amigável e convertemos nos dois sentidos.
   const allergiesPatientId = searchParams.get('patientId');
+  // CID-10 primário do paciente (puxado da admissão) — usado pelo receituário Portaria 344
+  const { cidPrimary: admissionCidPrimary } = usePatientCid(allergiesPatientId);
   const lastSyncedAllergiesRef = useRef<string | null>(null); // formato canônico (\n)
   const allergiesHydratedRef = useRef(false);
 
