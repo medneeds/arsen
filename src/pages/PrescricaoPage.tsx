@@ -5280,6 +5280,7 @@ const PrescricaoPage = () => {
                           onToggleValidation={requestValidateItem}
                           isPastRenewalTime={isPastRenewalTime}
                           prescriptionLocked={prescriptionLocked}
+                          missingFields={itemMissingMap.get(item.id) || []}
                         />
                       ))}
                     </div>
