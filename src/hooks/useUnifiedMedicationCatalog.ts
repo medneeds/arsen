@@ -267,6 +267,8 @@ export function useUnifiedMedicationCatalog(): UnifiedCatalog {
     };
   }, [rows]);
 
+  const allItems = useMemo(() => Object.values(byCategory).flat(), [byCategory]);
+
   const controlledItems = useMemo<ControlledCatalogItem[]>(() => {
     if (!rows) return [];
     const presByMed = new Map<string, PresentationRow[]>();
