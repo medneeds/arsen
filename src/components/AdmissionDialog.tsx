@@ -578,8 +578,8 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
             <TabsContent value="exame" className="space-y-4 mt-4">
               <Section icon={Stethoscope} title="Exame físico segmentar" tone="slate">
                 <div>
-                  <Label className="text-xs">Estado geral *</Label>
-                  <Textarea value={physGeneral} onChange={e => setPhysGeneral(e.target.value)} rows={2} className="mt-1" />
+                  <ReqLabel missing={attempted && missing.examGeneral}>Estado geral</ReqLabel>
+                  <Textarea value={physGeneral} onChange={e => setPhysGeneral(e.target.value)} rows={2} className={cn("mt-1", reqRing(attempted && missing.examGeneral))} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label className="text-xs">Cardiovascular</Label><Textarea value={physCv} onChange={e => setPhysCv(e.target.value)} rows={2} className="mt-1" /></div>
