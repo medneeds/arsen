@@ -236,6 +236,20 @@ export default function PainelClinicoPage() {
         />
       </div>
 
+      {/* Global SAPS 3 pending banner */}
+      <SapsPendingGlobalBanner
+        patients={filteredPatients}
+        sapsScores={sapsScores}
+        onComplete={(p) => {
+          const params = new URLSearchParams();
+          params.set("patientName", p.name);
+          if (p.id) params.set("patientId", p.id);
+          if (p.bedNumber) params.set("patientBed", p.bedNumber);
+          if (p.sector) params.set("patientSector", p.sector);
+          navigate(`/saps3?${params.toString()}`);
+        }}
+      />
+
       {/* Search bar below header */}
       <div className="px-4 py-2">
         <div className="flex gap-2 items-center">
