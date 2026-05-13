@@ -1304,13 +1304,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     const renewalCutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
     const validatedAfterCutoff = !!(item.validatedAt && new Date(item.validatedAt) > renewalCutoff);
     const isValidated = !!item.validated && (!isPastRenewalTime || validatedAfterCutoff);
+    const isBlocked = !isValidated && missingFields.length > 0;
 
-    // Regras: prescrição ainda não validada como um todo → desabilita clique individual
-    // (validação só pode ocorrer em bloco). Item já validado → não pode ser desvalidado.
-    // Item novo (pendente) em prescrição já validada → pode validar individualmente (com senha).
-    const canClick = !isValidated && prescriptionLocked;
+    const canClick = !isValidated && !isBlocked && prescriptionLocked;
     const tooltipMsg = isValidated
       ? "Validado — para retirar, suspenda o item"
+      : isBlocked
+      ? `Bloqueado — preencha: ${missingFields.join(', ')}`
       : prescriptionLocked
       ? "Pendente — clique para validar com senha"
       : "Use 'Validar prescrição' para validar todos os itens";
@@ -1325,12 +1325,12 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             className={cn(
               "shrink-0 transition-transform",
               canClick ? "hover:scale-125 cursor-pointer" : "cursor-not-allowed",
-              isValidated && "cursor-default"
+              (isValidated || isBlocked) && "cursor-default"
             )}
           >
             <Circle className={cn(
               "h-3 w-3 fill-current",
-              isValidated ? "text-emerald-500" : "text-amber-500"
+              isValidated ? "text-emerald-500" : isBlocked ? "text-red-500 animate-pulse" : "text-amber-500"
             )} />
           </button>
         </TooltipTrigger>
