@@ -45,51 +45,33 @@ export const MedicalResponsibilityIndicator = ({
 
   const getText = () => {
     const parts: string[] = [];
-    
+
+    if (responsibility.type === 'rotineiro') return 'Rotineiro';
+    if (responsibility.type === 'plantonista') return 'Plantonista';
+    if (responsibility.type === 'intercorrencista') return 'Intercorrencista';
+
     if (responsibility.type === 'porta') {
-      if (responsibility.portaNames) {
-        parts.push(responsibility.portaNames);
-      }
-      if (responsibility.officeNumber) {
-        parts.push(`C${responsibility.officeNumber}`);
-      }
+      if (responsibility.portaNames) parts.push(responsibility.portaNames);
+      if (responsibility.officeNumber) parts.push(`C${responsibility.officeNumber}`);
       return parts.join(' • ') || 'Porta';
     } else if (responsibility.type === 'lider' && responsibility.leaderNames) {
       return responsibility.leaderNames;
     } else if (responsibility.type === 'conjunto') {
-      if (responsibility.portaNames) {
-        parts.push(responsibility.portaNames);
-      }
-      if (responsibility.officeNumber) {
-        parts.push(`C${responsibility.officeNumber}`);
-      }
-      if (responsibility.leaderNames) {
-        parts.push(responsibility.leaderNames);
-      }
+      if (responsibility.portaNames) parts.push(responsibility.portaNames);
+      if (responsibility.officeNumber) parts.push(`C${responsibility.officeNumber}`);
+      if (responsibility.leaderNames) parts.push(responsibility.leaderNames);
       return parts.join(' • ');
     } else if (responsibility.type === 'obstetra') {
-      if (responsibility.portaNames) {
-        parts.push(responsibility.portaNames);
-      }
-      if (responsibility.officeNumber) {
-        parts.push(`C${responsibility.officeNumber}`);
-      }
+      if (responsibility.portaNames) parts.push(responsibility.portaNames);
+      if (responsibility.officeNumber) parts.push(`C${responsibility.officeNumber}`);
       return parts.join(' • ') || 'Obstetra';
     } else if (responsibility.type === 'cirurgiao_geral') {
-      if (responsibility.portaNames) {
-        parts.push(responsibility.portaNames);
-      }
-      if (responsibility.officeNumber) {
-        parts.push(`C${responsibility.officeNumber}`);
-      }
+      if (responsibility.portaNames) parts.push(responsibility.portaNames);
+      if (responsibility.officeNumber) parts.push(`C${responsibility.officeNumber}`);
       return parts.join(' • ') || 'Cirurgião Geral';
     } else if (responsibility.type === 'traumatologista') {
-      if (responsibility.portaNames) {
-        parts.push(responsibility.portaNames);
-      }
-      if (responsibility.officeNumber) {
-        parts.push(`C${responsibility.officeNumber}`);
-      }
+      if (responsibility.portaNames) parts.push(responsibility.portaNames);
+      if (responsibility.officeNumber) parts.push(`C${responsibility.officeNumber}`);
       return parts.join(' • ') || 'Traumatologista';
     }
 
