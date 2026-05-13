@@ -198,6 +198,103 @@ export function PatientRegistrationDialog({ open, onOpenChange, onSuccess, defau
     }
   }, [open, defaultDestinationSector]);
 
+  // Reset detection state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setNiSuggestion(null);
+      setNiSuggestionOpen(false);
+      setUserOverroteNiSuggestion(false);
+      lastDetectedNameRef.current = "";
+    }
+  }, [open]);
+
+  // Detector inteligente debounced para o nome digitado/importado
+  useEffect(() => {
+    if (!open) return;
+    if (form.is_unidentified) return;
+    if (userOverroteNiSuggestion) return;
+    const name = form.patient_name.trim();
+    if (!name) {
+      setNiSuggestion(null);
+      return;
+    }
+    if (name === lastDetectedNameRef.current) return;
+
+    const handle = setTimeout(async () => {
+      lastDetectedNameRef.current = name;
+      const heuristic = detectUnidentified(name, {
+        arrivalMode: form.ni_arrival_circumstance,
+      });
+      if (heuristic.isUnidentified && heuristic.confidence >= 0.7) {
+        setNiSuggestion(heuristic);
+        setNiSuggestionOpen(true);
+        return;
+      }
+      if (!shouldEscalateToAi(name, { arrivalMode: form.ni_arrival_circumstance })) {
+        setNiSuggestion(null);
+        return;
+      }
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          "detect-unidentified-patient",
+          { body: { name, arrivalMode: form.ni_arrival_circumstance } }
+        );
+        if (error) {
+          console.debug("[ni-detector] AI call failed", error);
+          return;
+        }
+        if (data?.isUnidentified && (data.confidence ?? 0) >= 0.7) {
+          setNiSuggestion({
+            isUnidentified: true,
+            confidence: data.confidence,
+            reason: data.reason,
+            source: "ai",
+            suggestedSex: data.suggestedSex ?? null,
+          });
+          setNiSuggestionOpen(true);
+        }
+      } catch (err) {
+        console.debug("[ni-detector] AI exception", err);
+      }
+    }, 450);
+
+    return () => clearTimeout(handle);
+  }, [open, form.patient_name, form.is_unidentified, form.ni_arrival_circumstance, userOverroteNiSuggestion]);
+
+  const handleAcceptNiSuggestion = () => {
+    setNiSuggestionOpen(false);
+    const sex = niSuggestion?.suggestedSex;
+    setForm(prev => ({
+      ...prev,
+      is_unidentified: true,
+      patient_name: "",
+      social_name: "",
+      mother_name: "",
+      cpf: "",
+      cns: "",
+      birth_date: "",
+      sex: "",
+      ni_apparent_sex: sex === "M" ? "Masculino" : sex === "F" ? "Feminino" : prev.ni_apparent_sex,
+    }));
+    toast({
+      title: "Fluxo NI ativado",
+      description: "Código NI-AAAA-NNNNNN será gerado ao salvar. Preencha as características aparentes.",
+    });
+  };
+
+  const handleRejectNiSuggestion = () => {
+    setNiSuggestionOpen(false);
+    setUserOverroteNiSuggestion(true);
+    toast({
+      title: "Mantido como nome real",
+      description: "Cadastro segue normalmente. Marque NI manualmente se mudar de ideia.",
+    });
+  };
+
+  const handleCancelNiSuggestion = () => {
+    setNiSuggestionOpen(false);
+  };
+
   // Toggle NI: limpa campos sensíveis e força sexo='ignorado' inicial
   const toggleUnidentified = (checked: boolean) => {
     setForm(prev => ({
