@@ -18,12 +18,37 @@ import { CidSearchInput } from "@/components/CidSearchInput";
 import {
   Stethoscope, Loader2, AlertTriangle, ClipboardCheck,
   HeartPulse, Activity, FileText, Pill, CalendarDays, Hash,
-  Printer, ShieldCheck,
+  Printer, ShieldCheck, Save, Trash2, AsteriskSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
 
 const UTI_SECTORS = ["red", "yellow", "blue", "outside", "uti_01", "uti_02", "uci_01", "uci_02"];
+
+/** Chave do rascunho local por paciente */
+const draftKeyFor = (patientId: string) => `admission_draft:v1:${patientId}`;
+
+/** Label com sinalização forte de obrigatoriedade */
+const ReqLabel = ({ children, missing }: { children: React.ReactNode; missing?: boolean }) => (
+  <Label className={cn(
+    "text-xs flex items-center gap-1.5",
+    missing ? "text-rose-700" : "text-slate-700"
+  )}>
+    <span>{children}</span>
+    <span className={cn(
+      "inline-flex items-center gap-0.5 rounded px-1 py-px text-[9px] font-bold uppercase tracking-wider",
+      missing
+        ? "bg-rose-100 text-rose-700 ring-1 ring-rose-300"
+        : "bg-rose-50 text-rose-600 ring-1 ring-rose-200"
+    )}>
+      <span className="leading-none">*</span> Obrigatório
+    </span>
+  </Label>
+);
+
+/** Classe utilitária pra realçar campo faltante após tentativa de submit */
+const reqRing = (missing?: boolean) =>
+  missing ? "ring-2 ring-rose-300 border-rose-400 focus-visible:ring-rose-400" : "";
 
 interface AdmissionDialogProps {
   open: boolean;
