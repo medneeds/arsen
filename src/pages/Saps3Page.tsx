@@ -385,13 +385,14 @@ export default function Saps3Page() {
   };
 
   const loadOccupiedBeds = async () => {
-    if (!hospitalId || !stateId) return;
+    if (!hospitalId || !stateId || !selectedSector) { setOccupiedBeds([]); return; }
     const { data } = await supabase
       .from("patients")
       .select("bed_number")
       .eq("hospital_unit_id", hospitalId)
       .eq("state_id", stateId)
-      .eq("department", "UTI");
+      .eq("sector", selectedSector)
+      .eq("is_vacant", false);
     if (data) setOccupiedBeds(data.map(p => p.bed_number));
   };
 
