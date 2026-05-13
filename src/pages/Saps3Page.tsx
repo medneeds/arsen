@@ -375,7 +375,8 @@ export default function Saps3Page() {
     const total = box1 + box2 + box3;
     return { box1, box2, box3, total, mortality: predictMortality(total) };
   }, [age, comorbidities, losBeforeIcu, admissionSource, plannedAdmission, admissionReason,
-    surgicalStatus, infectionAtAdmission, gcs, hrHighest, sbpLowest, bilirubinHighest,
+    surgicalStatus, infectionAtAdmission, gcs, sedationStatus, gcsPreSedation,
+    hrHighest, sbpLowest, bilirubinHighest,
     tempLowest, creatinineHighest, leukocytes, phLowest, plateletsLowest, pao2Fio2, isVentilated]);
 
   // ─── Available beds for selected sector ───
