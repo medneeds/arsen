@@ -99,17 +99,26 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
     // Persist history
     if (patientId) {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        const { data: profile } = user
-          ? await supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle()
-          : { data: null };
+        const { data: auth } = await supabase.auth.getUser();
+        const user = auth?.user;
+        let displayName: string | null = user?.email ?? null;
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (profile?.full_name) displayName = profile.full_name;
+        }
+        const oldParts = splitBR(value);
+        const oldISO = value ? brToISO(oldParts.date, oldParts.time) || null : null;
 
         await supabase.from("patient_admission_date_history").insert({
           patient_id: patientId,
-          old_value: value ? brToISO(...Object.values(splitBR(value)) as [string, string]) || null : null,
+          old_value: oldISO,
           new_value: newValueISO,
-          changed_by: user?.id,
-          changed_by_name: profile?.display_name || user?.email || null,
+          changed_by: user?.id ?? null,
+          changed_by_name: displayName,
           reason: reason || null,
         });
       } catch (err) {
