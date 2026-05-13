@@ -267,11 +267,13 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
         </div>
 
         <CollapsibleContent>
-          {filteredPreAdmissions.length === 0 ? (
+          {filteredPreAdmissions.length === 0 && (!searchTerm || registryResults.length === 0) ? (
             <Card className="border-dashed">
               <CardContent className="p-4 text-center text-sm text-muted-foreground">
                 {searchTerm
-                  ? `Nenhum paciente encontrado para "${searchTerm}".`
+                  ? (isSearchingRegistry
+                      ? `Buscando "${searchTerm}"...`
+                      : `Nenhum paciente encontrado para "${searchTerm}".`)
                   : "Nenhum paciente aguardando pré-admissão."}
               </CardContent>
             </Card>
