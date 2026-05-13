@@ -304,6 +304,8 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         state_id: currentState.id,
         created_by: user?.id,
         admission_date: new Date().toISOString(),
+        // Sincroniza automaticamente a data de admissão exibida no card (DD/MM/AAAA)
+        uti_admission_date: format(new Date(), "dd/MM/yyyy"),
         is_vacant: false,
         clinical_status: fullData.risk_classification === "vermelho" ? "grave" : null,
         diagnoses: fullData.chief_complaint || null,
@@ -311,11 +313,12 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         pendencies: admissionNotes || null,
         medical_record: (fullData as any).medical_record ?? null,
         patient_registry_id: (fullData as any).patient_registry_id ?? null,
+        // Previsão de alta: somente a data, sem sufixo "(N dias)"
         uti_discharge_prediction: noDischargePrediction
           ? "Sem previsão"
           : dischargeDate
-          ? `${format(dischargeDate, "dd/MM/yyyy")}${dischargeDays ? ` (${dischargeDays} dias)` : ""}`
-          : (dischargeDays ? `${dischargeDays} dias` : null),
+          ? format(dischargeDate, "dd/MM/yyyy")
+          : null,
       };
 
       let insertedPatient: { id: string } | null = null;

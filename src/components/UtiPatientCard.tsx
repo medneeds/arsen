@@ -977,6 +977,10 @@ export function UtiPatientCard({
   const antecedentes = getFieldArray("medicalHistory");
   const pendencias = getFieldArray("pendencies");
   const previsaoAlta = getFieldArray("utiDischargePrediction");
+  // Exibe somente a data; remove sufixo "(N dias)" quando presente
+  const previsaoAltaDate = (previsaoAlta[0] || "").replace(/\s*\(.*?\)\s*$/, "");
+  // Rótulo de admissão dinâmico por setor (ex.: "Admissão UCC", "Admissão UTI 1")
+  const admissionLabel = `Admissão ${derivedUtiUnit}`;
   const condutasDia = getFieldArray("utiDailyConducts");
   const dispositivos = getFieldArray("utiDevices");
   const culturasAtb = getFieldArray("utiCulturesAntibiotics");
@@ -1143,7 +1147,7 @@ export function UtiPatientCard({
 
                   {/* UTI Admission Date */}
                   <div className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
-                    <span className="text-[9px]">Admissão UTI:</span>
+                    <span className="text-[9px]">{admissionLabel}:</span>
                     <InlineEditableField
                       value={patient.utiAdmissionDate?.[0] || ""}
                       onUpdate={(v) => handleUpdateField("utiAdmissionDate", v ? [v] : [])}
@@ -1156,7 +1160,7 @@ export function UtiPatientCard({
                   <div className="hidden md:flex shrink-0 items-center gap-1 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
                     <span className="text-[9px]">Previsão de Alta:</span>
                     <InlineEditableField
-                      value={previsaoAlta[0] || ""}
+                      value={previsaoAltaDate}
                       onUpdate={(v) => handleUpdateField("utiDischargePrediction", v ? [v] : [])}
                       placeholder="DD/MM/AAAA"
                       className="text-[10px] font-medium w-20"
@@ -1398,7 +1402,7 @@ export function UtiPatientCard({
                     alwaysShowAll
                   />
                   <div className="bg-muted/30 border border-border/30 rounded-md p-2">
-                    <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">Admissão UTI</span>
+                    <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">{admissionLabel}</span>
                     <InlineEditableField
                       value={getFieldArray("utiAdmissionDate")[0] || ""}
                       onUpdate={(v) => handleUpdateField("utiAdmissionDate", v ? [v] : [])}
@@ -1409,7 +1413,7 @@ export function UtiPatientCard({
                   <div className="bg-muted/30 border border-border/30 rounded-md p-2">
                     <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">Previsão de alta</span>
                     <InlineEditableField
-                      value={previsaoAlta[0] || ""}
+                      value={previsaoAltaDate}
                       onUpdate={(v) => handleUpdateField("utiDischargePrediction", v ? [v] : [])}
                       placeholder="DD/MM/AAAA"
                       className="text-sm"
