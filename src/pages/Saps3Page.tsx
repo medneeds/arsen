@@ -619,21 +619,72 @@ export default function Saps3Page() {
       const destinationSectorLabel = sectorMeta?.label || selectedSector;
       const destinationDepartment = sectorMeta?.department || "UTI";
 
-      if (selectedRequest?.allocation_request_id && selectedRequest.patient_id) {
-        const { data: existingPatients } = await supabase
+      // Carrega dados clínicos da pré-admissão (queixa/alergias) quando aplicável
+      let diagnoses: string | null = null;
+      let medicalHistory: string | null = null;
+      if (selectedRequest?.id && !selectedRequest.allocation_request_id) {
+        const { data: preAdmissionData } = await supabase
+          .from("pre_admissions")
+          .select("chief_complaint, allergies")
+          .eq("id", selectedRequest.id)
+          .maybeSingle();
+        diagnoses = preAdmissionData?.chief_complaint || null;
+        medicalHistory = preAdmissionData?.allergies ? `Alergias: ${preAdmissionData.allergies}` : null;
+      }
+
+      // Modelo de leitos fixos: o leito alvo já existe como linha "vaga" em patients.
+      // Buscamos a linha do leito de destino (department + sector + bed_number).
+      const { data: existingBedRow, error: bedLookupError } = await supabase
+        .from("patients")
+        .select("id, is_vacant, name")
+        .eq("hospital_unit_id", hospitalId)
+        .eq("state_id", stateId)
+        .eq("department", destinationDepartment)
+        .eq("sector", selectedSector)
+        .eq("bed_number", selectedBed)
+        .maybeSingle();
+
+      if (bedLookupError) throw bedLookupError;
+
+      if (existingBedRow && existingBedRow.is_vacant === false) {
+        throw new Error(`Leito ${selectedBed} já está ocupado. Atualize o mapa e selecione outro leito.`);
+      }
+
+      const patientPayload: Record<string, any> = {
+        name: patientName,
+        bed_number: selectedBed,
+        sector: selectedSector,
+        department: destinationDepartment,
+        age: age ? `${age} anos` : null,
+        hospital_unit_id: hospitalId,
+        state_id: stateId,
+        created_by: user?.id,
+        admission_date: new Date().toISOString(),
+        uti_admission_date: format(new Date(), "dd/MM/yyyy"),
+        clinical_status: "grave",
+        is_vacant: false,
+        is_door_patient: false,
+        allocation_status: "approved",
+        diagnoses,
+        medical_history: medicalHistory,
+      };
+
+      if (existingBedRow?.id) {
+        const { error: updateBedError } = await supabase
           .from("patients")
-          .select("display_order")
-          .eq("hospital_unit_id", hospitalId)
-          .eq("state_id", stateId)
-          .eq("department", destinationDepartment)
-          .eq("sector", selectedSector);
+          .update(patientPayload)
+          .eq("id", existingBedRow.id);
+        if (updateBedError) throw updateBedError;
+      } else {
+        const { error: insertBedError } = await supabase
+          .from("patients")
+          .insert(patientPayload);
+        if (insertBedError) throw insertBedError;
+      }
 
-        const maxDisplayOrder = (existingPatients || []).reduce((max, patient) => {
-          const order = patient.display_order ?? 0;
-          return order > max ? order : max;
-        }, 0);
-
-        const { error: requestError } = await supabase
+      // Origem 1: solicitação de leito (door patient) → marca aprovada e remove a linha "porta"
+      if (selectedRequest?.allocation_request_id) {
+        await supabase
           .from("bed_allocation_requests")
           .update({
             status: "approved",
@@ -642,65 +693,22 @@ export default function Saps3Page() {
           })
           .eq("id", selectedRequest.allocation_request_id);
 
-        if (requestError) throw requestError;
+        if (selectedRequest.patient_id && selectedRequest.patient_id !== existingBedRow?.id) {
+          await supabase.from("patients").delete().eq("id", selectedRequest.patient_id);
+        }
+      }
 
-        const { error: patientError } = await supabase
-          .from("patients")
+      // Origem 2: pré-admissão → marca como admitida
+      if (selectedRequest?.id && !selectedRequest.allocation_request_id) {
+        const { error: updatePreAdmissionError } = await supabase
+          .from("pre_admissions")
           .update({
-            is_door_patient: false,
-            allocation_status: "approved",
-            sector: selectedSector,
-            bed_number: selectedBed,
-            display_order: maxDisplayOrder + 1,
-            department: destinationDepartment,
+            status: "admitido",
+            destination_bed: selectedBed,
+            destination_sector: destinationSectorLabel,
           })
-          .eq("id", selectedRequest.patient_id);
-
-        if (patientError) throw patientError;
-      } else {
-        let diagnoses: string | null = null;
-        let medicalHistory: string | null = null;
-
-        if (selectedRequest?.id) {
-          const { data: preAdmissionData } = await supabase
-            .from("pre_admissions")
-            .select("chief_complaint, allergies")
-            .eq("id", selectedRequest.id)
-            .maybeSingle();
-
-          diagnoses = preAdmissionData?.chief_complaint || null;
-          medicalHistory = preAdmissionData?.allergies ? `Alergias: ${preAdmissionData.allergies}` : null;
-        }
-
-        const { error: patientError } = await supabase.from("patients").insert({
-          name: patientName,
-          bed_number: selectedBed,
-          sector: selectedSector,
-          department: destinationDepartment,
-          age: age ? `${age} anos` : null,
-          hospital_unit_id: hospitalId,
-          state_id: stateId,
-          created_by: user?.id,
-          admission_date: new Date().toISOString(),
-          clinical_status: "grave",
-          is_vacant: false,
-          diagnoses,
-          medical_history: medicalHistory,
-        });
-        if (patientError) throw patientError;
-
-        if (selectedRequest?.id) {
-          const { error: updatePreAdmissionError } = await supabase
-            .from("pre_admissions")
-            .update({
-              status: "admitido",
-              destination_bed: selectedBed,
-              destination_sector: destinationSectorLabel,
-            })
-            .eq("id", selectedRequest.id);
-
-          if (updatePreAdmissionError) throw updatePreAdmissionError;
-        }
+          .eq("id", selectedRequest.id);
+        if (updatePreAdmissionError) throw updatePreAdmissionError;
       }
 
       if (asPending) {
