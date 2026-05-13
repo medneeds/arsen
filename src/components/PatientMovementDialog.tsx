@@ -39,6 +39,7 @@ import {
   type SubtypeDef,
 } from "@/data/movementFlow";
 import { DischargeDocumentForm } from "@/components/DischargeDocumentForm";
+import { DischargeConfirmDialog } from "@/components/DischargeConfirmDialog";
 import {
   type DischargeDocType,
   type DischargeDocPayload,
