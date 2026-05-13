@@ -3546,7 +3546,7 @@ const PrescricaoPage = () => {
     const autoUnit = detectQuantityUnit(med.presentation, med.defaultDose);
     const autoDefaults = detectDiluentDefaults(med.instructions || '');
     const isIV = isIVRoute(med.defaultRoute);
-    return {
+    const baseItem: PrescriptionItem = {
       id: crypto.randomUUID(),
       name: med.name,
       presentation: med.presentation,
@@ -3570,6 +3570,28 @@ const PrescricaoPage = () => {
       accessType: '',
       concentration: '',
     };
+    // Autofill inhalation defaults from catalog
+    if (med.category === 'inhalation') {
+      const preset = getInhalationDefaults(med.name);
+      if (preset) {
+        baseItem.inhalationMode = preset.mode;
+        if (preset.nebDose !== undefined) baseItem.nebDose = preset.nebDose;
+        if (preset.nebDoseUnit) baseItem.nebDoseUnit = preset.nebDoseUnit;
+        if (preset.diluent !== undefined) baseItem.diluent = preset.diluent;
+        if (preset.diluentVolume !== undefined) baseItem.diluentVolume = preset.diluentVolume;
+        if (preset.oxygenFlow !== undefined) baseItem.oxygenFlow = preset.oxygenFlow;
+        if (preset.stageDuration !== undefined) baseItem.stageDuration = preset.stageDuration;
+        if (preset.inhalationInterface) baseItem.inhalationInterface = preset.inhalationInterface;
+        if (preset.posology) baseItem.posology = preset.posology;
+        if (preset.puffs !== undefined) baseItem.puffs = preset.puffs;
+        if (preset.spacer !== undefined) baseItem.spacer = preset.spacer;
+        if (preset.gargle !== undefined) baseItem.gargle = preset.gargle;
+        if (preset.inhalationOrientation) baseItem.inhalationOrientation = preset.inhalationOrientation;
+      } else {
+        baseItem.inhalationMode = 'nebulization';
+      }
+    }
+    return baseItem;
   };
 
   const addItem = (med: MedicationEntry, opts?: { fromGlobalSearch?: boolean }) => {
