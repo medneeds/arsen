@@ -236,11 +236,22 @@ const COMORBIDITY_OPTIONS = [
   { id: "chemotherapy", label: "Quimioterapia recente" },
 ];
 
-// Bed config per UTI sector
+// Bed config per critical-care sector (UTI / UCI / UCC)
 const UTI_SECTORS = [
-  { value: "red", label: "UTI 1", prefix: "L", start: 1, max: 8 },
-  { value: "yellow", label: "UTI 2", prefix: "L", start: 9, max: 10 },
+  { value: "red", label: "UTI 1", prefix: "L", start: 1, max: 8, department: "UTI" },
+  { value: "yellow", label: "UTI 2", prefix: "L", start: 9, max: 10, department: "UTI" },
+  { value: "blue", label: "UCI 1", prefix: "L", start: 1, max: 6, department: "n" },
+  { value: "outside", label: "UCI 2", prefix: "L", start: 7, max: 8, department: "UCI 2" },
+  { value: "ucc", label: "UCC", prefix: "L", start: 1, max: 37, department: "UCC" },
 ];
+
+// Map any incoming label/value/alias to internal sector value
+function resolveSectorValue(input: string | null | undefined): string {
+  if (!input) return "";
+  const v = String(input).trim();
+  const direct = UTI_SECTORS.find(s => s.value === v || s.label.toLowerCase() === v.toLowerCase());
+  return direct?.value ?? "";
+}
 
 export default function Saps3Page() {
   const { user } = useAuth();
