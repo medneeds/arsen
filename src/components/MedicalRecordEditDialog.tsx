@@ -235,7 +235,7 @@ export function MedicalRecordEditDialog({
     if (!registry) return out;
     for (const k of REG_EDITABLE) {
       const before = (registry[k] ?? "") as string;
-      const after = ((reg[k] ?? "") as string) ?? "";
+      const after = (reg[k] ?? "") as string;
       const a = (before || "").toString().trim();
       const b = (after || "").toString().trim();
       if (a !== b) out.push({ field: k as string, oldVal: a, newVal: b });
