@@ -610,6 +610,53 @@ export default function NirDashboardPage() {
         open={!!selectedBed}
         onOpenChange={(o) => !o && setSelectedBed(null)}
       />
+
+      {/* Confirmação de realocação / permuta */}
+      <Dialog open={!!reallocDest} onOpenChange={(o) => !o && setReallocDest(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {reallocDest?.status === "ocupado" ? "Confirmar permuta de pacientes" : "Confirmar realocação"}
+            </DialogTitle>
+            <DialogDescription>
+              {reallocDest?.status === "ocupado"
+                ? "Os dois pacientes trocarão de leito. Nenhum leito vai para higienização."
+                : "O paciente será movido. O leito de origem irá para higienização."}
+            </DialogDescription>
+          </DialogHeader>
+          {reallocOrigin && reallocDest && (
+            <div className="space-y-3 text-sm">
+              <div className="rounded-md border p-3 bg-muted/30">
+                <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Origem</p>
+                <p className="font-semibold">{reallocOrigin.patient_name}</p>
+                <p className="text-xs text-muted-foreground">
+                  Leito {reallocOrigin.bed_number} · {sectorLabelFromCode(reallocOrigin.sector)}
+                </p>
+              </div>
+              <div className="flex justify-center text-muted-foreground">
+                <ArrowLeftRight className="h-4 w-4" />
+              </div>
+              <div className="rounded-md border p-3 bg-muted/30">
+                <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Destino</p>
+                <p className="font-semibold">
+                  {reallocDest.patient_name ?? <span className="italic text-muted-foreground">Leito vago</span>}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Leito {reallocDest.bed_number} · {sectorLabelFromCode(reallocDest.sector)} · {BED_STATUS_LABELS[reallocDest.status]?.label ?? reallocDest.status}
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReallocDest(null)} disabled={reallocBusy}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmRealloc} disabled={reallocBusy}>
+              {reallocBusy ? "Processando..." : reallocDest?.status === "ocupado" ? "Confirmar permuta" : "Confirmar realocação"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       </div>
     </>
   );
