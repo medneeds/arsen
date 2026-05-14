@@ -115,6 +115,16 @@ import { useMedicationFavorites } from "@/hooks/useMedicationFavorites";
 import { useQuickPrescriptionTemplates, type QuickPrescriptionTemplate, type QuickTemplateItem } from "@/hooks/useQuickPrescriptionTemplates";
 import { SaveTemplateDialog } from "@/components/SaveTemplateDialog";
 import { CareCatalogDialog } from "@/components/CareCatalogDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { DoseCalculatorDialog, type DoseCalculatorResult } from "@/components/DoseCalculatorDialog";
 import { PreValidationAlertDialog } from "@/components/PreValidationAlertDialog";
 import { runClinicalAlertChecks, type ClinicalAlert } from "@/lib/clinicalAlertChecks";
@@ -3494,6 +3504,16 @@ const PrescricaoPage = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [freeRecommendation, setFreeRecommendation] = useState("");
   const [appliedCareProfiles, setAppliedCareProfiles] = useState<Set<string>>(new Set());
+  // Pop-up para sugerir incluir esquema padrão de correção de insulina ao adicionar controle glicêmico
+  const [insulinSchemePromptOpen, setInsulinSchemePromptOpen] = useState(false);
+  // Detecta se o item de cuidado é de controle glicêmico (HGT / glicemia capilar)
+  const isGlycemicControlName = useCallback((name: string) => {
+    const n = (name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return n.includes('hgt') || n.includes('glicemia capilar') || n.includes('controle glicemico') || n.includes('dextro');
+  }, []);
+  const hasInsulinSchemeCare = useCallback((list: PrescriptionItem[]) => {
+    return list.some(i => i.category === 'care' && /esquema.*correc.*insulin/i.test(i.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')));
+  }, []);
   const [historyDate, setHistoryDate] = useState<Date | undefined>(undefined);
   // Conjunto de datas (yyyy-MM-dd) com prescrição salva — alimenta as bolinhas no calendário
   const [prescriptionDateKeys, setPrescriptionDateKeys] = useState<Set<string>>(new Set());
@@ -6830,7 +6850,12 @@ const PrescricaoPage = () => {
       <CareCatalogDialog
         open={careCatalogOpen}
         onOpenChange={setCareCatalogOpen}
-        onAddItem={(entry) => addItem(entry)}
+        onAddItem={(entry) => {
+          addItem(entry);
+          if (isGlycemicControlName(entry.name) && !hasInsulinSchemeCare(items)) {
+            setInsulinSchemePromptOpen(true);
+          }
+        }}
         onAddBulk={(structured, extras, profile) => {
           const existingNames = new Set(items.filter(i => i.category === 'care').map(i => i.name));
           const newItems: PrescriptionItem[] = [];
@@ -6855,6 +6880,10 @@ const PrescricaoPage = () => {
           if (newItems.length > 0) {
             setItems(prev => [...prev, ...newItems]);
             toast.success(`${newItems.length} cuidado(s) adicionado(s)${profile ? ` — ${profile.label}` : ''}`);
+            const addedGlycemic = newItems.some(i => isGlycemicControlName(i.name));
+            if (addedGlycemic && !hasInsulinSchemeCare([...items, ...newItems])) {
+              setInsulinSchemePromptOpen(true);
+            }
           } else {
             toast.info('Todos os cuidados selecionados já constam na prescrição');
           }
@@ -6863,6 +6892,70 @@ const PrescricaoPage = () => {
         appliedProfileIds={appliedCareProfiles}
         patientName={patient?.name}
       />
+
+      {/* Pop-up: sugerir incluir esquema padrão de correção de insulina ao adicionar controle glicêmico */}
+      <AlertDialog open={insulinSchemePromptOpen} onOpenChange={setInsulinSchemePromptOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Incluir esquema de correção de insulina?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  Você adicionou um controle glicêmico nos cuidados. Deseja incluir também o
+                  <strong> esquema padrão de correção de insulina</strong> (Insulina Regular SC conforme HGT)?
+                </p>
+                <div className="rounded-md border bg-muted/40 p-2 font-mono text-xs leading-relaxed">
+                  &lt;70 mg/dL → SG 50% 40 mL EV + reavaliar em 15 min<br />
+                  70–149 → não administrar<br />
+                  150–200 → 2 UI SC<br />
+                  201–250 → 4 UI SC<br />
+                  251–300 → 6 UI SC<br />
+                  301–350 → 8 UI SC<br />
+                  351–400 → 10 UI SC + comunicar médico<br />
+                  &gt;400 → chamar médico imediatamente
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  O esquema é incluído como item de <strong>Cuidados</strong>. Para ajustar (basal-bolus, BIC, peso),
+                  use o assistente de Insulinoterapia em Medicações.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Não, somente HGT</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const schemeName = 'Esquema de correção de insulina (Regular SC conforme HGT)';
+                if (items.some(i => i.name === schemeName)) {
+                  toast.info('Esquema já está na prescrição');
+                  return;
+                }
+                const instructions =
+                  '<70 mg/dL: SG 50% 40 mL EV + reavaliar em 15 min | 70-149: não administrar | ' +
+                  '150-200: 2 UI SC | 201-250: 4 UI SC | 251-300: 6 UI SC | 301-350: 8 UI SC | ' +
+                  '351-400: 10 UI SC + comunicar médico | >400: chamar médico imediatamente';
+                setItems(prev => [...prev, {
+                  id: crypto.randomUUID(),
+                  name: schemeName,
+                  presentation: 'Insulina Regular 100 UI/mL',
+                  dose: 'Conforme HGT',
+                  route: 'Subcutânea',
+                  posology: 'Conforme glicemia capilar',
+                  schedule: 'Atrelado ao HGT',
+                  instructions,
+                  category: 'care',
+                  flags: [],
+                  highAlert: true,
+                  status: 'active',
+                }]);
+                toast.success('Esquema de correção adicionado aos Cuidados');
+              }}
+            >
+              Sim, incluir esquema
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Quick Templates Dialog */}
       <Dialog open={quickTemplatesDialogOpen} onOpenChange={setQuickTemplatesDialogOpen}>
