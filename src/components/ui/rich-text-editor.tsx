@@ -65,18 +65,26 @@ export function RichTextEditor({
   disabled,
 }: Props) {
   const ref = React.useRef<HTMLDivElement>(null);
-  const lastEmitted = React.useRef<string>("");
+  const lastEmittedRaw = React.useRef<string>("");
   const [empty, setEmpty] = React.useState(true);
 
-  // Sync external value -> editor (apenas quando difere do último emitido)
+  // Sync external value -> editor.
+  // Importante: só re-sincroniza quando o `value` recebido é DIFERENTE do que
+  // acabamos de emitir. Caso contrário, o re-render do pai reescreve o
+  // innerHTML a cada tecla (sanitize/toRichHtml normalizam o HTML e geram
+  // strings diferentes), causando "retração" do conteúdo e perda do cursor.
   React.useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const incoming = toRichHtml(value);
-    if (incoming !== lastEmitted.current && incoming !== el.innerHTML) {
-      el.innerHTML = incoming;
-      lastEmitted.current = incoming;
+    if (value === lastEmittedRaw.current) {
+      setEmpty(!(el.textContent || "").trim());
+      return;
     }
+    const incoming = toRichHtml(value);
+    if (incoming !== el.innerHTML) {
+      el.innerHTML = incoming;
+    }
+    lastEmittedRaw.current = value ?? "";
     setEmpty(!(el.textContent || "").trim());
   }, [value]);
 
@@ -95,7 +103,7 @@ export function RichTextEditor({
     const el = ref.current;
     if (!el) return;
     const clean = sanitizeRichHtml(el.innerHTML);
-    lastEmitted.current = clean;
+    lastEmittedRaw.current = clean;
     setEmpty(!(el.textContent || "").trim());
     onChange(clean);
   };
