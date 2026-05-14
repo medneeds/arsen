@@ -1226,15 +1226,15 @@ export function UtiPatientCard({
               isCollapsed ? "flex-row" : "flex-col"
             )}>
               {canDeleteExtra && onDelete && (
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <button
+                  type="button"
                   onClick={() => setIsDeleteExtraOpen(true)}
-                  className="h-6 w-6 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  className="inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground/60 hover:text-white hover:bg-red-600 hover:scale-110 transition-all duration-150"
                   title="Excluir leito extra"
+                  aria-label="Excluir leito extra"
                 >
                   <Trash2 className="h-3 w-3" />
-                </Button>
+                </button>
               )}
               <Button
                 variant="ghost"
