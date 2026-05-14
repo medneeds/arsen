@@ -87,8 +87,8 @@ export const printEvolution = async (
   if (intercurrence) {
     bodyHtml += `
       <h2 class="nz-section">Intercorrência</h2>
-      <div style="padding:8pt 10pt;background:#fffbeb;border:1px solid #fde68a;border-radius:3pt;font-size:10pt;line-height:1.5">
-        ${escape(evo.soap_data.subjective) || "<em>—</em>"}
+      <div class="nz-rich" style="padding:8pt 10pt;background:#fffbeb;border:1px solid #fde68a;border-radius:3pt;font-size:10pt;line-height:1.5">
+        ${renderRich(evo.soap_data.subjective)}
       </div>
     `;
   } else {
@@ -114,11 +114,11 @@ export const printEvolution = async (
       )
       .join("");
 
-    // Unifica Subjetivo + Avaliação em "Evolução"
-    const evolucaoTexto = [s.subjective, s.assessment]
-      .map(t => (t || "").trim())
-      .filter(Boolean)
-      .join("\n\n");
+    // Unifica Subjetivo + Avaliação em "Evolução" preservando HTML rico
+    const subjHtml = toRichHtml(s.subjective);
+    const assessHtml = toRichHtml(s.assessment);
+    const evolucaoHtml = [subjHtml, assessHtml].filter((h) => richHtmlToPlainText(h)).join("");
+    const evolucaoOut = evolucaoHtml || "<em>—</em>";
 
     bodyHtml += `
       ${
@@ -127,18 +127,18 @@ export const printEvolution = async (
           : ""
       }
       <h2 class="nz-section">Evolução</h2>
-      <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">
-        ${escape(evolucaoTexto) || "<em>—</em>"}
+      <div class="nz-rich" style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">
+        ${evolucaoOut}
       </div>
       ${examRows ? `<h2 class="nz-section">Exame Físico</h2><table class="nz"><tbody>${examRows}</tbody></table>` : ""}
       ${
-        s.objective?.trim()
-          ? `<h2 class="nz-section">Exames Complementares</h2><div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(s.objective)}</div>`
+        richHtmlToPlainText(toRichHtml(s.objective))
+          ? `<h2 class="nz-section">Exames Complementares</h2><div class="nz-rich" style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${renderRich(s.objective)}</div>`
           : ""
       }
       <h2 class="nz-section">Plano</h2>
-      <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">
-        ${escape(s.plan) || "<em>—</em>"}
+      <div class="nz-rich" style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">
+        ${renderRich(s.plan)}
       </div>
     `;
   }
