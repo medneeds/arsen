@@ -469,7 +469,19 @@ export function AntimicrobialGuideDialog({
 
   const handleAttachOnly = () => doAttach(true);
   const handlePrintOnly = async () => { await handlePrint(); };
-  const handleAttachAndPrint = async () => { await handlePrint(); doAttach(true); };
+  const handleAttachAndPrint = async () => {
+    // Valida primeiro; só imprime se o anexo for válido — evita imprimir Guia
+    // com campos vazios que não vão entrar na prescrição.
+    setShowErrors(true);
+    const valid = entries.length > 0 && entries.every(e => getMissingFields(e).length === 0);
+    if (!valid) {
+      toast.error("Complete os campos obrigatórios antes de imprimir + anexar.");
+      focusFirstInvalid();
+      return;
+    }
+    await handlePrint();
+    doAttach(true);
+  };
   const handleSaveDraft = () => {
     if (!draftKey) { toast.error("Sem paciente vinculado para salvar rascunho"); return; }
     try {
