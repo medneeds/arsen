@@ -298,10 +298,11 @@ export function PatientMovementDialog({
         // Marca o paciente como alta/óbito (mantém no leito até liberação física)
         const newAdmissionStatus = requiredDocType === "obito" ? "obito" : "alta_dada";
         if ((patient as any).id) {
-          await supabase
+          const { error: statusErr } = await supabase
             .from("patients")
             .update({ admission_status: newAdmissionStatus, updated_at: new Date().toISOString() })
             .eq("id", (patient as any).id);
+          if (statusErr) throw statusErr;
         }
 
         // Auto preview the printable Norma Zero document

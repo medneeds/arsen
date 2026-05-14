@@ -814,50 +814,11 @@ export function UtiPatientCard({
   };
 
   const handleMovementSuccess = async () => {
-    // Clear patient data after discharge/death/transfer (but keep the bed slot)
-    // Mark the bed as vacant after movement
-    const emptyPatient: Patient = {
-      ...patient,
-      name: "",
-      age: "",
-      diagnoses: [],
-      medicalHistory: [],
-      pendencies: [],
-      relevantExams: [],
-      schedule: [],
-      admissionHistory: "",
-      admissionDate: "",
-      internmentNotes: null,
-      internmentStatus: null,
-      utiOriginSector: [],
-      utiAdmissionDate: [],
-      utiAdmissionReason: [],
-      utiAllergies: [],
-      utiCurrentStatus: [],
-      utiDevices: [],
-      utiSpecialties: [],
-      utiCulturesAntibiotics: [],
-      utiDailyConducts: [],
-      utiDischargePrediction: [],
-      highlightedDiagnoses: [],
-      highlightedMedicalHistory: [],
-      highlightedPendencies: [],
-      highlightedConducts: [],
-      medicalResponsibility: undefined,
-      clinicalStatus: null,
-      psmStatus: null,
-      isVacant: true, // Mark bed as vacant after movement
-    };
-    
-    // Update the patient - this persists to database
-    onUpdate(emptyPatient);
-    
-    // Close dialog
+    // Alta/óbito/transferência externa só sinalizam o desfecho.
+    // O leito permanece ocupado até a liberação física pelo fluxo pós-alta/óbito.
     setIsMovementDialogOpen(false);
     setMovementType(null);
-    
-    // Note: Don't call onRefetch here as it may race with the update
-    // The realtime subscription will handle syncing the data
+    onRefetch?.();
   };
 
   const handleReallocationSuccess = () => {
