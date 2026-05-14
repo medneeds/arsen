@@ -7690,6 +7690,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
 
   return (
     <div style={{ fontFamily: 'Arial, Helvetica, sans-serif', color: '#1e293b', width: '186mm', margin: '0 auto', lineHeight: 1.3 }}>
+      {/* Bloco cabeçalho + paciente — não pode ser separado do corpo da prescrição */}
+      <div style={{ pageBreakInside: 'avoid', breakInside: 'avoid', pageBreakAfter: 'avoid', breakAfter: 'avoid' }}>
       {/* Cabeçalho institucional Norma Zero (MAN.05-001) */}
       <NormaZeroPrintHeader
         documentLabel="Prescrição Médica Diária"
@@ -7699,7 +7701,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
       />
 
       {/* Patient Data — compact with allergy inline */}
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '5px' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '5px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
         <tbody>
           <tr>
             <td style={headerCellStyle}>Paciente</td>
@@ -7764,6 +7766,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
           )}
         </div>
       )}
+      </div>
 
       {/* Prescription Items — Lista contínua sem subtítulos de categoria (Cuidados separados ao final) */}
       {(() => {
