@@ -4582,11 +4582,13 @@ const PrescricaoPage = () => {
     if (med.id && med.category !== 'nonstandard') {
       trackMedicationUse(med.id, med.name, med.category);
     }
-    // Antimicrobials ALWAYS go through the Antimicrobial Guide first
-    // (único caminho que abre pop-up automático mesmo via busca "Todas")
+    // Antimicrobials ALWAYS go through the ATM Status Dialog first
+    // (mesmo fluxo do botão "Guia ATM": status → Nova ATB → guia seeded com o med).
+    // Sincroniza com a entrada via toolbar e card violeta para que "Anexar à
+    // prescrição" funcione exatamente da mesma forma.
     if (med.category === 'antimicrobial') {
       setPendingAntimicrobialMed(med);
-      setAntimicrobialGuideOpen(true);
+      setAtmStatusOpen(true);
       return;
     }
     // Insulinas: abrem o Assistente de Insulinoterapia (pop-up dentro de Medicações)
