@@ -14,7 +14,7 @@ export interface AdmissionPrintInput {
   height?: string;
   imc?: { value: string; label: string } | null;
   vitals: { pa?: string; fc?: string; fr?: string; spo2?: string; tax?: string; dx?: string };
-  exam: { general?: string; cv?: string; resp?: string; abd?: string; ext?: string };
+  exam: { general?: string; cv?: string; resp?: string; abd?: string; ext?: string; neuro?: string };
   plan: string;
   cidPrimary: string;
   cidSecondary?: string;
@@ -83,6 +83,7 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
       ${row("Respiratório", d.exam.resp)}
       ${row("Abdome", d.exam.abd)}
       ${row("Extremidades", d.exam.ext)}
+      ${row("Neurológico", d.exam.neuro)}
     </table>
 
     <h2 class="nz-section">Diagnóstico (CID-10)</h2>

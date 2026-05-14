@@ -176,6 +176,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   const [physResp, setPhysResp] = useState("");
   const [physAbd, setPhysAbd] = useState("");
   const [physExt, setPhysExt] = useState("");
+  const [physNeuro, setPhysNeuro] = useState("");
   const [plan, setPlan] = useState("");
   const [cidPrimary, setCidPrimary] = useState("");
   const [cidSecondary, setCidSecondary] = useState("");
@@ -212,7 +213,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         setPa(d.pa ?? ""); setFc(d.fc ?? ""); setFr(d.fr ?? ""); setSpo2(d.spo2 ?? "");
         setTax(d.tax ?? ""); setDx(d.dx ?? "");
         setPhysGeneral(d.physGeneral ?? ""); setPhysCv(d.physCv ?? "");
-        setPhysResp(d.physResp ?? ""); setPhysAbd(d.physAbd ?? ""); setPhysExt(d.physExt ?? "");
+        setPhysResp(d.physResp ?? ""); setPhysAbd(d.physAbd ?? ""); setPhysExt(d.physExt ?? ""); setPhysNeuro(d.physNeuro ?? "");
         setPlan(d.plan ?? ""); setCidPrimary(d.cidPrimary ?? ""); setCidSecondary(d.cidSecondary ?? "");
         setNoPrediction(!!d.noPrediction);
         if (d.predictionDate) setPredictionDate(d.predictionDate);
@@ -235,7 +236,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
       try {
         const payload = {
           hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
-          physGeneral, physCv, physResp, physAbd, physExt,
+          physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
           plan, cidPrimary, cidSecondary,
           noPrediction, predictionDate, predictionDays,
           admissionReason, originSector, devices, culturesAtb, specialties,
@@ -253,7 +254,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   }, [
     open, draftHydrated, patient.id,
     hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
-    physGeneral, physCv, physResp, physAbd, physExt,
+    physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
     plan, cidPrimary, cidSecondary,
     noPrediction, predictionDate, predictionDays,
     admissionReason, originSector, devices, culturesAtb, specialties,
@@ -324,7 +325,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     try {
       const payload = {
         hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
-        physGeneral, physCv, physResp, physAbd, physExt,
+        physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
         plan, cidPrimary, cidSecondary,
         noPrediction, predictionDate, predictionDays,
         admissionReason, originSector, devices, culturesAtb, specialties,
@@ -349,7 +350,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     isUti,
     hda, amp, muc, allergies, weight, height, imc,
     vitals: { pa, fc, fr, spo2, tax, dx },
-    exam: { general: physGeneral, cv: physCv, resp: physResp, abd: physAbd, ext: physExt },
+    exam: { general: physGeneral, cv: physCv, resp: physResp, abd: physAbd, ext: physExt, neuro: physNeuro },
     plan, cidPrimary, cidSecondary,
     dischargePredictionLabel,
     uti: isUti ? { admissionReason, originSector, devices, culturesAtb, specialties } : undefined,
@@ -404,7 +405,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
 
       const physicalExam = {
         general: physGeneral, cardiovascular: physCv, respiratory: physResp,
-        abdomen: physAbd, neurological: "", extremities: physExt, skin: "", other: "",
+        abdomen: physAbd, neurological: physNeuro, extremities: physExt, skin: "", other: "",
       };
 
       const { error: evError } = await supabase
@@ -607,6 +608,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                   <div><Label className="text-xs">Respiratório</Label><Textarea value={physResp} onChange={e => setPhysResp(e.target.value)} rows={2} className="mt-1" /></div>
                   <div><Label className="text-xs">Abdome</Label><Textarea value={physAbd} onChange={e => setPhysAbd(e.target.value)} rows={2} className="mt-1" /></div>
                   <div><Label className="text-xs">Extremidades</Label><Textarea value={physExt} onChange={e => setPhysExt(e.target.value)} rows={2} className="mt-1" /></div>
+                  <div className="col-span-2"><Label className="text-xs">Neurológico</Label><Textarea value={physNeuro} onChange={e => setPhysNeuro(e.target.value)} rows={2} className="mt-1" placeholder="Glasgow, pupilas, força, sensibilidade, reflexos, sinais focais..." /></div>
                 </div>
               </Section>
             </TabsContent>
