@@ -623,6 +623,7 @@ export function usePatients(department?: Department, sector?: string) {
     psmStatus: record.psm_status as Patient['psmStatus'],
     clinicalStatus: record.clinical_status as Patient['clinicalStatus'],
     isVacant: record.is_vacant ?? false,
+    admissionStatus: (record.admission_status as Patient['admissionStatus']) ?? 'admitido',
   });
 
   useEffect(() => {
