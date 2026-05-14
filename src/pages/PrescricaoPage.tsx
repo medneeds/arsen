@@ -7343,7 +7343,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
 
         const renderItemRow = (item: PrescriptionItem, displayIndex: number, rowBg: string) => {
           const isInhalation = item.category === 'inhalation';
-          const hasIvPreparo = !isInhalation && (item.diluent || item.diluentVolume || item.accessType || item.infusionTime || item.infusionRate || item.volumeTotal || item.concentration);
+          const hasIvPreparo = !isInhalation && (item.diluent || item.diluentVolume || item.accessType || item.infusionTime || item.infusionRate || item.volumeTotal || item.concentration || item.reconstitutionVolume || item.reconstitutionSolvent);
           const inhalationLine = isInhalation ? assembleInhalationInstruction(item as any) : '';
           const insulinDesc = item.insulinPlan ? describeInsulinPlan(item.insulinPlan) : null;
 
