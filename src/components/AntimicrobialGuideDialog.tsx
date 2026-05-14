@@ -108,6 +108,33 @@ const RESTRICTION_CLASSES = [
   { value: "profilaxia", label: "Profilaxia (máx 24h)", color: "text-blue-600" },
 ];
 
+// === Validação obrigatória para anexar à prescrição ===
+// Campos exigidos pela CCIH/Norma Zero antes de o ATB entrar no corpo da prescrição.
+// Se faltar qualquer um, o "Anexar" é bloqueado e a UI guia o médico.
+const REQUIRED_LABELS: Record<string, string> = {
+  medication: "Antimicrobiano",
+  dose: "Dose",
+  route: "Via",
+  posology: "Posologia",
+  startDate: "Data de início",
+  infectionSite: "Sítio de infecção",
+  justification: "Justificativa clínica",
+};
+
+function getMissingFields(e: AntimicrobialEntry): string[] {
+  const missing: string[] = [];
+  if (!e.medication?.trim()) missing.push(REQUIRED_LABELS.medication);
+  if (!e.dose?.trim()) missing.push(REQUIRED_LABELS.dose);
+  if (!e.route?.trim()) missing.push(REQUIRED_LABELS.route);
+  if (!e.posology?.trim()) missing.push(REQUIRED_LABELS.posology);
+  if (!e.startDate?.trim()) missing.push(REQUIRED_LABELS.startDate);
+  if (!e.infectionSite?.trim()) missing.push(REQUIRED_LABELS.infectionSite);
+  if (!e.justification?.trim()) missing.push(REQUIRED_LABELS.justification);
+  return missing;
+}
+
+const Req = () => <span className="text-red-500 ml-0.5" aria-label="obrigatório">*</span>;
+
 function createEmptyEntry(item?: PrescriptionItem | MedicationEntry): AntimicrobialEntry {
   const isMed = item && 'defaultDose' in item;
   return {
