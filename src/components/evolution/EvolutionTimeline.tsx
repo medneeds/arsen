@@ -528,23 +528,15 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
         })}
       </div>
 
-      {/* Validate dialog */}
-      <AlertDialog open={!!validateDialogId} onOpenChange={() => setValidateDialogId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Validar e Assinar Evolução</AlertDialogTitle>
-            <AlertDialogDescription>
-              Após a validação, esta evolução não poderá ser excluída. Deseja continuar?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleValidate} className="bg-emerald-600 hover:bg-emerald-700">
-              Validar e Assinar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Validate dialog — exige senha do médico */}
+      <PasswordConfirmDialog
+        open={!!validateDialogId}
+        onOpenChange={(o) => { if (!o) setValidateDialogId(null); }}
+        title="Validar e Assinar Evolução"
+        description="Confirme com sua senha. Após a validação, esta evolução não poderá ser excluída."
+        actionLabel="Validar e Assinar"
+        onConfirmed={handleValidate}
+      />
 
       {/* Suspend dialog */}
       <AlertDialog open={!!suspendDialogId} onOpenChange={() => { setSuspendDialogId(null); setSuspendReason(""); }}>
