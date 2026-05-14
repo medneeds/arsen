@@ -149,7 +149,7 @@ export const printEvolution = async (
   const html = buildNormaZeroDocument({
     title: intercurrence ? "Intercorrência Clínica" : "Evolução Clínica",
     subtitle: intercurrence ? "Registro de intercorrência" : "Registro de evolução",
-    sectorLabel: ctx?.patientSector || evo.patient_sector || "Assistência Médica",
+    sectorLabel: getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "Assistência Médica",
     docCodePrefix: intercurrence ? "INTC" : "EVOL",
     bodyHtml,
     logoDataUrl: logo,
