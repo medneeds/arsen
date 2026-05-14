@@ -77,6 +77,7 @@ import {
   CATEGORY_CONFIG,
   PRESCRIPTION_FLAGS,
   ROUTES,
+  routeShort,
   POSOLOGIES,
   CARE_OPTIONS,
   CARE_PROFILES,
@@ -886,7 +887,7 @@ function NutritionFields({
     <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">{children}</span>
   );
   const TinyInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <Input {...props} className={cn("h-6 text-[11px] bg-background border-border/40", props.className)} />
+    <Input {...props} className={cn("h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600", props.className)} />
   );
 
   const setSubtype = (v: string) => onUpdate(item.id, 'nutritionType', v);
@@ -896,7 +897,7 @@ function NutritionFields({
       <div className="flex items-center gap-1.5 flex-wrap">
         <FieldLabel>Tipo:</FieldLabel>
         <Select value={subtype} onValueChange={setSubtype}>
-          <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-44">
+          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -926,7 +927,7 @@ function NutritionFields({
             <span className="text-muted-foreground/40">·</span>
             <FieldLabel>Modo:</FieldLabel>
             <Select value={item.nutMode || ''} onValueChange={(v) => onUpdate(item.id, 'nutMode', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-44"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-44"><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
                 {subtype === 'diet_enteral' ? (
                   <>
@@ -965,7 +966,7 @@ function NutritionFields({
             <div className="flex items-center gap-1">
               <FieldLabel>Cabeceira:</FieldLabel>
               <Select value={item.nutBedHead || ''} onValueChange={(v) => onUpdate(item.id, 'nutBedHead', v)}>
-                <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 flex-1"><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 flex-1"><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="≥30°" className="text-xs">≥30°</SelectItem>
                   <SelectItem value="≥45°" className="text-xs">≥45°</SelectItem>
@@ -983,7 +984,7 @@ function NutritionFields({
             <div className="flex items-center gap-1">
               <FieldLabel>Consistência (IDDSI):</FieldLabel>
               <Select value={item.nutConsistency || ''} onValueChange={(v) => onUpdate(item.id, 'nutConsistency', v)}>
-                <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-56"><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-56"><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Líquida fina (IDDSI 0)" className="text-xs">Líquida fina (IDDSI 0)</SelectItem>
                   <SelectItem value="Levemente espessa (IDDSI 1)" className="text-xs">Levemente espessa (1)</SelectItem>
@@ -1030,7 +1031,7 @@ function NutritionFields({
             <FieldLabel>Correr em:</FieldLabel>
             <TinyInput value={item.infusionTime || ''} onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)} className="w-14 text-center" placeholder="18" />
             <Select value={item.infusionTimeUnit || 'h'} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-16"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="h" className="text-xs">horas</SelectItem>
                 <SelectItem value="min" className="text-xs">min</SelectItem>
@@ -1039,7 +1040,7 @@ function NutritionFields({
             <span className="text-muted-foreground/40">·</span>
             <FieldLabel>Acesso:</FieldLabel>
             <Select value={item.nutAccess || ''} onValueChange={(v) => onUpdate(item.id, 'nutAccess', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-28"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-28"><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="CVC" className="text-xs">CVC</SelectItem>
                 <SelectItem value="PICC" className="text-xs">PICC</SelectItem>
@@ -1166,7 +1167,7 @@ function HydrationFields({
           type="number"
           value={item.volumeTotal || ''}
           onChange={(e) => onUpdate(item.id, 'volumeTotal', e.target.value)}
-          className="h-6 text-[11px] bg-background border-border/40 w-16 text-center font-medium"
+          className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center font-medium"
           placeholder="mL"
         />
         <span className="text-[10px] text-muted-foreground">mL</span>
@@ -1175,7 +1176,7 @@ function HydrationFields({
 
         <FieldLabel>Fases / intervalo:</FieldLabel>
         <Select value={String(phases)} onValueChange={handlePhasesChange}>
-          <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-36"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
             {HYDRATION_PHASE_OPTIONS.map(o => (
               <SelectItem key={o.phases} value={String(o.phases)} className="text-xs">
@@ -1192,11 +1193,11 @@ function HydrationFields({
           type="number"
           value={item.infusionTime || ''}
           onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)}
-          className="h-6 text-[11px] bg-background border-border/40 w-14 text-center"
+          className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center"
           placeholder="—"
         />
         <Select value={tUnit} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
-          <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-16"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="h" className="text-xs">h</SelectItem>
             <SelectItem value="min" className="text-xs">min</SelectItem>
@@ -1210,7 +1211,7 @@ function HydrationFields({
           {isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '—'}
         </div>
         <Select value={dripMode} onValueChange={(v) => onUpdate(item.id, 'infusionMode', v)}>
-          <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-20"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="BIC" className="text-xs">mL/h</SelectItem>
             <SelectItem value="gts" className="text-xs">gts/min</SelectItem>
@@ -1221,7 +1222,7 @@ function HydrationFields({
 
         <FieldLabel>Acesso:</FieldLabel>
         <Select value={item.accessType || ''} onValueChange={(v) => onUpdate(item.id, 'accessType', v)}>
-          <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-32"><SelectValue placeholder="—" /></SelectTrigger>
+          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-32"><SelectValue placeholder="—" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="Periférico" className="text-xs">Periférico</SelectItem>
             <SelectItem value="Central" className="text-xs">Central (CVC)</SelectItem>
@@ -1863,33 +1864,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             return (
             <>
               {/* Bulário movido para o header (próximo ao nome da medicação) */}
-              {/* Row 1: Dose + Via + Intervalo (com legendas) */}
-              <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap mt-1">
+              {/* ===== Container integrado: 3 linhas de edição com fundo único ===== */}
+              <div className="relative rounded-md bg-accent/30 dark:bg-accent/20 border border-border/40 border-l-[3px] border-l-primary/50 p-2 space-y-2">
+              {/* Row 1: somente Int. (Intervalo) */}
+              <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Dose:</span>
-                  <Input
-                    value={item.dose}
-                    onChange={(e) => onUpdate(item.id, "dose", e.target.value)}
-                    className="h-7 text-xs bg-white dark:bg-slate-900 border-slate-400 dark:border-slate-500 focus-visible:border-primary focus-visible:ring-1 w-24"
-                    placeholder="ex: 500 mg"
-                  />
-                </div>
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Via:</span>
-                  <Select value={item.route} onValueChange={(v) => {
-                    onUpdate(item.id, "route", v);
-                    if (isIVRoute(v) && !item.infusionMode) {
-                      onUpdate(item.id, "infusionMode", 'BIC');
-                    }
-                  }}>
-                    <SelectTrigger className="h-7 text-xs bg-sky-100/80 dark:bg-sky-950/50 border-sky-400 dark:border-sky-700 text-sky-900 dark:text-sky-100 font-medium w-28"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-72">{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Intervalo:</span>
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Int.:</span>
                   <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
-                    <SelectTrigger className="h-7 text-xs bg-violet-100/80 dark:bg-violet-950/50 border-violet-400 dark:border-violet-700 text-violet-900 dark:text-violet-100 font-medium w-28"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 font-medium w-28 focus:ring-1 focus:ring-primary"><SelectValue /></SelectTrigger>
                     <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
@@ -1907,14 +1889,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       value={item.reconstitutionVolume ?? recon.volumeMl ?? ''}
                       onChange={(e) => onUpdate(item.id, "reconstitutionVolume", e.target.value)}
                       placeholder="mL"
-                      className="h-6 text-[11px] bg-background border-border/40 w-14 text-center"
+                      className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center"
                     />
                     <span className="text-[10px] text-muted-foreground">mL de</span>
                     <Select
                       value={item.reconstitutionSolvent ?? recon.solvent ?? ''}
                       onValueChange={(v) => onUpdate(item.id, "reconstitutionSolvent", v)}
                     >
-                      <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-36"><SelectValue placeholder="solvente" /></SelectTrigger>
+                      <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-36"><SelectValue placeholder="solvente" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="AD" className="text-xs">Água Destilada (AD)</SelectItem>
                         <SelectItem value="SF 0,9%" className="text-xs">SF 0,9%</SelectItem>
@@ -1927,47 +1909,43 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 );
               })()}
 
-              {/* Row 2: Forma, Diluente, Vol Diluente, Acesso */}
+              {/* Row 2: Qtd → Forma → Diluente → Vol. dil → Acesso → Via */}
               <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
-                <div className="flex items-center gap-1 min-w-0">
-                  <span className="text-[10px] text-muted-foreground shrink-0">Forma:</span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Qtd:</span>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="any"
+                    value={item.quantity || ''}
+                    onChange={(e) => {
+                      onUpdate(item.id, "quantity", e.target.value);
+                      const tempItem = { ...item, quantity: e.target.value };
+                      const autoVol = calcVolumeTotal(tempItem);
+                      if (autoVol) {
+                        onUpdate(item.id, "volumeTotal", autoVol);
+                        const autoConc = calcConcentration({ ...tempItem, volumeTotal: autoVol });
+                        if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                      }
+                    }}
+                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-12 text-center focus-visible:ring-1 focus-visible:ring-primary"
+                    placeholder="1"
+                    title={item.quantityUnit ? `Quantidade em ${item.quantityUnit}` : 'Quantidade'}
+                  />
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0 ml-1">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-[120px]"><SelectValue placeholder="forma/unidade" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-[120px] focus:ring-1 focus:ring-primary"><SelectValue placeholder="forma/unidade" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       {QUANTITY_UNITS.map(u => (
                         <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {item.quantityUnit && (
-                    <>
-                      <span className="text-[10px] text-muted-foreground shrink-0 ml-1">Qtd:</span>
-                      <Input
-                        type="number"
-                        inputMode="decimal"
-                        min="0"
-                        step="any"
-                        value={item.quantity || ''}
-                        onChange={(e) => {
-                          onUpdate(item.id, "quantity", e.target.value);
-                          const tempItem = { ...item, quantity: e.target.value };
-                          const autoVol = calcVolumeTotal(tempItem);
-                          if (autoVol) {
-                            onUpdate(item.id, "volumeTotal", autoVol);
-                            const autoConc = calcConcentration({ ...tempItem, volumeTotal: autoVol });
-                            if (autoConc) onUpdate(item.id, "concentration", autoConc);
-                          }
-                        }}
-                        className="h-6 text-[11px] bg-background border-border/40 w-12 text-center"
-                        placeholder="1"
-                        title={`Quantidade em ${item.quantityUnit}`}
-                      />
-                    </>
-                  )}
                 </div>
                 {renderDiluent && <>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Diluente:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Diluente:</span>
                   <Select value={item.diluent || ''} onValueChange={(v) => {
                     onUpdate(item.id, "diluent", v);
                     const tempItem = { ...item, diluent: v };
@@ -1981,7 +1959,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       onUpdate(item.id, "diluentVolume", '');
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-28"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       <SelectItem value="sem_diluente" className="text-xs font-medium">Sem diluente</SelectItem>
                       <SelectItem value="diluente_proprio" className="text-xs font-medium">Diluente próprio</SelectItem>
@@ -1996,8 +1974,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   </Select>
                 </div>
                 {item.diluent && item.diluent !== 'sem_diluente' && (
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Vol. diluente:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Vol. dil:</span>
                   <Input value={item.diluentVolume || ''} onChange={(e) => {
                     onUpdate(item.id, "diluentVolume", e.target.value);
                     const tempItem = { ...item, diluentVolume: e.target.value };
@@ -2006,13 +1984,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     const tempItem2 = { ...tempItem, volumeTotal: autoVol || item.volumeTotal || '' };
                     const autoConc = calcConcentration(tempItem2);
                     if (autoConc) onUpdate(item.id, "concentration", autoConc);
-                  }} className="h-6 text-[11px] bg-background border-border/40 w-16 text-center" placeholder="mL" />
+                  }} className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center focus-visible:ring-1 focus-visible:ring-primary" placeholder="mL" />
                 </div>
                 )}
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Acesso venoso:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Acesso:</span>
                   <Select value={item.accessType || ''} onValueChange={(v) => onUpdate(item.id, "accessType", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-28"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Periférico" className="text-xs">Periférico</SelectItem>
                       <SelectItem value="Central" className="text-xs">Central</SelectItem>
@@ -2024,10 +2002,31 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   </Select>
                 </div>
                 </>}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Via:</span>
+                  <Select value={item.route} onValueChange={(v) => {
+                    onUpdate(item.id, "route", v);
+                    if (isIVRoute(v) && !item.infusionMode) {
+                      onUpdate(item.id, "infusionMode", 'BIC');
+                    }
+                  }}>
+                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 font-semibold focus:ring-1 focus:ring-primary">
+                      <SelectValue>{routeShort(item.route)}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {ROUTES.map((r) => (
+                        <SelectItem key={r} value={r} className="text-xs">
+                          <span className="font-semibold mr-1.5">{routeShort(r)}</span>
+                          <span className="text-muted-foreground">— {r}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {renderInfusion && (
-              <div className="flex items-center gap-2 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
+              <div className="flex items-center gap-2 flex-wrap pt-1.5 border-t border-border/40">
                 <Droplets className="h-3 w-3 text-primary shrink-0" />
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground font-medium">Vol. final:</span>
@@ -2046,7 +2045,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                       }
                     }}
-                    className="h-6 text-[11px] bg-background border-border/40 w-16 text-center font-medium"
+                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center font-medium"
                     placeholder="opcional"
                     title="Volume final da solução (medicamento + diluente). Auto-calculado quando possível."
                   />
@@ -2066,7 +2065,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                       }
                     }}
-                    className="h-6 text-[11px] bg-background border-border/40 w-14 text-center"
+                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center"
                     placeholder="—"
                   />
                   <Select value={item.infusionTimeUnit || 'min'} onValueChange={(v) => {
@@ -2076,7 +2075,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-16">
+                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -2099,7 +2098,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoTime) onUpdate(item.id, "infusionTime", autoTime);
                       }
                     }}
-                    className="h-6 text-[11px] bg-background border-border/40 w-16 text-center font-medium"
+                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center font-medium"
                     placeholder="—"
                   />
                   <Select value={item.infusionMode || 'BIC'} onValueChange={(v) => {
@@ -2110,7 +2109,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       if (autoRate) onUpdate(item.id, "infusionRate", autoRate);
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-24">
+                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-24">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -2125,7 +2124,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   <Input
                     value={item.concentration || ''}
                     onChange={(e) => onUpdate(item.id, "concentration", e.target.value)}
-                    className="h-6 text-[11px] bg-background border-border/40 w-24 text-center"
+                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-24 text-center"
                     placeholder="auto"
                   />
                 </div>
@@ -2139,6 +2138,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 )}
               </div>
               )}
+              </div>
+              {/* ===== Fim do container integrado ===== */}
 
               {/* A.1 — Chip de concentração final calculada (somente expandido) */}
               {(() => {

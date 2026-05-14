@@ -64,6 +64,27 @@ export const ROUTES: string[] = [
   'Gastrostomia', 'Jejunostomia',
 ];
 
+// Siglas hospitalares amplamente conhecidas (display-only — values preservados)
+export const ROUTE_SHORT: Record<string, string> = {
+  'Oral': 'VO',
+  'Intravenosa': 'EV',
+  'Intramuscular': 'IM',
+  'Subcutânea': 'SC',
+  'Retal': 'VR',
+  'Sublingual': 'SL',
+  'Tópica': 'TOP',
+  'Inalatória': 'INAL',
+  'Nasal': 'NAS',
+  'Oftálmica': 'OFT',
+  'Otológica': 'OT',
+  'Transdérmica': 'TD',
+  'Enteral (SNE/SNG)': 'SNE',
+  'Sonda orogástrica': 'SOG',
+  'Gastrostomia': 'GTT',
+  'Jejunostomia': 'JJT',
+};
+export const routeShort = (r?: string): string => (r ? (ROUTE_SHORT[r] || r) : '');
+
 export const POSOLOGIES: string[] = [
   '1x/dia', '2x/dia', '3x/dia', '4x/dia',
   '6/6h', '8/8h', '12/12h', '24/24h', '4/4h', '2/2h',
