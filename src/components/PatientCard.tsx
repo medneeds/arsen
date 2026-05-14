@@ -86,6 +86,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { BedReleasePreAdmissionDialog } from "./BedReleasePreAdmissionDialog";
+import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
 
 // Helper function to format date input as DD/MM/YYYY
 const formatDateInput = (value: string): string => {
@@ -1396,7 +1397,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
         <Card 
           data-patient-id={patient.id}
           className={cn(
-            "overflow-hidden transition-all duration-200 hover:shadow-lg print:shadow-none print:break-inside-avoid print:mb-0 print:w-full", 
+            "relative overflow-hidden transition-all duration-200 hover:shadow-lg print:shadow-none print:break-inside-avoid print:mb-0 print:w-full", 
             config.color,
             isSelected && "ring-2 ring-primary",
             isDeleting && "animate-[slide-out-left_0.3s_ease-out_forwards]",
@@ -1405,6 +1406,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             patient.admissionStatus === 'obito' && "ring-1 ring-slate-500/50 bg-slate-100/50 dark:bg-slate-900/30 grayscale-[35%] opacity-90"
           )}
         >
+        <DischargeStatusRibbon status={patient.admissionStatus} />
         <div className="p-3 md:p-2 print:p-1.5">
           <div className="flex items-start justify-between gap-3 md:gap-2 print:gap-1">
             {selectionMode && onToggleSelection && (

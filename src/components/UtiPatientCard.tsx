@@ -1,4 +1,5 @@
 import { Patient } from "@/types/patient";
+import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
 import { calcDIH } from "@/lib/dihCalc";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -992,9 +993,15 @@ export function UtiPatientCard({
   return (
     <>
       <div 
-        className={cn("border rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-200", colors.card)}
+        className={cn(
+          "relative border rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-200",
+          colors.card,
+          patient.admissionStatus === 'alta_dada' && "ring-1 ring-emerald-400/40 bg-emerald-50/30 dark:bg-emerald-950/10 grayscale-[15%] opacity-95",
+          patient.admissionStatus === 'obito' && "ring-1 ring-slate-500/50 bg-slate-100/50 dark:bg-slate-900/30 grayscale-[35%] opacity-90",
+        )}
         data-patient-id={patient.id}
       >
+        <DischargeStatusRibbon status={patient.admissionStatus} />
         {/* VACANT BED VIEW */}
         {patient.isVacant ? (
           <div className="flex items-center justify-between p-2 md:p-3">
