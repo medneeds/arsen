@@ -7918,6 +7918,15 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     item.dose && item.dose !== '-' ? item.dose : null,
                     item.route && item.route !== '-' ? item.route : null,
                     item.posology && item.posology !== '-' ? item.posology : null,
+                    // Preparo IV inline (mesma linha do intervalo) — só quando não é insulina/inalação
+                    ...(hasIvPreparo && !insulinDesc && !isInhalation ? [
+                      item.reconstitutionVolume && item.reconstitutionSolvent ? `recon. ${item.reconstitutionVolume}mL ${item.reconstitutionSolvent}` : null,
+                      item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'sem diluição' : null,
+                      item.accessType && item.accessType !== '-' ? item.accessType : null,
+                      item.volumeTotal ? `vol ${item.volumeTotal}mL` : null,
+                      item.infusionTime ? `correr ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
+                      item.infusionRate ? `${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
+                    ] : []),
                   ].filter(Boolean).join(' · ')}
                   {item.flags.length > 0 && (
                     <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#334155', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
