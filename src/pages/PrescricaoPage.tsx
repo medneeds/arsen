@@ -1662,14 +1662,17 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           </span>
           {compactParts.length > 0 && (
             <span className="text-[10px] text-muted-foreground truncate">
-              · {compactParts.join(' · ')}
+              <span className="text-muted-foreground/50 mx-1">|</span>
+              {compactParts.join(' | ')}
             </span>
           )}
           {routePosology.length > 0 && (
             <span className="text-[10px] font-medium text-foreground/70 shrink-0">
-              · {routePosology.join(' · ')}
+              <span className="text-muted-foreground/50 mx-1">|</span>
+              {routePosology.join(' | ')}
             </span>
           )}
+          <MedicationFlagChips name={item.name} className="shrink-0" size="xs" />
           {item.isExtra && (
             <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-muted/50 text-muted-foreground border-border/50">EXTRA</Badge>
           )}
