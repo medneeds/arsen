@@ -1655,13 +1655,50 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     const compactParts: string[] = [];
     const isHydration = item.category === 'hydration';
     const isInhalation = item.category === 'inhalation';
+    const isNutrition = item.category === 'nutrition';
 
     if (isInhalation) {
       const phrase = assembleInhalationInstruction(item as any);
       if (phrase) compactParts.push(phrase);
-    } else
+    } else if (isNutrition) {
+      const sub: NonNullable<PrescriptionItem['nutritionType']> =
+        item.nutritionType ?? detectNutritionType(item.name) ?? 'diet_enteral';
+      const subLabel: Record<NonNullable<PrescriptionItem['nutritionType']>, string> = {
+        diet_enteral: 'Enteral',
+        diet_oral: 'Oral',
+        water: 'Água',
+        npt: 'NPT',
+        zero: 'Jejum',
+      };
+      compactParts.push(subLabel[sub]);
 
-    if (isHydration) {
+      if (sub === 'diet_enteral' || sub === 'diet_oral') {
+        if (item.nutVolDay) compactParts.push(`${item.nutVolDay} mL/dia`);
+        if (sub === 'diet_enteral' && item.infusionRate) compactParts.push(`${item.infusionRate} mL/h`);
+        if (item.nutMode) compactParts.push(item.nutMode);
+        if (item.nutFraction) compactParts.push(item.nutFraction);
+        if (item.nutNightPause) compactParts.push(`pausa ${item.nutNightPause}`);
+        if (item.nutBedHead) compactParts.push(`cab ${item.nutBedHead}`);
+        if (sub === 'diet_oral' && item.nutConsistency) {
+          // Mostra só o nome da consistência, sem o sufixo IDDSI
+          compactParts.push(item.nutConsistency.replace(/\s*\(IDDSI[^)]*\)/i, ''));
+        }
+      } else if (sub === 'water') {
+        if (item.nutWaterVolPerAdmin) compactParts.push(`${item.nutWaterVolPerAdmin}/adm`);
+        if (item.nutWaterFreq) compactParts.push(item.nutWaterFreq);
+        if (item.nutVolDay) compactParts.push(`meta ${item.nutVolDay} mL/24h`);
+      } else if (sub === 'npt') {
+        if (item.volumeTotal) compactParts.push(`vol ${item.volumeTotal} mL`);
+        if (item.infusionRate) compactParts.push(`${item.infusionRate} mL/h`);
+        if (item.infusionTime) {
+          const u = item.infusionTimeUnit === 'h' ? 'h' : 'min';
+          compactParts.push(`correr em ${item.infusionTime}${u}`);
+        }
+        if (item.nutAccess) compactParts.push(item.nutAccess);
+      } else if (sub === 'zero') {
+        if (item.nutZeroReason) compactParts.push(item.nutZeroReason);
+      }
+    } else if (isHydration) {
       // Frase única, em corrida, orientada à enfermagem
       const phases = intervalToPhases(item.posology);
       const interval = item.posology || '24/24h';
@@ -1702,8 +1739,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     }
     // Route + posology inline (skip posology for hydration since interval já está na frase)
     const routePosology: string[] = [];
-    if (item.route && item.route !== '-' && !isInhalation) routePosology.push(item.route);
-    if (!isHydration && !isInhalation && item.posology && item.posology !== '-') routePosology.push(item.posology);
+    if (item.route && item.route !== '-' && !isInhalation && !isNutrition) routePosology.push(item.route);
+    if (!isHydration && !isInhalation && !isNutrition && item.posology && item.posology !== '-') routePosology.push(item.posology);
 
 
     return (
