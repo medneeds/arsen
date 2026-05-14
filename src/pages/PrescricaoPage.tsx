@@ -2121,6 +2121,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 )}
               </div>
               )}
+              </div>
+              {/* ===== Fim do container integrado ===== */}
 
               {/* A.1 — Chip de concentração final calculada (somente expandido) */}
               {(() => {
