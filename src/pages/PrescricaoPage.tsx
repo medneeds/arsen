@@ -4733,6 +4733,18 @@ const PrescricaoPage = () => {
     }));
   }, [isItemEditLocked]);
 
+  const updateInsulinPlan = useCallback((id: string, plan: InsulinPlan) => {
+    setItems((prev) => prev.map((item) => {
+      if (item.id !== id) return item;
+      if (isItemEditLocked(item)) {
+        toast.error("Item validado", { description: "Suspenda o item para alterar o esquema de insulinoterapia." });
+        return item;
+      }
+      const desc = describeInsulinPlan(plan);
+      return { ...item, insulinPlan: plan, instructions: [desc.headline, ...desc.lines].join(' | ') };
+    }));
+  }, [isItemEditLocked]);
+
   const removeItem = useCallback((id: string) => {
     setItems((prev) => {
       const target = prev.find(i => i.id === id);
