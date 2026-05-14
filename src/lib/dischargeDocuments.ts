@@ -9,6 +9,7 @@ import {
   prepareLogo,
   type NormaZeroSignature,
 } from "@/lib/printNormaZero";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 export type DischargeDocType = "alta_hospitalar" | "alta_pedido" | "obito";
 
