@@ -3518,7 +3518,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     </p>
 
                     {/* LIBERAR LEITO (PRÉ-ADMISSÃO) — só quando paciente ainda não está admitido */}
-                    {patient.admissionStatus !== 'admitido' && onReleasePreAdmissionBed && role !== 'visitante' && role !== 'porta' && role !== 'farmacia' && (
+                    {patient.admissionStatus !== 'admitido' && onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
