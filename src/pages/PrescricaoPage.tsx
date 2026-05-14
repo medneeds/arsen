@@ -5945,6 +5945,7 @@ const PrescricaoPage = () => {
                           onSelect={addItem}
                           placeholder={`Buscar ${config.label.toLowerCase()}...`}
                           getFavoriteCount={getFavoriteCount}
+                          category={cat}
                           onAssistantClick={
                             cat === 'nutrition' ? () => setNutritionWizardOpen(true) :
                             cat === 'hydration' ? () => setHydrationWizardOpen(true) :
