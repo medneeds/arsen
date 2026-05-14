@@ -3,6 +3,7 @@ import { BedDouble, AlertTriangle, Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CidSearchInput } from "@/components/CidSearchInput";
+import { CopyNameButton } from "@/components/CopyNameButton";
 import { cn } from "@/lib/utils";
 
 interface CompactPatientHeaderProps {
