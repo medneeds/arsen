@@ -3632,6 +3632,10 @@ const PrescricaoPage = () => {
   const [pendingAntimicrobialMed, setPendingAntimicrobialMed] = useState<MedicationEntry | null>(null);
   // Modo de nova ATB vindo do AtmStatusDialog ('acrescimo' | 'troca' | 'inicial' | null)
   const [pendingAtbMode, setPendingAtbMode] = useState<'acrescimo' | 'troca' | 'inicial' | null>(null);
+  // Flag transitória: true entre AtmStatusDialog → AntimicrobialGuideDialog,
+  // para evitar que o cleanup do AtmStatusDialog limpe o pendingAntimicrobialMed
+  // antes da guia abrir (quebraria o seed do med vindo da busca).
+  const transitioningToAtmGuideRef = useRef(false);
   const [highAlertGuideOpen, setHighAlertGuideOpen] = useState(false);
   // Insulin therapy assistant
   const [insulinDialogOpen, setInsulinDialogOpen] = useState(false);
