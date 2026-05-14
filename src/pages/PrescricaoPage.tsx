@@ -1818,7 +1818,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             return (
             <>
               {evidence && (
-                <div className="flex items-center justify-between gap-2 px-2 py-1 rounded bg-sky-50 border border-sky-200/60 dark:bg-sky-950/20 dark:border-sky-800/40">
+                <div className="flex items-center justify-between gap-2 px-2 py-1 mb-2 rounded bg-sky-50 border border-sky-200/60 dark:bg-sky-950/20 dark:border-sky-800/40">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span className="text-[10px] text-sky-700 dark:text-sky-300 font-medium truncate">
@@ -1850,32 +1850,32 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </div>
               )}
               {/* Row 1: Dose + Via + Intervalo (com legendas) */}
-              <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
-                <div className="flex items-center gap-1 min-w-0">
-                  <span className="text-[10px] text-muted-foreground shrink-0">Dose:</span>
+              <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap mt-1">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Dose:</span>
                   <Input
                     value={item.dose}
                     onChange={(e) => onUpdate(item.id, "dose", e.target.value)}
-                    className="h-7 text-xs bg-background border-slate-300 dark:border-slate-600 focus-visible:border-primary w-24"
+                    className="h-7 text-xs bg-white dark:bg-slate-900 border-slate-400 dark:border-slate-500 focus-visible:border-primary focus-visible:ring-1 w-24"
                     placeholder="ex: 500 mg"
                   />
                 </div>
-                <div className="flex items-center gap-1 min-w-0">
-                  <span className="text-[10px] text-muted-foreground shrink-0">Via:</span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Via:</span>
                   <Select value={item.route} onValueChange={(v) => {
                     onUpdate(item.id, "route", v);
                     if (isIVRoute(v) && !item.infusionMode) {
                       onUpdate(item.id, "infusionMode", 'BIC');
                     }
                   }}>
-                    <SelectTrigger className="h-7 text-xs bg-sky-50/60 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800 w-28"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs bg-sky-100/80 dark:bg-sky-950/50 border-sky-400 dark:border-sky-700 text-sky-900 dark:text-sky-100 font-medium w-28"><SelectValue /></SelectTrigger>
                     <SelectContent className="max-h-72">{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-center gap-1 min-w-0">
-                  <span className="text-[10px] text-muted-foreground shrink-0">Intervalo:</span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Intervalo:</span>
                   <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
-                    <SelectTrigger className="h-7 text-xs bg-violet-50/60 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800 w-28"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs bg-violet-100/80 dark:bg-violet-950/50 border-violet-400 dark:border-violet-700 text-violet-900 dark:text-violet-100 font-medium w-28"><SelectValue /></SelectTrigger>
                     <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
