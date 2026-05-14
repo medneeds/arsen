@@ -228,6 +228,8 @@ interface PrescriptionItem {
   // Reconstituição (pó liofilizado) — Sprint A
   reconstitutionSolvent?: string;   // Ex.: 'AD', 'SF 0,9%', 'próprio diluente'
   reconstitutionVolume?: string;    // mL adicionados ao frasco-ampola
+  // Orientações detalhadas para enfermagem (opcional, sai como linha discreta no PDF)
+  nursingNotes?: string;
 }
 
 // Detect nutrition subtype from wizard-generated item name
