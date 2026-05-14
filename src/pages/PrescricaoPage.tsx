@@ -5503,8 +5503,8 @@ const PrescricaoPage = () => {
       return;
     }
     setPrintPrescription(true);
-    setPrintGuideAtm(hasActiveAtb);
-    setPrintGuidePsy(hasActivePsy);
+    setPrintGuideAtm(false);
+    setPrintGuidePsy(false);
     setPrintGuidesOpen(true);
   };
 
