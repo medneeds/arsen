@@ -8,7 +8,14 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { toRichHtml, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
+
+/** Renderiza HTML rico (sanitizado) preservando formatação dos campos editáveis. */
+const renderRich = (value: string | null | undefined): string => {
+  const html = toRichHtml(value);
+  return richHtmlToPlainText(html) ? html : "<em>—</em>";
+};
 
 const EXAM_LABELS: { key: keyof EvolutionRecord["physical_exam"]; label: string }[] = [
   { key: "general", label: "Geral" },
