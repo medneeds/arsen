@@ -456,6 +456,8 @@ export function ReplacementWizard({
   const [notes, setNotes] = useState<string>("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const queue = useWizardItemQueue<RepSnapshot>();
+
   const suggestions = useMemo(() => buildSuggestions(disorder, severity, value), [disorder, severity, value]);
 
   // Auto-seleciona a primeira sugestão sempre que muda distúrbio/gravidade
@@ -465,21 +467,77 @@ export function ReplacementWizard({
 
   const selected = suggestions.find(s => s.id === selectedId) ?? suggestions[0];
 
-  const entries = useMemo<MedicationEntry[]>(() => {
-    if (!selected) return [];
-    return selected.items.map((r, i) => ({
-      id: `rep-${disorder}-${selected.id}-${Date.now()}-${i}`,
+  // Carrega snapshot ao iniciar edição
+  useEffect(() => {
+    if (!queue.editingUid) return;
+    const it = queue.items.find(x => x.uid === queue.editingUid);
+    if (!it) return;
+    const s = it.snapshot;
+    setDisorder(s.disorder); setSeverity(s.severity);
+    setValue(s.value); setNotes(s.notes); setSelectedId(s.selectedId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue.editingUid]);
+
+  const snapshotToEntries = (s: RepSnapshot): MedicationEntry[] => {
+    const sug = buildSuggestions(s.disorder, s.severity, s.value).find(x => x.id === s.selectedId);
+    if (!sug) return [];
+    return sug.items.map((r, i) => ({
+      id: `rep-${s.disorder}-${sug.id}-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 5)}`,
       name: r.name,
       presentation: r.presentation,
       defaultDose: r.dose,
       defaultRoute: r.route,
       defaultPosology: r.posology,
       defaultSchedule: "ACM",
-      instructions: [r.instructions, notes].filter(Boolean).join(" · "),
+      instructions: [r.instructions, s.notes].filter(Boolean).join(" · "),
       category: "replacement" as const,
-      highAlert: ["hiperK", "hipoNa", "hipoK"].includes(disorder),
+      highAlert: ["hiperK", "hipoNa", "hipoK"].includes(s.disorder),
     }));
-  }, [selected, disorder, notes]);
+  };
+
+  const currentSnapshot: RepSnapshot | null = useMemo(() => {
+    if (!selected) return null;
+    return { disorder, severity, value, notes, selectedId: selected.id };
+  }, [disorder, severity, value, notes, selected]);
+
+  const entries = useMemo<MedicationEntry[]>(() => {
+    if (!currentSnapshot) return [];
+    return snapshotToEntries(currentSnapshot);
+  }, [currentSnapshot]);
+
+  const resetForm = () => {
+    setNotes("");
+    setValue("");
+  };
+
+  const handleAddToQueue = () => {
+    if (!currentSnapshot || !selected) return;
+    const label = `${DISORDERS.find(d => d.key === disorder)?.label} (${severity}) — ${selected.title}`;
+    const sublabel = selected.items.map(i => i.name).join(" + ");
+    queue.push(currentSnapshot, label, sublabel);
+    resetForm();
+  };
+
+  const handleSaveEditing = () => {
+    if (!queue.editingUid || !currentSnapshot || !selected) return;
+    const label = `${DISORDERS.find(d => d.key === disorder)?.label} (${severity}) — ${selected.title}`;
+    const sublabel = selected.items.map(i => i.name).join(" + ");
+    queue.update(queue.editingUid, currentSnapshot, label, sublabel);
+    queue.stopEditing();
+    resetForm();
+  };
+
+  const handleConfirmAll = () => {
+    const fromQueue = queue.items.flatMap(it => snapshotToEntries(it.snapshot));
+    const finalEntries = queue.items.length === 0 ? entries : fromQueue;
+    if (finalEntries.length === 0) return;
+    onAdd(finalEntries);
+    queue.clear();
+    resetForm();
+    onOpenChange(false);
+  };
+
+  const totalQueueEntries = queue.items.reduce((acc, it) => acc + snapshotToEntries(it.snapshot).length, 0);
 
   const Chip = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
     <button type="button" onClick={onClick} className={cn(
