@@ -2042,7 +2042,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             <>
               {/* Bulário movido para o header (próximo ao nome da medicação) */}
               {/* ===== Container integrado: 3 linhas de edição com fundo único ===== */}
-              <div className={cn(getCategoryContainerClass(item.category), getCategoryFieldAccent(item.category).descendantOverrides, "space-y-2")}>
+              <div className={cn(getCategoryContainerClass(item.category), getCategoryFieldAccent(item.category).descendantOverrides, "space-y-2", item.category === 'antimicrobial' && "atb-themed")}>
               {/* ATB Header — campos regulatórios editáveis inline (início, duração, sítio) */}
               {item.category === 'antimicrobial' && (() => {
                 const dayLine = buildAtbDayLine(item);
@@ -2113,7 +2113,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 if (!recon.required) return null;
                 return (
                   <div className="flex items-center gap-1.5 flex-wrap px-2 py-1 rounded-md bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40">
-                    <span className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold uppercase tracking-wide">Reconstituir</span>
+                    {item.category === 'antimicrobial' && <span className="atb-subchip">Reconstituir</span>}
+                    {item.category !== 'antimicrobial' && <span className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold uppercase tracking-wide">Reconstituir</span>}
                     <span className="text-[10px] text-muted-foreground">com</span>
                     <Input
                       value={item.reconstitutionVolume ?? recon.volumeMl ?? ''}
@@ -2256,7 +2257,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
 
               {renderInfusion && (
               <div className="flex items-center gap-2 flex-wrap pt-1.5 border-t border-border/40">
-                <Droplets className="h-3 w-3 text-primary shrink-0" />
+                {item.category === 'antimicrobial' && <span className="atb-subchip">Infusão EV</span>}
+                {item.category !== 'antimicrobial' && <Droplets className="h-3 w-3 text-primary shrink-0" />}
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground font-medium">Vol. final:</span>
                   <Input
@@ -2376,9 +2378,16 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 if (!conc) return null;
                 return (
                   <div className="flex items-center gap-1.5 px-2.5">
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/50 bg-muted/40 text-[10px] font-medium text-muted-foreground">
-                      Conc. final: <span className="text-foreground font-semibold">{conc}</span>
-                    </span>
+                    {item.category === 'antimicrobial' ? (
+                      <span className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded border border-violet-200/70 dark:border-violet-800/60 bg-violet-50/70 dark:bg-violet-950/30 text-[10px] font-medium text-violet-800 dark:text-violet-200">
+                        <span className="atb-subchip">Concentração</span>
+                        <span className="font-semibold">{conc}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/50 bg-muted/40 text-[10px] font-medium text-muted-foreground">
+                        Conc. final: <span className="text-foreground font-semibold">{conc}</span>
+                      </span>
+                    )}
                   </div>
                 );
               })()}

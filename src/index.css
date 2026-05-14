@@ -646,3 +646,59 @@ body.gestor-readonly main::before {
 /* Hide scrollbar but keep scrolling — used by horizontal breadcrumb on mobile */
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ============================================================
+   ATB THEMED — escopa toda a UI interna do item antimicrobiano
+   para a paleta lilás (violet), sobrescrevendo cinza/amber padrão
+   ============================================================ */
+.atb-themed .text-slate-600,
+.atb-themed .text-slate-700 { color: hsl(263 70% 42%); }
+.dark .atb-themed .text-slate-400,
+.dark .atb-themed .text-slate-300 { color: hsl(263 80% 80%); }
+
+.atb-themed input.border-slate-300,
+.atb-themed button.border-slate-300,
+.atb-themed [role="combobox"].border-slate-300 { border-color: hsl(263 80% 88%); }
+.dark .atb-themed input.dark\:border-slate-600,
+.dark .atb-themed button.dark\:border-slate-600,
+.dark .atb-themed [role="combobox"].dark\:border-slate-600 { border-color: hsl(263 30% 38%); }
+
+.atb-themed input:focus-visible,
+.atb-themed button:focus-visible,
+.atb-themed [role="combobox"]:focus-visible {
+  --tw-ring-color: hsl(263 80% 65% / 0.5);
+  border-color: hsl(263 75% 60%);
+}
+
+/* Reconstituir amber → lilás dentro do ATB */
+.atb-themed .bg-amber-50\/40 { background-color: hsl(263 90% 97% / 0.7); }
+.dark .atb-themed .dark\:bg-amber-950\/20 { background-color: hsl(263 60% 12% / 0.35); }
+.atb-themed .border-amber-200\/50 { border-color: hsl(263 70% 85% / 0.7); }
+.dark .atb-themed .dark\:border-amber-900\/40 { border-color: hsl(263 50% 30% / 0.5); }
+.atb-themed .text-amber-700 { color: hsl(263 75% 42%); }
+.atb-themed .text-amber-700\/80 { color: hsl(263 75% 42% / 0.85); }
+.dark .atb-themed .dark\:text-amber-300 { color: hsl(263 80% 80%); }
+.dark .atb-themed .dark\:text-amber-300\/80 { color: hsl(263 80% 80% / 0.85); }
+
+/* Borda divisora interna (ex.: pt-1.5 border-t border-border/40) — discreta lilás */
+.atb-themed .border-border\/40 { border-color: hsl(263 50% 75% / 0.35); }
+
+/* Ícone Droplets do bloco Infusão EV em lilás */
+.atb-themed .text-primary { color: hsl(263 75% 55%); }
+
+/* Chip identitário dos sub-blocos */
+.atb-subchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 1rem;
+  padding: 0 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: hsl(263 75% 55%);
+  color: white;
+  box-shadow: 0 1px 2px hsl(263 75% 55% / 0.25);
+}
