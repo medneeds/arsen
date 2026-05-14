@@ -418,7 +418,7 @@ const RequisicaoUnificadaPage = () => {
         patient_bed: formPatientBed.trim() || null,
         patient_sector: formPatientSector.trim() || null,
         items: formSelectedItems.map(name => ({ name })),
-        clinical_indication: formIndication.trim() || null,
+        clinical_indication: (activeCategory === "parecer" ? sanitizeRichHtml(formIndication) : formIndication.trim()) || null,
         priority: formPriority,
         notes: notesContent || null,
         requested_by: user.id,
