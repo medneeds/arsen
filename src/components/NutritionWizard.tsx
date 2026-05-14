@@ -16,6 +16,15 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MedicationEntry } from "@/data/medicationsDatabase";
+import {
+  WaterOfferingFields,
+  DEFAULT_WATER_STATE,
+  WATER_TYPES,
+  WATER_ROUTES,
+  buildWaterEntryName,
+  buildWaterInstruction,
+  type WaterOfferingState,
+} from "@/components/shared/WaterOfferingFields";
 
 /**
  * Nutrition Wizard — Terapia Nutricional Hospitalar
