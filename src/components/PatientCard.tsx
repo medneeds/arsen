@@ -85,6 +85,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { BedReleasePreAdmissionDialog } from "./BedReleasePreAdmissionDialog";
 
 // Helper function to format date input as DD/MM/YYYY
 const formatDateInput = (value: string): string => {
