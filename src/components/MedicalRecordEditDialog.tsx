@@ -953,6 +953,87 @@ export function MedicalRecordEditDialog({
         ]}
         finalNote="Use APENAS para erros administrativos excepcionais (cadastro duplicado, paciente inexistente, dados de teste). Para alta clínica use o fluxo de Saída."
       />
+
+      {/* ============ ETAPA INTERMEDIÁRIA: REVISAR DADOS RECONHECIDOS ============ */}
+      <Dialog open={pisReviewOpen} onOpenChange={(v) => { if (!v) { setPisReviewOpen(false); setPisExtracted(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              Revisar dados reconhecidos do PIS
+            </DialogTitle>
+            <DialogDescription className="text-xs leading-relaxed">
+              A IA leu os dados {pisSource === "paste" ? "colados" : "do anexo"} e identificou os campos abaixo.
+              <strong> Marque apenas os que deseja aplicar</strong> ao cadastro. Em seguida você ainda preencherá o motivo
+              e confirmará o salvamento — nada é gravado neste passo.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="flex-1 pr-2 max-h-[60vh]">
+            <div className="space-y-1.5 py-2">
+              {Object.entries(PIS_FIELD_MAP).map(([pisKey, regKey]) => {
+                const newVal = pisExtracted?.[pisKey];
+                const newStr = newVal === null || newVal === undefined ? "" : String(newVal).trim();
+                const oldStr = String((registry as any)?.[regKey] ?? "").trim();
+                const same = newStr === oldStr;
+                const hasNew = newStr.length > 0;
+                return (
+                  <div
+                    key={pisKey}
+                    className={`flex items-start gap-2 p-2 rounded border text-[11px] ${
+                      !hasNew ? "bg-muted/30 opacity-60" :
+                      same ? "bg-muted/40 border-muted" :
+                      "bg-blue-500/5 border-blue-500/30"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={!!pisAccepted[pisKey]}
+                      disabled={!hasNew}
+                      onCheckedChange={(v) => setPisAccepted((prev) => ({ ...prev, [pisKey]: !!v }))}
+                      className="mt-0.5"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold flex items-center gap-1.5">
+                        {REG_FIELD_LABEL[regKey as string] || pisKey}
+                        {!hasNew && <Badge variant="outline" className="text-[9px]">Não reconhecido</Badge>}
+                        {hasNew && same && <Badge variant="outline" className="text-[9px]">Já está igual</Badge>}
+                        {hasNew && !same && oldStr === "" && <Badge variant="secondary" className="text-[9px] bg-emerald-500/15 text-emerald-700">Novo</Badge>}
+                        {hasNew && !same && oldStr !== "" && <Badge variant="secondary" className="text-[9px] bg-amber-500/15 text-amber-700">Será substituído</Badge>}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mt-1">
+                        <div>
+                          <div className="text-[9px] uppercase text-muted-foreground">Atual</div>
+                          <div className="truncate">{oldStr || <span className="italic text-muted-foreground">vazio</span>}</div>
+                        </div>
+                        <div>
+                          <div className="text-[9px] uppercase text-muted-foreground">Reconhecido</div>
+                          <div className="truncate font-medium">{newStr || <span className="italic text-muted-foreground">—</span>}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+          <div className="border-t pt-3 space-y-2">
+            <div className="text-[10px] text-muted-foreground p-2 rounded bg-muted/40 leading-relaxed">
+              <strong>O que acontece a seguir?</strong> Os campos marcados serão preenchidos no formulário (em destaque azul).
+              Você ainda precisa informar o <strong>motivo</strong> e clicar em <strong>"Revisar e salvar ficha"</strong> para gravar
+              as alterações no banco — cada campo será registrado no histórico com origem <code className="text-[9px]">pis_import</code>.
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => { setPisReviewOpen(false); setPisExtracted(null); }} className="gap-1.5">
+                <X className="h-3.5 w-3.5" /> Cancelar reconhecimento
+              </Button>
+              <Button size="sm" onClick={applyPisAccepted}
+                disabled={!Object.values(pisAccepted).some(Boolean)}
+                className="gap-1.5 bg-blue-600 hover:bg-blue-700">
+                <Check className="h-3.5 w-3.5" /> Aplicar selecionados ({Object.values(pisAccepted).filter(Boolean).length})
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
