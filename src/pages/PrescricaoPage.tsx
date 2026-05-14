@@ -4222,7 +4222,7 @@ const PrescricaoPage = () => {
     const newItems: PrescriptionItem[] = confirmedEntries.map(entry => {
       const matchedMed = antimicrobialOptions.find(m => m.name === entry.medication);
       const base: PrescriptionItem = matchedMed
-        ? { ...createItem(matchedMed), dose: entry.dose || createItem(matchedMed).dose, route: entry.route || createItem(matchedMed).route, posology: entry.posology || createItem(matchedMed).posology }
+        ? { ...createItem(matchedMed), instructions: '', dose: entry.dose || createItem(matchedMed).dose, route: entry.route || createItem(matchedMed).route, posology: entry.posology || createItem(matchedMed).posology }
         : {
             id: crypto.randomUUID(),
             name: entry.medication,
