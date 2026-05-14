@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, MapPin, ArrowRight, Building2, UserCog, Briefcase, ArrowLeft, Navigation } from "lucide-react";
+import { Shield, MapPin, ArrowRight, Building2, UserCog, Briefcase, ArrowLeft, Navigation, Lock } from "lucide-react";
+import { isDepartmentLocked, LOCKED_TOOLTIP } from "@/config/lockedSectors";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
