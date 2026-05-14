@@ -1397,7 +1397,7 @@ function HydrationFields({
           </SelectContent>
         </Select>
 
-        <span className="ml-auto text-[10px] font-medium text-blue-700 dark:text-blue-300">
+        <span className="basis-full text-right text-[10px] font-medium text-blue-700 dark:text-blue-300 mt-1">
           Total: {volTotal24}mL / 24h
         </span>
       </div>
