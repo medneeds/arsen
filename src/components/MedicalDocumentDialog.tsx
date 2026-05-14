@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { usePatientLive } from "@/hooks/usePatientLive";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 
@@ -88,6 +89,7 @@ export function MedicalDocumentDialog({
   };
 
   const isRx = kind === "receituario" || kind === "receituario_especial";
+  const displaySector = getSectorDisplayLabel(patientSector);
 
   const startEdit = (k: DocKind) => {
     setKind(k);
@@ -103,7 +105,7 @@ export function MedicalDocumentDialog({
       <div style="border:1px solid #cbd5e1;border-radius:4pt;padding:6pt 10pt;margin-bottom:10pt;font-size:9pt;background:#f8fafc">
         <div><b>PACIENTE:</b> ${esc((patientName || "").toUpperCase())}</div>
         ${patient?.age ? `<div><b>IDADE:</b> ${esc(String(patient.age))}</div>` : ""}
-        ${patientBed ? `<div><b>LEITO:</b> ${esc(patientBed)} ${patientSector ? `• ${esc(patientSector)}` : ""}</div>` : ""}
+        ${patientBed ? `<div><b>LEITO:</b> ${esc(patientBed)} ${displaySector ? `• ${esc(displaySector)}` : ""}</div>` : ""}
         ${includeCid && cidPrimary ? `<div><b>CID-10:</b> ${esc(cidPrimary)}</div>` : ""}
       </div>`;
 
@@ -154,7 +156,7 @@ export function MedicalDocumentDialog({
     const html = buildNormaZeroDocument({
       title: tpl.label,
       subtitle,
-      sectorLabel: patientSector ? `Assistência — ${patientSector}` : "Assistência Médica",
+      sectorLabel: displaySector ? `Assistência — ${displaySector}` : "Assistência Médica",
       hospitalName,
       docCodePrefix: tpl.prefix,
       bodyHtml,
@@ -219,7 +221,7 @@ export function MedicalDocumentDialog({
               <div className="rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground space-y-0.5">
                 <div><b className="text-foreground">PACIENTE:</b> {(patientName || "").toUpperCase()}</div>
                 {patient?.age && <div><b className="text-foreground">IDADE:</b> {patient.age}</div>}
-                {patientBed && <div><b className="text-foreground">LEITO:</b> {patientBed} {patientSector && `• ${patientSector}`}</div>}
+                {patientBed && <div><b className="text-foreground">LEITO:</b> {patientBed} {displaySector && `• ${displaySector}`}</div>}
                 {cidPrimary && (
                   <div className="flex items-center gap-2">
                     <b className="text-foreground">CID-10:</b> {cidPrimary}

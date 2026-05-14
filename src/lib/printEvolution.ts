@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import { toRichHtml, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
 
 /** Renderiza HTML rico (sanitizado) preservando formatação dos campos editáveis. */
@@ -68,7 +69,7 @@ export const printEvolution = async (
         </tr>
         <tr>
           <th>Setor</th>
-          <td>${escape(ctx?.patientSector || evo.patient_sector || "—")}</td>
+          <td>${escape(getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "—")}</td>
           <th>Prontuário</th>
           <td>${escape(ctx?.patientRecord || "—")}</td>
         </tr>
@@ -148,7 +149,7 @@ export const printEvolution = async (
   const html = buildNormaZeroDocument({
     title: intercurrence ? "Intercorrência Clínica" : "Evolução Clínica",
     subtitle: intercurrence ? "Registro de intercorrência" : "Registro de evolução",
-    sectorLabel: ctx?.patientSector || evo.patient_sector || "Assistência Médica",
+    sectorLabel: getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "Assistência Médica",
     docCodePrefix: intercurrence ? "INTC" : "EVOL",
     bodyHtml,
     logoDataUrl: logo,

@@ -5,6 +5,7 @@
  */
 import { ROUND_SECTIONS, STATUS_OPTIONS, type RoundStatus } from "@/data/roundChecklistSchema";
 import { openPrintWindow } from "@/lib/printNormaZero";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { format } from "date-fns";
 
 export interface RoundPrintItem {
@@ -81,7 +82,7 @@ function renderPage(it: RoundPrintItem, blank: boolean): string {
           <td class="lbl">Idade</td><td>${escape(it.patientAge || "")}</td>
         </tr>
         <tr>
-          <td class="lbl">Setor</td><td>${escape(it.patientSector)}</td>
+          <td class="lbl">Setor</td><td>${escape(getSectorDisplayLabel(it.patientSector))}</td>
           <td class="lbl">Leito</td><td colspan="3">${escape(it.patientBed)}</td>
         </tr>
       </tbody>

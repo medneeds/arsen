@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Popover, PopoverContent, PopoverTrigger,
@@ -108,7 +109,7 @@ export default function HistoricoPacientePage() {
             </h1>
             <p className="text-xs text-muted-foreground">
               {patientBed && <span className="patient-id">Leito {patientBed}</span>}
-              {patientSector && <span className="patient-id"> · {patientSector}</span>}
+              {patientSector && <span className="patient-id"> · {getSectorDisplayLabel(patientSector)}</span>}
               <span className="ml-2">{events.length} eventos registrados</span>
             </p>
           </div>

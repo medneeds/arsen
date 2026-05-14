@@ -9,6 +9,7 @@ import {
   prepareLogo,
   type NormaZeroSignature,
 } from "@/lib/printNormaZero";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 
 export type DischargeDocType = "alta_hospitalar" | "alta_pedido" | "obito";
 
@@ -124,7 +125,7 @@ function buildBody(type: DischargeDocType, p: DischargeDocPayload): string {
       <div><span class="k">Paciente</span><b>${escapeHtml(p.patient_name)}</b></div>
       <div><span class="k">Prontuário</span>${escapeHtml(p.patient_record || "—")}</div>
       <div><span class="k">Atendimento</span>${escapeHtml(p.encounter_code || "—")}</div>
-      <div><span class="k">Leito / Setor</span>${escapeHtml(`${p.patient_bed || "—"} • ${p.patient_sector || "—"}`)}</div>
+      <div><span class="k">Leito / Setor</span>${escapeHtml(`${p.patient_bed || "—"} • ${getSectorDisplayLabel(p.patient_sector) || "—"}`)}</div>
       <div><span class="k">Nascimento</span>${escapeHtml(p.patient_birth_date || "—")}</div>
       <div><span class="k">Admissão</span>${escapeHtml(fmtDate(p.admission_date))}</div>
       <div><span class="k">${isDeath ? "Data/Hora do Óbito" : "Alta"}</span>${escapeHtml(fmtDate(isDeath ? p.death_date_time : p.discharge_date))}</div>
@@ -199,9 +200,10 @@ export async function printDischargeDocument(
   payload: DischargeDocPayload,
 ) {
   const title = DISCHARGE_DOC_LABELS[type];
+  const sectorDisplay = getSectorDisplayLabel(payload.patient_sector);
   const sectorLabel =
-    payload.patient_sector
-      ? `${payload.patient_sector}${payload.patient_bed ? ` • Leito ${payload.patient_bed}` : ""}`
+    sectorDisplay
+      ? `${sectorDisplay}${payload.patient_bed ? ` • Leito ${payload.patient_bed}` : ""}`
       : "Assistência hospitalar";
 
   const signatures: NormaZeroSignature[] = [
@@ -245,7 +247,7 @@ export function buildDischargeDocHTML(
   return buildNormaZeroDocument({
     title,
     subtitle: p.patient_name,
-    sectorLabel: p.patient_sector || "Assistência hospitalar",
+    sectorLabel: getSectorDisplayLabel(p.patient_sector) || "Assistência hospitalar",
     hospitalName: p.hospital_name,
     docCodePrefix: DISCHARGE_DOC_PREFIX[type],
     bodyHtml: buildBody(type, p),
