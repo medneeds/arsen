@@ -612,7 +612,7 @@ export function AppSidebar({
           <SidebarGroup className="py-0 my-0 border-b border-border/50">
             <div className={cn(
               "pt-2 pb-1.5",
-              isCollapsed ? "px-1" : "px-3"
+              isCollapsed ? "px-0 flex flex-col items-center" : "px-3"
             )}>
               {!isCollapsed && (
                 <div className="flex items-center gap-1.5 mb-1.5">
