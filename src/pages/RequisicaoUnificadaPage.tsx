@@ -166,6 +166,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 
 const RequisicaoUnificadaPage = () => {
   const { user } = useAuth();
+  const doctor = useCurrentDoctor();
   const { currentHospital, currentState } = useHospital();
   const location = useLocation();
   const [searchParams] = useSearchParams();
