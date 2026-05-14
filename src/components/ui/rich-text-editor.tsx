@@ -103,7 +103,7 @@ export function RichTextEditor({
     const el = ref.current;
     if (!el) return;
     const clean = sanitizeRichHtml(el.innerHTML);
-    lastEmitted.current = clean;
+    lastEmittedRaw.current = clean;
     setEmpty(!(el.textContent || "").trim());
     onChange(clean);
   };
