@@ -215,21 +215,7 @@ export default function PacienteHubPage() {
   return (
     <div className="flex flex-col h-full bg-slate-50">
       <div className="px-2 sm:px-4 pt-3">
-        <BreadcrumbBar
-          variant="institutional"
-          actions={
-            <div className="flex items-center gap-1.5">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs gap-1.5 bg-white text-slate-700 border-slate-300 hover:bg-slate-100 hover:text-slate-900 shadow-sm font-medium"
-                onClick={() => navigate("/painel-clinico")}
-              >
-                <ArrowLeft className="h-3.5 w-3.5 text-slate-600" /> Painel Clínico
-              </Button>
-            </div>
-          }
-        />
+        <BreadcrumbBar variant="institutional" />
       </div>
 
       <main className="flex-1 flex items-center justify-center px-6 py-10">
