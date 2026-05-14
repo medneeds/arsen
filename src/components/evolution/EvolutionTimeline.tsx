@@ -20,6 +20,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 
 interface DayGroup {
   dayLabel: string;
