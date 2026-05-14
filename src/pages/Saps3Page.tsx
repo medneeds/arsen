@@ -752,6 +752,7 @@ export default function Saps3Page() {
           patientId: completingPatientId,
           sectorCode: selectedSector,
           age: age ? `${age} anos` : null,
+          mode: "validation",
         });
         setSelectedRequest(null);
         setCompletingSapsId(null);
