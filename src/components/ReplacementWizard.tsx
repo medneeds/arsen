@@ -7,9 +7,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { FlaskConical, Sparkles, BookOpen, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MedicationEntry } from "@/data/medicationsDatabase";
+import { useWizardItemQueue } from "@/hooks/useWizardItemQueue";
+import { WizardItemQueue } from "@/components/shared/WizardItemQueue";
 
 type Disorder = "hipoK" | "hipoMg" | "hipoCa" | "hipoNa" | "hipoP" | "hiperK" | "hiperNa" | "acidose";
 type Severity = "leve" | "moderada" | "grave";
+
+interface RepSnapshot {
+  disorder: Disorder;
+  severity: Severity;
+  value: string;
+  notes: string;
+  selectedId: string;
+}
 
 const DISORDERS: { key: Disorder; label: string; detail: string }[] = [
   { key: "hipoK", label: "Hipocalemia", detail: "K⁺ < 3,5 mEq/L" },
@@ -446,6 +456,8 @@ export function ReplacementWizard({
   const [notes, setNotes] = useState<string>("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const queue = useWizardItemQueue<RepSnapshot>();
+
   const suggestions = useMemo(() => buildSuggestions(disorder, severity, value), [disorder, severity, value]);
 
   // Auto-seleciona a primeira sugestão sempre que muda distúrbio/gravidade
@@ -455,21 +467,77 @@ export function ReplacementWizard({
 
   const selected = suggestions.find(s => s.id === selectedId) ?? suggestions[0];
 
-  const entries = useMemo<MedicationEntry[]>(() => {
-    if (!selected) return [];
-    return selected.items.map((r, i) => ({
-      id: `rep-${disorder}-${selected.id}-${Date.now()}-${i}`,
+  // Carrega snapshot ao iniciar edição
+  useEffect(() => {
+    if (!queue.editingUid) return;
+    const it = queue.items.find(x => x.uid === queue.editingUid);
+    if (!it) return;
+    const s = it.snapshot;
+    setDisorder(s.disorder); setSeverity(s.severity);
+    setValue(s.value); setNotes(s.notes); setSelectedId(s.selectedId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue.editingUid]);
+
+  const snapshotToEntries = (s: RepSnapshot): MedicationEntry[] => {
+    const sug = buildSuggestions(s.disorder, s.severity, s.value).find(x => x.id === s.selectedId);
+    if (!sug) return [];
+    return sug.items.map((r, i) => ({
+      id: `rep-${s.disorder}-${sug.id}-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 5)}`,
       name: r.name,
       presentation: r.presentation,
       defaultDose: r.dose,
       defaultRoute: r.route,
       defaultPosology: r.posology,
       defaultSchedule: "ACM",
-      instructions: [r.instructions, notes].filter(Boolean).join(" · "),
+      instructions: [r.instructions, s.notes].filter(Boolean).join(" · "),
       category: "replacement" as const,
-      highAlert: ["hiperK", "hipoNa", "hipoK"].includes(disorder),
+      highAlert: ["hiperK", "hipoNa", "hipoK"].includes(s.disorder),
     }));
-  }, [selected, disorder, notes]);
+  };
+
+  const currentSnapshot: RepSnapshot | null = useMemo(() => {
+    if (!selected) return null;
+    return { disorder, severity, value, notes, selectedId: selected.id };
+  }, [disorder, severity, value, notes, selected]);
+
+  const entries = useMemo<MedicationEntry[]>(() => {
+    if (!currentSnapshot) return [];
+    return snapshotToEntries(currentSnapshot);
+  }, [currentSnapshot]);
+
+  const resetForm = () => {
+    setNotes("");
+    setValue("");
+  };
+
+  const handleAddToQueue = () => {
+    if (!currentSnapshot || !selected) return;
+    const label = `${DISORDERS.find(d => d.key === disorder)?.label} (${severity}) — ${selected.title}`;
+    const sublabel = selected.items.map(i => i.name).join(" + ");
+    queue.push(currentSnapshot, label, sublabel);
+    resetForm();
+  };
+
+  const handleSaveEditing = () => {
+    if (!queue.editingUid || !currentSnapshot || !selected) return;
+    const label = `${DISORDERS.find(d => d.key === disorder)?.label} (${severity}) — ${selected.title}`;
+    const sublabel = selected.items.map(i => i.name).join(" + ");
+    queue.update(queue.editingUid, currentSnapshot, label, sublabel);
+    queue.stopEditing();
+    resetForm();
+  };
+
+  const handleConfirmAll = () => {
+    const fromQueue = queue.items.flatMap(it => snapshotToEntries(it.snapshot));
+    const finalEntries = queue.items.length === 0 ? entries : fromQueue;
+    if (finalEntries.length === 0) return;
+    onAdd(finalEntries);
+    queue.clear();
+    resetForm();
+    onOpenChange(false);
+  };
+
+  const totalQueueEntries = queue.items.reduce((acc, it) => acc + snapshotToEntries(it.snapshot).length, 0);
 
   const Chip = ({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) => (
     <button type="button" onClick={onClick} className={cn(
@@ -573,12 +641,34 @@ export function ReplacementWizard({
               })}
             </div>
           </div>
+
+          {/* Fila de itens conjugados */}
+          <WizardItemQueue
+            items={queue.items}
+            editingUid={queue.editingUid}
+            onEdit={queue.startEditing}
+            onRemove={queue.remove}
+            onAddCurrent={handleAddToQueue}
+            onSaveCurrent={handleSaveEditing}
+            addLabel="Acrescentar esta reposição"
+            accentClassName="border-sky-300 bg-sky-50/40 text-sky-700 dark:border-sky-900 dark:bg-sky-950/20 dark:text-sky-300"
+            hint="Conjugue múltiplas reposições (ex: hipoK + hipoMg) em uma única prescrição."
+            disableAdd={!selected}
+          />
         </div>
 
-        <DialogFooter className="pt-2">
+        <DialogFooter className="pt-2 gap-2">
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button size="sm" disabled={entries.length === 0} onClick={() => { onAdd(entries); onOpenChange(false); }} className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white">
-            <Sparkles className="h-3.5 w-3.5" /> Adicionar à prescrição
+          <Button
+            size="sm"
+            disabled={queue.items.length === 0 && entries.length === 0}
+            onClick={handleConfirmAll}
+            className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            {queue.items.length > 0
+              ? `Adicionar ${totalQueueEntries} ite${totalQueueEntries === 1 ? "m" : "ns"} (${queue.items.length} reposiç${queue.items.length === 1 ? "ão" : "ões"})`
+              : "Adicionar à prescrição"}
           </Button>
         </DialogFooter>
       </DialogContent>
