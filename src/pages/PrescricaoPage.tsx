@@ -1928,7 +1928,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               })()}
 
               {/* Row 2: Forma, Diluente, Vol Diluente, Acesso */}
-              <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
+              <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
                 <div className="flex items-center gap-1 min-w-0">
                   <span className="text-[10px] text-muted-foreground shrink-0">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
