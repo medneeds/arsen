@@ -1868,6 +1868,38 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </Select>
               </div>
 
+              {/* Row 1.5: Reconstituição (pó liofilizado) — só quando catálogo indica */}
+              {renderDiluent && (() => {
+                const recon = getReconstitutionDefault(item.name);
+                if (!recon.required) return null;
+                return (
+                  <div className="flex items-center gap-1.5 flex-wrap px-2 py-1 rounded-md bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40">
+                    <span className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold uppercase tracking-wide">Reconstituir</span>
+                    <span className="text-[10px] text-muted-foreground">com</span>
+                    <Input
+                      value={item.reconstitutionVolume ?? recon.volumeMl ?? ''}
+                      onChange={(e) => onUpdate(item.id, "reconstitutionVolume", e.target.value)}
+                      placeholder="mL"
+                      className="h-6 text-[11px] bg-background border-border/40 w-14 text-center"
+                    />
+                    <span className="text-[10px] text-muted-foreground">mL de</span>
+                    <Select
+                      value={item.reconstitutionSolvent ?? recon.solvent ?? ''}
+                      onValueChange={(v) => onUpdate(item.id, "reconstitutionSolvent", v)}
+                    >
+                      <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-36"><SelectValue placeholder="solvente" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AD" className="text-xs">Água Destilada (AD)</SelectItem>
+                        <SelectItem value="SF 0,9%" className="text-xs">SF 0,9%</SelectItem>
+                        <SelectItem value="SG 5%" className="text-xs">SG 5%</SelectItem>
+                        <SelectItem value="próprio diluente" className="text-xs">Próprio diluente do fabricante</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-[10px] text-muted-foreground italic ml-auto">opcional · sugerido pelo catálogo</span>
+                  </div>
+                );
+              })()}
+
               {/* Row 2: Forma, Diluente, Vol Diluente, Acesso */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <div className="flex items-center gap-1">
