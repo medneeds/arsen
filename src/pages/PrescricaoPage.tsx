@@ -2088,6 +2088,19 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               </div>
               )}
 
+              {/* A.1 — Chip de concentração final calculada (somente expandido) */}
+              {(() => {
+                const conc = calcConcentration(item);
+                if (!conc) return null;
+                return (
+                  <div className="flex items-center gap-1.5 px-2.5">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/50 bg-muted/40 text-[10px] font-medium text-muted-foreground">
+                      Conc. final: <span className="text-foreground font-semibold">{conc}</span>
+                    </span>
+                  </div>
+                );
+              })()}
+
               {/* Auto-synced preparation description */}
               {(() => {
                 const autoDesc = buildPrepDescription(item);
