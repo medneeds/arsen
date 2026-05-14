@@ -590,7 +590,7 @@ export function getCategoryContainerClass(category?: string): string {
     case 'replacement':
       return `${base} bg-sky-50/50 dark:bg-sky-950/20 border-sky-200/60 dark:border-sky-900/50 border-l-[3px] border-l-sky-500/70 dark:border-l-sky-400/70`;
     case 'antimicrobial':
-      return `${base} bg-indigo-50/30 dark:bg-indigo-950/10 border-indigo-200/40 dark:border-indigo-900/30 border-l-[3px] border-l-indigo-400/60 dark:border-l-indigo-500/60`;
+      return `${base} bg-violet-50/30 dark:bg-violet-950/10 border-violet-200/40 dark:border-violet-900/30 border-l-[3px] border-l-violet-400/60 dark:border-l-violet-500/60`;
     case 'high_alert':
       return `${base} bg-red-50/50 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/50 border-l-[3px] border-l-red-500/70 dark:border-l-red-400/70`;
     case 'inhalation':
@@ -620,7 +620,7 @@ export function getCategoryFieldAccent(category?: string): { border: string; rin
     case 'replacement':
       return { border: 'border-sky-300/70 focus-visible:border-sky-400', ring: 'focus-visible:ring-sky-400/60', descendantOverrides: '[&_input.bg-white]:border-sky-200/70 [&_input.bg-white]:focus-visible:ring-sky-400/60 [&_button.bg-white]:border-sky-200/70 [&_button.bg-white]:focus-visible:ring-sky-400/60' };
     case 'antimicrobial':
-      return { border: 'border-indigo-300/60 focus-visible:border-indigo-400', ring: 'focus-visible:ring-indigo-400/50', descendantOverrides: '[&_input.bg-white]:border-indigo-200/60 [&_input.bg-white]:focus-visible:ring-indigo-400/50 [&_button.bg-white]:border-indigo-200/60 [&_button.bg-white]:focus-visible:ring-indigo-400/50' };
+      return { border: 'border-violet-300/60 focus-visible:border-violet-400', ring: 'focus-visible:ring-violet-400/50', descendantOverrides: '[&_input.bg-white]:border-violet-200/60 [&_input.bg-white]:focus-visible:ring-violet-400/50 [&_button.bg-white]:border-violet-200/60 [&_button.bg-white]:focus-visible:ring-violet-400/50' };
     case 'high_alert':
       return { border: 'border-red-300/70 focus-visible:border-red-400', ring: 'focus-visible:ring-red-400/60', descendantOverrides: '[&_input.bg-white]:border-red-200/70 [&_input.bg-white]:focus-visible:ring-red-400/60 [&_button.bg-white]:border-red-200/70 [&_button.bg-white]:focus-visible:ring-red-400/60' };
     case 'inhalation':
@@ -2047,44 +2047,46 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {item.category === 'antimicrobial' && (() => {
                 const dayLine = buildAtbDayLine(item);
                 return (
-                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-1 border-b border-indigo-200/50 dark:border-indigo-800/40">
-                    <div className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-300 shrink-0">
-                      <Pill className="h-3.5 w-3.5" />
-                      <span className="text-[11px] font-semibold uppercase tracking-wide">Antimicrobiano</span>
+                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-1.5 px-2 py-1.5 rounded-md bg-gradient-to-r from-violet-100/70 via-violet-50/60 to-transparent dark:from-violet-950/30 dark:via-violet-950/15 dark:to-transparent border border-violet-200/60 dark:border-violet-800/40 border-l-[3px] border-l-violet-500/80">
+                    <div className="flex items-center gap-1.5 text-violet-800 dark:text-violet-200 shrink-0">
+                      <div className="flex items-center justify-center h-5 w-5 rounded-md bg-violet-600 text-white shadow-sm shadow-violet-600/30">
+                        <Pill className="h-3 w-3" />
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.08em]">Antibiótico</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-indigo-700/80 dark:text-indigo-300/80 font-medium">Início:</span>
+                      <span className="text-[10px] text-violet-700/80 dark:text-violet-300/80 font-medium">Início:</span>
                       <Input
                         type="date"
                         value={item.atbStartDate || ''}
                         onChange={(e) => onUpdate(item.id, 'atbStartDate' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-indigo-200/70 dark:border-indigo-800/60 w-[124px] px-1.5"
+                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-violet-200/70 dark:border-violet-800/60 w-[124px] px-1.5"
                       />
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-indigo-700/80 dark:text-indigo-300/80 font-medium">Duração:</span>
+                      <span className="text-[10px] text-violet-700/80 dark:text-violet-300/80 font-medium">Duração:</span>
                       <Input
                         type="number"
                         min="1"
                         value={item.atbPlannedDays || ''}
                         onChange={(e) => onUpdate(item.id, 'atbPlannedDays' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-indigo-200/70 dark:border-indigo-800/60 w-12 text-center px-1"
+                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-violet-200/70 dark:border-violet-800/60 w-12 text-center px-1"
                         placeholder="—"
                       />
-                      <span className="text-[10px] text-indigo-700/70 dark:text-indigo-300/70">dias</span>
+                      <span className="text-[10px] text-violet-700/70 dark:text-violet-300/70">dias</span>
                     </div>
                     <div className="flex items-center gap-1 flex-1 min-w-[160px]">
-                      <span className="text-[10px] text-indigo-700/80 dark:text-indigo-300/80 font-medium shrink-0">Sítio:</span>
+                      <span className="text-[10px] text-violet-700/80 dark:text-violet-300/80 font-medium shrink-0">Sítio:</span>
                       <Input
                         value={item.atbInfectionSite || ''}
                         onChange={(e) => onUpdate(item.id, 'atbInfectionSite' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-indigo-200/70 dark:border-indigo-800/60 flex-1 px-1.5"
+                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-violet-200/70 dark:border-violet-800/60 flex-1 px-1.5"
                         placeholder="ex.: pneumonia comunitária"
                       />
                     </div>
                     <div className="ml-auto flex items-center gap-1.5 shrink-0">
                       {dayLine && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800/50">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-600 text-white border border-violet-700/40 shadow-sm shadow-violet-600/20">
                           {dayLine.split(' — ')[0]} · {dayLine.match(/— (\d{2}\/\d{2})/)?.[1] || ''}
                         </span>
                       )}
@@ -2092,7 +2094,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         <button
                           type="button"
                           onClick={onOpenAntimicrobialGuide}
-                          className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-700/50 transition-colors"
+                          className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-semibold bg-violet-600 hover:bg-violet-700 text-white border border-violet-700/50 transition-colors"
                           title="Abrir Guia ATM (CCIH / Norma Zero)"
                         >
                           <Shield className="h-3 w-3" />
