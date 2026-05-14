@@ -1085,27 +1085,7 @@ const Index = () => {
                 </div>
               )}
 
-              {/* Anotações e Lembretes Section */}
-              <Collapsible open={isNotesSectionOpen} onOpenChange={setIsNotesSectionOpen} className="space-y-3 mb-4 print:hidden">
-                <div className="bg-gradient-card rounded-xl p-2 border border-border/50 shadow-md transition-all duration-200 min-h-[48px] flex items-center">
-                  <div className="flex items-center justify-between w-full">
-                    <CollapsibleTrigger asChild>
-                      <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                        <ChevronDown className={`h-5 w-5 transition-transform ${isNotesSectionOpen ? '' : '-rotate-90'}`} />
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">📝</span>
-                          <h2 className="text-lg font-bold text-foreground">Anotações, Lembretes e Check-lists</h2>
-                        </div>
-                      </button>
-                    </CollapsibleTrigger>
-                  </div>
-                </div>
-                <CollapsibleContent>
-                  <div className="mt-3">
-                    <NotesTabOptimized />
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
+              {/* Anotações, Lembretes e Check-lists — removido do mapa de leitos */}
             </div>
           </main>
 
