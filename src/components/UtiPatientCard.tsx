@@ -1003,16 +1003,15 @@ export function UtiPatientCard({
             </div>
             {/* Botão inline de exclusão de leito extra (apenas leitos extras, fora dos fixos do setor) */}
             {canDeleteExtra && onDelete && (
-              <Button
-                variant="outline"
-                size="sm"
+              <button
+                type="button"
                 onClick={() => setIsDeleteExtraOpen(true)}
-                className="h-7 px-2 gap-1 border-destructive/40 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                title="Excluir este leito extra do setor"
+                className="inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground/60 hover:text-white hover:bg-red-600 hover:scale-110 transition-all duration-150"
+                title="Excluir leito extra"
+                aria-label="Excluir leito extra"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                <span className="text-[11px] font-semibold">Excluir leito</span>
-              </Button>
+              </button>
             )}
           </div>
         ) : (
