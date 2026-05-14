@@ -5873,7 +5873,7 @@ const PrescricaoPage = () => {
                     onClick={() => document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                     className={cn(
                       "group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm hover:-translate-y-px",
-                      emphasis && cat === 'antimicrobial' && "ring-1 ring-blue-300/60",
+                      emphasis && cat === 'antimicrobial' && "ring-1 ring-violet-300/60",
                       emphasis && cat === 'high_alert' && "ring-1 ring-red-300/70",
                       ok
                         ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
