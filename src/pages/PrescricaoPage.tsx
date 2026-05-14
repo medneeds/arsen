@@ -1909,47 +1909,43 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 );
               })()}
 
-              {/* Row 2: Forma, Diluente, Vol Diluente, Acesso */}
+              {/* Row 2: Qtd → Forma → Diluente → Vol. dil → Acesso → Via */}
               <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
-                <div className="flex items-center gap-1 min-w-0">
-                  <span className="text-[10px] text-muted-foreground shrink-0">Forma:</span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Qtd:</span>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="any"
+                    value={item.quantity || ''}
+                    onChange={(e) => {
+                      onUpdate(item.id, "quantity", e.target.value);
+                      const tempItem = { ...item, quantity: e.target.value };
+                      const autoVol = calcVolumeTotal(tempItem);
+                      if (autoVol) {
+                        onUpdate(item.id, "volumeTotal", autoVol);
+                        const autoConc = calcConcentration({ ...tempItem, volumeTotal: autoVol });
+                        if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                      }
+                    }}
+                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-12 text-center focus-visible:ring-1 focus-visible:ring-primary"
+                    placeholder="1"
+                    title={item.quantityUnit ? `Quantidade em ${item.quantityUnit}` : 'Quantidade'}
+                  />
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0 ml-1">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-[120px]"><SelectValue placeholder="forma/unidade" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-[120px] focus:ring-1 focus:ring-primary"><SelectValue placeholder="forma/unidade" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       {QUANTITY_UNITS.map(u => (
                         <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  {item.quantityUnit && (
-                    <>
-                      <span className="text-[10px] text-muted-foreground shrink-0 ml-1">Qtd:</span>
-                      <Input
-                        type="number"
-                        inputMode="decimal"
-                        min="0"
-                        step="any"
-                        value={item.quantity || ''}
-                        onChange={(e) => {
-                          onUpdate(item.id, "quantity", e.target.value);
-                          const tempItem = { ...item, quantity: e.target.value };
-                          const autoVol = calcVolumeTotal(tempItem);
-                          if (autoVol) {
-                            onUpdate(item.id, "volumeTotal", autoVol);
-                            const autoConc = calcConcentration({ ...tempItem, volumeTotal: autoVol });
-                            if (autoConc) onUpdate(item.id, "concentration", autoConc);
-                          }
-                        }}
-                        className="h-6 text-[11px] bg-background border-border/40 w-12 text-center"
-                        placeholder="1"
-                        title={`Quantidade em ${item.quantityUnit}`}
-                      />
-                    </>
-                  )}
                 </div>
                 {renderDiluent && <>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Diluente:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Diluente:</span>
                   <Select value={item.diluent || ''} onValueChange={(v) => {
                     onUpdate(item.id, "diluent", v);
                     const tempItem = { ...item, diluent: v };
@@ -1963,7 +1959,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       onUpdate(item.id, "diluentVolume", '');
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-28"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       <SelectItem value="sem_diluente" className="text-xs font-medium">Sem diluente</SelectItem>
                       <SelectItem value="diluente_proprio" className="text-xs font-medium">Diluente próprio</SelectItem>
@@ -1978,8 +1974,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   </Select>
                 </div>
                 {item.diluent && item.diluent !== 'sem_diluente' && (
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Vol. diluente:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Vol. dil:</span>
                   <Input value={item.diluentVolume || ''} onChange={(e) => {
                     onUpdate(item.id, "diluentVolume", e.target.value);
                     const tempItem = { ...item, diluentVolume: e.target.value };
@@ -1988,13 +1984,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     const tempItem2 = { ...tempItem, volumeTotal: autoVol || item.volumeTotal || '' };
                     const autoConc = calcConcentration(tempItem2);
                     if (autoConc) onUpdate(item.id, "concentration", autoConc);
-                  }} className="h-6 text-[11px] bg-background border-border/40 w-16 text-center" placeholder="mL" />
+                  }} className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center focus-visible:ring-1 focus-visible:ring-primary" placeholder="mL" />
                 </div>
                 )}
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Acesso venoso:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Acesso:</span>
                   <Select value={item.accessType || ''} onValueChange={(v) => onUpdate(item.id, "accessType", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-28"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Periférico" className="text-xs">Periférico</SelectItem>
                       <SelectItem value="Central" className="text-xs">Central</SelectItem>
@@ -2006,6 +2002,27 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   </Select>
                 </div>
                 </>}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Via:</span>
+                  <Select value={item.route} onValueChange={(v) => {
+                    onUpdate(item.id, "route", v);
+                    if (isIVRoute(v) && !item.infusionMode) {
+                      onUpdate(item.id, "infusionMode", 'BIC');
+                    }
+                  }}>
+                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 font-semibold focus:ring-1 focus:ring-primary">
+                      <SelectValue>{routeShort(item.route)}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {ROUTES.map((r) => (
+                        <SelectItem key={r} value={r} className="text-xs">
+                          <span className="font-semibold mr-1.5">{routeShort(r)}</span>
+                          <span className="text-muted-foreground">— {r}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {renderInfusion && (
