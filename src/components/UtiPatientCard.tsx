@@ -1,6 +1,18 @@
 import { Patient } from "@/types/patient";
 import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
 import { calcDIH, getEffectiveAdmissionDate } from "@/lib/dihCalc";
+import { isExtraBed } from "@/utils/bedNaming";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit, ChevronDown, ChevronRight, MoreVertical, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, ClipboardCheck, Clock, FileText, FolderOpen, Pill, Activity, Heart, User, Star, Printer, TrendingUp, Skull, ArrowRightLeft, ArrowLeftRight, BedDouble, DoorOpen, UserPlus, Shuffle, UserMinus } from "lucide-react";
@@ -793,6 +805,10 @@ export function UtiPatientCard({
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
   const [isRoundPrintDialogOpen, setIsRoundPrintDialogOpen] = useState(false);
   const [isReleasePreAdmissionOpen, setIsReleasePreAdmissionOpen] = useState(false);
+  const [isDeleteExtraOpen, setIsDeleteExtraOpen] = useState(false);
+  const { toast } = useToast();
+  const isExtra = isExtraBed(patient.bedNumber);
+  const canDeleteExtra = isExtra && (role === 'admin' || role === 'medico');
 
   // Derive current UTI unit from colorVariant if not provided
   const derivedUtiUnit = currentUtiUnit || (colorVariant === 'blue' ? 'UTI 1' : 'UTI 2');
@@ -1240,10 +1256,34 @@ export function UtiPatientCard({
                           </div>
                         </DropdownMenuItem>
                       )}
+                      {canDeleteExtra && onDelete && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setIsDeleteExtraOpen(true)} className="text-destructive focus:text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            <div className="flex flex-col">
+                              <span>Excluir leito extra</span>
+                              <span className="text-[10px] font-normal text-muted-foreground">
+                                Remove permanentemente este leito do setor
+                              </span>
+                            </div>
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </>
+                  ) : canDeleteExtra && onDelete ? (
+                    <DropdownMenuItem onClick={() => setIsDeleteExtraOpen(true)} className="text-destructive focus:text-destructive">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      <div className="flex flex-col">
+                        <span>Excluir leito extra</span>
+                        <span className="text-[10px] font-normal text-muted-foreground">
+                          Leito vago — pode ser removido com segurança
+                        </span>
+                      </div>
+                    </DropdownMenuItem>
                   ) : (
                     <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
-                      Leito vago — sem ações disponíveis.
+                      {isExtra ? 'Leito extra — sem permissão para excluir.' : 'Leito vago — sem ações disponíveis.'}
                     </DropdownMenuLabel>
                   )}
                 </DropdownMenuContent>
@@ -1439,6 +1479,41 @@ export function UtiPatientCard({
           }
         }}
       />
+
+      <AlertDialog open={isDeleteExtraOpen} onOpenChange={setIsDeleteExtraOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir leito extra {patient.bedNumber}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove permanentemente o leito extra <strong>{patient.bedNumber}</strong> deste setor.
+              {patient.name ? (
+                <> O paciente <strong>{patient.name}</strong> também será removido. </>
+              ) : (
+                <> O leito está vago e será removido com segurança. </>
+              )}
+              Leitos fixos do setor não podem ser excluídos — apenas leitos extras (maca extra). Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (onDelete) {
+                  onDelete(patient.id);
+                  toast({
+                    title: "Leito extra excluído",
+                    description: `${patient.bedNumber} foi removido do setor.`,
+                  });
+                }
+                setIsDeleteExtraOpen(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir leito
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
