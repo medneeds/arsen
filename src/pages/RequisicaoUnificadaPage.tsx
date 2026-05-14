@@ -1125,7 +1125,7 @@ const RequisicaoUnificadaPage = () => {
             const missing: string[] = [];
             if (!formPatientName.trim()) missing.push("identificar o paciente");
             if (formSelectedItems.length === 0) missing.push(`selecionar pelo menos 1 ${activeCategory === "parecer" ? "especialidade" : "exame"}`);
-            if (!formIndication.trim()) missing.push("preencher a justificativa clínica");
+            if (!richHtmlToPlainText(formIndication).trim()) missing.push("preencher a justificativa clínica");
             if (requiresExtraJustification && formExtraJustification.trim().length < 10) missing.push("justificar exames fora da rotina (mín. 10 caracteres)");
             const blocked = missing.length > 0;
             return (
