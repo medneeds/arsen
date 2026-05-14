@@ -1278,6 +1278,7 @@ export function UtiPatientCard({
                             </span>
                           </div>
                         </DropdownMenuItem>
+                      )}
                     </>
                   ) : (
                     <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
