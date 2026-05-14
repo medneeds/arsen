@@ -123,7 +123,8 @@ export function AppSidebar({
   const { open, setOpen, openMobile, setOpenMobile, state } = useSidebar();
   const navigate = useNavigate();
   const { signOut, user, role } = useAuth();
-  const { currentDepartment, setCurrentDepartment } = useDepartment();
+  const { currentDepartment, setCurrentDepartment, currentSectorLabel } = useDepartment();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const isCollapsed = state === "collapsed";
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
