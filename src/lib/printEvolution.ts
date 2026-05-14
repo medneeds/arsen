@@ -69,7 +69,7 @@ export const printEvolution = async (
         </tr>
         <tr>
           <th>Setor</th>
-          <td>${escape(ctx?.patientSector || evo.patient_sector || "—")}</td>
+          <td>${escape(getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "—")}</td>
           <th>Prontuário</th>
           <td>${escape(ctx?.patientRecord || "—")}</td>
         </tr>
