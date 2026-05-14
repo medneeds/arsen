@@ -151,6 +151,16 @@ export function MedicalRecordEditDialog({
   const [reg, setReg] = useState<Partial<RegistryRow>>({});
   const [regReason, setRegReason] = useState("");
   const [importing, setImporting] = useState(false);
+  const [cadastroEditMode, setCadastroEditMode] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Revisão PIS (etapa intermediária)
+  const [pisReviewOpen, setPisReviewOpen] = useState(false);
+  const [pisExtracted, setPisExtracted] = useState<Record<string, any> | null>(null);
+  const [pisAccepted, setPisAccepted] = useState<Record<string, boolean>>({});
+  const [pisSource, setPisSource] = useState<"file" | "paste">("file");
+  const [pisFromFieldsApplied, setPisFromFieldsApplied] = useState<Set<string>>(new Set());
 
   // Histórico
   const [mrHistory, setMrHistory] = useState<MrHistoryRow[]>([]);
