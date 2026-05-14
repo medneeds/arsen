@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit, ChevronDown, ChevronRight, MoreVertical, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, ClipboardCheck, Clock, FileText, FolderOpen, Pill, Activity, Heart, User, Star, Printer, TrendingUp, Skull, ArrowRightLeft, ArrowLeftRight, BedDouble, DoorOpen, UserPlus, Shuffle, UserMinus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -626,7 +626,7 @@ function ReadOnlyArray({
   label: string;
   placeholder?: string;
   colorClass?: string;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
 }) {
   return (
     <div className={cn("rounded-md p-1.5 cursor-default", colorClass)}>
