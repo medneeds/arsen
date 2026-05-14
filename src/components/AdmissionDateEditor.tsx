@@ -141,11 +141,18 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
         });
 
         // Caminho ÚNICO de mutação de admission_date (auditado).
-        // updatePatient genérico não toca mais este campo, então
-        // gravamos diretamente aqui após registrar o histórico.
+        // Sincroniza os 3 campos para manter a data efetiva consistente
+        // em mapa de leitos, cockpit, evolução e prescrição:
+        //   admission_date     — campo livre (cadastro)
+        //   admitted_at        — D0 oficial (timestamp da admissão validada)
+        //   uti_admission_date — admissão no setor (espelhada ao D0)
         const { error: updateErr } = await supabase
           .from("patients")
-          .update({ admission_date: newValueISO })
+          .update({
+            admission_date: newValueISO,
+            admitted_at: newValueISO,
+            uti_admission_date: newValueISO,
+          })
           .eq("id", patientId);
         if (updateErr) {
           console.error("[AdmissionDateEditor] patient update failed", updateErr);
