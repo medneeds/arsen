@@ -67,6 +67,7 @@ interface UtiPatientCardProps {
   patient: Patient;
   onUpdate: (patient: Patient) => void;
   onDelete?: (patientId: string) => void;
+  onReleasePreAdmissionBed?: (patientId: string, payload: { reason: string; reasonNote: string }) => void | Promise<void>;
   onPrintPatient?: (patientId: string) => void;
   onRefetch?: () => void;
   colorVariant?: ColorVariant;
