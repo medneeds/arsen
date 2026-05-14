@@ -7851,21 +7851,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         </tbody>
       </table>
 
-      {/* QP + Sinais Vitais (sem rótulo de Classificação de Risco) */}
-      {(patient.chiefComplaint || patient.vitalSigns) && (
-        <div style={{ padding: '3px 8px', backgroundColor: '#f8fafc', border: '0.5px solid #e2e8f0', marginBottom: '5px', borderLeft: '2px solid #0c4a6e' }}>
-          {patient.chiefComplaint && (
-            <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3 }}>
-              <span style={{ fontWeight: 700 }}>QP:</span> {patient.chiefComplaint}
-            </div>
-          )}
-          {patient.vitalSigns && (
-            <div style={{ fontSize: '6.5pt', color: '#475569', lineHeight: 1.3, marginTop: '1px' }}>
-              <span style={{ fontWeight: 700 }}>Sinais Vitais:</span> {patient.vitalSigns}
-            </div>
-          )}
-        </div>
-      )}
+      {/* QP / Sinais Vitais / Classificação de Risco removidos do PDF —
+          informações pertencem a outros documentos (evolução / triagem). */}
       </div>
 
       {/* Prescription Items — Lista contínua sem subtítulos de categoria (Cuidados separados ao final) */}
