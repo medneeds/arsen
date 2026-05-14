@@ -62,14 +62,14 @@ export function PatientSwitcher({ variant = "dark" }: PatientSwitcherProps) {
     const fetchSectorPatients = async () => {
       const { data } = await supabase
         .from("patients")
-        .select("id, name, bed_number, sector")
+        .select("id, name, bed_number, sector, age, patient_registry_id")
         .eq("hospital_unit_id", currentHospital.id)
         .eq("state_id", currentState.id)
         .eq("sector", patientSector)
         .eq("is_vacant", false)
         .order("bed_number");
 
-      if (data) setPatients(data);
+      if (data) setPatients(data as SectorPatient[]);
     };
 
     fetchSectorPatients();
@@ -80,10 +80,17 @@ export function PatientSwitcher({ variant = "dark" }: PatientSwitcherProps) {
 
   const handleSwitch = (p: SectorPatient) => {
     const params = new URLSearchParams(searchParams);
+    // Limpa contexto pontual do paciente anterior (pré-admissão, alocação,
+    // SAPS pendente etc.) para evitar que o novo paciente herde estados.
+    STALE_PATIENT_PARAMS.forEach(k => params.delete(k));
     params.set("patientId", p.id);
     params.set("patientName", p.name);
-    params.set("patientBed", p.bed_number);
+    params.set("patientBed", p.bed_number || "");
     params.set("patientSector", p.sector);
+    if (p.age) params.set("patientAge", p.age);
+    else params.delete("patientAge");
+    if (p.patient_registry_id) params.set("patientRegistryId", p.patient_registry_id);
+    else params.delete("patientRegistryId");
     navigate(`${location.pathname}?${params.toString()}`);
   };
 
