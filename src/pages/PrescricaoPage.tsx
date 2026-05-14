@@ -3856,9 +3856,11 @@ const PrescricaoPage = () => {
       }
     } catch (err: any) {
       console.error('[persistItems] persist failed', err);
-      toast.error("Erro ao persistir alteração", {
-        description: "A alteração ficou apenas em memória. Salve manualmente para garantir.",
-      });
+      if (!opts.silent) {
+        toast.error("Erro ao persistir alteração", {
+          description: "A alteração ficou apenas em memória. Salve manualmente para garantir.",
+        });
+      }
       throw err;
     }
   }, [currentHospital, currentState, patient, digitalSignature, currentPrescriptionId, user?.id, initialPatientSector]);
