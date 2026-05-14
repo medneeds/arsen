@@ -783,18 +783,57 @@ const RequisicaoUnificadaPage = () => {
           </div>
 
           {/* Clinical Justification */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">
-              Justificativa Clínica <span className="text-red-500">*</span>
-            </Label>
-            <Textarea
-              placeholder="Descreva a justificativa clínica para esta requisição..."
-              value={formIndication}
-              onChange={e => setFormIndication(e.target.value)}
-              rows={3}
-              className="resize-none text-sm"
-            />
-          </div>
+          {activeCategory === "parecer" ? (
+            <Card className="border-l-[4px] border-l-indigo-500 border-indigo-200/70 bg-gradient-to-br from-indigo-50/80 to-white dark:from-indigo-950/30 dark:to-transparent dark:border-indigo-900/50 shadow-sm">
+              <CardHeader className="pb-2 pt-3">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-indigo-900 dark:text-indigo-200">
+                  <ClipboardList className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
+                  Justificativa Clínica para o Parecerista
+                  <span className="text-red-500">*</span>
+                  <Badge variant="outline" className="ml-auto text-[10px] font-normal border-indigo-300 text-indigo-700 dark:text-indigo-300 dark:border-indigo-700">
+                    Imprime no laudo
+                  </Badge>
+                </CardTitle>
+                <p className="text-[11px] text-indigo-800/70 dark:text-indigo-300/70 mt-0.5 leading-snug">
+                  Descreva história resumida, hipótese diagnóstica, exames relevantes e a pergunta objetiva ao especialista. Esse é o único campo que vai para o parecerista.
+                </p>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <Textarea
+                  placeholder="Ex.: Paciente 54a, sepse de foco abdominal D3, em uso de meropenem. Lactato em queda, mas mantém disfunção renal (Cr 2,8). Solicito avaliação da Nefrologia quanto à indicação de TRS."
+                  value={formIndication}
+                  onChange={e => setFormIndication(e.target.value.slice(0, 900))}
+                  rows={6}
+                  maxLength={900}
+                  className="resize-none text-sm bg-white dark:bg-slate-900/60 border-indigo-200 dark:border-indigo-900/60 focus-visible:ring-indigo-400"
+                />
+                <div className="flex justify-between items-center mt-1.5 text-[10px]">
+                  <span className="text-indigo-700/70 dark:text-indigo-300/70">
+                    Limite alinhado ao laudo impresso (1 página A4).
+                  </span>
+                  <span className={cn(
+                    "font-mono tabular-nums",
+                    formIndication.length > 800 ? "text-red-600 font-semibold" : "text-muted-foreground"
+                  )}>
+                    {formIndication.length}/900
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">
+                Justificativa Clínica <span className="text-red-500">*</span>
+              </Label>
+              <Textarea
+                placeholder="Descreva a justificativa clínica para esta requisição..."
+                value={formIndication}
+                onChange={e => setFormIndication(e.target.value)}
+                rows={3}
+                className="resize-none text-sm"
+              />
+            </div>
+          )}
 
           {/* ── Pacotes rápidos de rotina (UTI / Enfermaria) ── */}
           {activeCategory === "laboratorio" && (
