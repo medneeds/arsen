@@ -62,6 +62,7 @@ interface UtiRowProps {
   patient: Patient;
   onUpdate: (patient: Patient) => void;
   onDelete?: (patientId: string) => void;
+  onReleasePreAdmissionBed?: (patientId: string, payload: { reason: string; reasonNote: string }) => void | Promise<void>;
   onPrintPatient?: (patientId: string) => void;
   onRefetch?: () => void;
   selectionMode?: boolean;
@@ -91,6 +92,7 @@ function UtiRow(props: UtiRowProps) {
           patient={props.patient}
           onUpdate={props.onUpdate}
           onDelete={props.onDelete}
+          onReleasePreAdmissionBed={props.onReleasePreAdmissionBed}
           onPrintPatient={props.onPrintPatient}
           onRefetch={props.onRefetch}
           colorVariant={props.colorVariant}
