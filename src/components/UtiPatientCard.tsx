@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit, ChevronDown, ChevronRight, MoreVertical, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, ClipboardCheck, Clock, FileText, FolderOpen, Pill, Activity, Heart, User, Star, Printer, TrendingUp, Skull, ArrowRightLeft, ArrowLeftRight, BedDouble, DoorOpen, UserPlus, Shuffle, UserMinus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -73,6 +73,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
+import { formatAgeDisplay } from "@/utils/ageDisplay";
 
 type ColorVariant = 'blue' | 'yellow' | 'red' | 'green';
 
@@ -614,147 +615,72 @@ function InlineEditableArray({
   );
 }
 
-// Single value inline editable field
-interface InlineEditableFieldProps {
-  value: string;
-  onUpdate: (value: string) => void;
+function ReadOnlyArray({
+  items,
+  label,
+  placeholder = "—",
+  colorClass,
+  icon,
+}: {
+  items: string[];
+  label: string;
   placeholder?: string;
-  className?: string;
-}
-
-function InlineEditableField({ value, onUpdate, placeholder = "-", className }: InlineEditableFieldProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [localValue, setLocalValue] = useState(value);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isEditing]);
-
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
-
-  const handleSave = () => {
-    onUpdate(localValue);
-    setIsEditing(false);
-  };
-
-  if (isEditing) {
-    return (
-      <input
-        ref={inputRef}
-        type="text"
-        value={localValue}
-        onChange={(e) => setLocalValue(e.target.value)}
-        className={cn("bg-background border border-primary/30 rounded px-1.5 py-0.5 outline-none text-sm w-full", className)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') handleSave();
-          if (e.key === 'Escape') setIsEditing(false);
-        }}
-        onBlur={handleSave}
-      />
-    );
-  }
-
+  colorClass?: string;
+  icon?: ReactNode;
+}) {
   return (
-    <span 
-      className={cn("cursor-pointer hover:text-primary transition-colors", className)}
-      onClick={(e) => {
-        e.stopPropagation();
-        setIsEditing(true);
-      }}
-    >
-      {value || <span className="text-muted-foreground/50">{placeholder}</span>}
-    </span>
+    <div className={cn("rounded-md p-1.5 cursor-default", colorClass)}>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5">
+          {icon}
+          <span className="text-[10px] font-semibold text-muted-foreground tracking-wide">{label}</span>
+          {items.length > 0 && (
+            <Badge variant="secondary" className="h-3.5 px-1 text-[9px] font-medium">{items.length}</Badge>
+          )}
+        </div>
+      </div>
+      {items.length > 0 ? (
+        <ol className="space-y-0.5">
+          {items.map((item, index) => (
+            <li key={`${label}-${index}`} className="flex items-start gap-1 text-[11px] leading-snug text-foreground">
+              <span className="mt-px text-[10px] font-semibold text-muted-foreground">{index + 1}.</span>
+              <span className="break-words">{item}</span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <span className="text-[11px] text-muted-foreground/60 italic pl-0.5">{placeholder}</span>
+      )}
+    </div>
   );
 }
 
-// Collapsible inline editable textarea for longer text - optimized for space
-interface InlineEditableTextareaProps {
-  value: string;
-  onUpdate: (value: string) => void;
-  placeholder?: string;
-}
-
-function InlineEditableTextarea({ value, onUpdate, placeholder = "-" }: InlineEditableTextareaProps) {
-  const [isEditing, setIsEditing] = useState(false);
+function ReadOnlyTextarea({ value, placeholder = "—" }: { value: string; placeholder?: string }) {
   const [isTextExpanded, setIsTextExpanded] = useState(false);
-  const [localValue, setLocalValue] = useState(value);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-
-  // Check if content overflows the collapsed height
   const [hasOverflow, setHasOverflow] = useState(false);
-  
-  useEffect(() => {
-    if (contentRef.current && !isEditing) {
-      const element = contentRef.current;
-      // Check if content height exceeds collapsed max height (48px = ~3 lines)
-      setHasOverflow(element.scrollHeight > 48);
-    }
-  }, [value, isEditing]);
 
   useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(textareaRef.current.value.length, textareaRef.current.value.length);
+    if (contentRef.current) {
+      setHasOverflow(contentRef.current.scrollHeight > 48);
     }
-  }, [isEditing]);
-
-  useEffect(() => {
-    setLocalValue(value);
   }, [value]);
 
-  const handleSave = () => {
-    onUpdate(localValue);
-    setIsEditing(false);
-  };
-
-  if (isEditing) {
-    return (
-      <textarea
-        ref={textareaRef}
-        value={localValue}
-        onChange={(e) => {
-          setLocalValue(e.target.value);
-        }}
-        className="w-full bg-background border border-primary/30 rounded px-2 py-1.5 outline-none text-xs min-h-[80px] max-h-[300px] resize-y overflow-auto"
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') setIsEditing(false);
-        }}
-        onBlur={handleSave}
-        onClick={(e) => e.stopPropagation()}
-        style={{ resize: 'vertical' }}
-      />
-    );
-  }
-
   return (
-    <div className="relative">
-      <div 
+    <div className="relative cursor-default" title="Importada automaticamente da admissão validada.">
+      <div
         ref={contentRef}
         className={cn(
-          "cursor-pointer hover:text-primary transition-all duration-200 text-xs whitespace-pre-wrap overflow-hidden",
+          "text-xs whitespace-pre-wrap overflow-hidden text-foreground",
           !isTextExpanded && hasOverflow ? "max-h-[48px]" : "max-h-none"
         )}
-        onClick={(e) => {
-          e.stopPropagation();
-          setIsEditing(true);
-        }}
       >
-        {value || <span className="text-muted-foreground/50 italic text-xs">{placeholder}</span>}
+        {value || <span className="text-muted-foreground/60 italic text-xs">{placeholder}</span>}
       </div>
-      
-      {/* Gradient fade when collapsed with overflow */}
-      {hasOverflow && !isTextExpanded && !isEditing && (
+      {hasOverflow && !isTextExpanded && (
         <div className="absolute bottom-5 left-0 right-0 h-4 bg-gradient-to-t from-muted/30 to-transparent pointer-events-none" />
       )}
-      
-      {/* Expand/Collapse button - only show if content overflows */}
-      {hasOverflow && !isEditing && (
+      {hasOverflow && (
         <Button
           variant="ghost"
           size="sm"
@@ -1038,14 +964,14 @@ export function UtiPatientCard({
                   )}
                 </Button>
                 
-                {/* Bed Number - Compact */}
+                {/* Bed Number - Compact (fixed by bed map allocation) */}
                 <div className={cn("shrink-0 px-1.5 py-0.5 rounded border", colors.bedBg)}>
-                  <InlineEditableField
-                    value={patient.bedNumber}
-                    onUpdate={(v) => handleUpdateField("bedNumber", v)}
-                    placeholder="LEITO"
-                    className={cn("text-xs font-bold w-8 md:w-10 text-center", colors.bedText)}
-                  />
+                  <span
+                    className={cn("patient-id block text-xs font-bold min-w-8 md:min-w-10 text-center cursor-default", colors.bedText)}
+                    title="Leito fixo no mapa. Alterações ocorrem apenas por realocação/transferência."
+                  >
+                    {patient.bedNumber || "LEITO"}
+                  </span>
                 </div>
                 
                 {/* Patient Name + Age - Flexible grow */}
@@ -1063,14 +989,11 @@ export function UtiPatientCard({
                       {patient.name || <span className="italic text-muted-foreground">SEM NOME</span>}
                     </span>
                   )}
-                  <div className="shrink-0 flex items-center gap-1 text-[10px] md:text-xs text-muted-foreground">
-                    <InlineEditableField
-                      value={String(patient.age || "").replace(/\s*anos?\s*$/i, "")}
-                      onUpdate={(v) => handleUpdateField("age", v)}
-                      placeholder="IDADE"
-                      className="w-8 text-center"
-                    />
-                    {patient.age && <span>anos</span>}
+                  <div
+                    className="shrink-0 text-[10px] md:text-xs text-muted-foreground cursor-default"
+                    title="Idade atualizada automaticamente pelo cadastro do paciente."
+                  >
+                    {patient.age ? formatAgeDisplay(patient.age) : "IDADE"}
                   </div>
                 </div>
 
@@ -1317,12 +1240,11 @@ export function UtiPatientCard({
                     colorClass="bg-red-50/50 dark:bg-red-900/10 border border-red-200/30 dark:border-red-800/20"
                     alwaysShowAll
                   />
-                  <InlineEditableArray
+                  <ReadOnlyArray
                     items={alergias}
-                    onUpdate={(items) => handleUpdateField("utiAllergies", items)}
                     label="Alergias"
+                    placeholder="Sincronizadas com a prescrição"
                     colorClass="bg-red-50/50 dark:bg-red-900/10 border border-red-200/30 dark:border-red-800/20"
-                    alwaysShowAll
                   />
                   <InlineEditableArray
                     items={culturasAtb}
@@ -1366,10 +1288,9 @@ export function UtiPatientCard({
                   <span className="text-[10px] font-bold text-slate-500 dark:text-slate-500 tracking-wider">História admissional</span>
                 </div>
                 <div className="bg-muted/30 border border-border/30 rounded-md p-2">
-                  <InlineEditableTextarea
+                  <ReadOnlyTextarea
                     value={patient.admissionHistory || ""}
-                    onUpdate={(v) => handleUpdateField("admissionHistory", v)}
-                    placeholder="História admissional / Anamnese..."
+                    placeholder="Importada da admissão validada"
                   />
                 </div>
               </div>
@@ -1381,19 +1302,17 @@ export function UtiPatientCard({
                   <span className="text-[10px] font-bold text-slate-500 dark:text-slate-500 tracking-wider">Administrativo</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-                  <InlineEditableArray
+                  <ReadOnlyArray
                     items={setorOrigem}
-                    onUpdate={(items) => handleUpdateField("utiOriginSector", items)}
                     label="Setor de origem"
+                    placeholder="Importado da admissão"
                     colorClass="bg-muted/30 border border-border/30"
-                    alwaysShowAll
                   />
-                  <InlineEditableArray
+                  <ReadOnlyArray
                     items={motivoAdmissao}
-                    onUpdate={(items) => handleUpdateField("utiAdmissionReason", items)}
                     label="Motivo da admissão"
+                    placeholder="Importado da admissão"
                     colorClass="bg-muted/30 border border-border/30"
-                    alwaysShowAll
                   />
                   <div className="bg-muted/30 border border-border/30 rounded-md p-2 cursor-not-allowed" title="Edite em Edição Avançada">
                     <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">{admissionLabel}</span>
