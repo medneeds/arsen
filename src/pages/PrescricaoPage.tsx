@@ -2503,6 +2503,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic"
                 placeholder="Observações adicionais..."
               />
+              {/* Optional detailed nursing orientations — appears in the PDF as a discreet line */}
+              <Input
+                value={item.nursingNotes || ''}
+                onChange={(e) => onUpdate(item.id, "nursingNotes", e.target.value)}
+                className="h-7 text-[11px] bg-amber-50/40 dark:bg-amber-950/10 border-amber-200/40 dark:border-amber-800/30 text-amber-900 dark:text-amber-200 italic pl-2.5 focus:not-italic"
+                placeholder="Orientações detalhadas p/ enfermagem (opcional, vai p/ o PDF)..."
+              />
             </>
             );
           })()}
