@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
@@ -227,15 +228,65 @@ interface Saps3Record {
 }
 
 const COMORBIDITY_OPTIONS = [
-  { id: "cancer_hematologic", label: "Neoplasia hematológica" },
-  { id: "cancer_metastatic", label: "Câncer metastático" },
-  { id: "hiv_aids", label: "HIV/AIDS" },
-  { id: "cirrhosis", label: "Cirrose" },
-  { id: "heart_failure_nyha4", label: "IC NYHA IV" },
-  { id: "chronic_renal", label: "Doença renal crônica" },
-  { id: "immunosuppression", label: "Imunossupressão" },
-  { id: "chemotherapy", label: "Quimioterapia recente" },
+  { id: "cancer_hematologic", label: "Neoplasia hematológica", points: 10 },
+  { id: "cancer_metastatic", label: "Câncer metastático", points: 11 },
+  { id: "hiv_aids", label: "HIV/AIDS", points: 8 },
+  { id: "cirrhosis", label: "Cirrose", points: 4 },
+  { id: "heart_failure_nyha4", label: "IC NYHA IV", points: 6 },
+  { id: "chronic_renal", label: "Doença renal crônica", points: 3 },
+  { id: "immunosuppression", label: "Imunossupressão", points: 3 },
+  { id: "chemotherapy", label: "Quimioterapia recente", points: 3 },
 ];
+
+// ───── Antecedentes clínicos NÃO-SAPS (não pontuam, opcionais) ─────
+const CLINICAL_HISTORY_OPTIONS = [
+  { id: "has", label: "Hipertensão arterial (HAS)" },
+  { id: "dm2", label: "Diabetes tipo 2" },
+  { id: "dm1", label: "Diabetes tipo 1" },
+  { id: "dpoc", label: "DPOC" },
+  { id: "asma", label: "Asma" },
+  { id: "avc_previo", label: "AVC prévio" },
+  { id: "iam_previo", label: "IAM prévio" },
+  { id: "fa", label: "Fibrilação atrial" },
+  { id: "icc_nao_iv", label: "ICC (não NYHA IV)" },
+  { id: "dislipidemia", label: "Dislipidemia" },
+  { id: "obesidade", label: "Obesidade" },
+  { id: "hipotireoidismo", label: "Hipotireoidismo" },
+  { id: "chagas", label: "Doença de Chagas" },
+  { id: "epilepsia", label: "Epilepsia" },
+  { id: "depressao_ansiedade", label: "Depressão / Ansiedade" },
+  { id: "hepatopatia_nao_cirrose", label: "Hepatopatia (não cirrótica)" },
+  { id: "drc_nao_dialise", label: "DRC não dialítica" },
+];
+
+// ───── Drogas vasoativas (não pontuam SAPS — perfil hemodinâmico) ─────
+const VASOACTIVE_OPTIONS = [
+  { id: "noradrenalina", label: "Noradrenalina" },
+  { id: "adrenalina", label: "Adrenalina" },
+  { id: "vasopressina", label: "Vasopressina" },
+  { id: "dobutamina", label: "Dobutamina" },
+  { id: "dopamina", label: "Dopamina" },
+  { id: "milrinona", label: "Milrinona" },
+];
+
+interface VasoactiveEntry {
+  id: string;
+  dose?: string; // mcg/kg/min
+  hours?: string; // horas de uso
+}
+
+interface LifestyleHabits {
+  tabagismo: "" | "nunca" | "ex" | "atual";
+  macos_ano?: string;
+  etilismo: "" | "nunca" | "social" | "abuso" | "dependencia";
+  drogas: "" | "nunca" | "ex" | "atual";
+  drogas_detalhe?: string;
+}
+
+interface ClinicalHistoryData {
+  selected: string[];
+  livre?: string; // texto livre para condições adicionais
+}
 
 const RASS_LABELS: Record<number, string> = {
   [-5]: "Não responsivo",
@@ -312,6 +363,13 @@ export default function Saps3Page() {
   const [patientName, setPatientName] = useState("");
   const [age, setAge] = useState<string>("");
   const [comorbidities, setComorbidities] = useState<string[]>([]);
+  // Antecedentes / hábitos / vasoativos — opcionais e NÃO pontuam no SAPS
+  const [clinicalHistory, setClinicalHistory] = useState<ClinicalHistoryData>({ selected: [], livre: "" });
+  const [lifestyleHabits, setLifestyleHabits] = useState<LifestyleHabits>({
+    tabagismo: "", macos_ano: "", etilismo: "", drogas: "", drogas_detalhe: "",
+  });
+  const [vasoactiveOnAdmission, setVasoactiveOnAdmission] = useState<boolean>(false);
+  const [vasoactiveDrugs, setVasoactiveDrugs] = useState<VasoactiveEntry[]>([]);
   const [losBeforeIcu, setLosBeforeIcu] = useState<string>("");
   const [admissionSource, setAdmissionSource] = useState<string>("");
   const [plannedAdmission, setPlannedAdmission] = useState(false);
@@ -516,6 +574,23 @@ export default function Saps3Page() {
         setPatientName(namePref);
         setAge(r.age != null ? String(r.age) : (patientAgeFromContext ? String(patientAgeFromContext).replace(/\D/g, "") : ""));
         setComorbidities(Array.isArray(r.comorbidities) ? r.comorbidities : []);
+        // Hidrata seções opcionais (não pontuam)
+        const ch = r.clinical_history || {};
+        setClinicalHistory({
+          selected: Array.isArray(ch.selected) ? ch.selected : [],
+          livre: typeof ch.livre === "string" ? ch.livre : "",
+        });
+        const lh = r.lifestyle_habits || {};
+        setLifestyleHabits({
+          tabagismo: lh.tabagismo || "",
+          macos_ano: lh.macos_ano || "",
+          etilismo: lh.etilismo || "",
+          drogas: lh.drogas || "",
+          drogas_detalhe: lh.drogas_detalhe || "",
+        });
+        const vd = r.vasoactive_drugs || {};
+        setVasoactiveOnAdmission(!!vd.on_admission);
+        setVasoactiveDrugs(Array.isArray(vd.entries) ? vd.entries : []);
         setLosBeforeIcu(r.hospital_los_before_icu != null ? String(r.hospital_los_before_icu) : "");
         setAdmissionSource(r.icu_admission_source || "");
         setPlannedAdmission(!!r.planned_admission);
@@ -562,8 +637,8 @@ export default function Saps3Page() {
       return;
     }
 
-    // Caminho B — Fluxo de alocação tradicional (admissão nova vinda de pré-admissão/leito)
-    if (!fromAllocation || !patientNameFromContext) return;
+    // Caminho B — Fluxo de alocação tradicional OU navegação direta com contexto de paciente
+    if (!patientNameFromContext) return;
 
     setCompletingSapsId(null);
     setCompletingPatientId(null);
@@ -588,9 +663,12 @@ export default function Saps3Page() {
 
     const sectorFromUrl = state?.selectedSector || searchParams.get("selectedSector");
     const bedFromUrl = state?.selectedBed || searchParams.get("selectedBed");
-    setSelectedSector(sectorFromUrl || resolveSectorFromContext(destinationSectorFromContext, currentSectorCode || currentDepartment));
-    setSelectedBed(bedFromUrl || "");
+    setSelectedSector(sectorFromUrl || resolveSectorFromContext(destinationSectorFromContext || patientSectorParam, currentSectorCode || currentDepartment));
+    setSelectedBed(bedFromUrl || patientBedParam || "");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
+    setClinicalHistory({ selected: [], livre: "" });
+    setLifestyleHabits({ tabagismo: "", macos_ano: "", etilismo: "", drogas: "", drogas_detalhe: "" });
+    setVasoactiveOnAdmission(false); setVasoactiveDrugs([]);
     setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
     setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setRassScore(""); setConsciousnessReason(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
     setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
@@ -614,7 +692,9 @@ export default function Saps3Page() {
     // Reset rest
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
-    setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
+    setClinicalHistory({ selected: [], livre: "" });
+    setLifestyleHabits({ tabagismo: "", macos_ano: "", etilismo: "", drogas: "", drogas_detalhe: "" });
+    setVasoactiveOnAdmission(false); setVasoactiveDrugs([]);
     setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setRassScore(""); setConsciousnessReason(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
     setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
     setPao2Fio2(""); setIsVentilated(false);
@@ -674,6 +754,10 @@ export default function Saps3Page() {
     created_by: user?.id,
     age: age ? parseInt(age) : null,
     comorbidities,
+    // Seções opcionais (não pontuam SAPS) — perfil epidemiológico/hemodinâmico
+    clinical_history: { selected: clinicalHistory.selected, livre: clinicalHistory.livre || "" },
+    lifestyle_habits: { ...lifestyleHabits },
+    vasoactive_drugs: { on_admission: vasoactiveOnAdmission, entries: vasoactiveOnAdmission ? vasoactiveDrugs : [] },
     hospital_los_before_icu: losBeforeIcu ? parseInt(losBeforeIcu) : null,
     icu_admission_source: admissionSource || null,
     planned_admission: plannedAdmission,
@@ -1229,19 +1313,143 @@ export default function Saps3Page() {
                   </div>
                   <Separator />
                   <div>
-                    <Label className="text-sm font-medium mb-2 block">Comorbidades</Label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                      <Label className="text-sm font-medium block">Comorbidades SAPS 3</Label>
+                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-100 text-[10px]">
+                        Pontuam no escore — marque todas que se aplicam
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                       {COMORBIDITY_OPTIONS.map(c => (
-                        <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer rounded-md border border-emerald-100 bg-emerald-50/40 px-2 py-1.5 hover:bg-emerald-50">
                           <Checkbox
                             checked={comorbidities.includes(c.id)}
                             onCheckedChange={(checked) => {
                               setComorbidities(prev => checked ? [...prev, c.id] : prev.filter(x => x !== c.id));
                             }}
                           />
-                          {c.label}
+                          <span className="flex-1 normal-case">{c.label}</span>
+                          <span className="text-[10px] font-mono font-semibold text-emerald-700">+{c.points}</span>
                         </label>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* ─── Antecedentes clínicos (NÃO pontuam) ─── */}
+                  <div className="rounded-lg border border-amber-300 bg-amber-50/60 p-3 space-y-3">
+                    <div className="flex items-start gap-2 flex-wrap">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-amber-900 normal-case">
+                          Antecedentes clínicos — opcional
+                        </p>
+                        <p className="text-[11px] text-amber-800 normal-case">
+                          Não obrigatório · Não pontua no escore SAPS 3 · Útil para perfil epidemiológico do paciente.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {CLINICAL_HISTORY_OPTIONS.map(c => (
+                        <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={clinicalHistory.selected.includes(c.id)}
+                            onCheckedChange={(checked) => {
+                              setClinicalHistory(prev => ({
+                                ...prev,
+                                selected: checked
+                                  ? [...prev.selected, c.id]
+                                  : prev.selected.filter(x => x !== c.id),
+                              }));
+                            }}
+                          />
+                          <span className="normal-case">{c.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div>
+                      <Label className="text-xs text-amber-900 normal-case">Outros antecedentes (texto livre)</Label>
+                      <Input
+                        value={clinicalHistory.livre || ""}
+                        onChange={(e) => setClinicalHistory(prev => ({ ...prev, livre: e.target.value }))}
+                        placeholder="Ex.: Lupus, Doença de Crohn, transplante renal 2018..."
+                        className="bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* ─── Hábitos de vida (NÃO pontuam) ─── */}
+                  <div className="rounded-lg border border-amber-300 bg-amber-50/60 p-3 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-amber-900 normal-case">
+                          Hábitos de vida — opcional
+                        </p>
+                        <p className="text-[11px] text-amber-800 normal-case">
+                          Não obrigatório · Não pontua no escore SAPS 3.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs normal-case">Tabagismo</Label>
+                        <Select
+                          value={lifestyleHabits.tabagismo}
+                          onValueChange={(v: any) => setLifestyleHabits(prev => ({ ...prev, tabagismo: v }))}
+                        >
+                          <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nunca">Nunca fumou</SelectItem>
+                            <SelectItem value="ex">Ex-tabagista</SelectItem>
+                            <SelectItem value="atual">Tabagista atual</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {(lifestyleHabits.tabagismo === "ex" || lifestyleHabits.tabagismo === "atual") && (
+                          <Input
+                            className="mt-1 bg-white"
+                            placeholder="Maços-ano"
+                            value={lifestyleHabits.macos_ano || ""}
+                            onChange={(e) => setLifestyleHabits(prev => ({ ...prev, macos_ano: e.target.value }))}
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <Label className="text-xs normal-case">Etilismo</Label>
+                        <Select
+                          value={lifestyleHabits.etilismo}
+                          onValueChange={(v: any) => setLifestyleHabits(prev => ({ ...prev, etilismo: v }))}
+                        >
+                          <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nunca">Nunca</SelectItem>
+                            <SelectItem value="social">Social</SelectItem>
+                            <SelectItem value="abuso">Abuso</SelectItem>
+                            <SelectItem value="dependencia">Dependência</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs normal-case">Drogas ilícitas</Label>
+                        <Select
+                          value={lifestyleHabits.drogas}
+                          onValueChange={(v: any) => setLifestyleHabits(prev => ({ ...prev, drogas: v }))}
+                        >
+                          <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nunca">Nunca</SelectItem>
+                            <SelectItem value="ex">Ex-usuário</SelectItem>
+                            <SelectItem value="atual">Usuário atual</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {(lifestyleHabits.drogas === "ex" || lifestyleHabits.drogas === "atual") && (
+                          <Input
+                            className="mt-1 bg-white"
+                            placeholder="Detalhe (ex.: maconha, cocaína...)"
+                            value={lifestyleHabits.drogas_detalhe || ""}
+                            onChange={(e) => setLifestyleHabits(prev => ({ ...prev, drogas_detalhe: e.target.value }))}
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -1330,6 +1538,93 @@ export default function Saps3Page() {
               </CollapsibleContent>
             </Card>
           </Collapsible>
+
+          {/* ─── Suporte hemodinâmico (NÃO pontua SAPS — perfil hemodinâmico) ─── */}
+          <Card className="border-amber-300">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between text-base flex-wrap gap-2">
+                <span className="flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-rose-500" />
+                  Suporte hemodinâmico na admissão
+                </span>
+                <Badge variant="outline" className="border-amber-400 bg-amber-50 text-amber-800 text-[10px]">
+                  Opcional · Não pontua SAPS
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-0">
+              <div className="rounded-md bg-amber-50/60 border border-amber-200 p-2 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <p className="text-[11px] text-amber-900 normal-case">
+                  Não obrigatório · Não entra no escore SAPS 3. Registre para qualificar o perfil hemodinâmico do paciente que está entrando na UTI.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={vasoactiveOnAdmission}
+                  onCheckedChange={(v) => {
+                    setVasoactiveOnAdmission(v);
+                    if (!v) setVasoactiveDrugs([]);
+                  }}
+                />
+                <Label className="normal-case">Em uso de drogas vasoativas na admissão?</Label>
+              </div>
+              {vasoactiveOnAdmission && (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    {VASOACTIVE_OPTIONS.map(opt => {
+                      const checked = vasoactiveDrugs.some(d => d.id === opt.id);
+                      return (
+                        <button
+                          type="button"
+                          key={opt.id}
+                          onClick={() => {
+                            setVasoactiveDrugs(prev =>
+                              checked
+                                ? prev.filter(d => d.id !== opt.id)
+                                : [...prev, { id: opt.id, dose: "", hours: "" }],
+                            );
+                          }}
+                          className={cn(
+                            "px-3 py-1 rounded-full text-xs font-medium border transition-colors normal-case",
+                            checked
+                              ? "bg-rose-100 border-rose-400 text-rose-800"
+                              : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50",
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {vasoactiveDrugs.length > 0 && (
+                    <div className="space-y-2">
+                      {vasoactiveDrugs.map((d, idx) => {
+                        const meta = VASOACTIVE_OPTIONS.find(o => o.id === d.id);
+                        return (
+                          <div key={d.id} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_140px] gap-2 items-center bg-rose-50/40 border border-rose-200 rounded-md p-2">
+                            <span className="text-sm font-medium normal-case">{meta?.label || d.id}</span>
+                            <Input
+                              placeholder="Dose (mcg/kg/min)"
+                              value={d.dose || ""}
+                              onChange={(e) => setVasoactiveDrugs(prev => prev.map((x, i) => i === idx ? { ...x, dose: e.target.value } : x))}
+                              className="bg-white"
+                            />
+                            <Input
+                              placeholder="Horas em uso"
+                              value={d.hours || ""}
+                              onChange={(e) => setVasoactiveDrugs(prev => prev.map((x, i) => i === idx ? { ...x, hours: e.target.value } : x))}
+                              className="bg-white"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Box III */}
           <Collapsible open={box3Open} onOpenChange={setBox3Open}>

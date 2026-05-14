@@ -122,9 +122,27 @@ export default function PacienteHubPage() {
     }
   };
 
-  const handleGoSaps = () => {
+  const handleGoSaps = async () => {
     const qs = new URLSearchParams();
     Object.entries(ctx).forEach(([k, v]) => v && qs.set(k, v));
+    // Busca a ficha SAPS pendente do paciente para abrir direto no formulário (caminho A)
+    if (ctx.patientId) {
+      try {
+        const { data } = await supabase
+          .from("saps3_assessments" as any)
+          .select("id")
+          .eq("patient_id", ctx.patientId)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const sapsId = (data as any)?.id;
+        if (sapsId) qs.set("completeSapsId", sapsId);
+        else qs.set("fromAllocation", "true"); // fallback caminho B
+      } catch {
+        qs.set("fromAllocation", "true");
+      }
+    }
     navigate(`/saps3?${qs.toString()}`);
   };
 
