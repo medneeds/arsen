@@ -3643,6 +3643,8 @@ const PrescricaoPage = () => {
   const [editingInsulinItemId, setEditingInsulinItemId] = useState<string | null>(null);
   const [careCatalogOpen, setCareCatalogOpen] = useState(false);
   const [nutritionWizardOpen, setNutritionWizardOpen] = useState(false);
+  const [nutritionConfirmOpen, setNutritionConfirmOpen] = useState(false);
+  const [manualOpenCategories, setManualOpenCategories] = useState<Set<PrescriptionCategory>>(new Set());
   const [hydrationWizardOpen, setHydrationWizardOpen] = useState(false);
   const [replacementWizardOpen, setReplacementWizardOpen] = useState(false);
   const [itemAssistantTargetId, setItemAssistantTargetId] = useState<string | null>(null);
@@ -6426,7 +6428,7 @@ const PrescricaoPage = () => {
                 { id: 'cuidados', label: 'Cuidados e orientações', cats: ['care', 'nonstandard'] },
               ];
               return GROUPS.map(group => {
-                const visibleCats = group.cats.filter(c => itemsByCategory[c].length > 0);
+                const visibleCats = group.cats.filter(c => itemsByCategory[c].length > 0 || manualOpenCategories.has(c));
                 if (visibleCats.length === 0) return null;
                 return (
                   <div key={group.id} className="space-y-3">
@@ -6442,7 +6444,7 @@ const PrescricaoPage = () => {
               const simple = isSimpleCategory(cat);
               const IconComp = CATEGORY_ICONS[config.icon] || Pill;
 
-              if (catItems.length === 0) return null;
+              if (catItems.length === 0 && !manualOpenCategories.has(cat)) return null;
 
               return (
                 <div key={cat} id={`prescription-cat-${cat}`} className="rounded-xl border border-border bg-card scroll-mt-24">
@@ -6694,6 +6696,50 @@ const PrescricaoPage = () => {
         }}
       />
 
+      {/* Nutrition entry-flow confirmation: assistente vs manual */}
+      <AlertDialog open={nutritionConfirmOpen} onOpenChange={setNutritionConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <UtensilsCrossed className="h-4 w-4 text-emerald-600" />
+              Seguir assistente de terapia nutricional?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              O assistente sugere a estratégia (Zero · Oral · Enteral · NPT), volume, fracionamento e cuidados com base no paciente.
+              Se preferir, você pode adicionar manualmente e usar a busca de nutrição para itens específicos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel
+              onClick={() => {
+                setNutritionConfirmOpen(false);
+                setManualOpenCategories(prev => {
+                  const n = new Set(prev);
+                  n.add('nutrition');
+                  return n;
+                });
+                setActiveTab('nutrition');
+                setTimeout(() => {
+                  document.getElementById('prescription-cat-nutrition')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+              }}
+            >
+              Adicionar manualmente
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setNutritionConfirmOpen(false);
+                setNutritionWizardOpen(true);
+              }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              Seguir assistente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <HydrationWizard
         open={hydrationWizardOpen}
         onOpenChange={setHydrationWizardOpen}
@@ -6751,7 +6797,7 @@ const PrescricaoPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
                 <button
                   type="button"
-                  onClick={() => setNutritionWizardOpen(true)}
+                  onClick={() => setNutritionConfirmOpen(true)}
                   className="text-left rounded-lg border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-400 dark:bg-emerald-950/20 dark:border-emerald-900 transition-all p-3 group"
                 >
                   <div className="flex items-center gap-2 mb-1">
