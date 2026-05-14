@@ -656,7 +656,7 @@ export function AntimicrobialGuideDialog({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label className="text-[10px]">Sítio de Infecção / Indicação Clínica</Label>
+                      <Label className="text-[10px]">Sítio de Infecção / Indicação Clínica{mode === 'prescribe' && <Req />}</Label>
                       <Select value={entry.infectionSite} onValueChange={v => updateEntry(entry.id, "infectionSite", v)}>
                         <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                         <SelectContent>
