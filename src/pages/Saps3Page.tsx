@@ -691,7 +691,9 @@ export default function Saps3Page() {
     // Reset rest
     setSelectedBed("");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
-    setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
+    setClinicalHistory({ selected: [], livre: "" });
+    setLifestyleHabits({ tabagismo: "", macos_ano: "", etilismo: "", drogas: "", drogas_detalhe: "" });
+    setVasoactiveOnAdmission(false); setVasoactiveDrugs([]);
     setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setRassScore(""); setConsciousnessReason(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
     setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
     setPao2Fio2(""); setIsVentilated(false);
