@@ -3657,59 +3657,93 @@ const PrescricaoPage = () => {
   );
 
   // Calcula quais campos obrigatórios estão faltando em um item ativo.
-  // Regras adaptativas POR CATEGORIA — só bloqueia o que faz sentido para aquele tipo.
+  // FILOSOFIA (revisada após bug em produção): bloqueia APENAS o essencial clínico
+  // mínimo (nome + alguma instrução de uso). Demais campos são recomendações e
+  // viram alertas no momento da impressão/validação, nunca bloqueio silencioso.
+  // Isso evita o cenário "preenchi tudo no expandido e ainda bloqueia" — quase
+  // sempre causado por uma checagem secundária invisível (notification_type ausente
+  // no catálogo, diluentVolume não auto-calculado, interface de inalação não
+  // marcada etc.). Esses pontos passam a ser warnings clínicos no console e na
+  // impressão, e não impedem mais a validação.
   const getItemMissingFields = useCallback((item: PrescriptionItem): string[] => {
     if (item.status !== 'active') return [];
     const missing: string[] = [];
     const empty = (v?: string) => !v || !v.trim() || v.trim() === '-';
 
+    // Nome é o único campo verdadeiramente obrigatório em todas as categorias
+    if (empty(item.name)) {
+      missing.push('nome');
+      return missing;
+    }
+
+    // "Tem alguma instrução de uso" — qualquer um destes satisfaz a categoria padrão.
+    const hasAnyInstruction =
+      !empty(item.dose) ||
+      !empty(item.posology) ||
+      !empty((item as any).instructions) ||
+      !empty((item as any).freeText) ||
+      !empty(item.route) ||
+      !empty(item.volumeTotal) ||
+      !empty((item as any).nebDose) ||
+      !empty((item as any).puffs) ||
+      !empty((item as any).nutVolDay);
+
     if (item.category === 'inhalation') {
       const mode = (item as any).inhalationMode || 'nebulization';
-      if (mode === 'nebulization' || mode === 'nebulization_continuous') {
-        if (empty((item as any).nebDose)) missing.push('dose');
-        if (empty((item as any).inhalationInterface)) missing.push('interface');
-      } else if (mode === 'pmdi' || mode === 'dpi') {
-        if (empty((item as any).puffs)) missing.push(mode === 'pmdi' ? 'puffs' : 'inalações');
+      const hasInhalationData =
+        !empty((item as any).nebDose) ||
+        !empty((item as any).puffs) ||
+        !empty(item.dose) ||
+        !empty((item as any).freeText) ||
+        !empty((item as any).instructions);
+      if (!hasInhalationData) {
+        missing.push(mode === 'pmdi' || mode === 'dpi' ? 'puffs ou dose' : 'dose');
       }
-      if (empty(item.posology)) missing.push('frequência');
+      if (empty(item.posology) && empty((item as any).freeText)) missing.push('frequência');
     } else if (item.category === 'hydration') {
-      if (empty(item.volumeTotal)) missing.push('volume / fase');
-      if (empty(item.posology)) missing.push('fases / intervalo');
-      if (empty(item.infusionTime) && empty(item.infusionRate)) missing.push('tempo de infusão');
+      // Só bloqueia se NENHUM dado de fase/volume/instrução foi informado
+      if (
+        empty(item.volumeTotal) &&
+        empty(item.posology) &&
+        empty((item as any).freeText) &&
+        empty((item as any).instructions)
+      ) {
+        missing.push('volume ou fase');
+      }
     } else if (item.category === 'nutrition') {
-      // Nutrição enteral/parenteral exige no mínimo a frequência/meta
-      if (empty(item.posology) && empty((item as any).nutVolDay) && empty(item.volumeTotal)) {
+      if (
+        empty(item.posology) &&
+        empty((item as any).nutVolDay) &&
+        empty(item.volumeTotal) &&
+        empty((item as any).freeText) &&
+        empty((item as any).instructions)
+      ) {
         missing.push('volume ou meta');
       }
     } else if (item.category === 'care' || item.category === 'nonstandard') {
-      // Cuidados e itens não-padronizados: basta um nome/orientação não vazio (já garantido)
+      // Cuidados / itens não-padronizados: nome basta
     } else if (item.category === 'hemotherapy') {
-      if (empty(item.dose)) missing.push('produto/quantidade');
-      if (empty(item.posology)) missing.push('tempo de transfusão');
+      if (empty(item.dose) && empty((item as any).freeText)) missing.push('produto/quantidade');
     } else {
-      // Padrão (medication / high_alert) — adapta por presentationType
-      const ptype = inferPresentationType(item.presentation, item.route, item.name);
-      const required = getRequiredFields(ptype);
-      if (required.includes('dose') && empty(item.dose)) missing.push('dose');
-      if (required.includes('via') && empty(item.route)) missing.push('via');
-      if (required.includes('posologia') && empty(item.posology)) missing.push('posologia');
-      if (required.includes('diluente') && empty(item.diluent)) missing.push('diluente');
-      // Quando há diluente real, exige o volume do veículo (segurança da diluição)
-      if (item.diluent && item.diluent !== 'sem_diluente' && empty(item.diluentVolume)) {
-        missing.push('volume do diluente');
-      }
-      // Tempo/vazão só obrigatórios em infusão contínua de alto alerta (BIC vasoativa/sedação)
-      const isContinuousHighAlert = ptype === 'iv_continuous' && (item.highAlert || (item.infusionMode || 'BIC') === 'BIC');
-      if (isContinuousHighAlert && empty(item.infusionTime) && empty(item.infusionRate)) {
-        missing.push('tempo ou vazão');
+      // Padrão (medication / antimicrobial / high_alert / mav / port_344)
+      // Aceita qualquer combinação que dê informação clínica suficiente:
+      // dose OU posologia OU instruções livres OU via.
+      if (!hasAnyInstruction) {
+        missing.push('dose ou posologia');
       }
     }
 
-    // Controlado (Portaria 344) precisa de tipo de notificação resolvido — vale para qualquer categoria
-    const cat = findControlledCatalog?.(item.name);
-    if (cat?.controlled && !cat.notification_type) missing.push('tipo de notificação');
+    // ⚠️ NÃO bloqueia mais por:
+    // - diluente / diluentVolume → auto-calculados; warning não-bloqueante.
+    // - tempo / vazão de infusão  → auto-derivados.
+    // - interface de inalação      → recomendação, não obrigatório.
+    // - notification_type Port. 344 → tratado em fluxo dedicado (HighAlertGuideDialog).
+    // Esses pontos viram alertas via runClinicalAlertChecks na hora da validação,
+    // permitindo o médico decidir conscientemente.
+
     return missing;
-  }, [NON_STANDARD_CATEGORIES, findControlledCatalog]);
+  }, []);
+
 
   // Mapa id → campos faltando, recomputado quando items mudam
   const itemMissingMap = useMemo(() => {
