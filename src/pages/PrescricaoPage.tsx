@@ -7093,8 +7093,11 @@ const PrescricaoPage = () => {
         open={atmStatusOpen}
         onOpenChange={(open) => {
           setAtmStatusOpen(open);
-          // Se o usuário fechar sem prosseguir, limpa o med pré-selecionado da busca
-          if (!open) setPendingAntimicrobialMed(null);
+          // Cleanup ao fechar: limpa o med vindo da busca SE não estamos
+          // transitando para a guia (caso contrário, o seed seria perdido).
+          if (!open && !transitioningToAtmGuideRef.current) {
+            setPendingAntimicrobialMed(null);
+          }
         }}
         activeItems={items
           .filter(i => i.category === 'antimicrobial' && i.status === 'active')
