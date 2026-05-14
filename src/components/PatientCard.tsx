@@ -629,6 +629,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isReleasePreAdmissionOpen, setIsReleasePreAdmissionOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [movementDialogOpen, setMovementDialogOpen] = useState(false);
   const [movementType, setMovementType] = useState<"ALTA" | "ÓBITO" | "TRANSFERÊNCIA" | null>(null);
