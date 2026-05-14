@@ -1882,7 +1882,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     }
                   }}>
                     <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-28"><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-72">
                       <SelectItem value="sem_diluente" className="text-xs font-medium">Sem diluente</SelectItem>
                       <SelectItem value="SF0,9%" className="text-xs">SF 0,9%</SelectItem>
                       <SelectItem value="SG5%" className="text-xs">SG 5%</SelectItem>
