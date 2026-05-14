@@ -233,6 +233,7 @@ interface PatientCardProps {
   patient: Patient;
   onUpdate: (updatedPatient: Patient) => void;
   onDelete?: (patientId: string) => void;
+  onReleasePreAdmissionBed?: (patientId: string, payload: { reason: string; reasonNote: string }) => void | Promise<void>;
   onUndelete?: (patient: Patient) => void;
   selectionMode?: boolean;
   isSelected?: boolean;
