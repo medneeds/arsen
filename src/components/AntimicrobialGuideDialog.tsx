@@ -624,7 +624,7 @@ export function AntimicrobialGuideDialog({
                       <Input value={entry.posology} onChange={e => updateEntry(entry.id, "posology", e.target.value)} className="h-8 text-xs" />
                     </div>
                     <div>
-                      <Label className="text-[10px]">Data de Início</Label>
+                      <Label className="text-[10px]">Data de Início{mode === 'prescribe' && <Req />}</Label>
                       <Input type="date" value={entry.startDate} onChange={e => updateEntry(entry.id, "startDate", e.target.value)} className="h-8 text-xs" />
                     </div>
                     <div>
