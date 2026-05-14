@@ -83,6 +83,7 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
       ${row("Respiratório", d.exam.resp)}
       ${row("Abdome", d.exam.abd)}
       ${row("Extremidades", d.exam.ext)}
+      ${row("Neurológico", d.exam.neuro)}
     </table>
 
     <h2 class="nz-section">Diagnóstico (CID-10)</h2>
