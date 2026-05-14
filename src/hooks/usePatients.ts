@@ -86,7 +86,10 @@ export function usePatients(department?: Department, sector?: string) {
         psmStatus: p.psm_status as Patient['psmStatus'],
         clinicalStatus: (p as any).clinical_status as Patient['clinicalStatus'],
         isVacant: (p as any).is_vacant ?? false,
-        admissionStatus: ((p as any).admission_status as Patient['admissionStatus']) ?? ((p as any).is_vacant ? undefined : 'admitido'),
+        // Leito vago NUNCA carrega admission_status (evita "admitido fantasma" pós-alta/óbito)
+        admissionStatus: (p as any).is_vacant
+          ? undefined
+          : (((p as any).admission_status as Patient['admissionStatus']) ?? 'admitido'),
         admittedAt: (p as any).admitted_at ?? null,
       }));
 
@@ -650,7 +653,9 @@ export function usePatients(department?: Department, sector?: string) {
     psmStatus: record.psm_status as Patient['psmStatus'],
     clinicalStatus: record.clinical_status as Patient['clinicalStatus'],
     isVacant: record.is_vacant ?? false,
-    admissionStatus: (record.admission_status as Patient['admissionStatus']) ?? (record.is_vacant ? undefined : 'admitido'),
+    admissionStatus: record.is_vacant
+      ? undefined
+      : ((record.admission_status as Patient['admissionStatus']) ?? 'admitido'),
     admittedAt: record.admitted_at ?? null,
   });
 
