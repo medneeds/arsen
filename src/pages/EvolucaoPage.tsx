@@ -379,7 +379,7 @@ const EvolucaoPage = () => {
         {!loading && (
           <EvolutionTimeline
             evolutions={evolutions}
-            admissionDate={patient.admissionDate}
+            admissionDate={livePatient?.admissionDate || patient.admissionDate}
             patientRecord={prontuarioReal}
             onUpdate={updateEvolution}
             onValidate={validateEvolution}
