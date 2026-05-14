@@ -1739,8 +1739,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     }
     // Route + posology inline (skip posology for hydration since interval já está na frase)
     const routePosology: string[] = [];
-    if (item.route && item.route !== '-' && !isInhalation) routePosology.push(item.route);
-    if (!isHydration && !isInhalation && item.posology && item.posology !== '-') routePosology.push(item.posology);
+    if (item.route && item.route !== '-' && !isInhalation && !isNutrition) routePosology.push(item.route);
+    if (!isHydration && !isInhalation && !isNutrition && item.posology && item.posology !== '-') routePosology.push(item.posology);
 
 
     return (
