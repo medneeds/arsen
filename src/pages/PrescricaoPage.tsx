@@ -1843,12 +1843,12 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   }
                 }}>
                   <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-32"><SelectValue /></SelectTrigger>
-                  <SelectContent>{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
+                  <SelectContent className="max-h-72">{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
                 </Select>
                 <span className="text-muted-foreground text-[10px]">—</span>
                 <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
                   <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-28"><SelectValue /></SelectTrigger>
-                  <SelectContent>{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
+                  <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
                 </Select>
               </div>
 
