@@ -352,8 +352,85 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
               })}
             </div>
           )}
+
+          {/* Resultados do registro de prontuários — só aparece quando há busca ativa */}
+          {searchTerm.trim().length >= 2 && (() => {
+            const fila = new Set(filteredPreAdmissions.map(p => p.patient_registry_id).filter(Boolean) as string[]);
+            const extras = registryResults.filter(r => !fila.has(r.id));
+            return (
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  <User className="h-3 w-3" />
+                  Pacientes do hospital
+                  <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                    {isSearchingRegistry ? "..." : extras.length}
+                  </Badge>
+                </div>
+                {extras.length === 0 ? (
+                  <Card className="border-dashed">
+                    <CardContent className="p-3 text-center text-xs text-muted-foreground">
+                      {isSearchingRegistry
+                        ? "Buscando no cadastro de pacientes..."
+                        : "Nenhum prontuário adicional encontrado."}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                    {extras.map(r => {
+                      const age = calcAge(r.birth_date ?? null);
+                      return (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => setActionPatient(r)}
+                          className="text-left"
+                        >
+                          <Card className="transition-all hover:shadow-md hover:border-primary/50 border-l-4 border-l-primary/30">
+                            <CardContent className="p-3 space-y-1.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-bold text-xs truncate">{r.full_name}</p>
+                                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5 flex-wrap">
+                                    {age !== null && <span>{age}a</span>}
+                                    {r.sex && <span>• {r.sex}</span>}
+                                    {r.medical_record && <span>• Pront: {r.medical_record}</span>}
+                                  </div>
+                                  {r.cpf && (
+                                    <p className="text-[10px] text-muted-foreground mt-0.5">CPF: {r.cpf}</p>
+                                  )}
+                                </div>
+                                <Badge variant="secondary" className="text-[9px] shrink-0 px-1.5 py-0.5">
+                                  Prontuário
+                                </Badge>
+                              </div>
+                              <p className="text-[10px] text-primary font-medium pt-1 border-t">
+                                Clique para abrir ações →
+                              </p>
+                            </CardContent>
+                          </Card>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </CollapsibleContent>
       </Collapsible>
+
+      {currentHospital?.id && currentState?.id && (
+        <PatientSearchActionsDialog
+          open={!!actionPatient}
+          onOpenChange={(o) => !o && setActionPatient(null)}
+          patient={actionPatient}
+          defaultSectorMapTitle={sectorFilterLabel}
+          hospitalUnitId={currentHospital.id}
+          stateId={currentState.id}
+          department={currentDepartment ?? "geral"}
+          onSuccess={fetchPreAdmissions}
+        />
+      )}
 
       <PatientRegistrationDialog
         open={showRegistration}
