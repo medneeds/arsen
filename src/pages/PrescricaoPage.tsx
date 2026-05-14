@@ -1215,50 +1215,6 @@ function NutritionFields({
         </>
       )}
 
-      {subtype === 'npt' && (
-        <>
-          <div className="flex items-center gap-1.5 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
-            <Droplets className="h-3 w-3 text-primary shrink-0" />
-            <FieldLabel>Vol total:</FieldLabel>
-            <TinyInput value={item.volumeTotal || ''} onChange={(e) => onUpdate(item.id, 'volumeTotal', e.target.value)} className="w-16 text-center" placeholder="mL" />
-            <span className="text-muted-foreground/40">·</span>
-            <FieldLabel>Vazão:</FieldLabel>
-            <TinyInput value={item.infusionRate || ''} onChange={(e) => onUpdate(item.id, 'infusionRate', e.target.value)} className="w-14 text-center" placeholder="mL/h" />
-            <span className="text-muted-foreground/40">·</span>
-            <FieldLabel>Correr em:</FieldLabel>
-            <TinyInput value={item.infusionTime || ''} onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)} className="w-14 text-center" placeholder="18" />
-            <Select value={item.infusionTimeUnit || 'h'} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="h" className="text-xs">horas</SelectItem>
-                <SelectItem value="min" className="text-xs">min</SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-muted-foreground/40">·</span>
-            <FieldLabel>Acesso:</FieldLabel>
-            <Select value={item.nutAccess || ''} onValueChange={(v) => onUpdate(item.id, 'nutAccess', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-28"><SelectValue placeholder="—" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="CVC" className="text-xs">CVC</SelectItem>
-                <SelectItem value="PICC" className="text-xs">PICC</SelectItem>
-                <SelectItem value="Periférico" className="text-xs">Periférico</SelectItem>
-                <SelectItem value="Port-a-cath" className="text-xs">Port-a-cath</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            <div className="flex items-start gap-1">
-              <FieldLabel>Composição:</FieldLabel>
-              <Textarea value={item.nutComposition || ''} onChange={(e) => onUpdate(item.id, 'nutComposition', e.target.value)} className="min-h-[36px] text-[11px] bg-muted/10 border-border/30 flex-1 py-1" placeholder="Glic 4 g/kg/dia · AA 1,5 g/kg/dia · Lip 1 g/kg/dia · eletrólitos" />
-            </div>
-            <div className="flex items-start gap-1">
-              <FieldLabel>Monitorização:</FieldLabel>
-              <Textarea value={item.nutMonitoring || ''} onChange={(e) => onUpdate(item.id, 'nutMonitoring', e.target.value)} className="min-h-[36px] text-[11px] bg-muted/10 border-border/30 flex-1 py-1" placeholder="Glicemia 6/6h · ionograma · TG 2x/sem · função hepática" />
-            </div>
-          </div>
-        </>
-      )}
-
       {subtype === 'zero' && (
         <div className="flex items-center gap-1 px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
           <FieldLabel>Motivo do jejum:</FieldLabel>
