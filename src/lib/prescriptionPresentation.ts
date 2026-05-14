@@ -107,11 +107,12 @@ export function getRequiredFields(type: PresentationType): RequiredField[] {
     case 'iv_bolus':
       return ['dose', 'via', 'posologia'];
     case 'iv_intermittent':
-      return ['dose', 'via', 'posologia', 'diluente', 'volume total', 'tempo de infusão'];
+      // tempo/volume validados condicionalmente em getItemMissingFields
+      return ['dose', 'via', 'posologia', 'diluente'];
     case 'iv_continuous':
-      return ['dose', 'via', 'posologia', 'diluente', 'volume total'];
+      return ['dose', 'via', 'posologia', 'diluente'];
     case 'inhalation':
-      return ['dose', 'via', 'posologia', 'diluente', 'volume total'];
+      return ['dose', 'via', 'posologia'];
     case 'unknown':
     default:
       return ['dose', 'via', 'posologia'];
