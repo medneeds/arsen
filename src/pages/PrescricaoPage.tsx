@@ -228,8 +228,6 @@ interface PrescriptionItem {
   // Reconstituição (pó liofilizado) — Sprint A
   reconstitutionSolvent?: string;   // Ex.: 'AD', 'SF 0,9%', 'próprio diluente'
   reconstitutionVolume?: string;    // mL adicionados ao frasco-ampola
-  // Orientações detalhadas para enfermagem (opcional, sai como linha discreta no PDF)
-  nursingNotes?: string;
 }
 
 // Detect nutrition subtype from wizard-generated item name
@@ -2502,13 +2500,6 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 onChange={(e) => onUpdate(item.id, "instructions", e.target.value)}
                 className="h-7 text-[11px] bg-muted/10 border-border/20 text-muted-foreground italic pl-2.5 focus:text-foreground focus:not-italic"
                 placeholder="Observações adicionais..."
-              />
-              {/* Optional detailed nursing orientations — appears in the PDF as a discreet line */}
-              <Input
-                value={item.nursingNotes || ''}
-                onChange={(e) => onUpdate(item.id, "nursingNotes", e.target.value)}
-                className="h-7 text-[11px] bg-amber-50/40 dark:bg-amber-950/10 border-amber-200/40 dark:border-amber-800/30 text-amber-900 dark:text-amber-200 italic pl-2.5 focus:not-italic"
-                placeholder="Orientações detalhadas p/ enfermagem (opcional, vai p/ o PDF)..."
               />
             </>
             );
@@ -5512,9 +5503,8 @@ const PrescricaoPage = () => {
       return;
     }
     setPrintPrescription(true);
-    // Guias regulatórias começam desmarcadas — usuário marca explicitamente se quiser imprimir junto
-    setPrintGuideAtm(false);
-    setPrintGuidePsy(false);
+    setPrintGuideAtm(hasActiveAtb);
+    setPrintGuidePsy(hasActivePsy);
     setPrintGuidesOpen(true);
   };
 
@@ -7918,15 +7908,6 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     item.dose && item.dose !== '-' ? item.dose : null,
                     item.route && item.route !== '-' ? item.route : null,
                     item.posology && item.posology !== '-' ? item.posology : null,
-                    // Preparo IV inline (mesma linha do intervalo) — só quando não é insulina/inalação
-                    ...(hasIvPreparo && !insulinDesc && !isInhalation ? [
-                      item.reconstitutionVolume && item.reconstitutionSolvent ? `recon. ${item.reconstitutionVolume}mL ${item.reconstitutionSolvent}` : null,
-                      item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'sem diluição' : null,
-                      item.accessType && item.accessType !== '-' ? item.accessType : null,
-                      item.volumeTotal ? `vol ${item.volumeTotal}mL` : null,
-                      item.infusionTime ? `correr ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
-                      item.infusionRate ? `${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
-                    ] : []),
                   ].filter(Boolean).join(' · ')}
                   {item.flags.length > 0 && (
                     <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#334155', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
@@ -7960,8 +7941,20 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   </div>
                 )}
 
-                {/* Preparo IV agora é renderizado inline na linha de dose/via/intervalo (acima) */}
-
+                {/* Preparo IV (medicação / hidratação) */}
+                {hasIvPreparo && !insulinDesc && (
+                  <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
+                    {[
+                      item.reconstitutionVolume && item.reconstitutionSolvent ? `Reconstituir em ${item.reconstitutionVolume}mL de ${item.reconstitutionSolvent}` : null,
+                      item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'Sem diluição' : null,
+                      item.accessType && item.accessType !== '-' ? item.accessType : null,
+                      item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
+                      item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
+                      item.infusionRate ? `${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
+                      item.concentration ? `Conc: ${item.concentration}` : null,
+                    ].filter(Boolean).join(' · ')}
+                  </div>
+                )}
 
                 {/* Linha de acompanhamento ATB (sítio + dia de terapia + janela) */}
                 {item.category === 'antimicrobial' && (item.atbInfectionSite || item.atbStartDate) && (
@@ -7994,10 +7987,10 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   </div>
                 )}
 
-                {/* Orientações detalhadas p/ enfermagem (opcional, preenchidas pelo médico) — linha discreta */}
-                {item.nursingNotes && (
-                  <div style={{ fontSize: '6.5pt', color: '#475569', lineHeight: 1.3, marginTop: '2px', fontStyle: 'italic' }}>
-                    <span style={{ fontWeight: 700, color: '#334155', fontStyle: 'normal' }}>Enf.: </span>{item.nursingNotes}
+                {/* Instruções livres (quando não há preparo/inalação/insulina) */}
+                {item.instructions && !hasIvPreparo && !insulinDesc && !isInhalation && (
+                  <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
+                    {item.instructions}
                   </div>
                 )}
               </td>
