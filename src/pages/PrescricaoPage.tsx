@@ -464,35 +464,45 @@ function buildPrepDescription(item: PrescriptionItem): string {
     return assembleInhalationInstruction(item as any);
   }
   const parts: string[] = [];
-  if (item.quantity && item.quantity !== '1' && item.quantityUnit) {
-    parts.push(`${item.quantity} ${item.quantityUnit}.`);
-  } else if (item.quantityUnit) {
-    parts.push(`1 ${item.quantityUnit}.`);
+
+  // 1) Quantidade + forma — quantidade implícita = 1
+  if (item.quantityUnit) {
+    const qty = (item.quantity && item.quantity.trim() && item.quantity.trim() !== '0') ? item.quantity.trim() : '1';
+    parts.push(`${qty} ${item.quantityUnit}.`);
   }
-  if (item.dose && item.dose !== '-') parts.push(item.dose);
+
+  // 2) Dose
+  if (item.dose && item.dose !== '-') parts.push(`${item.dose}.`);
+
+  // 3) Diluição
   if (item.diluent && item.diluent !== 'sem_diluente') {
     let dilPart = `Diluir em ${item.diluent}`;
     if (item.diluentVolume) dilPart += ` ${item.diluentVolume}mL`;
     parts.push(dilPart + '.');
-  } else if (item.diluent === 'sem_diluente') {
-    parts.push('Sem diluição.');
   }
-  if (item.accessType) parts.push(`Acesso ${item.accessType.toLowerCase()}.`);
-  if (item.volumeTotal) parts.push(`Volume total: ${item.volumeTotal}mL.`);
+
+  // 4) Volume total — só se preenchido E diferente do volume do diluente (evita redundância)
+  const volTotalNum = parseFloat((item.volumeTotal || '').replace(',', '.'));
+  const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
+  const hasDistinctTotal = item.volumeTotal && (!item.diluentVolume || (volTotalNum && volTotalNum !== volDilNum));
+  if (hasDistinctTotal) parts.push(`Volume total: ${item.volumeTotal}mL.`);
+
+  // 5) Correr em / Velocidade
   if (item.infusionTime || item.infusionRate) {
     const unit = item.infusionTimeUnit || 'min';
     const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
     if (item.infusionTime && item.infusionRate) {
-      const timeLabel = `${item.infusionTime}${unit === 'h' ? 'h' : 'min'}`;
-      parts.push(`Correr em ${timeLabel} — ${item.infusionRate} ${modeLabel}.`);
+      parts.push(`Correr em ${item.infusionTime}${unit === 'h' ? 'h' : 'min'} (${item.infusionRate} ${modeLabel}).`);
     } else if (item.infusionTime) {
-      const timeLabel = `${item.infusionTime}${unit === 'h' ? 'h' : 'min'}`;
-      parts.push(`Correr em ${timeLabel}.`);
+      parts.push(`Correr em ${item.infusionTime}${unit === 'h' ? 'h' : 'min'}.`);
     } else if (item.infusionRate) {
-      parts.push(`Vazão: ${item.infusionRate} ${modeLabel}.`);
+      parts.push(`Velocidade ${item.infusionRate} ${modeLabel}.`);
     }
   }
-  if (item.concentration) parts.push(`Concentração: ${item.concentration}.`);
+
+  // 6) Acesso (opcional, ao final)
+  if (item.accessType) parts.push(`Acesso ${item.accessType.toLowerCase()}.`);
+
   return parts.join(' ');
 }
 
