@@ -105,7 +105,7 @@ export function MedicalDocumentDialog({
       <div style="border:1px solid #cbd5e1;border-radius:4pt;padding:6pt 10pt;margin-bottom:10pt;font-size:9pt;background:#f8fafc">
         <div><b>PACIENTE:</b> ${esc((patientName || "").toUpperCase())}</div>
         ${patient?.age ? `<div><b>IDADE:</b> ${esc(String(patient.age))}</div>` : ""}
-        ${patientBed ? `<div><b>LEITO:</b> ${esc(patientBed)} ${patientSector ? `• ${esc(patientSector)}` : ""}</div>` : ""}
+        ${patientBed ? `<div><b>LEITO:</b> ${esc(patientBed)} ${displaySector ? `• ${esc(displaySector)}` : ""}</div>` : ""}
         ${includeCid && cidPrimary ? `<div><b>CID-10:</b> ${esc(cidPrimary)}</div>` : ""}
       </div>`;
 
