@@ -6696,6 +6696,50 @@ const PrescricaoPage = () => {
         }}
       />
 
+      {/* Nutrition entry-flow confirmation: assistente vs manual */}
+      <AlertDialog open={nutritionConfirmOpen} onOpenChange={setNutritionConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <UtensilsCrossed className="h-4 w-4 text-emerald-600" />
+              Seguir assistente de terapia nutricional?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              O assistente sugere a estratégia (Zero · Oral · Enteral · NPT), volume, fracionamento e cuidados com base no paciente.
+              Se preferir, você pode adicionar manualmente e usar a busca de nutrição para itens específicos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel
+              onClick={() => {
+                setNutritionConfirmOpen(false);
+                setManualOpenCategories(prev => {
+                  const n = new Set(prev);
+                  n.add('nutrition');
+                  return n;
+                });
+                setActiveTab('nutrition');
+                setTimeout(() => {
+                  document.getElementById('prescription-cat-nutrition')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+              }}
+            >
+              Adicionar manualmente
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setNutritionConfirmOpen(false);
+                setNutritionWizardOpen(true);
+              }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+              Seguir assistente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <HydrationWizard
         open={hydrationWizardOpen}
         onOpenChange={setHydrationWizardOpen}
