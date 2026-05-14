@@ -3632,6 +3632,10 @@ const PrescricaoPage = () => {
   const [pendingAntimicrobialMed, setPendingAntimicrobialMed] = useState<MedicationEntry | null>(null);
   // Modo de nova ATB vindo do AtmStatusDialog ('acrescimo' | 'troca' | 'inicial' | null)
   const [pendingAtbMode, setPendingAtbMode] = useState<'acrescimo' | 'troca' | 'inicial' | null>(null);
+  // Flag transitória: true entre AtmStatusDialog → AntimicrobialGuideDialog,
+  // para evitar que o cleanup do AtmStatusDialog limpe o pendingAntimicrobialMed
+  // antes da guia abrir (quebraria o seed do med vindo da busca).
+  const transitioningToAtmGuideRef = useRef(false);
   const [highAlertGuideOpen, setHighAlertGuideOpen] = useState(false);
   // Insulin therapy assistant
   const [insulinDialogOpen, setInsulinDialogOpen] = useState(false);
@@ -4582,11 +4586,13 @@ const PrescricaoPage = () => {
     if (med.id && med.category !== 'nonstandard') {
       trackMedicationUse(med.id, med.name, med.category);
     }
-    // Antimicrobials ALWAYS go through the Antimicrobial Guide first
-    // (único caminho que abre pop-up automático mesmo via busca "Todas")
+    // Antimicrobials ALWAYS go through the ATM Status Dialog first
+    // (mesmo fluxo do botão "Guia ATM": status → Nova ATB → guia seeded com o med).
+    // Sincroniza com a entrada via toolbar e card violeta para que "Anexar à
+    // prescrição" funcione exatamente da mesma forma.
     if (med.category === 'antimicrobial') {
       setPendingAntimicrobialMed(med);
-      setAntimicrobialGuideOpen(true);
+      setAtmStatusOpen(true);
       return;
     }
     // Insulinas: abrem o Assistente de Insulinoterapia (pop-up dentro de Medicações)
@@ -6351,8 +6357,9 @@ const PrescricaoPage = () => {
             getFavoriteCount={getFavoriteCount}
             onCategoryPopup={(cat) => {
               if (cat === 'antimicrobial') {
+                // Mesmo fluxo do botão "Guia ATM": passa pelo AtmStatusDialog primeiro
                 setPendingAntimicrobialMed(null);
-                setAntimicrobialGuideOpen(true);
+                setAtmStatusOpen(true);
               } else if (cat === 'high_alert') {
                 setHighAlertGuideOpen(true);
               } else if (cat === 'care') {
@@ -7084,7 +7091,14 @@ const PrescricaoPage = () => {
       {/* ATM Status Dialog — acompanhamento + nova solicitação */}
       <AtmStatusDialog
         open={atmStatusOpen}
-        onOpenChange={setAtmStatusOpen}
+        onOpenChange={(open) => {
+          setAtmStatusOpen(open);
+          // Cleanup ao fechar: limpa o med vindo da busca SE não estamos
+          // transitando para a guia (caso contrário, o seed seria perdido).
+          if (!open && !transitioningToAtmGuideRef.current) {
+            setPendingAntimicrobialMed(null);
+          }
+        }}
         activeItems={items
           .filter(i => i.category === 'antimicrobial' && i.status === 'active')
           .map(i => ({
@@ -7103,8 +7117,12 @@ const PrescricaoPage = () => {
             toast.info(`${suspendIds.length} antibiótico(s) suspenso(s) — preencha o substituto na Guia ATM.`);
           }
           setPendingAtbMode(mode);
-          setPendingAntimicrobialMed(null);
-          setTimeout(() => setAntimicrobialGuideOpen(true), 150);
+          // Sinaliza transição → onOpenChange do AtmStatus não vai limpar pendingAntimicrobialMed
+          transitioningToAtmGuideRef.current = true;
+          setTimeout(() => {
+            setAntimicrobialGuideOpen(true);
+            transitioningToAtmGuideRef.current = false;
+          }, 150);
         }}
       />
 
