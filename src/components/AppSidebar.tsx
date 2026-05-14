@@ -639,7 +639,7 @@ export function AppSidebar({
               <div className={cn(
                 "rounded-lg bg-muted/40 border border-border/60",
                 isCollapsed
-                  ? "flex flex-col items-stretch gap-0.5 p-0.5 mx-auto w-fit"
+                  ? "flex flex-col items-stretch gap-2 p-1.5 mx-auto w-fit"
                   : "flex gap-1 p-1"
               )}>
                 {[
