@@ -6520,6 +6520,7 @@ const PrescricaoPage = () => {
                             onReactivate={reactivateItem}
                             onAssistant={(id) => setItemAssistantTargetId(id)}
                             onEditInsulin={(id) => { setEditingInsulinItemId(id); setPendingInsulinMed(null); setInsulinDialogOpen(true); }}
+                            onUpdateInsulinPlan={updateInsulinPlan}
                             onOpenAntimicrobialGuide={() => setAtmStatusOpen(true)}
                             onToggleValidation={requestValidateItem}
                             isPastRenewalTime={isPastRenewalTime}
