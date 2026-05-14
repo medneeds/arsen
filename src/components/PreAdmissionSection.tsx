@@ -246,7 +246,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar por nome, CPF ou prontuário"
-                className="h-7 text-xs pl-7 pr-7 w-64"
+                className="h-7 text-xs pl-7 pr-7 w-96 bg-background border-primary/30 focus-visible:ring-primary/40 shadow-sm"
               />
               {searchTerm && (
                 <button
