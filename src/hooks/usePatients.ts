@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Department } from "@/contexts/DepartmentContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { isExtraBed } from "@/utils/bedNaming";
 
 export function usePatients(department?: Department, sector?: string) {
   const [patients, setPatients] = useState<Patient[]>([]);
