@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { printRequisitionGuide, PrintableRequisitionGuide } from "@/components/PrintableRequisitionGuide";
 import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
@@ -165,6 +166,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 
 const RequisicaoUnificadaPage = () => {
   const { user } = useAuth();
+  const doctor = useCurrentDoctor();
   const { currentHospital, currentState } = useHospital();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -294,15 +296,30 @@ const RequisicaoUnificadaPage = () => {
   };
 
   // ── Filtered lists ──
+  // Defesa em profundidade: mesmo após o filtro server-side, garante que
+  // só apareçam itens do paciente atualmente aberto quando há contexto.
+  const validPatientIdMemo = useMemo(() => asUuidOrNull(formPatientId), [formPatientId]);
+  const scopedRequests = useMemo(() => {
+    if (validPatientIdMemo) {
+      return requests.filter(r => r.patient_id === validPatientIdMemo);
+    }
+    if (formPatientName) {
+      return requests.filter(r => (r.patient_name || "").trim().toLowerCase() === formPatientName.trim().toLowerCase());
+    }
+    // Sem contexto de paciente: parecer não exibe nada (evita vazar entre pacientes)
+    if (activeCategory === "parecer") return [];
+    return requests;
+  }, [requests, validPatientIdMemo, formPatientName, activeCategory]);
+
   const pendingRequests = useMemo(() =>
-    requests.filter(r => (r.status === "pending" || r.status === "in_progress") &&
+    scopedRequests.filter(r => (r.status === "pending" || r.status === "in_progress") &&
       (!search || r.patient_name?.toLowerCase().includes(search.toLowerCase()))),
-    [requests, search]
+    [scopedRequests, search]
   );
   const completedRequests = useMemo(() =>
-    requests.filter(r => r.status === "completed" &&
+    scopedRequests.filter(r => r.status === "completed" &&
       (!search || r.patient_name?.toLowerCase().includes(search.toLowerCase()))),
-    [requests, search]
+    [scopedRequests, search]
   );
 
   const toggleItem = (item: string) => {
@@ -422,7 +439,15 @@ const RequisicaoUnificadaPage = () => {
         priority: formPriority,
         notes: notesContent || null,
         requested_by: user.id,
-        requested_by_name: user.user_metadata?.username || user.email?.split("@")[0] || "Médico",
+        requested_by_name: (() => {
+          const name = (doctor.fullName || "").trim()
+            || (user.user_metadata?.full_name as string | undefined)?.trim()
+            || user.user_metadata?.username
+            || user.email?.split("@")[0]
+            || "Médico";
+          const crm = (doctor.crm || "").trim();
+          return crm ? `${name} — CRM ${crm}` : name;
+        })(),
         hospital_unit_id: unitId,
         state_id: stateId,
         status: "pending",
