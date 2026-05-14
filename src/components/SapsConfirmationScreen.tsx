@@ -14,6 +14,7 @@ interface SapsConfirmationProps {
   patientId?: string | null;
   sectorCode?: string;
   age?: string | null;
+  mode?: "admission" | "validation";
   onComplete: () => void;
 }
 
