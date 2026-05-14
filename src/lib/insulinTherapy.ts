@@ -72,6 +72,9 @@ export interface InsulinPlan {
   /** Notas / orientações livres. */
   notes?: string;
 
+  /** Conduta de hipoglicemia (HGT < 70 mg/dL) — totalmente editável pelo prescritor. */
+  hypoglycemiaProtocol?: string;
+
   /** Fonte do protocolo aplicado (transparência clínica). */
   source?: string;
 }
