@@ -1042,7 +1042,7 @@ function NutritionFields({
   return (
     <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-1.5")}>
       <div className="flex items-center gap-1.5 flex-wrap">
-        <FieldLabel>Tipo:</FieldLabel>
+        <NutFieldLabel>Tipo:</NutFieldLabel>
         <Select value={subtype} onValueChange={setSubtype}>
           <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-44">
             <SelectValue />
@@ -1063,13 +1063,13 @@ function NutritionFields({
           {/* Linha ESSENCIAL — destacada em emerald */}
           <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
             <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
-            <FieldLabel>Vol/dia:</FieldLabel>
-            <SuffixInput value={item.nutVolDay || ''} onChange={setVolDay} suffix="mL" placeholder="1500" />
+            <NutFieldLabel>Vol/dia:</NutFieldLabel>
+            <NutSuffixInput value={item.nutVolDay || ''} onChange={setVolDay} suffix="mL" placeholder="1500" />
             {subtype === 'diet_enteral' && !isBolusMode && (
               <>
                 <span className="text-emerald-700/40">·</span>
-                <FieldLabel>Vazão:</FieldLabel>
-                <SuffixInput value={item.infusionRate || ''} onChange={setRate} suffix="mL/h" placeholder="62" />
+                <NutFieldLabel>Vazão:</NutFieldLabel>
+                <NutSuffixInput value={item.infusionRate || ''} onChange={setRate} suffix="mL/h" placeholder="62" />
                 {isContinuousMode && (
                   <span className="text-[10px] text-emerald-700/80 dark:text-emerald-300/80 italic">
                     ÷ 24h auto
@@ -1083,7 +1083,7 @@ function NutritionFields({
               </span>
             )}
             <span className="text-emerald-700/40">·</span>
-            <FieldLabel>Modo:</FieldLabel>
+            <NutFieldLabel>Modo:</NutFieldLabel>
             <Select value={item.nutMode || ''} onValueChange={(v) => onUpdate(item.id, 'nutMode', v)}>
               <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-400/60 w-44"><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
@@ -1107,22 +1107,22 @@ function NutritionFields({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
             <div className="flex items-center gap-1">
-              <FieldLabel>Fracionamento:</FieldLabel>
-              <TinyInput value={item.nutFraction || ''} onChange={(e) => onUpdate(item.id, 'nutFraction', e.target.value)} className="flex-1" placeholder="6x/dia, 4/4h..." />
+              <NutFieldLabel>Fracionamento:</NutFieldLabel>
+              <NutTinyInput value={item.nutFraction || ''} onChange={(e) => onUpdate(item.id, 'nutFraction', e.target.value)} className="flex-1" placeholder="6x/dia, 4/4h..." />
             </div>
             <div className="flex items-center gap-1">
-              <FieldLabel>Pausa noturna:</FieldLabel>
-              <TinyInput value={item.nutNightPause || ''} onChange={(e) => onUpdate(item.id, 'nutNightPause', e.target.value)} className="flex-1" placeholder="23h-6h" />
+              <NutFieldLabel>Pausa noturna:</NutFieldLabel>
+              <NutTinyInput value={item.nutNightPause || ''} onChange={(e) => onUpdate(item.id, 'nutNightPause', e.target.value)} className="flex-1" placeholder="23h-6h" />
             </div>
             <div className="flex items-center gap-1">
-              <FieldLabel>Progressão:</FieldLabel>
-              <TinyInput value={item.nutProgression || ''} onChange={(e) => onUpdate(item.id, 'nutProgression', e.target.value)} className="flex-1" placeholder="↑20mL/h a cada 6h" />
+              <NutFieldLabel>Progressão:</NutFieldLabel>
+              <NutTinyInput value={item.nutProgression || ''} onChange={(e) => onUpdate(item.id, 'nutProgression', e.target.value)} className="flex-1" placeholder="↑20mL/h a cada 6h" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             <div className="flex items-center gap-1">
-              <FieldLabel>Cabeceira:</FieldLabel>
+              <NutFieldLabel>Cabeceira:</NutFieldLabel>
               <Select value={item.nutBedHead || ''} onValueChange={(v) => onUpdate(item.id, 'nutBedHead', v)}>
                 <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 flex-1"><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
@@ -1133,14 +1133,14 @@ function NutritionFields({
               </Select>
             </div>
             <div className="flex items-center gap-1">
-              <FieldLabel>Resíduo gástrico:</FieldLabel>
-              <TinyInput value={item.nutResidualCheck || ''} onChange={(e) => onUpdate(item.id, 'nutResidualCheck', e.target.value)} className="flex-1" placeholder="aspirar 6/6h, suspender se >250mL" />
+              <NutFieldLabel>Resíduo gástrico:</NutFieldLabel>
+              <NutTinyInput value={item.nutResidualCheck || ''} onChange={(e) => onUpdate(item.id, 'nutResidualCheck', e.target.value)} className="flex-1" placeholder="aspirar 6/6h, suspender se >250mL" />
             </div>
           </div>
 
           {subtype === 'diet_oral' && (
             <div className="flex items-center gap-1">
-              <FieldLabel>Consistência (IDDSI):</FieldLabel>
+              <NutFieldLabel>Consistência (IDDSI):</NutFieldLabel>
               <Select value={item.nutConsistency || ''} onValueChange={(v) => onUpdate(item.id, 'nutConsistency', v)}>
                 <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-56"><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
@@ -1161,14 +1161,14 @@ function NutritionFields({
       {subtype === 'water' && (
         <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
           <Droplets className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
-          <FieldLabel>Vol/adm:</FieldLabel>
-          <SuffixInput value={item.nutWaterVolPerAdmin || ''} onChange={(v) => onUpdate(item.id, 'nutWaterVolPerAdmin', v)} suffix="mL" placeholder="50" />
+          <NutFieldLabel>Vol/adm:</NutFieldLabel>
+          <NutSuffixInput value={item.nutWaterVolPerAdmin || ''} onChange={(v) => onUpdate(item.id, 'nutWaterVolPerAdmin', v)} suffix="mL" placeholder="50" />
           <span className="text-emerald-700/40">·</span>
-          <FieldLabel>Frequência:</FieldLabel>
+          <NutFieldLabel>Frequência:</NutFieldLabel>
           <Input value={item.nutWaterFreq || ''} onChange={(e) => onUpdate(item.id, 'nutWaterFreq', e.target.value)} placeholder="antes/após dieta e meds" className="h-7 text-[12px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-400/60 w-48" />
           <span className="text-emerald-700/40">·</span>
-          <FieldLabel>Meta/24h:</FieldLabel>
-          <SuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="800" />
+          <NutFieldLabel>Meta/24h:</NutFieldLabel>
+          <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="800" />
         </div>
       )}
 
@@ -1176,14 +1176,14 @@ function NutritionFields({
         <>
           <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
             <Droplets className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
-            <FieldLabel>Vol total:</FieldLabel>
-            <SuffixInput value={item.volumeTotal || ''} onChange={(v) => onUpdate(item.id, 'volumeTotal', v)} suffix="mL" placeholder="2000" />
+            <NutFieldLabel>Vol total:</NutFieldLabel>
+            <NutSuffixInput value={item.volumeTotal || ''} onChange={(v) => onUpdate(item.id, 'volumeTotal', v)} suffix="mL" placeholder="2000" />
             <span className="text-emerald-700/40">·</span>
-            <FieldLabel>Vazão:</FieldLabel>
-            <SuffixInput value={item.infusionRate || ''} onChange={(v) => onUpdate(item.id, 'infusionRate', v)} suffix="mL/h" placeholder="83" />
+            <NutFieldLabel>Vazão:</NutFieldLabel>
+            <NutSuffixInput value={item.infusionRate || ''} onChange={(v) => onUpdate(item.id, 'infusionRate', v)} suffix="mL/h" placeholder="83" />
             <span className="text-emerald-700/40">·</span>
-            <FieldLabel>Correr em:</FieldLabel>
-            <TinyInput value={item.infusionTime || ''} onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)} className="w-14 text-center h-7 text-[12px] font-semibold border-emerald-300 dark:border-emerald-700" placeholder="18" />
+            <NutFieldLabel>Correr em:</NutFieldLabel>
+            <NutTinyInput value={item.infusionTime || ''} onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)} className="w-14 text-center h-7 text-[12px] font-semibold border-emerald-300 dark:border-emerald-700" placeholder="18" />
             <Select value={item.infusionTimeUnit || 'h'} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
               <SelectTrigger className="h-7 text-[11px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-16"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -1192,7 +1192,7 @@ function NutritionFields({
               </SelectContent>
             </Select>
             <span className="text-emerald-700/40">·</span>
-            <FieldLabel>Acesso:</FieldLabel>
+            <NutFieldLabel>Acesso:</NutFieldLabel>
             <Select value={item.nutAccess || ''} onValueChange={(v) => onUpdate(item.id, 'nutAccess', v)}>
               <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-28"><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
@@ -1205,11 +1205,11 @@ function NutritionFields({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             <div className="flex items-start gap-1">
-              <FieldLabel>Composição:</FieldLabel>
+              <NutFieldLabel>Composição:</NutFieldLabel>
               <Textarea value={item.nutComposition || ''} onChange={(e) => onUpdate(item.id, 'nutComposition', e.target.value)} className="min-h-[36px] text-[11px] bg-muted/10 border-border/30 flex-1 py-1" placeholder="Glic 4 g/kg/dia · AA 1,5 g/kg/dia · Lip 1 g/kg/dia · eletrólitos" />
             </div>
             <div className="flex items-start gap-1">
-              <FieldLabel>Monitorização:</FieldLabel>
+              <NutFieldLabel>Monitorização:</NutFieldLabel>
               <Textarea value={item.nutMonitoring || ''} onChange={(e) => onUpdate(item.id, 'nutMonitoring', e.target.value)} className="min-h-[36px] text-[11px] bg-muted/10 border-border/30 flex-1 py-1" placeholder="Glicemia 6/6h · ionograma · TG 2x/sem · função hepática" />
             </div>
           </div>
@@ -1218,8 +1218,8 @@ function NutritionFields({
 
       {subtype === 'zero' && (
         <div className="flex items-center gap-1 px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
-          <FieldLabel>Motivo do jejum:</FieldLabel>
-          <TinyInput value={item.nutZeroReason || ''} onChange={(e) => onUpdate(item.id, 'nutZeroReason', e.target.value)} className="flex-1" placeholder="pré-operatório, broncoaspiração, íleo..." />
+          <NutFieldLabel>Motivo do jejum:</NutFieldLabel>
+          <NutTinyInput value={item.nutZeroReason || ''} onChange={(e) => onUpdate(item.id, 'nutZeroReason', e.target.value)} className="flex-1" placeholder="pré-operatório, broncoaspiração, íleo..." />
         </div>
       )}
 
@@ -1315,7 +1315,7 @@ function HydrationFields({
   return (
     <div className="space-y-1.5">
       <div className="relative flex items-center gap-x-3 gap-y-2 flex-wrap rounded-md p-2 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/50 border-l-[3px] border-l-blue-500/70 dark:border-l-blue-400/70">
-        <FieldLabel>Volume / fase:</FieldLabel>
+        <NutFieldLabel>Volume / fase:</NutFieldLabel>
         <Input
           type="number"
           value={item.volumeTotal || ''}
@@ -1325,7 +1325,7 @@ function HydrationFields({
         />
         <span className="text-[10px] text-muted-foreground">mL</span>
 
-        <FieldLabel>Fases / intervalo:</FieldLabel>
+        <NutFieldLabel>Fases / intervalo:</NutFieldLabel>
         <Select value={String(phases)} onValueChange={handlePhasesChange}>
           <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-36 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -1337,7 +1337,7 @@ function HydrationFields({
           </SelectContent>
         </Select>
 
-        <FieldLabel>Tempo / fase:</FieldLabel>
+        <NutFieldLabel>Tempo / fase:</NutFieldLabel>
         <Input
           type="number"
           value={item.infusionTime || ''}
@@ -1353,7 +1353,7 @@ function HydrationFields({
           </SelectContent>
         </Select>
 
-        <FieldLabel>Gotejamento:</FieldLabel>
+        <NutFieldLabel>Gotejamento:</NutFieldLabel>
         <div className="h-6 px-2 flex items-center rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold w-16 justify-center">
           {isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '—'}
         </div>
@@ -1365,7 +1365,7 @@ function HydrationFields({
           </SelectContent>
         </Select>
 
-        <FieldLabel>Via:</FieldLabel>
+        <NutFieldLabel>Via:</NutFieldLabel>
         <Select value={item.route || 'EV'} onValueChange={(v) => onUpdate(item.id, 'route', v)}>
           <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 font-semibold focus:ring-1 focus:ring-blue-400">
             <SelectValue>{routeShort(item.route || 'EV')}</SelectValue>
@@ -1386,7 +1386,7 @@ function HydrationFields({
       </div>
 
       <div>
-        <FieldLabel>Recomendações para a enfermagem:</FieldLabel>
+        <NutFieldLabel>Recomendações para a enfermagem:</NutFieldLabel>
         <Textarea
           value={item.instructions || ''}
           onChange={(e) => onUpdate(item.id, 'instructions', e.target.value)}
