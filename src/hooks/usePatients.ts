@@ -343,6 +343,37 @@ export function usePatients(department?: Department, sector?: string) {
   // delete simplesmente desaloca o paciente.
   const deletePatient = async (patientId: string, options = { showToast: true, updateLocalState: true }) => {
     try {
+      // Detectar leito extra (maca extra) — para esses, EXCLUIR a linha do banco
+      // (leitos extras não são fixos do setor; podem ser removidos do mapa).
+      // Para leitos fixos, apenas esvazia (vacate) mantendo o leito disponível.
+      const target = patients.find(p => p.id === patientId);
+      const isExtra = target ? isExtraBed(target.bedNumber) : false;
+
+      if (isExtra) {
+        console.log('Hard-deleting extra bed row:', patientId, target?.bedNumber);
+        const { error } = await supabase
+          .from('patients')
+          .delete()
+          .eq('id', patientId);
+
+        if (error) {
+          console.error('Supabase delete extra bed error:', error);
+          throw error;
+        }
+
+        if (options.updateLocalState) {
+          setPatients(prev => prev.filter(p => p.id !== patientId));
+        }
+
+        if (options.showToast) {
+          toast({
+            title: "Leito extra excluído",
+            description: `${target?.bedNumber ?? 'Leito'} foi removido do setor.`,
+          });
+        }
+        return;
+      }
+
       console.log('Vacating bed (clearing patient data) for:', patientId);
 
       const vacantPayload = {
@@ -406,11 +437,11 @@ export function usePatients(department?: Department, sector?: string) {
         });
       }
     } catch (error) {
-      console.error('Error vacating bed:', error);
+      console.error('Error vacating/deleting bed:', error);
       if (options.showToast) {
         toast({
-          title: "Erro ao desocupar",
-          description: "Não foi possível esvaziar o leito.",
+          title: "Erro ao excluir",
+          description: "Não foi possível excluir o leito.",
           variant: "destructive",
         });
       }
