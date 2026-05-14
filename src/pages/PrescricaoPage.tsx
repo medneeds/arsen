@@ -4475,6 +4475,14 @@ const PrescricaoPage = () => {
       const profile = getInfusionProfile(med.name);
       if (profile) Object.assign(baseItem, applyInfusionProfileDefaults(baseItem, profile));
     }
+    // Bolsa pronta / pré-misturada (ex.: Linezolida 600mg/300mL Bolsa, Metronidazol bolsa,
+    // Ciprofloxacino bolsa) — NÃO diluir. Sobrescreve qualquer diluente sugerido pelo
+    // perfil ATB genérico, evitando confusão na farmácia/enfermagem.
+    if (isIV && /(\bbolsa\b|\bbag\b|pr[eé].?mistur|solu[çc][aã]o pronta|ready.?to.?use|RTU)/i.test(med.presentation || '')) {
+      baseItem.diluent = 'sem_diluente';
+      baseItem.diluentVolume = '';
+      // volumeTotal continua como o volume da bolsa (já vem preenchido) p/ cálculo de vazão
+    }
     // Autofill inhalation defaults from catalog
     if (med.category === 'inhalation') {
       const preset = getInhalationDefaults(med.name);
