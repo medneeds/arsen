@@ -28,6 +28,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { CollapsibleInfoCard } from "@/components/shared/CollapsibleInfoCard";
 import { SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
