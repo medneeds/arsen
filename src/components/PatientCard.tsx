@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronDown, ChevronUp, Clock, Calendar, Edit, Trash2, Copy, ArrowRightLeft, Printer, Check, X, GripVertical, MoreVertical, Maximize2, TrendingUp, Heart, Skull, Sparkles, Star, FileText, Pencil, Plus, CheckCircle2, BedDouble, Settings, Zap, AlertCircle, CircleCheck, Activity, Shuffle, FileEdit, AlertTriangle, Utensils, MessageSquare, XCircle, ClipboardList, ClipboardCheck, Eye, TestTubes } from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, Calendar, Edit, Trash2, Copy, ArrowRightLeft, Printer, Check, X, GripVertical, MoreVertical, Maximize2, TrendingUp, Heart, Skull, Sparkles, Star, FileText, Pencil, Plus, CheckCircle2, BedDouble, Settings, Zap, AlertCircle, CircleCheck, Activity, Shuffle, FileEdit, AlertTriangle, Utensils, MessageSquare, XCircle, ClipboardList, ClipboardCheck, Eye, TestTubes, UserMinus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { EditPatientDialog } from "./EditPatientDialog";
@@ -85,6 +85,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { BedReleasePreAdmissionDialog } from "./BedReleasePreAdmissionDialog";
 
 // Helper function to format date input as DD/MM/YYYY
 const formatDateInput = (value: string): string => {
@@ -233,6 +234,7 @@ interface PatientCardProps {
   patient: Patient;
   onUpdate: (updatedPatient: Patient) => void;
   onDelete?: (patientId: string) => void;
+  onReleasePreAdmissionBed?: (patientId: string, payload: { reason: string; reasonNote: string }) => void | Promise<void>;
   onUndelete?: (patient: Patient) => void;
   selectionMode?: boolean;
   isSelected?: boolean;
@@ -623,10 +625,11 @@ const SortableDiagnosisItemCollapsed = memo(function SortableDiagnosisItemCollap
   );
 });
 
-export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selectionMode = false, isSelected = false, onToggleSelection, onTransfer, onPrintPatient, onRefetch, onQuickView }: PatientCardProps) {
+export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmissionBed, onUndelete, selectionMode = false, isSelected = false, onToggleSelection, onTransfer, onPrintPatient, onRefetch, onQuickView }: PatientCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isReleasePreAdmissionOpen, setIsReleasePreAdmissionOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [movementDialogOpen, setMovementDialogOpen] = useState(false);
   const [movementType, setMovementType] = useState<"ALTA" | "ÓBITO" | "TRANSFERÊNCIA" | null>(null);
@@ -3514,6 +3517,23 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
                       Movimentações de alta, óbito e transferência são realizadas pelo Painel Clínico (Cockpit).
                     </p>
 
+                    {/* LIBERAR LEITO (PRÉ-ADMISSÃO) — só quando paciente ainda não está admitido */}
+                    {patient.admissionStatus !== 'admitido' && onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsReleasePreAdmissionOpen(true);
+                        }}
+                        className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-amber-50 to-transparent dark:from-amber-950/30 hover:from-amber-100 dark:hover:from-amber-950/50 transition-colors cursor-pointer"
+                      >
+                        <UserMinus className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        <div className="flex flex-col">
+                          <span className="text-amber-700 dark:text-amber-300">Liberar leito (pré-admissão)</span>
+                          <span className="text-[10px] font-normal text-muted-foreground">Desocupa o leito sem apagar o prontuário</span>
+                        </div>
+                      </DropdownMenuItem>
+                    )}
+
                     {/* VISUALIZAÇÃO RÁPIDA */}
                     {onQuickView && (
                       <DropdownMenuItem
@@ -3864,6 +3884,17 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
         onSuccess={() => {
           if (onDelete) {
             onDelete(patient.id);
+          }
+        }}
+      />
+
+      <BedReleasePreAdmissionDialog
+        open={isReleasePreAdmissionOpen}
+        onOpenChange={setIsReleasePreAdmissionOpen}
+        patient={patient}
+        onConfirm={async (payload) => {
+          if (onReleasePreAdmissionBed) {
+            await onReleasePreAdmissionBed(patient.id, payload);
           }
         }}
       />

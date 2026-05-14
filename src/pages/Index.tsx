@@ -228,7 +228,7 @@ const Index = () => {
   };
   
   // Use real database patients filtered by active sector on bed map
-  const { patients: dbPatients, isLoading: patientsLoading, updatePatient: dbUpdatePatient, createPatient: dbCreatePatient, deletePatient: dbDeletePatient, reorderPatients: dbReorderPatients, refetch } = usePatients(undefined, activeSector);
+  const { patients: dbPatients, isLoading: patientsLoading, updatePatient: dbUpdatePatient, createPatient: dbCreatePatient, deletePatient: dbDeletePatient, releaseBedPreAdmission: dbReleaseBedPreAdmission, reorderPatients: dbReorderPatients, refetch } = usePatients(undefined, activeSector);
   const [patients, setPatients] = useState<Patient[]>(dbPatients);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const preAdmissionRef = useRef<PreAdmissionSectionHandle>(null);
@@ -513,6 +513,18 @@ const Index = () => {
       await dbDeletePatient(patientId);
     } catch (error) {
       console.error("Failed to delete patient:", error);
+    }
+  };
+
+  const handleReleasePreAdmissionBed = async (
+    patientId: string,
+    payload: { reason: string; reasonNote: string },
+  ) => {
+    saveToHistory(patients);
+    try {
+      await dbReleaseBedPreAdmission(patientId, payload);
+    } catch (error) {
+      console.error("Failed to release pre-admission bed:", error);
     }
   };
 
@@ -1021,6 +1033,7 @@ const Index = () => {
                     patients={patients.filter(p => p.sector === activeSector)}
                     onUpdatePatient={handleUpdatePatient}
                     onDeletePatient={handleDeletePatient}
+                    onReleasePreAdmissionBed={handleReleasePreAdmissionBed}
                     onUndeletePatient={handleUndeletePatient}
                     onPrintSector={() => handlePrintSector(activeSector)}
                     onPrintRound={() => setRoundSectorDialogOpen(true)}
@@ -1046,6 +1059,7 @@ const Index = () => {
                     patients={filterPatients(patients.filter(p => p.sector === activeSector))}
                     onUpdatePatient={handleUpdatePatient}
                     onDeletePatient={handleDeletePatient}
+                    onReleasePreAdmissionBed={handleReleasePreAdmissionBed}
                     onUndeletePatient={handleUndeletePatient}
                     onPrintSector={() => handlePrintSector(activeSector)}
                     onAddExtraBed={() => handleAddExtraBed(activeSector as Patient['sector'])}

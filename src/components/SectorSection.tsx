@@ -30,6 +30,7 @@ interface SectorSectionProps {
   patients: Patient[];
   onUpdatePatient: (patient: Patient) => void;
   onDeletePatient?: (patientId: string) => void;
+  onReleasePreAdmissionBed?: (patientId: string, payload: { reason: string; reasonNote: string }) => void | Promise<void>;
   onUndeletePatient?: (patient: Patient) => void;
   onPrintSector?: () => void;
   onAddExtraBed?: () => void;
@@ -74,6 +75,7 @@ interface SortablePatientCardProps {
   patient: Patient;
   onUpdate: (patient: Patient) => void;
   onDelete?: (patientId: string) => void;
+  onReleasePreAdmissionBed?: (patientId: string, payload: { reason: string; reasonNote: string }) => void | Promise<void>;
   onUndelete?: (patient: Patient) => void;
   selectionMode?: boolean;
   isSelected?: boolean;
@@ -128,6 +130,7 @@ export function SectorSection({
   patients, 
   onUpdatePatient, 
   onDeletePatient,
+  onReleasePreAdmissionBed,
   onUndeletePatient, 
   onPrintSector, 
   onAddExtraBed, 
@@ -292,6 +295,7 @@ export function SectorSection({
                   patient={patient}
                   onUpdate={onUpdatePatient}
                   onDelete={onDeletePatient}
+                  onReleasePreAdmissionBed={onReleasePreAdmissionBed}
                   onUndelete={onUndeletePatient}
                   selectionMode={selectionMode}
                   isSelected={selectedPatients.has(patient.id)}
