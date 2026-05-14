@@ -2112,8 +2112,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 const recon = getReconstitutionDefault(item.name);
                 if (!recon.required) return null;
                 return (
-                  <div className="flex items-center gap-1.5 flex-wrap px-2 py-1 rounded-md bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40">
-                    <span className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold uppercase tracking-wide">Reconstituir</span>
+                  <div className="flex items-center gap-1.5 flex-wrap px-2 py-1 rounded-md bg-muted/40 dark:bg-slate-900/30 border border-border/60">
+                    <span className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wide">Reconstituir</span>
                     <span className="text-[10px] text-muted-foreground">com</span>
                     <Input
                       value={item.reconstitutionVolume ?? recon.volumeMl ?? ''}
@@ -2134,7 +2134,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         <SelectItem value="próprio diluente" className="text-xs">Próprio diluente do fabricante</SelectItem>
                       </SelectContent>
                     </Select>
-                    <span className="text-[10px] text-amber-700/80 dark:text-amber-300/80 italic ml-auto">Sugestão do catálogo · ajustável</span>
+                    <span className="text-[10px] text-muted-foreground italic ml-auto">Sugestão do catálogo · ajustável</span>
                   </div>
                 );
               })()}
@@ -2256,8 +2256,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
 
               {renderInfusion && (
               <div className="flex items-center gap-2 flex-wrap pt-1.5 border-t border-border/40">
-                <Droplets className="h-3 w-3 text-primary shrink-0" />
-                {item.category === 'antimicrobial' && <span className="atb-subchip">Infusão EV</span>}
+                <Droplets className="h-3 w-3 text-muted-foreground shrink-0" />
+                <span className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wide">Infusão EV</span>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground font-medium">Vol. final:</span>
                   <Input
