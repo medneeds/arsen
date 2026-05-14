@@ -312,6 +312,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
     setZeroReason("preop"); setZeroSince(""); setZeroHydrate(true); setZeroCustom("");
     setProteinSelected(new Set()); setProteinOverrides({});
     setNotes("");
+    setWaterOfferEnabled(false); setWaterOffer(DEFAULT_WATER_STATE);
   };
 
   const toggleProtein = (key: string) => {
