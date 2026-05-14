@@ -82,7 +82,7 @@ function renderPage(it: RoundPrintItem, blank: boolean): string {
           <td class="lbl">Idade</td><td>${escape(it.patientAge || "")}</td>
         </tr>
         <tr>
-          <td class="lbl">Setor</td><td>${escape(it.patientSector)}</td>
+          <td class="lbl">Setor</td><td>${escape(getSectorDisplayLabel(it.patientSector))}</td>
           <td class="lbl">Leito</td><td colspan="3">${escape(it.patientBed)}</td>
         </tr>
       </tbody>
