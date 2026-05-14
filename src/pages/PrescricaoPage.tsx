@@ -3643,6 +3643,8 @@ const PrescricaoPage = () => {
   const [editingInsulinItemId, setEditingInsulinItemId] = useState<string | null>(null);
   const [careCatalogOpen, setCareCatalogOpen] = useState(false);
   const [nutritionWizardOpen, setNutritionWizardOpen] = useState(false);
+  const [nutritionConfirmOpen, setNutritionConfirmOpen] = useState(false);
+  const [manualOpenCategories, setManualOpenCategories] = useState<Set<PrescriptionCategory>>(new Set());
   const [hydrationWizardOpen, setHydrationWizardOpen] = useState(false);
   const [replacementWizardOpen, setReplacementWizardOpen] = useState(false);
   const [itemAssistantTargetId, setItemAssistantTargetId] = useState<string | null>(null);
