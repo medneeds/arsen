@@ -1862,40 +1862,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             };
             return (
             <>
-              {evidence && (
-                <div className="flex justify-end mb-2">
-                  <div className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-full bg-sky-50 border border-sky-200/60 dark:bg-sky-950/20 dark:border-sky-800/40">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="text-[10px] text-sky-700 dark:text-sky-300 font-medium truncate max-w-[180px] px-1">
-                          📚 {evidence.source}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs text-xs">
-                        <div className="space-y-1">
-                          {evidence.defaultDose && <div><b>Dose:</b> {evidence.defaultDose}</div>}
-                          {evidence.defaultRoute && <div><b>Via:</b> {evidence.defaultRoute}</div>}
-                          {evidence.defaultPosology && <div><b>Posologia:</b> {evidence.defaultPosology}</div>}
-                          {evidence.diluent && <div><b>Diluente:</b> {evidence.diluent}</div>}
-                          {evidence.volumeTotal && <div><b>Vol total:</b> {evidence.volumeTotal} mL</div>}
-                          {evidence.infusionTime && <div><b>Tempo:</b> {evidence.infusionTime}{evidence.infusionTimeUnit || 'min'}</div>}
-                          {evidence.notes && <div className="text-muted-foreground">{evidence.notes}</div>}
-                          <div className="text-muted-foreground italic pt-1">Fonte: {evidence.source}</div>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={applyEvidence}
-                      className="h-5 px-2 text-[10px] rounded-full border-sky-300 text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:text-sky-300"
-                    >
-                      Sugerir
-                    </Button>
-                  </div>
-                </div>
-              )}
+              {/* Bulário movido para o header (próximo ao nome da medicação) */}
               {/* Row 1: Dose + Via + Intervalo (com legendas) */}
               <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap mt-1">
                 <div className="flex items-center gap-1.5 min-w-0">
