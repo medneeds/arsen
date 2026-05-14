@@ -324,7 +324,11 @@ export function PrintableRequisitionGuide({
             <tbody>
               <tr>
                 <td style={{ ...tdStyle, minHeight: 40 }}>
-                  {request.clinical_indication}
+                  {/<\/?(p|br|strong|em|u|ul|ol|li|b|i|span|div)[\s>/]/i.test(request.clinical_indication) ? (
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeRichHtmlPrint(request.clinical_indication) }} />
+                  ) : (
+                    request.clinical_indication
+                  )}
                 </td>
               </tr>
             </tbody>
