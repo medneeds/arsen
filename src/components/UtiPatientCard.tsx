@@ -1,4 +1,5 @@
 import { Patient } from "@/types/patient";
+import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
 import { calcDIH } from "@/lib/dihCalc";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
