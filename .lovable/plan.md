@@ -1,57 +1,53 @@
-## Entendimento
+## Objetivo
 
-Hoje o ciclo do paciente no mapa é:
-1. **Pré-admissão** (`admissionStatus = 'pre_admitido'`) — paciente alocado no leito, anamnese pendente.
-2. **Admissão concluída** (`admissionStatus = 'admitido'`) — paciente "D0" oficial.
-3. **Alta** (médica → administrativa) — desocupa o leito.
+Garantir que TODA transferência interna (entre setores ou entre leitos) preserve o **mesmo `patients.id`** — assim evoluções (`clinical_evolutions.patient_id`), prescrições (`prescriptions.patient_data->>id`), exames, culturas e histórico permanecem ligados sem orfandade.
 
-Você quer 3 ajustes:
+## Princípio único
 
-### 1. "Retirar paciente do mapa" antes da admissão estar concluída
-- Disponível **somente quando `admissionStatus = 'pre_admitido'`** (ainda não virou admissão oficial).
-- Ação: **libera o leito** (volta para vago) **sem apagar** o `patient_registry` / prontuário já cadastrado. Os dados do paciente continuam buscáveis em /historico-paciente e na recepção.
-- Hoje a função `deletePatient` no `usePatients` já zera o leito mantendo `patient_registry` intacto, mas seta `patient_registry_id = null` e `medical_record = null` na linha do leito — vou trocar para uma ação nova `releaseBedPreAdmission` que:
-  - registra `patient_movements` com `movement_type = 'liberacao_pre_admissao'` (auditoria, vincula ao prontuário)
-  - zera só os campos clínicos do leito
-  - **preserva** `patient_registry_id` no histórico do movimento (não no leito)
-  - mantém o registro em `patient_registry` (prontuário continua vivo)
-- Fica disponível para perfis: **médico, admin, gestor, NIR**. Bloqueado para visitante/porta/farmácia.
+> Transferência interna = `UPDATE patients SET sector, bed_number, department, hospital_unit_id... WHERE id = <id_existente>`.
+> **Nunca** `INSERT` de uma nova linha + alta da antiga.
 
-### 2. Onde a ação aparece
-- Botão "Liberar leito (pré-admissão)" no `PatientCard` (modo expandido, área de ações), com `MovementConfirmDialog` no padrão dos outros movimentos: resumo + bloqueios (se já estiver `admitido` mostra bloqueador "use o fluxo de alta") + consequências didáticas.
-- Atalho equivalente no `BedDetailDialog` do NIR (já tem o framework de ações).
+`INSERT` em `patients` fica reservado apenas para **primeira admissão** (paciente novo entrando no hospital pela recepção/triagem/UE).
 
-### 3. Revisão do fluxo de alta
-Hoje:
-- **Alta médica**: gerada via `DischargeConfirmDialog` + `DischargeDocumentForm` — gera sumário, marca `bed_census.status = 'alta_medica_dada'`, registra em `patient_movements`, mas **não desocupa o leito**.
-- **Alta administrativa**: NIR/gestão libera o leito (vai para `higienizacao` → `vago`).
+## Fluxos a auditar e ajustar
 
-Vou:
-- Garantir que a alta médica **valide os campos obrigatórios já existentes** (CID, destino, sumário) antes de permitir confirmar — usando `blockingMissing` do `DischargeConfirmDialog` (já existe, vou auditar se está cobrindo tudo).
-- Reforçar que após alta médica o leito fica **`alta_medica_dada` + ainda ocupado** (paciente fisicamente lá), e só a alta administrativa zera o leito.
-- Adicionar consequência didática nos dois diálogos explicando exatamente o próximo passo ("o leito ficará marcado como Alta Médica Dada e aparecerá para a Alta Administrativa do NIR liberar fisicamente").
-- Auditoria dupla: alta médica grava `patient_movements` com tipo `alta_medica`; alta administrativa grava `alta_administrativa`. Ambos vinculam ao mesmo `encounter_code`.
+### 1. PatientMovementDialog — TRANSFERENCIA_INTERNA
+Hoje só grava em `patient_movements` e não move o paciente. Vou:
+- Após gravar o movimento, executar `UPDATE patients SET sector=<novo>, department=<novo>, bed_number=<novo>, updated_at=now() WHERE id=<id>`.
+- Adicionar seleção de **leito de destino** (Combobox de leitos vagos do setor escolhido) já dentro do diálogo, obrigatório.
+- Bloquear submissão se o leito de destino estiver ocupado.
 
-## Arquivos afetados
-- `src/hooks/usePatients.ts` — nova função `releaseBedPreAdmission` (sem apagar registry); ajuste do `deletePatient` para uso restrito (admin).
-- `src/components/PatientCard.tsx` — novo botão "Liberar leito (pré-admissão)" com gating por `admissionStatus` e role.
-- `src/components/BedReleasePreAdmissionDialog.tsx` (novo) — usa `MovementConfirmDialog`.
-- `src/components/DischargeConfirmDialog.tsx` — auditoria/reforço dos `blockingMissing` e mensagem clara sobre alta médica × administrativa.
-- `src/components/nir/BedDetailDialog.tsx` — adicionar a mesma ação inline.
-- `src/pages/Index.tsx` — wire-up do novo handler.
-- `mem://features/bed-allocation-medical-autonomy.md` — atualizar memória (já existe esse arquivo).
+### 2. NIR / BedDetailDialog (aceitar paciente em leito vago do destino)
+Verificar se hoje cria nova linha. Se sim → trocar por `UPDATE` da linha do paciente original (resolvido via `pre_admissions.patient_id` ou `patient_registry_id`).
 
-## Permissões
-| Perfil | Liberar pré-adm | Alta médica | Alta administrativa |
-|---|---|---|---|
-| médico/admin/gestor | ✅ | ✅ | ❌ (só vê) |
-| NIR | ✅ | ❌ | ✅ |
-| visitante/porta/farmácia | ❌ | ❌ | ❌ |
+### 3. Páginas de UE Vertical / Horizontal / TriageQueue (`patients.insert`)
+Manter `INSERT` apenas no caminho "primeira admissão" (paciente sem `patients.id` ainda). Quando vier de transferência (já existe `patients.id`), trocar por `UPDATE`.
 
-## Confirmação
-Confirma esse desenho? Em especial:
-- (a) **liberar pré-admissão preserva o `patient_registry` mas desocupa o leito** (não há "soft delete" da admissão — quando o paciente voltar, será nova admissão vinculada ao mesmo prontuário);
-- (b) **médico pode fazer alta médica + liberar pré-admissão**, mas **alta administrativa fica com NIR** (mantendo a separação que você já modelou);
-- (c) **a ação fica bloqueada se o paciente já estiver `admitido`** — nesse caso o caminho oficial é alta médica → administrativa.
+### 4. Realocação intra-setor (BedReallocationDialog)
+Já está correta — só muda `bed_number`. Não mexer.
 
-Se algum desses pontos for diferente, me diga antes que eu execute.
+### 5. Trigger `auto_vacate_on_discharge`
+Hoje limpa campos clínicos quando `name` é esvaziado. **Não tocar** — continua valendo para alta real. Como transferência agora não esvazia `name` no leito antigo, a trigger não dispara indevidamente.
+
+→ Implicação: o leito de origem precisa ficar vago de outra forma. Solução: no `UPDATE` de transferência, mover o paciente para o leito de destino também significa o leito antigo automaticamente "perde" esse paciente (porque `bed_number` agora é outro). Como `patients.bed_number` é o vínculo, o leito antigo simplesmente não tem mais paciente apontando pra ele — fica visualmente vago no mapa sem precisar limpar nada.
+
+## Ordem de execução
+
+1. **Refatorar `PatientMovementDialog`** (subtype TRANSFERENCIA_INTERNA) — adiciona seletor de leito + executa UPDATE consolidado.
+2. **Auditar `BedDetailDialog` (NIR)**, `RequestNewAllocationDialog`, `AdmitPatientDialog` — caso criem nova linha quando já existe `patient_id`, trocar por UPDATE.
+3. **Auditar UE/Triagem** — garantir que só fazem INSERT em primeira admissão.
+4. Smoke test: transferir paciente UTI → Enfermaria, validar que evoluções e prescrição rascunho aparecem na nova ficha.
+
+## Sem alterações de schema
+
+Nenhuma migração de banco é necessária. Tudo é mudança de lógica no frontend.
+
+## O que NÃO está no escopo
+
+- Não vou migrar evoluções/prescrições órfãs já existentes no banco (resultado de transferências antigas que duplicaram linhas) — risco alto e não foi pedido. Se quiser, posso entregar um relatório listando esses casos depois.
+- Não vou mexer em alta hospitalar real (esvaziamento de leito, óbito, evasão).
+- Layout dos diálogos só ganha o seletor de leito quando faltar; sem outras mudanças visuais.
+
+## Confirmação necessária
+
+Posso prosseguir com essa refatoração nesta ordem?
