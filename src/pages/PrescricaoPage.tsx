@@ -3356,21 +3356,29 @@ const PrescricaoPage = () => {
   //   preserva o snapshot do dia anterior para auditoria/CCIH).
   const persistItems = useCallback(async (
     nextItems: PrescriptionItem[],
-    opts: { mode?: 'update' | 'newVersion'; reason?: string } = {}
+    opts: { mode?: 'update' | 'newVersion'; reason?: string; sigOverride?: DigitalSignature | null } = {}
   ) => {
     if (!currentHospital || !currentState || !patient.name.trim()) {
-      toast.warning("Alteração local — sem paciente/hospital ativo, não foi persistida.");
-      return;
+      toast.error("Não foi possível salvar a prescrição", {
+        description: "Falta paciente/hospital ativo. Recarregue a página com o paciente correto antes de prosseguir.",
+      });
+      throw new Error('persistItems: missing patient/hospital context');
     }
     const mode = opts.mode || 'update';
+    const sig = opts.sigOverride !== undefined ? opts.sigOverride : digitalSignature;
+    // Departamento real do paciente (UCC, UTI, etc.) em vez do hardcoded
+    const resolvedDepartment =
+      (patient.unit && patient.unit.trim()) ||
+      (initialPatientSector && (sectorMapInit[initialPatientSector] || initialPatientSector)) ||
+      'GERAL';
     try {
       const basePayload = {
         patient_name: patient.name.trim(),
         patient_data: patient as any,
         items: nextItems as any,
-        digital_signature: digitalSignature as any,
-        status: digitalSignature ? 'signed' : 'draft',
-        department: 'URGÊNCIA E EMERGÊNCIA ADULTO',
+        digital_signature: sig as any,
+        status: sig ? 'signed' : 'draft',
+        department: resolvedDepartment,
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
         created_by: user?.id || null,
@@ -3423,8 +3431,9 @@ const PrescricaoPage = () => {
       toast.error("Erro ao persistir alteração", {
         description: "A alteração ficou apenas em memória. Salve manualmente para garantir.",
       });
+      throw err;
     }
-  }, [currentHospital, currentState, patient, digitalSignature, currentPrescriptionId, user?.id]);
+  }, [currentHospital, currentState, patient, digitalSignature, currentPrescriptionId, user?.id, initialPatientSector]);
 
   // Aplica a validação a um conjunto (sem pedir senha) — usado tanto pelo caminho rápido
   // quanto pelo executeValidation (após senha).
@@ -4311,6 +4320,39 @@ const PrescricaoPage = () => {
 
   useEffect(() => { fetchPrescriptions(); }, [fetchPrescriptions]);
 
+  // Auto-hidrata a última prescrição do paciente nas últimas 24h ao abrir o cockpit.
+  // Garante que prescrições validadas/impressas continuem visíveis até o corte das 05h
+  // mesmo se o médico fechar a aba e reabrir, e impede duplicatas.
+  const autoLoadAttemptedRef = useRef(false);
+  const loadPrescriptionRef = useRef<((id: string) => Promise<void>) | null>(null);
+  useEffect(() => {
+    if (autoLoadAttemptedRef.current) return;
+    if (!currentHospital || !currentState || !patient.name.trim()) return;
+    if (currentPrescriptionId) return;
+    autoLoadAttemptedRef.current = true;
+    (async () => {
+      try {
+        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data, error } = await supabase
+          .from('prescriptions')
+          .select('id, created_at')
+          .eq('hospital_unit_id', currentHospital.id)
+          .eq('state_id', currentState.id)
+          .eq('patient_name', patient.name.trim())
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (error) throw error;
+        const last = (data || [])[0];
+        if (last?.id && loadPrescriptionRef.current) {
+          await loadPrescriptionRef.current(last.id);
+        }
+      } catch (err) {
+        console.error('[autoLoadPrescription] failed', err);
+      }
+    })();
+  }, [currentHospital, currentState, patient.name, currentPrescriptionId]);
+
   // Fetch version history for a prescription (by patient_name in same hospital)
   const fetchVersionHistory = useCallback(async (prescriptionId: string) => {
     if (!currentHospital || !currentState) return;
@@ -4360,6 +4402,9 @@ const PrescricaoPage = () => {
       toast.error("Erro ao carregar prescrição", { description: err.message });
     }
   }, [fetchVersionHistory]);
+
+  // Mantém o ref do auto-load apontando para a versão atual de loadPrescription
+  useEffect(() => { loadPrescriptionRef.current = loadPrescription; }, [loadPrescription]);
 
   // ===== Repeat previous prescription =====
   const openRepeatDialog = useCallback(async () => {
@@ -4597,7 +4642,14 @@ const PrescricaoPage = () => {
     return !cat.notification_type;
   });
 
-  const doPrintPrescription = () => {
+  const doPrintPrescription = async () => {
+    // Garante snapshot persistido ANTES da impressão (assinatura, validações, etc.)
+    try {
+      await persistItems(items);
+    } catch {
+      // persistItems já mostrou toast de erro; aborta impressão para não imprimir item não rastreado
+      return;
+    }
     setShowPrintPortal(true);
     setTimeout(() => {
       window.print();
@@ -4653,14 +4705,20 @@ const PrescricaoPage = () => {
     setSignDialogOpen(true);
   };
 
-  const confirmSign = useCallback((sig: DigitalSignature) => {
+  const confirmSign = useCallback(async (sig: DigitalSignature) => {
     setDigitalSignature(sig);
     setSignDialogOpen(false);
-    toast.success("Prescrição assinada digitalmente", {
-      description: `Dr(a). ${sig.doctorName} — CRM ${sig.crm} — Hash: ${sig.hash}`,
-      duration: 5000,
-    });
-  }, []);
+    // Persistência IMEDIATA da assinatura — não pode ficar só em memória
+    try {
+      await persistItems(items, { sigOverride: sig });
+      toast.success("Prescrição assinada digitalmente", {
+        description: `Dr(a). ${sig.doctorName} — CRM ${sig.crm} — Hash: ${sig.hash}`,
+        duration: 5000,
+      });
+    } catch {
+      // persistItems já reportou o erro
+    }
+  }, [items, persistItems]);
 
   // Renewal with dialog
   const handleRenew = () => {
@@ -4722,7 +4780,10 @@ const PrescricaoPage = () => {
             status: 'draft',
             version: nextVersion,
             parent_id: currentPrescriptionId || undefined,
-            department: 'URGÊNCIA E EMERGÊNCIA ADULTO',
+            department:
+              (patient.unit && patient.unit.trim()) ||
+              (initialPatientSector && (sectorMapInit[initialPatientSector] || initialPatientSector)) ||
+              'GERAL',
             hospital_unit_id: currentHospital.id,
             state_id: currentState.id,
             created_by: user?.id || null,
