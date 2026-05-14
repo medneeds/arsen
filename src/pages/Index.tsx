@@ -853,6 +853,12 @@ const Index = () => {
     setQuickViewOpen(true);
   };
 
+  const pageReady = usePageReady({ loading: authLoading || patientsLoading });
+  if (!pageReady) {
+    const sectorLabel = SECTOR_VISUAL[activeSector]?.title;
+    return <PageLoader message={sectorLabel ? `Preparando ${sectorLabel}` : "Carregando mapa de leitos"} subMessage={whitelabel.institution.hospitalAbbreviation} />;
+  }
+
   return (
     <MainLayout onOpenHandover={() => setHandoverDialogOpen(true)}>
         {/* Print-only layout - Hidden on screen, visible only when printing */}
