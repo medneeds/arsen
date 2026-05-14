@@ -229,20 +229,24 @@ export function AllergiesChipInput({
             </Popover>
           )}
 
-          <Input
-            ref={inputRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onBlur={() => {
-              if (draft.trim()) commitDraft();
-            }}
-            placeholder={empty ? "NDAM ou listar..." : "+ adicionar"}
-            className={cn(
-              "h-6 border-0 bg-transparent px-1 text-xs shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
-              empty ? "min-w-[110px]" : "min-w-[70px] max-w-[110px]",
-            )}
-          />
+          <div className="flex items-center gap-0.5">
+            {!empty && <Plus className="h-3 w-3 text-muted-foreground shrink-0" aria-hidden />}
+            <Input
+              ref={inputRef}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={() => {
+                if (draft.trim()) commitDraft();
+              }}
+              placeholder={empty ? "NDAM ou listar..." : ""}
+              aria-label="Adicionar alergia"
+              className={cn(
+                "h-6 border-0 bg-transparent px-1 text-xs shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
+                empty ? "min-w-[110px]" : "min-w-[60px] max-w-[100px]",
+              )}
+            />
+          </div>
 
           {empty && (
             <button
