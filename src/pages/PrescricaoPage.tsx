@@ -1902,11 +1902,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               })()}
 
               {/* Row 2: Forma, Diluente, Vol Diluente, Acesso */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Forma:</span>
+              <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="text-[10px] text-muted-foreground shrink-0">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-[130px]"><SelectValue placeholder="apresentação" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-[120px]"><SelectValue placeholder="forma/unidade" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       {QUANTITY_UNITS.map(u => (
                         <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
@@ -1915,7 +1915,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   </Select>
                   {item.quantityUnit && (
                     <>
-                      <span className="text-[10px] text-muted-foreground">Qtd:</span>
+                      <span className="text-[10px] text-muted-foreground shrink-0 ml-1">Qtd:</span>
                       <Input
                         type="number"
                         inputMode="decimal"
@@ -1932,11 +1932,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                             if (autoConc) onUpdate(item.id, "concentration", autoConc);
                           }
                         }}
-                        className="h-6 text-[11px] bg-muted/10 border-border/30 w-14 text-center"
+                        className="h-6 text-[11px] bg-muted/10 border-border/30 w-12 text-center"
                         placeholder="1"
                         title={`Quantidade em ${item.quantityUnit}`}
                       />
-                      <span className="text-[10px] text-muted-foreground lowercase">{item.quantityUnit}</span>
                     </>
                   )}
                 </div>
