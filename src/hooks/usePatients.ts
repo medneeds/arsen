@@ -86,7 +86,7 @@ export function usePatients(department?: Department, sector?: string) {
         psmStatus: p.psm_status as Patient['psmStatus'],
         clinicalStatus: (p as any).clinical_status as Patient['clinicalStatus'],
         isVacant: (p as any).is_vacant ?? false,
-        admissionStatus: ((p as any).admission_status as Patient['admissionStatus']) ?? 'admitido',
+        admissionStatus: ((p as any).admission_status as Patient['admissionStatus']) ?? ((p as any).is_vacant ? undefined : 'admitido'),
         admittedAt: (p as any).admitted_at ?? null,
       }));
 
@@ -457,7 +457,7 @@ export function usePatients(department?: Department, sector?: string) {
         patient_name: (full as any)?.name || target?.name || '',
         patient_bed: (full as any)?.bed_number || target?.bedNumber || null,
         patient_sector: (full as any)?.sector || target?.sector || null,
-        movement_type: 'LIBERAÇÃO PRÉ-ADMISSÃO',
+        movement_type: isPostDischargeRelease ? 'LIBERAÇÃO PÓS-ALTA/ÓBITO' : 'LIBERAÇÃO PRÉ-ADMISSÃO',
         destination: 'PRONTUÁRIO PRESERVADO — LEITO LIBERADO',
         notes: noteLines || null,
         responsible_doctor: null,
@@ -527,7 +527,23 @@ export function usePatients(department?: Department, sector?: string) {
                 pendencies: [],
                 schedule: [],
                 admissionHistory: '',
+                age: '',
+                medicalResponsibility: undefined,
+                utiAdmissionDate: [],
+                utiDischargePrediction: [],
+                utiAllergies: [],
+                utiAdmissionReason: [],
+                utiCurrentStatus: [],
+                utiDevices: [],
+                utiCulturesAntibiotics: [],
+                utiSpecialties: [],
+                utiOriginSector: [],
+                utiDailyConducts: [],
+                psmStatus: null,
+                clinicalStatus: null,
+                admissionDate: '',
                 admissionStatus: undefined,
+                admittedAt: null,
                 isVacant: true,
               } as unknown as Patient)
             : p,
@@ -634,7 +650,8 @@ export function usePatients(department?: Department, sector?: string) {
     psmStatus: record.psm_status as Patient['psmStatus'],
     clinicalStatus: record.clinical_status as Patient['clinicalStatus'],
     isVacant: record.is_vacant ?? false,
-    admissionStatus: (record.admission_status as Patient['admissionStatus']) ?? 'admitido',
+    admissionStatus: (record.admission_status as Patient['admissionStatus']) ?? (record.is_vacant ? undefined : 'admitido'),
+    admittedAt: record.admitted_at ?? null,
   });
 
   useEffect(() => {
