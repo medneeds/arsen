@@ -973,6 +973,7 @@ export default function Saps3Page() {
           patientId={confirmationData.patientId}
           sectorCode={confirmationData.sectorCode}
           age={confirmationData.age}
+          mode={confirmationData.mode}
           onComplete={() => setConfirmationData(null)}
         />
       )}
