@@ -219,15 +219,13 @@ export default function PacienteHubPage() {
           variant="institutional"
           actions={
             <div className="flex items-center gap-1.5">
-              {isAdmitted && (
-                <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5 bg-white/95"
-                  onClick={handlePrintAdmission}>
-                  <Printer className="h-3.5 w-3.5" /> Imprimir Admissão
-                </Button>
-              )}
-              <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5 bg-white/95"
-                onClick={() => navigate("/painel-clinico")}>
-                <ArrowLeft className="h-3.5 w-3.5" /> Painel Clínico
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1.5 bg-white text-slate-700 border-slate-300 hover:bg-slate-100 hover:text-slate-900 shadow-sm font-medium"
+                onClick={() => navigate("/painel-clinico")}
+              >
+                <ArrowLeft className="h-3.5 w-3.5 text-slate-600" /> Painel Clínico
               </Button>
             </div>
           }
