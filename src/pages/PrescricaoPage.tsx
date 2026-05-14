@@ -607,6 +607,36 @@ export function getCategoryContainerClass(category?: string): string {
   }
 }
 
+// Acento de campo (border + focus ring) por categoria — usado no
+// MedicationAutocomplete e como override descendente nos inputs/selects
+// internos do container (apenas os que têm fundo branco, preservando
+// campos especiais já tematizados como o pill ATB e a tarja âmbar).
+export function getCategoryFieldAccent(category?: string): { border: string; ring: string; descendantOverrides: string } {
+  switch (category) {
+    case 'nutrition':
+      return { border: 'border-emerald-300/70 focus-visible:border-emerald-400', ring: 'focus-visible:ring-emerald-400/60', descendantOverrides: '[&_input.bg-white]:border-emerald-200/70 [&_input.bg-white]:focus-visible:ring-emerald-400/60 [&_button.bg-white]:border-emerald-200/70 [&_button.bg-white]:focus-visible:ring-emerald-400/60' };
+    case 'hydration':
+      return { border: 'border-blue-300/70 focus-visible:border-blue-400', ring: 'focus-visible:ring-blue-400/60', descendantOverrides: '[&_input.bg-white]:border-blue-200/70 [&_input.bg-white]:focus-visible:ring-blue-400/60 [&_button.bg-white]:border-blue-200/70 [&_button.bg-white]:focus-visible:ring-blue-400/60' };
+    case 'replacement':
+      return { border: 'border-sky-300/70 focus-visible:border-sky-400', ring: 'focus-visible:ring-sky-400/60', descendantOverrides: '[&_input.bg-white]:border-sky-200/70 [&_input.bg-white]:focus-visible:ring-sky-400/60 [&_button.bg-white]:border-sky-200/70 [&_button.bg-white]:focus-visible:ring-sky-400/60' };
+    case 'antimicrobial':
+      return { border: 'border-indigo-300/60 focus-visible:border-indigo-400', ring: 'focus-visible:ring-indigo-400/50', descendantOverrides: '[&_input.bg-white]:border-indigo-200/60 [&_input.bg-white]:focus-visible:ring-indigo-400/50 [&_button.bg-white]:border-indigo-200/60 [&_button.bg-white]:focus-visible:ring-indigo-400/50' };
+    case 'high_alert':
+      return { border: 'border-red-300/70 focus-visible:border-red-400', ring: 'focus-visible:ring-red-400/60', descendantOverrides: '[&_input.bg-white]:border-red-200/70 [&_input.bg-white]:focus-visible:ring-red-400/60 [&_button.bg-white]:border-red-200/70 [&_button.bg-white]:focus-visible:ring-red-400/60' };
+    case 'inhalation':
+      return { border: 'border-cyan-300/70 focus-visible:border-cyan-400', ring: 'focus-visible:ring-cyan-400/60', descendantOverrides: '[&_input.bg-white]:border-cyan-200/70 [&_input.bg-white]:focus-visible:ring-cyan-400/60 [&_button.bg-white]:border-cyan-200/70 [&_button.bg-white]:focus-visible:ring-cyan-400/60' };
+    case 'hemotherapy':
+      return { border: 'border-rose-300/70 focus-visible:border-rose-400', ring: 'focus-visible:ring-rose-400/60', descendantOverrides: '[&_input.bg-white]:border-rose-200/70 [&_input.bg-white]:focus-visible:ring-rose-400/60 [&_button.bg-white]:border-rose-200/70 [&_button.bg-white]:focus-visible:ring-rose-400/60' };
+    case 'care':
+      return { border: 'border-violet-300/70 focus-visible:border-violet-400', ring: 'focus-visible:ring-violet-400/60', descendantOverrides: '[&_input.bg-white]:border-violet-200/70 [&_input.bg-white]:focus-visible:ring-violet-400/60 [&_button.bg-white]:border-violet-200/70 [&_button.bg-white]:focus-visible:ring-violet-400/60' };
+    case 'nonstandard':
+      return { border: 'border-zinc-300/70 focus-visible:border-zinc-400', ring: 'focus-visible:ring-zinc-400/60', descendantOverrides: '[&_input.bg-white]:border-zinc-200/70 [&_input.bg-white]:focus-visible:ring-zinc-400/60 [&_button.bg-white]:border-zinc-200/70 [&_button.bg-white]:focus-visible:ring-zinc-400/60' };
+    case 'medication':
+    default:
+      return { border: 'border-slate-300/70 focus-visible:border-slate-400', ring: 'focus-visible:ring-slate-400/60', descendantOverrides: '[&_input.bg-white]:border-slate-200/70 [&_input.bg-white]:focus-visible:ring-slate-400/60 [&_button.bg-white]:border-slate-200/70 [&_button.bg-white]:focus-visible:ring-slate-400/60' };
+  }
+}
+
 // --- Autocomplete Component ---
 function MedicationAutocomplete({
   source,
@@ -615,6 +645,7 @@ function MedicationAutocomplete({
   getFavoriteCount,
   onAssistantClick,
   assistantTooltip,
+  category,
 }: {
   source: MedicationEntry[];
   onSelect: (med: MedicationEntry) => void;
@@ -622,11 +653,13 @@ function MedicationAutocomplete({
   getFavoriteCount?: (id: string) => number;
   onAssistantClick?: () => void;
   assistantTooltip?: string;
+  category?: string;
 }) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const favCount = getFavoriteCount ?? (() => 0);
+  const accent = getCategoryFieldAccent(category);
 
   const filtered = useMemo(() => {
     return fuzzySearch(query, source, favCount, 10);
@@ -652,7 +685,8 @@ function MedicationAutocomplete({
             onBlur={() => setTimeout(() => setFocused(false), 200)}
             placeholder={placeholder}
             className={cn(
-              "pl-9 bg-background/60 border-border/50 h-7 text-xs focus:border-primary/50 transition-colors",
+              "pl-9 bg-background/60 h-7 text-xs transition-colors",
+              category ? `${accent.border} ${accent.ring}` : "border-border/50 focus:border-primary/50",
               onAssistantClick && "pr-9"
             )}
           />
@@ -949,7 +983,7 @@ function NutritionFields({
   const setSubtype = (v: string) => onUpdate(item.id, 'nutritionType', v);
 
   return (
-    <div className={cn(getCategoryContainerClass('nutrition'), "space-y-1.5")}>
+    <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-1.5")}>
       <div className="flex items-center gap-1.5 flex-wrap">
         <FieldLabel>Tipo:</FieldLabel>
         <Select value={subtype} onValueChange={setSubtype}>
@@ -1912,7 +1946,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             <>
               {/* Bulário movido para o header (próximo ao nome da medicação) */}
               {/* ===== Container integrado: 3 linhas de edição com fundo único ===== */}
-              <div className={cn(getCategoryContainerClass(item.category), "space-y-2")}>
+              <div className={cn(getCategoryContainerClass(item.category), getCategoryFieldAccent(item.category).descendantOverrides, "space-y-2")}>
               {/* Row 1 removida — Int. (intervalo) movido para o final da Row 2 */}
 
               {/* Row 1.5: Reconstituição (pó liofilizado) — só quando catálogo indica */}
@@ -2589,6 +2623,7 @@ function ExtraPrescriptionDialog({
             source={filteredMedications}
             onSelect={addFromAutocomplete}
             placeholder={categoryConfigLabel ? `Buscar em ${categoryConfigLabel.toLowerCase()}...` : "Buscar medicação para prescrição extra..."}
+            category={initialCategory !== 'all' ? initialCategory : undefined}
           />
           <div className="flex gap-2">
             <Input
@@ -5910,6 +5945,7 @@ const PrescricaoPage = () => {
                           onSelect={addItem}
                           placeholder={`Buscar ${config.label.toLowerCase()}...`}
                           getFavoriteCount={getFavoriteCount}
+                          category={cat}
                           onAssistantClick={
                             cat === 'nutrition' ? () => setNutritionWizardOpen(true) :
                             cat === 'hydration' ? () => setHydrationWizardOpen(true) :

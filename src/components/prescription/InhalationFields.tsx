@@ -77,7 +77,7 @@ export function InhalationFields({ item, onUpdate }: Props) {
   );
 
   return (
-    <div className="relative rounded-md p-2 border bg-cyan-50/50 dark:bg-cyan-950/20 border-cyan-200/60 dark:border-cyan-900/50 border-l-[3px] border-l-cyan-500/70 dark:border-l-cyan-400/70 space-y-2">
+    <div className="relative rounded-md p-2 border bg-cyan-50/50 dark:bg-cyan-950/20 border-cyan-200/60 dark:border-cyan-900/50 border-l-[3px] border-l-cyan-500/70 dark:border-l-cyan-400/70 space-y-2 [&_input.bg-white]:border-cyan-200/70 [&_input.bg-white]:focus-visible:ring-cyan-400/60 [&_button.bg-white]:border-cyan-200/70 [&_button.bg-white]:focus-visible:ring-cyan-400/60">
       {/* Modo de administração */}
       <div className="flex items-center gap-1.5 flex-wrap">
         <Wind className="h-3 w-3 text-primary shrink-0" />
