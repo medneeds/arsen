@@ -1070,15 +1070,17 @@ export default function Saps3Page() {
             </CardContent>
           </Card>
 
-          {/* Bed Selection */}
+          {/* Bed Selection / Allocation Confirmation */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Bed className="h-5 w-5 text-primary" />
-                Alocação de Leito
+                {completingSapsId ? "Leito já alocado" : "Alocação de Leito"}
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                Setor pré-configurado pela origem do pedido. Selecione apenas o leito de destino.
+                {completingSapsId
+                  ? "Paciente já está no leito. Esta seção é apenas informativa — a validação atualizará a ficha SAPS sem mover o paciente."
+                  : "Setor pré-configurado pela origem do pedido. Selecione apenas o leito de destino."}
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1089,24 +1091,35 @@ export default function Saps3Page() {
                     <span className="text-sm font-semibold text-foreground">
                       {currentSectorLabel || "—"}
                     </span>
-                    <Badge variant="outline" className="text-[10px] uppercase">Sincronizado</Badge>
+                    <Badge variant="outline" className="text-[10px] uppercase">
+                      {completingSapsId ? "Atual" : "Sincronizado"}
+                    </Badge>
                   </div>
                 </div>
                 <div>
-                  <Label>Leito de destino</Label>
-                  <Select value={selectedBed} onValueChange={setSelectedBed} disabled={!selectedSector}>
-                    <SelectTrigger><SelectValue placeholder={selectedSector ? "Selecione o leito" : "Setor não definido"} /></SelectTrigger>
-                    <SelectContent>
-                      {availableBeds.map(b => (
-                        <SelectItem key={b.value} value={b.value} disabled={b.occupied}>
-                          {b.label} {b.occupied ? " (ocupado)" : " ✓ livre"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>{completingSapsId ? "Leito atual" : "Leito de destino"}</Label>
+                  {completingSapsId ? (
+                    <div className="mt-1.5 flex items-center justify-between gap-2 h-10 px-3 rounded-md border border-dashed border-emerald-400/60 bg-emerald-50 dark:bg-emerald-900/20">
+                      <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                        {selectedBed || "—"}
+                      </span>
+                      <Badge variant="outline" className="text-[10px] uppercase border-emerald-300 text-emerald-700 dark:text-emerald-300">Ocupado</Badge>
+                    </div>
+                  ) : (
+                    <Select value={selectedBed} onValueChange={setSelectedBed} disabled={!selectedSector}>
+                      <SelectTrigger><SelectValue placeholder={selectedSector ? "Selecione o leito" : "Setor não definido"} /></SelectTrigger>
+                      <SelectContent>
+                        {availableBeds.map(b => (
+                          <SelectItem key={b.value} value={b.value} disabled={b.occupied}>
+                            {b.label} {b.occupied ? " (ocupado)" : " ✓ livre"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               </div>
-              {selectedBed && (
+              {selectedBed && !completingSapsId && (
                 <div className="flex items-center gap-2 p-2 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
                   <Bed className="h-4 w-4 text-emerald-600" />
                   <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
