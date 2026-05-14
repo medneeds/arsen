@@ -9,10 +9,13 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
 import {
-  NotebookPen, Plus, Loader2, AlertTriangle,
+  NotebookPen, Plus, Loader2, AlertTriangle, ChevronDown, Sun, Moon, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { RichTextEditor, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
