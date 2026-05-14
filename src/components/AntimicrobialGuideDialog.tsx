@@ -175,8 +175,8 @@ function AntimicrobialCombobox({
                   onSelect={() => { onSelectMed(med); setOpen(false); }}
                   className="text-xs"
                 >
-                  <Check className={cn("mr-2 h-3.5 w-3.5", value === med.name ? "opacity-100 text-orange-600" : "opacity-0")} />
-                  <Pill className="mr-1.5 h-3 w-3 text-orange-500 shrink-0" />
+                  <Check className={cn("mr-2 h-3.5 w-3.5", value === med.name ? "opacity-100 text-violet-600" : "opacity-0")} />
+                  <Pill className="mr-1.5 h-3 w-3 text-violet-500 shrink-0" />
                   <div className="flex flex-col flex-1 min-w-0">
                     <span className="font-medium truncate">{med.name}</span>
                     <span className="text-[10px] text-muted-foreground truncate">
@@ -416,9 +416,9 @@ export function AntimicrobialGuideDialog({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl w-[96vw] h-[88vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <DialogHeader className="px-6 py-3 border-b shrink-0 bg-orange-50/40 dark:bg-orange-950/10">
+          <DialogHeader className="px-6 py-3 border-b shrink-0 bg-violet-50/50 dark:bg-violet-950/15">
             <DialogTitle className="flex items-center gap-2 text-base">
-              <Shield className="h-5 w-5 text-orange-500" />
+              <Shield className="h-5 w-5 text-violet-500" />
               GUIA DE USO DE ANTIMICROBIANOS — CCIH
             </DialogTitle>
             <DialogDescription className="text-xs">
@@ -430,7 +430,7 @@ export function AntimicrobialGuideDialog({
           <ScrollArea className="flex-1 min-h-0">
             <div className="px-6 py-4 space-y-4">
               {/* Patient Summary */}
-              <div className="rounded-lg border border-orange-200 bg-orange-50/50 dark:bg-orange-950/10 dark:border-orange-800/30 p-3">
+              <div className="rounded-lg border border-violet-200/70 bg-violet-50/50 dark:bg-violet-950/15 dark:border-violet-800/30 p-3">
                 <div className="grid grid-cols-4 gap-2 text-xs">
                   <div><span className="text-muted-foreground">Paciente:</span> <strong>{patient.name}</strong></div>
                   <div><span className="text-muted-foreground">Leito:</span> <strong>{patient.bed}</strong></div>
@@ -448,7 +448,7 @@ export function AntimicrobialGuideDialog({
                 <div key={entry.id} className="rounded-lg border border-border p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold flex items-center gap-2">
-                      <Badge variant="outline" className="text-orange-600 border-orange-300">ATM {idx + 1}</Badge>
+                      <Badge variant="outline" className="text-violet-600 border-violet-300">ATM {idx + 1}</Badge>
                       {entry.medication || "Novo antimicrobiano"}
                     </h3>
                     {entries.length > 1 && (
@@ -618,10 +618,10 @@ export function AntimicrobialGuideDialog({
               </Button>
               {mode === 'prescribe' && onConfirm && (
                 <>
-                  <Button variant="outline" size="sm" onClick={handleAttachOnly} className="gap-1.5 border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400">
+                  <Button variant="outline" size="sm" onClick={handleAttachOnly} className="gap-1.5 border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-400">
                     <Shield className="h-3.5 w-3.5" /> Anexar antibióticos à prescrição
                   </Button>
-                  <Button size="sm" onClick={handleAttachAndPrint} className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white">
+                  <Button size="sm" onClick={handleAttachAndPrint} className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white">
                     <Printer className="h-3.5 w-3.5" /> Anexar + Imprimir Guia
                   </Button>
                 </>
