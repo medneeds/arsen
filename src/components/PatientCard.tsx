@@ -888,24 +888,16 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
         updatedPatient.admissionDate = new Date().toISOString();
       }
     } else if (editingField === "admissionDate") {
-      const val = editValue.trim();
-      if (!val) {
-        updatedPatient.admissionDate = new Date().toISOString();
-      } else {
-        // Try to parse DD/MM/YYYY HH:mm
-        const parsed = parse(val, "dd/MM/yyyy HH:mm", new Date());
-        if (isValid(parsed)) {
-          updatedPatient.admissionDate = parsed.toISOString();
-        } else {
-          // Try DD/MM/YYYY
-          const parsedDate = parse(val, "dd/MM/yyyy", new Date());
-          if (isValid(parsedDate)) {
-            updatedPatient.admissionDate = parsedDate.toISOString();
-          } else {
-            updatedPatient.admissionDate = val;
-          }
-        }
-      }
+      // Edição inline da data de admissão é BLOQUEADA.
+      // Caminho único: Edição Avançada → AdmissionDateEditor (com motivo + histórico auditado).
+      setEditingField(null);
+      setEditValue("");
+      toastHook({
+        title: "Edição bloqueada",
+        description: "A data de admissão só pode ser alterada por Edição Avançada (com motivo e histórico).",
+        variant: "destructive",
+      });
+      return;
     } else if (editingField === "age") {
       // Tenta formatar idade usando IA (data de nascimento ou idade simples)
       const formattedAge = await calculateAge(editValue);

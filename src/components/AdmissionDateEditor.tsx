@@ -139,8 +139,23 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
           changed_by_name: displayName,
           reason: reason || null,
         });
+
+        // Caminho ÚNICO de mutação de admission_date (auditado).
+        // updatePatient genérico não toca mais este campo, então
+        // gravamos diretamente aqui após registrar o histórico.
+        const { error: updateErr } = await supabase
+          .from("patients")
+          .update({ admission_date: newValueISO })
+          .eq("id", patientId);
+        if (updateErr) {
+          console.error("[AdmissionDateEditor] patient update failed", updateErr);
+          toast.error("Erro ao salvar data de admissão");
+          return;
+        }
       } catch (err) {
         console.error("[AdmissionDateEditor] history insert failed", err);
+        toast.error("Erro ao registrar histórico");
+        return;
       }
     }
 

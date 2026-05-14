@@ -133,7 +133,11 @@ export function usePatients(department?: Department, sector?: string) {
       if (updates.highlightedConducts !== undefined) dbUpdates.highlighted_conducts = updates.highlightedConducts;
       if (updates.schedule !== undefined) dbUpdates.schedule = updates.schedule.join('\n');
       if (updates.admissionHistory !== undefined) dbUpdates.admission_history = updates.admissionHistory || null;
-      if (updates.admissionDate !== undefined) dbUpdates.admission_date = updates.admissionDate && updates.admissionDate !== '' ? updates.admissionDate : null;
+      // admission_date é IMUTÁVEL via updatePatient genérico.
+      // Só pode ser alterado por:
+      //   1. createPatient (primeira admissão / alocação)
+      //   2. AdmissionDateEditor (Edição Avançada, com auditoria em patient_admission_date_history)
+      // Qualquer save do mapa de leitos (compacto/detalhado) NÃO toca admission_date.
       if (updates.medicalResponsibility !== undefined) dbUpdates.medical_responsibility = updates.medicalResponsibility;
       if (updates.displayOrder !== undefined) dbUpdates.display_order = updates.displayOrder;
       // UTI fields
