@@ -478,16 +478,19 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                     </div>
                   )}
                   <div className="mt-2">
-                    {isIntercurrence(evo) ? (
-                      <div className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                    {isIntercurrence(evo) ? (() => {
+                      const k = getComplementaryKind(evo)!;
+                      const m = COMPLEMENTARY_BADGE[k];
+                      return (
+                      <div className={cn("space-y-2 rounded-lg border p-3", m.borderClass, m.bgClass)}>
                         <div className="flex items-center gap-2">
-                          <Zap className="h-3.5 w-3.5 text-amber-600" />
-                          <span className="text-xs font-semibold text-foreground">Descritivo da Intercorrência</span>
+                          <Zap className={cn("h-3.5 w-3.5", m.iconColor)} />
+                          <span className="text-xs font-semibold text-foreground">Descritivo — {m.label}</span>
                         </div>
                         <RichTextEditor
                           value={data.soap.subjective || ""}
                           onChange={(html) => updateLocal(evo.id, "soap", "subjective", html)}
-                          placeholder="Descreva a intercorrência..."
+                          placeholder={`Descreva a evolução (${m.label.toLowerCase()})...`}
                           minHeight={120}
                           disabled={!isEditable}
                         />
