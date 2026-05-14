@@ -48,6 +48,8 @@ import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { PageLoader } from "@/components/PageLoader";
+import { usePageReady } from "@/hooks/usePageReady";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { ShiftRenewalAlert } from "@/components/ShiftRenewalAlert";
 import { PrescriptionDiffDialog } from "@/components/PrescriptionDiffDialog";
