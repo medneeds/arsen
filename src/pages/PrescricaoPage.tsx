@@ -239,6 +239,30 @@ const QUANTITY_UNITS = [
   'supositório', 'óvulo', 'bisnaga', 'frasco',
 ];
 
+// Siglas hospitalares para forma/unidade (display-only; valor preservado)
+const QUANTITY_UNIT_SHORT: Record<string, string> = {
+  'mL': 'mL',
+  'ampola': 'AMP',
+  'frasco-ampola': 'FA',
+  'frasco': 'FR',
+  'comprimido': 'CP',
+  'cápsula': 'CAP',
+  'gota': 'gts',
+  'mg': 'mg',
+  'g': 'g',
+  'mcg': 'mcg',
+  'UI': 'UI',
+  'bolsa': 'BOL',
+  'unidade': 'UN',
+  'sachê': 'SCH',
+  'envelope': 'ENV',
+  'adesivo': 'ADES',
+  'supositório': 'SUP',
+  'óvulo': 'OV',
+  'bisnaga': 'BIS',
+};
+const quantityUnitShort = (u?: string) => (u && QUANTITY_UNIT_SHORT[u]) || u || '';
+
 // Auto-detect quantity unit from medication presentation
 function detectQuantityUnit(presentation: string, dose: string): string {
   const p = presentation.toLowerCase();
@@ -478,11 +502,10 @@ function buildPrepDescription(item: PrescriptionItem): string {
     parts.push(`Reconstituir ${qtyFA} frasco-ampola com ${item.reconstitutionVolume}mL de ${item.reconstitutionSolvent}.`);
   }
 
-  // 1) Quantidade + forma — quantidade implícita = 1
-  // (omitido quando já houve reconstituição explícita acima, para evitar redundância)
+  // 1) Quantidade + forma (sigla) — quantidade implícita = 1
   if (item.quantityUnit && !(item.reconstitutionSolvent && item.reconstitutionVolume)) {
     const qty = (item.quantity && item.quantity.trim() && item.quantity.trim() !== '0') ? item.quantity.trim() : '1';
-    parts.push(`${qty} ${item.quantityUnit}.`);
+    parts.push(`${qty} ${quantityUnitShort(item.quantityUnit)}.`);
   }
 
   // 2) Dose
@@ -495,7 +518,7 @@ function buildPrepDescription(item: PrescriptionItem): string {
     parts.push(dilPart + '.');
   }
 
-  // 4) Volume total — só se preenchido E diferente do volume do diluente (evita redundância)
+  // 4) Volume total — só se preenchido E diferente do volume do diluente
   const volTotalNum = parseFloat((item.volumeTotal || '').replace(',', '.'));
   const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
   const hasDistinctTotal = item.volumeTotal && (!item.diluentVolume || (volTotalNum && volTotalNum !== volDilNum));
@@ -514,8 +537,11 @@ function buildPrepDescription(item: PrescriptionItem): string {
     }
   }
 
-  // 6) Acesso (opcional, ao final)
-  if (item.accessType) parts.push(`Acesso ${item.accessType.toLowerCase()}.`);
+  // 6) Via (sigla) + intervalo — fechamento padronizado
+  const tail: string[] = [];
+  if (item.route && item.route !== '-') tail.push(routeShort(item.route));
+  if (item.posology && item.posology !== '-') tail.push(item.posology);
+  if (tail.length) parts.push(tail.join(' · ') + '.');
 
   return parts.join(' ');
 }
@@ -1586,13 +1612,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       const tUnitH = item.infusionTimeUnit === 'h' ? 'h' : 'min';
       const rateLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
       const rate = item.infusionRate ? `${item.infusionRate} ${rateLabel}` : '';
-      const access = item.accessType ? `via ${item.accessType}` : '';
       const phrase = [
         vol ? `${vol}mL/fase` : '',
         `${phases} fase${phases > 1 ? 's' : ''} (${interval})`,
         tVal ? `correr em ${tVal}${tUnitH}` : '',
         rate ? `(${rate})` : '',
-        access,
         total24 ? `· total ${total24}mL/24h` : '',
       ].filter(Boolean).join(' · ');
       if (phrase) compactParts.push(phrase);
@@ -1866,16 +1890,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {/* Bulário movido para o header (próximo ao nome da medicação) */}
               {/* ===== Container integrado: 3 linhas de edição com fundo único ===== */}
               <div className="relative rounded-md bg-accent/30 dark:bg-accent/20 border border-border/40 border-l-[3px] border-l-primary/50 p-2 space-y-2">
-              {/* Row 1: somente Int. (Intervalo) */}
-              <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Int.:</span>
-                  <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
-                    <SelectTrigger className="h-7 text-xs bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 font-medium w-28 focus:ring-1 focus:ring-primary"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-              </div>
+              {/* Row 1 removida — Int. (intervalo) movido para o final da Row 2 */}
 
               {/* Row 1.5: Reconstituição (pó liofilizado) — só quando catálogo indica */}
               {renderDiluent && (() => {
@@ -1909,7 +1924,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 );
               })()}
 
-              {/* Row 2: Qtd → Forma → Diluente → Vol. dil → Acesso → Via */}
+              {/* Row 2: Qtd → Forma → Diluente → Vol. dil → Via → Int. */}
               <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Qtd:</span>
@@ -1935,10 +1950,15 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   />
                   <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0 ml-1">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-[120px] focus:ring-1 focus:ring-primary"><SelectValue placeholder="forma/unidade" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-[78px] font-semibold focus:ring-1 focus:ring-primary" title={item.quantityUnit || 'Forma/unidade'}>
+                      <SelectValue placeholder="—">{quantityUnitShort(item.quantityUnit)}</SelectValue>
+                    </SelectTrigger>
                     <SelectContent className="max-h-72">
                       {QUANTITY_UNITS.map(u => (
-                        <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
+                        <SelectItem key={u} value={u} className="text-xs">
+                          <span className="font-semibold mr-1.5">{quantityUnitShort(u)}</span>
+                          <span className="text-muted-foreground">— {u}</span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -1987,20 +2007,6 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   }} className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center focus-visible:ring-1 focus-visible:ring-primary" placeholder="mL" />
                 </div>
                 )}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Acesso:</span>
-                  <Select value={item.accessType || ''} onValueChange={(v) => onUpdate(item.id, "accessType", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Periférico" className="text-xs">Periférico</SelectItem>
-                      <SelectItem value="Central" className="text-xs">Central</SelectItem>
-                      <SelectItem value="PICC" className="text-xs">PICC</SelectItem>
-                      <SelectItem value="Port-a-cath" className="text-xs">Port-a-cath</SelectItem>
-                      <SelectItem value="Jelco" className="text-xs">Jelco</SelectItem>
-                      <SelectItem value="Intracath" className="text-xs">Intracath</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 </>}
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Via:</span>
@@ -2021,6 +2027,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         </SelectItem>
                       ))}
                     </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Int.:</span>
+                  <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
+                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 font-semibold w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
               </div>
