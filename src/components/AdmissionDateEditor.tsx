@@ -262,26 +262,48 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
+            <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 text-[11px] text-amber-900 dark:text-amber-200">
+              <strong>Padrão Brasileiro:</strong> Dia / Mês / Ano. Ex.: <strong>14/05/2026</strong> = 14 de MAIO de 2026.
+              Os campos só aceitam números — as barras são inseridas automaticamente.
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Data</Label>
+                <Label className="text-xs font-semibold">Data (DD/MM/AAAA)</Label>
                 <Input
                   value={editDate}
-                  onChange={(e) => setEditDate(e.target.value)}
+                  onChange={(e) => {
+                    // Mantém apenas dígitos e insere barras nas posições 2 e 4
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+                    let masked = digits;
+                    if (digits.length > 4) masked = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+                    else if (digits.length > 2) masked = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+                    setEditDate(masked);
+                  }}
                   placeholder="DD/MM/AAAA"
                   maxLength={10}
-                  className="h-9 text-xs uppercase"
+                  inputMode="numeric"
+                  pattern="\d{2}/\d{2}/\d{4}"
+                  className="h-9 text-xs uppercase tabular-nums tracking-wider"
                 />
+                <p className="text-[10px] text-muted-foreground">Dia · Mês · Ano</p>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Hora</Label>
+                <Label className="text-xs font-semibold">Hora (HH:MM 24h)</Label>
                 <Input
                   value={editTime}
-                  onChange={(e) => setEditTime(e.target.value)}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 4);
+                    let masked = digits;
+                    if (digits.length > 2) masked = `${digits.slice(0, 2)}:${digits.slice(2)}`;
+                    setEditTime(masked);
+                  }}
                   placeholder="HH:MM"
                   maxLength={5}
-                  className="h-9 text-xs uppercase"
+                  inputMode="numeric"
+                  pattern="\d{2}:\d{2}"
+                  className="h-9 text-xs uppercase tabular-nums tracking-wider"
                 />
+                <p className="text-[10px] text-muted-foreground">Hora · Minuto (24h)</p>
               </div>
             </div>
             <div className="space-y-1.5">
