@@ -772,6 +772,7 @@ export function UtiPatientCard({
   patient, 
   onUpdate, 
   onDelete,
+  onReleasePreAdmissionBed,
   onPrintPatient,
   onRefetch,
   colorVariant = 'blue',
@@ -779,6 +780,7 @@ export function UtiPatientCard({
   allPatients = [],
   currentUtiUnit
 }: UtiPatientCardProps) {
+  const { role } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -789,6 +791,7 @@ export function UtiPatientCard({
   const [isReallocationDialogOpen, setIsReallocationDialogOpen] = useState(false);
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
   const [isRoundPrintDialogOpen, setIsRoundPrintDialogOpen] = useState(false);
+  const [isReleasePreAdmissionOpen, setIsReleasePreAdmissionOpen] = useState(false);
 
   // Derive current UTI unit from colorVariant if not provided
   const derivedUtiUnit = currentUtiUnit || (colorVariant === 'blue' ? 'UTI 1' : 'UTI 2');
