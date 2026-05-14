@@ -7419,12 +7419,24 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 {hasIvPreparo && !insulinDesc && (
                   <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
                     {[
+                      item.reconstitutionVolume && item.reconstitutionSolvent ? `Reconstituir em ${item.reconstitutionVolume}mL de ${item.reconstitutionSolvent}` : null,
                       item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'Sem diluição' : null,
                       item.accessType && item.accessType !== '-' ? item.accessType : null,
                       item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
                       item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
                       item.infusionRate ? `${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
                       item.concentration ? `Conc: ${item.concentration}` : null,
+                    ].filter(Boolean).join(' · ')}
+                  </div>
+                )}
+
+                {/* Linha de acompanhamento ATB (sítio + dia de terapia + janela) */}
+                {item.category === 'antimicrobial' && (item.atbInfectionSite || item.atbStartDate) && (
+                  <div style={{ fontSize: '6.5pt', color: '#5b21b6', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #7c3aed', fontWeight: 600, backgroundColor: '#faf5ff', padding: '2px 6px 2px 8px', borderRadius: '0 2px 2px 0' }}>
+                    <span style={{ fontSize: '5.5pt', fontWeight: 800, color: '#fff', backgroundColor: '#7c3aed', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px', marginRight: '4px' }}>ATB</span>
+                    {[
+                      item.atbInfectionSite ? `Sítio: ${item.atbInfectionSite}` : null,
+                      buildAtbDayLine(item),
                     ].filter(Boolean).join(' · ')}
                   </div>
                 )}
