@@ -7393,9 +7393,6 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   {item.isExtra && (
                     <span style={{ fontSize: '5.5pt', fontWeight: 700, marginLeft: '3px', color: '#9a3412', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fdba74' }}>EXTRA</span>
                   )}
-                  {item.status === 'suspended' && (
-                    <span style={{ fontSize: '6pt', fontWeight: 700, color: '#fff', backgroundColor: '#dc2626', padding: '0.5px 4px', borderRadius: '2px', marginLeft: '3px' }}>SUSPENSO</span>
-                  )}
                 </div>
 
                 {/* Insulinoterapia: bloco estruturado para enfermagem */}
