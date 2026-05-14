@@ -1612,13 +1612,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       const tUnitH = item.infusionTimeUnit === 'h' ? 'h' : 'min';
       const rateLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
       const rate = item.infusionRate ? `${item.infusionRate} ${rateLabel}` : '';
-      const access = item.accessType ? `via ${item.accessType}` : '';
       const phrase = [
         vol ? `${vol}mL/fase` : '',
         `${phases} fase${phases > 1 ? 's' : ''} (${interval})`,
         tVal ? `correr em ${tVal}${tUnitH}` : '',
         rate ? `(${rate})` : '',
-        access,
         total24 ? `· total ${total24}mL/24h` : '',
       ].filter(Boolean).join(' · ');
       if (phrase) compactParts.push(phrase);
