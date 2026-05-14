@@ -294,15 +294,6 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                 onApply={(v) => onSOAPChange('objective', v)}
                 hospitalUnitId={hospitalId}
               />
-              <Button
-                type="button" size="sm" variant="outline"
-                onClick={() => setExaminusOpen(true)}
-                className="h-6 gap-1 text-[10px] border-primary/40 text-primary hover:bg-primary/10"
-                title="Importar exames com Examinus AI"
-              >
-                <Sparkles className="h-3 w-3" />
-                Examinus AI
-              </Button>
             </div>
           </div>
           <RichTextEditor
