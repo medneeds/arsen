@@ -2113,8 +2113,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 if (!recon.required) return null;
                 return (
                   <div className="flex items-center gap-1.5 flex-wrap px-2 py-1 rounded-md bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40">
-                    {item.category === 'antimicrobial' && <span className="atb-subchip">Reconstituir</span>}
-                    {item.category !== 'antimicrobial' && <span className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold uppercase tracking-wide">Reconstituir</span>}
+                    <span className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold uppercase tracking-wide">Reconstituir</span>
                     <span className="text-[10px] text-muted-foreground">com</span>
                     <Input
                       value={item.reconstitutionVolume ?? recon.volumeMl ?? ''}
@@ -2257,8 +2256,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
 
               {renderInfusion && (
               <div className="flex items-center gap-2 flex-wrap pt-1.5 border-t border-border/40">
+                <Droplets className="h-3 w-3 text-primary shrink-0" />
                 {item.category === 'antimicrobial' && <span className="atb-subchip">Infusão EV</span>}
-                {item.category !== 'antimicrobial' && <Droplets className="h-3 w-3 text-primary shrink-0" />}
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground font-medium">Vol. final:</span>
                   <Input
@@ -2378,16 +2377,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 if (!conc) return null;
                 return (
                   <div className="flex items-center gap-1.5 px-2.5">
-                    {item.category === 'antimicrobial' ? (
-                      <span className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded border border-violet-200/70 dark:border-violet-800/60 bg-violet-50/70 dark:bg-violet-950/30 text-[10px] font-medium text-violet-800 dark:text-violet-200">
-                        <span className="atb-subchip">Concentração</span>
-                        <span className="font-semibold">{conc}</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/50 bg-muted/40 text-[10px] font-medium text-muted-foreground">
-                        Conc. final: <span className="text-foreground font-semibold">{conc}</span>
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/50 bg-muted/40 text-[10px] font-medium text-muted-foreground">
+                      {item.category === 'antimicrobial' && <span className="atb-subchip">Concentração</span>}
+                      {item.category !== 'antimicrobial' && <>Conc. final:</>}
+                      <span className="text-foreground font-semibold">{conc}</span>
+                    </span>
                   </div>
                 );
               })()}
@@ -5873,7 +5867,7 @@ const PrescricaoPage = () => {
                     onClick={() => document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                     className={cn(
                       "group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm hover:-translate-y-px",
-                      emphasis && cat === 'antimicrobial' && "ring-1 ring-blue-300/60",
+                      emphasis && cat === 'antimicrobial' && "ring-1 ring-violet-300/60",
                       emphasis && cat === 'high_alert' && "ring-1 ring-red-300/70",
                       ok
                         ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
