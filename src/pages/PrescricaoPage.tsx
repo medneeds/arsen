@@ -577,6 +577,36 @@ const TAB_ORDER: PrescriptionCategory[] = [
   'high_alert', 'inhalation', 'hemotherapy', 'care', 'nonstandard',
 ];
 
+// Container temático harmônico por categoria de prescrição.
+// Mantém a mesma estrutura visual (rounded-md + borda esquerda 3px + fundo suave)
+// que adotamos em Hidratação/Medicação, sincronizando a cor com o tipo de item.
+export function getCategoryContainerClass(category?: string): string {
+  const base = "relative rounded-md p-2 border";
+  switch (category) {
+    case 'nutrition':
+      return `${base} bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/50 border-l-[3px] border-l-emerald-500/70 dark:border-l-emerald-400/70`;
+    case 'hydration':
+      return `${base} bg-blue-50/50 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-900/50 border-l-[3px] border-l-blue-500/70 dark:border-l-blue-400/70`;
+    case 'replacement':
+      return `${base} bg-sky-50/50 dark:bg-sky-950/20 border-sky-200/60 dark:border-sky-900/50 border-l-[3px] border-l-sky-500/70 dark:border-l-sky-400/70`;
+    case 'antimicrobial':
+      return `${base} bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-200/60 dark:border-indigo-900/50 border-l-[3px] border-l-indigo-500/70 dark:border-l-indigo-400/70`;
+    case 'high_alert':
+      return `${base} bg-red-50/50 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/50 border-l-[3px] border-l-red-500/70 dark:border-l-red-400/70`;
+    case 'inhalation':
+      return `${base} bg-cyan-50/50 dark:bg-cyan-950/20 border-cyan-200/60 dark:border-cyan-900/50 border-l-[3px] border-l-cyan-500/70 dark:border-l-cyan-400/70`;
+    case 'hemotherapy':
+      return `${base} bg-rose-50/50 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-900/50 border-l-[3px] border-l-rose-500/70 dark:border-l-rose-400/70`;
+    case 'care':
+      return `${base} bg-violet-50/50 dark:bg-violet-950/20 border-violet-200/60 dark:border-violet-900/50 border-l-[3px] border-l-violet-500/70 dark:border-l-violet-400/70`;
+    case 'nonstandard':
+      return `${base} bg-zinc-50/60 dark:bg-zinc-900/30 border-zinc-200/60 dark:border-zinc-800/60 border-l-[3px] border-l-zinc-400/70 dark:border-l-zinc-500/70`;
+    case 'medication':
+    default:
+      return `${base} bg-slate-50/60 dark:bg-slate-900/30 border-slate-200/60 dark:border-slate-800/60 border-l-[3px] border-l-slate-400/70 dark:border-l-slate-500/70`;
+  }
+}
+
 // --- Autocomplete Component ---
 function MedicationAutocomplete({
   source,
