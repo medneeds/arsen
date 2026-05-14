@@ -1849,24 +1849,36 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   </Button>
                 </div>
               )}
-              {/* Row 1: Dose + Via + Intervalo */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <Input value={item.dose} onChange={(e) => onUpdate(item.id, "dose", e.target.value)} className="h-7 text-xs bg-muted/20 border-border/30 w-24" placeholder="Dose" />
-                <span className="text-muted-foreground text-[10px]">—</span>
-                <Select value={item.route} onValueChange={(v) => {
-                  onUpdate(item.id, "route", v);
-                  if (isIVRoute(v) && !item.infusionMode) {
-                    onUpdate(item.id, "infusionMode", 'BIC');
-                  }
-                }}>
-                  <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-32"><SelectValue /></SelectTrigger>
-                  <SelectContent className="max-h-72">{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
-                </Select>
-                <span className="text-muted-foreground text-[10px]">—</span>
-                <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
-                  <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-28"><SelectValue /></SelectTrigger>
-                  <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
-                </Select>
+              {/* Row 1: Dose + Via + Intervalo (com legendas) */}
+              <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="text-[10px] text-muted-foreground shrink-0">Dose:</span>
+                  <Input
+                    value={item.dose}
+                    onChange={(e) => onUpdate(item.id, "dose", e.target.value)}
+                    className="h-7 text-xs bg-background border-slate-300 dark:border-slate-600 focus-visible:border-primary w-24"
+                    placeholder="ex: 500 mg"
+                  />
+                </div>
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="text-[10px] text-muted-foreground shrink-0">Via:</span>
+                  <Select value={item.route} onValueChange={(v) => {
+                    onUpdate(item.id, "route", v);
+                    if (isIVRoute(v) && !item.infusionMode) {
+                      onUpdate(item.id, "infusionMode", 'BIC');
+                    }
+                  }}>
+                    <SelectTrigger className="h-7 text-xs bg-sky-50/60 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800 w-28"><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-72">{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="text-[10px] text-muted-foreground shrink-0">Intervalo:</span>
+                  <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
+                    <SelectTrigger className="h-7 text-xs bg-violet-50/60 dark:bg-violet-950/30 border-violet-200 dark:border-violet-800 w-28"><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Row 1.5: Reconstituição (pó liofilizado) — só quando catálogo indica */}
