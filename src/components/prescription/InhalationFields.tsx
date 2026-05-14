@@ -1,4 +1,4 @@
-import { Wind, Sparkles } from 'lucide-react';
+import { Wind, Sparkles, Link2, Link2Off } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -34,14 +34,28 @@ export interface InhalationItemShape {
   spacer?: boolean;
   gargle?: boolean;
   inhalationOrientation?: string;
+  inhalationConjugatedWithId?: string;
 }
 
 interface Props {
   item: InhalationItemShape;
   onUpdate: (id: string, field: string, value: any) => void;
+  /** ID do item de inalação imediatamente anterior na lista (mesma categoria). */
+  previousInhalationItemId?: string;
+  /** Nome do item anterior — exibido no badge de conjugação. */
+  previousInhalationItemName?: string;
 }
 
-export function InhalationFields({ item, onUpdate }: Props) {
+export function InhalationFields({ item, onUpdate, previousInhalationItemId, previousInhalationItemName }: Props) {
+  const isConjugated = !!item.inhalationConjugatedWithId;
+  const canConjugate = !!previousInhalationItemId && (item.inhalationMode === 'nebulization' || item.inhalationMode === 'nebulization_continuous' || !item.inhalationMode);
+  const toggleConjugate = () => {
+    if (isConjugated) {
+      onUpdate(item.id, 'inhalationConjugatedWithId', undefined);
+    } else if (previousInhalationItemId) {
+      onUpdate(item.id, 'inhalationConjugatedWithId', previousInhalationItemId);
+    }
+  };
   const mode: InhalationMode = (item.inhalationMode as InhalationMode) || 'nebulization';
   const preset = getInhalationDefaults(item.name);
 
