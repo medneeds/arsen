@@ -206,6 +206,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
           </div>
         </div>
       }
-    />
+      />
+    </>
   );
 }
