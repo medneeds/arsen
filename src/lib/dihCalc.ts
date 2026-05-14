@@ -57,10 +57,11 @@ export function formatAdmissionDateBR(admissionDateIso: string | null | undefine
 
 /**
  * Resolve a data efetiva de admissão para fins de DIH/D-day.
- * Prioriza, nesta ordem:
- *   1) uti_admission_date  — quando o paciente está em setor UTI/UCI (admissão no setor crítico)
- *   2) admitted_at         — momento em que a admissão hospitalar foi validada (D0 hospitalar)
- *   3) admission_date      — data informada manualmente no cadastro
+ * Regra única (alinhada à política institucional): a admissão do setor é o
+ * momento em que o paciente é alocado e admitido. Prioriza, nesta ordem:
+ *   1) admitted_at         — timestamp oficial gravado quando a admissão é validada (D0 real)
+ *   2) admission_date      — data informada no cadastro / Edição Avançada (fallback)
+ *   3) uti_admission_date  — último recurso (somente se os dois acima estiverem vazios)
  * Aceita Patient parcial (qualquer combinação dos campos abaixo).
  */
 export function getEffectiveAdmissionDate(p: {
@@ -70,13 +71,11 @@ export function getEffectiveAdmissionDate(p: {
   sector?: string | null;
 } | null | undefined): string | null {
   if (!p) return null;
-  const isCritical = p.sector === "red" || p.sector === "yellow" || p.sector === "blue";
-  if (isCritical) {
-    const uti = Array.isArray(p.utiAdmissionDate) ? p.utiAdmissionDate[0] : p.utiAdmissionDate;
-    if (uti) return uti as string;
-  }
   if (p.admittedAt) return p.admittedAt;
   if (p.admissionDate) return p.admissionDate;
+  const uti = Array.isArray(p.utiAdmissionDate) ? p.utiAdmissionDate[0] : p.utiAdmissionDate;
+  if (uti) return uti as string;
   return null;
 }
+
 
