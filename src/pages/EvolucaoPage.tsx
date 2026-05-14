@@ -79,9 +79,38 @@ const EvolucaoPage = () => {
 
   // New evolution form state
   const [showNewForm, setShowNewForm] = useState(false);
-  const [showIntercurrenceForm, setShowIntercurrenceForm] = useState(false);
+  // Evoluções complementares (campo único): intercorrência | vespertina | noturna
+  type ComplementaryKind = 'intercurrence' | 'vespertina' | 'noturna';
+  const [complementaryKind, setComplementaryKind] = useState<ComplementaryKind | null>(null);
   const [intercurrenceText, setIntercurrenceText] = useState("");
   const [savingIntercurrence, setSavingIntercurrence] = useState(false);
+  const showIntercurrenceForm = complementaryKind !== null;
+  const COMPLEMENTARY_META: Record<ComplementaryKind, {
+    label: string; shortLabel: string; placeholder: string;
+    Icon: React.ComponentType<{ className?: string }>;
+    badgeClass: string; borderClass: string; bgClass: string; iconColor: string;
+  }> = {
+    intercurrence: {
+      label: 'Intercorrência', shortLabel: 'Intercorrência', Icon: AlertTriangle,
+      placeholder: 'Descreva a intercorrência (ex.: queda da própria altura às 14h, sem perda de consciência; novo episódio de hipotensão, PA 80x40 às 03h; dessaturação após mobilização...)',
+      badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40',
+      borderClass: 'border-amber-500/40', bgClass: 'bg-amber-500/5', iconColor: 'text-amber-600',
+    },
+    vespertina: {
+      label: 'Evolução Vespertina', shortLabel: 'Vespertina', Icon: Sun,
+      placeholder: 'Evolução vespertina — registre o que mudou desde a manhã (sinais vitais, condutas, exames recebidos, intercorrências leves, plano para a noite...)',
+      badgeClass: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/40',
+      borderClass: 'border-orange-500/40', bgClass: 'bg-orange-500/5', iconColor: 'text-orange-600',
+    },
+    noturna: {
+      label: 'Evolução Noturna', shortLabel: 'Noturna', Icon: Moon,
+      placeholder: 'Evolução noturna — descreva o estado clínico do plantão noturno (sono, dor, sinais vitais, intercorrências, condutas executadas, transmissão para a manhã...)',
+      badgeClass: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/40',
+      borderClass: 'border-indigo-500/40', bgClass: 'bg-indigo-500/5', iconColor: 'text-indigo-600',
+    },
+  };
+  const currentComplementary = complementaryKind ? COMPLEMENTARY_META[complementaryKind] : null;
+  const CompIcon = currentComplementary?.Icon ?? AlertTriangle;
   const [newSoap, setNewSoap] = useState({ subjective: "", objective: "", assessment: "", plan: "" });
   const [newVitals, setNewVitals] = useState({ pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" });
   const [newExam, setNewExam] = useState({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
