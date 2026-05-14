@@ -1912,7 +1912,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             <>
               {/* Bulário movido para o header (próximo ao nome da medicação) */}
               {/* ===== Container integrado: 3 linhas de edição com fundo único ===== */}
-              <div className="relative rounded-md bg-accent/30 dark:bg-accent/20 border border-border/40 border-l-[3px] border-l-primary/50 p-2 space-y-2">
+              <div className={cn(getCategoryContainerClass(item.category), "space-y-2")}>
               {/* Row 1 removida — Int. (intervalo) movido para o final da Row 2 */}
 
               {/* Row 1.5: Reconstituição (pó liofilizado) — só quando catálogo indica */}
