@@ -337,9 +337,6 @@ export function AppSidebar({
     if (isDoorUser) {
       return [
         { title: "Mapa", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
-        { title: "Assistente Clínico", icon: Brain, profiles: ["medico"], items: [
-          { name: "Examinus AI", link: "/ia", profiles: ["medico"] },
-        ]},
       ];
     }
     // Visitante: read-only map
