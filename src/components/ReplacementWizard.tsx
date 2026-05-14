@@ -641,12 +641,34 @@ export function ReplacementWizard({
               })}
             </div>
           </div>
+
+          {/* Fila de itens conjugados */}
+          <WizardItemQueue
+            items={queue.items}
+            editingUid={queue.editingUid}
+            onEdit={queue.startEditing}
+            onRemove={queue.remove}
+            onAddCurrent={handleAddToQueue}
+            onSaveCurrent={handleSaveEditing}
+            addLabel="Acrescentar esta reposição"
+            accentClassName="border-sky-300 bg-sky-50/40 text-sky-700 dark:border-sky-900 dark:bg-sky-950/20 dark:text-sky-300"
+            hint="Conjugue múltiplas reposições (ex: hipoK + hipoMg) em uma única prescrição."
+            disableAdd={!selected}
+          />
         </div>
 
-        <DialogFooter className="pt-2">
+        <DialogFooter className="pt-2 gap-2">
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button size="sm" disabled={entries.length === 0} onClick={() => { onAdd(entries); onOpenChange(false); }} className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white">
-            <Sparkles className="h-3.5 w-3.5" /> Adicionar à prescrição
+          <Button
+            size="sm"
+            disabled={queue.items.length === 0 && entries.length === 0}
+            onClick={handleConfirmAll}
+            className="gap-1.5 bg-sky-600 hover:bg-sky-700 text-white"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            {queue.items.length > 0
+              ? `Adicionar ${totalQueueEntries} ite${totalQueueEntries === 1 ? "m" : "ns"} (${queue.items.length} reposiç${queue.items.length === 1 ? "ão" : "ões"})`
+              : "Adicionar à prescrição"}
           </Button>
         </DialogFooter>
       </DialogContent>
