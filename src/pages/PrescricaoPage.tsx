@@ -2113,7 +2113,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 if (!recon.required) return null;
                 return (
                   <div className="flex items-center gap-1.5 flex-wrap px-2 py-1 rounded-md bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40">
-                    <span className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold uppercase tracking-wide">Reconstituir</span>
+                    {item.category === 'antimicrobial' && <span className="atb-subchip">Reconstituir</span>}
+                    {item.category !== 'antimicrobial' && <span className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold uppercase tracking-wide">Reconstituir</span>}
                     <span className="text-[10px] text-muted-foreground">com</span>
                     <Input
                       value={item.reconstitutionVolume ?? recon.volumeMl ?? ''}
