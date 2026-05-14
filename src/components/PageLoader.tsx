@@ -1,22 +1,21 @@
 import { useEffect, useState } from "react";
-import { whitelabel } from "@/config/whitelabel";
-import socorraoLogo from "@/assets/socorrao-logo.jpg";
+import socorraoIcon from "@/assets/socorrao-cross-logo.png";
 
 interface PageLoaderProps {
-  /** Mensagem contextual (ex: "PREPARANDO UTI 2…", "CARREGANDO PRESCRIÇÃO…") */
+  /** Mensagem contextual (ex: "Preparando UTI 2…"). Opcional — quando ausente, splash fica ainda mais limpo. */
   message?: string;
-  /** Submensagem opcional (ex: nome do setor, paciente) */
+  /** Submensagem opcional (ex: nome do setor, paciente). */
   subMessage?: string;
 }
 
 /**
- * Splash de carregamento institucional padronizado.
- * - Logo HMDM com pulso suave
- * - Barra de progresso indeterminada
- * - Backdrop com gradiente azul institucional
- * - Fade-in da própria splash (evita flash quando muito rápido)
+ * Splash de carregamento institucional — versão suave/esmaecida.
+ * - Fundo branco-azulado quase imperceptível (não preto/escuro)
+ * - Apenas o ícone (cruz) do Socorrão, com pulso muito sutil
+ * - Sem barra de progresso ruidosa — só um respiro discreto sob o ícone
+ * - Fade-in próprio para nunca dar sensação de "pop" brusco
  */
-export function PageLoader({ message = "Carregando", subMessage }: PageLoaderProps) {
+export function PageLoader({ message, subMessage }: PageLoaderProps) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const t = requestAnimationFrame(() => setVisible(true));
@@ -25,50 +24,48 @@ export function PageLoader({ message = "Carregando", subMessage }: PageLoaderPro
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-br from-[#0a1628] via-[#0f2847] to-[#1a3a5c] transition-opacity duration-300"
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-b from-slate-50/95 via-white/90 to-blue-50/80 backdrop-blur-sm transition-opacity duration-500 ease-out"
       style={{ opacity: visible ? 1 : 0 }}
       role="status"
       aria-live="polite"
       aria-busy="true"
     >
-      {/* Logo pulsante */}
-      <div className="relative mb-8">
-        <div className="absolute inset-0 rounded-full bg-primary/30 blur-2xl animate-pulse" />
+      {/* Ícone com halo respirando */}
+      <div className="relative">
+        <div
+          className="absolute inset-0 rounded-full bg-primary/15 blur-2xl"
+          style={{ animation: "loader-breath 2.4s ease-in-out infinite" }}
+        />
         <img
-          src={socorraoLogo}
-          alt={whitelabel.institution.hospitalAbbreviation}
-          className="relative h-20 w-20 rounded-full ring-2 ring-white/20 shadow-2xl animate-pulse object-cover"
-          style={{ animationDuration: "1.8s" }}
+          src={socorraoIcon}
+          alt=""
+          aria-hidden="true"
+          className="relative h-16 w-16 object-contain opacity-90"
+          style={{ animation: "loader-breath 2.4s ease-in-out infinite" }}
+          draggable={false}
         />
       </div>
 
-      {/* Texto */}
-      <div className="text-center mb-6 px-6">
-        <div className="text-white/95 text-sm font-semibold tracking-wider uppercase">
-          {message}
+      {/* Texto opcional, bem discreto */}
+      {(message || subMessage) && (
+        <div className="mt-6 text-center px-6">
+          {message && (
+            <div className="text-foreground/55 text-[11px] font-medium tracking-[0.18em] uppercase">
+              {message}
+            </div>
+          )}
+          {subMessage && (
+            <div className="mt-1 text-foreground/35 text-[10px] tracking-wide uppercase">
+              {subMessage}
+            </div>
+          )}
         </div>
-        {subMessage && (
-          <div className="text-white/60 text-xs mt-1.5 tracking-wide uppercase">
-            {subMessage}
-          </div>
-        )}
-      </div>
-
-      {/* Barra de progresso indeterminada */}
-      <div className="relative h-1 w-56 overflow-hidden rounded-full bg-white/10">
-        <div className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-primary/60 via-primary to-primary/60 animate-[loader-slide_1.4s_ease-in-out_infinite]" />
-      </div>
-
-      {/* Footer institucional */}
-      <div className="absolute bottom-6 text-[10px] text-white/40 tracking-widest uppercase">
-        {whitelabel.platform.fullName} · {whitelabel.institution.hospitalAbbreviation}
-      </div>
+      )}
 
       <style>{`
-        @keyframes loader-slide {
-          0%   { transform: translateX(-100%); }
-          50%  { transform: translateX(150%); }
-          100% { transform: translateX(350%); }
+        @keyframes loader-breath {
+          0%, 100% { opacity: 0.55; transform: scale(0.97); }
+          50%      { opacity: 1;    transform: scale(1.03); }
         }
       `}</style>
     </div>
