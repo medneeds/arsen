@@ -502,11 +502,10 @@ function buildPrepDescription(item: PrescriptionItem): string {
     parts.push(`Reconstituir ${qtyFA} frasco-ampola com ${item.reconstitutionVolume}mL de ${item.reconstitutionSolvent}.`);
   }
 
-  // 1) Quantidade + forma — quantidade implícita = 1
-  // (omitido quando já houve reconstituição explícita acima, para evitar redundância)
+  // 1) Quantidade + forma (sigla) — quantidade implícita = 1
   if (item.quantityUnit && !(item.reconstitutionSolvent && item.reconstitutionVolume)) {
     const qty = (item.quantity && item.quantity.trim() && item.quantity.trim() !== '0') ? item.quantity.trim() : '1';
-    parts.push(`${qty} ${item.quantityUnit}.`);
+    parts.push(`${qty} ${quantityUnitShort(item.quantityUnit)}.`);
   }
 
   // 2) Dose
@@ -519,7 +518,7 @@ function buildPrepDescription(item: PrescriptionItem): string {
     parts.push(dilPart + '.');
   }
 
-  // 4) Volume total — só se preenchido E diferente do volume do diluente (evita redundância)
+  // 4) Volume total — só se preenchido E diferente do volume do diluente
   const volTotalNum = parseFloat((item.volumeTotal || '').replace(',', '.'));
   const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
   const hasDistinctTotal = item.volumeTotal && (!item.diluentVolume || (volTotalNum && volTotalNum !== volDilNum));
@@ -538,8 +537,11 @@ function buildPrepDescription(item: PrescriptionItem): string {
     }
   }
 
-  // 6) Acesso (opcional, ao final)
-  if (item.accessType) parts.push(`Acesso ${item.accessType.toLowerCase()}.`);
+  // 6) Via (sigla) + intervalo — fechamento padronizado
+  const tail: string[] = [];
+  if (item.route && item.route !== '-') tail.push(routeShort(item.route));
+  if (item.posology && item.posology !== '-') tail.push(item.posology);
+  if (tail.length) parts.push(tail.join(' · ') + '.');
 
   return parts.join(' ');
 }
