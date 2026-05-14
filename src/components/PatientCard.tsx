@@ -1590,50 +1590,12 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         </div>
                       )}
                       
-                      {editingField === "age" ? (
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <Input
-                            ref={ageInputRef}
-                            type="text"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            onBlur={saveInlineEdit}
-                            className="h-5 text-[11px] w-32"
-                            placeholder="Idade ou data nasc."
-                            disabled={isCalculating}
-                          />
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={saveInlineEdit}
-                            className="h-5 w-5 text-green-600 hover:bg-green-100"
-                            disabled={isCalculating}
-                          >
-                            <Check className={cn("h-2.5 w-2.5", isCalculating && "animate-spin")} />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={cancelEditing}
-                            className="h-5 w-5 text-red-600 hover:bg-red-100"
-                            disabled={isCalculating}
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <p 
-                          className={cn(
-                            "text-sm md:text-[11px] text-muted-foreground mt-0.5 rounded px-1 -mx-1 whitespace-normal break-words",
-                            canEdit && "cursor-pointer hover:bg-accent/50"
-                          )}
-                          onClick={() => canEdit && setIsEditDialogOpen(true)}
-                          title={canEdit ? "Editar dados do paciente" : undefined}
-                        >
-                          {patient.age ? formatAgeDisplay(patient.age) : <span className="italic">Clique para adicionar idade</span>}
-                        </p>
-                      )}
+                      <p
+                        className="text-sm md:text-[11px] text-muted-foreground mt-0.5 px-1 -mx-1 whitespace-normal break-words cursor-default"
+                        title="Idade é atualizada automaticamente pelo cadastro do paciente"
+                      >
+                        {patient.age ? formatAgeDisplay(patient.age) : <span className="italic opacity-70">Idade não cadastrada</span>}
+                      </p>
                     </div>
                     {!editingField && (
                       <Button
