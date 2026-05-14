@@ -80,18 +80,12 @@ export function AllocationPendingBadge({ patient, onStatusChange }: AllocationPe
 
   const Icon = config.icon;
 
-  // SAPS 3 é exclusivo para UTI e UCI.
+  // SAPS 3 só é exigido em UTI 1, UTI 2 e UCI 2 (setores monitorizados).
   const isUtiAllocation = () => {
     if (!patientRequest) return false;
-    const criticalSectors = ["UTI 1", "UTI 2", "UCI 1", "UCI 2", "red", "yellow", "blue", "outside"];
+    const sapsRequiredSectors = ["UTI 1", "UTI 2", "UCI 2", "red", "yellow", "outside"];
     const sector = patientRequest.requested_sector || "";
-    return (
-      criticalSectors.includes(sector) ||
-      patientRequest.department === "UTI" ||
-      patientRequest.department === "UCI" ||
-      /^UTI\b/i.test(sector) ||
-      /^UCI\b/i.test(sector)
-    );
+    return sapsRequiredSectors.includes(sector);
   };
 
   const handleApprove = async () => {
