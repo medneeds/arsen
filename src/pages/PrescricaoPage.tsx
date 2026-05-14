@@ -2086,7 +2086,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     </div>
                     <div className="ml-auto flex items-center gap-1.5 shrink-0">
                       {dayLine && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800/50">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-600 text-white border border-violet-700/40 shadow-sm shadow-violet-600/20">
                           {dayLine.split(' — ')[0]} · {dayLine.match(/— (\d{2}\/\d{2})/)?.[1] || ''}
                         </span>
                       )}
