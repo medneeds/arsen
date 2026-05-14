@@ -351,9 +351,6 @@ export function AppSidebar({
         { title: "Mapa", icon: LayoutDashboard, link: "/", profiles: ["farmacia"] },
         { title: "Validação Farmacêutica", icon: ClipboardCheck, link: "/validacao-farmaceutica", profiles: ["farmacia"] },
         { title: "Catálogo de Medicamentos", icon: BookOpen, link: "/catalogo-medicamentos", profiles: ["farmacia"] },
-        { title: "Assistente Clínico", icon: Brain, profiles: ["farmacia"], items: [
-          { name: "Examinus AI", link: "/ia", profiles: ["farmacia"] },
-        ]},
       ];
     }
     // Imagem
