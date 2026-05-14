@@ -231,6 +231,9 @@ export function MedicalRecordEditDialog({
       setReg(regRow ? { ...regRow } : {});
       setMrReason("");
       setRegReason("");
+      setCadastroEditMode(false);
+      setPasteText("");
+      setPisFromFieldsApplied(new Set());
 
       if (regRow?.id) {
         const { data: rh } = await supabase
