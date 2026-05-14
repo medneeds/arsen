@@ -1001,7 +1001,19 @@ export function UtiPatientCard({
                 <span className="text-sm font-medium italic">Leito Vago</span>
               </div>
             </div>
-            {/* Leito vago — sem ações. Cadastro/admissão ocorre pelo fluxo da cockpit. */}
+            {/* Botão inline de exclusão de leito extra (apenas leitos extras, fora dos fixos do setor) */}
+            {canDeleteExtra && onDelete && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsDeleteExtraOpen(true)}
+                className="h-7 px-2 gap-1 border-destructive/40 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                title="Excluir este leito extra do setor"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span className="text-[11px] font-semibold">Excluir leito</span>
+              </Button>
+            )}
           </div>
         ) : (
           /* OCCUPIED BED VIEW - Normal card */
@@ -1214,6 +1226,17 @@ export function UtiPatientCard({
               "flex items-center justify-center gap-0.5 px-1 py-1 border-l border-border/30 bg-muted/20 transition-all",
               isCollapsed ? "flex-row" : "flex-col"
             )}>
+              {canDeleteExtra && onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsDeleteExtraOpen(true)}
+                  className="h-6 w-6 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  title="Excluir leito extra"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -1256,34 +1279,10 @@ export function UtiPatientCard({
                           </div>
                         </DropdownMenuItem>
                       )}
-                      {canDeleteExtra && onDelete && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setIsDeleteExtraOpen(true)} className="text-destructive focus:text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            <div className="flex flex-col">
-                              <span>Excluir leito extra</span>
-                              <span className="text-[10px] font-normal text-muted-foreground">
-                                Remove permanentemente este leito do setor
-                              </span>
-                            </div>
-                          </DropdownMenuItem>
-                        </>
-                      )}
                     </>
-                  ) : canDeleteExtra && onDelete ? (
-                    <DropdownMenuItem onClick={() => setIsDeleteExtraOpen(true)} className="text-destructive focus:text-destructive">
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      <div className="flex flex-col">
-                        <span>Excluir leito extra</span>
-                        <span className="text-[10px] font-normal text-muted-foreground">
-                          Leito vago — pode ser removido com segurança
-                        </span>
-                      </div>
-                    </DropdownMenuItem>
                   ) : (
                     <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
-                      {isExtra ? 'Leito extra — sem permissão para excluir.' : 'Leito vago — sem ações disponíveis.'}
+                      Leito vago — sem ações disponíveis.
                     </DropdownMenuLabel>
                   )}
                 </DropdownMenuContent>

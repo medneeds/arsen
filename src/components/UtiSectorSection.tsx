@@ -206,22 +206,7 @@ export function UtiSectorSection({
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-2 print:space-y-0.5 print:break-inside-avoid">
       <div className={`${headerClass} rounded-xl p-2 border border-border/50 shadow-md print:p-1 print:mb-0.5 print:rounded-md transition-all duration-200 min-h-[48px] print:h-auto flex items-center`}>
         <div className="flex items-center justify-between w-full gap-3">
-          {selectionMode && patients.length > 0 && (
-            <div className="flex items-center print:hidden" onClick={(e) => e.stopPropagation()}>
-              <Checkbox
-                checked={allPatientsSelected}
-                onCheckedChange={handleSelectAllSection}
-                className={`h-5 w-5 border-2 ${
-                  sector === 'red' 
-                    ? 'border-critical data-[state=checked]:bg-critical data-[state=checked]:border-critical' 
-                    : sector === 'yellow' 
-                    ? 'border-warning data-[state=checked]:bg-warning data-[state=checked]:border-warning' 
-                    : 'border-stable data-[state=checked]:bg-stable data-[state=checked]:border-stable'
-                }`}
-                aria-label={`Selecionar todos os pacientes de ${info.title}`}
-              />
-            </div>
-          )}
+          {/* Checkbox de seleção em massa removido do cabeçalho a pedido — não é necessário */}
           <CollapsibleTrigger asChild>
             <button className="flex items-center gap-2 hover:opacity-80 transition-opacity print:pointer-events-none flex-1">
               <ChevronDown className={`h-5 w-5 transition-transform print:hidden ${chevronClass} ${isOpen ? '' : '-rotate-90'}`} />
