@@ -362,6 +362,29 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
                     const sectorCode = DEPARTMENT_TO_SECTOR[dept];
                     const label = SECTOR_DISPLAY[sectorCode] || dept;
                     const isSelected = selectedSector === dept;
+                    const locked = isDepartmentLocked(dept);
+
+                    if (locked) {
+                      return (
+                        <div
+                          key={dept}
+                          className="group flex items-center justify-between gap-2 rounded-lg border border-border/40 bg-muted/20 px-3 py-2 cursor-not-allowed select-none"
+                          title={LOCKED_TOOLTIP}
+                          aria-disabled="true"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Lock className="h-3 w-3 text-muted-foreground/60 shrink-0" strokeWidth={2.2} />
+                            <span className="text-[11px] font-semibold tracking-wide uppercase truncate text-muted-foreground/70 italic">
+                              {label}
+                            </span>
+                          </div>
+                          <span className="text-[8px] font-medium text-muted-foreground/50 italic preserve-case shrink-0">
+                            Em breve
+                          </span>
+                        </div>
+                      );
+                    }
+
                     return (
                       <button
                         key={dept}
