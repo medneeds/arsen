@@ -427,9 +427,66 @@ export function MedicalRecordEditDialog({
     }
   }
 
-  // ===== Import PIS =====
-  async function handlePisFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  // ===== Import PIS — abre etapa intermediária de revisão =====
+  const PIS_FIELD_MAP: Record<string, keyof RegistryRow> = {
+    patient_name: "full_name",
+    mother_name: "mother_name",
+    birth_date: "birth_date",
+    sex: "sex",
+    cpf: "cpf",
+    cns: "cns",
+    phone: "phone",
+    address: "address",
+    neighborhood: "neighborhood",
+    city: "city",
+    state: "state",
+    medical_record: "medical_record",
+  };
+
+  function openPisReview(extracted: Record<string, any>, source: "file" | "paste") {
+    // pré-marca apenas campos com valor não vazio
+    const accepted: Record<string, boolean> = {};
+    for (const [pisKey] of Object.entries(PIS_FIELD_MAP)) {
+      const v = extracted?.[pisKey];
+      if (v !== null && v !== undefined && String(v).trim() !== "") accepted[pisKey] = true;
+    }
+    setPisExtracted(extracted);
+    setPisAccepted(accepted);
+    setPisSource(source);
+    setPisReviewOpen(true);
+  }
+
+  function applyPisAccepted() {
+    if (!pisExtracted) return;
+    const next: Partial<RegistryRow> = { ...reg };
+    const sources = new Set(pisFromFieldsApplied);
+    for (const [pisKey, regKey] of Object.entries(PIS_FIELD_MAP)) {
+      if (!pisAccepted[pisKey]) continue;
+      const raw = pisExtracted[pisKey];
+      if (raw === null || raw === undefined || String(raw).trim() === "") continue;
+      let val = String(raw).trim();
+      if (UPPER_FIELDS.has(regKey as string)) val = val.toUpperCase();
+      (next as any)[regKey] = val;
+      sources.add(regKey as string);
+    }
+    setReg(next);
+    setPisFromFieldsApplied(sources);
+    if (!regReason.trim()) {
+      setRegReason(pisSource === "paste"
+        ? "Atualização cadastral via colagem de dados do PIS"
+        : "Importação automática do sistema PIS (anexo)");
+    }
+    setPisReviewOpen(false);
+    setPisExtracted(null);
+    setPasteText("");
+    toast({
+      title: "✅ Campos aplicados aos formulários",
+      description: "Revise, ajuste se necessário e salve para confirmar a alteração.",
+    });
+  }
+
+  async function handlePisFile(eOrFile: React.ChangeEvent<HTMLInputElement> | File) {
+    const file = (eOrFile as any)?.target ? (eOrFile as any).target.files?.[0] : (eOrFile as File);
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       toast({ title: "Arquivo muito grande", description: "Máximo 10 MB", variant: "destructive" });
@@ -448,23 +505,7 @@ export function MedicalRecordEditDialog({
       if (resp.error) throw new Error(resp.error.message);
       const data = (resp.data as any)?.data;
       if (!data) throw new Error("Sem dados extraídos");
-
-      setReg((prev) => ({
-        ...prev,
-        full_name: (data.patient_name || prev.full_name || "")?.toString().toUpperCase() || prev.full_name,
-        mother_name: (data.mother_name || prev.mother_name || "")?.toString().toUpperCase() || prev.mother_name,
-        birth_date: data.birth_date || prev.birth_date,
-        sex: data.sex || prev.sex,
-        cpf: data.cpf || prev.cpf,
-        cns: data.cns || prev.cns,
-        phone: data.phone || prev.phone,
-        address: (data.address || prev.address || "")?.toString().toUpperCase() || prev.address,
-        neighborhood: (data.neighborhood || prev.neighborhood || "")?.toString().toUpperCase() || prev.neighborhood,
-        city: (data.city || prev.city || "")?.toString().toUpperCase() || prev.city,
-        medical_record: (data.medical_record || prev.medical_record || "").toString().trim() || prev.medical_record,
-      }));
-      if (!regReason.trim()) setRegReason("Importação automática do sistema PIS");
-      toast({ title: "✅ Dados importados do PIS", description: "Revise antes de salvar." });
+      openPisReview(data, "file");
     } catch (err: any) {
       console.error(err);
       toast({ title: "Falha na importação PIS", description: err.message, variant: "destructive" });
@@ -472,6 +513,36 @@ export function MedicalRecordEditDialog({
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  }
+
+  async function handlePasteSubmit() {
+    const text = pasteText.trim();
+    if (text.length < 10) {
+      toast({ title: "Cole um trecho maior", description: "Cole o texto completo da ficha PIS para reconhecimento.", variant: "destructive" });
+      return;
+    }
+    setImporting(true);
+    try {
+      const resp = await supabase.functions.invoke("extract-patient-data", {
+        body: { rawText: text },
+      });
+      if (resp.error) throw new Error(resp.error.message);
+      const data = (resp.data as any)?.data;
+      if (!data) throw new Error("Sem dados extraídos");
+      openPisReview(data, "paste");
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Falha no reconhecimento", description: err.message, variant: "destructive" });
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) void handlePisFile(file);
   }
 
   return (
