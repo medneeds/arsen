@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   Heart, NotebookPen, Stethoscope, FileText,
   Save, Loader2, CheckCircle2,
-  ShieldCheck, Printer, Sparkles,
+  ShieldCheck, Printer,
   AlertCircle, Eye, ChevronDown, Stethoscope as DiagnosisIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
