@@ -4324,6 +4324,7 @@ const PrescricaoPage = () => {
   // Garante que prescrições validadas/impressas continuem visíveis até o corte das 05h
   // mesmo se o médico fechar a aba e reabrir, e impede duplicatas.
   const autoLoadAttemptedRef = useRef(false);
+  const loadPrescriptionRef = useRef<((id: string) => Promise<void>) | null>(null);
   useEffect(() => {
     if (autoLoadAttemptedRef.current) return;
     if (!currentHospital || !currentState || !patient.name.trim()) return;
@@ -4343,14 +4344,14 @@ const PrescricaoPage = () => {
           .limit(1);
         if (error) throw error;
         const last = (data || [])[0];
-        if (last?.id) {
-          await loadPrescription(last.id);
+        if (last?.id && loadPrescriptionRef.current) {
+          await loadPrescriptionRef.current(last.id);
         }
       } catch (err) {
         console.error('[autoLoadPrescription] failed', err);
       }
     })();
-  }, [currentHospital, currentState, patient.name, currentPrescriptionId, loadPrescription]);
+  }, [currentHospital, currentState, patient.name, currentPrescriptionId]);
 
   // Fetch version history for a prescription (by patient_name in same hospital)
   const fetchVersionHistory = useCallback(async (prescriptionId: string) => {
