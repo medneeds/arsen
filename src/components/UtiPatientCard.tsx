@@ -822,6 +822,58 @@ function InlineEditableTextarea({ value, onUpdate, placeholder = "-" }: InlineEd
   );
 }
 
+function ReadOnlyTextarea({ value, placeholder = "—" }: { value: string; placeholder?: string }) {
+  const [isTextExpanded, setIsTextExpanded] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [hasOverflow, setHasOverflow] = useState(false);
+
+  useEffect(() => {
+    if (contentRef.current) {
+      setHasOverflow(contentRef.current.scrollHeight > 48);
+    }
+  }, [value]);
+
+  return (
+    <div className="relative cursor-default" title="Importada automaticamente da admissão validada.">
+      <div
+        ref={contentRef}
+        className={cn(
+          "text-xs whitespace-pre-wrap overflow-hidden text-foreground",
+          !isTextExpanded && hasOverflow ? "max-h-[48px]" : "max-h-none"
+        )}
+      >
+        {value || <span className="text-muted-foreground/60 italic text-xs">{placeholder}</span>}
+      </div>
+      {hasOverflow && !isTextExpanded && (
+        <div className="absolute bottom-5 left-0 right-0 h-4 bg-gradient-to-t from-muted/30 to-transparent pointer-events-none" />
+      )}
+      {hasOverflow && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-5 px-1.5 text-[10px] font-medium text-muted-foreground hover:text-primary mt-0.5"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsTextExpanded(!isTextExpanded);
+          }}
+        >
+          {isTextExpanded ? (
+            <>
+              <ChevronDown className="h-3 w-3 mr-0.5 rotate-180" />
+              Retrair
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-3 w-3 mr-0.5" />
+              Expandir
+            </>
+          )}
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export function UtiPatientCard({ 
   patient, 
   onUpdate, 
