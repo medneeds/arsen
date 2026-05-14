@@ -73,6 +73,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
+import { formatAgeDisplay } from "@/utils/ageDisplay";
 
 type ColorVariant = 'blue' | 'yellow' | 'red' | 'green';
 
@@ -610,6 +611,46 @@ function InlineEditableArray({
           </Button>
         )}
       </div>
+    </div>
+  );
+}
+
+function ReadOnlyArray({
+  items,
+  label,
+  placeholder = "—",
+  colorClass,
+  icon,
+}: {
+  items: string[];
+  label: string;
+  placeholder?: string;
+  colorClass?: string;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <div className={cn("rounded-md p-1.5 cursor-default", colorClass)}>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5">
+          {icon}
+          <span className="text-[10px] font-semibold text-muted-foreground tracking-wide">{label}</span>
+          {items.length > 0 && (
+            <Badge variant="secondary" className="h-3.5 px-1 text-[9px] font-medium">{items.length}</Badge>
+          )}
+        </div>
+      </div>
+      {items.length > 0 ? (
+        <ol className="space-y-0.5">
+          {items.map((item, index) => (
+            <li key={`${label}-${index}`} className="flex items-start gap-1 text-[11px] leading-snug text-foreground">
+              <span className="mt-px text-[10px] font-semibold text-muted-foreground">{index + 1}.</span>
+              <span className="break-words">{item}</span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <span className="text-[11px] text-muted-foreground/60 italic pl-0.5">{placeholder}</span>
+      )}
     </div>
   );
 }
