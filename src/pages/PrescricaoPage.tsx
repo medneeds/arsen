@@ -3651,6 +3651,55 @@ const PrescricaoPage = () => {
   const [currentPrescriptionId, setCurrentPrescriptionId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // ─── Sincronização com PatientSwitcher (cabeçalho) ─────────────────────────
+  // Quando o usuário alterna paciente pelo dropdown do header, a URL muda mas
+  // este componente permanece montado. Sem este efeito, `patient`, `items`,
+  // `currentPrescriptionId`, etc. ficavam congelados no paciente anterior —
+  // só o cabeçalho refletia a troca. Aqui detectamos a mudança de patientId
+  // e ressetamos todo o cockpit para o novo paciente, deixando os efeitos
+  // dependentes de `patient.name` re-disparem (auto-load das últimas 24h,
+  // pré-admissão, lista de prescrições, dispensações).
+  const urlPatientId = searchParams.get('patientId') || '';
+  const lastSyncedPatientIdRef = useRef<string>(urlPatientId);
+  useEffect(() => {
+    if (!urlPatientId || urlPatientId === lastSyncedPatientIdRef.current) return;
+    lastSyncedPatientIdRef.current = urlPatientId;
+
+    const newName = searchParams.get('patientName') || '';
+    const newBed = searchParams.get('patientBed') || '';
+    const newSector = searchParams.get('patientSector') || '';
+    const newAge = searchParams.get('patientAge') || '';
+    const sectorMap: Record<string, string> = { red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2" };
+
+    setPatient(prev => ({
+      ...prev,
+      name: newName,
+      bed: newBed,
+      unit: sectorMap[newSector] || newSector,
+      age: newAge || prev.age,
+      // limpa campos que eram do paciente anterior — serão re-hidratados
+      // pelos efeitos de pré-admissão / auto-load / alergias.
+      record: '',
+      encounterCode: undefined,
+      chiefComplaint: undefined,
+      vitalSigns: undefined,
+      riskClassification: undefined,
+      allergies: '',
+    }));
+    setItems([]);
+    setCurrentPrescriptionId(null);
+    setDigitalSignature(null);
+    setSelectedIds(new Set());
+    setAppliedCareProfiles(new Set());
+    setSavedPrescriptions([]);
+    setVersionHistory([]);
+    setDispensations([]);
+    setPosologySuggestion(null);
+    autoLoadAttemptedRef.current = false;
+    draftRestoreAttemptedRef.current = false;
+  }, [urlPatientId, searchParams]);
+
+
   // Repeat previous prescription
   const [repeatDialogOpen, setRepeatDialogOpen] = useState(false);
   const [repeatLoading, setRepeatLoading] = useState(false);
