@@ -4393,6 +4393,14 @@ const PrescricaoPage = () => {
     });
     setItems(prev => [...prev, ...newItems]);
     setPendingAntimicrobialMed(null);
+    // Pop-up didático: D1 exige impressão da Guia ATM em 2 vias junto com a prescrição
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const d1Items = newItems.filter(it => (it.atbStartDate || today) === today);
+    setAtbAttachNotice({
+      open: true,
+      isFirstDay: d1Items.length > 0,
+      names: newItems.map(it => it.name),
+    });
     toast.success(`${newItems.length} antimicrobiano(s) adicionado(s) à prescrição via Guia ATM`);
   }, []);
 
