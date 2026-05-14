@@ -127,8 +127,15 @@ export function SapsConfirmationScreen({
             transition={{ delay: 0.4 }}
             className="text-center"
           >
-            <h2 className="text-2xl font-bold text-foreground">Paciente pré-admitido</h2>
+            <h2 className="text-2xl font-bold text-foreground">
+              {isValidation ? "Ficha SAPS validada" : "Paciente pré-admitido"}
+            </h2>
             <p className="text-muted-foreground mt-1">{patientName}</p>
+            {isValidation && (
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                Cálculo recalculado · gate clínico liberado
+              </p>
+            )}
           </motion.div>
 
           {/* Bed info */}
