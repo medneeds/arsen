@@ -49,7 +49,7 @@ export function PatientInfoHeader({
             <span className="text-xs font-bold text-primary">{name ? name.charAt(0).toUpperCase() : "?"}</span>
           </div>
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-foreground leading-tight truncate">{name || "Paciente não identificado"}</h2>
+            <h2 className="text-sm font-semibold text-foreground leading-tight truncate flex items-center gap-1"><span className="truncate">{name || "Paciente não identificado"}</span><CopyNameButton value={name} /></h2>
             <p className="text-[10px] text-muted-foreground flex items-center gap-1">
               <BedDouble className="h-3 w-3" />
               Leito {bed || "—"} · {unit || "—"}
