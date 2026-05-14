@@ -3886,9 +3886,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
           setMovementType(null);
         }}
         onSuccess={() => {
-          if (onDelete) {
-            onDelete(patient.id);
-          }
+          onRefetch?.();
         }}
       />
 
