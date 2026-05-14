@@ -1272,10 +1272,21 @@ export function UtiPatientCard({
                       Impressão fica no botão geral do setor. Movimentações de alta/transferência/óbito
                       ocorrem pelo Painel Clínico (Cockpit). Leitos são fixos — não há exclusão. */}
                   {patient.name ? (
-                    <DropdownMenuItem onClick={() => setIsReallocationDialogOpen(true)}>
-                      <Shuffle className="h-4 w-4 mr-2 text-teal-600" />
-                      Realocar / Permutar leito
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem onClick={() => setIsReallocationDialogOpen(true)}>
+                        <Shuffle className="h-4 w-4 mr-2 text-teal-600" />
+                        Realocar / Permutar leito
+                      </DropdownMenuItem>
+                      {patient.admissionStatus !== 'admitido' && onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (
+                        <DropdownMenuItem onClick={() => setIsReleasePreAdmissionOpen(true)}>
+                          <UserMinus className="h-4 w-4 mr-2 text-amber-600" />
+                          <div className="flex flex-col">
+                            <span className="text-amber-700 dark:text-amber-300">Liberar leito (pré-admissão)</span>
+                            <span className="text-[10px] font-normal text-muted-foreground">Desocupa o leito sem apagar o prontuário</span>
+                          </div>
+                        </DropdownMenuItem>
+                      )}
+                    </>
                   ) : (
                     <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
                       Leito vago — sem ações disponíveis.
