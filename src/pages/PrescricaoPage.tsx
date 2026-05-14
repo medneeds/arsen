@@ -1185,24 +1185,20 @@ function HydrationFields({
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center gap-1.5 flex-wrap px-2 py-1.5 rounded-md bg-blue-50/40 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-900/40">
-        <Droplets className="h-3 w-3 text-blue-600 shrink-0" />
-
+      <div className="relative flex items-center gap-x-3 gap-y-2 flex-wrap rounded-md p-2 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/50 border-l-[3px] border-l-blue-500/70 dark:border-l-blue-400/70">
         <FieldLabel>Volume / fase:</FieldLabel>
         <Input
           type="number"
           value={item.volumeTotal || ''}
           onChange={(e) => onUpdate(item.id, 'volumeTotal', e.target.value)}
-          className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center font-medium"
+          className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center font-medium focus-visible:ring-1 focus-visible:ring-blue-400"
           placeholder="mL"
         />
         <span className="text-[10px] text-muted-foreground">mL</span>
 
-        <span className="text-muted-foreground/40">│</span>
-
         <FieldLabel>Fases / intervalo:</FieldLabel>
         <Select value={String(phases)} onValueChange={handlePhasesChange}>
-          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-36"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-36 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
           <SelectContent>
             {HYDRATION_PHASE_OPTIONS.map(o => (
               <SelectItem key={o.phases} value={String(o.phases)} className="text-xs">
@@ -1212,50 +1208,46 @@ function HydrationFields({
           </SelectContent>
         </Select>
 
-        <span className="text-muted-foreground/40">│</span>
-
         <FieldLabel>Tempo / fase:</FieldLabel>
         <Input
           type="number"
           value={item.infusionTime || ''}
           onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)}
-          className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center"
+          className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-14 text-center focus-visible:ring-1 focus-visible:ring-blue-400"
           placeholder="—"
         />
         <Select value={tUnit} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
-          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="h" className="text-xs">h</SelectItem>
             <SelectItem value="min" className="text-xs">min</SelectItem>
           </SelectContent>
         </Select>
 
-        <span className="text-muted-foreground/40">│</span>
-
         <FieldLabel>Gotejamento:</FieldLabel>
-        <div className="h-6 px-2 flex items-center rounded-md border border-border/40 bg-background text-[11px] font-semibold w-16 justify-center">
+        <div className="h-6 px-2 flex items-center rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-[11px] font-semibold w-16 justify-center">
           {isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '—'}
         </div>
         <Select value={dripMode} onValueChange={(v) => onUpdate(item.id, 'infusionMode', v)}>
-          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 focus:ring-1 focus:ring-blue-400"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="BIC" className="text-xs">mL/h</SelectItem>
             <SelectItem value="gts" className="text-xs">gts/min</SelectItem>
           </SelectContent>
         </Select>
 
-        <span className="text-muted-foreground/40">│</span>
-
-        <FieldLabel>Acesso:</FieldLabel>
-        <Select value={item.accessType || ''} onValueChange={(v) => onUpdate(item.id, 'accessType', v)}>
-          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-32"><SelectValue placeholder="—" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Periférico" className="text-xs">Periférico</SelectItem>
-            <SelectItem value="Central" className="text-xs">Central (CVC)</SelectItem>
-            <SelectItem value="PICC" className="text-xs">PICC</SelectItem>
-            <SelectItem value="Port-a-cath" className="text-xs">Port-a-cath</SelectItem>
-            <SelectItem value="Intraósseo" className="text-xs">Intraósseo</SelectItem>
-            <SelectItem value="Hipodermóclise" className="text-xs">Hipodermóclise</SelectItem>
+        <FieldLabel>Via:</FieldLabel>
+        <Select value={item.route || 'EV'} onValueChange={(v) => onUpdate(item.id, 'route', v)}>
+          <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-20 font-semibold focus:ring-1 focus:ring-blue-400">
+            <SelectValue>{routeShort(item.route || 'EV')}</SelectValue>
+          </SelectTrigger>
+          <SelectContent className="max-h-72">
+            {ROUTES.map((r) => (
+              <SelectItem key={r} value={r} className="text-xs">
+                <span className="font-semibold mr-1.5">{routeShort(r)}</span>
+                <span className="text-muted-foreground">— {r}</span>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 
@@ -1269,7 +1261,7 @@ function HydrationFields({
         <Textarea
           value={item.instructions || ''}
           onChange={(e) => onUpdate(item.id, 'instructions', e.target.value)}
-          className="min-h-[56px] text-[11px] bg-muted/10 border-border/30 mt-0.5"
+          className="min-h-[56px] text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 mt-0.5 focus-visible:ring-1 focus-visible:ring-blue-400"
           placeholder="Ex.: manter acesso pérvio; observar sinais de sobrecarga; reavaliar em 24h; trocar equipo a cada 72h..."
         />
       </div>
