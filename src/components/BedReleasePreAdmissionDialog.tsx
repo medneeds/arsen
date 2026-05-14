@@ -133,7 +133,9 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
               <div className="rounded-full bg-amber-100 dark:bg-amber-950/40 p-2">
                 <AlertTriangle className="h-5 w-5 text-amber-600" />
               </div>
-              <AlertDialogTitle className="text-base">Atenção: liberar leito sem alta</AlertDialogTitle>
+              <AlertDialogTitle className="text-base">
+                {isPostDischarge ? "Liberar leito após alta/óbito" : "Atenção: liberar leito sem alta"}
+              </AlertDialogTitle>
             </div>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-xs leading-relaxed text-foreground">
@@ -141,20 +143,27 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                   Você está prestes a <strong>desocupar o leito {patient.bedNumber || "—"}</strong> ocupado por{" "}
                   <strong>{patient.name || "este paciente"}</strong>.
                 </p>
-                {alreadyAdmitted ? (
+                {blockReleaseHard ? (
                   <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-destructive">
                     <p className="font-semibold">Esta ação não está disponível.</p>
                     <p className="mt-1">
-                      O paciente já foi <strong>admitido oficialmente</strong>. Liberação só pode ocorrer pelo fluxo
-                      <strong> Alta Médica → Alta Administrativa</strong>.
+                      O paciente está <strong>admitido</strong>. Registre primeiro a <strong>Alta Médica</strong> ou <strong>Óbito</strong> pelo Painel Clínico — depois você poderá liberar o leito por aqui.
                     </p>
                   </div>
+                ) : isPostDischarge ? (
+                  <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                    <li>O documento de <strong>{patient.admissionStatus === "obito" ? "óbito" : "alta"}</strong> já foi <strong>assinado e gravado</strong> no prontuário.</li>
+                    <li>Esta ação <strong>libera fisicamente o leito</strong> no mapa para limpeza/nova alocação.</li>
+                    <li>O <strong>prontuário do paciente é preservado</strong> e segue consultável no histórico.</li>
+                    <li>Você precisará <strong>confirmar com sua senha</strong> antes da liberação efetiva.</li>
+                  </ul>
                 ) : (
                   <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
                     <li>O <strong>prontuário do paciente é preservado</strong> (nada é apagado).</li>
                     <li>O <strong>leito volta a ficar vago</strong> e disponível para nova alocação.</li>
                     <li>A ação é <strong>auditada</strong> em Movimentações com motivo, autor e horário.</li>
                     <li>Use somente para pacientes que <strong>ainda não concluíram a admissão</strong> (evasão, alocação indevida, redirecionamento, etc.).</li>
+                    <li>Você precisará <strong>confirmar com sua senha</strong> antes da liberação efetiva.</li>
                   </ul>
                 )}
                 <p className="pt-1 text-muted-foreground">
@@ -165,7 +174,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            {!alreadyAdmitted && (
+            {!blockReleaseHard && (
               <AlertDialogAction onClick={() => setStep("form")}>
                 Entendi, continuar
               </AlertDialogAction>
@@ -178,27 +187,41 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       <MovementConfirmDialog
         open={open && step === "form"}
       onOpenChange={(v) => (!submitting ? onOpenChange(v) : undefined)}
-      onConfirm={handleConfirm}
+      onConfirm={goToPasswordStep}
       isSubmitting={submitting}
-      title="Liberar leito (pré-admissão)"
-      description="O paciente ainda não concluiu a admissão hospitalar — você pode desocupar o leito sem apagar o prontuário."
+      title={isPostDischarge ? "Liberar leito após alta/óbito" : "Liberar leito (pré-admissão)"}
+      description={
+        isPostDischarge
+          ? "O documento clínico já foi registrado — esta etapa apenas libera o leito no mapa."
+          : "O paciente ainda não concluiu a admissão hospitalar — você pode desocupar o leito sem apagar o prontuário."
+      }
       tone="warning"
-      confirmLabel="Liberar leito agora"
+      confirmLabel="Avançar para senha"
       cancelLabel="Voltar"
       summary={[
         { icon: UserMinus, label: "Paciente", value: patient.name || "—" },
         { icon: Bed, label: "Leito atual", value: patient.bedNumber || "—" },
         { icon: Stethoscope, label: "Setor", value: (patient as any).department || patient.sector || "—" },
-        { icon: ClipboardList, label: "Status atual", value: patient.admissionStatus === "admitido" ? "Admitido" : "Pré-admitido" },
+        {
+          icon: ClipboardList,
+          label: "Status atual",
+          value:
+            patient.admissionStatus === "admitido" ? "Admitido"
+            : patient.admissionStatus === "alta_dada" ? "Alta registrada — aguardando liberação"
+            : patient.admissionStatus === "obito" ? "Óbito registrado — aguardando liberação"
+            : "Pré-admitido",
+        },
         { icon: FileText, label: "Motivo selecionado", value: reasonLabel, fullWidth: true },
       ]}
       blockers={blockers}
       warnings={warnings}
       consequences={[
         { icon: Bed, text: <><strong>O leito volta para vago</strong> no mapa, disponível para nova alocação imediatamente.</> },
-        { icon: UserCheck, text: <>O <strong>prontuário do paciente é preservado</strong> — nada do que foi cadastrado na recepção/triagem é apagado. Quando o paciente voltar, será nova admissão vinculada ao mesmo prontuário.</> },
-        { icon: FileText, text: <>A ação é <strong>auditada em Movimentações</strong> como "Liberação Pré-admissão", com motivo, autor e snapshot do leito.</> },
-        { icon: Info, text: <>Esta ação <strong>não substitui</strong> a alta médica. Pacientes já admitidos só podem deixar o leito pelo fluxo Alta Médica → Alta Administrativa.</> },
+        { icon: UserCheck, text: <>O <strong>prontuário do paciente é preservado</strong> — nada do que foi cadastrado na recepção/triagem é apagado.</> },
+        { icon: FileText, text: <>A ação é <strong>auditada em Movimentações</strong> com motivo, autor, snapshot do leito e <strong>autenticação por senha</strong>.</> },
+        { icon: Info, text: isPostDischarge
+            ? <>Esta liberação é o <strong>passo final</strong> do fluxo Alta/Óbito → liberação censitária.</>
+            : <>Esta ação <strong>não substitui</strong> a alta médica. Pacientes já admitidos só podem deixar o leito pelo fluxo Alta Médica → Alta Administrativa.</> },
       ]}
       finalNote={
         <div className="space-y-3">
@@ -229,6 +252,20 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
           </div>
         </div>
       }
+      />
+
+      {/* ETAPA 3: Confirmação por SENHA do médico */}
+      <PasswordConfirmDialog
+        open={open && step === "password"}
+        onOpenChange={(o) => {
+          if (!o && !submitting) {
+            setStep("form");
+          }
+        }}
+        title="Confirmar liberação do leito"
+        description={`Digite sua senha para liberar o leito ${patient.bedNumber || ""} ocupado por ${patient.name || "este paciente"}. A ação será registrada com seu usuário.`}
+        actionLabel="Liberar leito"
+        onConfirmed={handleConfirm}
       />
     </>
   );
