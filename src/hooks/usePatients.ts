@@ -123,8 +123,8 @@ export function usePatients(department?: Department, sector?: string) {
     try {
       const dbUpdates: any = {};
       
-      // Campos fixos no mapa: leito e idade são definidos por cadastro/fluxos próprios.
-      // updatePatient genérico nunca persiste alterações desses campos para evitar edição inline acidental.
+      // Leito pode mudar apenas por fluxos próprios de transferência/realocação.
+      if (updates.bedNumber !== undefined) dbUpdates.bed_number = updates.bedNumber;
       if (updates.name !== undefined) dbUpdates.name = updates.name;
       if (updates.sector !== undefined) dbUpdates.sector = updates.sector;
       if (updates.diagnoses !== undefined) dbUpdates.diagnoses = updates.diagnoses.join('\n');
