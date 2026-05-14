@@ -1497,28 +1497,33 @@ export default function Saps3Page() {
           {/* Save */}
           <div className="flex gap-3 justify-end flex-wrap">
             <Button variant="outline" onClick={() => setSelectedRequest(null)}>Cancelar</Button>
-            <Button 
+            <Button
               variant="outline"
-              onClick={() => handleSave(true)} 
-              disabled={saving || !selectedBed} 
+              onClick={() => handleSave(true)}
+              disabled={saving || (!completingSapsId && !selectedBed)}
               className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-400 dark:hover:bg-amber-900/20"
             >
               <Clock className="h-4 w-4" />
-              {saving ? "Pré-admitindo..." : "Pré-admitir com SAPS pendente"}
+              {saving
+                ? (completingSapsId ? "Salvando..." : "Pré-admitindo...")
+                : (completingSapsId ? "Manter como pendente" : "Pré-admitir com SAPS pendente")}
             </Button>
-            <Button onClick={() => handleSave(false)} disabled={saving || !selectedBed} className="gap-2">
+            <Button onClick={() => handleSave(false)} disabled={saving || (!completingSapsId && !selectedBed)} className="gap-2">
               <Save className="h-4 w-4" />
-              {saving ? "Pré-admitindo..." : `Pré-admitir no ${selectedBed || "leito"}`}
+              {saving
+                ? (completingSapsId ? "Validando..." : "Pré-admitindo...")
+                : (completingSapsId ? "Validar ficha SAPS" : `Pré-admitir no ${selectedBed || "leito"}`)}
             </Button>
           </div>
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-300">
+          <div className={`${completingSapsId ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300" : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300"} border rounded-lg p-3 text-sm`}>
             <p className="font-medium flex items-center gap-1.5">
-              <AlertTriangle className="h-4 w-4" /> Exames laboratoriais ainda pendentes?
+              <AlertTriangle className="h-4 w-4" />
+              {completingSapsId ? "Validação atualiza a ficha e libera o gate clínico" : "Exames laboratoriais ainda pendentes?"}
             </p>
-            <p className="text-xs mt-1 text-amber-700 dark:text-amber-400">
-              Utilize "Pré-admitir com SAPS pendente" para alocar o paciente no leito agora e completar a ficha SAPS 3 
-              quando os resultados de gasometria, hemograma, função renal e demais exames admissionais estiverem disponíveis. 
-              Um cronômetro será ativado para rastrear o tempo de pendência.
+            <p className={`text-xs mt-1 ${completingSapsId ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
+              {completingSapsId
+                ? "Ao validar, o cálculo SAPS 3 é recalculado com os valores atuais, a flag de pendência é removida do paciente e você é redirecionado para o painel clínico do leito correspondente para seguir com HDA, exame físico e plano."
+                : "Utilize \"Pré-admitir com SAPS pendente\" para alocar o paciente no leito agora e completar a ficha SAPS 3 quando os resultados de gasometria, hemograma, função renal e demais exames admissionais estiverem disponíveis. Um cronômetro será ativado para rastrear o tempo de pendência."}
             </p>
           </div>
         </div>
