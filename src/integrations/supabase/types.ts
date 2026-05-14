@@ -1434,6 +1434,36 @@ export type Database = {
         }
         Relationships: []
       }
+      locked_sector_cleanup_log: {
+        Row: {
+          cleaned_at: string
+          id: string
+          patient_id: string | null
+          patient_name: string | null
+          sector: string | null
+          source_id: string
+          source_table: string
+        }
+        Insert: {
+          cleaned_at?: string
+          id?: string
+          patient_id?: string | null
+          patient_name?: string | null
+          sector?: string | null
+          source_id: string
+          source_table: string
+        }
+        Update: {
+          cleaned_at?: string
+          id?: string
+          patient_id?: string | null
+          patient_name?: string | null
+          sector?: string | null
+          source_id?: string
+          source_table?: string
+        }
+        Relationships: []
+      }
       medical_codes: {
         Row: {
           category: string
@@ -4574,6 +4604,7 @@ export type Database = {
           medical_record: string
         }[]
       }
+      cleanup_locked_sector_pending_allocations: { Args: never; Returns: Json }
       create_patient_snapshot: {
         Args: { p_description: string; p_patient_id: string }
         Returns: string
