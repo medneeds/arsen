@@ -1,98 +1,85 @@
-# Otimização do campo de prescrição de inalatórios
+## Objetivo
 
-## Problema
-Hoje o campo expandido de itens da categoria **Inalatórios** reaproveita os mesmos campos das medicações endovenosas (volume total, diluente, velocidade de infusão em mL/h, BIC/gotejamento). Isso é clinicamente incorreto: na inalação não existe "velocidade de infusão" — o que importa é **dose da droga, diluente, fluxo de O2/Ar e o esquema de etapas**. Além disso, sprays (pMDI) e pó seco (DPI) têm campos completamente diferentes (puffs, espaçador, técnica).
+Tornar a linha EV mais intuitiva, eliminar redundância (campo "quantity") e regenerar o descritivo no formato:
 
-## Escopo
+> `1 ampola. 0,05–0,5 mcg/kg/min. Diluir em SG5% 234 mL. Volume total: 234 mL.`
 
-### 1. Detecção da modalidade (4 modos)
-Cada item de Inalatórios passa a ter um seletor segmentado **`inhalationMode`** no topo do painel expandido:
+## 1. Remover o campo `quantity` (numérico) da UI
 
-- **Nebulização** (jato/ultrassônica) — padrão
-- **Nebulização contínua** (crise grave de asma)
-- **Spray pressurizado (pMDI)** — puffs
-- **Pó seco (DPI)** — inalações/cápsulas
+- Some o `Input` de quantidade nas duas linhas (compacta `~1849` e expandida `~1144`).
+- Mantém **só `quantityUnit`** (mL, ampola, frasco-ampola, comp, mg, gota…).
+- Internamente, `quantity` passa a ser sempre `"1"` por padrão (não exibido). Sem migração de dados — campo continua existindo no tipo, apenas oculto.
+- Resultado visual: um único Select "Forma" no lugar dos dois inputs.
 
-Ao trocar a modalidade, os campos abaixo se adaptam automaticamente.
+## 2. Layout das linhas EV (otimização)
 
-### 2. Campos por modalidade
+Reagrupar em **3 blocos visuais** com separadores sutis, na ordem clínica natural:
 
-**Nebulização (jato/ultrassônica):**
-```
-[Dose] [Unidade: mg | gts | mL]   [Diluente: SF 0,9% | Água destilada | SF 3%]   [Volume diluente: mL]
-[Fluxo O2/Ar: L/min] (padrão 6-8)   [Interface: máscara | traqueostomia | peça T | circuito VM]
-[Tempo por etapa: min] (padrão 10)   [Frequência: 6/6h, 8/8h, 12/12h, SOS]
+```text
+[ Forma ▾ ] [ Dose ____ ]   |   [ Diluente ▾ ] [ Vol dil ___ ]   |   [ Vol total ___ ] [ Correr em __ ▾ ] [ Velocidade ___ ▾ ]
+   IDENTIDADE                       DILUIÇÃO                             INFUSÃO
 ```
 
-**Nebulização contínua:**
+- Adiciono `border-l border-border/30 pl-2 ml-1` entre os blocos.
+- Labels muted em `text-[10px]` acima de cada campo no modo expandido (já existem parcialmente — uniformizar).
+- Modo compacto: mesma ordem, sem labels, com tooltips.
+
+## 3. Obrigatoriedade — saudável e seguro no dia a dia
+
+**Sempre obrigatórios** (bloqueiam validação):
+- `name` (medicamento)
+- `dose` OU `quantityUnit` (precisa ter pelo menos **uma forma de saber o que vai ser administrado**)
+- `route` (já tem default)
+- `posology` (frequência) — segurança crítica
+
+**Obrigatórios só quando há diluente**:
+- `diluentVolume` (mL do veículo)
+
+**Flexíveis (não bloqueiam)**:
+- `volumeTotal` — **deixa de ser obrigatório**. Se `quantityUnit ≠ mL` e usuário não preencheu, validação passa com aviso suave (não erro). Quando o app não consegue calcular (ampola sem volume conhecido), simplesmente não exige.
+- `infusionTime` / `infusionRate` — opcional; só obrigatório quando `infusionMode = BIC` **E** o medicamento está marcado como `highAlert` (vasoativo, sedação contínua).
+- `accessType`, `concentration` — sempre opcionais.
+
+## 4. Descritivo automático (`buildInstructionFromFields`)
+
+Reescrita para o formato exato do exemplo, com regras:
+
+```text
+{quantidade} {unidade}. {dose}. Diluir em {diluente} {volDil}mL. Volume total: {volTotal}mL. Correr em {tempo}{unidade}. Velocidade {rate} {modo}.
 ```
-[Dose por hora]   [Diluente + volume]   [Fluxo O2/Ar]
-[Duração total: h]   [Interface]
-```
 
-**Spray pressurizado (pMDI):**
-```
-[Nº de puffs/jatos]   [Frequência]
-[☐ Com espaçador]   [☐ Gargarejar após (corticoide)]
-```
+Regras:
+- Quantidade implícita = `1` quando não há valor (ex.: `"1 ampola."`).
+- Dose só entra se preenchida (sem ponto duplo).
+- Bloco diluição só se `diluent ≠ sem_diluente`.
+- "Volume total" só se preenchido **e diferente do volume do diluente** (evita redundância tipo "Diluir em SG5% 234mL. Volume total: 234mL." → vira só "Diluir em SG5% 234mL.").
+- "Correr em" e "Velocidade" só se preenchidos.
+- Pontuação consistente: cada bloco termina em `.`.
 
-**Pó seco (DPI):**
-```
-[Nº de inalações/cápsulas]   [Frequência]
-[Orientação livre]
-```
+Exemplo final reproduzível:
+- Noradrenalina 4mg/4mL: `1 ampola. 0,05–0,5 mcg/kg/min. Diluir em SG5% 234 mL.` (omito "Volume total" porque seria redundante)
+- Dipirona: `2 ampolas. 1 g. EV em bolus.` (sem diluente)
 
-### 3. Catálogo padrão com autofill
-Novo arquivo `src/data/inhalationCatalog.ts` com drogas mais usadas e seus presets (dose / diluente / fluxo / espaçador):
+## 5. Scroll otimizado nos Selects
 
-| Droga | Modo padrão | Dose padrão | Diluente | Fluxo |
-|---|---|---|---|---|
-| Berotec (fenoterol) | Nebulização | 10 gts | SF 0,9% 3 mL | 6 L/min |
-| Atrovent (ipratrópio) | Nebulização | 20 gts | SF 0,9% 3 mL | 6 L/min |
-| Berotec + Atrovent | Nebulização | 10+20 gts | SF 0,9% 3 mL | 6 L/min |
-| Salbutamol nebulização | Nebulização | 2,5 mg (10 gts) | SF 0,9% 3 mL | 6 L/min |
-| Budesonida nebulização | Nebulização | 0,5 mg (1 amp) | SF 0,9% 3 mL | 6 L/min |
-| Adrenalina nebulizada | Nebulização | 5 mg (5 mL) | puro | 6 L/min |
-| NaCl 3% (hipertônico) | Nebulização | 4 mL | puro | 6 L/min |
-| N-acetilcisteína | Nebulização | 300 mg | SF 0,9% 3 mL | 6 L/min |
-| Salbutamol spray | pMDI | 2 puffs | — | espaçador ON |
-| Beclometasona spray | pMDI | 2 puffs | — | espaçador ON, gargarejar ON |
-| Formoterol DPI | DPI | 1 inalação | — | — |
-| Tiotrópio DPI | DPI | 1 cápsula | — | — |
+- Adicionar `<ScrollArea className="h-64">` dentro de `SelectContent` para `quantityUnit`, `diluent`, `route`, `posology`.
+- `SelectContent` recebe `className="max-h-72"` como fallback.
 
-Ao escolher a droga via combobox de prescrição, o sistema:
-- Define `inhalationMode` automaticamente
-- Preenche dose, diluente, fluxo, espaçador
-- Médico pode editar tudo livremente
+## 6. Cálculo de `volumeTotal` (correção do bug original)
 
-### 4. Geração da instrução clínica (impressão e cockpit)
-Substituir `assembleInstructionFromFields` para itens de inalação por uma função dedicada `assembleInhalationInstruction(item)` que monta linha humana:
+Mantém a lógica atual (que só soma quando unidade = mL), mas:
+- Não força recálculo nem bloqueia validação quando não dá pra calcular.
+- Tooltip no campo `volumeTotal` explica: "Editável. Auto-calculado quando a forma é em mL."
 
-- Nebulização: `"Berotec 10gts + Atrovent 20gts diluído em SF 0,9% 3mL — nebulizar com fluxo de O2 6 L/min por 10 min, 6/6h via máscara facial."`
-- pMDI com espaçador: `"Beclometasona spray — 2 puffs com espaçador, 12/12h. Gargarejar após uso."`
-- DPI: `"Tiotrópio DPI — 1 cápsula inalada 1x/dia (manhã)."`
-- Contínua: `"Salbutamol nebulização contínua 7,5 mg/h + SF 0,9% — fluxo O2 8 L/min, máscara, por 4 horas."`
+## Arquivos afetados
 
-### 5. Validação clínica (sem regressão)
-- O bloco de checagem de alergias (`clinicalAlertChecks`) já trata cada droga isoladamente — continua funcionando para inalatórios (salbutamol, fenoterol, ipratrópio, etc).
-- Adicionar interações específicas se já existirem no detector (mantido — não é foco desta sprint).
+- `src/pages/PrescricaoPage.tsx` (única alteração — linhas ~140-200 tipo, ~305-340 calc, ~460-500 buildInstruction, ~1140-1180 linha expandida, ~1840-1910 linha compacta, validação ~em torno de 1559-1600)
 
-## Implementação técnica
-- **Tipo**: estender `PrescriptionItem` em `PrescricaoPage.tsx` com campos opcionais: `inhalationMode`, `nebDose`, `nebDoseUnit`, `oxygenFlow`, `stageDuration`, `stagesPerDay` (frequência reaproveita `posology`), `inhalationInterface`, `puffs`, `spacer`, `gargle`, `inhalationOrientation`.
-- **Componente novo**: `InhalationExpandedFields` em arquivo separado para manter `PrescricaoPage.tsx` enxuto.
-- **Roteamento de render**: no painel expandido (linha 1635+), quando `item.category === 'inhalation'`, renderizar `<InhalationExpandedFields>` **em vez** dos campos de infusão IV.
-- **Catálogo**: `src/data/inhalationCatalog.ts` exportando lista + helper `getInhalationDefaults(name)`. Engatado no `addItem`/autofill quando categoria detectada = `inhalation`.
-- **Helper de string**: `src/lib/inhalationInstruction.ts` com `assembleInhalationInstruction(item)`.
-- **Persistência**: campos novos viajam dentro do JSONB existente (`prescriptions.payload`) — sem migration.
-- **Impressão**: o builder de PDF usa a string gerada por `assembleInhalationInstruction` quando `category === 'inhalation'`.
+## Fora de escopo
 
-## O que **não** muda
-- Categorias não-inalatórias seguem com os mesmos campos atuais (zero regressão em IV/hidratação).
-- Sem alteração de schema do banco.
-- Layout geral da página de prescrição preservado.
+- Não mexo em impressão, persistência, schema do banco, regras MAV/Port.344, insulina, inalatório.
+- Não removo `quantity` do tipo TS (só da UI) — evita quebrar dados antigos.
 
-## Confirmação solicitada
-Confirma este escopo? Em particular:
-1. Os 4 modos (Nebulização / Contínua / pMDI / DPI) cobrem o que você precisa?
-2. A lista do catálogo inicial cobre o essencial — devo incluir mais alguma droga (lidocaína nebulizada, DNase, colistina inalada, tobramicina inalada, iloprost)?
-3. O esquema de impressão proposto está adequado para o farmacêutico e o enfermeiro executarem?
+---
+
+Confirma que aplico exatamente isso? Se quiser ajustar algum item (ex.: manter algum campo obrigatório a mais, ou mudar a ordem dos blocos), me diz antes.

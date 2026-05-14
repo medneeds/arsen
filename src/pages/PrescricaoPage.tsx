@@ -464,35 +464,45 @@ function buildPrepDescription(item: PrescriptionItem): string {
     return assembleInhalationInstruction(item as any);
   }
   const parts: string[] = [];
-  if (item.quantity && item.quantity !== '1' && item.quantityUnit) {
-    parts.push(`${item.quantity} ${item.quantityUnit}.`);
-  } else if (item.quantityUnit) {
-    parts.push(`1 ${item.quantityUnit}.`);
+
+  // 1) Quantidade + forma — quantidade implícita = 1
+  if (item.quantityUnit) {
+    const qty = (item.quantity && item.quantity.trim() && item.quantity.trim() !== '0') ? item.quantity.trim() : '1';
+    parts.push(`${qty} ${item.quantityUnit}.`);
   }
-  if (item.dose && item.dose !== '-') parts.push(item.dose);
+
+  // 2) Dose
+  if (item.dose && item.dose !== '-') parts.push(`${item.dose}.`);
+
+  // 3) Diluição
   if (item.diluent && item.diluent !== 'sem_diluente') {
     let dilPart = `Diluir em ${item.diluent}`;
     if (item.diluentVolume) dilPart += ` ${item.diluentVolume}mL`;
     parts.push(dilPart + '.');
-  } else if (item.diluent === 'sem_diluente') {
-    parts.push('Sem diluição.');
   }
-  if (item.accessType) parts.push(`Acesso ${item.accessType.toLowerCase()}.`);
-  if (item.volumeTotal) parts.push(`Volume total: ${item.volumeTotal}mL.`);
+
+  // 4) Volume total — só se preenchido E diferente do volume do diluente (evita redundância)
+  const volTotalNum = parseFloat((item.volumeTotal || '').replace(',', '.'));
+  const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
+  const hasDistinctTotal = item.volumeTotal && (!item.diluentVolume || (volTotalNum && volTotalNum !== volDilNum));
+  if (hasDistinctTotal) parts.push(`Volume total: ${item.volumeTotal}mL.`);
+
+  // 5) Correr em / Velocidade
   if (item.infusionTime || item.infusionRate) {
     const unit = item.infusionTimeUnit || 'min';
     const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
     if (item.infusionTime && item.infusionRate) {
-      const timeLabel = `${item.infusionTime}${unit === 'h' ? 'h' : 'min'}`;
-      parts.push(`Correr em ${timeLabel} — ${item.infusionRate} ${modeLabel}.`);
+      parts.push(`Correr em ${item.infusionTime}${unit === 'h' ? 'h' : 'min'} (${item.infusionRate} ${modeLabel}).`);
     } else if (item.infusionTime) {
-      const timeLabel = `${item.infusionTime}${unit === 'h' ? 'h' : 'min'}`;
-      parts.push(`Correr em ${timeLabel}.`);
+      parts.push(`Correr em ${item.infusionTime}${unit === 'h' ? 'h' : 'min'}.`);
     } else if (item.infusionRate) {
-      parts.push(`Vazão: ${item.infusionRate} ${modeLabel}.`);
+      parts.push(`Velocidade ${item.infusionRate} ${modeLabel}.`);
     }
   }
-  if (item.concentration) parts.push(`Concentração: ${item.concentration}.`);
+
+  // 6) Acesso (opcional, ao final)
+  if (item.accessType) parts.push(`Acesso ${item.accessType.toLowerCase()}.`);
+
   return parts.join(' ');
 }
 
@@ -1833,23 +1843,22 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   }
                 }}>
                   <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-32"><SelectValue /></SelectTrigger>
-                  <SelectContent>{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
+                  <SelectContent className="max-h-72">{ROUTES.map((r) => (<SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>))}</SelectContent>
                 </Select>
                 <span className="text-muted-foreground text-[10px]">—</span>
                 <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
                   <SelectTrigger className="h-7 text-xs bg-muted/20 border-border/30 w-28"><SelectValue /></SelectTrigger>
-                  <SelectContent>{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
+                  <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
                 </Select>
               </div>
 
-              {/* Row 2: Quantidade, Diluente, Vol Diluente, Acesso */}
+              {/* Row 2: Forma, Diluente, Vol Diluente, Acesso */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Qtd:</span>
-                  <Input value={item.quantity || ''} onChange={(e) => onUpdate(item.id, "quantity", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-12 text-center" placeholder="1" />
+                  <span className="text-[10px] text-muted-foreground">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-[110px]"><SelectValue placeholder="unidade" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-[130px]"><SelectValue placeholder="forma/unidade" /></SelectTrigger>
+                    <SelectContent className="max-h-72">
                       {QUANTITY_UNITS.map(u => (
                         <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
                       ))}
@@ -1873,7 +1882,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     }
                   }}>
                     <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-28"><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-72">
                       <SelectItem value="sem_diluente" className="text-xs font-medium">Sem diluente</SelectItem>
                       <SelectItem value="SF0,9%" className="text-xs">SF 0,9%</SelectItem>
                       <SelectItem value="SG5%" className="text-xs">SG 5%</SelectItem>
@@ -1937,7 +1946,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       }
                     }}
                     className="h-6 text-[11px] bg-background border-border/40 w-16 text-center font-medium"
-                    placeholder="mL"
+                    placeholder="opcional"
+                    title="Editável. Auto-calculado quando a forma é em mL. Opcional — não bloqueia validação."
                   />
                   <span className="text-[10px] text-muted-foreground">mL</span>
                 </div>
@@ -3303,9 +3313,14 @@ const PrescricaoPage = () => {
       if (required.includes('via') && empty(item.route)) missing.push('via');
       if (required.includes('posologia') && empty(item.posology)) missing.push('posologia');
       if (required.includes('diluente') && empty(item.diluent)) missing.push('diluente');
-      if (required.includes('volume total') && empty(item.volumeTotal)) missing.push('volume total');
-      if (required.includes('tempo de infusão') && empty(item.infusionTime) && empty(item.infusionRate)) {
-        missing.push('tempo de infusão');
+      // Quando há diluente real, exige o volume do veículo (segurança da diluição)
+      if (item.diluent && item.diluent !== 'sem_diluente' && empty(item.diluentVolume)) {
+        missing.push('volume do diluente');
+      }
+      // Tempo/vazão só obrigatórios em infusão contínua de alto alerta (BIC vasoativa/sedação)
+      const isContinuousHighAlert = ptype === 'iv_continuous' && (item.highAlert || (item.infusionMode || 'BIC') === 'BIC');
+      if (isContinuousHighAlert && empty(item.infusionTime) && empty(item.infusionRate)) {
+        missing.push('tempo ou vazão');
       }
     }
 
