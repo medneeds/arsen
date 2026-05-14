@@ -25,6 +25,7 @@ import {
   type BasalInsulin, type BolusInsulin,
   computeBasalBolus, computeNphFixed, suggestIvProtocol, suggestSlidingByWeight,
   describeInsulinPlan, detectInsulinKind,
+  SLIDING_LOW, SLIDING_MEDIUM, SLIDING_HIGH, DEFAULT_HYPO_PROTOCOL,
 } from "@/lib/insulinTherapy";
 import { cn } from "@/lib/utils";
 
