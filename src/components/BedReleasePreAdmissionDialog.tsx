@@ -33,12 +33,14 @@ export interface BedReleasePreAdmissionDialogProps {
 }
 
 export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onConfirm }: BedReleasePreAdmissionDialogProps) {
+  const [step, setStep] = useState<"notice" | "form">("notice");
   const [reason, setReason] = useState<string>("paciente_saiu");
   const [reasonNote, setReasonNote] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
+      setStep("notice");
       setReason("paciente_saiu");
       setReasonNote("");
       setSubmitting(false);
@@ -46,6 +48,8 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
   }, [open]);
 
   if (!patient) return null;
+
+  const alreadyAdmitted = patient.admissionStatus === "admitido";
 
   // Bloqueio: já está admitido formalmente
   const blockers: MovementBlocker[] =
