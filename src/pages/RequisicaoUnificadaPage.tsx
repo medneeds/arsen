@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { printRequisitionGuide, PrintableRequisitionGuide } from "@/components/PrintableRequisitionGuide";
 import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
