@@ -158,6 +158,15 @@ export const printEvolution = async (
         caption: validatedAt ? `Validada em ${validatedAt}` : "CRM e assinatura",
       },
     ],
+    extraStyles: `
+      .nz-rich p { margin: 0 0 6pt 0; }
+      .nz-rich p:last-child { margin-bottom: 0; }
+      .nz-rich ul, .nz-rich ol { margin: 4pt 0 6pt 18pt; padding: 0; }
+      .nz-rich li { margin: 0 0 2pt 0; }
+      .nz-rich strong, .nz-rich b { font-weight: 600; }
+      .nz-rich em, .nz-rich i { font-style: italic; }
+      .nz-rich u { text-decoration: underline; }
+    `,
   });
 
   openPrintWindow(
