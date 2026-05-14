@@ -31,7 +31,8 @@ import {
   ArrowRight,
   Terminal,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Home as HomeIcon } from "lucide-react";
 import { whitelabel } from "@/config/whitelabel";
 import { BigHelpLogo } from "./BigHelpLogo";
 import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
