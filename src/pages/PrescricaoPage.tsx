@@ -57,6 +57,7 @@ import { NewPrescriptionChoiceDialog } from "@/components/NewPrescriptionChoiceD
 import { ExtraPrescriptionChooserDialog } from "@/components/ExtraPrescriptionChooserDialog";
 import { printExtraPrescription } from "@/lib/printExtraPrescription";
 import { useHospital } from "@/contexts/HospitalContext";
+import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import {
   DndContext,
   closestCenter,
@@ -4401,6 +4402,24 @@ const PrescricaoPage = () => {
   }, [currentHospital, currentState, patient.name, patient.encounterCode, user, searchParams]);
 
   useEffect(() => { ensureEncounterCode(); }, [ensureEncounterCode]);
+
+  // Sincroniza Nº de Prontuário (cadastro/registry) com o cabeçalho do PDF
+  const urlPatientIdForRecord = searchParams.get('patientId');
+  const { prontuario: registryProntuario, atendimento: registryAtendimento } = usePatientIdentifiers(
+    urlPatientIdForRecord,
+    patient.name || null,
+    currentHospital?.id ?? null,
+  );
+  useEffect(() => {
+    if (registryProntuario && registryProntuario !== patient.record) {
+      setPatient(prev => ({ ...prev, record: registryProntuario }));
+    }
+  }, [registryProntuario, patient.record]);
+  useEffect(() => {
+    if (registryAtendimento && registryAtendimento !== patient.encounterCode) {
+      setPatient(prev => ({ ...prev, encounterCode: registryAtendimento }));
+    }
+  }, [registryAtendimento, patient.encounterCode]);
 
   // Fetch pre-admission data for risk classification on print
   useEffect(() => {
