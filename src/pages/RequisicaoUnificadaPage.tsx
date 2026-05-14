@@ -424,7 +424,15 @@ const RequisicaoUnificadaPage = () => {
         priority: formPriority,
         notes: notesContent || null,
         requested_by: user.id,
-        requested_by_name: user.user_metadata?.username || user.email?.split("@")[0] || "Médico",
+        requested_by_name: (() => {
+          const name = (doctor.fullName || "").trim()
+            || (user.user_metadata?.full_name as string | undefined)?.trim()
+            || user.user_metadata?.username
+            || user.email?.split("@")[0]
+            || "Médico";
+          const crm = (doctor.crm || "").trim();
+          return crm ? `${name} — CRM ${crm}` : name;
+        })(),
         hospital_unit_id: unitId,
         state_id: stateId,
         status: "pending",
