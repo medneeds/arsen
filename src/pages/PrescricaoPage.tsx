@@ -3511,6 +3511,8 @@ const PrescricaoPage = () => {
   const [appliedCareProfiles, setAppliedCareProfiles] = useState<Set<string>>(new Set());
   // Pop-up para sugerir incluir esquema padrão de correção de insulina ao adicionar controle glicêmico
   const [insulinSchemePromptOpen, setInsulinSchemePromptOpen] = useState(false);
+  // Pop-up orientativo após anexar antimicrobianos: lembra de imprimir Guia ATM 2 vias se D1
+  const [atbAttachNotice, setAtbAttachNotice] = useState<{ open: boolean; isFirstDay: boolean; names: string[] }>({ open: false, isFirstDay: false, names: [] });
   // Detecta se o item de cuidado é de controle glicêmico (HGT / glicemia capilar)
   const isGlycemicControlName = useCallback((name: string) => {
     const n = (name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
