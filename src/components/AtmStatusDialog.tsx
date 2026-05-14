@@ -337,7 +337,7 @@ export function AtmStatusDialog({
             <Button
               size="sm"
               onClick={handleProceed}
-              className="gap-1.5 bg-orange-600 hover:bg-orange-700 text-white"
+              className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white"
             >
               {novaModeEffective === 'inicial' ? 'Abrir Guia ATM' : novaModeEffective === 'troca' ? 'Continuar com Troca' : 'Continuar com Acréscimo'}
               <ChevronRight className="h-3.5 w-3.5" />
