@@ -20,6 +20,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useEvolutions, EvolutionRecord } from "@/hooks/useEvolutions";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { usePatientLive } from "@/hooks/usePatientLive";
+import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { usePatientDiagnosticContext } from "@/hooks/usePatientDiagnosticContext";
 import { EvolutionForm } from "@/components/evolution/EvolutionForm";
 import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
@@ -69,6 +70,9 @@ const EvolucaoPage = () => {
     patientBed: patient.bed,
     patientSector: patient.unit,
   });
+
+  const ids = usePatientIdentifiers(initialPatientId || null, patient.name || null, currentHospital?.id || null);
+  const prontuarioReal = ids.prontuario || patient.record;
 
   // New evolution form state
   const [showNewForm, setShowNewForm] = useState(false);
@@ -376,6 +380,7 @@ const EvolucaoPage = () => {
           <EvolutionTimeline
             evolutions={evolutions}
             admissionDate={patient.admissionDate}
+            patientRecord={prontuarioReal}
             onUpdate={updateEvolution}
             onValidate={validateEvolution}
             onSuspend={suspendEvolution}

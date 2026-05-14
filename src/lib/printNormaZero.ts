@@ -74,7 +74,7 @@ export const generateDocCode = (prefix: string = "DOC"): string => {
 
 /** CSS base do timbrado Norma Zero — compartilhado por todos os documentos */
 export const normaZeroBaseStyles = (orientation: "portrait" | "landscape" = "portrait") => `
-  @page { size: A4 ${orientation}; margin: ${orientation === "landscape" ? "10mm 12mm 14mm" : "12mm 14mm 16mm"}; }
+  @page { size: A4 ${orientation}; margin: ${orientation === "landscape" ? "10mm 12mm" : "12mm 14mm"}; }
   @media print {
     body { margin: 0; }
     .nz-header { page-break-after: avoid; }
