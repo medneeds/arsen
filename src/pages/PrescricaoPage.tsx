@@ -2007,20 +2007,6 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   }} className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center focus-visible:ring-1 focus-visible:ring-primary" placeholder="mL" />
                 </div>
                 )}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Acesso:</span>
-                  <Select value={item.accessType || ''} onValueChange={(v) => onUpdate(item.id, "accessType", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Periférico" className="text-xs">Periférico</SelectItem>
-                      <SelectItem value="Central" className="text-xs">Central</SelectItem>
-                      <SelectItem value="PICC" className="text-xs">PICC</SelectItem>
-                      <SelectItem value="Port-a-cath" className="text-xs">Port-a-cath</SelectItem>
-                      <SelectItem value="Jelco" className="text-xs">Jelco</SelectItem>
-                      <SelectItem value="Intracath" className="text-xs">Intracath</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 </>}
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Via:</span>
@@ -2041,6 +2027,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         </SelectItem>
                       ))}
                     </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Int.:</span>
+                  <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
+                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 font-semibold w-28 focus:ring-1 focus:ring-primary"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
               </div>
