@@ -24,7 +24,6 @@ import { DietReleaseDialog } from "./DietReleaseDialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useAgeCalculator } from "@/hooks/useAgeCalculator";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBedAllocationRequests } from "@/hooks/useBedAllocationRequests";
@@ -641,12 +640,9 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   const [loadingCid, setLoadingCid] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
-  const ageInputRef = useRef<HTMLInputElement>(null);
   const config = sectorConfig[patient.sector as keyof typeof sectorConfig] ?? sectorConfig.outside;
   const { toast: toastHook } = useToast();
   const { currentDepartment } = useDepartment();
-  const isPediatric = currentDepartment === "URGÊNCIA E EMERGÊNCIA PEDIÁTRICA";
-  const { calculateAge, isCalculating } = useAgeCalculator(isPediatric);
   const navigate = useNavigate();
   const [medicalResponsibilityDialogOpen, setMedicalResponsibilityDialogOpen] = useState(false);
   const [localMedicalResponsibility, setLocalMedicalResponsibility] = useState(patient.medicalResponsibility);
@@ -846,6 +842,12 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   }, [onTransfer, patient.id, patient.sector]);
 
   const startEditing = useCallback((field: string, currentValue: string, index: number = -1) => {
+    const readOnlyInlineFields = new Set(["name", "age", "bedNumber", "admissionDate"]);
+    if (readOnlyInlineFields.has(field)) {
+      toast.error("Campo somente leitura no mapa de leitos");
+      return;
+    }
+
     // Porta users can only edit patients they created
     if (!canEdit) {
       toast.error("Você só pode editar pacientes que você criou");
@@ -865,20 +867,18 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   const saveInlineEdit = async () => {
     if (!editingField) return;
 
-    // 🔒 GUARDA FIXA: nome do paciente é IMUTÁVEL pelo mapa de leitos.
-    // Edição apenas via cockpit (Edição Avançada → Ficha cadastral),
-    // que sincroniza patients.name + audita em patient_registry_edit_history.
-    if (editingField === "name") {
+    // 🔒 GUARDA FIXA: identificação do leito/paciente é IMUTÁVEL pelo mapa de leitos.
+    // Idade vem do cadastro; leito muda apenas por realocação/transferência; nome pelo prontuário.
+    if (["name", "age", "bedNumber", "admissionDate"].includes(editingField)) {
       setEditingField(null);
       setEditValue("");
       toastHook({
         title: "Edição bloqueada",
-        description: "O nome do paciente é fixo no mapa de leitos. Use Edição Avançada → Ficha cadastral.",
+        description: "Nome, idade, leito e admissão são campos somente leitura no mapa de leitos.",
         variant: "destructive",
       });
       return;
     }
-
 
     const updatedPatient = { ...patient };
     
@@ -899,10 +899,6 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
         variant: "destructive",
       });
       return;
-    } else if (editingField === "age") {
-      // Tenta formatar idade usando IA (data de nascimento ou idade simples)
-      const formattedAge = await calculateAge(editValue);
-      updatedPatient.age = formattedAge ?? editValue;
     } else if (editingField === "diagnoses") {
       if (editingArrayIndex === -2) {
         // Adding new
