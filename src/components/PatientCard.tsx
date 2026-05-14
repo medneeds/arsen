@@ -3888,6 +3888,17 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
         }}
       />
 
+      <BedReleasePreAdmissionDialog
+        open={isReleasePreAdmissionOpen}
+        onOpenChange={setIsReleasePreAdmissionOpen}
+        patient={patient}
+        onConfirm={async (payload) => {
+          if (onReleasePreAdmissionBed) {
+            await onReleasePreAdmissionBed(patient.id, payload);
+          }
+        }}
+      />
+
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent className="dark:bg-gray-900 dark:border-gray-700">
           <AlertDialogHeader>
