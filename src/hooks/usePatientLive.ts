@@ -24,6 +24,8 @@ function rowToPatient(p: any): Patient {
     schedule: splitLines(p.schedule),
     admissionHistory: p.admission_history || "",
     admissionDate: p.admission_date || undefined,
+    admittedAt: p.admitted_at || undefined,
+    admissionStatus: p.admission_status || undefined,
     clinicalStatus: p.clinical_status || "regular",
     internmentStatus: p.internment_status || undefined,
     medicalResponsibility: p.medical_responsibility || undefined,

@@ -29,6 +29,7 @@ import { EvolutionForm } from "@/components/evolution/EvolutionForm";
 import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
 import type { Patient } from "@/types/patient";
+import { getEffectiveAdmissionDate } from "@/lib/dihCalc";
 
 interface PatientHeader {
   name: string;
@@ -435,7 +436,12 @@ const EvolucaoPage = () => {
         {!loading && (
           <EvolutionTimeline
             evolutions={evolutions}
-            admissionDate={livePatient?.admissionDate || patient.admissionDate}
+            admissionDate={getEffectiveAdmissionDate({
+              utiAdmissionDate: livePatient?.utiAdmissionDate,
+              admittedAt: livePatient?.admittedAt,
+              admissionDate: livePatient?.admissionDate || patient.admissionDate,
+              sector: livePatient?.sector || initialPatientSector,
+            }) || patient.admissionDate}
             patientRecord={prontuarioReal}
             onUpdate={updateEvolution}
             onValidate={validateEvolution}

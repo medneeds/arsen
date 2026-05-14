@@ -31,7 +31,7 @@ import { useBedAllocationRequests } from "@/hooks/useBedAllocationRequests";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
 import { differenceInDays, differenceInHours, differenceInMinutes, parseISO, isValid, parse } from "date-fns";
 import { useSectorStayTimer } from "@/hooks/useSectorStayTimer";
-import { calcDIH, formatDIHLabel, formatAdmissionDateBR } from "@/lib/dihCalc";
+import { calcDIH, formatDIHLabel, formatAdmissionDateBR, getEffectiveAdmissionDate } from "@/lib/dihCalc";
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { useConductHistory } from "@/hooks/useConductHistory";
 import { ConductHistoryDialog } from "./ConductHistoryDialog";
@@ -1764,7 +1764,12 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       Admissão no Setor
                     </span>
                     {(() => {
-                      const adm = patient.admissionDate || (patient.utiAdmissionDate || [])[0] || null;
+                      const adm = getEffectiveAdmissionDate({
+                        utiAdmissionDate: patient.utiAdmissionDate,
+                        admittedAt: patient.admittedAt,
+                        admissionDate: patient.admissionDate,
+                        sector: patient.sector,
+                      });
                       const dih = calcDIH(adm);
                       return (
                         <div className="flex items-center gap-1.5 text-[10px] text-foreground leading-snug py-0.5">
