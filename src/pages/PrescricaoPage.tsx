@@ -6428,7 +6428,7 @@ const PrescricaoPage = () => {
                 { id: 'cuidados', label: 'Cuidados e orientações', cats: ['care', 'nonstandard'] },
               ];
               return GROUPS.map(group => {
-                const visibleCats = group.cats.filter(c => itemsByCategory[c].length > 0);
+                const visibleCats = group.cats.filter(c => itemsByCategory[c].length > 0 || manualOpenCategories.has(c));
                 if (visibleCats.length === 0) return null;
                 return (
                   <div key={group.id} className="space-y-3">
