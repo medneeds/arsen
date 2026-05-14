@@ -306,13 +306,12 @@ export function AppSidebar({
       ],
     },
 
-    // ── Farmácia e IA ──
+    // ── Farmácia ──
     {
-      title: "Farmácia & IA",
-      icon: Brain,
+      title: "Farmácia",
+      icon: BookOpen,
       profiles: ["gestor"],
       items: [
-        { name: "Examinus AI", link: "/ia", profiles: ["gestor"] },
         { name: "Validação Farmacêutica", link: "/validacao-farmaceutica", profiles: ["gestor"] },
         { name: "Catálogo de Medicamentos", link: "/catalogo-medicamentos", profiles: ["gestor"] },
       ],
