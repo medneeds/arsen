@@ -65,6 +65,11 @@ const DashboardPage = () => {
 
   // Listen for sector changes from other pages
   useEffect(() => {
+    // Limpeza idempotente (debounce 1h) de sinalizações órfãs em setores bloqueados.
+    import("@/lib/lockedSectorCleanup").then((m) => m.maybeRunLockedSectorCleanup());
+  }, []);
+
+  useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === "selected_sector" && e.newValue) {
         setActiveSector(e.newValue);
