@@ -189,7 +189,32 @@ export function SectorSelector({ variant = "light" }: SectorSelectorProps) {
             {SECTOR_HIERARCHY.map((group) => {
               const isGroupOpen = openGroups[group.group] ?? false;
               const groupHasActive = group.sectors.some((s) => s.department === currentDepartment);
+              const unlockedSectors = group.sectors.filter((s) => !isDepartmentLocked(s.department));
+              const isGroupFullyLocked = unlockedSectors.length === 0;
               const activeCount = groupHasActive ? 1 : 0;
+
+              // Grupos 100% bloqueados (UE, Anexo Vascular, Centro Cirúrgico):
+              // não-expansíveis, com cadeado cinza no cabeçalho.
+              if (isGroupFullyLocked) {
+                return (
+                  <div
+                    key={group.group}
+                    className="mb-0.5 last:mb-0 w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-md bg-muted/30 cursor-not-allowed select-none"
+                    title={LOCKED_TOOLTIP}
+                    aria-disabled="true"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Lock className="h-3 w-3 text-muted-foreground/70 flex-shrink-0" strokeWidth={2.2} />
+                      <span className="text-[10px] font-bold uppercase tracking-[0.14em] truncate text-muted-foreground/70">
+                        {group.group}
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-medium text-muted-foreground/50 italic preserve-case">
+                      Em breve
+                    </span>
+                  </div>
+                );
+              }
 
               return (
                 <Collapsible
@@ -221,13 +246,29 @@ export function SectorSelector({ variant = "light" }: SectorSelectorProps) {
                       </span>
                     </div>
                     <span className="text-[9px] font-semibold text-muted-foreground/60 tabular-nums">
-                      {activeCount > 0 ? `${activeCount}/${group.sectors.length}` : group.sectors.length}
+                      {activeCount > 0
+                        ? `${activeCount}/${unlockedSectors.length}`
+                        : `${unlockedSectors.length}${unlockedSectors.length !== group.sectors.length ? `/${group.sectors.length}` : ""}`}
                     </span>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
                     <div className="grid grid-cols-1 gap-0.5 pl-4 pr-1 pt-0.5 pb-1">
                       {group.sectors.map((sector) => {
                         const isActive = currentDepartment === sector.department;
+                        const locked = isDepartmentLocked(sector.department);
+                        if (locked) {
+                          return (
+                            <div
+                              key={sector.name}
+                              className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] font-medium text-muted-foreground/60 cursor-not-allowed select-none bg-muted/20"
+                              title={LOCKED_TOOLTIP}
+                              aria-disabled="true"
+                            >
+                              <span className="truncate preserve-case italic">{sector.name}</span>
+                              <Lock className="h-3 w-3 text-muted-foreground/60 flex-shrink-0" strokeWidth={2.2} />
+                            </div>
+                          );
+                        }
                         return (
                           <button
                             key={sector.name}
