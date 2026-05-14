@@ -296,15 +296,30 @@ const RequisicaoUnificadaPage = () => {
   };
 
   // ── Filtered lists ──
+  // Defesa em profundidade: mesmo após o filtro server-side, garante que
+  // só apareçam itens do paciente atualmente aberto quando há contexto.
+  const validPatientIdMemo = useMemo(() => asUuidOrNull(formPatientId), [formPatientId]);
+  const scopedRequests = useMemo(() => {
+    if (validPatientIdMemo) {
+      return requests.filter(r => r.patient_id === validPatientIdMemo);
+    }
+    if (formPatientName) {
+      return requests.filter(r => (r.patient_name || "").trim().toLowerCase() === formPatientName.trim().toLowerCase());
+    }
+    // Sem contexto de paciente: parecer não exibe nada (evita vazar entre pacientes)
+    if (activeCategory === "parecer") return [];
+    return requests;
+  }, [requests, validPatientIdMemo, formPatientName, activeCategory]);
+
   const pendingRequests = useMemo(() =>
-    requests.filter(r => (r.status === "pending" || r.status === "in_progress") &&
+    scopedRequests.filter(r => (r.status === "pending" || r.status === "in_progress") &&
       (!search || r.patient_name?.toLowerCase().includes(search.toLowerCase()))),
-    [requests, search]
+    [scopedRequests, search]
   );
   const completedRequests = useMemo(() =>
-    requests.filter(r => r.status === "completed" &&
+    scopedRequests.filter(r => r.status === "completed" &&
       (!search || r.patient_name?.toLowerCase().includes(search.toLowerCase()))),
-    [requests, search]
+    [scopedRequests, search]
   );
 
   const toggleItem = (item: string) => {
