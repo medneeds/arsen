@@ -294,6 +294,7 @@ export function SectorSection({
                   patient={patient}
                   onUpdate={onUpdatePatient}
                   onDelete={onDeletePatient}
+                  onReleasePreAdmissionBed={onReleasePreAdmissionBed}
                   onUndelete={onUndeletePatient}
                   selectionMode={selectionMode}
                   isSelected={selectedPatients.has(patient.id)}
