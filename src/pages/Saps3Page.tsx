@@ -227,15 +227,65 @@ interface Saps3Record {
 }
 
 const COMORBIDITY_OPTIONS = [
-  { id: "cancer_hematologic", label: "Neoplasia hematológica" },
-  { id: "cancer_metastatic", label: "Câncer metastático" },
-  { id: "hiv_aids", label: "HIV/AIDS" },
-  { id: "cirrhosis", label: "Cirrose" },
-  { id: "heart_failure_nyha4", label: "IC NYHA IV" },
-  { id: "chronic_renal", label: "Doença renal crônica" },
-  { id: "immunosuppression", label: "Imunossupressão" },
-  { id: "chemotherapy", label: "Quimioterapia recente" },
+  { id: "cancer_hematologic", label: "Neoplasia hematológica", points: 10 },
+  { id: "cancer_metastatic", label: "Câncer metastático", points: 11 },
+  { id: "hiv_aids", label: "HIV/AIDS", points: 8 },
+  { id: "cirrhosis", label: "Cirrose", points: 4 },
+  { id: "heart_failure_nyha4", label: "IC NYHA IV", points: 6 },
+  { id: "chronic_renal", label: "Doença renal crônica", points: 3 },
+  { id: "immunosuppression", label: "Imunossupressão", points: 3 },
+  { id: "chemotherapy", label: "Quimioterapia recente", points: 3 },
 ];
+
+// ───── Antecedentes clínicos NÃO-SAPS (não pontuam, opcionais) ─────
+const CLINICAL_HISTORY_OPTIONS = [
+  { id: "has", label: "Hipertensão arterial (HAS)" },
+  { id: "dm2", label: "Diabetes tipo 2" },
+  { id: "dm1", label: "Diabetes tipo 1" },
+  { id: "dpoc", label: "DPOC" },
+  { id: "asma", label: "Asma" },
+  { id: "avc_previo", label: "AVC prévio" },
+  { id: "iam_previo", label: "IAM prévio" },
+  { id: "fa", label: "Fibrilação atrial" },
+  { id: "icc_nao_iv", label: "ICC (não NYHA IV)" },
+  { id: "dislipidemia", label: "Dislipidemia" },
+  { id: "obesidade", label: "Obesidade" },
+  { id: "hipotireoidismo", label: "Hipotireoidismo" },
+  { id: "chagas", label: "Doença de Chagas" },
+  { id: "epilepsia", label: "Epilepsia" },
+  { id: "depressao_ansiedade", label: "Depressão / Ansiedade" },
+  { id: "hepatopatia_nao_cirrose", label: "Hepatopatia (não cirrótica)" },
+  { id: "drc_nao_dialise", label: "DRC não dialítica" },
+];
+
+// ───── Drogas vasoativas (não pontuam SAPS — perfil hemodinâmico) ─────
+const VASOACTIVE_OPTIONS = [
+  { id: "noradrenalina", label: "Noradrenalina" },
+  { id: "adrenalina", label: "Adrenalina" },
+  { id: "vasopressina", label: "Vasopressina" },
+  { id: "dobutamina", label: "Dobutamina" },
+  { id: "dopamina", label: "Dopamina" },
+  { id: "milrinona", label: "Milrinona" },
+];
+
+interface VasoactiveEntry {
+  id: string;
+  dose?: string; // mcg/kg/min
+  hours?: string; // horas de uso
+}
+
+interface LifestyleHabits {
+  tabagismo: "" | "nunca" | "ex" | "atual";
+  macos_ano?: string;
+  etilismo: "" | "nunca" | "social" | "abuso" | "dependencia";
+  drogas: "" | "nunca" | "ex" | "atual";
+  drogas_detalhe?: string;
+}
+
+interface ClinicalHistoryData {
+  selected: string[];
+  livre?: string; // texto livre para condições adicionais
+}
 
 const RASS_LABELS: Record<number, string> = {
   [-5]: "Não responsivo",
