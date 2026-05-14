@@ -239,6 +239,30 @@ const QUANTITY_UNITS = [
   'supositório', 'óvulo', 'bisnaga', 'frasco',
 ];
 
+// Siglas hospitalares para forma/unidade (display-only; valor preservado)
+const QUANTITY_UNIT_SHORT: Record<string, string> = {
+  'mL': 'mL',
+  'ampola': 'AMP',
+  'frasco-ampola': 'FA',
+  'frasco': 'FR',
+  'comprimido': 'CP',
+  'cápsula': 'CAP',
+  'gota': 'gts',
+  'mg': 'mg',
+  'g': 'g',
+  'mcg': 'mcg',
+  'UI': 'UI',
+  'bolsa': 'BOL',
+  'unidade': 'UN',
+  'sachê': 'SCH',
+  'envelope': 'ENV',
+  'adesivo': 'ADES',
+  'supositório': 'SUP',
+  'óvulo': 'OV',
+  'bisnaga': 'BIS',
+};
+const quantityUnitShort = (u?: string) => (u && QUANTITY_UNIT_SHORT[u]) || u || '';
+
 // Auto-detect quantity unit from medication presentation
 function detectQuantityUnit(presentation: string, dose: string): string {
   const p = presentation.toLowerCase();
