@@ -6353,8 +6353,9 @@ const PrescricaoPage = () => {
             getFavoriteCount={getFavoriteCount}
             onCategoryPopup={(cat) => {
               if (cat === 'antimicrobial') {
+                // Mesmo fluxo do botão "Guia ATM": passa pelo AtmStatusDialog primeiro
                 setPendingAntimicrobialMed(null);
-                setAntimicrobialGuideOpen(true);
+                setAtmStatusOpen(true);
               } else if (cat === 'high_alert') {
                 setHighAlertGuideOpen(true);
               } else if (cat === 'care') {
