@@ -753,6 +753,10 @@ export default function Saps3Page() {
     created_by: user?.id,
     age: age ? parseInt(age) : null,
     comorbidities,
+    // Seções opcionais (não pontuam SAPS) — perfil epidemiológico/hemodinâmico
+    clinical_history: { selected: clinicalHistory.selected, livre: clinicalHistory.livre || "" },
+    lifestyle_habits: { ...lifestyleHabits },
+    vasoactive_drugs: { on_admission: vasoactiveOnAdmission, entries: vasoactiveOnAdmission ? vasoactiveDrugs : [] },
     hospital_los_before_icu: losBeforeIcu ? parseInt(losBeforeIcu) : null,
     icu_admission_source: admissionSource || null,
     planned_admission: plannedAdmission,
