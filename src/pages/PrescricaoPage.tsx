@@ -583,6 +583,12 @@ function buildPrepDescription(item: PrescriptionItem): string {
   // 4) INTERVALO
   if (item.posology && item.posology !== '-') {
     parts.push(`${item.posology}.`);
+  } else {
+    // Sólido oral (comprimido / cápsula / drágea) sem posologia → farmácia dispensa
+    // só 1 unidade. Sinaliza explicitamente p/ a equipe perceber a lacuna.
+    const pres = (item.presentation || '').toLowerCase();
+    const isOralSolid = /(comprimido|c[aá]psula|cap\.?\b|dr[aá]gea|sublingual|orodisper)/.test(pres);
+    if (isOralSolid) parts.push('⚠ POSOLOGIA NÃO INFORMADA.');
   }
 
   return parts.join(' ');
