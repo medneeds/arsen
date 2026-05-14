@@ -188,18 +188,18 @@ const EvolucaoPage = () => {
 
   const handleCreateIntercurrence = async () => {
     const text = intercurrenceText;
-    if (!richHtmlToPlainText(text)) return;
+    if (!richHtmlToPlainText(text) || !complementaryKind) return;
     setSavingIntercurrence(true);
     const result = await createEvolution(
       patient.name, patient.bed, patient.unit,
-      { subjective: text, objective: "", assessment: "", plan: "", type: "intercurrence" } as any,
+      { subjective: text, objective: "", assessment: "", plan: "", type: complementaryKind } as any,
       undefined,
       undefined
     );
     setSavingIntercurrence(false);
     if (result) {
       setIntercurrenceText("");
-      setShowIntercurrenceForm(false);
+      setComplementaryKind(null);
     }
   };
 
