@@ -1852,14 +1852,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </Select>
               </div>
 
-              {/* Row 2: Quantidade, Diluente, Vol Diluente, Acesso */}
+              {/* Row 2: Forma, Diluente, Vol Diluente, Acesso */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Qtd:</span>
-                  <Input value={item.quantity || ''} onChange={(e) => onUpdate(item.id, "quantity", e.target.value)} className="h-6 text-[11px] bg-muted/10 border-border/30 w-12 text-center" placeholder="1" />
+                  <span className="text-[10px] text-muted-foreground">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-[110px]"><SelectValue placeholder="unidade" /></SelectTrigger>
-                    <SelectContent>
+                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-[130px]"><SelectValue placeholder="forma/unidade" /></SelectTrigger>
+                    <SelectContent className="max-h-72">
                       {QUANTITY_UNITS.map(u => (
                         <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
                       ))}
