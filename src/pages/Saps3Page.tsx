@@ -573,6 +573,23 @@ export default function Saps3Page() {
         setPatientName(namePref);
         setAge(r.age != null ? String(r.age) : (patientAgeFromContext ? String(patientAgeFromContext).replace(/\D/g, "") : ""));
         setComorbidities(Array.isArray(r.comorbidities) ? r.comorbidities : []);
+        // Hidrata seções opcionais (não pontuam)
+        const ch = r.clinical_history || {};
+        setClinicalHistory({
+          selected: Array.isArray(ch.selected) ? ch.selected : [],
+          livre: typeof ch.livre === "string" ? ch.livre : "",
+        });
+        const lh = r.lifestyle_habits || {};
+        setLifestyleHabits({
+          tabagismo: lh.tabagismo || "",
+          macos_ano: lh.macos_ano || "",
+          etilismo: lh.etilismo || "",
+          drogas: lh.drogas || "",
+          drogas_detalhe: lh.drogas_detalhe || "",
+        });
+        const vd = r.vasoactive_drugs || {};
+        setVasoactiveOnAdmission(!!vd.on_admission);
+        setVasoactiveDrugs(Array.isArray(vd.entries) ? vd.entries : []);
         setLosBeforeIcu(r.hospital_los_before_icu != null ? String(r.hospital_los_before_icu) : "");
         setAdmissionSource(r.icu_admission_source || "");
         setPlannedAdmission(!!r.planned_admission);
