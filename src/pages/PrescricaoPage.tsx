@@ -1885,14 +1885,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         item.highAlert && item.status !== 'suspended' && "border-red-300/50 bg-red-50/30 dark:bg-red-950/10",
         selected && "ring-2 ring-primary/40 border-primary/30",
         isDragging && "shadow-lg",
-        isCompact && individualExpanded && "cursor-pointer"
       )}
-      onClick={(e) => {
-        // Only handle collapse click when individually expanded in compact mode
-        if (!isCompact || !individualExpanded) return;
-        if ((e.target as HTMLElement).closest('button, input, select, textarea, [role="checkbox"], [role="combobox"], [data-radix-collection-item], [data-radix-select-trigger]')) return;
-        setIndividualExpanded(false);
-      }}
     >
       <div className="flex items-start gap-2 p-2.5">
         {/* Left: validation dot + drag + checkbox */}
