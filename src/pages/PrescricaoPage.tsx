@@ -5126,7 +5126,19 @@ const PrescricaoPage = () => {
                 onSelect={(d) => { setHistoryDate(d); }}
                 locale={ptBR}
                 initialFocus
+                className="pointer-events-auto"
+                modifiers={{
+                  hasPrescription: (date) => prescriptionDateKeys.has(format(date, 'yyyy-MM-dd')),
+                }}
+                modifiersClassNames={{
+                  hasPrescription:
+                    "relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-primary",
+                }}
               />
+              <div className="px-3 pb-2 -mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+                Dias com prescrição salva
+              </div>
               {historyDate && (
                 <div className="p-2 border-t">
                   <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setHistoryDate(undefined)}>
