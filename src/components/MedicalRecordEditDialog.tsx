@@ -706,12 +706,21 @@ export function MedicalRecordEditDialog({
               {/* ============ ABA FICHA CADASTRAL ============ */}
               <TabsContent value="ficha" className="flex-1 mt-3 min-h-0">
                 <ScrollArea className="h-[58vh] pr-2">
-                  {!registry ? (
-                    <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                      Nenhuma ficha cadastral vinculada a este paciente.
-                    </div>
-                  ) : (
+                  {(
                     <div className="space-y-3">
+                      {!registry && (
+                        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px] flex items-start gap-2">
+                          <FileWarning className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <div className="font-semibold text-amber-800 dark:text-amber-300">
+                              Sem ficha cadastral vinculada
+                            </div>
+                            <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
+                              Este paciente foi admitido sem cadastro central (comum em leitos legados da UTI). Ative <strong>"Atualizar cadastro"</strong> para preencher os campos manualmente ou importar do PIS — ao salvar, a ficha será criada e vinculada automaticamente ao prontuário.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       {/* Cabeçalho com botão Atualizar cadastro */}
                       <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${cadastroEditMode ? "border-emerald-500/40 bg-emerald-500/5" : "border-muted bg-muted/30"}`}>
                         <div className="text-[11px] leading-snug flex items-center gap-2">
