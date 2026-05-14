@@ -299,6 +299,7 @@ export function describeInsulinPlan(plan: InsulinPlan): { headline: string; line
       (plan.fixedDoses ?? []).forEach(d => lines.push(formatDose(d)));
       if (plan.correctionRows?.length) {
         lines.push('Correção pré-refeição:');
+        lines.push(`  • HGT < 70 → ${plan.hypoglycemiaProtocol?.trim() || DEFAULT_HYPO_PROTOCOL}`);
         plan.correctionRows.forEach(r => lines.push(`  • ${formatSlidingRow(r)}`));
       }
       break;
