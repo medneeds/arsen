@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   Heart, NotebookPen, Stethoscope, FileText,
   Save, Loader2, CheckCircle2,
-  ShieldCheck, Printer, Sparkles,
+  ShieldCheck, Printer,
   AlertCircle, Eye, ChevronDown, Stethoscope as DiagnosisIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RichTextEditor, richHtmlToPlainText, sanitizeRichHtml, toRichHtml } from "@/components/ui/rich-text-editor";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ExaminusAIDialog } from "@/components/ExaminusAIDialog";
+
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
@@ -88,7 +88,6 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   autoSave = false, hasUnsaved = false,
   diagnosticsSlot,
 }) => {
-  const [examinusOpen, setExaminusOpen] = useState(false);
   const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'evolucao', 'complementares', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
   const { currentHospital } = useHospital();
@@ -118,14 +117,6 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
 
   const requiredComplete = completion.evolucao && completion.plan;
 
-  const handleImportExams = (newExams: string[]) => {
-    const currentHtml = sanitizeRichHtml(toRichHtml(soap.objective || ""));
-    const blockHtml = newExams
-      .filter(Boolean)
-      .map(t => `<p>${t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`)
-      .join("");
-    onSOAPChange('objective', currentHtml + blockHtml);
-  };
 
   // Autosave (debounced 2s) for editing existing drafts in Timeline
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -294,21 +285,12 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                 onApply={(v) => onSOAPChange('objective', v)}
                 hospitalUnitId={hospitalId}
               />
-              <Button
-                type="button" size="sm" variant="outline"
-                onClick={() => setExaminusOpen(true)}
-                className="h-6 gap-1 text-[10px] border-primary/40 text-primary hover:bg-primary/10"
-                title="Importar exames com Examinus AI"
-              >
-                <Sparkles className="h-3 w-3" />
-                Examinus AI
-              </Button>
             </div>
           </div>
           <RichTextEditor
             value={soap.objective}
             onChange={(html) => onSOAPChange('objective', html)}
-            placeholder="Cole resultados laboratoriais ou de imagem, ou use o Examinus AI para extrair automaticamente..."
+            placeholder="Cole resultados laboratoriais ou de imagem..."
             minHeight={120}
           />
         </SectionItem>
@@ -411,13 +393,6 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           </Button>
         )}
       </div>
-
-      <ExaminusAIDialog
-        open={examinusOpen}
-        onOpenChange={setExaminusOpen}
-        currentExams={richHtmlToPlainText(soap.objective).split("\n").filter(Boolean)}
-        onImportExams={handleImportExams}
-      />
     </div>
   );
 };

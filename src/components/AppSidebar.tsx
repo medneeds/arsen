@@ -247,7 +247,7 @@ export function AppSidebar({
     { title: "Início", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
     { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: ["medico"] },
     { title: "Painel Clínico", icon: ClipboardList, link: "/painel-clinico", profiles: ["medico"] },
-    { title: "Examinus AI", icon: Brain, link: "/ia", profiles: ["medico"] },
+    
   ];
 
   // GESTOR: organizado em blocos lógicos
@@ -306,13 +306,12 @@ export function AppSidebar({
       ],
     },
 
-    // ── Farmácia e IA ──
+    // ── Farmácia ──
     {
-      title: "Farmácia & IA",
-      icon: Brain,
+      title: "Farmácia",
+      icon: BookOpen,
       profiles: ["gestor"],
       items: [
-        { name: "Examinus AI", link: "/ia", profiles: ["gestor"] },
         { name: "Validação Farmacêutica", link: "/validacao-farmaceutica", profiles: ["gestor"] },
         { name: "Catálogo de Medicamentos", link: "/catalogo-medicamentos", profiles: ["gestor"] },
       ],
@@ -338,9 +337,6 @@ export function AppSidebar({
     if (isDoorUser) {
       return [
         { title: "Mapa", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
-        { title: "Assistente Clínico", icon: Brain, profiles: ["medico"], items: [
-          { name: "Examinus AI", link: "/ia", profiles: ["medico"] },
-        ]},
       ];
     }
     // Visitante: read-only map
@@ -355,9 +351,6 @@ export function AppSidebar({
         { title: "Mapa", icon: LayoutDashboard, link: "/", profiles: ["farmacia"] },
         { title: "Validação Farmacêutica", icon: ClipboardCheck, link: "/validacao-farmaceutica", profiles: ["farmacia"] },
         { title: "Catálogo de Medicamentos", icon: BookOpen, link: "/catalogo-medicamentos", profiles: ["farmacia"] },
-        { title: "Assistente Clínico", icon: Brain, profiles: ["farmacia"], items: [
-          { name: "Examinus AI", link: "/ia", profiles: ["farmacia"] },
-        ]},
       ];
     }
     // Imagem
