@@ -727,7 +727,8 @@ export function AntimicrobialGuideDialog({
                     <Textarea value={entry.ccihNotes} onChange={e => updateEntry(entry.id, "ccihNotes", e.target.value)} placeholder="Observações da Comissão de Controle de Infecção Hospitalar..." className="text-xs min-h-[40px] resize-none" />
                   </div>
                 </div>
-              ))}
+                );
+              })}
 
               <Button variant="outline" size="sm" onClick={addEntry} className="gap-1.5 w-full text-xs">
                 <Plus className="h-3.5 w-3.5" /> Adicionar Antimicrobiano
