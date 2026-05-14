@@ -3782,12 +3782,14 @@ const PrescricaoPage = () => {
   //   preserva o snapshot do dia anterior para auditoria/CCIH).
   const persistItems = useCallback(async (
     nextItems: PrescriptionItem[],
-    opts: { mode?: 'update' | 'newVersion'; reason?: string; sigOverride?: DigitalSignature | null } = {}
+    opts: { mode?: 'update' | 'newVersion'; reason?: string; sigOverride?: DigitalSignature | null; silent?: boolean } = {}
   ) => {
     if (!currentHospital || !currentState || !patient.name.trim()) {
-      toast.error("Não foi possível salvar a prescrição", {
-        description: "Falta paciente/hospital ativo. Recarregue a página com o paciente correto antes de prosseguir.",
-      });
+      if (!opts.silent) {
+        toast.error("Não foi possível salvar a prescrição", {
+          description: "Falta paciente/hospital ativo. Recarregue a página com o paciente correto antes de prosseguir.",
+        });
+      }
       throw new Error('persistItems: missing patient/hospital context');
     }
     const mode = opts.mode || 'update';
