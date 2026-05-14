@@ -3303,9 +3303,14 @@ const PrescricaoPage = () => {
       if (required.includes('via') && empty(item.route)) missing.push('via');
       if (required.includes('posologia') && empty(item.posology)) missing.push('posologia');
       if (required.includes('diluente') && empty(item.diluent)) missing.push('diluente');
-      if (required.includes('volume total') && empty(item.volumeTotal)) missing.push('volume total');
-      if (required.includes('tempo de infusão') && empty(item.infusionTime) && empty(item.infusionRate)) {
-        missing.push('tempo de infusão');
+      // Quando há diluente real, exige o volume do veículo (segurança da diluição)
+      if (item.diluent && item.diluent !== 'sem_diluente' && empty(item.diluentVolume)) {
+        missing.push('volume do diluente');
+      }
+      // Tempo/vazão só obrigatórios em infusão contínua de alto alerta (BIC vasoativa/sedação)
+      const isContinuousHighAlert = ptype === 'iv_continuous' && (item.highAlert || (item.infusionMode || 'BIC') === 'BIC');
+      if (isContinuousHighAlert && empty(item.infusionTime) && empty(item.infusionRate)) {
+        missing.push('tempo ou vazão');
       }
     }
 
