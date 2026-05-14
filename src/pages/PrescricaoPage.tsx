@@ -1972,7 +1972,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </div>
                 {item.diluent && item.diluent !== 'sem_diluente' && (
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Vol dil:</span>
+                  <span className="text-[10px] text-muted-foreground">Vol. diluente:</span>
                   <Input value={item.diluentVolume || ''} onChange={(e) => {
                     onUpdate(item.id, "diluentVolume", e.target.value);
                     const tempItem = { ...item, diluentVolume: e.target.value };
@@ -1985,7 +1985,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </div>
                 )}
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Acesso:</span>
+                  <span className="text-[10px] text-muted-foreground">Acesso venoso:</span>
                   <Select value={item.accessType || ''} onValueChange={(v) => onUpdate(item.id, "accessType", v)}>
                     <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-28"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
