@@ -247,7 +247,7 @@ export function buildDischargeDocHTML(
   return buildNormaZeroDocument({
     title,
     subtitle: p.patient_name,
-    sectorLabel: p.patient_sector || "Assistência hospitalar",
+    sectorLabel: getSectorDisplayLabel(p.patient_sector) || "Assistência hospitalar",
     hospitalName: p.hospital_name,
     docCodePrefix: DISCHARGE_DOC_PREFIX[type],
     bodyHtml: buildBody(type, p),
