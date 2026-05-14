@@ -1906,13 +1906,39 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-[130px]"><SelectValue placeholder="forma/unidade" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-[130px]"><SelectValue placeholder="apresentação" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       {QUANTITY_UNITS.map(u => (
                         <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {item.quantityUnit && (
+                    <>
+                      <span className="text-[10px] text-muted-foreground">Qtd:</span>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="any"
+                        value={item.quantity || ''}
+                        onChange={(e) => {
+                          onUpdate(item.id, "quantity", e.target.value);
+                          const tempItem = { ...item, quantity: e.target.value };
+                          const autoVol = calcVolumeTotal(tempItem);
+                          if (autoVol) {
+                            onUpdate(item.id, "volumeTotal", autoVol);
+                            const autoConc = calcConcentration({ ...tempItem, volumeTotal: autoVol });
+                            if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                          }
+                        }}
+                        className="h-6 text-[11px] bg-muted/10 border-border/30 w-14 text-center"
+                        placeholder="1"
+                        title={`Quantidade em ${item.quantityUnit}`}
+                      />
+                      <span className="text-[10px] text-muted-foreground lowercase">{item.quantityUnit}</span>
+                    </>
+                  )}
                 </div>
                 {renderDiluent && <>
                 <div className="flex items-center gap-1">
