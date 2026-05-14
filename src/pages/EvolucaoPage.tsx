@@ -20,6 +20,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { useEvolutions, EvolutionRecord } from "@/hooks/useEvolutions";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { usePatientLive } from "@/hooks/usePatientLive";
+import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { usePatientDiagnosticContext } from "@/hooks/usePatientDiagnosticContext";
 import { EvolutionForm } from "@/components/evolution/EvolutionForm";
 import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
