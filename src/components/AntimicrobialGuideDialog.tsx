@@ -738,8 +738,22 @@ export function AntimicrobialGuideDialog({
 
           {/* === STICKY FOOTER === */}
           <DialogFooter className="px-6 py-3 border-t bg-background shrink-0 flex-row sm:justify-between gap-2">
-            <div className="text-[11px] text-muted-foreground self-center">
-              {entries.filter(e => e.medication.trim()).length} antimicrobiano(s) preenchido(s)
+            <div className="text-[11px] self-center flex items-center gap-2 flex-wrap">
+              {mode === 'prescribe' ? (
+                allValid ? (
+                  <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {validCount} de {entries.length} pronto(s) para anexar
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    {validCount} de {entries.length} pronto(s) — complete os campos com <Req /> para liberar
+                  </span>
+                )
+              ) : (
+                <span className="text-muted-foreground">{entries.filter(e => e.medication.trim()).length} antimicrobiano(s) preenchido(s)</span>
+              )}
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-end">
               <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
@@ -755,10 +769,22 @@ export function AntimicrobialGuideDialog({
               </Button>
               {mode === 'prescribe' && onConfirm && (
                 <>
-                  <Button variant="outline" size="sm" onClick={handleAttachOnly} className="gap-1.5 border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-400">
+                  <Button
+                    variant="outline" size="sm"
+                    onClick={handleAttachOnly}
+                    disabled={!allValid}
+                    title={allValid ? undefined : "Preencha os campos obrigatórios em todos os antimicrobianos"}
+                    className="gap-1.5 border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <Shield className="h-3.5 w-3.5" /> Anexar antibióticos à prescrição
                   </Button>
-                  <Button size="sm" onClick={handleAttachAndPrint} className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white">
+                  <Button
+                    size="sm"
+                    onClick={handleAttachAndPrint}
+                    disabled={!allValid}
+                    title={allValid ? undefined : "Preencha os campos obrigatórios em todos os antimicrobianos"}
+                    className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <Printer className="h-3.5 w-3.5" /> Anexar + Imprimir Guia
                   </Button>
                 </>
