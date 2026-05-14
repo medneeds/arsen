@@ -91,8 +91,11 @@ export function AtmStatusDialog({
     if (novaModeEffective === 'troca' && suspendIds.length === 0) {
       // sem seleção: ainda assim sinaliza troca para que a guia já abra com aviso
     }
-    onOpenChange(false);
+    // IMPORTANTE: dispara onStartNew ANTES de fechar — assim o pai pode usar
+    // pendingAntimicrobialMed (vindo da busca) para semear a guia antes do
+    // cleanup do onOpenChange limpar esse estado.
     onStartNew(novaModeEffective, suspendIds);
+    onOpenChange(false);
   };
 
   return (
