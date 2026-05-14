@@ -3517,6 +3517,23 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       Movimentações de alta, óbito e transferência são realizadas pelo Painel Clínico (Cockpit).
                     </p>
 
+                    {/* LIBERAR LEITO (PRÉ-ADMISSÃO) — só quando paciente ainda não está admitido */}
+                    {patient.admissionStatus !== 'admitido' && onReleasePreAdmissionBed && role !== 'visitante' && role !== 'porta' && role !== 'farmacia' && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsReleasePreAdmissionOpen(true);
+                        }}
+                        className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-amber-50 to-transparent dark:from-amber-950/30 hover:from-amber-100 dark:hover:from-amber-950/50 transition-colors cursor-pointer"
+                      >
+                        <UserMinus className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        <div className="flex flex-col">
+                          <span className="text-amber-700 dark:text-amber-300">Liberar leito (pré-admissão)</span>
+                          <span className="text-[10px] font-normal text-muted-foreground">Desocupa o leito sem apagar o prontuário</span>
+                        </div>
+                      </DropdownMenuItem>
+                    )}
+
                     {/* VISUALIZAÇÃO RÁPIDA */}
                     {onQuickView && (
                       <DropdownMenuItem
