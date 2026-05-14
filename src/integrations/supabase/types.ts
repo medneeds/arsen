@@ -3701,6 +3701,7 @@ export type Database = {
           box1_score: number | null
           box2_score: number | null
           box3_score: number | null
+          clinical_history: Json
           comorbidities: Json | null
           created_at: string
           created_by: string | null
@@ -3716,6 +3717,7 @@ export type Database = {
           infection_at_admission: string | null
           is_mechanically_ventilated: boolean | null
           leukocytes: number | null
+          lifestyle_habits: Json
           oxygenation_pao2_fio2: number | null
           patient_id: string | null
           patient_name: string
@@ -3732,6 +3734,7 @@ export type Database = {
           temperature_lowest: number | null
           total_score: number | null
           updated_at: string
+          vasoactive_drugs: Json
         }
         Insert: {
           admission_reason?: string | null
@@ -3741,6 +3744,7 @@ export type Database = {
           box1_score?: number | null
           box2_score?: number | null
           box3_score?: number | null
+          clinical_history?: Json
           comorbidities?: Json | null
           created_at?: string
           created_by?: string | null
@@ -3756,6 +3760,7 @@ export type Database = {
           infection_at_admission?: string | null
           is_mechanically_ventilated?: boolean | null
           leukocytes?: number | null
+          lifestyle_habits?: Json
           oxygenation_pao2_fio2?: number | null
           patient_id?: string | null
           patient_name: string
@@ -3772,6 +3777,7 @@ export type Database = {
           temperature_lowest?: number | null
           total_score?: number | null
           updated_at?: string
+          vasoactive_drugs?: Json
         }
         Update: {
           admission_reason?: string | null
@@ -3781,6 +3787,7 @@ export type Database = {
           box1_score?: number | null
           box2_score?: number | null
           box3_score?: number | null
+          clinical_history?: Json
           comorbidities?: Json | null
           created_at?: string
           created_by?: string | null
@@ -3796,6 +3803,7 @@ export type Database = {
           infection_at_admission?: string | null
           is_mechanically_ventilated?: boolean | null
           leukocytes?: number | null
+          lifestyle_habits?: Json
           oxygenation_pao2_fio2?: number | null
           patient_id?: string | null
           patient_name?: string
@@ -3812,6 +3820,7 @@ export type Database = {
           temperature_lowest?: number | null
           total_score?: number | null
           updated_at?: string
+          vasoactive_drugs?: Json
         }
         Relationships: [
           {
