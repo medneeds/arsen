@@ -98,6 +98,7 @@ import { InhalationFields } from "@/components/prescription/InhalationFields";
 import { getInhalationDefaults, type InhalationMode, type InhalationInterface } from "@/data/inhalationCatalog";
 import { assembleInhalationInstruction } from "@/lib/inhalationInstruction";
 import { getReconstitutionDefault } from "@/lib/ivMedicationFlags";
+import { getInfusionProfile, applyInfusionProfileDefaults } from "@/lib/ivInfusionProfiles";
 import { MedicationFlagChips } from "@/components/MedicationFlagChips";
 import { AntimicrobialGuideDialog } from "@/components/AntimicrobialGuideDialog";
 import { AtmStatusDialog } from "@/components/AtmStatusDialog";
@@ -2306,7 +2307,11 @@ function ExtraPrescriptionDialog({
       accessType: '',
       concentration: '',
     };
-    setExtraItems(prev => [...prev, item]);
+    // Sprint B — perfil de infusão (apenas para EV, preenche campos vazios)
+    const finalItem = isIV
+      ? applyInfusionProfileDefaults(item, getInfusionProfile(med.name))
+      : item;
+    setExtraItems(prev => [...prev, finalItem]);
   };
 
   const addFreeItem = () => {
@@ -3874,6 +3879,11 @@ const PrescricaoPage = () => {
       accessType: '',
       concentration: '',
     };
+    // Sprint B — perfil de infusão para EV (preenche apenas campos vazios)
+    if (isIV) {
+      const profile = getInfusionProfile(med.name);
+      if (profile) Object.assign(baseItem, applyInfusionProfileDefaults(baseItem, profile));
+    }
     // Autofill inhalation defaults from catalog
     if (med.category === 'inhalation') {
       const preset = getInhalationDefaults(med.name);
