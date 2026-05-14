@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Bed, ClipboardList, FileText, Info, Stethoscope, UserMinus, UserCheck } from "lucide-react";
 import { MovementConfirmDialog, type MovementBlocker, type MovementWarning } from "./MovementConfirmDialog";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -51,6 +51,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
   const [reason, setReason] = useState<string>(defaultReason);
   const [reasonNote, setReasonNote] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  const stepTransitionRef = useRef(false);
 
   useEffect(() => {
     if (open) {
@@ -99,6 +100,14 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
   const reasonLabel = REASON_OPTIONS.find((r) => r.value === reason)?.label ?? reason;
 
   // Etapa 2 → vai para etapa de SENHA (não confirma direto)
+  const goToFormStep = () => {
+    stepTransitionRef.current = true;
+    setStep("form");
+    requestAnimationFrame(() => {
+      stepTransitionRef.current = false;
+    });
+  };
+
   const goToPasswordStep = () => {
     if (blockers.length > 0) return;
     setStep("password");
@@ -124,7 +133,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       <AlertDialog
         open={open && step === "notice"}
         onOpenChange={(v) => {
-          if (!v) onOpenChange(false);
+          if (!v && !stepTransitionRef.current) onOpenChange(false);
         }}
       >
         <AlertDialogContent className="max-w-md">
@@ -175,9 +184,9 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             {!blockReleaseHard && (
-              <AlertDialogAction onClick={() => setStep("form")}>
+              <Button type="button" onClick={goToFormStep}>
                 Entendi, continuar
-              </AlertDialogAction>
+              </Button>
             )}
           </AlertDialogFooter>
         </AlertDialogContent>

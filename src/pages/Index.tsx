@@ -523,8 +523,10 @@ const Index = () => {
     saveToHistory(patients);
     try {
       await dbReleaseBedPreAdmission(patientId, payload);
+      await refetch();
     } catch (error) {
       console.error("Failed to release pre-admission bed:", error);
+      throw error;
     }
   };
 
