@@ -3131,6 +3131,8 @@ const PrescricaoPage = () => {
   const [freeRecommendation, setFreeRecommendation] = useState("");
   const [appliedCareProfiles, setAppliedCareProfiles] = useState<Set<string>>(new Set());
   const [historyDate, setHistoryDate] = useState<Date | undefined>(undefined);
+  // Conjunto de datas (yyyy-MM-dd) com prescrição salva — alimenta as bolinhas no calendário
+  const [prescriptionDateKeys, setPrescriptionDateKeys] = useState<Set<string>>(new Set());
 
   // Phase 3 state
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
@@ -3257,17 +3259,44 @@ const PrescricaoPage = () => {
     return items.some(i => i.status === 'active' && isItemValidatedToday(i));
   }, [items, isItemValidatedToday]);
 
-  // Categorias que NÃO seguem o esquema dose/via/posologia (têm campos próprios)
-  const NON_STANDARD_CATEGORIES = useMemo(() => new Set(['nutrition', 'care', 'nonstandard', 'hydration']), []);
+  // Categorias com bloqueio próprio (não seguem dose/via/posologia padrão)
+  const NON_STANDARD_CATEGORIES = useMemo(
+    () => new Set(['nutrition', 'care', 'nonstandard', 'hydration', 'inhalation', 'hemotherapy']),
+    []
+  );
 
   // Calcula quais campos obrigatórios estão faltando em um item ativo.
-  // Os obrigatórios são adaptativos por tipo de apresentação (comprimido vs IV BIC, etc.)
+  // Regras adaptativas POR CATEGORIA — só bloqueia o que faz sentido para aquele tipo.
   const getItemMissingFields = useCallback((item: PrescriptionItem): string[] => {
     if (item.status !== 'active') return [];
     const missing: string[] = [];
-    const isStandard = !NON_STANDARD_CATEGORIES.has(item.category);
-    if (isStandard) {
-      const empty = (v?: string) => !v || !v.trim() || v.trim() === '-';
+    const empty = (v?: string) => !v || !v.trim() || v.trim() === '-';
+
+    if (item.category === 'inhalation') {
+      const mode = (item as any).inhalationMode || 'nebulization';
+      if (mode === 'nebulization' || mode === 'nebulization_continuous') {
+        if (empty((item as any).nebDose)) missing.push('dose');
+        if (empty((item as any).inhalationInterface)) missing.push('interface');
+      } else if (mode === 'pmdi' || mode === 'dpi') {
+        if (empty((item as any).puffs)) missing.push(mode === 'pmdi' ? 'puffs' : 'inalações');
+      }
+      if (empty(item.posology)) missing.push('frequência');
+    } else if (item.category === 'hydration') {
+      if (empty(item.volumeTotal)) missing.push('volume / fase');
+      if (empty(item.posology)) missing.push('fases / intervalo');
+      if (empty(item.infusionTime) && empty(item.infusionRate)) missing.push('tempo de infusão');
+    } else if (item.category === 'nutrition') {
+      // Nutrição enteral/parenteral exige no mínimo a frequência/meta
+      if (empty(item.posology) && empty((item as any).nutVolDay) && empty(item.volumeTotal)) {
+        missing.push('volume ou meta');
+      }
+    } else if (item.category === 'care' || item.category === 'nonstandard') {
+      // Cuidados e itens não-padronizados: basta um nome/orientação não vazio (já garantido)
+    } else if (item.category === 'hemotherapy') {
+      if (empty(item.dose)) missing.push('produto/quantidade');
+      if (empty(item.posology)) missing.push('tempo de transfusão');
+    } else {
+      // Padrão (medication / high_alert) — adapta por presentationType
       const ptype = inferPresentationType(item.presentation, item.route, item.name);
       const required = getRequiredFields(ptype);
       if (required.includes('dose') && empty(item.dose)) missing.push('dose');
@@ -3279,7 +3308,8 @@ const PrescricaoPage = () => {
         missing.push('tempo de infusão');
       }
     }
-    // Controlado (Portaria 344) precisa de tipo de notificação resolvido
+
+    // Controlado (Portaria 344) precisa de tipo de notificação resolvido — vale para qualquer categoria
     const cat = findControlledCatalog?.(item.name);
     if (cat?.controlled && !cat.notification_type) missing.push('tipo de notificação');
     return missing;
@@ -4406,6 +4436,37 @@ const PrescricaoPage = () => {
   // Mantém o ref do auto-load apontando para a versão atual de loadPrescription
   useEffect(() => { loadPrescriptionRef.current = loadPrescription; }, [loadPrescription]);
 
+  // Busca as datas (últimos 60 dias) com prescrições do paciente — para marcar bolinhas no calendário
+  useEffect(() => {
+    if (!currentHospital || !currentState || !patient.name.trim()) {
+      setPrescriptionDateKeys(new Set());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const since = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+        const { data, error } = await supabase
+          .from('prescriptions')
+          .select('created_at')
+          .eq('hospital_unit_id', currentHospital.id)
+          .eq('state_id', currentState.id)
+          .eq('patient_name', patient.name.trim())
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(500);
+        if (error) throw error;
+        if (cancelled) return;
+        const keys = new Set<string>();
+        (data || []).forEach(d => keys.add(format(new Date(d.created_at), 'yyyy-MM-dd')));
+        setPrescriptionDateKeys(keys);
+      } catch (err) {
+        console.error('[prescriptionDateKeys] fetch failed', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [currentHospital, currentState, patient.name, currentPrescriptionId]);
+
   // ===== Repeat previous prescription =====
   const openRepeatDialog = useCallback(async () => {
     if (!currentHospital || !currentState || !patient.name.trim()) {
@@ -5065,7 +5126,19 @@ const PrescricaoPage = () => {
                 onSelect={(d) => { setHistoryDate(d); }}
                 locale={ptBR}
                 initialFocus
+                className="pointer-events-auto"
+                modifiers={{
+                  hasPrescription: (date) => prescriptionDateKeys.has(format(date, 'yyyy-MM-dd')),
+                }}
+                modifiersClassNames={{
+                  hasPrescription:
+                    "relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-primary",
+                }}
               />
+              <div className="px-3 pb-2 -mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+                Dias com prescrição salva
+              </div>
               {historyDate && (
                 <div className="p-2 border-t">
                   <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setHistoryDate(undefined)}>
