@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertTriangle, Search, Plus, Syringe, Activity, Zap, Waves } from "lucide-react";
+import { AlertTriangle, Search, Plus, Syringe, Activity, Zap, Waves, Droplet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MedicationEntry } from "@/data/medicationsDatabase";
 import { normalizeSearch } from "@/lib/fuzzySearch";
