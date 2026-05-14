@@ -1043,16 +1043,24 @@ export default function Saps3Page() {
       {isFormMode && (
         <div className="space-y-4">
           {/* Patient info banner */}
-          <Card className="border-primary/30 bg-primary/5">
+          <Card className={completingSapsId ? "border-emerald-300 bg-emerald-50/60 dark:border-emerald-700 dark:bg-emerald-900/15" : "border-primary/30 bg-primary/5"}>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Admitindo paciente</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                    {completingSapsId ? "Validando ficha SAPS — paciente já alocado" : "Admitindo paciente"}
+                  </p>
                   <p className="patient-id text-lg font-bold text-foreground">{patientName}</p>
-                  {selectedRequest?.destination_sector && (
+                  {completingSapsId ? (
                     <p className="text-xs text-muted-foreground">
-                      Pedido: {selectedRequest.destination_sector}
+                      Leito {selectedBed || "—"} · {currentSectorLabel || "Setor —"} · aguardando validação dos exames
                     </p>
+                  ) : (
+                    selectedRequest?.destination_sector && (
+                      <p className="text-xs text-muted-foreground">
+                        Pedido: {selectedRequest.destination_sector}
+                      </p>
+                    )
                   )}
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setSelectedRequest(null)}>
