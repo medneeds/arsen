@@ -24,6 +24,8 @@ export interface SlidingRow {
   max: number | null;
   /** Unidades de insulina rápida SC. -1 = "Chamar médico". */
   units: number;
+  /** Observação livre por faixa (ex.: "repetir HGT 1h após", "chamar plantão"). */
+  note?: string;
 }
 
 /** Tomada fixa programada (NPH ou bolus alimentar). */
@@ -70,6 +72,9 @@ export interface InsulinPlan {
   /** Notas / orientações livres. */
   notes?: string;
 
+  /** Conduta de hipoglicemia (HGT < 70 mg/dL) — totalmente editável pelo prescritor. */
+  hypoglycemiaProtocol?: string;
+
   /** Fonte do protocolo aplicado (transparência clínica). */
   source?: string;
 }
@@ -112,31 +117,34 @@ export function detectInsulinKind(name: string): { isBasal: boolean; isBolus: bo
 
 // ───────────────────────── Sugestões padrão ─────────────────────────
 
-/** Escala de correção padrão (low-dose) — adultos sensíveis, peso < 70 kg. */
+/** Escala de correção padrão (low-dose) — adultos sensíveis, peso < 70 kg. 6 faixas. */
 export const SLIDING_LOW: SlidingRow[] = [
   { min: 150, max: 200, units: 2 },
   { min: 201, max: 250, units: 4 },
   { min: 251, max: 300, units: 6 },
   { min: 301, max: 350, units: 8 },
-  { min: 351, max: null, units: -1 }, // chamar médico
+  { min: 351, max: 400, units: 10 },
+  { min: 401, max: null, units: -1 }, // chamar médico
 ];
 
-/** Escala de correção média — adultos 70-100 kg. */
+/** Escala de correção média — adultos 70-100 kg. 6 faixas. */
 export const SLIDING_MEDIUM: SlidingRow[] = [
   { min: 150, max: 200, units: 4 },
   { min: 201, max: 250, units: 6 },
   { min: 251, max: 300, units: 8 },
   { min: 301, max: 350, units: 10 },
-  { min: 351, max: null, units: -1 },
+  { min: 351, max: 400, units: 12 },
+  { min: 401, max: null, units: -1 },
 ];
 
-/** Escala de correção alta — pacientes resistentes, > 100 kg, corticoterapia. */
+/** Escala de correção alta — pacientes resistentes, > 100 kg, corticoterapia. 6 faixas. */
 export const SLIDING_HIGH: SlidingRow[] = [
   { min: 150, max: 200, units: 6 },
   { min: 201, max: 250, units: 8 },
   { min: 251, max: 300, units: 10 },
   { min: 301, max: 350, units: 12 },
-  { min: 351, max: null, units: -1 },
+  { min: 351, max: 400, units: 14 },
+  { min: 401, max: null, units: -1 },
 ];
 
 export function suggestSlidingByWeight(weightKg?: number): SlidingRow[] {
@@ -262,10 +270,14 @@ const MOMENT_LABEL: Record<NonNullable<InsulinDose['moment']>, string> = {
   noite: 'noite',
 };
 
+export const DEFAULT_HYPO_PROTOCOL =
+  'SG 50% 30 mL EV em bolus + repetir HGT em 15 min; se persistir <70, repetir bolus e chamar plantonista.';
+
 export function formatSlidingRow(r: SlidingRow): string {
   const range = r.max == null ? `> ${r.min - 1}` : `${r.min}–${r.max}`;
   const action = r.units < 0 ? 'CHAMAR MÉDICO' : `${r.units} U SC`;
-  return `HGT ${range} → ${action}`;
+  const note = r.note?.trim() ? ` — ${r.note.trim()}` : '';
+  return `HGT ${range} → ${action}${note}`;
 }
 
 export function formatDose(d: InsulinDose): string {
@@ -287,6 +299,7 @@ export function describeInsulinPlan(plan: InsulinPlan): { headline: string; line
       (plan.fixedDoses ?? []).forEach(d => lines.push(formatDose(d)));
       if (plan.correctionRows?.length) {
         lines.push('Correção pré-refeição:');
+        lines.push(`  • HGT < 70 → ${plan.hypoglycemiaProtocol?.trim() || DEFAULT_HYPO_PROTOCOL}`);
         plan.correctionRows.forEach(r => lines.push(`  • ${formatSlidingRow(r)}`));
       }
       break;
@@ -294,6 +307,7 @@ export function describeInsulinPlan(plan: InsulinPlan): { headline: string; line
     case 'sliding': {
       headline = 'Esquema de Resgate · Insulina Regular SC';
       lines.push(`HGT ${plan.hgtFrequency ?? '6/6h'}`);
+      lines.push(`  • HGT < 70 → ${plan.hypoglycemiaProtocol?.trim() || DEFAULT_HYPO_PROTOCOL}`);
       (plan.slidingRows ?? []).forEach(r => lines.push(`  • ${formatSlidingRow(r)}`));
       break;
     }

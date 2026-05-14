@@ -25,6 +25,7 @@ import {
   type BasalInsulin, type BolusInsulin,
   computeBasalBolus, computeNphFixed, suggestIvProtocol, suggestSlidingByWeight,
   describeInsulinPlan, detectInsulinKind,
+  SLIDING_LOW, SLIDING_MEDIUM, SLIDING_HIGH, DEFAULT_HYPO_PROTOCOL,
 } from "@/lib/insulinTherapy";
 import { cn } from "@/lib/utils";
 
@@ -360,9 +361,10 @@ function BasalBolusEditor({ plan, onChange, onRecalc }: { plan: InsulinPlan; onC
   );
 }
 
-function SlidingEditor({
+export function SlidingEditor({
   plan, onChange, title = "Escala de correção (sliding scale)", rowsKey = 'slidingRows',
-}: { plan: InsulinPlan; onChange: (p: Partial<InsulinPlan>) => void; title?: string; rowsKey?: 'slidingRows' | 'correctionRows' }) {
+  compact = false,
+}: { plan: InsulinPlan; onChange: (p: Partial<InsulinPlan>) => void; title?: string; rowsKey?: 'slidingRows' | 'correctionRows'; compact?: boolean }) {
   const rows = (plan[rowsKey] as SlidingRow[] | undefined) ?? [];
   const setRows = (r: SlidingRow[]) => onChange({ [rowsKey]: r } as Partial<InsulinPlan>);
 
@@ -373,8 +375,8 @@ function SlidingEditor({
   };
 
   return (
-    <div className="space-y-2 rounded-lg border border-border/50 p-3 bg-card/40">
-      <div className="flex items-center justify-between">
+    <div className={cn("space-y-2 rounded-lg border border-border/50 p-3 bg-card/40", compact && "p-2")}>
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <Label className="text-xs font-semibold">{title}</Label>
         {rowsKey === 'slidingRows' && (
           <div className="flex items-center gap-2">
@@ -393,45 +395,63 @@ function SlidingEditor({
         )}
       </div>
 
-      <div className="flex gap-1.5 mb-2">
-        <Button size="sm" variant="outline" onClick={() => setRows([...((plan as any)[rowsKey === 'slidingRows' ? 'slidingRows' : 'correctionRows'] = []), ...[
-          { min: 150, max: 200, units: 2 }, { min: 201, max: 250, units: 4 },
-          { min: 251, max: 300, units: 6 }, { min: 301, max: 350, units: 8 },
-          { min: 351, max: null, units: -1 },
-        ]] as SlidingRow[])} className="text-[10px] h-7">SENSÍVEL</Button>
-        <Button size="sm" variant="outline" onClick={() => setRows([
-          { min: 150, max: 200, units: 4 }, { min: 201, max: 250, units: 6 },
-          { min: 251, max: 300, units: 8 }, { min: 301, max: 350, units: 10 },
-          { min: 351, max: null, units: -1 },
-        ])} className="text-[10px] h-7">MÉDIA</Button>
-        <Button size="sm" variant="outline" onClick={() => setRows([
-          { min: 150, max: 200, units: 6 }, { min: 201, max: 250, units: 8 },
-          { min: 251, max: 300, units: 10 }, { min: 301, max: 350, units: 12 },
-          { min: 351, max: null, units: -1 },
-        ])} className="text-[10px] h-7">RESISTENTE</Button>
+      <div className="flex gap-1.5 mb-2 flex-wrap">
+        <Button size="sm" variant="outline" onClick={() => setRows([...SLIDING_LOW])} className="text-[10px] h-7">SENSÍVEL (6 faixas)</Button>
+        <Button size="sm" variant="outline" onClick={() => setRows([...SLIDING_MEDIUM])} className="text-[10px] h-7">MÉDIA (6 faixas)</Button>
+        <Button size="sm" variant="outline" onClick={() => setRows([...SLIDING_HIGH])} className="text-[10px] h-7">RESISTENTE (6 faixas)</Button>
+      </div>
+
+      {/* Linha fixa de hipoglicemia (HGT < 70) — totalmente editável */}
+      <div className="rounded-md border border-rose-300/70 bg-rose-50/60 dark:bg-rose-950/20 p-2 space-y-1">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-[9px] px-1 bg-rose-100 text-rose-700 border-rose-300">HGT &lt; 70 mg/dL · HIPOGLICEMIA</Badge>
+        </div>
+        <Textarea
+          value={plan.hypoglycemiaProtocol ?? DEFAULT_HYPO_PROTOCOL}
+          onChange={e => onChange({ hypoglycemiaProtocol: e.target.value })}
+          placeholder={DEFAULT_HYPO_PROTOCOL}
+          className="text-[11px] min-h-[44px] bg-white dark:bg-slate-900 border-rose-200 dark:border-rose-900 focus-visible:ring-rose-400/50"
+        />
+      </div>
+
+      {/* Cabeçalho de colunas */}
+      <div className="grid grid-cols-[80px_18px_80px_18px_64px_1fr_28px] items-center gap-1 text-[9px] uppercase tracking-wide text-muted-foreground px-1">
+        <span>HGT mín</span>
+        <span></span>
+        <span>HGT máx</span>
+        <span></span>
+        <span>U SC</span>
+        <span>Observação</span>
+        <span></span>
       </div>
 
       <div className="space-y-1">
         {rows.map((r, i) => (
-          <div key={i} className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto] items-center gap-1 text-xs">
+          <div key={i} className="grid grid-cols-[80px_18px_80px_18px_64px_1fr_28px] items-center gap-1 text-xs">
             <Input
               type="number" value={r.min}
               onChange={e => updateRow(i, { min: Number(e.target.value) })}
               className="h-7 text-xs"
             />
-            <span className="text-muted-foreground">a</span>
+            <span className="text-muted-foreground text-center">a</span>
             <Input
               type="number" value={r.max ?? ''}
               placeholder="∞"
               onChange={e => updateRow(i, { max: e.target.value ? Number(e.target.value) : null })}
               className="h-7 text-xs"
             />
-            <span className="text-muted-foreground">→</span>
+            <span className="text-muted-foreground text-center">→</span>
             <Input
               type="number" value={r.units}
               onChange={e => updateRow(i, { units: Number(e.target.value) })}
               className="h-7 text-xs"
               title="-1 = chamar médico"
+            />
+            <Input
+              value={r.note ?? ''}
+              onChange={e => updateRow(i, { note: e.target.value })}
+              placeholder="ex.: repetir HGT 1h após; chamar plantonista"
+              className="h-7 text-[11px]"
             />
             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setRows(rows.filter((_, j) => j !== i))}>
               <Trash2 className="h-3 w-3" />
@@ -440,14 +460,14 @@ function SlidingEditor({
         ))}
         <Button
           size="sm" variant="ghost"
-          onClick={() => setRows([...rows, { min: 0, max: 0, units: 0 }])}
+          onClick={() => setRows([...rows, { min: 0, max: 0, units: 0, note: '' }])}
           className="text-[10px] h-7"
         >
           <Plus className="h-3 w-3 mr-1" /> ADICIONAR FAIXA
         </Button>
       </div>
       <p className="text-[10px] text-muted-foreground">
-        Use <code>-1</code> em "U" para "CHAMAR MÉDICO". Glicemia &lt; 70 → protocolo de hipoglicemia.
+        Faixas, observação e protocolo de hipoglicemia totalmente editáveis. Use <code>-1</code> em "U" para "CHAMAR MÉDICO".
       </p>
     </div>
   );
