@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Bed, ClipboardList, FileText, Info, Stethoscope, UserMinus, UserCheck } from "lucide-react";
 import { MovementConfirmDialog, type MovementBlocker, type MovementWarning } from "./MovementConfirmDialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,12 +17,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Patient } from "@/types/patient";
 
-const REASON_OPTIONS = [
+const PRE_ADMISSION_REASONS = [
   { value: "paciente_saiu", label: "Paciente saiu antes da admissão (evasão / saída a pedido)" },
   { value: "alocacao_indevida", label: "Alocação indevida no leito (paciente errado)" },
   { value: "redirecionado_outro_setor", label: "Redirecionado para outro setor antes da admissão" },
   { value: "obito_pre_admissao", label: "Óbito antes da admissão hospitalar" },
   { value: "transferido_externo", label: "Transferido para outra unidade antes da admissão" },
+  { value: "outro", label: "Outro motivo" },
+];
+
+const POST_DISCHARGE_REASONS = [
+  { value: "alta_concluida", label: "Alta médica já registrada — liberar leito para limpeza/nova alocação" },
+  { value: "obito_concluido", label: "Óbito já registrado — liberar leito para preparo/remoção" },
+  { value: "transferencia_externa_concluida", label: "Transferência externa já efetivada — leito disponível" },
   { value: "outro", label: "Outro motivo" },
 ];
 
