@@ -109,7 +109,7 @@ export default function HistoricoPacientePage() {
             </h1>
             <p className="text-xs text-muted-foreground">
               {patientBed && <span className="patient-id">Leito {patientBed}</span>}
-              {patientSector && <span className="patient-id"> · {patientSector}</span>}
+              {patientSector && <span className="patient-id"> · {getSectorDisplayLabel(patientSector)}</span>}
               <span className="ml-2">{events.length} eventos registrados</span>
             </p>
           </div>
