@@ -609,7 +609,7 @@ export function AntimicrobialGuideDialog({
                       )}
                     </div>
                     <div>
-                      <Label className="text-[10px]">Dose</Label>
+                      <Label className="text-[10px]">Dose{mode === 'prescribe' && <Req />}</Label>
                       <Input value={entry.dose} onChange={e => updateEntry(entry.id, "dose", e.target.value)} className="h-8 text-xs" />
                     </div>
                     <div>
