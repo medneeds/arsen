@@ -1099,6 +1099,7 @@ function NutritionFields({
       <Textarea
         value={item.instructions}
         onChange={(e) => onUpdate(item.id, 'instructions', e.target.value)}
+        onKeyDown={(e) => e.stopPropagation()}
         className="min-h-[44px] text-[11px] bg-muted/10 border-border/20 italic focus:not-italic"
         placeholder="Observações nutricionais livres (orientações à equipe, restrições, alergias, metas calóricas, conduta em caso de intolerância...)"
       />
