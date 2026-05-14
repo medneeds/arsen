@@ -17,8 +17,9 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
   FileText, History, Loader2, Save, AlertTriangle, IdCard, Upload, FileWarning,
-  ShieldAlert, Trash2,
+  ShieldAlert, Trash2, Pencil, Lock, ClipboardPaste, Sparkles, Check, X, FileUp,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { MovementConfirmDialog } from "./MovementConfirmDialog";
 import { useAuth } from "@/contexts/AuthContext";
 
