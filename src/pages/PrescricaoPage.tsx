@@ -3772,8 +3772,10 @@ const PrescricaoPage = () => {
     // ----- IV intermitente (ampola/frasco) -----
     if (ptype === 'iv_intermittent') {
       if (empty(item.diluent) && !anyInstruction(item)) missing.push('diluente');
-      if (item.diluent && item.diluent !== 'sem_diluente' && empty(item.diluentVolume) && !anyInstruction(item)) {
-        missing.push('volume do diluente');
+      // Aceita volume informado em QUALQUER campo equivalente: diluentVolume OU volumeTotal
+      const hasAnyVolumeIVI = has(item.diluentVolume) || has(item.volumeTotal);
+      if (item.diluent && item.diluent !== 'sem_diluente' && !hasAnyVolumeIVI && !anyInstruction(item)) {
+        missing.push('volume de diluição');
       }
       if (empty(item.infusionTime) && empty(item.infusionRate) && !anyInstruction(item)) {
         missing.push('tempo ou vazão');
@@ -3783,7 +3785,9 @@ const PrescricaoPage = () => {
     // ----- IV contínua (BIC) -----
     if (ptype === 'iv_continuous') {
       if (empty(item.diluent) && !anyInstruction(item)) missing.push('diluente');
-      if (empty(item.volumeTotal) && !anyInstruction(item)) missing.push('volume total');
+      if (empty(item.volumeTotal) && empty(item.diluentVolume) && !anyInstruction(item)) {
+        missing.push('volume total');
+      }
       if (empty(item.infusionTime) && empty(item.infusionRate) && !anyInstruction(item)) {
         missing.push('tempo ou vazão');
       }
@@ -3796,20 +3800,28 @@ const PrescricaoPage = () => {
     const route = (item.route || '').toLowerCase();
     const presentation = (item.presentation || '').toLowerCase();
     const isOralSolid = /(comprimido|capsula|cap\.|drágea|dragea)/.test(presentation);
-    const isEnteralRoute = /(sng|sne|gtt|enteral|gastrostomia|jejunostomia)/.test(route);
+    const isEnteralRoute = /(\bsng\b|\bsne\b|enteral|gastrostomia|jejunostomia)/.test(route);
     if (isOralSolid && isEnteralRoute) {
       const isCrushable = (item as any).crushable !== false; // false explícito = bloqueado por catálogo ISMP
       if (!isCrushable) {
         missing.push('item NÃO triturável — trocar apresentação');
-      } else if (empty((item as any).enteralDilutionVolume) && !anyInstruction(item)) {
-        missing.push('volume de diluição enteral');
+      } else {
+        // Aceita volume de diluição em QUALQUER campo equivalente OU instrução textual
+        const hasDilVol = has((item as any).enteralDilutionVolume)
+          || has(item.diluentVolume)
+          || has(item.volumeTotal);
+        if (!hasDilVol && !anyInstruction(item)) {
+          missing.push('volume de diluição enteral');
+        }
       }
     }
 
-    // ----- Controlado Port. 344 — só bloqueia se realmente regulatório (lista A/B/C) -----
+    // ----- Controlado Port. 344 — só bloqueia para LISTAS DE ALTA RESTRIÇÃO (A1/A2/A3/B1/B2)
+    // Listas C (uso comum, ex.: anticonvulsivantes) não bloqueiam validação para manter fluidez clínica.
     const cat = findControlledCatalog?.(item.name);
     if (cat?.controlled && cat?.lista && !cat.notification_type) {
-      missing.push('tipo de notificação');
+      const highRestriction = /^(A1|A2|A3|B1|B2)$/i.test(String(cat.lista));
+      if (highRestriction) missing.push('tipo de notificação');
     }
 
     return missing;
