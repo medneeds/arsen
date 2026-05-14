@@ -1065,11 +1065,13 @@ const RequisicaoUnificadaPage = () => {
             </Card>
           )}
 
-          {/* Notes */}
-          <div className="space-y-1.5">
-            <Label className="text-xs">Observações</Label>
-            <Textarea placeholder="Informações adicionais..." value={formNotes} onChange={e => setFormNotes(e.target.value)} rows={2} />
-          </div>
+          {/* Notes — oculto para parecer (vai sujar o laudo do especialista) */}
+          {activeCategory !== "parecer" && (
+            <div className="space-y-1.5">
+              <Label className="text-xs">Observações</Label>
+              <Textarea placeholder="Informações adicionais..." value={formNotes} onChange={e => setFormNotes(e.target.value)} rows={2} />
+            </div>
+          )}
 
           {/* Submit */}
           {(() => {
