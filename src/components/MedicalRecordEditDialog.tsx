@@ -355,36 +355,102 @@ export function MedicalRecordEditDialog({
   }
 
   async function saveFicha(source: "manual" | "pis_import" = "manual") {
-    if (!registry) return;
     setSaving(true);
     try {
       const { data: u } = await supabase.auth.getUser();
       const userId = u?.user?.id;
       const userEmail = u?.user?.email;
 
-      const updatePayload: Record<string, any> = {};
-      for (const c of regChanges) updatePayload[c.field] = (c.newVal || null);
+      let registryId = registry?.id || null;
+      let createdNewRegistry = false;
 
-      const { error: upErr } = await supabase
-        .from("patient_registry").update(updatePayload).eq("id", registry.id);
-      if (upErr) throw upErr;
+      // Se o paciente ainda não tem ficha cadastral vinculada, cria uma agora
+      // hidratando com dados básicos do paciente (legacy UTI patients).
+      if (!registryId) {
+        const { data: pat } = await supabase
+          .from("patients")
+          .select("id, name, hospital_unit_id, state_id, patient_registry_id")
+          .eq("id", patientId)
+          .maybeSingle();
 
-      const { error: hErr } = await supabase
-        .from("patient_registry_edit_history" as any)
-        .insert(regChanges.map((c) => ({
-          patient_registry_id: registry.id,
-          patient_id: patientId,
-          field_changed: c.field,
-          old_value: c.oldVal || null,
-          new_value: c.newVal || null,
-          reason: regReason.trim(),
-          source: pisFromFieldsApplied.has(c.field) ? "pis_import" : source,
-          changed_by: userId,
-          changed_by_email: userEmail,
-        })));
-      if (hErr) throw hErr;
+        if ((pat as any)?.patient_registry_id) {
+          registryId = (pat as any).patient_registry_id;
+        } else {
+          const seedName = (reg.full_name || (pat as any)?.name || "PACIENTE SEM IDENTIFICAÇÃO").toString().toUpperCase().trim();
+          const insertPayload: Record<string, any> = {
+            full_name: seedName,
+            hospital_unit_id: (pat as any)?.hospital_unit_id || null,
+            state_id: (pat as any)?.state_id || null,
+            is_unidentified: false,
+            created_by: userId,
+          };
+          // Aplica desde já os campos preenchidos no formulário
+          for (const k of REG_EDITABLE) {
+            const v = (reg as any)[k];
+            if (v != null && String(v).trim() !== "") insertPayload[k as string] = v;
+          }
+          const { data: newReg, error: insErr } = await supabase
+            .from("patient_registry")
+            .insert(insertPayload as any)
+            .select("id")
+            .single();
+          if (insErr) throw insErr;
+          registryId = (newReg as any).id;
+          createdNewRegistry = true;
 
-      toast({ title: "✅ Ficha cadastral atualizada", description: `${regChanges.length} campo(s) alterado(s).` });
+          // Vincula ao paciente
+          await supabase
+            .from("patients")
+            .update({ patient_registry_id: registryId } as any)
+            .eq("id", patientId);
+
+          // Vincula ao prontuário ativo (se existir)
+          if (record?.id) {
+            await supabase
+              .from("medical_records")
+              .update({ patient_registry_id: registryId } as any)
+              .eq("id", record.id);
+          }
+        }
+      }
+
+      // Se houve criação, todos os campos preenchidos já entraram no insert; só precisamos auditar.
+      // Caso contrário (registry pré-existente), aplica o UPDATE com os diffs.
+      if (!createdNewRegistry && regChanges.length > 0) {
+        const updatePayload: Record<string, any> = {};
+        for (const c of regChanges) updatePayload[c.field] = (c.newVal || null);
+
+        const { error: upErr } = await supabase
+          .from("patient_registry").update(updatePayload).eq("id", registryId!);
+        if (upErr) throw upErr;
+      }
+
+      // Histórico — registra todas as alterações (incluindo a criação inicial campo a campo)
+      const historyRows = regChanges.map((c) => ({
+        patient_registry_id: registryId!,
+        patient_id: patientId,
+        field_changed: c.field,
+        old_value: c.oldVal || null,
+        new_value: c.newVal || null,
+        reason: createdNewRegistry
+          ? `[Ficha criada] ${regReason.trim()}`
+          : regReason.trim(),
+        source: pisFromFieldsApplied.has(c.field) ? "pis_import" : source,
+        changed_by: userId,
+        changed_by_email: userEmail,
+      }));
+
+      if (historyRows.length > 0) {
+        const { error: hErr } = await supabase
+          .from("patient_registry_edit_history" as any)
+          .insert(historyRows);
+        if (hErr) throw hErr;
+      }
+
+      toast({
+        title: createdNewRegistry ? "✅ Ficha cadastral criada" : "✅ Ficha cadastral atualizada",
+        description: `${regChanges.length} campo(s) ${createdNewRegistry ? "preenchido(s)" : "alterado(s)"}.`,
+      });
       setConfirmOpen(false);
       await loadData();
       onSaved?.();
