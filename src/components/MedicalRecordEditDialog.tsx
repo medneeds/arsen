@@ -897,20 +897,25 @@ function FieldGrid({ title, children }: { title: string; children: React.ReactNo
 }
 
 function FieldInput({
-  label, value, onChange, placeholder, type = "text", fullWidth,
+  label, value, onChange, placeholder, type = "text", fullWidth, disabled, highlight,
 }: {
   label: string; value: string; onChange: (v: string) => void;
   placeholder?: string; type?: string; fullWidth?: boolean;
+  disabled?: boolean; highlight?: boolean;
 }) {
   return (
     <div className={fullWidth ? "col-span-2" : ""}>
-      <Label className="text-[11px]">{label}</Label>
+      <Label className="text-[11px] flex items-center gap-1">
+        {label}
+        {highlight && <Badge variant="secondary" className="text-[8px] uppercase h-3.5 px-1 bg-blue-500/15 text-blue-700 dark:text-blue-300">PIS</Badge>}
+      </Label>
       <Input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-9 text-xs"
+        disabled={disabled}
+        className={`h-9 text-xs ${highlight ? "border-blue-500/40 bg-blue-500/5" : ""} ${disabled ? "bg-muted/40 cursor-not-allowed" : ""}`}
       />
     </div>
   );
