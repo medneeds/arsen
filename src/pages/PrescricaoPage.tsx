@@ -1988,11 +1988,24 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         placeholder="ex.: pneumonia comunitária"
                       />
                     </div>
-                    {dayLine && (
-                      <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800/50 shrink-0">
-                        {dayLine.split(' — ')[0]} · {dayLine.match(/— (\d{2}\/\d{2})/)?.[1] || ''}
-                      </span>
-                    )}
+                    <div className="ml-auto flex items-center gap-1.5 shrink-0">
+                      {dayLine && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800/50">
+                          {dayLine.split(' — ')[0]} · {dayLine.match(/— (\d{2}\/\d{2})/)?.[1] || ''}
+                        </span>
+                      )}
+                      {onOpenAntimicrobialGuide && (
+                        <button
+                          type="button"
+                          onClick={onOpenAntimicrobialGuide}
+                          className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-semibold bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-700/50 transition-colors"
+                          title="Abrir Guia ATM (CCIH / Norma Zero)"
+                        >
+                          <Shield className="h-3 w-3" />
+                          Abrir Guia ATM
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })()}
