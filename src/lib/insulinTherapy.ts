@@ -270,10 +270,14 @@ const MOMENT_LABEL: Record<NonNullable<InsulinDose['moment']>, string> = {
   noite: 'noite',
 };
 
+export const DEFAULT_HYPO_PROTOCOL =
+  'SG 50% 30 mL EV em bolus + repetir HGT em 15 min; se persistir <70, repetir bolus e chamar plantonista.';
+
 export function formatSlidingRow(r: SlidingRow): string {
   const range = r.max == null ? `> ${r.min - 1}` : `${r.min}–${r.max}`;
   const action = r.units < 0 ? 'CHAMAR MÉDICO' : `${r.units} U SC`;
-  return `HGT ${range} → ${action}`;
+  const note = r.note?.trim() ? ` — ${r.note.trim()}` : '';
+  return `HGT ${range} → ${action}${note}`;
 }
 
 export function formatDose(d: InsulinDose): string {
