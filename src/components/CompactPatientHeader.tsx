@@ -3,6 +3,7 @@ import { BedDouble, AlertTriangle, Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CidSearchInput } from "@/components/CidSearchInput";
+import { CopyNameButton } from "@/components/CopyNameButton";
 import { cn } from "@/lib/utils";
 
 interface CompactPatientHeaderProps {
@@ -67,8 +68,9 @@ export function CompactPatientHeader({
           </span>
         </div>
         <div className="min-w-0 leading-tight">
-          <p className="text-sm font-semibold text-foreground truncate">
-            {name || "Paciente não identificado"}
+          <p className="text-sm font-semibold text-foreground truncate flex items-center gap-1">
+            <span className="truncate">{name || "Paciente não identificado"}</span>
+            <CopyNameButton value={name} />
           </p>
           <p className="text-[10px] text-muted-foreground flex items-center gap-1">
             <BedDouble className="h-3 w-3" />
