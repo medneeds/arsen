@@ -170,6 +170,74 @@ export function MedicalRecordEditDialog({
   const [confirmKind, setConfirmKind] = useState<"prontuario" | "ficha">("prontuario");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Criação de prontuário legado on-demand (paciente sem medical_records — comum em UTI legacy)
+  const [createLegacyNumber, setCreateLegacyNumber] = useState("");
+  const [creatingLegacy, setCreatingLegacy] = useState(false);
+
+  async function createLegacyMedicalRecord() {
+    const value = createLegacyNumber.trim();
+    if (value.length < 1) {
+      toast({ title: "Informe o nº do prontuário (PIN/PIS ou nº legado).", variant: "destructive" });
+      return;
+    }
+    setCreatingLegacy(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      const userId = u?.user?.id;
+      const userEmail = u?.user?.email;
+
+      const { data: pat } = await supabase
+        .from("patients")
+        .select("hospital_unit_id, patient_registry_id")
+        .eq("id", patientId)
+        .maybeSingle();
+
+      const insertPayload: Record<string, any> = {
+        numero_prontuario: value,
+        numero_prontuario_legado: value,
+        generation_mode: "manual_legacy",
+        is_legacy: true,
+        patient_id: patientId,
+        patient_registry_id: (pat as any)?.patient_registry_id || null,
+        hospital_unit_id: (pat as any)?.hospital_unit_id || null,
+        created_by: userId,
+      };
+
+      const { data: created, error: insErr } = await supabase
+        .from("medical_records")
+        .insert(insertPayload as any)
+        .select("id")
+        .single();
+      if (insErr) throw insErr;
+
+      await supabase
+        .from("medical_record_edit_history")
+        .insert({
+          medical_record_id: (created as any).id,
+          patient_id: patientId,
+          field_changed: "numero_prontuario",
+          old_value: null,
+          new_value: value,
+          reason: "[Prontuário legado criado on-demand pelo cockpit de edição]",
+          changed_by: userId,
+          changed_by_email: userEmail,
+        } as any);
+
+      toast({ title: "✅ Prontuário legado criado", description: `Nº ${value} vinculado ao paciente.` });
+      setCreateLegacyNumber("");
+      await loadData();
+      onSaved?.();
+    } catch (e: any) {
+      console.error(e);
+      const msg = (e?.message || "").includes("numero_prontuario_key")
+        ? `Já existe um prontuário com o nº "${value}". Escolha outro identificador.`
+        : (e.message || "Erro inesperado");
+      toast({ title: "Erro ao criar prontuário", description: msg, variant: "destructive" });
+    } finally {
+      setCreatingLegacy(false);
+    }
+  }
+
   useEffect(() => {
     if (!open || !patientId) return;
     void loadData();
