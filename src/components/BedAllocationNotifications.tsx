@@ -172,14 +172,14 @@ export function BedAllocationNotifications() {
   const pendingRequests = requests.filter(r => r.status === "pending");
   const discussingRequests = requests.filter(r => r.status === "discussing");
 
-  // SAPS 3 é exclusivo para UTI e UCI.
+  // SAPS 3 só é exigido em UTI 1, UTI 2 e UCI 2 (setores monitorizados).
   const isUtiSector = (sector: string) => {
-    const criticalSectors = ["UTI 1", "UTI 2", "UCI 1", "UCI 2", "red", "yellow", "blue", "outside"];
-    return criticalSectors.includes(sector) || /^UTI\b/i.test(sector) || /^UCI\b/i.test(sector);
+    const sapsRequiredSectors = ["UTI 1", "UTI 2", "UCI 2", "red", "yellow", "outside"];
+    return sapsRequiredSectors.includes(sector);
   };
 
   const handleApprove = async (request: BedAllocationRequest) => {
-    const isUti = isUtiSector(request.requested_sector) || request.department === "UTI" || request.department === "UCI";
+    const isUti = isUtiSector(request.requested_sector);
 
     if (isUti && request.patient) {
       const params = new URLSearchParams({
