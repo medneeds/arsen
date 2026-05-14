@@ -805,6 +805,10 @@ export function UtiPatientCard({
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
   const [isRoundPrintDialogOpen, setIsRoundPrintDialogOpen] = useState(false);
   const [isReleasePreAdmissionOpen, setIsReleasePreAdmissionOpen] = useState(false);
+  const [isDeleteExtraOpen, setIsDeleteExtraOpen] = useState(false);
+  const { toast } = useToast();
+  const isExtra = isExtraBed(patient.bedNumber);
+  const canDeleteExtra = isExtra && (role === 'admin' || role === 'medico');
 
   // Derive current UTI unit from colorVariant if not provided
   const derivedUtiUnit = currentUtiUnit || (colorVariant === 'blue' ? 'UTI 1' : 'UTI 2');
