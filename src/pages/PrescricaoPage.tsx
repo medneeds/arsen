@@ -2426,6 +2426,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             </>
             );
           })()}
+          {item.status === 'active' && isTabletOrCapsule(item.presentation) && isEnteralRoute(item.route) && (
+            <CompoundedTabletFields item={item} onUpdate={onUpdate} />
+          )}
           {item.flags.length > 0 && (
             <div className="flex gap-1 flex-wrap">
               {item.flags.map(fk => {
