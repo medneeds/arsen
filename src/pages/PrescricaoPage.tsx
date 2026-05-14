@@ -57,6 +57,7 @@ import { NewPrescriptionChoiceDialog } from "@/components/NewPrescriptionChoiceD
 import { ExtraPrescriptionChooserDialog } from "@/components/ExtraPrescriptionChooserDialog";
 import { printExtraPrescription } from "@/lib/printExtraPrescription";
 import { useHospital } from "@/contexts/HospitalContext";
+import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import {
   DndContext,
   closestCenter,
