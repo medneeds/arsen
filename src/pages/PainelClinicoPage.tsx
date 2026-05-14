@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { PatientCockpit } from "@/components/PatientCockpit";
+import { PageLoader } from "@/components/PageLoader";
+import { usePageReady } from "@/hooks/usePageReady";
 
 const parseTextArray = (input: string | string[] | undefined | null): string[] => {
   if (!input) return [];
@@ -221,6 +223,11 @@ export default function PainelClinicoPage() {
     if (patient.age) params.set("patientAge", patient.age.toString());
     navigate(`/paciente?${params.toString()}`);
   };
+
+  const pageReady = usePageReady({ loading: isLoading });
+  if (!pageReady) {
+    return <PageLoader message="Carregando painel clínico" subMessage={currentDepartment || undefined} />;
+  }
 
   return (
     <div className="flex flex-col h-full">

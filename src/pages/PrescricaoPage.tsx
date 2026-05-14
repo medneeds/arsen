@@ -48,6 +48,8 @@ import { toast } from "sonner";
 import { cn, asUuidOrNull } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { PageLoader } from "@/components/PageLoader";
+import { usePageReady } from "@/hooks/usePageReady";
 import { PasswordConfirmDialog } from "@/components/PasswordConfirmDialog";
 import { ShiftRenewalAlert } from "@/components/ShiftRenewalAlert";
 import { PrescriptionDiffDialog } from "@/components/PrescriptionDiffDialog";
@@ -3542,7 +3544,7 @@ function getDemoPrescriptionItems(bedNumber: string): PrescriptionItem[] {
 
 
 const PrescricaoPage = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { currentHospital, currentState } = useHospital();
   const [searchParams] = useSearchParams();
   const { getCount: getFavoriteCount, trackUse: trackMedicationUse } = useMedicationFavorites();
@@ -5803,6 +5805,11 @@ const PrescricaoPage = () => {
       .filter(Boolean),
     clinicalStatus: 'regular',
   }), [patient, searchParams, initialPatientSector]);
+
+  const pageReady = usePageReady({ loading: authLoading });
+  if (!pageReady) {
+    return <PageLoader message="Carregando prescrição" subMessage={patient?.name || undefined} />;
+  }
 
   return (
     <div className="animate-fade-in">
