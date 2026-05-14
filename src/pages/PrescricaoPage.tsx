@@ -1946,7 +1946,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       }
                     }}
                     className="h-6 text-[11px] bg-background border-border/40 w-16 text-center font-medium"
-                    placeholder="mL"
+                    placeholder="opcional"
+                    title="Editável. Auto-calculado quando a forma é em mL. Opcional — não bloqueia validação."
                   />
                   <span className="text-[10px] text-muted-foreground">mL</span>
                 </div>
