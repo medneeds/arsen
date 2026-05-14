@@ -119,6 +119,7 @@ import { getProtocolsFor, type PosologyProtocol } from "@/lib/posologyProtocols"
 import { PosologySuggestionsBar } from "@/components/PosologySuggestionsBar";
 import { useMedicationProtocols } from "@/hooks/useMedicationProtocols";
 import { PatientCockpit } from "@/components/PatientCockpit";
+import { AllergiesChipInput } from "@/components/AllergiesChipInput";
 import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 import { NutritionWizard } from "@/components/NutritionWizard";
 import { HydrationWizard } from "@/components/HydrationWizard";
@@ -4958,16 +4959,10 @@ const PrescricaoPage = () => {
             <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
               <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
             </Label>
-            <Input
+            <AllergiesChipInput
               value={patient.allergies}
-              onChange={(e) => updatePatient("allergies", e.target.value)}
-              placeholder="NDAM ou listar"
-              className={cn(
-                "h-7 w-36 text-xs font-medium",
-                !patient.allergies.trim()
-                  ? "border-amber-400/60 bg-amber-50/30 dark:bg-amber-950/10"
-                  : "border-destructive/20"
-              )}
+              onChange={(next) => updatePatient("allergies", next)}
+              className="max-w-[340px]"
             />
           </div>
           {(!patient.weight.trim() || !patient.allergies.trim()) && (
