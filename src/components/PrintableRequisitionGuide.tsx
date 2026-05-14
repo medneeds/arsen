@@ -10,6 +10,13 @@
  */
 
 import React from "react";
+import DOMPurify from "dompurify";
+
+const PARECER_ALLOWED_TAGS = ["p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "span", "div"];
+function sanitizeRichHtmlPrint(html: string): string {
+  if (!html) return "";
+  return DOMPurify.sanitize(html, { ALLOWED_TAGS: PARECER_ALLOWED_TAGS, ALLOWED_ATTR: [] });
+}
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
