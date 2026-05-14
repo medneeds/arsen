@@ -2,6 +2,7 @@ import React from "react";
 import { BedDouble, AlertTriangle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { CopyNameButton } from "@/components/CopyNameButton";
 import { format } from "date-fns";
 
 interface PatientInfoHeaderProps {
