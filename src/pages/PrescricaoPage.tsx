@@ -1970,7 +1970,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     >
                       <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-36"><SelectValue placeholder="solvente" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="AD" className="text-xs">Água Destilada (AD)</SelectItem>
+                        <SelectItem value="AD" className="text-xs">AD</SelectItem>
                         <SelectItem value="SF 0,9%" className="text-xs">SF 0,9%</SelectItem>
                         <SelectItem value="SG 5%" className="text-xs">SG 5%</SelectItem>
                         <SelectItem value="próprio diluente" className="text-xs">Próprio diluente do fabricante</SelectItem>
@@ -2045,7 +2045,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       <SelectItem value="SG5%" className="text-xs">SG 5%</SelectItem>
                       <SelectItem value="SG10%" className="text-xs">SG 10%</SelectItem>
                       <SelectItem value="RL" className="text-xs">Ringer Lactato</SelectItem>
-                      <SelectItem value="AD" className="text-xs">Água Destilada</SelectItem>
+                      <SelectItem value="AD" className="text-xs">AD</SelectItem>
                       <SelectItem value="SF0,45%" className="text-xs">SF 0,45%</SelectItem>
                       <SelectItem value="outro" className="text-xs">Outro</SelectItem>
                     </SelectContent>
