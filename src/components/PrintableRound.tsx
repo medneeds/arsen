@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import { ROUND_SECTIONS, STATUS_OPTIONS, type RoundStatus } from "@/data/roundChecklistSchema";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { format } from "date-fns";
 
 interface PrintableRoundProps {
