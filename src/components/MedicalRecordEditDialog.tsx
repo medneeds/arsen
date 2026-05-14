@@ -758,8 +758,42 @@ export function MedicalRecordEditDialog({
               <TabsContent value="prontuario" className="flex-1 mt-3 min-h-0">
                 <ScrollArea className="h-[58vh] pr-2">
                   {!record ? (
-                    <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                      Nenhum prontuário vinculado a este paciente ainda.
+                    <div className="rounded-md border border-dashed border-amber-500/40 bg-amber-500/5 p-4 text-sm space-y-3">
+                      <div className="flex items-start gap-2">
+                        <span className="text-amber-700 dark:text-amber-400 font-semibold text-xs uppercase tracking-wide">
+                          Sem prontuário vinculado
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Este paciente ainda não possui registro em <code>medical_records</code> — comum em leitos
+                        legados (UTI/PIS) admitidos antes da migração. Informe o nº de prontuário (PIN/PIS ou
+                        identificador legado) para criar o vínculo agora. O modo <code>manual_legacy</code> será
+                        aplicado automaticamente e a ação fica registrada no histórico.
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+                        <div className="flex-1">
+                          <Label className="text-[11px] font-semibold">Nº do prontuário (PIN/PIS ou legado)</Label>
+                          <Input
+                            value={createLegacyNumber}
+                            onChange={(e) => setCreateLegacyNumber(e.target.value)}
+                            placeholder="Ex.: 123456 ou PIS-7788"
+                            className="h-9 text-xs uppercase mt-1"
+                            disabled={creatingLegacy}
+                          />
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={createLegacyMedicalRecord}
+                          disabled={creatingLegacy || createLegacyNumber.trim().length < 1}
+                          className="gap-1.5"
+                        >
+                          {creatingLegacy ? "Criando..." : "Criar prontuário legado"}
+                        </Button>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Após a criação você poderá editar o nº, alternar para o formato oficial AA-UUU-SSSSSS-DV
+                        e completar a ficha cadastral normalmente.
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
