@@ -1001,7 +1001,19 @@ export function UtiPatientCard({
                 <span className="text-sm font-medium italic">Leito Vago</span>
               </div>
             </div>
-            {/* Leito vago — sem ações. Cadastro/admissão ocorre pelo fluxo da cockpit. */}
+            {/* Botão inline de exclusão de leito extra (apenas leitos extras, fora dos fixos do setor) */}
+            {canDeleteExtra && onDelete && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsDeleteExtraOpen(true)}
+                className="h-7 px-2 gap-1 border-destructive/40 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                title="Excluir este leito extra do setor"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span className="text-[11px] font-semibold">Excluir leito</span>
+              </Button>
+            )}
           </div>
         ) : (
           /* OCCUPIED BED VIEW - Normal card */
