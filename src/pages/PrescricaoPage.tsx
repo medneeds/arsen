@@ -4958,16 +4958,26 @@ const PrescricaoPage = () => {
               )}
             />
           </div>
-          <div className="flex items-center gap-1.5">
-            <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
-              <AlertTriangle className="h-3 w-3 text-destructive" /> Alergias
-            </Label>
-            <AllergiesChipInput
-              value={patient.allergies}
-              onChange={(next) => updatePatient("allergies", next)}
-              className="max-w-[340px]"
-            />
-          </div>
+          {(() => {
+            const isNDAM = patient.allergies.trim().toUpperCase() === "NDAM";
+            return (
+              <div className="flex items-center gap-1.5">
+                <Label className="text-[10px] text-muted-foreground font-medium flex items-center gap-0.5 whitespace-nowrap">
+                  {isNDAM ? (
+                    <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                  ) : (
+                    <AlertTriangle className="h-3 w-3 text-destructive" />
+                  )}{" "}
+                  Alergias
+                </Label>
+                <AllergiesChipInput
+                  value={patient.allergies}
+                  onChange={(next) => updatePatient("allergies", next)}
+                  className="max-w-[340px]"
+                />
+              </div>
+            );
+          })()}
           {(!patient.weight.trim() || !patient.allergies.trim()) && (
             <span className="inline-flex items-center gap-1 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
               <AlertTriangle className="h-3 w-3" />
