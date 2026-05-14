@@ -523,7 +523,18 @@ function buildPrepDescription(item: PrescriptionItem): string {
   }
 
   // 2) Dose
-  if (item.dose && item.dose !== '-') parts.push(`${item.dose}.`);
+  // SEGURANÇA: se a "dose" autopreenchida vier apenas como um volume em mL
+  // (ex.: "10 mL" — volume da ampola) e a Qtd já está em mL, omitimos esse
+  // token. Caso contrário a enfermagem vê dois volumes seguidos
+  // ("50 mL. 10 mL. Diluir em SF0,9% 50 mL.") e pode confundir o que infundir.
+  // Doses terapêuticas reais (mg, g, mcg, UI, mEq, gts, %) continuam impressas.
+  if (item.dose && item.dose !== '-') {
+    const doseTrim = item.dose.trim();
+    const isPureMlVolume = /^\d+(?:[.,]\d+)?\s*ml\.?$/i.test(doseTrim);
+    const qtyInMl = (item.quantityUnit || '').toLowerCase() === 'ml';
+    const isRedundantAmpoulVolume = isPureMlVolume && qtyInMl;
+    if (!isRedundantAmpoulVolume) parts.push(`${doseTrim}.`);
+  }
 
   // 3) Diluição
   if (item.diluent && item.diluent !== 'sem_diluente') {
