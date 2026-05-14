@@ -200,9 +200,10 @@ export async function printDischargeDocument(
   payload: DischargeDocPayload,
 ) {
   const title = DISCHARGE_DOC_LABELS[type];
+  const sectorDisplay = getSectorDisplayLabel(payload.patient_sector);
   const sectorLabel =
-    payload.patient_sector
-      ? `${payload.patient_sector}${payload.patient_bed ? ` • Leito ${payload.patient_bed}` : ""}`
+    sectorDisplay
+      ? `${sectorDisplay}${payload.patient_bed ? ` • Leito ${payload.patient_bed}` : ""}`
       : "Assistência hospitalar";
 
   const signatures: NormaZeroSignature[] = [
