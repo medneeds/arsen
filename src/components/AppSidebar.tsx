@@ -245,11 +245,8 @@ export function AppSidebar({
   // ── MENUS POR PERFIL ──
   // MÉDICO: ultra-enxuto. Mapa/Painel acessados via breadcrumb superior.
   // Round e demais módulos acessados via card do paciente / aba Docs.
-  const medicoMenu = [
-    { title: "Início", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
-    { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: ["medico"] },
-    { title: "Painel Clínico", icon: ClipboardList, link: "/painel-clinico", profiles: ["medico"] },
-    
+  const medicoMenu: any[] = [
+    // Trio "Início / Mapa / Painel" agora é renderizado como bloco "Setor Ativo" no topo da sidebar
   ];
 
   // GESTOR: organizado em blocos lógicos
