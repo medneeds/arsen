@@ -590,7 +590,7 @@ export function getCategoryContainerClass(category?: string): string {
     case 'replacement':
       return `${base} bg-sky-50/50 dark:bg-sky-950/20 border-sky-200/60 dark:border-sky-900/50 border-l-[3px] border-l-sky-500/70 dark:border-l-sky-400/70`;
     case 'antimicrobial':
-      return `${base} bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-200/60 dark:border-indigo-900/50 border-l-[3px] border-l-indigo-500/70 dark:border-l-indigo-400/70`;
+      return `${base} bg-indigo-50/30 dark:bg-indigo-950/10 border-indigo-200/40 dark:border-indigo-900/30 border-l-[3px] border-l-indigo-400/60 dark:border-l-indigo-500/60`;
     case 'high_alert':
       return `${base} bg-red-50/50 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/50 border-l-[3px] border-l-red-500/70 dark:border-l-red-400/70`;
     case 'inhalation':
