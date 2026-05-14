@@ -270,9 +270,8 @@ export function MedicalRecordEditDialog({
 
   const regChanges = useMemo(() => {
     const out: { field: string; oldVal: string; newVal: string }[] = [];
-    if (!registry) return out;
     for (const k of REG_EDITABLE) {
-      const before = (registry[k] ?? "") as string;
+      const before = (registry?.[k] ?? "") as string;
       const after = (reg[k] ?? "") as string;
       const a = (before || "").toString().trim();
       const b = (after || "").toString().trim();
@@ -356,36 +355,102 @@ export function MedicalRecordEditDialog({
   }
 
   async function saveFicha(source: "manual" | "pis_import" = "manual") {
-    if (!registry) return;
     setSaving(true);
     try {
       const { data: u } = await supabase.auth.getUser();
       const userId = u?.user?.id;
       const userEmail = u?.user?.email;
 
-      const updatePayload: Record<string, any> = {};
-      for (const c of regChanges) updatePayload[c.field] = (c.newVal || null);
+      let registryId = registry?.id || null;
+      let createdNewRegistry = false;
 
-      const { error: upErr } = await supabase
-        .from("patient_registry").update(updatePayload).eq("id", registry.id);
-      if (upErr) throw upErr;
+      // Se o paciente ainda não tem ficha cadastral vinculada, cria uma agora
+      // hidratando com dados básicos do paciente (legacy UTI patients).
+      if (!registryId) {
+        const { data: pat } = await supabase
+          .from("patients")
+          .select("id, name, hospital_unit_id, state_id, patient_registry_id")
+          .eq("id", patientId)
+          .maybeSingle();
 
-      const { error: hErr } = await supabase
-        .from("patient_registry_edit_history" as any)
-        .insert(regChanges.map((c) => ({
-          patient_registry_id: registry.id,
-          patient_id: patientId,
-          field_changed: c.field,
-          old_value: c.oldVal || null,
-          new_value: c.newVal || null,
-          reason: regReason.trim(),
-          source: pisFromFieldsApplied.has(c.field) ? "pis_import" : source,
-          changed_by: userId,
-          changed_by_email: userEmail,
-        })));
-      if (hErr) throw hErr;
+        if ((pat as any)?.patient_registry_id) {
+          registryId = (pat as any).patient_registry_id;
+        } else {
+          const seedName = (reg.full_name || (pat as any)?.name || "PACIENTE SEM IDENTIFICAÇÃO").toString().toUpperCase().trim();
+          const insertPayload: Record<string, any> = {
+            full_name: seedName,
+            hospital_unit_id: (pat as any)?.hospital_unit_id || null,
+            state_id: (pat as any)?.state_id || null,
+            is_unidentified: false,
+            created_by: userId,
+          };
+          // Aplica desde já os campos preenchidos no formulário
+          for (const k of REG_EDITABLE) {
+            const v = (reg as any)[k];
+            if (v != null && String(v).trim() !== "") insertPayload[k as string] = v;
+          }
+          const { data: newReg, error: insErr } = await supabase
+            .from("patient_registry")
+            .insert(insertPayload as any)
+            .select("id")
+            .single();
+          if (insErr) throw insErr;
+          registryId = (newReg as any).id;
+          createdNewRegistry = true;
 
-      toast({ title: "✅ Ficha cadastral atualizada", description: `${regChanges.length} campo(s) alterado(s).` });
+          // Vincula ao paciente
+          await supabase
+            .from("patients")
+            .update({ patient_registry_id: registryId } as any)
+            .eq("id", patientId);
+
+          // Vincula ao prontuário ativo (se existir)
+          if (record?.id) {
+            await supabase
+              .from("medical_records")
+              .update({ patient_registry_id: registryId } as any)
+              .eq("id", record.id);
+          }
+        }
+      }
+
+      // Se houve criação, todos os campos preenchidos já entraram no insert; só precisamos auditar.
+      // Caso contrário (registry pré-existente), aplica o UPDATE com os diffs.
+      if (!createdNewRegistry && regChanges.length > 0) {
+        const updatePayload: Record<string, any> = {};
+        for (const c of regChanges) updatePayload[c.field] = (c.newVal || null);
+
+        const { error: upErr } = await supabase
+          .from("patient_registry").update(updatePayload).eq("id", registryId!);
+        if (upErr) throw upErr;
+      }
+
+      // Histórico — registra todas as alterações (incluindo a criação inicial campo a campo)
+      const historyRows = regChanges.map((c) => ({
+        patient_registry_id: registryId!,
+        patient_id: patientId,
+        field_changed: c.field,
+        old_value: c.oldVal || null,
+        new_value: c.newVal || null,
+        reason: createdNewRegistry
+          ? `[Ficha criada] ${regReason.trim()}`
+          : regReason.trim(),
+        source: pisFromFieldsApplied.has(c.field) ? "pis_import" : source,
+        changed_by: userId,
+        changed_by_email: userEmail,
+      }));
+
+      if (historyRows.length > 0) {
+        const { error: hErr } = await supabase
+          .from("patient_registry_edit_history" as any)
+          .insert(historyRows);
+        if (hErr) throw hErr;
+      }
+
+      toast({
+        title: createdNewRegistry ? "✅ Ficha cadastral criada" : "✅ Ficha cadastral atualizada",
+        description: `${regChanges.length} campo(s) ${createdNewRegistry ? "preenchido(s)" : "alterado(s)"}.`,
+      });
       setConfirmOpen(false);
       await loadData();
       onSaved?.();
@@ -641,12 +706,21 @@ export function MedicalRecordEditDialog({
               {/* ============ ABA FICHA CADASTRAL ============ */}
               <TabsContent value="ficha" className="flex-1 mt-3 min-h-0">
                 <ScrollArea className="h-[58vh] pr-2">
-                  {!registry ? (
-                    <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                      Nenhuma ficha cadastral vinculada a este paciente.
-                    </div>
-                  ) : (
+                  {(
                     <div className="space-y-3">
+                      {!registry && (
+                        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px] flex items-start gap-2">
+                          <FileWarning className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <div className="font-semibold text-amber-800 dark:text-amber-300">
+                              Sem ficha cadastral vinculada
+                            </div>
+                            <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
+                              Este paciente foi admitido sem cadastro central (comum em leitos legados da UTI). Ative <strong>"Atualizar cadastro"</strong> para preencher os campos manualmente ou importar do PIS — ao salvar, a ficha será criada e vinculada automaticamente ao prontuário.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       {/* Cabeçalho com botão Atualizar cadastro */}
                       <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${cadastroEditMode ? "border-emerald-500/40 bg-emerald-500/5" : "border-muted bg-muted/30"}`}>
                         <div className="text-[11px] leading-snug flex items-center gap-2">
@@ -734,7 +808,7 @@ export function MedicalRecordEditDialog({
                         </section>
                       )}
 
-                      {registry.is_unidentified && (
+                      {registry?.is_unidentified && (
                         <Badge variant="outline" className="text-[10px] border-amber-500/40">
                           <FileWarning className="h-3 w-3 mr-1" />
                           Paciente Não Identificado — para promover, use a função dedicada (merge).
