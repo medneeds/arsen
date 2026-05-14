@@ -156,7 +156,7 @@ export const EVIDENCE_SUGGESTIONS: Record<string, EvidenceSuggestion> = {
   'metronidazol':           { defaultDose: '500 mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h',   diluent: 'SF0,9%',  volumeTotal: '100', infusionTime: '30', infusionTimeUnit: 'min', source: 'Sanford 2024' },
   'azitromicina':           { defaultDose: '500 mg', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', diluent: 'SF0,9%',  volumeTotal: '250', infusionTime: '60', infusionTimeUnit: 'min', source: 'Bulário · Sanford' },
   'clindamicina':           { defaultDose: '600 mg', defaultRoute: 'Intravenosa', defaultPosology: '8/8h',   diluent: 'SF0,9%',  volumeTotal: '100', infusionTime: '30', infusionTimeUnit: 'min', source: 'Sanford 2024' },
-  'linezolida':             { defaultDose: '600 mg', defaultRoute: 'Intravenosa', defaultPosology: '12/12h', diluent: 'SF0,9%',  volumeTotal: '300', infusionTime: '60', infusionTimeUnit: 'min', source: 'Sanford 2024' },
+  'linezolida':             { defaultDose: '600 mg', defaultRoute: 'Intravenosa', defaultPosology: '12/12h', diluent: 'sem_diluente',  volumeTotal: '300', infusionTime: '60', infusionTimeUnit: 'min', source: 'Sanford 2024', notes: 'Bolsa pronta 600 mg/300 mL — NÃO diluir; infundir direto em 30–120 min' },
 
   // ===== Vasoativos / sedação (BIC) =====
   'noradrenalina':          { defaultDose: '0,05–0,5 mcg/kg/min', defaultRoute: 'Intravenosa', defaultPosology: 'Contínuo', diluent: 'SG5%', volumeTotal: '250', source: 'AMIB 2023 · UpToDate', notes: 'Diluição padrão 16 mg / 250 mL = 64 mcg/mL · acesso central' },

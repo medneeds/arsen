@@ -583,6 +583,12 @@ function buildPrepDescription(item: PrescriptionItem): string {
   // 4) INTERVALO
   if (item.posology && item.posology !== '-') {
     parts.push(`${item.posology}.`);
+  } else {
+    // Sólido oral (comprimido / cápsula / drágea) sem posologia → farmácia dispensa
+    // só 1 unidade. Sinaliza explicitamente p/ a equipe perceber a lacuna.
+    const pres = (item.presentation || '').toLowerCase();
+    const isOralSolid = /(comprimido|c[aá]psula|cap\.?\b|dr[aá]gea|sublingual|orodisper)/.test(pres);
+    if (isOralSolid) parts.push('⚠ POSOLOGIA NÃO INFORMADA.');
   }
 
   return parts.join(' ');
@@ -4474,6 +4480,14 @@ const PrescricaoPage = () => {
     if (isIV) {
       const profile = getInfusionProfile(med.name);
       if (profile) Object.assign(baseItem, applyInfusionProfileDefaults(baseItem, profile));
+    }
+    // Bolsa pronta / pré-misturada (ex.: Linezolida 600mg/300mL Bolsa, Metronidazol bolsa,
+    // Ciprofloxacino bolsa) — NÃO diluir. Sobrescreve qualquer diluente sugerido pelo
+    // perfil ATB genérico, evitando confusão na farmácia/enfermagem.
+    if (isIV && /(\bbolsa\b|\bbag\b|pr[eé].?mistur|solu[çc][aã]o pronta|ready.?to.?use|RTU)/i.test(med.presentation || '')) {
+      baseItem.diluent = 'sem_diluente';
+      baseItem.diluentVolume = '';
+      // volumeTotal continua como o volume da bolsa (já vem preenchido) p/ cálculo de vazão
     }
     // Autofill inhalation defaults from catalog
     if (med.category === 'inhalation') {
