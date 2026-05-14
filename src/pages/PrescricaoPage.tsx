@@ -1950,10 +1950,15 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   />
                   <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0 ml-1">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-[120px] focus:ring-1 focus:ring-primary"><SelectValue placeholder="forma/unidade" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-[78px] font-semibold focus:ring-1 focus:ring-primary" title={item.quantityUnit || 'Forma/unidade'}>
+                      <SelectValue placeholder="—">{quantityUnitShort(item.quantityUnit)}</SelectValue>
+                    </SelectTrigger>
                     <SelectContent className="max-h-72">
                       {QUANTITY_UNITS.map(u => (
-                        <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
+                        <SelectItem key={u} value={u} className="text-xs">
+                          <span className="font-semibold mr-1.5">{quantityUnitShort(u)}</span>
+                          <span className="text-muted-foreground">— {u}</span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
