@@ -743,12 +743,27 @@ export default function Saps3Page() {
         }
 
         const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector || "—";
+
+        if (asPending) {
+          // Manter pendente: NÃO mostra animação de validação. Apenas atualiza e volta para a lista.
+          setSelectedRequest(null);
+          setCompletingSapsId(null);
+          setCompletingPatientId(null);
+          loadRecords();
+          toast.success("Ficha SAPS 3 mantida como pendente. Cronômetro segue ativo até a validação.");
+          // Redireciona de volta para o painel clínico do paciente preservando contexto
+          if (completingPatientId) {
+            navigate(`/paciente?patientId=${completingPatientId}`);
+          }
+          return;
+        }
+
         setConfirmationData({
           patientName,
           bedNumber: selectedBed || "—",
           sectorLabel,
-          totalScore: asPending ? 0 : scores.total,
-          predictedMortality: asPending ? 0 : scores.mortality,
+          totalScore: scores.total,
+          predictedMortality: scores.mortality,
           patientId: completingPatientId,
           sectorCode: selectedSector,
           age: age ? `${age} anos` : null,
@@ -758,7 +773,7 @@ export default function Saps3Page() {
         setCompletingSapsId(null);
         setCompletingPatientId(null);
         loadRecords();
-        toast.success(asPending ? "Ficha SAPS 3 mantida como pendente." : "Ficha SAPS 3 concluída.");
+        toast.success("Ficha SAPS 3 validada com sucesso.");
       } catch (err: any) {
         toast.error("Erro ao salvar: " + err.message);
       } finally {
