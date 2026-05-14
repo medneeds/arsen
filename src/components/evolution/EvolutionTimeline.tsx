@@ -167,16 +167,28 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     setDeleteDialogId(null);
   };
 
-  const isIntercurrence = (evo: EvolutionRecord) =>
-    (evo.soap_data as any)?.type === "intercurrence";
+  type ComplementaryKind = 'intercurrence' | 'vespertina' | 'noturna';
+  const COMPLEMENTARY_BADGE: Record<ComplementaryKind, { label: string; badgeClass: string; borderClass: string; bgClass: string; iconColor: string }> = {
+    intercurrence: { label: 'Intercorrência', badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40', borderClass: 'border-amber-500/30', bgClass: 'bg-amber-500/5', iconColor: 'text-amber-600' },
+    vespertina:    { label: 'Vespertina',     badgeClass: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/40', borderClass: 'border-orange-500/30', bgClass: 'bg-orange-500/5', iconColor: 'text-orange-600' },
+    noturna:       { label: 'Noturna',        badgeClass: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/40', borderClass: 'border-indigo-500/30', bgClass: 'bg-indigo-500/5', iconColor: 'text-indigo-600' },
+  };
+  const getComplementaryKind = (evo: EvolutionRecord): ComplementaryKind | null => {
+    const t = (evo.soap_data as any)?.type;
+    if (t === 'intercurrence' || t === 'vespertina' || t === 'noturna') return t;
+    return null;
+  };
+  const isIntercurrence = (evo: EvolutionRecord) => getComplementaryKind(evo) !== null;
 
   const buildSummary = (evo: EvolutionRecord) => {
     const s = evo.soap_data;
     const subj = richHtmlToPlainText(s.subjective);
     const ass = richHtmlToPlainText(s.assessment);
     const plan = richHtmlToPlainText(s.plan);
-    if (isIntercurrence(evo)) {
-      return subj ? `Intercorrência: ${subj.slice(0, 120)}` : "Intercorrência sem descrição";
+    const kind = getComplementaryKind(evo);
+    if (kind) {
+      const label = COMPLEMENTARY_BADGE[kind].label;
+      return subj ? `${label}: ${subj.slice(0, 120)}` : `${label} sem descrição`;
     }
     const evolucao = [subj, ass].filter(Boolean).join(" — ");
     const parts: string[] = [];
@@ -387,12 +399,17 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         <StatusIcon className="h-2.5 w-2.5 mr-0.5" />
                         {config.label}
                       </Badge>
-                      {isIntercurrence(evo) && (
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40 gap-0.5">
-                          <Zap className="h-2.5 w-2.5" />
-                          Intercorrência
-                        </Badge>
-                      )}
+                      {(() => {
+                        const k = getComplementaryKind(evo);
+                        if (!k) return null;
+                        const m = COMPLEMENTARY_BADGE[k];
+                        return (
+                          <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 gap-0.5", m.badgeClass)}>
+                            <Zap className="h-2.5 w-2.5" />
+                            {m.label}
+                          </Badge>
+                        );
+                      })()}
                       {hasUnsaved && (
                         <Badge variant="outline" className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-600 border-amber-500/30">
                           Não salvo
@@ -461,16 +478,19 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                     </div>
                   )}
                   <div className="mt-2">
-                    {isIntercurrence(evo) ? (
-                      <div className="space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                    {isIntercurrence(evo) ? (() => {
+                      const k = getComplementaryKind(evo)!;
+                      const m = COMPLEMENTARY_BADGE[k];
+                      return (
+                      <div className={cn("space-y-2 rounded-lg border p-3", m.borderClass, m.bgClass)}>
                         <div className="flex items-center gap-2">
-                          <Zap className="h-3.5 w-3.5 text-amber-600" />
-                          <span className="text-xs font-semibold text-foreground">Descritivo da Intercorrência</span>
+                          <Zap className={cn("h-3.5 w-3.5", m.iconColor)} />
+                          <span className="text-xs font-semibold text-foreground">Descritivo — {m.label}</span>
                         </div>
                         <RichTextEditor
                           value={data.soap.subjective || ""}
                           onChange={(html) => updateLocal(evo.id, "soap", "subjective", html)}
-                          placeholder="Descreva a intercorrência..."
+                          placeholder={`Descreva a evolução (${m.label.toLowerCase()})...`}
                           minHeight={120}
                           disabled={!isEditable}
                         />
@@ -500,7 +520,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           </div>
                         )}
                       </div>
-                    ) : (
+                      ); })() : (
                       <EvolutionForm
                         soap={data.soap}
                         vitals={data.vitals}

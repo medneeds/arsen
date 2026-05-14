@@ -9,10 +9,13 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import bighelpLogo from "@/assets/bighelp-map-logo.png";
 import {
-  NotebookPen, Plus, Loader2, AlertTriangle,
+  NotebookPen, Plus, Loader2, AlertTriangle, ChevronDown, Sun, Moon, Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { RichTextEditor, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -76,9 +79,38 @@ const EvolucaoPage = () => {
 
   // New evolution form state
   const [showNewForm, setShowNewForm] = useState(false);
-  const [showIntercurrenceForm, setShowIntercurrenceForm] = useState(false);
+  // Evoluções complementares (campo único): intercorrência | vespertina | noturna
+  type ComplementaryKind = 'intercurrence' | 'vespertina' | 'noturna';
+  const [complementaryKind, setComplementaryKind] = useState<ComplementaryKind | null>(null);
   const [intercurrenceText, setIntercurrenceText] = useState("");
   const [savingIntercurrence, setSavingIntercurrence] = useState(false);
+  const showIntercurrenceForm = complementaryKind !== null;
+  const COMPLEMENTARY_META: Record<ComplementaryKind, {
+    label: string; shortLabel: string; placeholder: string;
+    Icon: React.ComponentType<{ className?: string }>;
+    badgeClass: string; borderClass: string; bgClass: string; iconColor: string;
+  }> = {
+    intercurrence: {
+      label: 'Intercorrência', shortLabel: 'Intercorrência', Icon: AlertTriangle,
+      placeholder: 'Descreva a intercorrência (ex.: queda da própria altura às 14h, sem perda de consciência; novo episódio de hipotensão, PA 80x40 às 03h; dessaturação após mobilização...)',
+      badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40',
+      borderClass: 'border-amber-500/40', bgClass: 'bg-amber-500/5', iconColor: 'text-amber-600',
+    },
+    vespertina: {
+      label: 'Evolução Vespertina', shortLabel: 'Vespertina', Icon: Sun,
+      placeholder: 'Evolução vespertina — registre o que mudou desde a manhã (sinais vitais, condutas, exames recebidos, intercorrências leves, plano para a noite...)',
+      badgeClass: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/40',
+      borderClass: 'border-orange-500/40', bgClass: 'bg-orange-500/5', iconColor: 'text-orange-600',
+    },
+    noturna: {
+      label: 'Evolução Noturna', shortLabel: 'Noturna', Icon: Moon,
+      placeholder: 'Evolução noturna — descreva o estado clínico do plantão noturno (sono, dor, sinais vitais, intercorrências, condutas executadas, transmissão para a manhã...)',
+      badgeClass: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/40',
+      borderClass: 'border-indigo-500/40', bgClass: 'bg-indigo-500/5', iconColor: 'text-indigo-600',
+    },
+  };
+  const currentComplementary = complementaryKind ? COMPLEMENTARY_META[complementaryKind] : null;
+  const CompIcon = currentComplementary?.Icon ?? AlertTriangle;
   const [newSoap, setNewSoap] = useState({ subjective: "", objective: "", assessment: "", plan: "" });
   const [newVitals, setNewVitals] = useState({ pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" });
   const [newExam, setNewExam] = useState({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
@@ -156,18 +188,18 @@ const EvolucaoPage = () => {
 
   const handleCreateIntercurrence = async () => {
     const text = intercurrenceText;
-    if (!richHtmlToPlainText(text)) return;
+    if (!richHtmlToPlainText(text) || !complementaryKind) return;
     setSavingIntercurrence(true);
     const result = await createEvolution(
       patient.name, patient.bed, patient.unit,
-      { subjective: text, objective: "", assessment: "", plan: "", type: "intercurrence" } as any,
+      { subjective: text, objective: "", assessment: "", plan: "", type: complementaryKind } as any,
       undefined,
       undefined
     );
     setSavingIntercurrence(false);
     if (result) {
       setIntercurrenceText("");
-      setShowIntercurrenceForm(false);
+      setComplementaryKind(null);
     }
   };
 
@@ -271,15 +303,39 @@ const EvolucaoPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs border-amber-500/40 text-amber-700 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400 flex-1 sm:flex-none min-h-9"
-              onClick={() => { setShowIntercurrenceForm(true); setIntercurrenceText(""); }}
-              disabled={showIntercurrenceForm || showNewForm}
-            >
-              <AlertTriangle className="h-3.5 w-3.5" /> Intercorrência
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs border-amber-500/40 text-amber-700 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400 flex-1 sm:flex-none min-h-9"
+                  disabled={showIntercurrenceForm || showNewForm}
+                >
+                  <Zap className="h-3.5 w-3.5" /> Evolução complementar
+                  <ChevronDown className="h-3 w-3 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  Registro rápido — campo único
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {(['intercurrence', 'vespertina', 'noturna'] as const).map(kind => {
+                  const meta = COMPLEMENTARY_META[kind];
+                  const Icon = meta.Icon;
+                  return (
+                    <DropdownMenuItem
+                      key={kind}
+                      onClick={() => { setComplementaryKind(kind); setIntercurrenceText(""); }}
+                      className="gap-2 text-xs"
+                    >
+                      <Icon className={cn("h-3.5 w-3.5", meta.iconColor)} />
+                      {meta.label}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               size="sm"
               className="gap-1.5 text-xs flex-1 sm:flex-none min-h-9"
@@ -291,13 +347,13 @@ const EvolucaoPage = () => {
           </div>
         </div>
 
-        {/* Intercurrence Form (compact, single field) */}
-        {showIntercurrenceForm && (
-          <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/5 p-3 sm:p-4 space-y-3">
+        {/* Complementary evolution form (compact, single field) — Intercorrência | Vespertina | Noturna */}
+        {showIntercurrenceForm && currentComplementary && (
+          <div className={cn("rounded-xl border-2 p-3 sm:p-4 space-y-3", currentComplementary.borderClass, currentComplementary.bgClass)}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <span className="text-sm font-semibold text-foreground">Intercorrência</span>
+                <CompIcon className={cn("h-4 w-4", currentComplementary.iconColor)} />
+                <span className="text-sm font-semibold text-foreground">{currentComplementary.label}</span>
                 <span className="text-[10px] text-muted-foreground">
                   {format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                 </span>
@@ -306,7 +362,7 @@ const EvolucaoPage = () => {
                 variant="ghost"
                 size="sm"
                 className="text-xs"
-                onClick={() => { setShowIntercurrenceForm(false); setIntercurrenceText(""); }}
+                onClick={() => { setComplementaryKind(null); setIntercurrenceText(""); }}
               >
                 Cancelar
               </Button>
@@ -314,7 +370,7 @@ const EvolucaoPage = () => {
             <RichTextEditor
               value={intercurrenceText}
               onChange={setIntercurrenceText}
-              placeholder="Descreva a intercorrência (ex.: queda da própria altura às 14h, sem perda de consciência; novo episódio de hipotensão, PA 80x40 às 03h; dessaturação após mobilização...)"
+              placeholder={currentComplementary.placeholder}
               minHeight={140}
               autoFocus
             />
@@ -331,7 +387,7 @@ const EvolucaoPage = () => {
                 {savingIntercurrence ? (
                   <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando...</>
                 ) : (
-                  <><AlertTriangle className="h-3.5 w-3.5" /> Registrar Intercorrência</>
+                  <><CompIcon className="h-3.5 w-3.5" /> Registrar {currentComplementary.shortLabel}</>
                 )}
               </Button>
             </div>
