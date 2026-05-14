@@ -2,7 +2,9 @@ import { Patient } from "@/types/patient";
 import { calcDIH } from "@/lib/dihCalc";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Edit, ChevronDown, ChevronRight, MoreVertical, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, ClipboardCheck, Clock, FileText, FolderOpen, Pill, Activity, Heart, User, Star, Printer, TrendingUp, Skull, ArrowRightLeft, ArrowLeftRight, BedDouble, DoorOpen, UserPlus, Shuffle } from "lucide-react";
+import { Edit, ChevronDown, ChevronRight, MoreVertical, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, ClipboardCheck, Clock, FileText, FolderOpen, Pill, Activity, Heart, User, Star, Printer, TrendingUp, Skull, ArrowRightLeft, ArrowLeftRight, BedDouble, DoorOpen, UserPlus, Shuffle, UserMinus } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { BedReleasePreAdmissionDialog } from "./BedReleasePreAdmissionDialog";
 import {
   Select,
   SelectContent,
