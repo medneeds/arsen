@@ -425,13 +425,11 @@ const Index = () => {
           admissionDate: currentPatient.admissionDate,
         }
       : updatedPatient;
-    const {
-      name: _name,
-      bedNumber: _bedNumber,
-      age: _age,
-      admissionDate: _admissionDate,
-      ...mutableUpdates
-    } = safePatient;
+    const mutableUpdates: Partial<Patient> = { ...safePatient };
+    delete mutableUpdates.name;
+    delete mutableUpdates.bedNumber;
+    delete mutableUpdates.age;
+    delete mutableUpdates.admissionDate;
     
     try {
       // Update in database
