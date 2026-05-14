@@ -2,7 +2,9 @@ import { Patient } from "@/types/patient";
 import { calcDIH } from "@/lib/dihCalc";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Edit, ChevronDown, ChevronRight, MoreVertical, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, ClipboardCheck, Clock, FileText, FolderOpen, Pill, Activity, Heart, User, Star, Printer, TrendingUp, Skull, ArrowRightLeft, ArrowLeftRight, BedDouble, DoorOpen, UserPlus, Shuffle } from "lucide-react";
+import { Edit, ChevronDown, ChevronRight, MoreVertical, Check, X, Plus, GripVertical, Trash2, AlertTriangle, Stethoscope, ClipboardList, ClipboardCheck, Clock, FileText, FolderOpen, Pill, Activity, Heart, User, Star, Printer, TrendingUp, Skull, ArrowRightLeft, ArrowLeftRight, BedDouble, DoorOpen, UserPlus, Shuffle, UserMinus } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { BedReleasePreAdmissionDialog } from "./BedReleasePreAdmissionDialog";
 import {
   Select,
   SelectContent,
@@ -65,6 +67,7 @@ interface UtiPatientCardProps {
   patient: Patient;
   onUpdate: (patient: Patient) => void;
   onDelete?: (patientId: string) => void;
+  onReleasePreAdmissionBed?: (patientId: string, payload: { reason: string; reasonNote: string }) => void | Promise<void>;
   onPrintPatient?: (patientId: string) => void;
   onRefetch?: () => void;
   colorVariant?: ColorVariant;
@@ -769,6 +772,7 @@ export function UtiPatientCard({
   patient, 
   onUpdate, 
   onDelete,
+  onReleasePreAdmissionBed,
   onPrintPatient,
   onRefetch,
   colorVariant = 'blue',
@@ -776,6 +780,7 @@ export function UtiPatientCard({
   allPatients = [],
   currentUtiUnit
 }: UtiPatientCardProps) {
+  const { role } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -786,6 +791,7 @@ export function UtiPatientCard({
   const [isReallocationDialogOpen, setIsReallocationDialogOpen] = useState(false);
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
   const [isRoundPrintDialogOpen, setIsRoundPrintDialogOpen] = useState(false);
+  const [isReleasePreAdmissionOpen, setIsReleasePreAdmissionOpen] = useState(false);
 
   // Derive current UTI unit from colorVariant if not provided
   const derivedUtiUnit = currentUtiUnit || (colorVariant === 'blue' ? 'UTI 1' : 'UTI 2');
@@ -1266,10 +1272,21 @@ export function UtiPatientCard({
                       Impressão fica no botão geral do setor. Movimentações de alta/transferência/óbito
                       ocorrem pelo Painel Clínico (Cockpit). Leitos são fixos — não há exclusão. */}
                   {patient.name ? (
-                    <DropdownMenuItem onClick={() => setIsReallocationDialogOpen(true)}>
-                      <Shuffle className="h-4 w-4 mr-2 text-teal-600" />
-                      Realocar / Permutar leito
-                    </DropdownMenuItem>
+                    <>
+                      <DropdownMenuItem onClick={() => setIsReallocationDialogOpen(true)}>
+                        <Shuffle className="h-4 w-4 mr-2 text-teal-600" />
+                        Realocar / Permutar leito
+                      </DropdownMenuItem>
+                      {patient.admissionStatus !== 'admitido' && onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (
+                        <DropdownMenuItem onClick={() => setIsReleasePreAdmissionOpen(true)}>
+                          <UserMinus className="h-4 w-4 mr-2 text-amber-600" />
+                          <div className="flex flex-col">
+                            <span className="text-amber-700 dark:text-amber-300">Liberar leito (pré-admissão)</span>
+                            <span className="text-[10px] font-normal text-muted-foreground">Desocupa o leito sem apagar o prontuário</span>
+                          </div>
+                        </DropdownMenuItem>
+                      )}
+                    </>
                   ) : (
                     <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
                       Leito vago — sem ações disponíveis.
@@ -1457,6 +1474,17 @@ export function UtiPatientCard({
           patientAge={patient.age}
         />
       )}
+
+      <BedReleasePreAdmissionDialog
+        open={isReleasePreAdmissionOpen}
+        onOpenChange={setIsReleasePreAdmissionOpen}
+        patient={patient}
+        onConfirm={async (payload) => {
+          if (onReleasePreAdmissionBed) {
+            await onReleasePreAdmissionBed(patient.id, payload);
+          }
+        }}
+      />
     </>
   );
 }
