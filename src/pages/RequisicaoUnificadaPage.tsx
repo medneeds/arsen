@@ -385,7 +385,7 @@ const RequisicaoUnificadaPage = () => {
   const handleSubmitRequest = async () => {
     if (!formPatientName.trim()) { toast.error("Informe o nome do paciente"); return; }
     if (formSelectedItems.length === 0) { toast.error("Selecione ao menos um item"); return; }
-    if (!formIndication.trim()) { toast.error("Informe a justificativa clínica"); return; }
+    if (!richHtmlToPlainText(formIndication).trim()) { toast.error("Informe a justificativa clínica"); return; }
     if (requiresExtraJustification && formExtraJustification.trim().length < 10) {
       toast.error("Itens fora dos pacotes de rotina exigem justificativa específica (mín. 10 caracteres) para liberação da guia");
       return;
