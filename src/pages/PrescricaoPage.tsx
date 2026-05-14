@@ -3356,21 +3356,29 @@ const PrescricaoPage = () => {
   //   preserva o snapshot do dia anterior para auditoria/CCIH).
   const persistItems = useCallback(async (
     nextItems: PrescriptionItem[],
-    opts: { mode?: 'update' | 'newVersion'; reason?: string } = {}
+    opts: { mode?: 'update' | 'newVersion'; reason?: string; sigOverride?: DigitalSignature | null } = {}
   ) => {
     if (!currentHospital || !currentState || !patient.name.trim()) {
-      toast.warning("Alteração local — sem paciente/hospital ativo, não foi persistida.");
-      return;
+      toast.error("Não foi possível salvar a prescrição", {
+        description: "Falta paciente/hospital ativo. Recarregue a página com o paciente correto antes de prosseguir.",
+      });
+      throw new Error('persistItems: missing patient/hospital context');
     }
     const mode = opts.mode || 'update';
+    const sig = opts.sigOverride !== undefined ? opts.sigOverride : digitalSignature;
+    // Departamento real do paciente (UCC, UTI, etc.) em vez do hardcoded
+    const resolvedDepartment =
+      (patient.unit && patient.unit.trim()) ||
+      (initialPatientSector && (sectorMapInit[initialPatientSector] || initialPatientSector)) ||
+      'GERAL';
     try {
       const basePayload = {
         patient_name: patient.name.trim(),
         patient_data: patient as any,
         items: nextItems as any,
-        digital_signature: digitalSignature as any,
-        status: digitalSignature ? 'signed' : 'draft',
-        department: 'URGÊNCIA E EMERGÊNCIA ADULTO',
+        digital_signature: sig as any,
+        status: sig ? 'signed' : 'draft',
+        department: resolvedDepartment,
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
         created_by: user?.id || null,
@@ -3423,8 +3431,9 @@ const PrescricaoPage = () => {
       toast.error("Erro ao persistir alteração", {
         description: "A alteração ficou apenas em memória. Salve manualmente para garantir.",
       });
+      throw err;
     }
-  }, [currentHospital, currentState, patient, digitalSignature, currentPrescriptionId, user?.id]);
+  }, [currentHospital, currentState, patient, digitalSignature, currentPrescriptionId, user?.id, initialPatientSector]);
 
   // Aplica a validação a um conjunto (sem pedir senha) — usado tanto pelo caminho rápido
   // quanto pelo executeValidation (após senha).
