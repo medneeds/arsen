@@ -3506,6 +3506,14 @@ const PrescricaoPage = () => {
   const [appliedCareProfiles, setAppliedCareProfiles] = useState<Set<string>>(new Set());
   // Pop-up para sugerir incluir esquema padrão de correção de insulina ao adicionar controle glicêmico
   const [insulinSchemePromptOpen, setInsulinSchemePromptOpen] = useState(false);
+  // Detecta se o item de cuidado é de controle glicêmico (HGT / glicemia capilar)
+  const isGlycemicControlName = useCallback((name: string) => {
+    const n = (name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return n.includes('hgt') || n.includes('glicemia capilar') || n.includes('controle glicemico') || n.includes('dextro');
+  }, []);
+  const hasInsulinSchemeCare = useCallback((list: PrescriptionItem[]) => {
+    return list.some(i => i.category === 'care' && /esquema.*correc.*insulin/i.test(i.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')));
+  }, []);
   const [historyDate, setHistoryDate] = useState<Date | undefined>(undefined);
   // Conjunto de datas (yyyy-MM-dd) com prescrição salva — alimenta as bolinhas no calendário
   const [prescriptionDateKeys, setPrescriptionDateKeys] = useState<Set<string>>(new Set());
