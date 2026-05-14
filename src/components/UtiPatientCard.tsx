@@ -1278,35 +1278,10 @@ export function UtiPatientCard({
                             </span>
                           </div>
                         </DropdownMenuItem>
-                      )}
-                      {canDeleteExtra && onDelete && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setIsDeleteExtraOpen(true)} className="text-destructive focus:text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            <div className="flex flex-col">
-                              <span>Excluir leito extra</span>
-                              <span className="text-[10px] font-normal text-muted-foreground">
-                                Remove permanentemente este leito do setor
-                              </span>
-                            </div>
-                          </DropdownMenuItem>
-                        </>
-                      )}
                     </>
-                  ) : canDeleteExtra && onDelete ? (
-                    <DropdownMenuItem onClick={() => setIsDeleteExtraOpen(true)} className="text-destructive focus:text-destructive">
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      <div className="flex flex-col">
-                        <span>Excluir leito extra</span>
-                        <span className="text-[10px] font-normal text-muted-foreground">
-                          Leito vago — pode ser removido com segurança
-                        </span>
-                      </div>
-                    </DropdownMenuItem>
                   ) : (
                     <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
-                      {isExtra ? 'Leito extra — sem permissão para excluir.' : 'Leito vago — sem ações disponíveis.'}
+                      Leito vago — sem ações disponíveis.
                     </DropdownMenuLabel>
                   )}
                 </DropdownMenuContent>
