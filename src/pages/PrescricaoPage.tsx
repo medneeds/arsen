@@ -470,8 +470,15 @@ function buildPrepDescription(item: PrescriptionItem): string {
   }
   const parts: string[] = [];
 
+  // 0) Reconstituição (pó liofilizado) — vem antes da diluição final
+  if (item.reconstitutionSolvent && item.reconstitutionVolume) {
+    const qtyFA = (item.quantity && item.quantity.trim() && item.quantity.trim() !== '0') ? item.quantity.trim() : '1';
+    parts.push(`Reconstituir ${qtyFA} frasco-ampola com ${item.reconstitutionVolume}mL de ${item.reconstitutionSolvent}.`);
+  }
+
   // 1) Quantidade + forma — quantidade implícita = 1
-  if (item.quantityUnit) {
+  // (omitido quando já houve reconstituição explícita acima, para evitar redundância)
+  if (item.quantityUnit && !(item.reconstitutionSolvent && item.reconstitutionVolume)) {
     const qty = (item.quantity && item.quantity.trim() && item.quantity.trim() !== '0') ? item.quantity.trim() : '1';
     parts.push(`${qty} ${item.quantityUnit}.`);
   }
