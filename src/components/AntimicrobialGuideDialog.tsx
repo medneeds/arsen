@@ -546,12 +546,38 @@ export function AntimicrobialGuideDialog({
                   </div>
                 </div>
               )}
-              {entries.map((entry, idx) => (
-                <div key={entry.id} className="rounded-lg border border-border p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold flex items-center gap-2">
-                      <Badge variant="outline" className="text-violet-600 border-violet-300">ATM {idx + 1}</Badge>
-                      {entry.medication || "Novo antimicrobiano"}
+              {entries.map((entry, idx) => {
+                const missing = missingByEntry[entry.id] || [];
+                const isComplete = missing.length === 0;
+                const showThisError = mode === 'prescribe' && (showErrors || highlightId === entry.id);
+                const cardCls = cn(
+                  "rounded-lg border p-4 space-y-3 transition-all",
+                  highlightId === entry.id ? "border-red-400 ring-2 ring-red-200 dark:ring-red-900/40" :
+                    showThisError && !isComplete ? "border-amber-300 dark:border-amber-700/60" :
+                    isComplete && mode === 'prescribe' ? "border-emerald-200 dark:border-emerald-800/40" :
+                    "border-border"
+                );
+                return (
+                <div
+                  key={entry.id}
+                  ref={(el) => { entryRefs.current[entry.id] = el; }}
+                  className={cardCls}
+                >
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <h3 className="text-sm font-semibold flex items-center gap-2 min-w-0">
+                      <Badge variant="outline" className="text-violet-600 border-violet-300 shrink-0">ATM {idx + 1}</Badge>
+                      <span className="truncate">{entry.medication || "Novo antimicrobiano"}</span>
+                      {mode === 'prescribe' && (
+                        isComplete ? (
+                          <Badge variant="outline" className="text-emerald-700 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 gap-1 text-[10px] font-normal">
+                            <CheckCircle2 className="h-3 w-3" /> Pronto p/ anexar
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50 dark:bg-amber-950/20 gap-1 text-[10px] font-normal">
+                            <AlertCircle className="h-3 w-3" /> Faltam {missing.length} campo(s)
+                          </Badge>
+                        )
+                      )}
                     </h3>
                     {entries.length > 1 && (
                       <Button variant="ghost" size="sm" onClick={() => removeEntry(entry.id)} className="h-7 text-destructive">
@@ -560,6 +586,14 @@ export function AntimicrobialGuideDialog({
                     )}
                   </div>
 
+                  {showThisError && !isComplete && (
+                    <div className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50/70 dark:bg-amber-950/15 border border-amber-200 dark:border-amber-800/40 rounded px-2 py-1.5">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                      <div>
+                        <strong>Para anexar este antimicrobiano, preencha:</strong> {missing.join(', ')}.
+                      </div>
+                    </div>
+                  )}
                   {/* Antimicrobial picker (combobox) */}
                   <div className="grid grid-cols-4 gap-2">
                     <div className="col-span-2">
