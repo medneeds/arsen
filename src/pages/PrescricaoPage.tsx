@@ -1183,9 +1183,9 @@ function NutritionFields({
             <NutSuffixInput value={item.infusionRate || ''} onChange={(v) => onUpdate(item.id, 'infusionRate', v)} suffix="mL/h" placeholder="83" />
             <span className="text-emerald-700/40">·</span>
             <NutFieldLabel>Correr em:</NutFieldLabel>
-            <NutTinyInput value={item.infusionTime || ''} onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)} className="w-14 text-center h-7 text-[12px] font-semibold border-emerald-300 dark:border-emerald-700" placeholder="18" />
+            <NutTinyInput value={item.infusionTime || ''} onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)} className="w-20 text-center h-7 text-[12px] font-semibold border-emerald-300 dark:border-emerald-700" placeholder="18" />
             <Select value={item.infusionTimeUnit || 'h'} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
-              <SelectTrigger className="h-7 text-[11px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-16"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-7 text-[11px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-20"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="h" className="text-xs">horas</SelectItem>
                 <SelectItem value="min" className="text-xs">min</SelectItem>
@@ -1194,7 +1194,7 @@ function NutritionFields({
             <span className="text-emerald-700/40">·</span>
             <NutFieldLabel>Acesso:</NutFieldLabel>
             <Select value={item.nutAccess || ''} onValueChange={(v) => onUpdate(item.id, 'nutAccess', v)}>
-              <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-28"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-36"><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="CVC" className="text-xs">CVC</SelectItem>
                 <SelectItem value="PICC" className="text-xs">PICC</SelectItem>
