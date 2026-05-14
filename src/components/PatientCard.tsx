@@ -3509,8 +3509,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       Movimentações de alta, óbito e transferência são realizadas pelo Painel Clínico (Cockpit).
                     </p>
 
-                    {/* LIBERAR LEITO (PRÉ-ADMISSÃO) — só quando paciente ainda não está admitido */}
-                    {patient.admissionStatus !== 'admitido' && onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (
+                    {/* LIBERAR LEITO — habilitado para pré-admissão E para pós-alta/óbito (com senha) */}
+                    {(patient.admissionStatus !== 'admitido' || patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito') && onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
@@ -3520,8 +3520,16 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       >
                         <UserMinus className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                         <div className="flex flex-col">
-                          <span className="text-amber-700 dark:text-amber-300">Liberar leito (pré-admissão)</span>
-                          <span className="text-[10px] font-normal text-muted-foreground">Desocupa o leito sem apagar o prontuário</span>
+                          <span className="text-amber-700 dark:text-amber-300">
+                            {patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito'
+                              ? 'Liberar leito (pós-alta/óbito)'
+                              : 'Liberar leito (pré-admissão)'}
+                          </span>
+                          <span className="text-[10px] font-normal text-muted-foreground">
+                            {patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito'
+                              ? 'Confirmação por senha — preserva o prontuário'
+                              : 'Desocupa o leito sem apagar o prontuário'}
+                          </span>
                         </div>
                       </DropdownMenuItem>
                     )}
