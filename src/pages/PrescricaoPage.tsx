@@ -1924,7 +1924,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 );
               })()}
 
-              {/* Row 2: Qtd → Forma → Diluente → Vol. dil → Acesso → Via */}
+              {/* Row 2: Qtd → Forma → Diluente → Vol. dil → Via → Int. */}
               <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Qtd:</span>
