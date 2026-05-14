@@ -4436,6 +4436,37 @@ const PrescricaoPage = () => {
   // Mantém o ref do auto-load apontando para a versão atual de loadPrescription
   useEffect(() => { loadPrescriptionRef.current = loadPrescription; }, [loadPrescription]);
 
+  // Busca as datas (últimos 60 dias) com prescrições do paciente — para marcar bolinhas no calendário
+  useEffect(() => {
+    if (!currentHospital || !currentState || !patient.name.trim()) {
+      setPrescriptionDateKeys(new Set());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const since = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+        const { data, error } = await supabase
+          .from('prescriptions')
+          .select('created_at')
+          .eq('hospital_unit_id', currentHospital.id)
+          .eq('state_id', currentState.id)
+          .eq('patient_name', patient.name.trim())
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(500);
+        if (error) throw error;
+        if (cancelled) return;
+        const keys = new Set<string>();
+        (data || []).forEach(d => keys.add(format(new Date(d.created_at), 'yyyy-MM-dd')));
+        setPrescriptionDateKeys(keys);
+      } catch (err) {
+        console.error('[prescriptionDateKeys] fetch failed', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [currentHospital, currentState, patient.name, currentPrescriptionId]);
+
   // ===== Repeat previous prescription =====
   const openRepeatDialog = useCallback(async () => {
     if (!currentHospital || !currentState || !patient.name.trim()) {
