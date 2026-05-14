@@ -167,16 +167,28 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     setDeleteDialogId(null);
   };
 
-  const isIntercurrence = (evo: EvolutionRecord) =>
-    (evo.soap_data as any)?.type === "intercurrence";
+  type ComplementaryKind = 'intercurrence' | 'vespertina' | 'noturna';
+  const COMPLEMENTARY_BADGE: Record<ComplementaryKind, { label: string; badgeClass: string; borderClass: string; bgClass: string; iconColor: string }> = {
+    intercurrence: { label: 'Intercorrência', badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40', borderClass: 'border-amber-500/30', bgClass: 'bg-amber-500/5', iconColor: 'text-amber-600' },
+    vespertina:    { label: 'Vespertina',     badgeClass: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/40', borderClass: 'border-orange-500/30', bgClass: 'bg-orange-500/5', iconColor: 'text-orange-600' },
+    noturna:       { label: 'Noturna',        badgeClass: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/40', borderClass: 'border-indigo-500/30', bgClass: 'bg-indigo-500/5', iconColor: 'text-indigo-600' },
+  };
+  const getComplementaryKind = (evo: EvolutionRecord): ComplementaryKind | null => {
+    const t = (evo.soap_data as any)?.type;
+    if (t === 'intercurrence' || t === 'vespertina' || t === 'noturna') return t;
+    return null;
+  };
+  const isIntercurrence = (evo: EvolutionRecord) => getComplementaryKind(evo) !== null;
 
   const buildSummary = (evo: EvolutionRecord) => {
     const s = evo.soap_data;
     const subj = richHtmlToPlainText(s.subjective);
     const ass = richHtmlToPlainText(s.assessment);
     const plan = richHtmlToPlainText(s.plan);
-    if (isIntercurrence(evo)) {
-      return subj ? `Intercorrência: ${subj.slice(0, 120)}` : "Intercorrência sem descrição";
+    const kind = getComplementaryKind(evo);
+    if (kind) {
+      const label = COMPLEMENTARY_BADGE[kind].label;
+      return subj ? `${label}: ${subj.slice(0, 120)}` : `${label} sem descrição`;
     }
     const evolucao = [subj, ass].filter(Boolean).join(" — ");
     const parts: string[] = [];
