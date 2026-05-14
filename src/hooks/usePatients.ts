@@ -653,7 +653,9 @@ export function usePatients(department?: Department, sector?: string) {
     psmStatus: record.psm_status as Patient['psmStatus'],
     clinicalStatus: record.clinical_status as Patient['clinicalStatus'],
     isVacant: record.is_vacant ?? false,
-    admissionStatus: (record.admission_status as Patient['admissionStatus']) ?? (record.is_vacant ? undefined : 'admitido'),
+    admissionStatus: record.is_vacant
+      ? undefined
+      : ((record.admission_status as Patient['admissionStatus']) ?? 'admitido'),
     admittedAt: record.admitted_at ?? null,
   });
 
