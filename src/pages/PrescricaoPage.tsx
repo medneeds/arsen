@@ -1681,8 +1681,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   }
 
   // === INSULIN PLAN VIEW (always grouped block, even in compact mode) ===
-  if (item.insulinPlan && !individualExpanded) {
+  if (item.insulinPlan) {
     const desc = describeInsulinPlan(item.insulinPlan);
+    const plan = item.insulinPlan;
+    const supportsInline = plan.scheme === 'sliding' || plan.scheme === 'basal_bolus';
+    const canInlineEdit = !isLocked && supportsInline && !!onUpdateInsulinPlan;
+    const showInline = canInlineEdit && individualExpanded;
+    const rowsKey: 'slidingRows' | 'correctionRows' = plan.scheme === 'sliding' ? 'slidingRows' : 'correctionRows';
+    const editorTitle = plan.scheme === 'sliding' ? 'Esquema de correção (sliding)' : 'Escala de correção pré-refeição';
     return (
       <div
         ref={setNodeRef}
@@ -1710,16 +1716,28 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 INSULINOTERAPIA — {desc.headline}
               </span>
               <Badge variant="outline" className="text-[8px] px-1 bg-red-100 text-red-700 border-red-300 dark:bg-red-950 dark:text-red-300">MAV</Badge>
-              {item.insulinPlan.scheme === 'iv_continuous' && (
+              {plan.scheme === 'iv_continuous' && (
                 <Badge variant="outline" className="text-[8px] px-1 bg-amber-100 text-amber-700 border-amber-300">BIC</Badge>
               )}
-              <button
-                type="button"
-                onClick={() => onEditInsulin?.(item.id)}
-                className="ml-auto text-[10px] text-primary hover:underline"
-              >
-                EDITAR ESQUEMA
-              </button>
+              <div className="ml-auto flex items-center gap-2">
+                {canInlineEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setIndividualExpanded(v => !v)}
+                    className="text-[10px] text-primary hover:underline inline-flex items-center gap-1"
+                    title="Ajustar faixas e observações sem reabrir o assistente"
+                  >
+                    {showInline ? 'FECHAR AJUSTE INLINE' : 'AJUSTAR FAIXAS INLINE'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onEditInsulin?.(item.id)}
+                  className="text-[10px] text-primary hover:underline"
+                >
+                  EDITAR ESQUEMA
+                </button>
+              </div>
             </div>
             <ul className="mt-1.5 space-y-0.5">
               {desc.lines.map((l, i) => (
@@ -1729,6 +1747,25 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 )}>{l.replace(/^ {2}• /, '• ')}</li>
               ))}
             </ul>
+            {showInline && (
+              <div className="mt-2 rounded-lg border border-red-200 dark:border-red-900/40 bg-white/70 dark:bg-slate-900/40 p-2">
+                <SlidingEditor
+                  plan={plan}
+                  onChange={(patch) => {
+                    const nextPlan: InsulinPlan = { ...plan, ...patch };
+                    onUpdateInsulinPlan?.(item.id, nextPlan);
+                  }}
+                  title={editorTitle}
+                  rowsKey={rowsKey}
+                  compact
+                />
+              </div>
+            )}
+            {isLocked && supportsInline && (
+              <p className="mt-1 text-[10px] text-emerald-700 dark:text-emerald-400">
+                Item validado — para alterar, suspenda e reescreva ou aguarde a renovação 05h.
+              </p>
+            )}
           </div>
           <ItemActions />
         </div>
