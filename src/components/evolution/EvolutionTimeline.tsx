@@ -520,7 +520,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           </div>
                         )}
                       </div>
-                    ) : (
+                      ); })() : (
                       <EvolutionForm
                         soap={data.soap}
                         vitals={data.vitals}
