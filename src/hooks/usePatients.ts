@@ -123,6 +123,7 @@ export function usePatients(department?: Department, sector?: string) {
     try {
       const dbUpdates: any = {};
       
+      // Leito pode mudar apenas por fluxos próprios de transferência/realocação.
       if (updates.bedNumber !== undefined) dbUpdates.bed_number = updates.bedNumber;
       if (updates.name !== undefined) dbUpdates.name = updates.name;
       if (updates.age !== undefined) dbUpdates.age = typeof updates.age === 'number' ? updates.age.toString() : updates.age;
