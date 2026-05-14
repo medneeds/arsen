@@ -1947,6 +1947,53 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {/* Bulário movido para o header (próximo ao nome da medicação) */}
               {/* ===== Container integrado: 3 linhas de edição com fundo único ===== */}
               <div className={cn(getCategoryContainerClass(item.category), getCategoryFieldAccent(item.category).descendantOverrides, "space-y-2")}>
+              {/* ATB Header — campos regulatórios editáveis inline (início, duração, sítio) */}
+              {item.category === 'antimicrobial' && (() => {
+                const dayLine = buildAtbDayLine(item);
+                return (
+                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-1 border-b border-indigo-200/50 dark:border-indigo-800/40">
+                    <div className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-300 shrink-0">
+                      <Pill className="h-3.5 w-3.5" />
+                      <span className="text-[11px] font-semibold uppercase tracking-wide">Antimicrobiano</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-indigo-700/80 dark:text-indigo-300/80 font-medium">Início:</span>
+                      <Input
+                        type="date"
+                        value={item.atbStartDate || ''}
+                        onChange={(e) => onUpdate(item.id, 'atbStartDate' as any, e.target.value)}
+                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-indigo-200/70 dark:border-indigo-800/60 w-[124px] px-1.5"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-indigo-700/80 dark:text-indigo-300/80 font-medium">Duração:</span>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={item.atbPlannedDays || ''}
+                        onChange={(e) => onUpdate(item.id, 'atbPlannedDays' as any, e.target.value)}
+                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-indigo-200/70 dark:border-indigo-800/60 w-12 text-center px-1"
+                        placeholder="—"
+                      />
+                      <span className="text-[10px] text-indigo-700/70 dark:text-indigo-300/70">dias</span>
+                    </div>
+                    <div className="flex items-center gap-1 flex-1 min-w-[160px]">
+                      <span className="text-[10px] text-indigo-700/80 dark:text-indigo-300/80 font-medium shrink-0">Sítio:</span>
+                      <Input
+                        value={item.atbInfectionSite || ''}
+                        onChange={(e) => onUpdate(item.id, 'atbInfectionSite' as any, e.target.value)}
+                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-indigo-200/70 dark:border-indigo-800/60 flex-1 px-1.5"
+                        placeholder="ex.: pneumonia comunitária"
+                      />
+                    </div>
+                    {dayLine && (
+                      <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800/50 shrink-0">
+                        {dayLine.split(' — ')[0]} · {dayLine.match(/— (\d{2}\/\d{2})/)?.[1] || ''}
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
               {/* Row 1 removida — Int. (intervalo) movido para o final da Row 2 */}
 
               {/* Row 1.5: Reconstituição (pó liofilizado) — só quando catálogo indica */}
