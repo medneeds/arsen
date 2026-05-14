@@ -30,6 +30,7 @@ interface SectorSectionProps {
   patients: Patient[];
   onUpdatePatient: (patient: Patient) => void;
   onDeletePatient?: (patientId: string) => void;
+  onReleasePreAdmissionBed?: (patientId: string, payload: { reason: string; reasonNote: string }) => void | Promise<void>;
   onUndeletePatient?: (patient: Patient) => void;
   onPrintSector?: () => void;
   onAddExtraBed?: () => void;
