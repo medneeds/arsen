@@ -165,7 +165,7 @@ export function UtiReallocationDialog({
       const repoint = await repointPatientHistory(
         patient.id,
         targetBedPatient.id,
-        `Realocação UTI: ${originalBedNumber} → ${targetBedPatient.bed_number}`,
+        `Realocação UTI: ${originalBedNumber} → ${targetBedPatient.bedNumber}`,
       );
       if (!repoint.ok) {
         throw new Error(
