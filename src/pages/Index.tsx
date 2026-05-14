@@ -415,14 +415,23 @@ const Index = () => {
 
   const handleUpdatePatient = async (updatedPatient: Patient) => {
     saveToHistory(patients);
+    const currentPatient = patients.find((p) => p.id === updatedPatient.id);
+    const safePatient = currentPatient
+      ? {
+          ...updatedPatient,
+          bedNumber: currentPatient.bedNumber,
+          age: currentPatient.age,
+          admissionDate: currentPatient.admissionDate,
+        }
+      : updatedPatient;
     
     try {
       // Update in database
-      await dbUpdatePatient(updatedPatient.id, updatedPatient);
+      await dbUpdatePatient(safePatient.id, safePatient);
       
       // Update local state (will be synced by realtime)
       setPatients((prev) =>
-        prev.map((p) => (p.id === updatedPatient.id ? updatedPatient : p))
+        prev.map((p) => (p.id === safePatient.id ? safePatient : p))
       );
     } catch (error) {
       // Error toast already shown in dbUpdatePatient
