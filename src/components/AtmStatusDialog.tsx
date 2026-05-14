@@ -71,14 +71,15 @@ export function AtmStatusDialog({
 
   const hasActive = activeItems.length > 0;
 
-  // Reset ao abrir
+  // Reset ao abrir — se não há ATB ativa, já abre direto na aba "Nova ATB"
+  // (evita o usuário cair numa tela vazia e não saber como prosseguir)
   React.useEffect(() => {
     if (open) {
-      setTab('status');
+      setTab(activeItems.length > 0 ? 'status' : 'nova');
       setNovaMode('acrescimo');
       setTrocaIds(new Set());
     }
-  }, [open]);
+  }, [open, activeItems.length]);
 
   const novaModeEffective: 'acrescimo' | 'troca' | 'inicial' = useMemo(() => {
     if (!hasActive) return 'inicial';

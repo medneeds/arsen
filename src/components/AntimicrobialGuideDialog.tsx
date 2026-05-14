@@ -473,9 +473,16 @@ export function AntimicrobialGuideDialog({
     // Valida primeiro; só imprime se o anexo for válido — evita imprimir Guia
     // com campos vazios que não vão entrar na prescrição.
     setShowErrors(true);
-    const valid = entries.length > 0 && entries.every(e => getMissingFields(e).length === 0);
-    if (!valid) {
-      toast.error("Complete os campos obrigatórios antes de imprimir + anexar.");
+    if (entries.length === 0) {
+      toast.error("Adicione pelo menos um antimicrobiano antes de anexar.");
+      return;
+    }
+    const firstMissing = entries.find(e => getMissingFields(e).length > 0);
+    if (firstMissing) {
+      const fields = getMissingFields(firstMissing).join(', ');
+      toast.error("Complete os campos obrigatórios antes de imprimir + anexar.", {
+        description: `Faltando em "${firstMissing.medication || 'item sem nome'}": ${fields}`,
+      });
       focusFirstInvalid();
       return;
     }
@@ -772,18 +779,16 @@ export function AntimicrobialGuideDialog({
                   <Button
                     variant="outline" size="sm"
                     onClick={handleAttachOnly}
-                    disabled={!allValid}
-                    title={allValid ? undefined : "Preencha os campos obrigatórios em todos os antimicrobianos"}
-                    className="gap-1.5 border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={allValid ? "Anexar à prescrição" : "Clique para ver o que falta preencher"}
+                    className="gap-1.5 border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-400"
                   >
                     <Shield className="h-3.5 w-3.5" /> Anexar antibióticos à prescrição
                   </Button>
                   <Button
                     size="sm"
                     onClick={handleAttachAndPrint}
-                    disabled={!allValid}
-                    title={allValid ? undefined : "Preencha os campos obrigatórios em todos os antimicrobianos"}
-                    className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={allValid ? "Anexar e imprimir Guia ATM" : "Clique para ver o que falta preencher"}
+                    className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white"
                   >
                     <Printer className="h-3.5 w-3.5" /> Anexar + Imprimir Guia
                   </Button>
