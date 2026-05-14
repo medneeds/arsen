@@ -65,14 +65,14 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
 
   const alreadyAdmitted = patient.admissionStatus === "admitido";
 
-  // Bloqueio: já está admitido formalmente
+  // Bloqueio: admitido SEM alta/óbito registrado (fluxo errado)
   const blockers: MovementBlocker[] =
     patient.admissionStatus === "admitido"
       ? [
           {
-            label: "Paciente já admitido oficialmente",
+            label: "Paciente admitido sem alta/óbito registrado",
             reason:
-              "A admissão hospitalar foi concluída. Use o fluxo de Alta Médica → Alta Administrativa para liberar o leito.",
+              "Registre a Alta Médica ou Óbito pelo Painel Clínico → Movimentações antes de liberar o leito.",
           },
         ]
       : [];
