@@ -1890,16 +1890,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {/* Bulário movido para o header (próximo ao nome da medicação) */}
               {/* ===== Container integrado: 3 linhas de edição com fundo único ===== */}
               <div className="relative rounded-md bg-accent/30 dark:bg-accent/20 border border-border/40 border-l-[3px] border-l-primary/50 p-2 space-y-2">
-              {/* Row 1: somente Int. (Intervalo) */}
-              <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium shrink-0">Int.:</span>
-                  <Select value={item.posology} onValueChange={(v) => onUpdate(item.id, "posology", v)}>
-                    <SelectTrigger className="h-7 text-xs bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 font-medium w-28 focus:ring-1 focus:ring-primary"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-72">{POSOLOGIES.map((p) => (<SelectItem key={p} value={p} className="text-xs">{p}</SelectItem>))}</SelectContent>
-                  </Select>
-                </div>
-              </div>
+              {/* Row 1 removida — Int. (intervalo) movido para o final da Row 2 */}
 
               {/* Row 1.5: Reconstituição (pó liofilizado) — só quando catálogo indica */}
               {renderDiluent && (() => {
