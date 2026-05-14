@@ -170,6 +170,74 @@ export function MedicalRecordEditDialog({
   const [confirmKind, setConfirmKind] = useState<"prontuario" | "ficha">("prontuario");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Criação de prontuário legado on-demand (paciente sem medical_records — comum em UTI legacy)
+  const [createLegacyNumber, setCreateLegacyNumber] = useState("");
+  const [creatingLegacy, setCreatingLegacy] = useState(false);
+
+  async function createLegacyMedicalRecord() {
+    const value = createLegacyNumber.trim();
+    if (value.length < 1) {
+      toast({ title: "Informe o nº do prontuário (PIN/PIS ou nº legado).", variant: "destructive" });
+      return;
+    }
+    setCreatingLegacy(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      const userId = u?.user?.id;
+      const userEmail = u?.user?.email;
+
+      const { data: pat } = await supabase
+        .from("patients")
+        .select("hospital_unit_id, patient_registry_id")
+        .eq("id", patientId)
+        .maybeSingle();
+
+      const insertPayload: Record<string, any> = {
+        numero_prontuario: value,
+        numero_prontuario_legado: value,
+        generation_mode: "manual_legacy",
+        is_legacy: true,
+        patient_id: patientId,
+        patient_registry_id: (pat as any)?.patient_registry_id || null,
+        hospital_unit_id: (pat as any)?.hospital_unit_id || null,
+        created_by: userId,
+      };
+
+      const { data: created, error: insErr } = await supabase
+        .from("medical_records")
+        .insert(insertPayload as any)
+        .select("id")
+        .single();
+      if (insErr) throw insErr;
+
+      await supabase
+        .from("medical_record_edit_history")
+        .insert({
+          medical_record_id: (created as any).id,
+          patient_id: patientId,
+          field_changed: "numero_prontuario",
+          old_value: null,
+          new_value: value,
+          reason: "[Prontuário legado criado on-demand pelo cockpit de edição]",
+          changed_by: userId,
+          changed_by_email: userEmail,
+        } as any);
+
+      toast({ title: "✅ Prontuário legado criado", description: `Nº ${value} vinculado ao paciente.` });
+      setCreateLegacyNumber("");
+      await loadData();
+      onSaved?.();
+    } catch (e: any) {
+      console.error(e);
+      const msg = (e?.message || "").includes("numero_prontuario_key")
+        ? `Já existe um prontuário com o nº "${value}". Escolha outro identificador.`
+        : (e.message || "Erro inesperado");
+      toast({ title: "Erro ao criar prontuário", description: msg, variant: "destructive" });
+    } finally {
+      setCreatingLegacy(false);
+    }
+  }
+
   useEffect(() => {
     if (!open || !patientId) return;
     void loadData();
@@ -690,8 +758,42 @@ export function MedicalRecordEditDialog({
               <TabsContent value="prontuario" className="flex-1 mt-3 min-h-0">
                 <ScrollArea className="h-[58vh] pr-2">
                   {!record ? (
-                    <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                      Nenhum prontuário vinculado a este paciente ainda.
+                    <div className="rounded-md border border-dashed border-amber-500/40 bg-amber-500/5 p-4 text-sm space-y-3">
+                      <div className="flex items-start gap-2">
+                        <span className="text-amber-700 dark:text-amber-400 font-semibold text-xs uppercase tracking-wide">
+                          Sem prontuário vinculado
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Este paciente ainda não possui registro em <code>medical_records</code> — comum em leitos
+                        legados (UTI/PIS) admitidos antes da migração. Informe o nº de prontuário (PIN/PIS ou
+                        identificador legado) para criar o vínculo agora. O modo <code>manual_legacy</code> será
+                        aplicado automaticamente e a ação fica registrada no histórico.
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+                        <div className="flex-1">
+                          <Label className="text-[11px] font-semibold">Nº do prontuário (PIN/PIS ou legado)</Label>
+                          <Input
+                            value={createLegacyNumber}
+                            onChange={(e) => setCreateLegacyNumber(e.target.value)}
+                            placeholder="Ex.: 123456 ou PIS-7788"
+                            className="h-9 text-xs uppercase mt-1"
+                            disabled={creatingLegacy}
+                          />
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={createLegacyMedicalRecord}
+                          disabled={creatingLegacy || createLegacyNumber.trim().length < 1}
+                          className="gap-1.5"
+                        >
+                          {creatingLegacy ? "Criando..." : "Criar prontuário legado"}
+                        </Button>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Após a criação você poderá editar o nº, alternar para o formato oficial AA-UUU-SSSSSS-DV
+                        e completar a ficha cadastral normalmente.
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
