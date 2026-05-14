@@ -303,6 +303,7 @@ export function UtiSectorSection({
                 patient={patient}
                 onUpdate={onUpdatePatient}
                 onDelete={onDeletePatient}
+                onReleasePreAdmissionBed={onReleasePreAdmissionBed}
                 onPrintPatient={onPrintPatient}
                 onRefetch={onRefetch}
                 selectionMode={selectionMode}
