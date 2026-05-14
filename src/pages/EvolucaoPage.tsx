@@ -29,6 +29,7 @@ import { EvolutionForm } from "@/components/evolution/EvolutionForm";
 import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
 import type { Patient } from "@/types/patient";
+import { getEffectiveAdmissionDate } from "@/lib/dihCalc";
 
 interface PatientHeader {
   name: string;
