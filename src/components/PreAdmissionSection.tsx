@@ -20,6 +20,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { PatientSearchActionsDialog, type RegistryPatientLite } from "./PatientSearchActionsDialog";
 
 interface PreAdmission {
   id: string;
@@ -28,6 +29,7 @@ interface PreAdmission {
   sex: string | null;
   medical_record: string | null;
   cpf: string | null;
+  patient_registry_id: string | null;
   destination_sector: string | null;
   status: string;
   risk_classification: string | null;
@@ -78,6 +80,9 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
   const [deleteTarget, setDeleteTarget] = useState<PreAdmission | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [registryResults, setRegistryResults] = useState<RegistryPatientLite[]>([]);
+  const [isSearchingRegistry, setIsSearchingRegistry] = useState(false);
+  const [actionPatient, setActionPatient] = useState<RegistryPatientLite | null>(null);
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
 
@@ -129,6 +134,45 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [currentHospital?.id, currentState?.id, sectorFilterLabel]);
+
+  // Busca no patient_registry com debounce — alimenta a seção "Pacientes do hospital"
+  useEffect(() => {
+    const q = searchTerm.trim();
+    if (q.length < 2 || !currentHospital?.id) {
+      setRegistryResults([]);
+      setIsSearchingRegistry(false);
+      return;
+    }
+    setIsSearchingRegistry(true);
+    const handle = setTimeout(async () => {
+      try {
+        const qDigits = q.replace(/\D/g, "");
+        const qNorm = q.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const ors: string[] = [`full_name_normalized.ilike.%${qNorm}%`];
+        if (qDigits) {
+          ors.push(`cpf.ilike.%${qDigits}%`);
+          ors.push(`medical_record.ilike.%${qDigits}%`);
+          ors.push(`cns.ilike.%${qDigits}%`);
+        }
+        const { data, error } = await supabase
+          .from("patient_registry")
+          .select("id, full_name, social_name, mother_name, birth_date, sex, cpf, cns, medical_record, phone")
+          .eq("hospital_unit_id", currentHospital.id)
+          .is("merged_into_registry_id", null)
+          .or(ors.join(","))
+          .order("full_name", { ascending: true })
+          .limit(10);
+        if (error) throw error;
+        setRegistryResults((data as RegistryPatientLite[]) || []);
+      } catch (err) {
+        console.error("Registry search error:", err);
+        setRegistryResults([]);
+      } finally {
+        setIsSearchingRegistry(false);
+      }
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [searchTerm, currentHospital?.id]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -223,11 +267,13 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
         </div>
 
         <CollapsibleContent>
-          {filteredPreAdmissions.length === 0 ? (
+          {filteredPreAdmissions.length === 0 && (!searchTerm || registryResults.length === 0) ? (
             <Card className="border-dashed">
               <CardContent className="p-4 text-center text-sm text-muted-foreground">
                 {searchTerm
-                  ? `Nenhum paciente encontrado para "${searchTerm}".`
+                  ? (isSearchingRegistry
+                      ? `Buscando "${searchTerm}"...`
+                      : `Nenhum paciente encontrado para "${searchTerm}".`)
                   : "Nenhum paciente aguardando pré-admissão."}
               </CardContent>
             </Card>
@@ -306,8 +352,85 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
               })}
             </div>
           )}
+
+          {/* Resultados do registro de prontuários — só aparece quando há busca ativa */}
+          {searchTerm.trim().length >= 2 && (() => {
+            const fila = new Set(filteredPreAdmissions.map(p => p.patient_registry_id).filter(Boolean) as string[]);
+            const extras = registryResults.filter(r => !fila.has(r.id));
+            return (
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  <User className="h-3 w-3" />
+                  Pacientes do hospital
+                  <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                    {isSearchingRegistry ? "..." : extras.length}
+                  </Badge>
+                </div>
+                {extras.length === 0 ? (
+                  <Card className="border-dashed">
+                    <CardContent className="p-3 text-center text-xs text-muted-foreground">
+                      {isSearchingRegistry
+                        ? "Buscando no cadastro de pacientes..."
+                        : "Nenhum prontuário adicional encontrado."}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                    {extras.map(r => {
+                      const age = calcAge(r.birth_date ?? null);
+                      return (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => setActionPatient(r)}
+                          className="text-left"
+                        >
+                          <Card className="transition-all hover:shadow-md hover:border-primary/50 border-l-4 border-l-primary/30">
+                            <CardContent className="p-3 space-y-1.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-bold text-xs truncate">{r.full_name}</p>
+                                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5 flex-wrap">
+                                    {age !== null && <span>{age}a</span>}
+                                    {r.sex && <span>• {r.sex}</span>}
+                                    {r.medical_record && <span>• Pront: {r.medical_record}</span>}
+                                  </div>
+                                  {r.cpf && (
+                                    <p className="text-[10px] text-muted-foreground mt-0.5">CPF: {r.cpf}</p>
+                                  )}
+                                </div>
+                                <Badge variant="secondary" className="text-[9px] shrink-0 px-1.5 py-0.5">
+                                  Prontuário
+                                </Badge>
+                              </div>
+                              <p className="text-[10px] text-primary font-medium pt-1 border-t">
+                                Clique para abrir ações →
+                              </p>
+                            </CardContent>
+                          </Card>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </CollapsibleContent>
       </Collapsible>
+
+      {currentHospital?.id && currentState?.id && (
+        <PatientSearchActionsDialog
+          open={!!actionPatient}
+          onOpenChange={(o) => !o && setActionPatient(null)}
+          patient={actionPatient}
+          defaultSectorMapTitle={sectorFilterLabel}
+          hospitalUnitId={currentHospital.id}
+          stateId={currentState.id}
+          department={currentDepartment ?? "geral"}
+          onSuccess={fetchPreAdmissions}
+        />
+      )}
 
       <PatientRegistrationDialog
         open={showRegistration}
