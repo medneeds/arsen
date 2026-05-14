@@ -272,7 +272,7 @@ export function AtmStatusDialog({
                   <RadioGroup value={novaMode} onValueChange={(v) => setNovaMode(v as any)} className="space-y-2">
                     <label className={cn(
                       "flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer hover:bg-muted/30",
-                      novaMode === 'acrescimo' && "border-orange-400 bg-orange-50/50 dark:bg-orange-950/20"
+                      novaMode === 'acrescimo' && "border-violet-400 bg-violet-50/50 dark:bg-violet-950/20"
                     )}>
                       <RadioGroupItem value="acrescimo" className="mt-0.5" />
                       <div className="text-xs">
