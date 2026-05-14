@@ -379,7 +379,7 @@ export function MedicalRecordEditDialog({
           old_value: c.oldVal || null,
           new_value: c.newVal || null,
           reason: regReason.trim(),
-          source,
+          source: pisFromFieldsApplied.has(c.field) ? "pis_import" : source,
           changed_by: userId,
           changed_by_email: userEmail,
         })));
