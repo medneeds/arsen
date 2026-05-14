@@ -3657,92 +3657,164 @@ const PrescricaoPage = () => {
   );
 
   // Calcula quais campos obrigatórios estão faltando em um item ativo.
-  // FILOSOFIA (revisada após bug em produção): bloqueia APENAS o essencial clínico
-  // mínimo (nome + alguma instrução de uso). Demais campos são recomendações e
-  // viram alertas no momento da impressão/validação, nunca bloqueio silencioso.
-  // Isso evita o cenário "preenchi tudo no expandido e ainda bloqueia" — quase
-  // sempre causado por uma checagem secundária invisível (notification_type ausente
-  // no catálogo, diluentVolume não auto-calculado, interface de inalação não
-  // marcada etc.). Esses pontos passam a ser warnings clínicos no console e na
-  // impressão, e não impedem mais a validação.
+  // FILOSOFIA: regras adaptativas POR CENÁRIO REAL — cada categoria + tipo de
+  // apresentação tem seu próprio conjunto mínimo. Sem incongruências:
+  // ex.: comprimido VO não exige diluente; nebulização não exige posologia se
+  // tem freeText; IV intermitente exige diluente + volume + tempo OU vazão.
   const getItemMissingFields = useCallback((item: PrescriptionItem): string[] => {
     if (item.status !== 'active') return [];
     const missing: string[] = [];
     const empty = (v?: string) => !v || !v.trim() || v.trim() === '-';
+    const has = (v?: string) => !empty(v);
+    const anyInstruction = (it: PrescriptionItem) =>
+      has((it as any).instructions) || has((it as any).freeText);
 
-    // Nome é o único campo verdadeiramente obrigatório em todas as categorias
+    // Nome é obrigatório em qualquer cenário.
     if (empty(item.name)) {
       missing.push('nome');
       return missing;
     }
 
-    // "Tem alguma instrução de uso" — qualquer um destes satisfaz a categoria padrão.
-    const hasAnyInstruction =
-      !empty(item.dose) ||
-      !empty(item.posology) ||
-      !empty((item as any).instructions) ||
-      !empty((item as any).freeText) ||
-      !empty(item.route) ||
-      !empty(item.volumeTotal) ||
-      !empty((item as any).nebDose) ||
-      !empty((item as any).puffs) ||
-      !empty((item as any).nutVolDay);
+    // ============= CUIDADOS / NÃO-PADRONIZADO =============
+    if (item.category === 'care' || item.category === 'nonstandard') {
+      // Apenas o nome é necessário — texto livre opcional.
+      return missing;
+    }
 
+    // ============= INALAÇÃO =============
     if (item.category === 'inhalation') {
       const mode = (item as any).inhalationMode || 'nebulization';
-      const hasInhalationData =
-        !empty((item as any).nebDose) ||
-        !empty((item as any).puffs) ||
-        !empty(item.dose) ||
-        !empty((item as any).freeText) ||
-        !empty((item as any).instructions);
-      if (!hasInhalationData) {
-        missing.push(mode === 'pmdi' || mode === 'dpi' ? 'puffs ou dose' : 'dose');
+      if (mode === 'nebulization' || mode === 'nebulization_continuous') {
+        if (empty((item as any).nebDose) && empty(item.dose) && !anyInstruction(item)) {
+          missing.push('dose');
+        }
+        if (empty((item as any).inhalationInterface) && !anyInstruction(item)) {
+          missing.push('interface');
+        }
+        if (mode === 'nebulization_continuous'
+          && empty(item.posology) && empty((item as any).inhalationDuration) && !anyInstruction(item)) {
+          missing.push('duração');
+        } else if (mode === 'nebulization'
+          && empty(item.posology) && !anyInstruction(item)) {
+          missing.push('frequência');
+        }
+      } else if (mode === 'pmdi' || mode === 'dpi') {
+        if (empty((item as any).puffs) && empty(item.dose) && !anyInstruction(item)) {
+          missing.push(mode === 'pmdi' ? 'puffs' : 'inalações');
+        }
+        if (empty(item.posology) && !anyInstruction(item)) missing.push('frequência');
       }
-      if (empty(item.posology) && empty((item as any).freeText)) missing.push('frequência');
-    } else if (item.category === 'hydration') {
-      // Só bloqueia se NENHUM dado de fase/volume/instrução foi informado
-      if (
-        empty(item.volumeTotal) &&
-        empty(item.posology) &&
-        empty((item as any).freeText) &&
-        empty((item as any).instructions)
-      ) {
-        missing.push('volume ou fase');
+      return missing;
+    }
+
+    // ============= HIDRATAÇÃO / REPOSIÇÃO =============
+    if (item.category === 'hydration') {
+      if (empty(item.volumeTotal) && !anyInstruction(item)) missing.push('volume');
+      if (empty(item.posology) && !anyInstruction(item)) missing.push('fases / intervalo');
+      if (empty(item.infusionTime) && empty(item.infusionRate) && !anyInstruction(item)) {
+        missing.push('tempo ou vazão');
       }
-    } else if (item.category === 'nutrition') {
-      if (
-        empty(item.posology) &&
-        empty((item as any).nutVolDay) &&
-        empty(item.volumeTotal) &&
-        empty((item as any).freeText) &&
-        empty((item as any).instructions)
-      ) {
-        missing.push('volume ou meta');
+      return missing;
+    }
+
+    // ============= NUTRIÇÃO =============
+    if (item.category === 'nutrition') {
+      const subType = (item as any).nutritionType as string | undefined;
+      // Dieta zero / VO simples: nome basta
+      if (subType === 'zero') return missing;
+      // Enteral: volume/dia OU velocidade
+      if (subType === 'diet_enteral') {
+        if (empty((item as any).nutVolDay) && empty(item.volumeTotal) && empty(item.infusionRate) && !anyInstruction(item)) {
+          missing.push('volume/dia ou velocidade');
+        }
+        return missing;
       }
-    } else if (item.category === 'care' || item.category === 'nonstandard') {
-      // Cuidados / itens não-padronizados: nome basta
-    } else if (item.category === 'hemotherapy') {
-      if (empty(item.dose) && empty((item as any).freeText)) missing.push('produto/quantidade');
-    } else {
-      // Padrão (medication / antimicrobial / high_alert / mav / port_344)
-      // Aceita qualquer combinação que dê informação clínica suficiente:
-      // dose OU posologia OU instruções livres OU via.
-      if (!hasAnyInstruction) {
-        missing.push('dose ou posologia');
+      // Parenteral (NPT): volume + tempo
+      if (subType === 'npt') {
+        if (empty(item.volumeTotal) && !anyInstruction(item)) missing.push('volume');
+        if (empty(item.infusionTime) && empty(item.infusionRate) && !anyInstruction(item)) {
+          missing.push('tempo ou vazão');
+        }
+        return missing;
+      }
+      // VO fracionada / outros
+      if (empty(item.posology) && empty((item as any).nutVolDay) && empty(item.volumeTotal) && !anyInstruction(item)) {
+        missing.push('volume ou fracionamento');
+      }
+      return missing;
+    }
+
+    // ============= HEMOTERAPIA =============
+    if (item.category === 'hemotherapy') {
+      if (empty(item.dose) && !anyInstruction(item)) missing.push('produto/quantidade');
+      if (empty(item.route) && !anyInstruction(item)) missing.push('via');
+      if (empty(item.posology) && empty(item.infusionTime) && !anyInstruction(item)) {
+        missing.push('tempo de transfusão');
+      }
+      return missing;
+    }
+
+    // ============= PADRÃO (medication / antimicrobial / high_alert / mav / port_344) =============
+    const ptype = inferPresentationType(item.presentation, item.route, item.name);
+
+    // Tópicos / oftálmicos / retais — dose costuma ser instrucional ("aplicar fina camada")
+    if (ptype === 'topical' || ptype === 'rectal') {
+      if (empty(item.posology) && !anyInstruction(item)) missing.push('posologia');
+      if (empty(item.route) && !anyInstruction(item)) missing.push('via');
+      return missing;
+    }
+
+    // Núcleo comum: dose + posologia + via
+    if (empty(item.dose) && !anyInstruction(item)) missing.push('dose');
+    if (empty(item.posology) && !anyInstruction(item)) missing.push('posologia');
+    if (empty(item.route) && !anyInstruction(item)) missing.push('via');
+
+    // ----- IV intermitente (ampola/frasco) -----
+    if (ptype === 'iv_intermittent') {
+      if (empty(item.diluent) && !anyInstruction(item)) missing.push('diluente');
+      if (item.diluent && item.diluent !== 'sem_diluente' && empty(item.diluentVolume) && !anyInstruction(item)) {
+        missing.push('volume do diluente');
+      }
+      if (empty(item.infusionTime) && empty(item.infusionRate) && !anyInstruction(item)) {
+        missing.push('tempo ou vazão');
       }
     }
 
-    // ⚠️ NÃO bloqueia mais por:
-    // - diluente / diluentVolume → auto-calculados; warning não-bloqueante.
-    // - tempo / vazão de infusão  → auto-derivados.
-    // - interface de inalação      → recomendação, não obrigatório.
-    // - notification_type Port. 344 → tratado em fluxo dedicado (HighAlertGuideDialog).
-    // Esses pontos viram alertas via runClinicalAlertChecks na hora da validação,
-    // permitindo o médico decidir conscientemente.
+    // ----- IV contínua (BIC) -----
+    if (ptype === 'iv_continuous') {
+      if (empty(item.diluent) && !anyInstruction(item)) missing.push('diluente');
+      if (empty(item.volumeTotal) && !anyInstruction(item)) missing.push('volume total');
+      if (empty(item.infusionTime) && empty(item.infusionRate) && !anyInstruction(item)) {
+        missing.push('tempo ou vazão');
+      }
+      // Posologia em contínua é redundante (rate define) — remove se aparecer
+      const idx = missing.indexOf('posologia');
+      if (idx >= 0) missing.splice(idx, 1);
+    }
+
+    // ----- Comprimido por sonda enteral -----
+    const route = (item.route || '').toLowerCase();
+    const presentation = (item.presentation || '').toLowerCase();
+    const isOralSolid = /(comprimido|capsula|cap\.|drágea|dragea)/.test(presentation);
+    const isEnteralRoute = /(sng|sne|gtt|enteral|gastrostomia|jejunostomia)/.test(route);
+    if (isOralSolid && isEnteralRoute) {
+      const isCrushable = (item as any).crushable !== false; // false explícito = bloqueado por catálogo ISMP
+      if (!isCrushable) {
+        missing.push('item NÃO triturável — trocar apresentação');
+      } else if (empty((item as any).enteralDilutionVolume) && !anyInstruction(item)) {
+        missing.push('volume de diluição enteral');
+      }
+    }
+
+    // ----- Controlado Port. 344 — só bloqueia se realmente regulatório (lista A/B/C) -----
+    const cat = findControlledCatalog?.(item.name);
+    if (cat?.controlled && cat?.lista && !cat.notification_type) {
+      missing.push('tipo de notificação');
+    }
 
     return missing;
-  }, []);
+  }, [findControlledCatalog]);
+
 
 
   // Mapa id → campos faltando, recomputado quando items mudam
