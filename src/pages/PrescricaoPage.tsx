@@ -4320,6 +4320,38 @@ const PrescricaoPage = () => {
 
   useEffect(() => { fetchPrescriptions(); }, [fetchPrescriptions]);
 
+  // Auto-hidrata a última prescrição do paciente nas últimas 24h ao abrir o cockpit.
+  // Garante que prescrições validadas/impressas continuem visíveis até o corte das 05h
+  // mesmo se o médico fechar a aba e reabrir, e impede duplicatas.
+  const autoLoadAttemptedRef = useRef(false);
+  useEffect(() => {
+    if (autoLoadAttemptedRef.current) return;
+    if (!currentHospital || !currentState || !patient.name.trim()) return;
+    if (currentPrescriptionId) return;
+    autoLoadAttemptedRef.current = true;
+    (async () => {
+      try {
+        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data, error } = await supabase
+          .from('prescriptions')
+          .select('id, created_at')
+          .eq('hospital_unit_id', currentHospital.id)
+          .eq('state_id', currentState.id)
+          .eq('patient_name', patient.name.trim())
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (error) throw error;
+        const last = (data || [])[0];
+        if (last?.id) {
+          await loadPrescription(last.id);
+        }
+      } catch (err) {
+        console.error('[autoLoadPrescription] failed', err);
+      }
+    })();
+  }, [currentHospital, currentState, patient.name, currentPrescriptionId, loadPrescription]);
+
   // Fetch version history for a prescription (by patient_name in same hospital)
   const fetchVersionHistory = useCallback(async (prescriptionId: string) => {
     if (!currentHospital || !currentState) return;
