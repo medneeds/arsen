@@ -270,9 +270,8 @@ export function MedicalRecordEditDialog({
 
   const regChanges = useMemo(() => {
     const out: { field: string; oldVal: string; newVal: string }[] = [];
-    if (!registry) return out;
     for (const k of REG_EDITABLE) {
-      const before = (registry[k] ?? "") as string;
+      const before = (registry?.[k] ?? "") as string;
       const after = (reg[k] ?? "") as string;
       const a = (before || "").toString().trim();
       const b = (after || "").toString().trim();
