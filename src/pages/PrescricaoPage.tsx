@@ -3131,6 +3131,8 @@ const PrescricaoPage = () => {
   const [freeRecommendation, setFreeRecommendation] = useState("");
   const [appliedCareProfiles, setAppliedCareProfiles] = useState<Set<string>>(new Set());
   const [historyDate, setHistoryDate] = useState<Date | undefined>(undefined);
+  // Conjunto de datas (yyyy-MM-dd) com prescrição salva — alimenta as bolinhas no calendário
+  const [prescriptionDateKeys, setPrescriptionDateKeys] = useState<Set<string>>(new Set());
 
   // Phase 3 state
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
