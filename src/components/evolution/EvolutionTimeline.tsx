@@ -379,7 +379,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                       </span>
                       {isAdmission && (
                         <Badge className="text-[9px] px-1.5 py-0 h-4 bg-emerald-600 text-white gap-0.5 uppercase tracking-wider">
-                          D0 — Admissão Hospitalar
+                          {group.dayLabel} — Admissão Hospitalar
                         </Badge>
                       )}
                       <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0", config.color)}>
