@@ -129,6 +129,7 @@ export function SectorSection({
   patients, 
   onUpdatePatient, 
   onDeletePatient,
+  onReleasePreAdmissionBed,
   onUndeletePatient, 
   onPrintSector, 
   onAddExtraBed, 
