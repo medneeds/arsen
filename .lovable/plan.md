@@ -1,51 +1,61 @@
-## Diagnóstico
+## Escopo (3 frentes independentes — você pode aprovar todas ou só algumas)
 
-Hoje há duas frases automáticas no bloco ATB e ambas têm problemas distintos:
+---
 
-### 1. Faixa laranja (D{n}/total · sítio)
-Gerada por `buildAtbDayLine(item)` a partir de `atbStartDate`, `atbPlannedDays`, `atbInfectionSite`.
-Esses três campos **só existem no `AntimicrobialGuideDialog`** (linhas 4201-4203). Não há UI inline na linha do item para editá-los depois — então qualquer "atualização nos campos detalhados" não tem como propagar.
+### 1) Revisão do PDF gerado ao validar a prescrição
 
-### 2. Frase de preparo (cinza, italic)
-Gerada por `buildPrepDescription(item)` a partir de dose/diluente/volume/tempo/via/posologia. Essa **já é reativa** (recalculada a cada render, e `updateItem` cria nova referência do item).
+**O que vou fazer:** abrir o `PrintablePrescription` (linha 7242 de `PrescricaoPage.tsx`) e revisar 7 pontos comuns de inconsistência depois das últimas mudanças (insulina, MAV/Port.344, inalatórios, "Única", reconstituição):
 
-O que parece "fora de sincronia" é o **input "Observações adicionais"** (linha 2247-2252) que está vinculado a `item.instructions`. Quando o ATB é incluído via catálogo (Ceftriaxona, Meropenem, Vancomicina…), `instructions` já vem **pré-preenchido com uma frase sintetizada** (ex.: `"Reconstituir em 10ml AD, diluir em 100ml SF 0,9%, infundir em 30 min"`). Aí o usuário edita Diluente/Volume/Tempo nos campos estruturados → a frase de preparo (cinza) atualiza, mas o input de baixo continua mostrando o texto antigo do catálogo. Visualmente parecem duas frases divergentes.
+- Insulinoterapia: confirmar que o bloco vermelho do PDF não duplica linha "EV contínua" quando o item já é EV via grid normal.
+- "Única" (nova posologia): confirmar que renderiza como `Dose · Via · Única` e que não força bloco IV vazio.
+- Reconstituição (`reconstitutionVolume`/`reconstitutionSolvent`): hoje **não aparece** no PDF — incluir no bloco "Preparo IV" como `Reconstituir em Xml de SF/AD` antes da diluição final.
+- Sítio de infecção (`atbInfectionSite`) e dia de terapia: hoje não saem no PDF do antimicrobiano — incluir uma linha discreta `Sítio: ... · Dia X de Y · Início dd/mm` quando for ATB.
+- Chip MAV+PORT.344: validar que o chip violeta não fica "comendo" o nome do medicamento em itens longos (vou medir o `marginRight`).
+- Coluna de Aprazamento (230 px fixa): conferir se ainda cabe num A4 com a margem de 186 mm; se estourar, reduzir para 200 px.
+- "Suspenso" no PDF: hoje só itens `active` entram, então o badge SUSPENSO está morto — vou removê-lo do código (não chega a ser bug visual, só lixo).
 
-## Plano
+**Entrega:** lista do que estava inconsistente + correções aplicadas. Sem mudança estrutural de layout — só ajustes de conteúdo e duas regras de exibição novas (reconstituição + linha ATB).
 
-### A) Header inline editável (estrutural — afeta layout)
+---
 
-Substitui a faixa laranja redundante por um header tipo Inalação no topo do container indigo:
+### 2) Enriquecimento do card "Status" da Guia ATM
 
-```text
-┌─ [💊] Antimicrobiano ────────────────── [D3/7 — 14/05] ─ [Aplicar Guia ATM] ─┐
-│  Início: [14/05/2026] · Duração: [7] dias · Sítio: [pneumonia comunitária]   │
-├──────────────────────────────────────────────────────────────────────────────┤
-│  Qtd · Forma · Diluente · Vol · Via · Int · ...   (linhas atuais inalteradas)│
-└──────────────────────────────────────────────────────────────────────────────┘
-```
+Hoje cada antibiótico em curso mostra: nome, dose/via/posologia, sítio, "Dia X de Y", início, previsão fim. Vou adicionar:
 
-- 3 inputs inline editáveis: Início (date), Duração (numeric + "dias"), Sítio (text livre curto).
-- Badge `D{n}/{total} — DD/MM` à direita (mantém destaque âmbar/laranja em pill, não em faixa).
-- Botão "Aplicar Guia ATM" abre o `AntimicrobialGuideDialog` existente.
-- **Remover** a faixa laranja antiga (linhas 2238-2245) — vira o badge no header.
-- Grid principal (Qtd/Forma/Diluente/Vol/Via/Int/dose/posologia/tempo) **inalterado**.
+- **Barra de progresso** horizontal (lilás, fininha) com % do curso (Dia X / Y), com cor mudando para vermelha quando excedido.
+- **Dias restantes** em destaque (`Faltam 3 dias` / `Excedeu há 2 dias`).
+- **Aprovação CCIH** se houver (`ccihApproval` na guia salva): badge `CCIH: aprovado/restrito/pendente`.
+- **Cultura** (`cultureCollected`/`cultureResult`): badge `Cultura: pendente/coletada/resultado`.
+- **Tempo desde o início** em horas para as primeiras 24h (`Iniciado há 8h`), depois vira "Dia 2", etc.
+- **Mini-linha de janela**: `Iniciado dd/mm 14:30 → previsto fim dd/mm` no rodapé do card.
+- Botão **Suspender** ganha confirmação + motivo curto (já existe padrão MovementConfirm, mas aqui posso usar um inline AlertDialog leve para não inflar).
 
-### B) Frase de preparo única (não estrutural)
+**Pergunta de implementação:** os campos CCIH/cultura hoje vivem só dentro do `AntimicrobialGuideDialog` (form), não na prescrição. Para o card mostrar isso, precisaria ler do snapshot salvo da última guia (Supabase). Se preferir, faço só o que está disponível no `PrescriptionItem` (progresso + dias restantes + janela + tempo desde início) e deixo CCIH/cultura para uma 2ª iteração quando integrarmos com a guia salva. **Sugestão:** ir só com o que está local agora.
 
-- Em `handleAntimicrobialConfirm` (linha 4178), ao criar item via `createItem(matchedMed)`, **forçar `instructions: ''`** para items ATB. A frase pronta do catálogo deixa de poluir o input "Observações adicionais".
-- A frase oficial fica só na linha cinza italic (`buildPrepDescription`), derivada dos campos estruturados — fonte única da verdade.
-- O input "Observações adicionais" passa a servir só ao que o nome diz: anotações manuais (ex.: "monitorar vancocinemia vale", "ajustar pelo Cl Cr").
+---
 
-## Arquivos
+### 3) Identidade lilás suave em toda a Guia ATM (`AntimicrobialGuideDialog` + `AtmStatusDialog`)
 
-- `src/pages/PrescricaoPage.tsx` — adicionar header inline ATB no início do container (~linha 1949), remover faixa laranja antiga (2238-2245), limpar `instructions` em `handleAntimicrobialConfirm` (4185).
+Hoje os dois dialogs usam **laranja** (`bg-orange-50`, `text-orange-600`, `bg-orange-600 hover:bg-orange-700`, etc.). Vou alinhar com a paleta lilás já usada na seção ATB da prescrição, **sem exageros** e **preservando cores semânticas**:
 
-## O que NÃO muda
+**Mudanças:**
+- Header dos dialogs: ícone `Shield` e fundo do header trocam de `text-orange-600` / `bg-orange-50/40` → `text-violet-600` / `bg-violet-50/40` (mesmo tom da seção ATB). 
+- Borda dos cards de item em curso: `border-orange-200` → `border-violet-200/70`.
+- Chip "Dia X de Y": `text-orange-700` → `text-violet-700`.
+- Botão primário "Continuar"/"Abrir Guia ATM": `bg-orange-600 hover:bg-orange-700` → `bg-violet-600 hover:bg-violet-700` (igual ao botão "Abrir Guia ATM" da seção).
+- Aba ativa (Status/Nova) ganha underline lilás suave.
+- Radio "Acréscimo": borda/fundo passam de orange → violet.
 
-- Nenhuma lógica de cálculo de dia, posologia ou diluição.
-- Comportamento e dados do `AntimicrobialGuideDialog`.
-- Catálogo `UNIFIED_CATALOG.antimicrobial`.
-- Layout dos demais blocos (hidratação, inalação, alto alerta, etc.).
+**Preservados (cores semânticas):**
+- Vermelho de "Excedeu duração", "Suspender", radio "Troca/Escalonamento", alerta de CCIH negado.
+- Azul do banner informativo no rodapé da aba "Nova" (continua azul porque é informacional, não o tema).
+- Verde do badge "Em curso" e do dot de status.
+- Âmbar/laranja só fica em alertas pontuais (sem "vazar" no tema do dialog).
 
-Confirma para eu implementar?
+**Não vou:** mexer em altura, padding, grid/colunas, abas ou estrutura — apenas tokens de cor.
+
+---
+
+## Pergunta única
+
+Aprova as 3 frentes? Se sim, sigo nesta ordem: (1) PDF, (2) cards Status enriquecidos só com dados locais (deixo CCIH/cultura para depois), (3) repintar Guia ATM em lilás. Se quiser tirar alguma frente, me diz qual.
