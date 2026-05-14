@@ -503,6 +503,32 @@ function getPresetsForPosology(posology: string): typeof SCHEDULE_PRESETS[string
 }
 
 // Build synced preparation description from structured fields
+// Ordem padronizada (segura p/ enfermagem):
+//   SOLUTO > SOLUÇÃO > VIA > TEMPO/VAZÃO > INTERVALO
+// Ex.: "Diluir 100 mg (10 mL) em 100 mL de SF 0,9%. EV. Correr em 4h (25 mL/h). Dose única."
+function buildSolutoToken(item: PrescriptionItem): string {
+  const qtyRaw = (item.quantity || '').trim();
+  const qty = qtyRaw && qtyRaw !== '0' ? qtyRaw : '';
+  const unitShort = item.quantityUnit ? quantityUnitShort(item.quantityUnit) : '';
+  const qtyStr = qty && unitShort ? `${qty} ${unitShort}` : '';
+
+  const doseRaw = (item.dose && item.dose !== '-') ? item.dose.trim().replace(/\.$/, '') : '';
+  // Dose terapêutica real = tem unidade de massa/atividade (mg, g, mcg, UI, mEq, %).
+  // Volume puro em mL não conta como "dose terapêutica" — é só o volume da ampola.
+  const isPureMlVolume = /^\d+(?:[.,]\d+)?\s*ml$/i.test(doseRaw);
+  const isMassDose = !!doseRaw && !isPureMlVolume &&
+    /(mg|mcg|µg|ug|\bg\b|\bui\b|u\/|unidades?|meq|%)/i.test(doseRaw);
+
+  // Quando temos dose terapêutica + volume aspirado distinto, mostramos os dois
+  // (mais informativo para a enfermagem): "100 mg (10 mL)".
+  if (isMassDose && qtyStr && qtyStr.toLowerCase() !== doseRaw.toLowerCase()) {
+    return `${doseRaw} (${qtyStr})`;
+  }
+  if (isMassDose) return doseRaw;
+  if (qtyStr) return qtyStr;
+  return doseRaw; // fallback bruto (raro)
+}
+
 function buildPrepDescription(item: PrescriptionItem): string {
   // Inhalation items use a dedicated builder (nebulização / pMDI / DPI)
   if (item.category === 'inhalation') {
@@ -510,63 +536,54 @@ function buildPrepDescription(item: PrescriptionItem): string {
   }
   const parts: string[] = [];
 
-  // 0) Reconstituição (pó liofilizado) — vem antes da diluição final
+  // 0) Reconstituição (pó liofilizado) — antes da diluição final
   if (item.reconstitutionSolvent && item.reconstitutionVolume) {
     const qtyFA = (item.quantity && item.quantity.trim() && item.quantity.trim() !== '0') ? item.quantity.trim() : '1';
-    parts.push(`Reconstituir ${qtyFA} frasco-ampola com ${item.reconstitutionVolume}mL de ${item.reconstitutionSolvent}.`);
+    parts.push(`Reconstituir ${qtyFA} frasco-ampola com ${item.reconstitutionVolume} mL de ${item.reconstitutionSolvent}.`);
   }
 
-  // 1) Quantidade + forma (sigla) — quantidade implícita = 1
-  if (item.quantityUnit && !(item.reconstitutionSolvent && item.reconstitutionVolume)) {
-    const qty = (item.quantity && item.quantity.trim() && item.quantity.trim() !== '0') ? item.quantity.trim() : '1';
-    parts.push(`${qty} ${quantityUnitShort(item.quantityUnit)}.`);
+  // 1) SOLUTO + SOLUÇÃO — uma frase só, sem ambiguidade
+  const soluto = buildSolutoToken(item);
+  const hasDiluent = !!(item.diluent && item.diluent !== 'sem_diluente' && item.diluent !== '-');
+
+  if (hasDiluent) {
+    const dilStr = item.diluentVolume
+      ? `${item.diluentVolume} mL de ${item.diluent}`
+      : item.diluent!;
+    if (soluto) parts.push(`Diluir ${soluto} em ${dilStr}.`);
+    else parts.push(`Diluir em ${dilStr}.`);
+
+    // Volume final apenas quando distinto do diluente (ex.: soluto 50 mL + diluente 50 mL = 100 mL)
+    const volTotalNum = parseFloat((item.volumeTotal || '').replace(',', '.'));
+    const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
+    const hasDistinctTotal = item.volumeTotal && (!item.diluentVolume || (volTotalNum && volTotalNum !== volDilNum));
+    if (hasDistinctTotal) parts.push(`Volume final: ${item.volumeTotal} mL.`);
+  } else if (soluto) {
+    parts.push(`${soluto}.`);
   }
 
-  // 2) Dose
-  // SEGURANÇA: se a "dose" autopreenchida vier apenas como um volume em mL
-  // (ex.: "10 mL" — volume da ampola) e a Qtd já está em mL, omitimos esse
-  // token. Caso contrário a enfermagem vê dois volumes seguidos
-  // ("50 mL. 10 mL. Diluir em SF0,9% 50 mL.") e pode confundir o que infundir.
-  // Doses terapêuticas reais (mg, g, mcg, UI, mEq, gts, %) continuam impressas.
-  if (item.dose && item.dose !== '-') {
-    const doseTrim = item.dose.trim();
-    const isPureMlVolume = /^\d+(?:[.,]\d+)?\s*ml\.?$/i.test(doseTrim);
-    const qtyInMl = (item.quantityUnit || '').toLowerCase() === 'ml';
-    const isRedundantAmpoulVolume = isPureMlVolume && qtyInMl;
-    if (!isRedundantAmpoulVolume) parts.push(`${doseTrim}.`);
+  // 2) VIA
+  if (item.route && item.route !== '-') {
+    parts.push(`${routeShort(item.route)}.`);
   }
 
-  // 3) Diluição
-  if (item.diluent && item.diluent !== 'sem_diluente') {
-    let dilPart = `Diluir em ${item.diluent}`;
-    if (item.diluentVolume) dilPart += ` ${item.diluentVolume}mL`;
-    parts.push(dilPart + '.');
-  }
-
-  // 4) Volume total — só se preenchido E diferente do volume do diluente
-  const volTotalNum = parseFloat((item.volumeTotal || '').replace(',', '.'));
-  const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
-  const hasDistinctTotal = item.volumeTotal && (!item.diluentVolume || (volTotalNum && volTotalNum !== volDilNum));
-  if (hasDistinctTotal) parts.push(`Volume total: ${item.volumeTotal}mL.`);
-
-  // 5) Correr em / Velocidade
+  // 3) TEMPO / VAZÃO
   if (item.infusionTime || item.infusionRate) {
-    const unit = item.infusionTimeUnit || 'min';
+    const unit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
     const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
     if (item.infusionTime && item.infusionRate) {
-      parts.push(`Correr em ${item.infusionTime}${unit === 'h' ? 'h' : 'min'} (${item.infusionRate} ${modeLabel}).`);
+      parts.push(`Correr em ${item.infusionTime}${unit} (${item.infusionRate} ${modeLabel}).`);
     } else if (item.infusionTime) {
-      parts.push(`Correr em ${item.infusionTime}${unit === 'h' ? 'h' : 'min'}.`);
+      parts.push(`Correr em ${item.infusionTime}${unit}.`);
     } else if (item.infusionRate) {
       parts.push(`Velocidade ${item.infusionRate} ${modeLabel}.`);
     }
   }
 
-  // 6) Via (sigla) + intervalo — fechamento padronizado
-  const tail: string[] = [];
-  if (item.route && item.route !== '-') tail.push(routeShort(item.route));
-  if (item.posology && item.posology !== '-') tail.push(item.posology);
-  if (tail.length) parts.push(tail.join(' · ') + '.');
+  // 4) INTERVALO
+  if (item.posology && item.posology !== '-') {
+    parts.push(`${item.posology}.`);
+  }
 
   return parts.join(' ');
 }
