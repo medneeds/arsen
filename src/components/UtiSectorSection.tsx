@@ -110,6 +110,7 @@ export function UtiSectorSection({
   patients, 
   onUpdatePatient, 
   onDeletePatient,
+  onReleasePreAdmissionBed,
   onUndeletePatient, 
   onPrintSector, 
   onPrintRound,
