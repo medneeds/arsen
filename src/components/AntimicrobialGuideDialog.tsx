@@ -427,17 +427,44 @@ export function AntimicrobialGuideDialog({
     openPrintWindow(html, "Preparando Guia ATM…");
   };
 
-  const validEntries = () => entries.filter(e => e.medication.trim());
+  const validEntries = () => entries.filter(e => getMissingFields(e).length === 0);
 
-  const doAttach = (close: boolean) => {
+  // Centraliza e destaca a primeira entrada incompleta
+  const focusFirstInvalid = (): boolean => {
+    const firstInvalid = entries.find(e => missingByEntry[e.id]?.length > 0);
+    if (!firstInvalid) return false;
+    setHighlightId(firstInvalid.id);
+    setTimeout(() => {
+      entryRefs.current[firstInvalid.id]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+    setTimeout(() => setHighlightId(null), 2500);
+    return true;
+  };
+
+  const doAttach = (close: boolean): boolean => {
+    if (!onConfirm) return false;
+    setShowErrors(true);
+    if (entries.length === 0) {
+      toast.error("Adicione pelo menos um antimicrobiano antes de anexar.");
+      return false;
+    }
     const valid = validEntries();
-    if (valid.length === 0 || !onConfirm) return;
+    if (valid.length !== entries.length) {
+      const firstMissing = entries.find(e => missingByEntry[e.id]?.length > 0);
+      const fields = firstMissing ? missingByEntry[firstMissing.id].join(', ') : '';
+      toast.error("Não é possível anexar: campos obrigatórios em aberto.", {
+        description: fields ? `Faltando: ${fields}` : undefined,
+      });
+      focusFirstInvalid();
+      return false;
+    }
     onConfirm(valid.map(e => ({
       medication: e.medication, dose: e.dose, route: e.route, posology: e.posology,
       startDate: e.startDate, plannedDuration: e.plannedDuration, infectionSite: e.infectionSite,
     })));
     if (draftKey) localStorage.removeItem(draftKey);
     if (close) onOpenChange(false);
+    return true;
   };
 
   const handleAttachOnly = () => doAttach(true);
