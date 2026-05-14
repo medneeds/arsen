@@ -71,6 +71,9 @@ const EvolucaoPage = () => {
     patientSector: patient.unit,
   });
 
+  const ids = usePatientIdentifiers(initialPatientId || null, patient.name || null, currentHospital?.id || null);
+  const prontuarioReal = ids.prontuario || patient.record;
+
   // New evolution form state
   const [showNewForm, setShowNewForm] = useState(false);
   const [showIntercurrenceForm, setShowIntercurrenceForm] = useState(false);
