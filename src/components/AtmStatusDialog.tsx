@@ -258,7 +258,7 @@ export function AtmStatusDialog({
               {!hasActive ? (
                 <div className="rounded-lg border border-dashed p-4 bg-muted/20 text-xs">
                   <div className="font-semibold flex items-center gap-1.5 mb-1">
-                    <Plus className="h-3.5 w-3.5 text-orange-600" />
+                    <Plus className="h-3.5 w-3.5 text-violet-600" />
                     Início de antibioticoterapia
                   </div>
                   <div className="text-muted-foreground">
