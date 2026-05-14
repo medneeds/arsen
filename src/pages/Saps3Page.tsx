@@ -362,6 +362,13 @@ export default function Saps3Page() {
   const [patientName, setPatientName] = useState("");
   const [age, setAge] = useState<string>("");
   const [comorbidities, setComorbidities] = useState<string[]>([]);
+  // Antecedentes / hábitos / vasoativos — opcionais e NÃO pontuam no SAPS
+  const [clinicalHistory, setClinicalHistory] = useState<ClinicalHistoryData>({ selected: [], livre: "" });
+  const [lifestyleHabits, setLifestyleHabits] = useState<LifestyleHabits>({
+    tabagismo: "", macos_ano: "", etilismo: "", drogas: "", drogas_detalhe: "",
+  });
+  const [vasoactiveOnAdmission, setVasoactiveOnAdmission] = useState<boolean>(false);
+  const [vasoactiveDrugs, setVasoactiveDrugs] = useState<VasoactiveEntry[]>([]);
   const [losBeforeIcu, setLosBeforeIcu] = useState<string>("");
   const [admissionSource, setAdmissionSource] = useState<string>("");
   const [plannedAdmission, setPlannedAdmission] = useState(false);
