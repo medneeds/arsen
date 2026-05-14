@@ -3504,6 +3504,8 @@ const PrescricaoPage = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [freeRecommendation, setFreeRecommendation] = useState("");
   const [appliedCareProfiles, setAppliedCareProfiles] = useState<Set<string>>(new Set());
+  // Pop-up para sugerir incluir esquema padrão de correção de insulina ao adicionar controle glicêmico
+  const [insulinSchemePromptOpen, setInsulinSchemePromptOpen] = useState(false);
   const [historyDate, setHistoryDate] = useState<Date | undefined>(undefined);
   // Conjunto de datas (yyyy-MM-dd) com prescrição salva — alimenta as bolinhas no calendário
   const [prescriptionDateKeys, setPrescriptionDateKeys] = useState<Set<string>>(new Set());
