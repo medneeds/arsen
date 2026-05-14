@@ -1314,12 +1314,15 @@ function HydrationFields({
   const dripVal = dripMode === 'BIC' ? mlh : gtt;
   const volTotal24 = volPhase * phases;
 
-  // Auto-sync calculated drip rate into infusionRate
+  // Auto-sync calculated drip rate into infusionRate (via effect, NUNCA durante o render
+  // — fazer setState/onUpdate no corpo do componente cria loop de re-render que rouba foco
+  // dos inputs e impede a edição dos campos).
   const calcRateStr = isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '';
-  if (calcRateStr && calcRateStr !== item.infusionRate) {
-    // schedule on next tick to avoid setState during render
-    queueMicrotask(() => onUpdate(item.id, 'infusionRate', calcRateStr));
-  }
+  React.useEffect(() => {
+    if (calcRateStr && calcRateStr !== item.infusionRate) {
+      onUpdate(item.id, 'infusionRate', calcRateStr);
+    }
+  }, [calcRateStr, item.infusionRate, item.id, onUpdate]);
 
   const handlePhasesChange = (v: string) => {
     const opt = HYDRATION_PHASE_OPTIONS.find(o => String(o.phases) === v);
@@ -1394,7 +1397,7 @@ function HydrationFields({
           </SelectContent>
         </Select>
 
-        <span className="ml-auto text-[10px] font-medium text-blue-700 dark:text-blue-300">
+        <span className="basis-full text-right text-[10px] font-medium text-blue-700 dark:text-blue-300 mt-1">
           Total: {volTotal24}mL / 24h
         </span>
       </div>
