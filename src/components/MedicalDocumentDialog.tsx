@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { usePatientLive } from "@/hooks/usePatientLive";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { usePatientCid } from "@/hooks/usePatientCid";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 
