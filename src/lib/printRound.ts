@@ -5,6 +5,7 @@
  */
 import { ROUND_SECTIONS, STATUS_OPTIONS, type RoundStatus } from "@/data/roundChecklistSchema";
 import { openPrintWindow } from "@/lib/printNormaZero";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { format } from "date-fns";
 
 export interface RoundPrintItem {
