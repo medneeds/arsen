@@ -3510,7 +3510,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     </p>
 
                     {/* LIBERAR LEITO — habilitado para pré-admissão E para pós-alta/óbito (com senha) */}
-                    {(patient.admissionStatus !== 'admitido' || patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito') && onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (
+                    {patient.admissionStatus !== 'admitido' && onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
