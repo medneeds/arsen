@@ -808,7 +808,7 @@ export function MedicalRecordEditDialog({
                         </section>
                       )}
 
-                      {registry.is_unidentified && (
+                      {registry?.is_unidentified && (
                         <Badge variant="outline" className="text-[10px] border-amber-500/40">
                           <FileWarning className="h-3 w-3 mr-1" />
                           Paciente Não Identificado — para promover, use a função dedicada (merge).
