@@ -979,8 +979,64 @@ function NutritionFields({
   const TinyInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <Input {...props} className={cn("h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600", props.className)} />
   );
+  // Input com sufixo de unidade fixo à direita (ex.: "1500 mL")
+  const SuffixInput = ({
+    value, onChange, suffix, width = 'w-20', placeholder, type = 'number', inputMode = 'decimal',
+  }: {
+    value: string;
+    onChange: (v: string) => void;
+    suffix: string;
+    width?: string;
+    placeholder?: string;
+    type?: string;
+    inputMode?: 'decimal' | 'numeric' | 'text';
+  }) => (
+    <div className={cn("relative inline-flex items-center", width)}>
+      <Input
+        type={type}
+        inputMode={inputMode}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-7 text-[12px] font-semibold pr-9 bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-400/60"
+      />
+      <span className="absolute right-2 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 pointer-events-none select-none">
+        {suffix}
+      </span>
+    </div>
+  );
 
   const setSubtype = (v: string) => onUpdate(item.id, 'nutritionType', v);
+
+  // Sincronização Vol/dia ↔ Vazão para BIC contínua / Bomba ciclada
+  const isContinuousMode = item.nutMode === 'Contínua BIC' || item.nutMode === 'Bomba ciclada';
+  const isBolusMode = item.nutMode === 'Bolus' || item.nutMode === 'Gravitacional intermitente';
+  const setVolDay = (v: string) => {
+    onUpdate(item.id, 'nutVolDay', v);
+    const n = parseFloat(v);
+    if (isContinuousMode && !isNaN(n) && n > 0) {
+      const rate = Math.round(n / 24);
+      onUpdate(item.id, 'infusionRate', String(rate));
+    }
+  };
+  const setRate = (v: string) => {
+    onUpdate(item.id, 'infusionRate', v);
+    const n = parseFloat(v);
+    if (isContinuousMode && !isNaN(n) && n > 0) {
+      onUpdate(item.id, 'nutVolDay', String(n * 24));
+    }
+  };
+
+  // Vol/adm calculado para Bolus a partir de Vol/dia ÷ nº fracionamentos (parse simples "6x" ou "6")
+  const bolusFractionN = (() => {
+    const m = (item.nutFraction || '').match(/(\d+)\s*x?/i);
+    return m ? parseInt(m[1], 10) : 0;
+  })();
+  const bolusVolPerAdm = (() => {
+    const v = parseFloat(item.nutVolDay || '');
+    if (!isNaN(v) && bolusFractionN > 0) return Math.round(v / bolusFractionN);
+    return null;
+  })();
 
   return (
     <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-1.5")}>
@@ -1003,21 +1059,32 @@ function NutritionFields({
 
       {(subtype === 'diet_enteral' || subtype === 'diet_oral') && (
         <>
-          <div className="flex items-center gap-1.5 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
-            <UtensilsCrossed className="h-3 w-3 text-primary shrink-0" />
+          {/* Linha ESSENCIAL — destacada em emerald */}
+          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
+            <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
             <FieldLabel>Vol/dia:</FieldLabel>
-            <TinyInput value={item.nutVolDay || ''} onChange={(e) => onUpdate(item.id, 'nutVolDay', e.target.value)} className="w-16 text-center" placeholder="mL" />
-            {subtype === 'diet_enteral' && (
+            <SuffixInput value={item.nutVolDay || ''} onChange={setVolDay} suffix="mL" placeholder="1500" />
+            {subtype === 'diet_enteral' && !isBolusMode && (
               <>
-                <span className="text-muted-foreground/40">·</span>
+                <span className="text-emerald-700/40">·</span>
                 <FieldLabel>Vazão:</FieldLabel>
-                <TinyInput value={item.infusionRate || ''} onChange={(e) => onUpdate(item.id, 'infusionRate', e.target.value)} className="w-14 text-center" placeholder="mL/h" />
+                <SuffixInput value={item.infusionRate || ''} onChange={setRate} suffix="mL/h" placeholder="62" />
+                {isContinuousMode && (
+                  <span className="text-[10px] text-emerald-700/80 dark:text-emerald-300/80 italic">
+                    ÷ 24h auto
+                  </span>
+                )}
               </>
             )}
-            <span className="text-muted-foreground/40">·</span>
+            {subtype === 'diet_enteral' && isBolusMode && bolusVolPerAdm !== null && (
+              <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium px-2 py-0.5 rounded-full bg-emerald-100/80 dark:bg-emerald-900/30">
+                ≈ {bolusVolPerAdm} mL/adm ({bolusFractionN}x)
+              </span>
+            )}
+            <span className="text-emerald-700/40">·</span>
             <FieldLabel>Modo:</FieldLabel>
             <Select value={item.nutMode || ''} onValueChange={(v) => onUpdate(item.id, 'nutMode', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-44"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-400/60 w-44"><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
                 {subtype === 'diet_enteral' ? (
                   <>
@@ -1091,46 +1158,42 @@ function NutritionFields({
       )}
 
       {subtype === 'water' && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
-          <div className="flex items-center gap-1">
-            <Droplets className="h-3 w-3 text-primary shrink-0" />
-            <FieldLabel>Vol/adm:</FieldLabel>
-            <TinyInput value={item.nutWaterVolPerAdmin || ''} onChange={(e) => onUpdate(item.id, 'nutWaterVolPerAdmin', e.target.value)} className="flex-1 text-center" placeholder="50 mL" />
-          </div>
-          <div className="flex items-center gap-1">
-            <FieldLabel>Frequência:</FieldLabel>
-            <TinyInput value={item.nutWaterFreq || ''} onChange={(e) => onUpdate(item.id, 'nutWaterFreq', e.target.value)} className="flex-1" placeholder="antes/após dieta e meds" />
-          </div>
-          <div className="flex items-center gap-1">
-            <FieldLabel>Meta hídrica/dia:</FieldLabel>
-            <TinyInput value={item.nutVolDay || ''} onChange={(e) => onUpdate(item.id, 'nutVolDay', e.target.value)} className="flex-1 text-center" placeholder="800 mL" />
-          </div>
+        <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
+          <Droplets className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+          <FieldLabel>Vol/adm:</FieldLabel>
+          <SuffixInput value={item.nutWaterVolPerAdmin || ''} onChange={(v) => onUpdate(item.id, 'nutWaterVolPerAdmin', v)} suffix="mL" placeholder="50" />
+          <span className="text-emerald-700/40">·</span>
+          <FieldLabel>Frequência:</FieldLabel>
+          <Input value={item.nutWaterFreq || ''} onChange={(e) => onUpdate(item.id, 'nutWaterFreq', e.target.value)} placeholder="antes/após dieta e meds" className="h-7 text-[12px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-400/60 w-48" />
+          <span className="text-emerald-700/40">·</span>
+          <FieldLabel>Meta/24h:</FieldLabel>
+          <SuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="800" />
         </div>
       )}
 
       {subtype === 'npt' && (
         <>
-          <div className="flex items-center gap-1.5 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
-            <Droplets className="h-3 w-3 text-primary shrink-0" />
+          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
+            <Droplets className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
             <FieldLabel>Vol total:</FieldLabel>
-            <TinyInput value={item.volumeTotal || ''} onChange={(e) => onUpdate(item.id, 'volumeTotal', e.target.value)} className="w-16 text-center" placeholder="mL" />
-            <span className="text-muted-foreground/40">·</span>
+            <SuffixInput value={item.volumeTotal || ''} onChange={(v) => onUpdate(item.id, 'volumeTotal', v)} suffix="mL" placeholder="2000" />
+            <span className="text-emerald-700/40">·</span>
             <FieldLabel>Vazão:</FieldLabel>
-            <TinyInput value={item.infusionRate || ''} onChange={(e) => onUpdate(item.id, 'infusionRate', e.target.value)} className="w-14 text-center" placeholder="mL/h" />
-            <span className="text-muted-foreground/40">·</span>
+            <SuffixInput value={item.infusionRate || ''} onChange={(v) => onUpdate(item.id, 'infusionRate', v)} suffix="mL/h" placeholder="83" />
+            <span className="text-emerald-700/40">·</span>
             <FieldLabel>Correr em:</FieldLabel>
-            <TinyInput value={item.infusionTime || ''} onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)} className="w-14 text-center" placeholder="18" />
+            <TinyInput value={item.infusionTime || ''} onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)} className="w-14 text-center h-7 text-[12px] font-semibold border-emerald-300 dark:border-emerald-700" placeholder="18" />
             <Select value={item.infusionTimeUnit || 'h'} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-7 text-[11px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-16"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="h" className="text-xs">horas</SelectItem>
                 <SelectItem value="min" className="text-xs">min</SelectItem>
               </SelectContent>
             </Select>
-            <span className="text-muted-foreground/40">·</span>
+            <span className="text-emerald-700/40">·</span>
             <FieldLabel>Acesso:</FieldLabel>
             <Select value={item.nutAccess || ''} onValueChange={(v) => onUpdate(item.id, 'nutAccess', v)}>
-              <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-28"><SelectValue placeholder="—" /></SelectTrigger>
+              <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-28"><SelectValue placeholder="—" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="CVC" className="text-xs">CVC</SelectItem>
                 <SelectItem value="PICC" className="text-xs">PICC</SelectItem>
