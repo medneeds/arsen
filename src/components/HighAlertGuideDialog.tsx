@@ -16,7 +16,7 @@ import type { MedicationEntry } from "@/data/medicationsDatabase";
 import { normalizeSearch } from "@/lib/fuzzySearch";
 
 interface MavItem extends MedicationEntry {
-  subgroup: 'opioid' | 'vasoactive' | 'rsi_bolus' | 'continuous';
+  subgroup: 'opioid' | 'vasoactive' | 'rsi_bolus' | 'continuous' | 'insulin';
   doseHint?: string;
 }
 
