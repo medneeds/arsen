@@ -74,6 +74,7 @@ export default function MovementsPage() {
 
   useEffect(() => {
     fetchMovements();
+    import("@/lib/lockedSectorCleanup").then((m) => m.maybeRunLockedSectorCleanup());
 
     // Realtime subscription filtered by department
     const channel = supabase

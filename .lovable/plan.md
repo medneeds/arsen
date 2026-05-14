@@ -1,85 +1,63 @@
-## Confirmação prévia
+## Objetivo
 
-- **Setores que dispararão SAPS 3:** UTI 1, UTI 2 e UCI 2 (UCI 1 e UCC deixam de exigir).
-- **Obrigatório para validar:** somente os campos que **pontuam** no SAPS 3 (Box I idade + comorbidades SAPS + LOS + origem + planejada; Box II razão + cirurgia + infecção; Box III consciência + sinais vitais + laboratoriais).
-- **Não obrigatórios e não pontuam** (com aviso visual claro): Antecedentes clínicos, Hábitos de vida, Suporte hemodinâmico/Vasoativos.
+Bloquear setores que ainda não têm implantação ativa (cadeado cinza elegante, na identidade visual) tanto na tela pós-login (`AccessLimitsScreen`) quanto no `SectorSelector` do Painel Clínico / Mapa, e adicionar uma rotina inteligente que limpa em 24h sinalizações de leito direcionadas a setores bloqueados — preservando o prontuário do paciente.
 
----
+## Setores
 
-## 1. Reestruturação da ficha SAPS 3 (`src/pages/Saps3Page.tsx`)
+**Liberados (clicáveis):**
+- UTI 1, UTI 2, UCI 1, UCI 2, UCC, **Enfermaria de Transição**
 
-### Box I — separar em três blocos visuais
+**Bloqueados (cadeado cinza, não clicáveis):**
+- Enfermarias: Neuro 01, Neuro 02, Clínica Cirúrgica
+- Urgência e Emergência (todos): UE Vertical, UE Horizontal, Sala Vermelha, Sala Laranja, Internação UE, Observação Clínica
+- Anexo Vascular: Enf. Vascular, RIV
+- Centro Cirúrgico: CC Preparo, Bloco Cirúrgico, RPA
 
-**Bloco 1.A — Comorbidades SAPS 3 (pontuam — obrigatório se aplicável)**
-- Mantém os 8 itens atuais (Neoplasia hematológica 10, Câncer metastático 11, HIV/AIDS 8, Cirrose 4, IC NYHA IV 6, DRC 3, Imunossupressão 3, QT recente 3).
-- Badge verde com pontuação ao lado do nome.
-- Helper: "Marque todas que se aplicam. Estas pontuam no escore SAPS 3."
+## Mudanças
 
-**Bloco 1.B — Antecedentes clínicos (não pontuam — opcional)**
-- Banner âmbar discreto: *"Não obrigatório · Não pontua no SAPS 3 · Útil para perfil epidemiológico"*.
-- Lista de checkbox rápidos: HAS, DM2, DM1, DPOC, asma, AVC prévio, IAM prévio, FA, ICC (não NYHA IV), dislipidemia, obesidade, hipotireoidismo, doença de Chagas, epilepsia, depressão/ansiedade, hepatopatia (não cirrótica), DRC não dialítica.
-- Campo busca/autocomplete para acrescentar livre (texto livre, normalização NFD).
+### 1. Lista única de setores bloqueados
+Criar `src/config/lockedSectors.ts` exportando `LOCKED_DEPARTMENTS: Set<Department>` com os 12 setores acima e helpers `isDepartmentLocked(d)`. Fonte única de verdade reutilizada por todos os pontos de seleção e pela rotina de limpeza.
 
-**Bloco 1.C — Hábitos de vida (não pontuam — opcional)**
-- Mesmo banner âmbar.
-- Tabagismo: nunca / ex / atual + maços-ano (input opcional).
-- Etilismo: nunca / social / abuso / dependência.
-- Drogas ilícitas: nunca / ex / atual (lista livre).
+### 2. `SectorSelector.tsx` (header — Painel Clínico, Mapa, etc.)
+- Em cada botão de setor, se `isDepartmentLocked`: 
+  - Renderizar ícone `Lock` (lucide) cinza (`text-muted-foreground/60`) à direita.
+  - `disabled`, `cursor-not-allowed`, opacidade reduzida (`opacity-60`), sem hover de seleção.
+  - Tooltip: "Setor não habilitado nesta unidade".
+- Grupos cujos **todos** os setores estão bloqueados (UE, Anexo Vascular, Centro Cirúrgico) ficam **não-expansíveis**: cabeçalho com cadeado cinza, sem chevron, click bloqueado. Grupo "Enfermarias" continua expansível porque tem itens liberados (Transição, UCC).
 
-### Novo Box — Suporte hemodinâmico na admissão (não pontua — opcional)
-- Posicionado entre Box II e Box III, com rótulo destacado e mesmo banner âmbar.
-- Switch "Em uso de drogas vasoativas na admissão?".
-- Se sim, lista com chips (Noradrenalina, Adrenalina, Vasopressina, Dobutamina, Dopamina, Milrinona) + dose (mcg/kg/min) + tempo de uso (h).
-- Helper didático: *"Não entra no escore SAPS 3, mas registra o perfil hemodinâmico para o painel UTI."*
+### 3. `AccessLimitsScreen.tsx` (pós-login, múltiplos acessos)
+- No grid "Direcionar Para", aplicar mesma lógica: cards bloqueados ficam com cadeado cinza + opacidade + `disabled`.
+- `selectedSector` inicial pula setores bloqueados (`selectableSectors.find(d => !isDepartmentLocked(d))`).
+- Botão "ACESSAR PAINEL" desabilitado se único setor disponível for bloqueado.
 
-### Persistência
-- Adicionar colunas JSONB em `saps3_assessments`: `clinical_history` (antecedentes), `lifestyle_habits` (hábitos), `vasoactive_drugs` (vasoativos).
-- Migration cria as colunas com default `'{}'::jsonb` (não quebra registros existentes).
-- `buildSapsPayload` passa a serializar os 3 novos campos. `calculateComorbidityScore` continua olhando **somente** `comorbidities` (SAPS oficial) — nada muda no escore.
+### 4. Estilo do cadeado (identidade visual)
+- Ícone `Lock` Lucide, `h-3 w-3`, cor `text-muted-foreground/70` (cinza neutro do design system, não cinza puro).
+- Em hover sobre item bloqueado: micro-tooltip com `bg-muted text-muted-foreground` + borda sutil.
 
-### Validação no `handleSave`
-- Antecedentes/hábitos/vasoativos **nunca** geram toast de erro.
-- Mantém validações atuais para os campos que pontuam (consciência, laboratoriais quando preenchidos, etc.).
+### 5. Limpeza automática de sinalizações órfãs (24h)
+Atualmente uma alta para enfermaria neuro cria registro em `pre_admissions`/`bed_allocation_requests` aguardando admissão. Como o fluxo desses setores não funciona, esses registros acumulam.
 
----
+- **Migration**: criar função `cleanup_locked_sector_pending_allocations()` em SQL que:
+  - Marca como `expired` (ou deleta, conforme schema) registros de `pre_admissions` e `bed_allocation_requests` cujo `target_department`/`destination_sector` esteja na lista bloqueada **e** `created_at < now() - interval '24 hours'` **e** `status` ainda pendente.
+  - **Preserva o prontuário do paciente** (não toca em `patient_registry`, `medical_records`, evoluções, etc).
+  - Registra em log `locked_sector_cleanup_log` (id, patient_id, sector, cleaned_at) para auditoria.
+- Trigger leve via cron `pg_cron` a cada 1h, ou — mais simples e suficiente — chamada idempotente disparada no carregamento do `DashboardPage`/`MovementsPage` (debounce por `localStorage` flag `last_locked_cleanup_at` para rodar no máximo 1x/hora por sessão).
+- Vou usar a **abordagem on-load com debounce 1h** para evitar dependência de pg_cron e manter o comportamento previsível.
 
-## 2. Restringir SAPS aos setores UTI 1, UTI 2 e UCI 2
+### 6. Validação opcional na origem (defesa em profundidade)
+No diálogo de criação de movimento/alta para outro setor (`BedReleasePreAdmissionDialog`, `MovementsPage`), exibir badge âmbar "Setor sem implantação — sinalização será removida em 24h se não admitida" quando o destino for um setor bloqueado. Não bloquear o fluxo (o usuário pode continuar faturando, conforme pedido).
 
-Atualizar a função `isUtiSector` / `isUtiAllocation` em:
-- `src/components/BedAllocationNotifications.tsx`
-- `src/components/AllocationPendingBadge.tsx`
+## Fora de escopo (não tocar)
+- Páginas dedicadas (`/ue-vertical`, `/ue-horizontal`) seguem existindo — bloqueio é apenas no seletor.
+- Permissionamento por perfil em `user_departments` — não altera.
+- Cálculos clínicos, dashboards do Gestor, prontuário — intactos.
 
-Nova lista: `["UTI 1", "UTI 2", "UCI 2", "red", "yellow", "outside"]` (UCI 1 = `blue` e UCC saem). Remover o regex amplo `^UCI\b` (passa a casar somente UCI 2 explícito).
+## Detalhes técnicos
+- Sem mudança em RLS.
+- A migration usa `SECURITY DEFINER` na função de cleanup com `search_path = public`.
+- Se `bed_allocation_requests` tiver enum `status` sem `expired`, uso `'cancelled'` + coluna `cancellation_reason = 'locked_sector_auto_cleanup'`.
 
-Em `src/pages/Saps3Page.tsx`, no `UTI_SECTORS`, manter UCI 1 e UCC visíveis na lista do formulário (para casos de pendência histórica), mas o gate automático de "exigir SAPS na admissão" só roda nos 3 setores acima.
-
----
-
-## 3. Corrigir navegação do alerta SAPS no Painel Clínico
-
-**Sintoma:** ao clicar em "Finalizar SAPS 3" no banner do `/paciente`, a página abre a lista geral em vez do formulário do paciente.
-
-**Causa:** `handleGoSaps` em `PacienteHubPage.tsx` envia apenas `patientId/Name/Bed/Sector`, mas o `useEffect` do `Saps3Page.tsx` só hidrata o formulário quando recebe `completeSapsId` (caminho A) ou `fromAllocation=true` (caminho B). Sem nenhum dos dois, cai no estado vazio.
-
-**Correção em `PacienteHubPage.handleGoSaps`:**
-1. Buscar a ficha SAPS pendente do paciente: `select id from saps3_assessments where patient_id = ctx.patientId and status = 'pending' order by created_at desc limit 1`.
-2. Se encontrar, navegar com `completeSapsId={id}` + contexto do paciente.
-3. Se **não** encontrar (caso raro), navegar com `fromAllocation=true&patientId=...&patientName=...` para forçar o caminho B.
-
-Bônus de robustez no `Saps3Page` useEffect: aceitar `patientNameFromContext` sozinho como gatilho do caminho B (eliminando o requisito explícito de `fromAllocation=true`), garantindo que qualquer link com `?patientId=...&patientName=...` carregue o paciente direto.
-
----
-
-## 4. Detalhes técnicos resumidos
-
-- Migration: `ALTER TABLE saps3_assessments ADD COLUMN clinical_history jsonb DEFAULT '{}'::jsonb, ADD COLUMN lifestyle_habits jsonb DEFAULT '{}'::jsonb, ADD COLUMN vasoactive_drugs jsonb DEFAULT '{}'::jsonb;`
-- Sem quebra de cálculo do escore (mortalidade preditiva permanece idêntica).
-- Banner âmbar reutiliza tokens semânticos (`bg-amber-50 border-amber-300 text-amber-900`).
-- `buildSapsPayload` passa a incluir os três campos novos; hidratação ao reabrir ficha pendente lê os mesmos campos.
-- Toast informativo no salvamento: *"Ficha validada. Antecedentes/hábitos/vasoativos arquivados (não pontuam no SAPS)."*
-
----
-
-## Confirma para eu implementar?
-
-Posso seguir exatamente este plano, ou quer ajustar algum item antes (ex.: incluir mais comorbidades opcionais, mudar o conjunto de vasoativos, manter UCI 1 também no gate)?
+## Confirmação solicitada
+1. Confirma a lista de **6 setores liberados** (UTI 1/2, UCI 1/2, UCC, Enf. Transição) e os **12 bloqueados**?
+2. Pode aplicar a limpeza automática **24h** com **deleção lógica** (`status='cancelled'` + motivo) em vez de hard delete? Isso preserva auditoria.
+3. Pode usar **debounce on-load (1h)** em vez de `pg_cron`?
