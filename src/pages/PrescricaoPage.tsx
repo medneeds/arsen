@@ -7851,12 +7851,9 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         </tbody>
       </table>
 
-      {/* Risk Classification Summary */}
+      {/* QP + Sinais Vitais (sem rótulo de Classificação de Risco) */}
       {(patient.chiefComplaint || patient.vitalSigns) && (
         <div style={{ padding: '3px 8px', backgroundColor: '#f8fafc', border: '0.5px solid #e2e8f0', marginBottom: '5px', borderLeft: '2px solid #0c4a6e' }}>
-          <div style={{ fontSize: '6pt', fontWeight: 800, color: '#0c4a6e', letterSpacing: '0.5px', marginBottom: '1px' }}>
-            CLASSIFICAÇÃO DE RISCO{patient.riskClassification ? ` — ${patient.riskClassification.toUpperCase()}` : ''}
-          </div>
           {patient.chiefComplaint && (
             <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3 }}>
               <span style={{ fontWeight: 700 }}>QP:</span> {patient.chiefComplaint}
