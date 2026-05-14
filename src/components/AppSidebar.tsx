@@ -247,7 +247,7 @@ export function AppSidebar({
     { title: "Início", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
     { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: ["medico"] },
     { title: "Painel Clínico", icon: ClipboardList, link: "/painel-clinico", profiles: ["medico"] },
-    { title: "Examinus AI", icon: Brain, link: "/ia", profiles: ["medico"] },
+    
   ];
 
   // GESTOR: organizado em blocos lógicos
