@@ -2042,7 +2042,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             <>
               {/* Bulário movido para o header (próximo ao nome da medicação) */}
               {/* ===== Container integrado: 3 linhas de edição com fundo único ===== */}
-              <div className={cn(getCategoryContainerClass(item.category), getCategoryFieldAccent(item.category).descendantOverrides, "space-y-2")}>
+              <div className={cn(getCategoryContainerClass(item.category), getCategoryFieldAccent(item.category).descendantOverrides, "space-y-2", item.category === 'antimicrobial' && "atb-themed")}>
               {/* ATB Header — campos regulatórios editáveis inline (início, duração, sítio) */}
               {item.category === 'antimicrobial' && (() => {
                 const dayLine = buildAtbDayLine(item);
