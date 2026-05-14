@@ -607,6 +607,36 @@ export function getCategoryContainerClass(category?: string): string {
   }
 }
 
+// Acento de campo (border + focus ring) por categoria — usado no
+// MedicationAutocomplete e como override descendente nos inputs/selects
+// internos do container (apenas os que têm fundo branco, preservando
+// campos especiais já tematizados como o pill ATB e a tarja âmbar).
+export function getCategoryFieldAccent(category?: string): { border: string; ring: string; descendantOverrides: string } {
+  switch (category) {
+    case 'nutrition':
+      return { border: 'border-emerald-300/70 focus-visible:border-emerald-400', ring: 'focus-visible:ring-emerald-400/60', descendantOverrides: '[&_input.bg-white]:border-emerald-200/70 [&_input.bg-white]:focus-visible:ring-emerald-400/60 [&_button.bg-white]:border-emerald-200/70 [&_button.bg-white]:focus-visible:ring-emerald-400/60' };
+    case 'hydration':
+      return { border: 'border-blue-300/70 focus-visible:border-blue-400', ring: 'focus-visible:ring-blue-400/60', descendantOverrides: '[&_input.bg-white]:border-blue-200/70 [&_input.bg-white]:focus-visible:ring-blue-400/60 [&_button.bg-white]:border-blue-200/70 [&_button.bg-white]:focus-visible:ring-blue-400/60' };
+    case 'replacement':
+      return { border: 'border-sky-300/70 focus-visible:border-sky-400', ring: 'focus-visible:ring-sky-400/60', descendantOverrides: '[&_input.bg-white]:border-sky-200/70 [&_input.bg-white]:focus-visible:ring-sky-400/60 [&_button.bg-white]:border-sky-200/70 [&_button.bg-white]:focus-visible:ring-sky-400/60' };
+    case 'antimicrobial':
+      return { border: 'border-indigo-300/60 focus-visible:border-indigo-400', ring: 'focus-visible:ring-indigo-400/50', descendantOverrides: '[&_input.bg-white]:border-indigo-200/60 [&_input.bg-white]:focus-visible:ring-indigo-400/50 [&_button.bg-white]:border-indigo-200/60 [&_button.bg-white]:focus-visible:ring-indigo-400/50' };
+    case 'high_alert':
+      return { border: 'border-red-300/70 focus-visible:border-red-400', ring: 'focus-visible:ring-red-400/60', descendantOverrides: '[&_input.bg-white]:border-red-200/70 [&_input.bg-white]:focus-visible:ring-red-400/60 [&_button.bg-white]:border-red-200/70 [&_button.bg-white]:focus-visible:ring-red-400/60' };
+    case 'inhalation':
+      return { border: 'border-cyan-300/70 focus-visible:border-cyan-400', ring: 'focus-visible:ring-cyan-400/60', descendantOverrides: '[&_input.bg-white]:border-cyan-200/70 [&_input.bg-white]:focus-visible:ring-cyan-400/60 [&_button.bg-white]:border-cyan-200/70 [&_button.bg-white]:focus-visible:ring-cyan-400/60' };
+    case 'hemotherapy':
+      return { border: 'border-rose-300/70 focus-visible:border-rose-400', ring: 'focus-visible:ring-rose-400/60', descendantOverrides: '[&_input.bg-white]:border-rose-200/70 [&_input.bg-white]:focus-visible:ring-rose-400/60 [&_button.bg-white]:border-rose-200/70 [&_button.bg-white]:focus-visible:ring-rose-400/60' };
+    case 'care':
+      return { border: 'border-violet-300/70 focus-visible:border-violet-400', ring: 'focus-visible:ring-violet-400/60', descendantOverrides: '[&_input.bg-white]:border-violet-200/70 [&_input.bg-white]:focus-visible:ring-violet-400/60 [&_button.bg-white]:border-violet-200/70 [&_button.bg-white]:focus-visible:ring-violet-400/60' };
+    case 'nonstandard':
+      return { border: 'border-zinc-300/70 focus-visible:border-zinc-400', ring: 'focus-visible:ring-zinc-400/60', descendantOverrides: '[&_input.bg-white]:border-zinc-200/70 [&_input.bg-white]:focus-visible:ring-zinc-400/60 [&_button.bg-white]:border-zinc-200/70 [&_button.bg-white]:focus-visible:ring-zinc-400/60' };
+    case 'medication':
+    default:
+      return { border: 'border-slate-300/70 focus-visible:border-slate-400', ring: 'focus-visible:ring-slate-400/60', descendantOverrides: '[&_input.bg-white]:border-slate-200/70 [&_input.bg-white]:focus-visible:ring-slate-400/60 [&_button.bg-white]:border-slate-200/70 [&_button.bg-white]:focus-visible:ring-slate-400/60' };
+  }
+}
+
 // --- Autocomplete Component ---
 function MedicationAutocomplete({
   source,
