@@ -96,8 +96,64 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
   };
 
   return (
-    <MovementConfirmDialog
-      open={open}
+    <>
+      {/* ETAPA 1: Notificação de consciência (intermediária) */}
+      <AlertDialog
+        open={open && step === "notice"}
+        onOpenChange={(v) => {
+          if (!v) onOpenChange(false);
+        }}
+      >
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="rounded-full bg-amber-100 dark:bg-amber-950/40 p-2">
+                <AlertTriangle className="h-5 w-5 text-amber-600" />
+              </div>
+              <AlertDialogTitle className="text-base">Atenção: liberar leito sem alta</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-xs leading-relaxed text-foreground">
+                <p>
+                  Você está prestes a <strong>desocupar o leito {patient.bedNumber || "—"}</strong> ocupado por{" "}
+                  <strong>{patient.name || "este paciente"}</strong>.
+                </p>
+                {alreadyAdmitted ? (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-destructive">
+                    <p className="font-semibold">Esta ação não está disponível.</p>
+                    <p className="mt-1">
+                      O paciente já foi <strong>admitido oficialmente</strong>. Liberação só pode ocorrer pelo fluxo
+                      <strong> Alta Médica → Alta Administrativa</strong>.
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                    <li>O <strong>prontuário do paciente é preservado</strong> (nada é apagado).</li>
+                    <li>O <strong>leito volta a ficar vago</strong> e disponível para nova alocação.</li>
+                    <li>A ação é <strong>auditada</strong> em Movimentações com motivo, autor e horário.</li>
+                    <li>Use somente para pacientes que <strong>ainda não concluíram a admissão</strong> (evasão, alocação indevida, redirecionamento, etc.).</li>
+                  </ul>
+                )}
+                <p className="pt-1 text-muted-foreground">
+                  Na próxima etapa você deverá <strong>selecionar o motivo</strong> e revisar os detalhes antes de confirmar.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            {!alreadyAdmitted && (
+              <AlertDialogAction onClick={() => setStep("form")}>
+                Entendi, continuar
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ETAPA 2: Formulário detalhado com motivo + consequências */}
+      <MovementConfirmDialog
+        open={open && step === "form"}
       onOpenChange={(v) => (!submitting ? onOpenChange(v) : undefined)}
       onConfirm={handleConfirm}
       isSubmitting={submitting}
