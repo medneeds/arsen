@@ -713,6 +713,7 @@ export function usePatients(department?: Department, sector?: string) {
     updatePatient,
     createPatient,
     deletePatient,
+    releaseBedPreAdmission,
     reorderPatients,
     refetch: fetchPatients,
   };
