@@ -1896,7 +1896,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         <SelectItem value="próprio diluente" className="text-xs">Próprio diluente do fabricante</SelectItem>
                       </SelectContent>
                     </Select>
-                    <span className="text-[10px] text-muted-foreground italic ml-auto">opcional · sugerido pelo catálogo</span>
+                    <span className="text-[10px] text-amber-700/80 dark:text-amber-300/80 italic ml-auto">Sugestão do catálogo · ajustável</span>
                   </div>
                 );
               })()}
@@ -1906,13 +1906,39 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-[130px]"><SelectValue placeholder="forma/unidade" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-[130px]"><SelectValue placeholder="apresentação" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       {QUANTITY_UNITS.map(u => (
                         <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {item.quantityUnit && (
+                    <>
+                      <span className="text-[10px] text-muted-foreground">Qtd:</span>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="any"
+                        value={item.quantity || ''}
+                        onChange={(e) => {
+                          onUpdate(item.id, "quantity", e.target.value);
+                          const tempItem = { ...item, quantity: e.target.value };
+                          const autoVol = calcVolumeTotal(tempItem);
+                          if (autoVol) {
+                            onUpdate(item.id, "volumeTotal", autoVol);
+                            const autoConc = calcConcentration({ ...tempItem, volumeTotal: autoVol });
+                            if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                          }
+                        }}
+                        className="h-6 text-[11px] bg-muted/10 border-border/30 w-14 text-center"
+                        placeholder="1"
+                        title={`Quantidade em ${item.quantityUnit}`}
+                      />
+                      <span className="text-[10px] text-muted-foreground lowercase">{item.quantityUnit}</span>
+                    </>
+                  )}
                 </div>
                 {renderDiluent && <>
                 <div className="flex items-center gap-1">
@@ -1946,7 +1972,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </div>
                 {item.diluent && item.diluent !== 'sem_diluente' && (
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Vol dil:</span>
+                  <span className="text-[10px] text-muted-foreground">Vol. diluente:</span>
                   <Input value={item.diluentVolume || ''} onChange={(e) => {
                     onUpdate(item.id, "diluentVolume", e.target.value);
                     const tempItem = { ...item, diluentVolume: e.target.value };
@@ -1959,7 +1985,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </div>
                 )}
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">Acesso:</span>
+                  <span className="text-[10px] text-muted-foreground">Acesso venoso:</span>
                   <Select value={item.accessType || ''} onValueChange={(v) => onUpdate(item.id, "accessType", v)}>
                     <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-28"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
@@ -1979,7 +2005,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               <div className="flex items-center gap-2 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
                 <Droplets className="h-3 w-3 text-primary shrink-0" />
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">Vol total:</span>
+                  <span className="text-[10px] text-muted-foreground font-medium">Vol. final:</span>
                   <Input
                     value={item.volumeTotal || ''}
                     onChange={(e) => {
@@ -1997,7 +2023,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     }}
                     className="h-6 text-[11px] bg-background border-border/40 w-16 text-center font-medium"
                     placeholder="opcional"
-                    title="Editável. Auto-calculado quando a forma é em mL. Opcional — não bloqueia validação."
+                    title="Volume final da solução (medicamento + diluente). Auto-calculado quando possível."
                   />
                   <span className="text-[10px] text-muted-foreground">mL</span>
                 </div>
@@ -2070,7 +2096,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </div>
                 <span className="text-muted-foreground/40">│</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">Conc:</span>
+                  <span className="text-[10px] text-muted-foreground font-medium">Conc. final:</span>
                   <Input
                     value={item.concentration || ''}
                     onChange={(e) => onUpdate(item.id, "concentration", e.target.value)}
