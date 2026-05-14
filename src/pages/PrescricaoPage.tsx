@@ -1944,7 +1944,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         if (autoConc) onUpdate(item.id, "concentration", autoConc);
                       }
                     }}
-                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-12 text-center focus-visible:ring-1 focus-visible:ring-primary"
+                    className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 px-1.5 text-center focus-visible:ring-1 focus-visible:ring-primary"
+                    style={{ width: `${Math.max(2.75, (String(item.quantity || '').length || 1) * 0.7 + 1.5)}ch`, minWidth: '3rem' }}
                     placeholder="1"
                     title={item.quantityUnit ? `Quantidade em ${item.quantityUnit}` : 'Quantidade'}
                   />
