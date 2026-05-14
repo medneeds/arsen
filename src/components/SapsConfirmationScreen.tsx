@@ -27,9 +27,11 @@ export function SapsConfirmationScreen({
   patientId,
   sectorCode,
   age,
+  mode = "admission",
   onComplete,
 }: SapsConfirmationProps) {
   const navigate = useNavigate();
+  const isValidation = mode === "validation";
   const [countdown, setCountdown] = useState(3);
   const [progress, setProgress] = useState(0);
 
