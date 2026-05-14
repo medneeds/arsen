@@ -1355,12 +1355,11 @@ export function UtiPatientCard({
                     colorClass="bg-red-50/50 dark:bg-red-900/10 border border-red-200/30 dark:border-red-800/20"
                     alwaysShowAll
                   />
-                  <InlineEditableArray
+                  <ReadOnlyArray
                     items={alergias}
-                    onUpdate={(items) => handleUpdateField("utiAllergies", items)}
                     label="Alergias"
+                    placeholder="Sincronizadas com a prescrição"
                     colorClass="bg-red-50/50 dark:bg-red-900/10 border border-red-200/30 dark:border-red-800/20"
-                    alwaysShowAll
                   />
                   <InlineEditableArray
                     items={culturasAtb}
@@ -1406,7 +1405,7 @@ export function UtiPatientCard({
                 <div className="bg-muted/30 border border-border/30 rounded-md p-2">
                   <InlineEditableTextarea
                     value={patient.admissionHistory || ""}
-                    onUpdate={(v) => handleUpdateField("admissionHistory", v)}
+                    onUpdate={() => {}}
                     placeholder="História admissional / Anamnese..."
                   />
                 </div>
@@ -1419,19 +1418,17 @@ export function UtiPatientCard({
                   <span className="text-[10px] font-bold text-slate-500 dark:text-slate-500 tracking-wider">Administrativo</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-                  <InlineEditableArray
+                  <ReadOnlyArray
                     items={setorOrigem}
-                    onUpdate={(items) => handleUpdateField("utiOriginSector", items)}
                     label="Setor de origem"
+                    placeholder="Importado da admissão"
                     colorClass="bg-muted/30 border border-border/30"
-                    alwaysShowAll
                   />
-                  <InlineEditableArray
+                  <ReadOnlyArray
                     items={motivoAdmissao}
-                    onUpdate={(items) => handleUpdateField("utiAdmissionReason", items)}
                     label="Motivo da admissão"
+                    placeholder="Importado da admissão"
                     colorClass="bg-muted/30 border border-border/30"
-                    alwaysShowAll
                   />
                   <div className="bg-muted/30 border border-border/30 rounded-md p-2 cursor-not-allowed" title="Edite em Edição Avançada">
                     <span className="text-[10px] font-semibold text-muted-foreground tracking-wide block mb-1">{admissionLabel}</span>
