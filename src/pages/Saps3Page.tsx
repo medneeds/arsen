@@ -297,6 +297,7 @@ export default function Saps3Page() {
     patientId?: string | null;
     sectorCode?: string;
     age?: string | null;
+    mode?: "admission" | "validation";
   } | null>(null);
 
   // Allocation
@@ -751,6 +752,7 @@ export default function Saps3Page() {
           patientId: completingPatientId,
           sectorCode: selectedSector,
           age: age ? `${age} anos` : null,
+          mode: "validation",
         });
         setSelectedRequest(null);
         setCompletingSapsId(null);
@@ -972,6 +974,7 @@ export default function Saps3Page() {
           patientId={confirmationData.patientId}
           sectorCode={confirmationData.sectorCode}
           age={confirmationData.age}
+          mode={confirmationData.mode}
           onComplete={() => setConfirmationData(null)}
         />
       )}
@@ -1043,16 +1046,24 @@ export default function Saps3Page() {
       {isFormMode && (
         <div className="space-y-4">
           {/* Patient info banner */}
-          <Card className="border-primary/30 bg-primary/5">
+          <Card className={completingSapsId ? "border-emerald-300 bg-emerald-50/60 dark:border-emerald-700 dark:bg-emerald-900/15" : "border-primary/30 bg-primary/5"}>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Admitindo paciente</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                    {completingSapsId ? "Validando ficha SAPS — paciente já alocado" : "Admitindo paciente"}
+                  </p>
                   <p className="patient-id text-lg font-bold text-foreground">{patientName}</p>
-                  {selectedRequest?.destination_sector && (
+                  {completingSapsId ? (
                     <p className="text-xs text-muted-foreground">
-                      Pedido: {selectedRequest.destination_sector}
+                      Leito {selectedBed || "—"} · {currentSectorLabel || "Setor —"} · aguardando validação dos exames
                     </p>
+                  ) : (
+                    selectedRequest?.destination_sector && (
+                      <p className="text-xs text-muted-foreground">
+                        Pedido: {selectedRequest.destination_sector}
+                      </p>
+                    )
                   )}
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setSelectedRequest(null)}>
@@ -1062,15 +1073,17 @@ export default function Saps3Page() {
             </CardContent>
           </Card>
 
-          {/* Bed Selection */}
+          {/* Bed Selection / Allocation Confirmation */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Bed className="h-5 w-5 text-primary" />
-                Alocação de Leito
+                {completingSapsId ? "Leito já alocado" : "Alocação de Leito"}
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                Setor pré-configurado pela origem do pedido. Selecione apenas o leito de destino.
+                {completingSapsId
+                  ? "Paciente já está no leito. Esta seção é apenas informativa — a validação atualizará a ficha SAPS sem mover o paciente."
+                  : "Setor pré-configurado pela origem do pedido. Selecione apenas o leito de destino."}
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1081,24 +1094,35 @@ export default function Saps3Page() {
                     <span className="text-sm font-semibold text-foreground">
                       {currentSectorLabel || "—"}
                     </span>
-                    <Badge variant="outline" className="text-[10px] uppercase">Sincronizado</Badge>
+                    <Badge variant="outline" className="text-[10px] uppercase">
+                      {completingSapsId ? "Atual" : "Sincronizado"}
+                    </Badge>
                   </div>
                 </div>
                 <div>
-                  <Label>Leito de destino</Label>
-                  <Select value={selectedBed} onValueChange={setSelectedBed} disabled={!selectedSector}>
-                    <SelectTrigger><SelectValue placeholder={selectedSector ? "Selecione o leito" : "Setor não definido"} /></SelectTrigger>
-                    <SelectContent>
-                      {availableBeds.map(b => (
-                        <SelectItem key={b.value} value={b.value} disabled={b.occupied}>
-                          {b.label} {b.occupied ? " (ocupado)" : " ✓ livre"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>{completingSapsId ? "Leito atual" : "Leito de destino"}</Label>
+                  {completingSapsId ? (
+                    <div className="mt-1.5 flex items-center justify-between gap-2 h-10 px-3 rounded-md border border-dashed border-emerald-400/60 bg-emerald-50 dark:bg-emerald-900/20">
+                      <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                        {selectedBed || "—"}
+                      </span>
+                      <Badge variant="outline" className="text-[10px] uppercase border-emerald-300 text-emerald-700 dark:text-emerald-300">Ocupado</Badge>
+                    </div>
+                  ) : (
+                    <Select value={selectedBed} onValueChange={setSelectedBed} disabled={!selectedSector}>
+                      <SelectTrigger><SelectValue placeholder={selectedSector ? "Selecione o leito" : "Setor não definido"} /></SelectTrigger>
+                      <SelectContent>
+                        {availableBeds.map(b => (
+                          <SelectItem key={b.value} value={b.value} disabled={b.occupied}>
+                            {b.label} {b.occupied ? " (ocupado)" : " ✓ livre"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               </div>
-              {selectedBed && (
+              {selectedBed && !completingSapsId && (
                 <div className="flex items-center gap-2 p-2 rounded-md bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
                   <Bed className="h-4 w-4 text-emerald-600" />
                   <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
@@ -1476,28 +1500,33 @@ export default function Saps3Page() {
           {/* Save */}
           <div className="flex gap-3 justify-end flex-wrap">
             <Button variant="outline" onClick={() => setSelectedRequest(null)}>Cancelar</Button>
-            <Button 
+            <Button
               variant="outline"
-              onClick={() => handleSave(true)} 
-              disabled={saving || !selectedBed} 
+              onClick={() => handleSave(true)}
+              disabled={saving || (!completingSapsId && !selectedBed)}
               className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-400 dark:hover:bg-amber-900/20"
             >
               <Clock className="h-4 w-4" />
-              {saving ? "Pré-admitindo..." : "Pré-admitir com SAPS pendente"}
+              {saving
+                ? (completingSapsId ? "Salvando..." : "Pré-admitindo...")
+                : (completingSapsId ? "Manter como pendente" : "Pré-admitir com SAPS pendente")}
             </Button>
-            <Button onClick={() => handleSave(false)} disabled={saving || !selectedBed} className="gap-2">
+            <Button onClick={() => handleSave(false)} disabled={saving || (!completingSapsId && !selectedBed)} className="gap-2">
               <Save className="h-4 w-4" />
-              {saving ? "Pré-admitindo..." : `Pré-admitir no ${selectedBed || "leito"}`}
+              {saving
+                ? (completingSapsId ? "Validando..." : "Pré-admitindo...")
+                : (completingSapsId ? "Validar ficha SAPS" : `Pré-admitir no ${selectedBed || "leito"}`)}
             </Button>
           </div>
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-300">
+          <div className={`${completingSapsId ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300" : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300"} border rounded-lg p-3 text-sm`}>
             <p className="font-medium flex items-center gap-1.5">
-              <AlertTriangle className="h-4 w-4" /> Exames laboratoriais ainda pendentes?
+              <AlertTriangle className="h-4 w-4" />
+              {completingSapsId ? "Validação atualiza a ficha e libera o gate clínico" : "Exames laboratoriais ainda pendentes?"}
             </p>
-            <p className="text-xs mt-1 text-amber-700 dark:text-amber-400">
-              Utilize "Pré-admitir com SAPS pendente" para alocar o paciente no leito agora e completar a ficha SAPS 3 
-              quando os resultados de gasometria, hemograma, função renal e demais exames admissionais estiverem disponíveis. 
-              Um cronômetro será ativado para rastrear o tempo de pendência.
+            <p className={`text-xs mt-1 ${completingSapsId ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
+              {completingSapsId
+                ? "Ao validar, o cálculo SAPS 3 é recalculado com os valores atuais, a flag de pendência é removida do paciente e você é redirecionado para o painel clínico do leito correspondente para seguir com HDA, exame físico e plano."
+                : "Utilize \"Pré-admitir com SAPS pendente\" para alocar o paciente no leito agora e completar a ficha SAPS 3 quando os resultados de gasometria, hemograma, função renal e demais exames admissionais estiverem disponíveis. Um cronômetro será ativado para rastrear o tempo de pendência."}
             </p>
           </div>
         </div>
