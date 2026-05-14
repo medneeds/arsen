@@ -705,7 +705,7 @@ export function AntimicrobialGuideDialog({
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <Label className="text-[10px]">Justificativa Clínica</Label>
+                      <Label className="text-[10px]">Justificativa Clínica{mode === 'prescribe' && <Req />}</Label>
                       {patientId && (
                         <div className="flex items-center gap-1">
                           <Button type="button" variant="outline" size="sm" onClick={() => importAdmissionHistory(entry.id)} disabled={!!loadingImport[entry.id]} className="h-6 text-[10px] gap-1 px-2">
