@@ -3,9 +3,9 @@
 //        e NOVA (acréscimo vs troca → abre AntimicrobialGuideDialog do zero).
 // Não edita guias autorizadas; apenas permite suspender e iniciar nova.
 import React, { useMemo, useState } from "react";
-import { differenceInCalendarDays, format, parseISO } from "date-fns";
+import { differenceInCalendarDays, format, parseISO, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Shield, Activity, Plus, AlertTriangle, Clock, Ban, ChevronRight } from "lucide-react";
+import { Shield, Activity, Plus, AlertTriangle, Clock, Ban, ChevronRight, CalendarDays, Timer } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
