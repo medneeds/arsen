@@ -17,8 +17,9 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
   FileText, History, Loader2, Save, AlertTriangle, IdCard, Upload, FileWarning,
-  ShieldAlert, Trash2,
+  ShieldAlert, Trash2, Pencil, Lock, ClipboardPaste, Sparkles, Check, X, FileUp,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { MovementConfirmDialog } from "./MovementConfirmDialog";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -150,6 +151,16 @@ export function MedicalRecordEditDialog({
   const [reg, setReg] = useState<Partial<RegistryRow>>({});
   const [regReason, setRegReason] = useState("");
   const [importing, setImporting] = useState(false);
+  const [cadastroEditMode, setCadastroEditMode] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Revisão PIS (etapa intermediária)
+  const [pisReviewOpen, setPisReviewOpen] = useState(false);
+  const [pisExtracted, setPisExtracted] = useState<Record<string, any> | null>(null);
+  const [pisAccepted, setPisAccepted] = useState<Record<string, boolean>>({});
+  const [pisSource, setPisSource] = useState<"file" | "paste">("file");
+  const [pisFromFieldsApplied, setPisFromFieldsApplied] = useState<Set<string>>(new Set());
 
   // Histórico
   const [mrHistory, setMrHistory] = useState<MrHistoryRow[]>([]);
@@ -220,6 +231,9 @@ export function MedicalRecordEditDialog({
       setReg(regRow ? { ...regRow } : {});
       setMrReason("");
       setRegReason("");
+      setCadastroEditMode(false);
+      setPasteText("");
+      setPisFromFieldsApplied(new Set());
 
       if (regRow?.id) {
         const { data: rh } = await supabase
@@ -365,7 +379,7 @@ export function MedicalRecordEditDialog({
           old_value: c.oldVal || null,
           new_value: c.newVal || null,
           reason: regReason.trim(),
-          source,
+          source: pisFromFieldsApplied.has(c.field) ? "pis_import" : source,
           changed_by: userId,
           changed_by_email: userEmail,
         })));
@@ -413,9 +427,66 @@ export function MedicalRecordEditDialog({
     }
   }
 
-  // ===== Import PIS =====
-  async function handlePisFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  // ===== Import PIS — abre etapa intermediária de revisão =====
+  const PIS_FIELD_MAP: Record<string, keyof RegistryRow> = {
+    patient_name: "full_name",
+    mother_name: "mother_name",
+    birth_date: "birth_date",
+    sex: "sex",
+    cpf: "cpf",
+    cns: "cns",
+    phone: "phone",
+    address: "address",
+    neighborhood: "neighborhood",
+    city: "city",
+    state: "state",
+    medical_record: "medical_record",
+  };
+
+  function openPisReview(extracted: Record<string, any>, source: "file" | "paste") {
+    // pré-marca apenas campos com valor não vazio
+    const accepted: Record<string, boolean> = {};
+    for (const [pisKey] of Object.entries(PIS_FIELD_MAP)) {
+      const v = extracted?.[pisKey];
+      if (v !== null && v !== undefined && String(v).trim() !== "") accepted[pisKey] = true;
+    }
+    setPisExtracted(extracted);
+    setPisAccepted(accepted);
+    setPisSource(source);
+    setPisReviewOpen(true);
+  }
+
+  function applyPisAccepted() {
+    if (!pisExtracted) return;
+    const next: Partial<RegistryRow> = { ...reg };
+    const sources = new Set(pisFromFieldsApplied);
+    for (const [pisKey, regKey] of Object.entries(PIS_FIELD_MAP)) {
+      if (!pisAccepted[pisKey]) continue;
+      const raw = pisExtracted[pisKey];
+      if (raw === null || raw === undefined || String(raw).trim() === "") continue;
+      let val = String(raw).trim();
+      if (UPPER_FIELDS.has(regKey as string)) val = val.toUpperCase();
+      (next as any)[regKey] = val;
+      sources.add(regKey as string);
+    }
+    setReg(next);
+    setPisFromFieldsApplied(sources);
+    if (!regReason.trim()) {
+      setRegReason(pisSource === "paste"
+        ? "Atualização cadastral via colagem de dados do PIS"
+        : "Importação automática do sistema PIS (anexo)");
+    }
+    setPisReviewOpen(false);
+    setPisExtracted(null);
+    setPasteText("");
+    toast({
+      title: "✅ Campos aplicados aos formulários",
+      description: "Revise, ajuste se necessário e salve para confirmar a alteração.",
+    });
+  }
+
+  async function handlePisFile(eOrFile: React.ChangeEvent<HTMLInputElement> | File) {
+    const file = (eOrFile as any)?.target ? (eOrFile as any).target.files?.[0] : (eOrFile as File);
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
       toast({ title: "Arquivo muito grande", description: "Máximo 10 MB", variant: "destructive" });
@@ -434,23 +505,7 @@ export function MedicalRecordEditDialog({
       if (resp.error) throw new Error(resp.error.message);
       const data = (resp.data as any)?.data;
       if (!data) throw new Error("Sem dados extraídos");
-
-      setReg((prev) => ({
-        ...prev,
-        full_name: (data.patient_name || prev.full_name || "")?.toString().toUpperCase() || prev.full_name,
-        mother_name: (data.mother_name || prev.mother_name || "")?.toString().toUpperCase() || prev.mother_name,
-        birth_date: data.birth_date || prev.birth_date,
-        sex: data.sex || prev.sex,
-        cpf: data.cpf || prev.cpf,
-        cns: data.cns || prev.cns,
-        phone: data.phone || prev.phone,
-        address: (data.address || prev.address || "")?.toString().toUpperCase() || prev.address,
-        neighborhood: (data.neighborhood || prev.neighborhood || "")?.toString().toUpperCase() || prev.neighborhood,
-        city: (data.city || prev.city || "")?.toString().toUpperCase() || prev.city,
-        medical_record: (data.medical_record || prev.medical_record || "").toString().trim() || prev.medical_record,
-      }));
-      if (!regReason.trim()) setRegReason("Importação automática do sistema PIS");
-      toast({ title: "✅ Dados importados do PIS", description: "Revise antes de salvar." });
+      openPisReview(data, "file");
     } catch (err: any) {
       console.error(err);
       toast({ title: "Falha na importação PIS", description: err.message, variant: "destructive" });
@@ -458,6 +513,36 @@ export function MedicalRecordEditDialog({
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  }
+
+  async function handlePasteSubmit() {
+    const text = pasteText.trim();
+    if (text.length < 10) {
+      toast({ title: "Cole um trecho maior", description: "Cole o texto completo da ficha PIS para reconhecimento.", variant: "destructive" });
+      return;
+    }
+    setImporting(true);
+    try {
+      const resp = await supabase.functions.invoke("extract-patient-data", {
+        body: { rawText: text },
+      });
+      if (resp.error) throw new Error(resp.error.message);
+      const data = (resp.data as any)?.data;
+      if (!data) throw new Error("Sem dados extraídos");
+      openPisReview(data, "paste");
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: "Falha no reconhecimento", description: err.message, variant: "destructive" });
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) void handlePisFile(file);
   }
 
   return (
@@ -562,24 +647,92 @@ export function MedicalRecordEditDialog({
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {/* Importar PIS */}
-                      <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-blue-500/30 bg-blue-500/10">
-                        <div className="text-[11px] leading-snug">
-                          <div className="font-semibold text-foreground flex items-center gap-1.5">
-                            <Upload className="h-3.5 w-3.5" /> Importar do sistema PIS
+                      {/* Cabeçalho com botão Atualizar cadastro */}
+                      <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${cadastroEditMode ? "border-emerald-500/40 bg-emerald-500/5" : "border-muted bg-muted/30"}`}>
+                        <div className="text-[11px] leading-snug flex items-center gap-2">
+                          {cadastroEditMode ? <Pencil className="h-3.5 w-3.5 text-emerald-600" /> : <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+                          <div>
+                            <div className="font-semibold">
+                              {cadastroEditMode ? "Modo edição ativo" : "Cadastro bloqueado"}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">
+                              {cadastroEditMode
+                                ? "Edite os campos manualmente OU use a captura PIS abaixo. Toda alteração exige motivo + confirmação."
+                                : "Para alterar dados cadastrais ou importar do PIS, ative o modo edição."}
+                            </p>
                           </div>
-                          <p className="text-muted-foreground text-[10px]">
-                            Anexe ficha PIS (PDF/imagem) — IA preenche automaticamente. Revise antes de salvar.
-                          </p>
                         </div>
-                        <input ref={fileInputRef} type="file" accept="image/*,application/pdf"
-                          onChange={handlePisFile} className="hidden" />
-                        <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}
-                          disabled={importing} className="gap-1.5 text-xs">
-                          {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                          Importar
-                        </Button>
+                        {!cadastroEditMode ? (
+                          <Button size="sm" onClick={() => setCadastroEditMode(true)} className="gap-1.5 text-xs">
+                            <Pencil className="h-3.5 w-3.5" /> Atualizar cadastro
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setCadastroEditMode(false);
+                            setReg(registry ? { ...registry } : {});
+                            setRegReason("");
+                            setPasteText("");
+                            setPisFromFieldsApplied(new Set());
+                          }} className="gap-1.5 text-xs">
+                            <X className="h-3.5 w-3.5" /> Cancelar edição
+                          </Button>
+                        )}
                       </div>
+
+                      {/* Captura PIS (anexar / arrastar / colar) — só em modo edição */}
+                      {cadastroEditMode && (
+                        <section className="p-3 rounded-lg border border-blue-500/30 bg-blue-500/5 space-y-2.5">
+                          <div className="flex items-center gap-1.5 text-xs font-semibold">
+                            <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                            Captura automática do PIS
+                            <span className="text-[10px] font-normal text-muted-foreground">(anexar arquivo, arrastar ou colar texto)</span>
+                          </div>
+
+                          <div
+                            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                            onDragLeave={() => setIsDragging(false)}
+                            onDrop={handleDrop}
+                            className={`rounded-md border-2 border-dashed p-3 text-center text-[11px] transition-colors ${
+                              isDragging ? "border-blue-500 bg-blue-500/10" : "border-muted-foreground/30 bg-background/50"
+                            }`}
+                          >
+                            <FileUp className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                            <p className="text-muted-foreground">Arraste a ficha PIS aqui (PDF/imagem) <strong>ou</strong></p>
+                            <input ref={fileInputRef} type="file" accept="image/*,application/pdf"
+                              onChange={handlePisFile} className="hidden" />
+                            <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}
+                              disabled={importing} className="gap-1.5 text-xs mt-1.5">
+                              {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                              Anexar arquivo
+                            </Button>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label className="text-[11px] flex items-center gap-1.5">
+                              <ClipboardPaste className="h-3.5 w-3.5" /> Colar dados do PIS
+                            </Label>
+                            <Textarea
+                              value={pasteText}
+                              onChange={(e) => setPasteText(e.target.value)}
+                              rows={3}
+                              placeholder="Cole aqui o texto da ficha PIS (Ctrl+V). A IA reconhece nome, CPF, CNS, endereço, mãe, etc."
+                              className="text-xs"
+                              disabled={importing}
+                            />
+                            <div className="flex justify-end">
+                              <Button size="sm" onClick={handlePasteSubmit}
+                                disabled={importing || pasteText.trim().length < 10}
+                                className="gap-1.5 text-xs">
+                                {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                                Reconhecer e revisar
+                              </Button>
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground italic">
+                            Os dados reconhecidos passam por uma etapa de revisão antes de serem aplicados aos campos. Nada é salvo automaticamente.
+                          </p>
+                        </section>
+                      )}
 
                       {registry.is_unidentified && (
                         <Badge variant="outline" className="text-[10px] border-amber-500/40">
@@ -590,51 +743,55 @@ export function MedicalRecordEditDialog({
 
                       {/* Identificação */}
                       <FieldGrid title="Identificação">
-                        <FieldInput label="Nome completo" value={reg.full_name || ""} onChange={(v) => setRegField("full_name", v)} />
-                        <FieldInput label="Nome social" value={reg.social_name || ""} onChange={(v) => setRegField("social_name", v)} />
-                        <FieldInput label="CPF" value={reg.cpf || ""} onChange={(v) => setRegField("cpf", v)} placeholder="000.000.000-00" />
-                        <FieldInput label="CNS (Cartão SUS)" value={reg.cns || ""} onChange={(v) => setRegField("cns", v)} />
-                        <FieldInput label="Data de nascimento" type="date" value={reg.birth_date || ""} onChange={(v) => setRegField("birth_date", v)} />
-                        <FieldInput label="Sexo" value={reg.sex || ""} onChange={(v) => setRegField("sex", v)} placeholder="M / F / I" />
-                        <FieldInput label="Tipo sanguíneo" value={reg.blood_type || ""} onChange={(v) => setRegField("blood_type", v)} />
-                        <FieldInput label="Telefone" value={reg.phone || ""} onChange={(v) => setRegField("phone", v)} />
+                        <FieldInput label="Nome completo" value={reg.full_name || ""} onChange={(v) => setRegField("full_name", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("full_name")} />
+                        <FieldInput label="Nome social" value={reg.social_name || ""} onChange={(v) => setRegField("social_name", v)} disabled={!cadastroEditMode} />
+                        <FieldInput label="CPF" value={reg.cpf || ""} onChange={(v) => setRegField("cpf", v)} placeholder="000.000.000-00" disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("cpf")} />
+                        <FieldInput label="CNS (Cartão SUS)" value={reg.cns || ""} onChange={(v) => setRegField("cns", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("cns")} />
+                        <FieldInput label="Data de nascimento" type="date" value={reg.birth_date || ""} onChange={(v) => setRegField("birth_date", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("birth_date")} />
+                        <FieldInput label="Sexo" value={reg.sex || ""} onChange={(v) => setRegField("sex", v)} placeholder="M / F / I" disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("sex")} />
+                        <FieldInput label="Tipo sanguíneo" value={reg.blood_type || ""} onChange={(v) => setRegField("blood_type", v)} disabled={!cadastroEditMode} />
+                        <FieldInput label="Telefone" value={reg.phone || ""} onChange={(v) => setRegField("phone", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("phone")} />
                       </FieldGrid>
 
                       <FieldGrid title="Filiação">
-                        <FieldInput label="Nome da mãe" value={reg.mother_name || ""} onChange={(v) => setRegField("mother_name", v)} fullWidth />
+                        <FieldInput label="Nome da mãe" value={reg.mother_name || ""} onChange={(v) => setRegField("mother_name", v)} fullWidth disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("mother_name")} />
                       </FieldGrid>
 
                       <FieldGrid title="Endereço">
-                        <FieldInput label="Logradouro" value={reg.address || ""} onChange={(v) => setRegField("address", v)} fullWidth />
-                        <FieldInput label="Bairro" value={reg.neighborhood || ""} onChange={(v) => setRegField("neighborhood", v)} />
-                        <FieldInput label="Cidade" value={reg.city || ""} onChange={(v) => setRegField("city", v)} />
-                        <FieldInput label="UF" value={reg.state || ""} onChange={(v) => setRegField("state", v)} />
+                        <FieldInput label="Logradouro" value={reg.address || ""} onChange={(v) => setRegField("address", v)} fullWidth disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("address")} />
+                        <FieldInput label="Bairro" value={reg.neighborhood || ""} onChange={(v) => setRegField("neighborhood", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("neighborhood")} />
+                        <FieldInput label="Cidade" value={reg.city || ""} onChange={(v) => setRegField("city", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("city")} />
+                        <FieldInput label="UF" value={reg.state || ""} onChange={(v) => setRegField("state", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("state")} />
                       </FieldGrid>
 
                       <FieldGrid title="Clínico">
-                        <FieldInput label="Alergias conhecidas" value={reg.allergies || ""} onChange={(v) => setRegField("allergies", v)} fullWidth />
-                        <FieldInput label="Comorbidades" value={reg.comorbidities || ""} onChange={(v) => setRegField("comorbidities", v)} fullWidth />
+                        <FieldInput label="Alergias conhecidas" value={reg.allergies || ""} onChange={(v) => setRegField("allergies", v)} fullWidth disabled={!cadastroEditMode} />
+                        <FieldInput label="Comorbidades" value={reg.comorbidities || ""} onChange={(v) => setRegField("comorbidities", v)} fullWidth disabled={!cadastroEditMode} />
                       </FieldGrid>
 
                       <FieldGrid title="Origem PIS">
-                        <FieldInput label="Prontuário PIS / legado (referência)" value={reg.medical_record || ""} onChange={(v) => setRegField("medical_record", v)} fullWidth />
+                        <FieldInput label="Prontuário PIS / legado (referência)" value={reg.medical_record || ""} onChange={(v) => setRegField("medical_record", v)} fullWidth disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("medical_record")} />
                       </FieldGrid>
 
-                      <section className="space-y-2 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10">
-                        <Label className="text-xs font-semibold flex items-center gap-1.5">
-                          <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-                          Motivo da atualização cadastral (obrigatório)
-                        </Label>
-                        <Textarea value={regReason} onChange={(e) => setRegReason(e.target.value)} rows={2}
-                          placeholder="Ex.: Atualização do endereço informada pelo acompanhante; importação do PIS..."
-                          className="text-xs" />
-                      </section>
+                      {cadastroEditMode && (
+                        <>
+                          <section className="space-y-2 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10">
+                            <Label className="text-xs font-semibold flex items-center gap-1.5">
+                              <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                              Motivo da atualização cadastral (obrigatório)
+                            </Label>
+                            <Textarea value={regReason} onChange={(e) => setRegReason(e.target.value)} rows={2}
+                              placeholder="Ex.: Atualização do endereço informada pelo acompanhante; importação do PIS..."
+                              className="text-xs" />
+                          </section>
 
-                      <div className="flex justify-end">
-                        <Button onClick={tryConfirmFicha} disabled={!regChanges.length || saving} className="gap-1.5">
-                          <Save className="h-4 w-4" /> Revisar e salvar ficha ({regChanges.length})
-                        </Button>
-                      </div>
+                          <div className="flex justify-end">
+                            <Button onClick={tryConfirmFicha} disabled={!regChanges.length || saving} className="gap-1.5">
+                              <Save className="h-4 w-4" /> Revisar e salvar ficha ({regChanges.length})
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </ScrollArea>
@@ -796,6 +953,87 @@ export function MedicalRecordEditDialog({
         ]}
         finalNote="Use APENAS para erros administrativos excepcionais (cadastro duplicado, paciente inexistente, dados de teste). Para alta clínica use o fluxo de Saída."
       />
+
+      {/* ============ ETAPA INTERMEDIÁRIA: REVISAR DADOS RECONHECIDOS ============ */}
+      <Dialog open={pisReviewOpen} onOpenChange={(v) => { if (!v) { setPisReviewOpen(false); setPisExtracted(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              Revisar dados reconhecidos do PIS
+            </DialogTitle>
+            <DialogDescription className="text-xs leading-relaxed">
+              A IA leu os dados {pisSource === "paste" ? "colados" : "do anexo"} e identificou os campos abaixo.
+              <strong> Marque apenas os que deseja aplicar</strong> ao cadastro. Em seguida você ainda preencherá o motivo
+              e confirmará o salvamento — nada é gravado neste passo.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="flex-1 pr-2 max-h-[60vh]">
+            <div className="space-y-1.5 py-2">
+              {Object.entries(PIS_FIELD_MAP).map(([pisKey, regKey]) => {
+                const newVal = pisExtracted?.[pisKey];
+                const newStr = newVal === null || newVal === undefined ? "" : String(newVal).trim();
+                const oldStr = String((registry as any)?.[regKey] ?? "").trim();
+                const same = newStr === oldStr;
+                const hasNew = newStr.length > 0;
+                return (
+                  <div
+                    key={pisKey}
+                    className={`flex items-start gap-2 p-2 rounded border text-[11px] ${
+                      !hasNew ? "bg-muted/30 opacity-60" :
+                      same ? "bg-muted/40 border-muted" :
+                      "bg-blue-500/5 border-blue-500/30"
+                    }`}
+                  >
+                    <Checkbox
+                      checked={!!pisAccepted[pisKey]}
+                      disabled={!hasNew}
+                      onCheckedChange={(v) => setPisAccepted((prev) => ({ ...prev, [pisKey]: !!v }))}
+                      className="mt-0.5"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold flex items-center gap-1.5">
+                        {REG_FIELD_LABEL[regKey as string] || pisKey}
+                        {!hasNew && <Badge variant="outline" className="text-[9px]">Não reconhecido</Badge>}
+                        {hasNew && same && <Badge variant="outline" className="text-[9px]">Já está igual</Badge>}
+                        {hasNew && !same && oldStr === "" && <Badge variant="secondary" className="text-[9px] bg-emerald-500/15 text-emerald-700">Novo</Badge>}
+                        {hasNew && !same && oldStr !== "" && <Badge variant="secondary" className="text-[9px] bg-amber-500/15 text-amber-700">Será substituído</Badge>}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mt-1">
+                        <div>
+                          <div className="text-[9px] uppercase text-muted-foreground">Atual</div>
+                          <div className="truncate">{oldStr || <span className="italic text-muted-foreground">vazio</span>}</div>
+                        </div>
+                        <div>
+                          <div className="text-[9px] uppercase text-muted-foreground">Reconhecido</div>
+                          <div className="truncate font-medium">{newStr || <span className="italic text-muted-foreground">—</span>}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+          <div className="border-t pt-3 space-y-2">
+            <div className="text-[10px] text-muted-foreground p-2 rounded bg-muted/40 leading-relaxed">
+              <strong>O que acontece a seguir?</strong> Os campos marcados serão preenchidos no formulário (em destaque azul).
+              Você ainda precisa informar o <strong>motivo</strong> e clicar em <strong>"Revisar e salvar ficha"</strong> para gravar
+              as alterações no banco — cada campo será registrado no histórico com origem <code className="text-[9px]">pis_import</code>.
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => { setPisReviewOpen(false); setPisExtracted(null); }} className="gap-1.5">
+                <X className="h-3.5 w-3.5" /> Cancelar reconhecimento
+              </Button>
+              <Button size="sm" onClick={applyPisAccepted}
+                disabled={!Object.values(pisAccepted).some(Boolean)}
+                className="gap-1.5 bg-blue-600 hover:bg-blue-700">
+                <Check className="h-3.5 w-3.5" /> Aplicar selecionados ({Object.values(pisAccepted).filter(Boolean).length})
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
@@ -812,20 +1050,25 @@ function FieldGrid({ title, children }: { title: string; children: React.ReactNo
 }
 
 function FieldInput({
-  label, value, onChange, placeholder, type = "text", fullWidth,
+  label, value, onChange, placeholder, type = "text", fullWidth, disabled, highlight,
 }: {
   label: string; value: string; onChange: (v: string) => void;
   placeholder?: string; type?: string; fullWidth?: boolean;
+  disabled?: boolean; highlight?: boolean;
 }) {
   return (
     <div className={fullWidth ? "col-span-2" : ""}>
-      <Label className="text-[11px]">{label}</Label>
+      <Label className="text-[11px] flex items-center gap-1">
+        {label}
+        {highlight && <Badge variant="secondary" className="text-[8px] uppercase h-3.5 px-1 bg-blue-500/15 text-blue-700 dark:text-blue-300">PIS</Badge>}
+      </Label>
       <Input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-9 text-xs"
+        disabled={disabled}
+        className={`h-9 text-xs ${highlight ? "border-blue-500/40 bg-blue-500/5" : ""} ${disabled ? "bg-muted/40 cursor-not-allowed" : ""}`}
       />
     </div>
   );
