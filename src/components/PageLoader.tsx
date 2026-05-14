@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { whitelabel } from "@/config/whitelabel";
+import socorraoLogo from "@/assets/socorrao-logo.jpg";
 
 interface PageLoaderProps {
   /** Mensagem contextual (ex: "PREPARANDO UTI 2…", "CARREGANDO PRESCRIÇÃO…") */
@@ -34,13 +35,10 @@ export function PageLoader({ message = "Carregando", subMessage }: PageLoaderPro
       <div className="relative mb-8">
         <div className="absolute inset-0 rounded-full bg-primary/30 blur-2xl animate-pulse" />
         <img
-          src="/src/assets/socorrao-logo.jpg"
+          src={socorraoLogo}
           alt={whitelabel.institution.hospitalAbbreviation}
-          className="relative h-20 w-20 rounded-full ring-2 ring-white/20 shadow-2xl animate-pulse"
+          className="relative h-20 w-20 rounded-full ring-2 ring-white/20 shadow-2xl animate-pulse object-cover"
           style={{ animationDuration: "1.8s" }}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = "none";
-          }}
         />
       </div>
 
