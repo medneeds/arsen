@@ -884,7 +884,15 @@ export function UtiPatientCard({
 
   const colors = colorSchemes[colorVariant];
 
-  const daysInUti = useMemo(() => calculateDaysInUti(patient.utiAdmissionDate), [patient.utiAdmissionDate]);
+  const daysInUti = useMemo(() => {
+    const eff = getEffectiveAdmissionDate({
+      utiAdmissionDate: patient.utiAdmissionDate,
+      admittedAt: patient.admittedAt,
+      admissionDate: patient.admissionDate,
+      sector: patient.sector,
+    });
+    return calcDIH(eff) ?? 0;
+  }, [patient.utiAdmissionDate, patient.admittedAt, patient.admissionDate, patient.sector]);
 
   const getFieldArray = (key: keyof Patient): string[] => {
     const value = patient[key];
