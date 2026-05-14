@@ -2378,9 +2378,16 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 if (!conc) return null;
                 return (
                   <div className="flex items-center gap-1.5 px-2.5">
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/50 bg-muted/40 text-[10px] font-medium text-muted-foreground">
-                      Conc. final: <span className="text-foreground font-semibold">{conc}</span>
-                    </span>
+                    {item.category === 'antimicrobial' ? (
+                      <span className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded border border-violet-200/70 dark:border-violet-800/60 bg-violet-50/70 dark:bg-violet-950/30 text-[10px] font-medium text-violet-800 dark:text-violet-200">
+                        <span className="atb-subchip">Concentração</span>
+                        <span className="font-semibold">{conc}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/50 bg-muted/40 text-[10px] font-medium text-muted-foreground">
+                        Conc. final: <span className="text-foreground font-semibold">{conc}</span>
+                      </span>
+                    )}
                   </div>
                 );
               })()}
