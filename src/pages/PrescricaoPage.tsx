@@ -7087,7 +7087,11 @@ const PrescricaoPage = () => {
       {/* ATM Status Dialog — acompanhamento + nova solicitação */}
       <AtmStatusDialog
         open={atmStatusOpen}
-        onOpenChange={setAtmStatusOpen}
+        onOpenChange={(open) => {
+          setAtmStatusOpen(open);
+          // Se o usuário fechar sem prosseguir, limpa o med pré-selecionado da busca
+          if (!open) setPendingAntimicrobialMed(null);
+        }}
         activeItems={items
           .filter(i => i.category === 'antimicrobial' && i.status === 'active')
           .map(i => ({
