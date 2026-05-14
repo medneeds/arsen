@@ -133,12 +133,13 @@ export function AccessLimitsScreen({ onProceed }: AccessLimitsScreenProps) {
   }, [isAdmin, allowedDepartments]);
 
   const [selectedSector, setSelectedSector] = useState<Department | null>(
-    selectableSectors[0] ?? null
+    selectableSectors.find((d) => !isDepartmentLocked(d)) ?? null,
   );
 
   // Sincroniza seleção quando os setores carregam após o mount inicial
-  if (selectedSector === null && selectableSectors.length > 0) {
-    setSelectedSector(selectableSectors[0]);
+  if (selectedSector === null) {
+    const firstUnlocked = selectableSectors.find((d) => !isDepartmentLocked(d));
+    if (firstUnlocked) setSelectedSector(firstUnlocked);
   }
 
   const handleProceed = () => {
