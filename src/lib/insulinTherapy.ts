@@ -306,6 +306,7 @@ export function describeInsulinPlan(plan: InsulinPlan): { headline: string; line
     case 'sliding': {
       headline = 'Esquema de Resgate · Insulina Regular SC';
       lines.push(`HGT ${plan.hgtFrequency ?? '6/6h'}`);
+      lines.push(`  • HGT < 70 → ${plan.hypoglycemiaProtocol?.trim() || DEFAULT_HYPO_PROTOCOL}`);
       (plan.slidingRows ?? []).forEach(r => lines.push(`  • ${formatSlidingRow(r)}`));
       break;
     }
