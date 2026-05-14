@@ -2623,6 +2623,7 @@ function ExtraPrescriptionDialog({
             source={filteredMedications}
             onSelect={addFromAutocomplete}
             placeholder={categoryConfigLabel ? `Buscar em ${categoryConfigLabel.toLowerCase()}...` : "Buscar medicação para prescrição extra..."}
+            category={initialCategory !== 'all' ? initialCategory : undefined}
           />
           <div className="flex gap-2">
             <Input
