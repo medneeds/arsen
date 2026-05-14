@@ -1752,6 +1752,51 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               )}
             </p>
             <MedicationFlagChips name={item.name} size="sm" />
+            {(() => {
+              const ev = getEvidenceSuggestion(item.name);
+              if (!ev) return null;
+              const apply = () => {
+                const isEmpty = (v?: string) => !v || !v.trim() || v.trim() === '-';
+                if (ev.defaultDose && isEmpty(item.dose)) onUpdate(item.id, 'dose', ev.defaultDose);
+                if (ev.defaultRoute && isEmpty(item.route)) onUpdate(item.id, 'route', ev.defaultRoute);
+                if (ev.defaultPosology && isEmpty(item.posology)) onUpdate(item.id, 'posology', ev.defaultPosology);
+                if (ev.diluent && isEmpty(item.diluent)) onUpdate(item.id, 'diluent', ev.diluent);
+                if (ev.volumeTotal && isEmpty(item.volumeTotal)) onUpdate(item.id, 'volumeTotal', ev.volumeTotal);
+                if (ev.infusionTime && isEmpty(item.infusionTime)) onUpdate(item.id, 'infusionTime', ev.infusionTime);
+                if (ev.infusionTimeUnit) onUpdate(item.id, 'infusionTimeUnit', ev.infusionTimeUnit);
+                toast.success('Sugestão aplicada', { description: `Fonte: ${ev.source}` });
+              };
+              return (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-sky-50 border border-sky-200/70 dark:bg-sky-950/20 dark:border-sky-800/40">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-[10px] text-sky-700 dark:text-sky-300 font-medium px-0.5 cursor-help">📚 {ev.source}</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs">
+                      <div className="space-y-1">
+                        {ev.defaultDose && <div><b>Dose:</b> {ev.defaultDose}</div>}
+                        {ev.defaultRoute && <div><b>Via:</b> {ev.defaultRoute}</div>}
+                        {ev.defaultPosology && <div><b>Posologia:</b> {ev.defaultPosology}</div>}
+                        {ev.diluent && <div><b>Diluente:</b> {ev.diluent}</div>}
+                        {ev.volumeTotal && <div><b>Vol total:</b> {ev.volumeTotal} mL</div>}
+                        {ev.infusionTime && <div><b>Tempo:</b> {ev.infusionTime}{ev.infusionTimeUnit || 'min'}</div>}
+                        {ev.notes && <div className="text-muted-foreground">{ev.notes}</div>}
+                        <div className="text-muted-foreground italic pt-1">Fonte: {ev.source}</div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => { e.stopPropagation(); apply(); }}
+                    className="h-5 px-2 text-[10px] rounded-full border-sky-300 text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:text-sky-300"
+                  >
+                    Sugerir
+                  </Button>
+                </span>
+              );
+            })()}
             {item.isExtra && (
               <Badge variant="outline" className="text-[9px] px-1.5 bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800">EXTRA</Badge>
             )}
