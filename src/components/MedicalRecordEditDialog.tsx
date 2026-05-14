@@ -1042,8 +1042,8 @@ export function MedicalRecordEditDialog({
               e confirmará o salvamento — nada é gravado neste passo.
             </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-1 pr-2 max-h-[60vh]">
-            <div className="space-y-1.5 py-2">
+          <ScrollArea className="h-[55vh] pr-3 -mr-1 border rounded-md bg-background/40">
+            <div className="space-y-1.5 p-2">
               {Object.entries(PIS_FIELD_MAP).map(([pisKey, regKey]) => {
                 const newVal = pisExtracted?.[pisKey];
                 const newStr = newVal === null || newVal === undefined ? "" : String(newVal).trim();
@@ -1066,7 +1066,7 @@ export function MedicalRecordEditDialog({
                       className="mt-0.5"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold flex items-center gap-1.5">
+                      <div className="font-semibold flex items-center gap-1.5 flex-wrap">
                         {REG_FIELD_LABEL[regKey as string] || pisKey}
                         {!hasNew && <Badge variant="outline" className="text-[9px]">Não reconhecido</Badge>}
                         {hasNew && same && <Badge variant="outline" className="text-[9px]">Já está igual</Badge>}
@@ -1074,13 +1074,13 @@ export function MedicalRecordEditDialog({
                         {hasNew && !same && oldStr !== "" && <Badge variant="secondary" className="text-[9px] bg-amber-500/15 text-amber-700">Será substituído</Badge>}
                       </div>
                       <div className="grid grid-cols-2 gap-2 mt-1">
-                        <div>
+                        <div className="min-w-0">
                           <div className="text-[9px] uppercase text-muted-foreground">Atual</div>
-                          <div className="truncate">{oldStr || <span className="italic text-muted-foreground">vazio</span>}</div>
+                          <div className="break-words">{oldStr || <span className="italic text-muted-foreground">vazio</span>}</div>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <div className="text-[9px] uppercase text-muted-foreground">Reconhecido</div>
-                          <div className="truncate font-medium">{newStr || <span className="italic text-muted-foreground">—</span>}</div>
+                          <div className="break-words font-medium">{newStr || <span className="italic text-muted-foreground">—</span>}</div>
                         </div>
                       </div>
                     </div>
