@@ -8,7 +8,14 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { toRichHtml, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
+
+/** Renderiza HTML rico (sanitizado) preservando formatação dos campos editáveis. */
+const renderRich = (value: string | null | undefined): string => {
+  const html = toRichHtml(value);
+  return richHtmlToPlainText(html) ? html : "<em>—</em>";
+};
 
 const EXAM_LABELS: { key: keyof EvolutionRecord["physical_exam"]; label: string }[] = [
   { key: "general", label: "Geral" },
@@ -80,8 +87,8 @@ export const printEvolution = async (
   if (intercurrence) {
     bodyHtml += `
       <h2 class="nz-section">Intercorrência</h2>
-      <div style="padding:8pt 10pt;background:#fffbeb;border:1px solid #fde68a;border-radius:3pt;font-size:10pt;line-height:1.5">
-        ${escape(evo.soap_data.subjective) || "<em>—</em>"}
+      <div class="nz-rich" style="padding:8pt 10pt;background:#fffbeb;border:1px solid #fde68a;border-radius:3pt;font-size:10pt;line-height:1.5">
+        ${renderRich(evo.soap_data.subjective)}
       </div>
     `;
   } else {
@@ -107,11 +114,11 @@ export const printEvolution = async (
       )
       .join("");
 
-    // Unifica Subjetivo + Avaliação em "Evolução"
-    const evolucaoTexto = [s.subjective, s.assessment]
-      .map(t => (t || "").trim())
-      .filter(Boolean)
-      .join("\n\n");
+    // Unifica Subjetivo + Avaliação em "Evolução" preservando HTML rico
+    const subjHtml = toRichHtml(s.subjective);
+    const assessHtml = toRichHtml(s.assessment);
+    const evolucaoHtml = [subjHtml, assessHtml].filter((h) => richHtmlToPlainText(h)).join("");
+    const evolucaoOut = evolucaoHtml || "<em>—</em>";
 
     bodyHtml += `
       ${
@@ -120,18 +127,18 @@ export const printEvolution = async (
           : ""
       }
       <h2 class="nz-section">Evolução</h2>
-      <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">
-        ${escape(evolucaoTexto) || "<em>—</em>"}
+      <div class="nz-rich" style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">
+        ${evolucaoOut}
       </div>
       ${examRows ? `<h2 class="nz-section">Exame Físico</h2><table class="nz"><tbody>${examRows}</tbody></table>` : ""}
       ${
-        s.objective?.trim()
-          ? `<h2 class="nz-section">Exames Complementares</h2><div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${escape(s.objective)}</div>`
+        richHtmlToPlainText(toRichHtml(s.objective))
+          ? `<h2 class="nz-section">Exames Complementares</h2><div class="nz-rich" style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${renderRich(s.objective)}</div>`
           : ""
       }
       <h2 class="nz-section">Plano</h2>
-      <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">
-        ${escape(s.plan) || "<em>—</em>"}
+      <div class="nz-rich" style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">
+        ${renderRich(s.plan)}
       </div>
     `;
   }
@@ -151,6 +158,15 @@ export const printEvolution = async (
         caption: validatedAt ? `Validada em ${validatedAt}` : "CRM e assinatura",
       },
     ],
+    extraStyles: `
+      .nz-rich p { margin: 0 0 6pt 0; }
+      .nz-rich p:last-child { margin-bottom: 0; }
+      .nz-rich ul, .nz-rich ol { margin: 4pt 0 6pt 18pt; padding: 0; }
+      .nz-rich li { margin: 0 0 2pt 0; }
+      .nz-rich strong, .nz-rich b { font-weight: 600; }
+      .nz-rich em, .nz-rich i { font-style: italic; }
+      .nz-rich u { text-decoration: underline; }
+    `,
   });
 
   openPrintWindow(
