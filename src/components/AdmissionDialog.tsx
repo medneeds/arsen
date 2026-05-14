@@ -325,7 +325,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     try {
       const payload = {
         hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
-        physGeneral, physCv, physResp, physAbd, physExt,
+        physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
         plan, cidPrimary, cidSecondary,
         noPrediction, predictionDate, predictionDays,
         admissionReason, originSector, devices, culturesAtb, specialties,
@@ -350,7 +350,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     isUti,
     hda, amp, muc, allergies, weight, height, imc,
     vitals: { pa, fc, fr, spo2, tax, dx },
-    exam: { general: physGeneral, cv: physCv, resp: physResp, abd: physAbd, ext: physExt },
+    exam: { general: physGeneral, cv: physCv, resp: physResp, abd: physAbd, ext: physExt, neuro: physNeuro },
     plan, cidPrimary, cidSecondary,
     dischargePredictionLabel,
     uti: isUti ? { admissionReason, originSector, devices, culturesAtb, specialties } : undefined,
