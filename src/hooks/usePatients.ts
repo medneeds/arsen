@@ -496,7 +496,7 @@ export function usePatients(department?: Department, sector?: string) {
         // Importante: zeramos os ponteiros no leito, mas o registry continua intacto no banco
         patient_registry_id: null,
         medical_record: null,
-        admission_status: null,
+        admission_status: 'admitido',
         updated_at: new Date().toISOString(),
       };
 
