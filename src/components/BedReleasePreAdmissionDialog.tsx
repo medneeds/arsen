@@ -41,19 +41,25 @@ export interface BedReleasePreAdmissionDialogProps {
 }
 
 export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onConfirm }: BedReleasePreAdmissionDialogProps) {
-  const [step, setStep] = useState<"notice" | "form">("notice");
-  const [reason, setReason] = useState<string>("paciente_saiu");
+  const isPostDischarge = patient?.admissionStatus === "alta_dada" || patient?.admissionStatus === "obito";
+  const REASON_OPTIONS = isPostDischarge ? POST_DISCHARGE_REASONS : PRE_ADMISSION_REASONS;
+  const defaultReason = isPostDischarge
+    ? (patient?.admissionStatus === "obito" ? "obito_concluido" : "alta_concluida")
+    : "paciente_saiu";
+
+  const [step, setStep] = useState<"notice" | "form" | "password">("notice");
+  const [reason, setReason] = useState<string>(defaultReason);
   const [reasonNote, setReasonNote] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
       setStep("notice");
-      setReason("paciente_saiu");
+      setReason(defaultReason);
       setReasonNote("");
       setSubmitting(false);
     }
-  }, [open]);
+  }, [open, defaultReason]);
 
   if (!patient) return null;
 
