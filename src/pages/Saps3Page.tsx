@@ -1538,6 +1538,93 @@ export default function Saps3Page() {
             </Card>
           </Collapsible>
 
+          {/* ─── Suporte hemodinâmico (NÃO pontua SAPS — perfil hemodinâmico) ─── */}
+          <Card className="border-amber-300">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between text-base flex-wrap gap-2">
+                <span className="flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-rose-500" />
+                  Suporte hemodinâmico na admissão
+                </span>
+                <Badge variant="outline" className="border-amber-400 bg-amber-50 text-amber-800 text-[10px]">
+                  Opcional · Não pontua SAPS
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-0">
+              <div className="rounded-md bg-amber-50/60 border border-amber-200 p-2 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                <p className="text-[11px] text-amber-900 normal-case">
+                  Não obrigatório · Não entra no escore SAPS 3. Registre para qualificar o perfil hemodinâmico do paciente que está entrando na UTI.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={vasoactiveOnAdmission}
+                  onCheckedChange={(v) => {
+                    setVasoactiveOnAdmission(v);
+                    if (!v) setVasoactiveDrugs([]);
+                  }}
+                />
+                <Label className="normal-case">Em uso de drogas vasoativas na admissão?</Label>
+              </div>
+              {vasoactiveOnAdmission && (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    {VASOACTIVE_OPTIONS.map(opt => {
+                      const checked = vasoactiveDrugs.some(d => d.id === opt.id);
+                      return (
+                        <button
+                          type="button"
+                          key={opt.id}
+                          onClick={() => {
+                            setVasoactiveDrugs(prev =>
+                              checked
+                                ? prev.filter(d => d.id !== opt.id)
+                                : [...prev, { id: opt.id, dose: "", hours: "" }],
+                            );
+                          }}
+                          className={cn(
+                            "px-3 py-1 rounded-full text-xs font-medium border transition-colors normal-case",
+                            checked
+                              ? "bg-rose-100 border-rose-400 text-rose-800"
+                              : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50",
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {vasoactiveDrugs.length > 0 && (
+                    <div className="space-y-2">
+                      {vasoactiveDrugs.map((d, idx) => {
+                        const meta = VASOACTIVE_OPTIONS.find(o => o.id === d.id);
+                        return (
+                          <div key={d.id} className="grid grid-cols-1 sm:grid-cols-[1fr_140px_140px] gap-2 items-center bg-rose-50/40 border border-rose-200 rounded-md p-2">
+                            <span className="text-sm font-medium normal-case">{meta?.label || d.id}</span>
+                            <Input
+                              placeholder="Dose (mcg/kg/min)"
+                              value={d.dose || ""}
+                              onChange={(e) => setVasoactiveDrugs(prev => prev.map((x, i) => i === idx ? { ...x, dose: e.target.value } : x))}
+                              className="bg-white"
+                            />
+                            <Input
+                              placeholder="Horas em uso"
+                              value={d.hours || ""}
+                              onChange={(e) => setVasoactiveDrugs(prev => prev.map((x, i) => i === idx ? { ...x, hours: e.target.value } : x))}
+                              className="bg-white"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Box III */}
           <Collapsible open={box3Open} onOpenChange={setBox3Open}>
             <Card>
