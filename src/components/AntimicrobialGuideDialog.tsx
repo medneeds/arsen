@@ -620,7 +620,7 @@ export function AntimicrobialGuideDialog({
 
                   <div className="grid grid-cols-4 gap-2">
                     <div>
-                      <Label className="text-[10px]">Posologia</Label>
+                      <Label className="text-[10px]">Posologia{mode === 'prescribe' && <Req />}</Label>
                       <Input value={entry.posology} onChange={e => updateEntry(entry.id, "posology", e.target.value)} className="h-8 text-xs" />
                     </div>
                     <div>
