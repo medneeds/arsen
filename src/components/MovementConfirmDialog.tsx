@@ -86,7 +86,7 @@ export function MovementConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !isSubmitting && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-[640px] max-h-[92vh]">
+      <DialogContent className="sm:max-w-[640px] max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3 mb-1">
             <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", t.ring)}>
@@ -183,9 +183,9 @@ export function MovementConfirmDialog({
                 })}
               </ol>
               {finalNote && (
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground pt-1 border-t border-primary/20">
+                <div className="text-[10px] text-muted-foreground pt-1 border-t border-primary/20">
                   {finalNote}
-                </p>
+                </div>
               )}
             </section>
           )}
