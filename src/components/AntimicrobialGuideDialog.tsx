@@ -235,6 +235,19 @@ export function AntimicrobialGuideDialog({
   const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | 'cultures' | null>>({});
   const [availableCultures, setAvailableCultures] = useState<Array<{ id: string; culture_type: string; collection_date: string | null; status: string; microorganism: string | null; antibiogram: string | null; sensitivity_profile: string | null; result_text: string | null; created_at: string }>>([]);
   const draftKey = patientId ? `atb-draft-${patientId}` : null;
+  const entryRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [showErrors, setShowErrors] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  // Mapa de erros por entrada (sempre calculado, mas só exibido após tentativa de anexar
+  // ou quando o item já tem alguma coisa preenchida — evita poluir a tela inicial).
+  const missingByEntry = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    entries.forEach(e => { map[e.id] = getMissingFields(e); });
+    return map;
+  }, [entries]);
+  const allValid = entries.length > 0 && entries.every(e => missingByEntry[e.id].length === 0);
+  const validCount = entries.filter(e => missingByEntry[e.id].length === 0).length;
 
   useEffect(() => {
     if (!open) return;
