@@ -2047,10 +2047,12 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {item.category === 'antimicrobial' && (() => {
                 const dayLine = buildAtbDayLine(item);
                 return (
-                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-1 border-b border-violet-200/50 dark:border-violet-800/40">
-                    <div className="flex items-center gap-1.5 text-violet-700 dark:text-violet-300 shrink-0">
-                      <Pill className="h-3.5 w-3.5" />
-                      <span className="text-[11px] font-semibold uppercase tracking-wide">Antimicrobiano</span>
+                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-1.5 px-2 py-1.5 rounded-md bg-gradient-to-r from-violet-100/70 via-violet-50/60 to-transparent dark:from-violet-950/30 dark:via-violet-950/15 dark:to-transparent border border-violet-200/60 dark:border-violet-800/40 border-l-[3px] border-l-violet-500/80">
+                    <div className="flex items-center gap-1.5 text-violet-800 dark:text-violet-200 shrink-0">
+                      <div className="flex items-center justify-center h-5 w-5 rounded-md bg-violet-600 text-white shadow-sm shadow-violet-600/30">
+                        <Pill className="h-3 w-3" />
+                      </div>
+                      <span className="text-[10px] font-bold uppercase tracking-[0.08em]">Antibiótico</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <span className="text-[10px] text-violet-700/80 dark:text-violet-300/80 font-medium">Início:</span>
