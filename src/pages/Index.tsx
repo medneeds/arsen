@@ -516,6 +516,18 @@ const Index = () => {
     }
   };
 
+  const handleReleasePreAdmissionBed = async (
+    patientId: string,
+    payload: { reason: string; reasonNote: string },
+  ) => {
+    saveToHistory(patients);
+    try {
+      await dbReleaseBedPreAdmission(patientId, payload);
+    } catch (error) {
+      console.error("Failed to release pre-admission bed:", error);
+    }
+  };
+
   const handleUndeletePatient = async (patient: Patient) => {
     try {
       await dbCreatePatient({
