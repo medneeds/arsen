@@ -1033,6 +1033,7 @@ const Index = () => {
                     patients={patients.filter(p => p.sector === activeSector)}
                     onUpdatePatient={handleUpdatePatient}
                     onDeletePatient={handleDeletePatient}
+                    onReleasePreAdmissionBed={handleReleasePreAdmissionBed}
                     onUndeletePatient={handleUndeletePatient}
                     onPrintSector={() => handlePrintSector(activeSector)}
                     onPrintRound={() => setRoundSectorDialogOpen(true)}
@@ -1058,6 +1059,7 @@ const Index = () => {
                     patients={filterPatients(patients.filter(p => p.sector === activeSector))}
                     onUpdatePatient={handleUpdatePatient}
                     onDeletePatient={handleDeletePatient}
+                    onReleasePreAdmissionBed={handleReleasePreAdmissionBed}
                     onUndeletePatient={handleUndeletePatient}
                     onPrintSector={() => handlePrintSector(activeSector)}
                     onAddExtraBed={() => handleAddExtraBed(activeSector as Patient['sector'])}
