@@ -201,7 +201,7 @@ const EvolucaoPage = () => {
       schedule: [],
       admissionHistory: "",
       admissionDate: patient.admissionDate,
-      utiAllergies: patient.allergies && patient.allergies !== "NDAM" ? [patient.allergies] : [],
+      utiAllergies: (patient.allergies ?? "").split(/[,\n;]/).map(s => s.trim()).filter(Boolean),
       clinicalStatus: "regular",
     };
   }, [livePatient, patient, initialPatientId, initialPatientSector, cidPrimary, cidSecondary]);
