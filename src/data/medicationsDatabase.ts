@@ -88,7 +88,7 @@ export const routeShort = (r?: string): string => (r ? (ROUTE_SHORT[r] || r) : '
 export const POSOLOGIES: string[] = [
   '1x/dia', '2x/dia', '3x/dia', '4x/dia',
   '6/6h', '8/8h', '12/12h', '24/24h', '4/4h', '2/2h',
-  'ACM', 'SOS', 'Dose única', 'Contínuo',
+  'ACM', 'SOS', 'Única', 'Dose única', 'Contínuo',
 ];
 
 export const COMMON_SCHEDULES: string[] = [
