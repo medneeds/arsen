@@ -886,7 +886,7 @@ function NutritionFields({
     <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">{children}</span>
   );
   const TinyInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <Input {...props} className={cn("h-6 text-[11px] bg-muted/10 border-border/30", props.className)} />
+    <Input {...props} className={cn("h-6 text-[11px] bg-background border-border/40", props.className)} />
   );
 
   const setSubtype = (v: string) => onUpdate(item.id, 'nutritionType', v);
@@ -896,7 +896,7 @@ function NutritionFields({
       <div className="flex items-center gap-1.5 flex-wrap">
         <FieldLabel>Tipo:</FieldLabel>
         <Select value={subtype} onValueChange={setSubtype}>
-          <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-44">
+          <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -965,7 +965,7 @@ function NutritionFields({
             <div className="flex items-center gap-1">
               <FieldLabel>Cabeceira:</FieldLabel>
               <Select value={item.nutBedHead || ''} onValueChange={(v) => onUpdate(item.id, 'nutBedHead', v)}>
-                <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 flex-1"><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 flex-1"><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="≥30°" className="text-xs">≥30°</SelectItem>
                   <SelectItem value="≥45°" className="text-xs">≥45°</SelectItem>
@@ -983,7 +983,7 @@ function NutritionFields({
             <div className="flex items-center gap-1">
               <FieldLabel>Consistência (IDDSI):</FieldLabel>
               <Select value={item.nutConsistency || ''} onValueChange={(v) => onUpdate(item.id, 'nutConsistency', v)}>
-                <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-56"><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-56"><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Líquida fina (IDDSI 0)" className="text-xs">Líquida fina (IDDSI 0)</SelectItem>
                   <SelectItem value="Levemente espessa (IDDSI 1)" className="text-xs">Levemente espessa (1)</SelectItem>
@@ -1752,6 +1752,51 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               )}
             </p>
             <MedicationFlagChips name={item.name} size="sm" />
+            {(() => {
+              const ev = getEvidenceSuggestion(item.name);
+              if (!ev) return null;
+              const apply = () => {
+                const isEmpty = (v?: string) => !v || !v.trim() || v.trim() === '-';
+                if (ev.defaultDose && isEmpty(item.dose)) onUpdate(item.id, 'dose', ev.defaultDose);
+                if (ev.defaultRoute && isEmpty(item.route)) onUpdate(item.id, 'route', ev.defaultRoute);
+                if (ev.defaultPosology && isEmpty(item.posology)) onUpdate(item.id, 'posology', ev.defaultPosology);
+                if (ev.diluent && isEmpty(item.diluent)) onUpdate(item.id, 'diluent', ev.diluent);
+                if (ev.volumeTotal && isEmpty(item.volumeTotal)) onUpdate(item.id, 'volumeTotal', ev.volumeTotal);
+                if (ev.infusionTime && isEmpty(item.infusionTime)) onUpdate(item.id, 'infusionTime', ev.infusionTime);
+                if (ev.infusionTimeUnit) onUpdate(item.id, 'infusionTimeUnit', ev.infusionTimeUnit);
+                toast.success('Sugestão aplicada', { description: `Fonte: ${ev.source}` });
+              };
+              return (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-sky-50 border border-sky-200/70 dark:bg-sky-950/20 dark:border-sky-800/40">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="text-[10px] text-sky-700 dark:text-sky-300 font-medium px-0.5 cursor-help">📚 {ev.source}</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs text-xs">
+                      <div className="space-y-1">
+                        {ev.defaultDose && <div><b>Dose:</b> {ev.defaultDose}</div>}
+                        {ev.defaultRoute && <div><b>Via:</b> {ev.defaultRoute}</div>}
+                        {ev.defaultPosology && <div><b>Posologia:</b> {ev.defaultPosology}</div>}
+                        {ev.diluent && <div><b>Diluente:</b> {ev.diluent}</div>}
+                        {ev.volumeTotal && <div><b>Vol total:</b> {ev.volumeTotal} mL</div>}
+                        {ev.infusionTime && <div><b>Tempo:</b> {ev.infusionTime}{ev.infusionTimeUnit || 'min'}</div>}
+                        {ev.notes && <div className="text-muted-foreground">{ev.notes}</div>}
+                        <div className="text-muted-foreground italic pt-1">Fonte: {ev.source}</div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => { e.stopPropagation(); apply(); }}
+                    className="h-5 px-2 text-[10px] rounded-full border-sky-300 text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:text-sky-300"
+                  >
+                    Sugerir
+                  </Button>
+                </span>
+              );
+            })()}
             {item.isExtra && (
               <Badge variant="outline" className="text-[9px] px-1.5 bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800">EXTRA</Badge>
             )}
@@ -1817,40 +1862,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             };
             return (
             <>
-              {evidence && (
-                <div className="flex justify-end mb-2">
-                  <div className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-full bg-sky-50 border border-sky-200/60 dark:bg-sky-950/20 dark:border-sky-800/40">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="text-[10px] text-sky-700 dark:text-sky-300 font-medium truncate max-w-[180px] px-1">
-                          📚 {evidence.source}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs text-xs">
-                        <div className="space-y-1">
-                          {evidence.defaultDose && <div><b>Dose:</b> {evidence.defaultDose}</div>}
-                          {evidence.defaultRoute && <div><b>Via:</b> {evidence.defaultRoute}</div>}
-                          {evidence.defaultPosology && <div><b>Posologia:</b> {evidence.defaultPosology}</div>}
-                          {evidence.diluent && <div><b>Diluente:</b> {evidence.diluent}</div>}
-                          {evidence.volumeTotal && <div><b>Vol total:</b> {evidence.volumeTotal} mL</div>}
-                          {evidence.infusionTime && <div><b>Tempo:</b> {evidence.infusionTime}{evidence.infusionTimeUnit || 'min'}</div>}
-                          {evidence.notes && <div className="text-muted-foreground">{evidence.notes}</div>}
-                          <div className="text-muted-foreground italic pt-1">Fonte: {evidence.source}</div>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={applyEvidence}
-                      className="h-5 px-2 text-[10px] rounded-full border-sky-300 text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:text-sky-300"
-                    >
-                      Sugerir
-                    </Button>
-                  </div>
-                </div>
-              )}
+              {/* Bulário movido para o header (próximo ao nome da medicação) */}
               {/* Row 1: Dose + Via + Intervalo (com legendas) */}
               <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap mt-1">
                 <div className="flex items-center gap-1.5 min-w-0">
@@ -1916,11 +1928,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               })()}
 
               {/* Row 2: Forma, Diluente, Vol Diluente, Acesso */}
-              <div className="flex items-center gap-x-2 gap-y-1 flex-wrap">
+              <div className="flex items-center gap-x-4 gap-y-2 flex-wrap">
                 <div className="flex items-center gap-1 min-w-0">
                   <span className="text-[10px] text-muted-foreground shrink-0">Forma:</span>
                   <Select value={item.quantityUnit || ''} onValueChange={(v) => onUpdate(item.id, "quantityUnit", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-[120px]"><SelectValue placeholder="forma/unidade" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-[120px]"><SelectValue placeholder="forma/unidade" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       {QUANTITY_UNITS.map(u => (
                         <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
@@ -1946,7 +1958,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                             if (autoConc) onUpdate(item.id, "concentration", autoConc);
                           }
                         }}
-                        className="h-6 text-[11px] bg-muted/10 border-border/30 w-12 text-center"
+                        className="h-6 text-[11px] bg-background border-border/40 w-12 text-center"
                         placeholder="1"
                         title={`Quantidade em ${item.quantityUnit}`}
                       />
@@ -1969,7 +1981,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                       onUpdate(item.id, "diluentVolume", '');
                     }
                   }}>
-                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-28"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-28"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent className="max-h-72">
                       <SelectItem value="sem_diluente" className="text-xs font-medium">Sem diluente</SelectItem>
                       <SelectItem value="diluente_proprio" className="text-xs font-medium">Diluente próprio</SelectItem>
@@ -1994,13 +2006,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                     const tempItem2 = { ...tempItem, volumeTotal: autoVol || item.volumeTotal || '' };
                     const autoConc = calcConcentration(tempItem2);
                     if (autoConc) onUpdate(item.id, "concentration", autoConc);
-                  }} className="h-6 text-[11px] bg-muted/10 border-border/30 w-16 text-center" placeholder="mL" />
+                  }} className="h-6 text-[11px] bg-background border-border/40 w-16 text-center" placeholder="mL" />
                 </div>
                 )}
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground">Acesso venoso:</span>
                   <Select value={item.accessType || ''} onValueChange={(v) => onUpdate(item.id, "accessType", v)}>
-                    <SelectTrigger className="h-6 text-[11px] bg-muted/10 border-border/30 w-28"><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger className="h-6 text-[11px] bg-background border-border/40 w-28"><SelectValue placeholder="—" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Periférico" className="text-xs">Periférico</SelectItem>
                       <SelectItem value="Central" className="text-xs">Central</SelectItem>
