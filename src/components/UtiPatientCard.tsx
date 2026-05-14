@@ -1474,6 +1474,17 @@ export function UtiPatientCard({
           patientAge={patient.age}
         />
       )}
+
+      <BedReleasePreAdmissionDialog
+        open={isReleasePreAdmissionOpen}
+        onOpenChange={setIsReleasePreAdmissionOpen}
+        patient={patient}
+        onConfirm={async (payload) => {
+          if (onReleasePreAdmissionBed) {
+            await onReleasePreAdmissionBed(patient.id, payload);
+          }
+        }}
+      />
     </>
   );
 }
