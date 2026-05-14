@@ -73,7 +73,7 @@ const PrintableRound = forwardRef<HTMLDivElement, PrintableRoundProps>(
             </tr>
             <tr>
               <td style={{ border: "0.5px solid #000", padding: "1.5mm 2mm", fontWeight: "bold" }}>Setor</td>
-              <td style={{ border: "0.5px solid #000", padding: "1.5mm 2mm" }}>{patientSector}</td>
+              <td style={{ border: "0.5px solid #000", padding: "1.5mm 2mm" }}>{getSectorDisplayLabel(patientSector)}</td>
               <td style={{ border: "0.5px solid #000", padding: "1.5mm 2mm", fontWeight: "bold" }}>Leito</td>
               <td colSpan={3} style={{ border: "0.5px solid #000", padding: "1.5mm 2mm" }}>{patientBed}</td>
             </tr>
