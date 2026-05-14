@@ -1479,6 +1479,41 @@ export function UtiPatientCard({
           }
         }}
       />
+
+      <AlertDialog open={isDeleteExtraOpen} onOpenChange={setIsDeleteExtraOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir leito extra {patient.bedNumber}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove permanentemente o leito extra <strong>{patient.bedNumber}</strong> deste setor.
+              {patient.name ? (
+                <> O paciente <strong>{patient.name}</strong> também será removido. </>
+              ) : (
+                <> O leito está vago e será removido com segurança. </>
+              )}
+              Leitos fixos do setor não podem ser excluídos — apenas leitos extras (maca extra). Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (onDelete) {
+                  onDelete(patient.id);
+                  toast({
+                    title: "Leito extra excluído",
+                    description: `${patient.bedNumber} foi removido do setor.`,
+                  });
+                }
+                setIsDeleteExtraOpen(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir leito
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
