@@ -7960,20 +7960,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   </div>
                 )}
 
-                {/* Preparo IV (medicação / hidratação) */}
-                {hasIvPreparo && !insulinDesc && (
-                  <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
-                    {[
-                      item.reconstitutionVolume && item.reconstitutionSolvent ? `Reconstituir em ${item.reconstitutionVolume}mL de ${item.reconstitutionSolvent}` : null,
-                      item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'Sem diluição' : null,
-                      item.accessType && item.accessType !== '-' ? item.accessType : null,
-                      item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
-                      item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
-                      item.infusionRate ? `${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
-                      item.concentration ? `Conc: ${item.concentration}` : null,
-                    ].filter(Boolean).join(' · ')}
-                  </div>
-                )}
+                {/* Preparo IV agora é renderizado inline na linha de dose/via/intervalo (acima) */}
+
 
                 {/* Linha de acompanhamento ATB (sítio + dia de terapia + janela) */}
                 {item.category === 'antimicrobial' && (item.atbInfectionSite || item.atbStartDate) && (
