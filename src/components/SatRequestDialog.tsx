@@ -268,7 +268,7 @@ export function SatRequestDialog({
 
         <h2>Paciente</h2>
         <div class="row"><b>Nome:</b> ${patientName}</div>
-        <div class="row"><b>Setor / Leito:</b> ${patientSector || "—"} / ${patientBed || "—"}</div>
+        <div class="row"><b>Setor / Leito:</b> ${getSectorDisplayLabel(patientSector) || "—"} / ${patientBed || "—"}</div>
 
         <h2>Avaliação clínica</h2>
         <div class="row"><b>Tipo de ferimento:</b> ${WOUND_LABEL[wound]}</div>
