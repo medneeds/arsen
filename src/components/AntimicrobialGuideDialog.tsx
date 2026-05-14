@@ -473,9 +473,16 @@ export function AntimicrobialGuideDialog({
     // Valida primeiro; só imprime se o anexo for válido — evita imprimir Guia
     // com campos vazios que não vão entrar na prescrição.
     setShowErrors(true);
-    const valid = entries.length > 0 && entries.every(e => getMissingFields(e).length === 0);
-    if (!valid) {
-      toast.error("Complete os campos obrigatórios antes de imprimir + anexar.");
+    if (entries.length === 0) {
+      toast.error("Adicione pelo menos um antimicrobiano antes de anexar.");
+      return;
+    }
+    const firstMissing = entries.find(e => getMissingFields(e).length > 0);
+    if (firstMissing) {
+      const fields = getMissingFields(firstMissing).join(', ');
+      toast.error("Complete os campos obrigatórios antes de imprimir + anexar.", {
+        description: `Faltando em "${firstMissing.medication || 'item sem nome'}": ${fields}`,
+      });
       focusFirstInvalid();
       return;
     }
