@@ -4654,6 +4654,14 @@ export type Database = {
         }
         Returns: string
       }
+      repoint_patient_history: {
+        Args: {
+          p_reason?: string
+          p_source_patient_id: string
+          p_target_patient_id: string
+        }
+        Returns: Json
+      }
       search_movements_global: {
         Args: {
           p_hospital_unit_id: string
