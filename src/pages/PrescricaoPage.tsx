@@ -7994,11 +7994,10 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   </div>
                 )}
 
-                {/* Observações para a enfermagem — sempre após preparo/intervalos/blocos específicos */}
-                {item.instructions && !insulinDesc && (
-                  <div style={{ fontSize: '7pt', color: '#0f172a', lineHeight: 1.3, marginTop: '3px', paddingLeft: '8px', borderLeft: '2px solid #b45309', backgroundColor: '#fffbeb', padding: '2px 6px 2px 8px', borderRadius: '0 2px 2px 0', fontWeight: 500 }}>
-                    <span style={{ fontSize: '5.5pt', fontWeight: 800, color: '#fff', backgroundColor: '#b45309', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px', marginRight: '4px', textTransform: 'uppercase' }}>Enfermagem</span>
-                    {item.instructions}
+                {/* Orientações detalhadas p/ enfermagem (opcional, preenchidas pelo médico) — linha discreta */}
+                {item.nursingNotes && (
+                  <div style={{ fontSize: '6.5pt', color: '#475569', lineHeight: 1.3, marginTop: '2px', fontStyle: 'italic' }}>
+                    <span style={{ fontWeight: 700, color: '#334155', fontStyle: 'normal' }}>Enf.: </span>{item.nursingNotes}
                   </div>
                 )}
               </td>
