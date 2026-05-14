@@ -2096,7 +2096,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 </div>
                 <span className="text-muted-foreground/40">│</span>
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground font-medium">Conc:</span>
+                  <span className="text-[10px] text-muted-foreground font-medium">Conc. final:</span>
                   <Input
                     value={item.concentration || ''}
                     onChange={(e) => onUpdate(item.id, "concentration", e.target.value)}
