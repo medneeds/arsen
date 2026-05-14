@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, BedDouble, Check, ChevronRight, LayoutGrid } from "lucide-react";
+import { ChevronDown, BedDouble, Check, ChevronRight, LayoutGrid, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDepartment, type Department } from "@/contexts/DepartmentContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { isDepartmentLocked, LOCKED_TOOLTIP } from "@/config/lockedSectors";
 import {
   Popover,
   PopoverContent,
