@@ -1896,7 +1896,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         <SelectItem value="próprio diluente" className="text-xs">Próprio diluente do fabricante</SelectItem>
                       </SelectContent>
                     </Select>
-                    <span className="text-[10px] text-muted-foreground italic ml-auto">opcional · sugerido pelo catálogo</span>
+                    <span className="text-[10px] text-amber-700/80 dark:text-amber-300/80 italic ml-auto">Sugestão do catálogo · ajustável</span>
                   </div>
                 );
               })()}
