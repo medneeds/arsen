@@ -97,9 +97,9 @@ export function AtmStatusDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-5 py-3 border-b bg-orange-50/40 dark:bg-orange-950/10">
+        <DialogHeader className="px-5 py-3 border-b bg-violet-50/50 dark:bg-violet-950/15">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <Shield className="h-5 w-5 text-orange-600" />
+            <Shield className="h-5 w-5 text-violet-600" />
             Guia ATM — Antimicrobianos
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -109,10 +109,10 @@ export function AtmStatusDialog({
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
           <TabsList className="mx-5 mt-3 grid grid-cols-2 w-auto self-start">
-            <TabsTrigger value="status" className="text-xs gap-1.5">
+            <TabsTrigger value="status" className="text-xs gap-1.5 data-[state=active]:text-violet-700 data-[state=active]:border-b-2 data-[state=active]:border-violet-500">
               <Activity className="h-3.5 w-3.5" /> Status ({activeItems.length})
             </TabsTrigger>
-            <TabsTrigger value="nova" className="text-xs gap-1.5">
+            <TabsTrigger value="nova" className="text-xs gap-1.5 data-[state=active]:text-violet-700 data-[state=active]:border-b-2 data-[state=active]:border-violet-500">
               <Plus className="h-3.5 w-3.5" /> Nova ATB
             </TabsTrigger>
           </TabsList>
@@ -131,14 +131,30 @@ export function AtmStatusDialog({
                   {activeItems.map((it) => {
                     const dot = dayOfTherapy(it.atbStartDate);
                     const total = parseInt(it.atbPlannedDays || '', 10);
+                    const totalValid = Number.isFinite(total) && total > 0;
                     const end = endDate(it.atbStartDate, it.atbPlannedDays);
-                    const overdue = dot !== null && Number.isFinite(total) && total > 0 && dot > total;
+                    const overdue = dot !== null && totalValid && dot > total;
+                    const remaining = totalValid && dot !== null ? total - dot : null;
+                    const pct = totalValid && dot !== null ? Math.min(100, Math.round((dot / total) * 100)) : null;
+
+                    // Tempo desde início (horas para <24h, dias depois)
+                    let sinceLabel: string | null = null;
+                    if (it.atbStartDate) {
+                      try {
+                        const start = parseISO(it.atbStartDate);
+                        const hoursSince = differenceInHours(new Date(), start);
+                        if (hoursSince < 24 && hoursSince >= 0) sinceLabel = `Iniciado há ${hoursSince}h`;
+                      } catch {}
+                    }
+
                     return (
                       <div
                         key={it.id}
                         className={cn(
-                          "rounded-lg border p-3 bg-card",
-                          overdue ? "border-red-300 bg-red-50/40 dark:bg-red-950/10" : "border-orange-200 dark:border-orange-800/40",
+                          "rounded-lg border p-3 bg-card transition-colors",
+                          overdue
+                            ? "border-red-300 bg-red-50/40 dark:bg-red-950/10"
+                            : "border-violet-200/70 dark:border-violet-800/40 hover:border-violet-300",
                         )}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -153,28 +169,66 @@ export function AtmStatusDialog({
                                   <AlertTriangle className="h-2.5 w-2.5" /> Excedeu duração planejada
                                 </Badge>
                               )}
+                              {sinceLabel && !overdue && (
+                                <Badge variant="outline" className="text-[9px] gap-1 border-violet-300 text-violet-700 dark:text-violet-400">
+                                  <Timer className="h-2.5 w-2.5" /> {sinceLabel}
+                                </Badge>
+                              )}
                             </div>
                             <div className="text-[11px] text-muted-foreground mt-0.5">
                               {it.dose} · {it.route} · {it.posology}
                             </div>
                             {it.atbInfectionSite && (
                               <div className="text-[11px] text-muted-foreground mt-0.5">
-                                Sítio: <strong>{it.atbInfectionSite}</strong>
+                                Sítio: <strong className="text-foreground/80">{it.atbInfectionSite}</strong>
                               </div>
                             )}
-                            <div className="flex items-center gap-3 mt-1.5 text-[11px]">
-                              {dot !== null && (
-                                <span className="inline-flex items-center gap-1 font-medium text-orange-700 dark:text-orange-400">
-                                  <Clock className="h-3 w-3" /> Dia {dot}{Number.isFinite(total) && total > 0 ? ` de ${total}` : ''}
-                                </span>
-                              )}
-                              {it.atbStartDate && (
-                                <span className="text-muted-foreground">
-                                  Início: {format(parseISO(it.atbStartDate), 'dd/MM/yyyy', { locale: ptBR })}
-                                </span>
-                              )}
-                              {end && <span className="text-muted-foreground">Previsão fim: {end}</span>}
-                            </div>
+
+                            {/* Linha de progresso (Dia X / Y + barra) */}
+                            {dot !== null && (
+                              <div className="mt-2">
+                                <div className="flex items-center justify-between gap-2 text-[11px] mb-1">
+                                  <span className="inline-flex items-center gap-1 font-semibold text-violet-700 dark:text-violet-400">
+                                    <Clock className="h-3 w-3" /> Dia {dot}{totalValid ? ` de ${total}` : ''}
+                                  </span>
+                                  {totalValid && remaining !== null && (
+                                    <span className={cn(
+                                      "font-semibold",
+                                      remaining < 0 ? "text-red-600" : remaining <= 1 ? "text-amber-600" : "text-muted-foreground"
+                                    )}>
+                                      {remaining > 0 ? `Faltam ${remaining} dia${remaining === 1 ? '' : 's'}` : remaining === 0 ? 'Último dia' : `Excedeu há ${Math.abs(remaining)} dia${Math.abs(remaining) === 1 ? '' : 's'}`}
+                                    </span>
+                                  )}
+                                </div>
+                                {pct !== null && (
+                                  <div className="h-1.5 w-full rounded-full bg-violet-100 dark:bg-violet-950/30 overflow-hidden">
+                                    <div
+                                      className={cn(
+                                        "h-full rounded-full transition-all",
+                                        overdue ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-violet-500"
+                                      )}
+                                      style={{ width: `${overdue ? 100 : pct}%` }}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Janela de tratamento */}
+                            {(it.atbStartDate || end) && (
+                              <div className="flex items-center gap-1.5 mt-1.5 text-[10.5px] text-muted-foreground">
+                                <CalendarDays className="h-2.5 w-2.5" />
+                                {it.atbStartDate && (
+                                  <span>Início <strong className="text-foreground/70">{format(parseISO(it.atbStartDate), 'dd/MM/yyyy', { locale: ptBR })}</strong></span>
+                                )}
+                                {end && (
+                                  <>
+                                    <span className="text-muted-foreground/50">→</span>
+                                    <span>Previsão fim <strong className="text-foreground/70">{end}</strong></span>
+                                  </>
+                                )}
+                              </div>
+                            )}
                           </div>
                           {onSuspendItem && (
                             <Button
