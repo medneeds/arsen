@@ -2026,7 +2026,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               </div>
 
               {renderInfusion && (
-              <div className="flex items-center gap-2 flex-wrap px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
+              <div className="flex items-center gap-2 flex-wrap pt-1.5 border-t border-border/40">
                 <Droplets className="h-3 w-3 text-primary shrink-0" />
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground font-medium">Vol. final:</span>
