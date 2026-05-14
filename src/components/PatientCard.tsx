@@ -1250,8 +1250,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
       // Determina qual é a próxima coluna
       setTimeout(() => {
         if (editingField === "name") {
-          startEditing("age", patient.age.toString());
-        } else if (editingField === "age") {
+          // Idade é somente leitura (atualizada via cadastro). Pula direto p/ diagnósticos.
           if (patient.diagnoses.length > 0) {
             startEditing("diagnoses", patient.diagnoses[0], 0);
           } else {
