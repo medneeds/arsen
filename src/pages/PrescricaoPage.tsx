@@ -7766,6 +7766,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
           )}
         </div>
       )}
+      </div>
 
       {/* Prescription Items — Lista contínua sem subtítulos de categoria (Cuidados separados ao final) */}
       {(() => {
