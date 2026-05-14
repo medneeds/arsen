@@ -393,6 +393,12 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
       if (ahError) console.warn("admission_histories:", ahError);
 
       const imcLine = imc ? ` | IMC ${imc.value} (${imc.label})` : "";
+      const admissionHistoryText = [
+        `QUEIXA PRINCIPAL: ${hda.split("\n")[0]?.slice(0, 200) || "—"}`,
+        `HISTÓRIA CLÍNICA: ${hda}`,
+        cidPrimary && `HIPÓTESE DIAGNÓSTICA: ${cidPrimary}`,
+        `CONDUTA INICIAL: ${plan}`,
+      ].filter(Boolean).join("\n");
 
       const soapAdmission = {
         subjective: `HDA:\n${hda}\n\nAMP: ${amp || "—"}\nMUC: ${muc || "—"}\nAlergias: ${allergies || "Nega"}`,
@@ -446,6 +452,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         admission_status: "admitido",
         admitted_at: now,
         uti_discharge_prediction: dischargePredictionLabel,
+        admission_history: admissionHistoryText,
       };
       if (isUti) {
         Object.assign(baseUpdate, {
