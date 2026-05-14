@@ -4403,6 +4403,9 @@ const PrescricaoPage = () => {
     }
   }, [fetchVersionHistory]);
 
+  // Mantém o ref do auto-load apontando para a versão atual de loadPrescription
+  useEffect(() => { loadPrescriptionRef.current = loadPrescription; }, [loadPrescription]);
+
   // ===== Repeat previous prescription =====
   const openRepeatDialog = useCallback(async () => {
     if (!currentHospital || !currentState || !patient.name.trim()) {
