@@ -1455,10 +1455,9 @@ export function UtiPatientCard({
                   <span className="text-[10px] font-bold text-slate-500 dark:text-slate-500 tracking-wider">História admissional</span>
                 </div>
                 <div className="bg-muted/30 border border-border/30 rounded-md p-2">
-                  <InlineEditableTextarea
+                  <ReadOnlyTextarea
                     value={patient.admissionHistory || ""}
-                    onUpdate={() => {}}
-                    placeholder="História admissional / Anamnese..."
+                    placeholder="Importada da admissão validada"
                   />
                 </div>
               </div>
