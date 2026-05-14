@@ -520,22 +520,49 @@ export async function printRequisitionGuide(
 
   const isParecer = request.category === "parecer";
 
-  // Para parecer, cap o texto da justificativa para garantir 1 página
-  const PARECER_MAX_CHARS = 900;
+  // Para parecer aceitamos HTML rico (negrito, itálico, sublinhado, listas, parágrafos).
+  // O limite passa a ser por caracteres-de-texto (plain) para preservar 1 página A4.
+  const PARECER_SOFT = 900;
+  const PARECER_MID  = 1600;
+  const PARECER_HARD = 2400;
   const rawIndication = request.clinical_indication || "";
-  const indicationTruncated =
-    isParecer && rawIndication.length > PARECER_MAX_CHARS
-      ? rawIndication.slice(0, PARECER_MAX_CHARS).trimEnd() + "…"
-      : rawIndication;
-  const indicationOverflowed = isParecer && rawIndication.length > PARECER_MAX_CHARS;
+  const isHtmlIndication = /<\/?(p|br|strong|em|u|ul|ol|li|b|i|span|div)[\s>/]/i.test(rawIndication);
+
+  // Sanitização e cálculo do plain length p/ ajustar a área de resposta
+  const tmpDiv = typeof document !== "undefined" ? document.createElement("div") : null;
+  let indicationHtml = "";
+  let indicationPlainLen = 0;
+  if (rawIndication) {
+    if (isParecer && isHtmlIndication) {
+      indicationHtml = sanitizeRichHtmlPrint(rawIndication);
+      if (tmpDiv) {
+        tmpDiv.innerHTML = indicationHtml;
+        indicationPlainLen = (tmpDiv.textContent || "").length;
+      } else {
+        indicationPlainLen = indicationHtml.replace(/<[^>]+>/g, "").length;
+      }
+    } else {
+      indicationPlainLen = rawIndication.length;
+      indicationHtml = escapeHtml(rawIndication).replace(/\n/g, "<br/>");
+    }
+  }
+
+  // Resposta encolhe à medida que a justificativa cresce
+  const respHeightMm = isParecer
+    ? indicationPlainLen > PARECER_MID ? 45
+      : indicationPlainLen > PARECER_SOFT ? 60
+      : 78
+    : 78;
+  // Cap visual da justificativa para nunca extrapolar 1 página
+  const justMaxMm = isParecer
+    ? indicationPlainLen > PARECER_MID ? 95
+      : indicationPlainLen > PARECER_SOFT ? 75
+      : 52
+    : 999;
 
   const justificationBlock = rawIndication
     ? `<h2 class="nz-section">${isParecer ? "Motivo da Solicitação de Parecer" : "Justificativa Clínica"}</h2>
-       <table class="nz"><tbody><tr><td class="${isParecer ? "parecer-just" : ""}">${escapeHtml(indicationTruncated).replace(/\n/g, "<br/>")}${
-         indicationOverflowed
-           ? `<div style="margin-top:4pt;font-size:7pt;color:#b91c1c;font-style:italic">(Texto truncado em ${PARECER_MAX_CHARS} caracteres para caber em 1 página — anexar detalhamento à evolução clínica.)</div>`
-           : ""
-       }</td></tr></tbody></table>`
+       <table class="nz"><tbody><tr><td class="${isParecer ? "parecer-just" : ""}">${indicationHtml}</td></tr></tbody></table>`
     : "";
 
   const itemsCells =
@@ -559,11 +586,11 @@ export async function printRequisitionGuide(
        <table class="nz"><tbody><tr><td>${escapeHtml(cleanNotes).replace(/\n/g, "<br/>")}</td></tr></tbody></table>`
     : "";
 
-  // Bloco específico do parecer: área pautada para resposta manual (~35% da página)
+  // Bloco específico do parecer: área pautada para resposta manual (altura dinâmica)
   const parecerResponseBlock = isParecer
     ? `<h2 class="nz-section" style="background:#0a1628">Resposta do Parecer (preenchimento manual)</h2>
        <div class="parecer-response">
-         <div class="parecer-response-lines"></div>
+         <div class="parecer-response-lines" style="height:${respHeightMm}mm"></div>
          <table class="parecer-sign">
            <tbody>
              <tr>
@@ -596,11 +623,17 @@ export async function printRequisitionGuide(
     .req-item:nth-child(2n) { border-right:none; }
     .req-num { min-width:14pt; font-size:8.5pt; font-weight:600; color:#0a1628; text-align:right; flex-shrink:0; }
 
-    /* Parecer — caixa de justificativa enxuta + área de resposta manual */
-    .parecer-just { max-height: 52mm; overflow: hidden; font-size: 9pt; line-height: 1.35; }
+    /* Parecer — caixa de justificativa (altura dinâmica) + área de resposta manual */
+    .parecer-just { max-height: ${justMaxMm}mm; overflow: hidden; font-size: 9pt; line-height: 1.38; }
+    .parecer-just p { margin: 0 0 4pt 0; }
+    .parecer-just p:last-child { margin-bottom: 0; }
+    .parecer-just ul, .parecer-just ol { margin: 2pt 0 4pt 14pt; padding: 0; }
+    .parecer-just li { margin-bottom: 1.5pt; }
+    .parecer-just strong, .parecer-just b { font-weight: 700; }
+    .parecer-just em, .parecer-just i { font-style: italic; }
+    .parecer-just u { text-decoration: underline; }
     .parecer-response { border: 1pt solid #0a1628; border-radius: 3pt; margin-top: 4pt; padding: 4pt 6pt 6pt; background: #fff; page-break-inside: avoid; }
     .parecer-response-lines {
-      height: 78mm;
       background-image: repeating-linear-gradient(
         to bottom,
         transparent 0,
