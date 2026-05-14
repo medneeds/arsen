@@ -963,6 +963,39 @@ function buildAtbDayLine(item: PrescriptionItem): string | null {
 // --- Nutrition fields (specific structured controls per nutrition subtype) ---
 // Renderizado no modo expandido para itens da categoria 'nutrition' no lugar
 // dos campos de medicação. Todos os campos são OPCIONAIS.
+const NutFieldLabel = ({ children }: { children: React.ReactNode }) => (
+  <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">{children}</span>
+);
+const NutTinyInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+  <Input {...props} className={cn("h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600", props.className)} />
+);
+// Input com sufixo de unidade fixo à direita (ex.: "1500 mL")
+const NutSuffixInput = ({
+  value, onChange, suffix, width = 'w-24', placeholder, type = 'number', inputMode = 'decimal',
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  suffix: string;
+  width?: string;
+  placeholder?: string;
+  type?: string;
+  inputMode?: 'decimal' | 'numeric' | 'text';
+}) => (
+  <div className={cn("relative inline-flex items-center", width)}>
+    <Input
+      type={type}
+      inputMode={inputMode}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="h-7 text-[12px] font-semibold pr-9 bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-400/60"
+    />
+    <span className="absolute right-2 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 pointer-events-none select-none">
+      {suffix}
+    </span>
+  </div>
+);
+
 function NutritionFields({
   item,
   onUpdate,
@@ -973,38 +1006,6 @@ function NutritionFields({
   const subtype: NonNullable<PrescriptionItem['nutritionType']> =
     item.nutritionType ?? detectNutritionType(item.name) ?? 'diet_enteral';
 
-  const FieldLabel = ({ children }: { children: React.ReactNode }) => (
-    <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">{children}</span>
-  );
-  const TinyInput = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <Input {...props} className={cn("h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600", props.className)} />
-  );
-  // Input com sufixo de unidade fixo à direita (ex.: "1500 mL")
-  const SuffixInput = ({
-    value, onChange, suffix, width = 'w-20', placeholder, type = 'number', inputMode = 'decimal',
-  }: {
-    value: string;
-    onChange: (v: string) => void;
-    suffix: string;
-    width?: string;
-    placeholder?: string;
-    type?: string;
-    inputMode?: 'decimal' | 'numeric' | 'text';
-  }) => (
-    <div className={cn("relative inline-flex items-center", width)}>
-      <Input
-        type={type}
-        inputMode={inputMode}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="h-7 text-[12px] font-semibold pr-9 bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-400/60"
-      />
-      <span className="absolute right-2 text-[10px] font-medium text-emerald-700 dark:text-emerald-300 pointer-events-none select-none">
-        {suffix}
-      </span>
-    </div>
-  );
 
   const setSubtype = (v: string) => onUpdate(item.id, 'nutritionType', v);
 
