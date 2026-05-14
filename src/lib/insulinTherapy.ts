@@ -117,31 +117,34 @@ export function detectInsulinKind(name: string): { isBasal: boolean; isBolus: bo
 
 // ───────────────────────── Sugestões padrão ─────────────────────────
 
-/** Escala de correção padrão (low-dose) — adultos sensíveis, peso < 70 kg. */
+/** Escala de correção padrão (low-dose) — adultos sensíveis, peso < 70 kg. 6 faixas. */
 export const SLIDING_LOW: SlidingRow[] = [
   { min: 150, max: 200, units: 2 },
   { min: 201, max: 250, units: 4 },
   { min: 251, max: 300, units: 6 },
   { min: 301, max: 350, units: 8 },
-  { min: 351, max: null, units: -1 }, // chamar médico
+  { min: 351, max: 400, units: 10 },
+  { min: 401, max: null, units: -1 }, // chamar médico
 ];
 
-/** Escala de correção média — adultos 70-100 kg. */
+/** Escala de correção média — adultos 70-100 kg. 6 faixas. */
 export const SLIDING_MEDIUM: SlidingRow[] = [
   { min: 150, max: 200, units: 4 },
   { min: 201, max: 250, units: 6 },
   { min: 251, max: 300, units: 8 },
   { min: 301, max: 350, units: 10 },
-  { min: 351, max: null, units: -1 },
+  { min: 351, max: 400, units: 12 },
+  { min: 401, max: null, units: -1 },
 ];
 
-/** Escala de correção alta — pacientes resistentes, > 100 kg, corticoterapia. */
+/** Escala de correção alta — pacientes resistentes, > 100 kg, corticoterapia. 6 faixas. */
 export const SLIDING_HIGH: SlidingRow[] = [
   { min: 150, max: 200, units: 6 },
   { min: 201, max: 250, units: 8 },
   { min: 251, max: 300, units: 10 },
   { min: 301, max: 350, units: 12 },
-  { min: 351, max: null, units: -1 },
+  { min: 351, max: 400, units: 14 },
+  { min: 401, max: null, units: -1 },
 ];
 
 export function suggestSlidingByWeight(weightKg?: number): SlidingRow[] {
