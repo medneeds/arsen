@@ -157,6 +157,22 @@ export function UtiReallocationDialog({
 
       if (targetError) throw targetError;
 
+      // Step 1.5: Migrar histórico clínico (evoluções, prescrições, exames,
+      // culturas, condutas, prontuário, etc.) do leito de ORIGEM para o
+      // leito de DESTINO antes de esvaziar a origem. Garante continuidade
+      // assistencial sem orfanizar o histórico vinculado ao patient_id antigo.
+      const { repointPatientHistory } = await import("@/lib/repointPatientHistory");
+      const repoint = await repointPatientHistory(
+        patient.id,
+        targetBedPatient.id,
+        `Realocação UTI: ${originalBedNumber} → ${targetBedPatient.bedNumber}`,
+      );
+      if (!repoint.ok) {
+        throw new Error(
+          `Falha ao migrar histórico clínico do leito de origem (${repoint.error}). Operação abortada para preservar integridade.`,
+        );
+      }
+
       // Step 2: Clear the original bed (make it empty)
       const { error: sourceError } = await supabase
         .from('patients')
