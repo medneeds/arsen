@@ -979,7 +979,7 @@ function NutritionFields({
   const setSubtype = (v: string) => onUpdate(item.id, 'nutritionType', v);
 
   return (
-    <div className={cn(getCategoryContainerClass('nutrition'), "space-y-1.5")}>
+    <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-1.5")}>
       <div className="flex items-center gap-1.5 flex-wrap">
         <FieldLabel>Tipo:</FieldLabel>
         <Select value={subtype} onValueChange={setSubtype}>
