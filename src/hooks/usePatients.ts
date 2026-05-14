@@ -445,16 +445,19 @@ export function usePatients(department?: Department, sector?: string) {
         .eq('id', patientId)
         .maybeSingle();
 
+      const isPostDischargeRelease =
+        (full as any)?.admission_status === 'alta_dada' || (full as any)?.admission_status === 'obito';
+
       // 1) Audita a ação
       const reasonLabel = opts.reason || 'Liberação de pré-admissão';
       const noteLines = [reasonLabel, opts.reasonNote].filter(Boolean).join(' — ');
-      await supabase.from('patient_movements').insert({
+      const { error: movementError } = await supabase.from('patient_movements').insert({
         patient_id: patientId,
         patient_registry_id: (full as any)?.patient_registry_id ?? null,
         patient_name: (full as any)?.name || target?.name || '',
         patient_bed: (full as any)?.bed_number || target?.bedNumber || null,
         patient_sector: (full as any)?.sector || target?.sector || null,
-        movement_type: 'LIBERAÇÃO PRÉ-ADMISSÃO',
+        movement_type: isPostDischargeRelease ? 'LIBERAÇÃO PÓS-ALTA/ÓBITO' : 'LIBERAÇÃO PRÉ-ADMISSÃO',
         destination: 'PRONTUÁRIO PRESERVADO — LEITO LIBERADO',
         notes: noteLines || null,
         responsible_doctor: null,
@@ -464,6 +467,7 @@ export function usePatients(department?: Department, sector?: string) {
         state_id: currentState.id,
         hospital_unit_id: currentHospital.id,
       });
+      if (movementError) throw movementError;
 
       // 2) Zera os campos clínicos do leito (preserva o leito no mapa)
       const vacantPayload = {
@@ -532,7 +536,9 @@ export function usePatients(department?: Department, sector?: string) {
 
       toast({
         title: 'Leito liberado',
-        description: 'Pré-admissão removida do mapa. O prontuário do paciente foi preservado e continua disponível no histórico.',
+        description: isPostDischargeRelease
+          ? 'Leito desocupado no mapa. O prontuário do paciente foi preservado e continua disponível no histórico.'
+          : 'Pré-admissão removida do mapa. O prontuário do paciente foi preservado e continua disponível no histórico.',
       });
     } catch (error) {
       console.error('Error releasing pre-admission bed:', error);
