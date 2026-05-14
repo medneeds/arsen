@@ -457,7 +457,7 @@ export function usePatients(department?: Department, sector?: string) {
         patient_name: (full as any)?.name || target?.name || '',
         patient_bed: (full as any)?.bed_number || target?.bedNumber || null,
         patient_sector: (full as any)?.sector || target?.sector || null,
-        movement_type: isPostDischargeRelease ? 'LIBERAÇÃO PÓS-ALTA/ÓBITO' : 'LIBERAÇÃO PRÉ-ADMISSÃO',
+        movement_type: 'LIBERAÇÃO PRÉ-ADMISSÃO',
         destination: 'PRONTUÁRIO PRESERVADO — LEITO LIBERADO',
         notes: noteLines || null,
         responsible_doctor: null,
