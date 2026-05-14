@@ -119,6 +119,7 @@ import { getProtocolsFor, type PosologyProtocol } from "@/lib/posologyProtocols"
 import { PosologySuggestionsBar } from "@/components/PosologySuggestionsBar";
 import { useMedicationProtocols } from "@/hooks/useMedicationProtocols";
 import { PatientCockpit } from "@/components/PatientCockpit";
+import { AllergiesChipInput } from "@/components/AllergiesChipInput";
 import { SapsPendingAlert } from "@/components/SapsPendingAlert";
 import { NutritionWizard } from "@/components/NutritionWizard";
 import { HydrationWizard } from "@/components/HydrationWizard";
