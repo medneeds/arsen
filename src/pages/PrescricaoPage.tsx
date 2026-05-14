@@ -98,6 +98,8 @@ import { findRegulatoryInfo } from "@/data/mavPort344Catalog";
 import { InhalationFields } from "@/components/prescription/InhalationFields";
 import { getInhalationDefaults, type InhalationMode, type InhalationInterface } from "@/data/inhalationCatalog";
 import { assembleInhalationInstruction } from "@/lib/inhalationInstruction";
+import { CompoundedTabletFields } from "@/components/prescription/CompoundedTabletFields";
+import { isTabletOrCapsule, isEnteralRoute } from "@/data/notCrushableMedications";
 import { getReconstitutionDefault } from "@/lib/ivMedicationFlags";
 import { getInfusionProfile, applyInfusionProfileDefaults } from "@/lib/ivInfusionProfiles";
 import { MedicationFlagChips } from "@/components/MedicationFlagChips";
@@ -2426,6 +2428,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             </>
             );
           })()}
+          {item.status === 'active' && isTabletOrCapsule(item.presentation) && isEnteralRoute(item.route) && (
+            <CompoundedTabletFields item={item} onUpdate={onUpdate} />
+          )}
           {item.flags.length > 0 && (
             <div className="flex gap-1 flex-wrap">
               {item.flags.map(fk => {
@@ -3506,6 +3511,8 @@ const PrescricaoPage = () => {
   const [appliedCareProfiles, setAppliedCareProfiles] = useState<Set<string>>(new Set());
   // Pop-up para sugerir incluir esquema padrão de correção de insulina ao adicionar controle glicêmico
   const [insulinSchemePromptOpen, setInsulinSchemePromptOpen] = useState(false);
+  // Pop-up orientativo após anexar antimicrobianos: lembra de imprimir Guia ATM 2 vias se D1
+  const [atbAttachNotice, setAtbAttachNotice] = useState<{ open: boolean; isFirstDay: boolean; names: string[] }>({ open: false, isFirstDay: false, names: [] });
   // Detecta se o item de cuidado é de controle glicêmico (HGT / glicemia capilar)
   const isGlycemicControlName = useCallback((name: string) => {
     const n = (name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -4388,6 +4395,14 @@ const PrescricaoPage = () => {
     });
     setItems(prev => [...prev, ...newItems]);
     setPendingAntimicrobialMed(null);
+    // Pop-up didático: D1 exige impressão da Guia ATM em 2 vias junto com a prescrição
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const d1Items = newItems.filter(it => (it.atbStartDate || today) === today);
+    setAtbAttachNotice({
+      open: true,
+      isFirstDay: d1Items.length > 0,
+      names: newItems.map(it => it.name),
+    });
     toast.success(`${newItems.length} antimicrobiano(s) adicionado(s) à prescrição via Guia ATM`);
   }, []);
 
@@ -6957,7 +6972,52 @@ const PrescricaoPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Quick Templates Dialog */}
+      {/* Pop-up orientativo após anexar antimicrobianos via Guia ATM */}
+      <AlertDialog
+        open={atbAttachNotice.open}
+        onOpenChange={(v) => setAtbAttachNotice(prev => ({ ...prev, open: v }))}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Antimicrobiano(s) anexado(s) à prescrição</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                {atbAttachNotice.names.length > 0 && (
+                  <div className="rounded-md border bg-muted/40 p-2 text-xs">
+                    <div className="font-semibold mb-1">Itens incluídos:</div>
+                    <ul className="list-disc pl-4 space-y-0.5">
+                      {atbAttachNotice.names.map((n, i) => <li key={i}>{n}</li>)}
+                    </ul>
+                  </div>
+                )}
+                {atbAttachNotice.isFirstDay ? (
+                  <div className="rounded-md border-l-[3px] border-l-amber-500 bg-amber-50/70 dark:bg-amber-950/30 p-2 text-xs leading-relaxed">
+                    <strong>Atenção — D1 (primeiro dia de antibiótico):</strong> ao imprimir a prescrição
+                    do dia, é obrigatório anexar a <strong>Guia ATM em 2 vias</strong> (1 via para a
+                    farmácia/CCIH e 1 via para o prontuário). Marque "Imprimir Guia ATM" no botão de
+                    impressão da prescrição.
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Continuação de antibiótico já em curso. A Guia ATM <strong>não precisa</strong>
+                    ser reimpressa diariamente — apenas no D1, na troca de esquema ou no escalonamento.
+                  </p>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  A duração programada (7, 10, 14 dias) e o sítio infeccioso ficam visíveis no cabeçalho
+                  roxo do item — você pode editar a qualquer momento.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setAtbAttachNotice(prev => ({ ...prev, open: false }))}>
+              Entendi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={quickTemplatesDialogOpen} onOpenChange={setQuickTemplatesDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
           <DialogHeader>
