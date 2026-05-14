@@ -221,7 +221,7 @@ export function MedicalDocumentDialog({
               <div className="rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground space-y-0.5">
                 <div><b className="text-foreground">PACIENTE:</b> {(patientName || "").toUpperCase()}</div>
                 {patient?.age && <div><b className="text-foreground">IDADE:</b> {patient.age}</div>}
-                {patientBed && <div><b className="text-foreground">LEITO:</b> {patientBed} {patientSector && `• ${patientSector}`}</div>}
+                {patientBed && <div><b className="text-foreground">LEITO:</b> {patientBed} {displaySector && `• ${displaySector}`}</div>}
                 {cidPrimary && (
                   <div className="flex items-center gap-2">
                     <b className="text-foreground">CID-10:</b> {cidPrimary}
