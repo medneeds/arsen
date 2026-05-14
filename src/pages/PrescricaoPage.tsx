@@ -98,6 +98,8 @@ import { findRegulatoryInfo } from "@/data/mavPort344Catalog";
 import { InhalationFields } from "@/components/prescription/InhalationFields";
 import { getInhalationDefaults, type InhalationMode, type InhalationInterface } from "@/data/inhalationCatalog";
 import { assembleInhalationInstruction } from "@/lib/inhalationInstruction";
+import { CompoundedTabletFields } from "@/components/prescription/CompoundedTabletFields";
+import { isTabletOrCapsule, isEnteralRoute } from "@/data/notCrushableMedications";
 import { getReconstitutionDefault } from "@/lib/ivMedicationFlags";
 import { getInfusionProfile, applyInfusionProfileDefaults } from "@/lib/ivInfusionProfiles";
 import { MedicationFlagChips } from "@/components/MedicationFlagChips";
