@@ -1422,6 +1422,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   isPastRenewalTime,
   prescriptionLocked,
   missingFields = [],
+  previousInhalationItem,
 }: {
   item: PrescriptionItem;
   index: number;
@@ -1442,6 +1443,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   isPastRenewalTime: boolean;
   prescriptionLocked: boolean;
   missingFields?: string[];
+  /** Item de inalação imediatamente anterior na lista (mesma categoria), para conjugação. */
+  previousInhalationItem?: { id: string; name: string };
 }) {
   const [individualExpanded, setIndividualExpanded] = useState(false);
   const {
@@ -2021,7 +2024,12 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             <HydrationFields item={item} onUpdate={onUpdate} />
           )}
           {item.status === 'active' && item.category === 'inhalation' && (
-            <InhalationFields item={item as any} onUpdate={onUpdate} />
+            <InhalationFields
+              item={item as any}
+              onUpdate={onUpdate}
+              previousInhalationItemId={previousInhalationItem?.id}
+              previousInhalationItemName={previousInhalationItem?.name}
+            />
           )}
           {item.status === 'active' && item.category !== 'nutrition' && item.category !== 'hydration' && item.category !== 'inhalation' && (() => {
             const ptype = inferPresentationType(item.presentation, item.route, item.name);
@@ -6194,30 +6202,37 @@ const PrescricaoPage = () => {
                   {/* Items */}
                   {catItems.length > 0 && (
                     <div className="p-2 space-y-1.5">
-                      {catItems.map((item, i) => (
-                        <SortablePrescriptionItemRow
-                          key={item.id}
-                          item={item}
-                          index={i}
-                          onUpdate={updateItem}
-                          onRemove={removeItem}
-                          onToggleFlag={toggleFlag}
-                          isSimple={simple}
-                          isCompact={compactView && !expandedCategories.has(cat)}
-                          selected={selectedIds.has(item.id)}
-                          onToggleSelect={toggleSelect}
-                          onDuplicate={duplicateItem}
-                          onRequestSuspend={requestSuspendItem}
-                          onReactivate={reactivateItem}
-                          onAssistant={(id) => setItemAssistantTargetId(id)}
-                          onEditInsulin={(id) => { setEditingInsulinItemId(id); setPendingInsulinMed(null); setInsulinDialogOpen(true); }}
-                          onOpenAntimicrobialGuide={() => setAtmStatusOpen(true)}
-                          onToggleValidation={requestValidateItem}
-                          isPastRenewalTime={isPastRenewalTime}
-                          prescriptionLocked={prescriptionLocked}
-                          missingFields={itemMissingMap.get(item.id) || []}
-                        />
-                      ))}
+                      {catItems.map((item, i) => {
+                        // Calcula o item de inalação imediatamente anterior (mesma categoria)
+                        const prevInhal = item.category === 'inhalation' && i > 0 && catItems[i - 1].category === 'inhalation'
+                          ? { id: catItems[i - 1].id, name: catItems[i - 1].name }
+                          : undefined;
+                        return (
+                          <SortablePrescriptionItemRow
+                            key={item.id}
+                            item={item}
+                            index={i}
+                            onUpdate={updateItem}
+                            onRemove={removeItem}
+                            onToggleFlag={toggleFlag}
+                            isSimple={simple}
+                            isCompact={compactView && !expandedCategories.has(cat)}
+                            selected={selectedIds.has(item.id)}
+                            onToggleSelect={toggleSelect}
+                            onDuplicate={duplicateItem}
+                            onRequestSuspend={requestSuspendItem}
+                            onReactivate={reactivateItem}
+                            onAssistant={(id) => setItemAssistantTargetId(id)}
+                            onEditInsulin={(id) => { setEditingInsulinItemId(id); setPendingInsulinMed(null); setInsulinDialogOpen(true); }}
+                            onOpenAntimicrobialGuide={() => setAtmStatusOpen(true)}
+                            onToggleValidation={requestValidateItem}
+                            isPastRenewalTime={isPastRenewalTime}
+                            prescriptionLocked={prescriptionLocked}
+                            missingFields={itemMissingMap.get(item.id) || []}
+                            previousInhalationItem={prevInhal}
+                          />
+                        );
+                      })}
                     </div>
                   )}
                 </div>
