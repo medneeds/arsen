@@ -24,6 +24,8 @@ export interface SlidingRow {
   max: number | null;
   /** Unidades de insulina rápida SC. -1 = "Chamar médico". */
   units: number;
+  /** Observação livre por faixa (ex.: "repetir HGT 1h após", "chamar plantão"). */
+  note?: string;
 }
 
 /** Tomada fixa programada (NPH ou bolus alimentar). */
