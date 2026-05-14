@@ -98,8 +98,13 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
 
   const reasonLabel = REASON_OPTIONS.find((r) => r.value === reason)?.label ?? reason;
 
-  const handleConfirm = async () => {
+  // Etapa 2 → vai para etapa de SENHA (não confirma direto)
+  const goToPasswordStep = () => {
     if (blockers.length > 0) return;
+    setStep("password");
+  };
+
+  const handleConfirm = async () => {
     setSubmitting(true);
     try {
       await onConfirm({ reason: reasonLabel, reasonNote: reasonNote.trim() });
@@ -108,6 +113,10 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       setSubmitting(false);
     }
   };
+
+  // Bloqueio "já admitido" só vale para o fluxo pré-admissão clássico.
+  // Pós-alta/óbito é justamente o caso de admitido + alta concluída → liberação permitida.
+  const blockReleaseHard = alreadyAdmitted && !isPostDischarge;
 
   return (
     <>
