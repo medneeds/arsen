@@ -410,6 +410,136 @@ export function usePatients(department?: Department, sector?: string) {
     }
   };
 
+  /**
+   * Libera o leito de um paciente que ainda NÃO concluiu a admissão hospitalar
+   * (admissionStatus === 'pre_admitido'). Diferente de `deletePatient`:
+   *  - Registra a ação em `patient_movements` (movement_type = 'LIBERAÇÃO PRÉ-ADMISSÃO')
+   *    com snapshot e vínculo ao prontuário, garantindo auditoria.
+   *  - PRESERVA `patient_registry_id` no histórico do movimento — o prontuário
+   *    do paciente continua existindo e pode ser reaberto a qualquer momento.
+   *  - Zera apenas os campos clínicos do leito, deixando-o disponível para
+   *    nova alocação no mapa.
+   */
+  const releaseBedPreAdmission = async (
+    patientId: string,
+    opts: { reason?: string; reasonNote?: string } = {},
+  ) => {
+    try {
+      const target = patients.find((p) => p.id === patientId);
+      const dbRow = target as any;
+      if (!currentHospital || !currentState) {
+        throw new Error('Hospital e estado precisam estar selecionados.');
+      }
+
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const patientDepartment = (dbRow?.department as string) || department || 'URGÊNCIA E EMERGÊNCIA ADULTO';
+
+      // Busca o registro atual para snapshot + patient_registry_id
+      const { data: full } = await supabase
+        .from('patients')
+        .select('*')
+        .eq('id', patientId)
+        .maybeSingle();
+
+      // 1) Audita a ação
+      const reasonLabel = opts.reason || 'Liberação de pré-admissão';
+      const noteLines = [reasonLabel, opts.reasonNote].filter(Boolean).join(' — ');
+      await supabase.from('patient_movements').insert({
+        patient_id: patientId,
+        patient_registry_id: (full as any)?.patient_registry_id ?? null,
+        patient_name: (full as any)?.name || target?.name || '',
+        patient_bed: (full as any)?.bed_number || target?.bedNumber || null,
+        patient_sector: (full as any)?.sector || target?.sector || null,
+        movement_type: 'LIBERAÇÃO PRÉ-ADMISSÃO',
+        destination: 'PRONTUÁRIO PRESERVADO — LEITO LIBERADO',
+        notes: noteLines || null,
+        responsible_doctor: null,
+        created_by: authUser?.id ?? null,
+        patient_snapshot: full as any,
+        department: patientDepartment,
+        state_id: currentState.id,
+        hospital_unit_id: currentHospital.id,
+      });
+
+      // 2) Zera os campos clínicos do leito (preserva o leito no mapa)
+      const vacantPayload = {
+        name: '',
+        age: null as any,
+        diagnoses: null,
+        medical_history: null,
+        relevant_exams: null,
+        pendencies: null,
+        schedule: null,
+        admission_history: null,
+        admission_date: null,
+        medical_responsibility: null,
+        uti_admission_date: null,
+        uti_discharge_prediction: null,
+        uti_allergies: null,
+        uti_admission_reason: null,
+        uti_current_status: null,
+        uti_devices: null,
+        uti_cultures_antibiotics: null,
+        uti_specialties: null,
+        uti_origin_sector: null,
+        uti_daily_conducts: null,
+        internment_status: null,
+        internment_notes: null,
+        clinical_status: null,
+        is_palliative: false,
+        isolation_precautions: null,
+        hospital_discharge_prediction: null,
+        psm_status: null,
+        allocation_status: null,
+        is_door_patient: false,
+        is_vacant: true,
+        // Importante: zeramos os ponteiros no leito, mas o registry continua intacto no banco
+        patient_registry_id: null,
+        medical_record: null,
+        admission_status: null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('patients')
+        .update(vacantPayload)
+        .eq('id', patientId);
+      if (error) throw error;
+
+      setPatients((prev) =>
+        prev.map((p) =>
+          p.id === patientId
+            ? ({
+                ...p,
+                name: '',
+                diagnoses: [],
+                medicalHistory: [],
+                relevantExams: [],
+                pendencies: [],
+                schedule: [],
+                admissionHistory: '',
+                admissionStatus: undefined,
+                isVacant: true,
+              } as unknown as Patient)
+            : p,
+        ),
+      );
+
+      toast({
+        title: 'Leito liberado',
+        description: 'Pré-admissão removida do mapa. O prontuário do paciente foi preservado e continua disponível no histórico.',
+      });
+    } catch (error) {
+      console.error('Error releasing pre-admission bed:', error);
+      toast({
+        title: 'Erro ao liberar leito',
+        description: 'Não foi possível liberar a pré-admissão.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   const reorderPatients = async (reorderedPatients: Patient[]) => {
     // Update display_order for each patient based on new position
     const updates = reorderedPatients.map((patient, index) => ({
