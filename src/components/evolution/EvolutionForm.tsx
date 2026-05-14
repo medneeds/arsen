@@ -88,7 +88,6 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   autoSave = false, hasUnsaved = false,
   diagnosticsSlot,
 }) => {
-  const [examinusOpen, setExaminusOpen] = useState(false);
   const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'evolucao', 'complementares', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
   const { currentHospital } = useHospital();
