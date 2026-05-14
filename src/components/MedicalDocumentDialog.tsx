@@ -89,6 +89,7 @@ export function MedicalDocumentDialog({
   };
 
   const isRx = kind === "receituario" || kind === "receituario_especial";
+  const displaySector = getSectorDisplayLabel(patientSector);
 
   const startEdit = (k: DocKind) => {
     setKind(k);
