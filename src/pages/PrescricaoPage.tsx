@@ -5503,8 +5503,9 @@ const PrescricaoPage = () => {
       return;
     }
     setPrintPrescription(true);
-    setPrintGuideAtm(hasActiveAtb);
-    setPrintGuidePsy(hasActivePsy);
+    // Guias regulatórias começam desmarcadas — usuário marca explicitamente se quiser imprimir junto
+    setPrintGuideAtm(false);
+    setPrintGuidePsy(false);
     setPrintGuidesOpen(true);
   };
 
