@@ -1049,37 +1049,7 @@ export function UtiPatientCard({
 
                 {/* Mobile: Chips wrap to second line */}
                 <div className="flex items-center gap-1 flex-wrap md:flex-nowrap w-full md:w-auto mt-1 md:mt-0">
-                  {/* Clinical Status - Discreet color dot */}
-                  <Select
-                    value={patient.clinicalStatus || ""}
-                    onValueChange={(v) => handleUpdateField("clinicalStatus", v)}
-                  >
-                    <SelectTrigger 
-                      className="shrink-0 h-5 w-5 p-0 border-0 bg-transparent shadow-none focus:ring-0 [&>svg]:hidden"
-                      onClick={(e) => e.stopPropagation()}
-                      title={patient.clinicalStatus 
-                        ? CLINICAL_STATUS_OPTIONS.find(o => o.value === patient.clinicalStatus)?.label 
-                        : "Classificação"
-                      }
-                    >
-                      <div className={cn(
-                        "w-3 h-3 rounded-full border-2 transition-colors mx-auto",
-                        patient.clinicalStatus 
-                          ? CLINICAL_STATUS_OPTIONS.find(o => o.value === patient.clinicalStatus)?.color || "bg-muted border-muted-foreground/30"
-                          : "bg-muted border-muted-foreground/30"
-                      )} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CLINICAL_STATUS_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          <div className="flex items-center gap-2">
-                            <div className={cn("w-2.5 h-2.5 rounded-full", option.color)} />
-                            <span className="text-xs font-medium">{option.label}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {/* Classificação clínica (bola de gravidade) removida do mapa de leitos */}
 
                   {/* Days in UTI - Fixed width for consistent alignment */}
                   {(() => {
