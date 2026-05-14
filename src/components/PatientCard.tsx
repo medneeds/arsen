@@ -31,7 +31,7 @@ import { useBedAllocationRequests } from "@/hooks/useBedAllocationRequests";
 import { formatAgeDisplay } from "@/utils/ageDisplay";
 import { differenceInDays, differenceInHours, differenceInMinutes, parseISO, isValid, parse } from "date-fns";
 import { useSectorStayTimer } from "@/hooks/useSectorStayTimer";
-import { calcDIH, formatDIHLabel, formatAdmissionDateBR } from "@/lib/dihCalc";
+import { calcDIH, formatDIHLabel, formatAdmissionDateBR, getEffectiveAdmissionDate } from "@/lib/dihCalc";
 import { usePrivacy, maskName } from "@/contexts/PrivacyContext";
 import { useConductHistory } from "@/hooks/useConductHistory";
 import { ConductHistoryDialog } from "./ConductHistoryDialog";
