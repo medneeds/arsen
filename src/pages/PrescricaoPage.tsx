@@ -3845,6 +3845,18 @@ const PrescricaoPage = () => {
     if (empty(item.posology) && !anyInstruction(item)) missing.push('posologia');
     if (empty(item.route) && !anyInstruction(item)) missing.push('via');
 
+    // ----- Sólido oral (cp/cápsula/drágea/SL/orodispersível) por via oral/SL/enteral -----
+    // Posologia é OBRIGATÓRIA — instrução livre NÃO substitui (risco de erro de farmácia/enfermagem).
+    {
+      const presLower = (item.presentation || '').toLowerCase();
+      const routeLower = (item.route || '').toLowerCase();
+      const isSolidOral = /(comprimido|c[aá]psula|cap\.|dr[áa]gea|sublingual|orodispers)/i.test(presLower);
+      const isOralLike = /(\boral\b|\bvo\b|sublingual|sng|sne|enteral|gastrostomia|jejunostomia)/i.test(routeLower);
+      if (isSolidOral && isOralLike && empty(item.posology) && !missing.includes('posologia')) {
+        missing.push('posologia');
+      }
+    }
+
     // ----- IV intermitente (ampola/frasco) -----
     if (ptype === 'iv_intermittent') {
       if (empty(item.diluent) && !anyInstruction(item)) missing.push('diluente');
