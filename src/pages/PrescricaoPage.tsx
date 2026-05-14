@@ -4606,7 +4606,14 @@ const PrescricaoPage = () => {
     return !cat.notification_type;
   });
 
-  const doPrintPrescription = () => {
+  const doPrintPrescription = async () => {
+    // Garante snapshot persistido ANTES da impressão (assinatura, validações, etc.)
+    try {
+      await persistItems(items);
+    } catch {
+      // persistItems já mostrou toast de erro; aborta impressão para não imprimir item não rastreado
+      return;
+    }
     setShowPrintPortal(true);
     setTimeout(() => {
       window.print();
@@ -4662,14 +4669,20 @@ const PrescricaoPage = () => {
     setSignDialogOpen(true);
   };
 
-  const confirmSign = useCallback((sig: DigitalSignature) => {
+  const confirmSign = useCallback(async (sig: DigitalSignature) => {
     setDigitalSignature(sig);
     setSignDialogOpen(false);
-    toast.success("Prescrição assinada digitalmente", {
-      description: `Dr(a). ${sig.doctorName} — CRM ${sig.crm} — Hash: ${sig.hash}`,
-      duration: 5000,
-    });
-  }, []);
+    // Persistência IMEDIATA da assinatura — não pode ficar só em memória
+    try {
+      await persistItems(items, { sigOverride: sig });
+      toast.success("Prescrição assinada digitalmente", {
+        description: `Dr(a). ${sig.doctorName} — CRM ${sig.crm} — Hash: ${sig.hash}`,
+        duration: 5000,
+      });
+    } catch {
+      // persistItems já reportou o erro
+    }
+  }, [items, persistItems]);
 
   // Renewal with dialog
   const handleRenew = () => {
