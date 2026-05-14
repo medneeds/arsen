@@ -636,8 +636,8 @@ export default function Saps3Page() {
       return;
     }
 
-    // Caminho B — Fluxo de alocação tradicional (admissão nova vinda de pré-admissão/leito)
-    if (!fromAllocation || !patientNameFromContext) return;
+    // Caminho B — Fluxo de alocação tradicional OU navegação direta com contexto de paciente
+    if (!patientNameFromContext) return;
 
     setCompletingSapsId(null);
     setCompletingPatientId(null);
@@ -662,9 +662,12 @@ export default function Saps3Page() {
 
     const sectorFromUrl = state?.selectedSector || searchParams.get("selectedSector");
     const bedFromUrl = state?.selectedBed || searchParams.get("selectedBed");
-    setSelectedSector(sectorFromUrl || resolveSectorFromContext(destinationSectorFromContext, currentSectorCode || currentDepartment));
-    setSelectedBed(bedFromUrl || "");
+    setSelectedSector(sectorFromUrl || resolveSectorFromContext(destinationSectorFromContext || patientSectorParam, currentSectorCode || currentDepartment));
+    setSelectedBed(bedFromUrl || patientBedParam || "");
     setComorbidities([]); setLosBeforeIcu(""); setAdmissionSource(""); setPlannedAdmission(false);
+    setClinicalHistory({ selected: [], livre: "" });
+    setLifestyleHabits({ tabagismo: "", macos_ano: "", etilismo: "", drogas: "", drogas_detalhe: "" });
+    setVasoactiveOnAdmission(false); setVasoactiveDrugs([]);
     setAdmissionReason(""); setAdmissionReasonDetail(""); setSurgicalStatus(""); setSurgeryType("");
     setInfectionAtAdmission(""); setSedationStatus(""); setGcsO(""); setGcsV(""); setGcsM(""); setRassScore(""); setConsciousnessReason(""); setGcsPreSedation(""); setHrHighest(""); setSbpLowest(""); setBilirubinHighest("");
     setTempLowest(""); setCreatinineHighest(""); setLeukocytes(""); setPhLowest(""); setPlateletsLowest("");
