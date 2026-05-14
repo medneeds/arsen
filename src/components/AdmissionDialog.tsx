@@ -236,7 +236,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
       try {
         const payload = {
           hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
-          physGeneral, physCv, physResp, physAbd, physExt,
+          physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
           plan, cidPrimary, cidSecondary,
           noPrediction, predictionDate, predictionDays,
           admissionReason, originSector, devices, culturesAtb, specialties,
@@ -254,7 +254,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   }, [
     open, draftHydrated, patient.id,
     hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
-    physGeneral, physCv, physResp, physAbd, physExt,
+    physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
     plan, cidPrimary, cidSecondary,
     noPrediction, predictionDate, predictionDays,
     admissionReason, originSector, devices, culturesAtb, specialties,
