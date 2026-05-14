@@ -647,24 +647,92 @@ export function MedicalRecordEditDialog({
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {/* Importar PIS */}
-                      <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg border border-blue-500/30 bg-blue-500/10">
-                        <div className="text-[11px] leading-snug">
-                          <div className="font-semibold text-foreground flex items-center gap-1.5">
-                            <Upload className="h-3.5 w-3.5" /> Importar do sistema PIS
+                      {/* Cabeçalho com botão Atualizar cadastro */}
+                      <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${cadastroEditMode ? "border-emerald-500/40 bg-emerald-500/5" : "border-muted bg-muted/30"}`}>
+                        <div className="text-[11px] leading-snug flex items-center gap-2">
+                          {cadastroEditMode ? <Pencil className="h-3.5 w-3.5 text-emerald-600" /> : <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+                          <div>
+                            <div className="font-semibold">
+                              {cadastroEditMode ? "Modo edição ativo" : "Cadastro bloqueado"}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">
+                              {cadastroEditMode
+                                ? "Edite os campos manualmente OU use a captura PIS abaixo. Toda alteração exige motivo + confirmação."
+                                : "Para alterar dados cadastrais ou importar do PIS, ative o modo edição."}
+                            </p>
                           </div>
-                          <p className="text-muted-foreground text-[10px]">
-                            Anexe ficha PIS (PDF/imagem) — IA preenche automaticamente. Revise antes de salvar.
-                          </p>
                         </div>
-                        <input ref={fileInputRef} type="file" accept="image/*,application/pdf"
-                          onChange={handlePisFile} className="hidden" />
-                        <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}
-                          disabled={importing} className="gap-1.5 text-xs">
-                          {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                          Importar
-                        </Button>
+                        {!cadastroEditMode ? (
+                          <Button size="sm" onClick={() => setCadastroEditMode(true)} className="gap-1.5 text-xs">
+                            <Pencil className="h-3.5 w-3.5" /> Atualizar cadastro
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setCadastroEditMode(false);
+                            setReg(registry ? { ...registry } : {});
+                            setRegReason("");
+                            setPasteText("");
+                            setPisFromFieldsApplied(new Set());
+                          }} className="gap-1.5 text-xs">
+                            <X className="h-3.5 w-3.5" /> Cancelar edição
+                          </Button>
+                        )}
                       </div>
+
+                      {/* Captura PIS (anexar / arrastar / colar) — só em modo edição */}
+                      {cadastroEditMode && (
+                        <section className="p-3 rounded-lg border border-blue-500/30 bg-blue-500/5 space-y-2.5">
+                          <div className="flex items-center gap-1.5 text-xs font-semibold">
+                            <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                            Captura automática do PIS
+                            <span className="text-[10px] font-normal text-muted-foreground">(anexar arquivo, arrastar ou colar texto)</span>
+                          </div>
+
+                          <div
+                            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                            onDragLeave={() => setIsDragging(false)}
+                            onDrop={handleDrop}
+                            className={`rounded-md border-2 border-dashed p-3 text-center text-[11px] transition-colors ${
+                              isDragging ? "border-blue-500 bg-blue-500/10" : "border-muted-foreground/30 bg-background/50"
+                            }`}
+                          >
+                            <FileUp className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                            <p className="text-muted-foreground">Arraste a ficha PIS aqui (PDF/imagem) <strong>ou</strong></p>
+                            <input ref={fileInputRef} type="file" accept="image/*,application/pdf"
+                              onChange={handlePisFile} className="hidden" />
+                            <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}
+                              disabled={importing} className="gap-1.5 text-xs mt-1.5">
+                              {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                              Anexar arquivo
+                            </Button>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label className="text-[11px] flex items-center gap-1.5">
+                              <ClipboardPaste className="h-3.5 w-3.5" /> Colar dados do PIS
+                            </Label>
+                            <Textarea
+                              value={pasteText}
+                              onChange={(e) => setPasteText(e.target.value)}
+                              rows={3}
+                              placeholder="Cole aqui o texto da ficha PIS (Ctrl+V). A IA reconhece nome, CPF, CNS, endereço, mãe, etc."
+                              className="text-xs"
+                              disabled={importing}
+                            />
+                            <div className="flex justify-end">
+                              <Button size="sm" onClick={handlePasteSubmit}
+                                disabled={importing || pasteText.trim().length < 10}
+                                className="gap-1.5 text-xs">
+                                {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                                Reconhecer e revisar
+                              </Button>
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground italic">
+                            Os dados reconhecidos passam por uma etapa de revisão antes de serem aplicados aos campos. Nada é salvo automaticamente.
+                          </p>
+                        </section>
+                      )}
 
                       {registry.is_unidentified && (
                         <Badge variant="outline" className="text-[10px] border-amber-500/40">
@@ -675,51 +743,55 @@ export function MedicalRecordEditDialog({
 
                       {/* Identificação */}
                       <FieldGrid title="Identificação">
-                        <FieldInput label="Nome completo" value={reg.full_name || ""} onChange={(v) => setRegField("full_name", v)} />
-                        <FieldInput label="Nome social" value={reg.social_name || ""} onChange={(v) => setRegField("social_name", v)} />
-                        <FieldInput label="CPF" value={reg.cpf || ""} onChange={(v) => setRegField("cpf", v)} placeholder="000.000.000-00" />
-                        <FieldInput label="CNS (Cartão SUS)" value={reg.cns || ""} onChange={(v) => setRegField("cns", v)} />
-                        <FieldInput label="Data de nascimento" type="date" value={reg.birth_date || ""} onChange={(v) => setRegField("birth_date", v)} />
-                        <FieldInput label="Sexo" value={reg.sex || ""} onChange={(v) => setRegField("sex", v)} placeholder="M / F / I" />
-                        <FieldInput label="Tipo sanguíneo" value={reg.blood_type || ""} onChange={(v) => setRegField("blood_type", v)} />
-                        <FieldInput label="Telefone" value={reg.phone || ""} onChange={(v) => setRegField("phone", v)} />
+                        <FieldInput label="Nome completo" value={reg.full_name || ""} onChange={(v) => setRegField("full_name", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("full_name")} />
+                        <FieldInput label="Nome social" value={reg.social_name || ""} onChange={(v) => setRegField("social_name", v)} disabled={!cadastroEditMode} />
+                        <FieldInput label="CPF" value={reg.cpf || ""} onChange={(v) => setRegField("cpf", v)} placeholder="000.000.000-00" disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("cpf")} />
+                        <FieldInput label="CNS (Cartão SUS)" value={reg.cns || ""} onChange={(v) => setRegField("cns", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("cns")} />
+                        <FieldInput label="Data de nascimento" type="date" value={reg.birth_date || ""} onChange={(v) => setRegField("birth_date", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("birth_date")} />
+                        <FieldInput label="Sexo" value={reg.sex || ""} onChange={(v) => setRegField("sex", v)} placeholder="M / F / I" disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("sex")} />
+                        <FieldInput label="Tipo sanguíneo" value={reg.blood_type || ""} onChange={(v) => setRegField("blood_type", v)} disabled={!cadastroEditMode} />
+                        <FieldInput label="Telefone" value={reg.phone || ""} onChange={(v) => setRegField("phone", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("phone")} />
                       </FieldGrid>
 
                       <FieldGrid title="Filiação">
-                        <FieldInput label="Nome da mãe" value={reg.mother_name || ""} onChange={(v) => setRegField("mother_name", v)} fullWidth />
+                        <FieldInput label="Nome da mãe" value={reg.mother_name || ""} onChange={(v) => setRegField("mother_name", v)} fullWidth disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("mother_name")} />
                       </FieldGrid>
 
                       <FieldGrid title="Endereço">
-                        <FieldInput label="Logradouro" value={reg.address || ""} onChange={(v) => setRegField("address", v)} fullWidth />
-                        <FieldInput label="Bairro" value={reg.neighborhood || ""} onChange={(v) => setRegField("neighborhood", v)} />
-                        <FieldInput label="Cidade" value={reg.city || ""} onChange={(v) => setRegField("city", v)} />
-                        <FieldInput label="UF" value={reg.state || ""} onChange={(v) => setRegField("state", v)} />
+                        <FieldInput label="Logradouro" value={reg.address || ""} onChange={(v) => setRegField("address", v)} fullWidth disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("address")} />
+                        <FieldInput label="Bairro" value={reg.neighborhood || ""} onChange={(v) => setRegField("neighborhood", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("neighborhood")} />
+                        <FieldInput label="Cidade" value={reg.city || ""} onChange={(v) => setRegField("city", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("city")} />
+                        <FieldInput label="UF" value={reg.state || ""} onChange={(v) => setRegField("state", v)} disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("state")} />
                       </FieldGrid>
 
                       <FieldGrid title="Clínico">
-                        <FieldInput label="Alergias conhecidas" value={reg.allergies || ""} onChange={(v) => setRegField("allergies", v)} fullWidth />
-                        <FieldInput label="Comorbidades" value={reg.comorbidities || ""} onChange={(v) => setRegField("comorbidities", v)} fullWidth />
+                        <FieldInput label="Alergias conhecidas" value={reg.allergies || ""} onChange={(v) => setRegField("allergies", v)} fullWidth disabled={!cadastroEditMode} />
+                        <FieldInput label="Comorbidades" value={reg.comorbidities || ""} onChange={(v) => setRegField("comorbidities", v)} fullWidth disabled={!cadastroEditMode} />
                       </FieldGrid>
 
                       <FieldGrid title="Origem PIS">
-                        <FieldInput label="Prontuário PIS / legado (referência)" value={reg.medical_record || ""} onChange={(v) => setRegField("medical_record", v)} fullWidth />
+                        <FieldInput label="Prontuário PIS / legado (referência)" value={reg.medical_record || ""} onChange={(v) => setRegField("medical_record", v)} fullWidth disabled={!cadastroEditMode} highlight={pisFromFieldsApplied.has("medical_record")} />
                       </FieldGrid>
 
-                      <section className="space-y-2 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10">
-                        <Label className="text-xs font-semibold flex items-center gap-1.5">
-                          <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-                          Motivo da atualização cadastral (obrigatório)
-                        </Label>
-                        <Textarea value={regReason} onChange={(e) => setRegReason(e.target.value)} rows={2}
-                          placeholder="Ex.: Atualização do endereço informada pelo acompanhante; importação do PIS..."
-                          className="text-xs" />
-                      </section>
+                      {cadastroEditMode && (
+                        <>
+                          <section className="space-y-2 p-3 rounded-lg border border-amber-500/30 bg-amber-500/10">
+                            <Label className="text-xs font-semibold flex items-center gap-1.5">
+                              <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                              Motivo da atualização cadastral (obrigatório)
+                            </Label>
+                            <Textarea value={regReason} onChange={(e) => setRegReason(e.target.value)} rows={2}
+                              placeholder="Ex.: Atualização do endereço informada pelo acompanhante; importação do PIS..."
+                              className="text-xs" />
+                          </section>
 
-                      <div className="flex justify-end">
-                        <Button onClick={tryConfirmFicha} disabled={!regChanges.length || saving} className="gap-1.5">
-                          <Save className="h-4 w-4" /> Revisar e salvar ficha ({regChanges.length})
-                        </Button>
-                      </div>
+                          <div className="flex justify-end">
+                            <Button onClick={tryConfirmFicha} disabled={!regChanges.length || saving} className="gap-1.5">
+                              <Save className="h-4 w-4" /> Revisar e salvar ficha ({regChanges.length})
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </ScrollArea>
