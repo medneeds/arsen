@@ -6753,7 +6753,7 @@ const PrescricaoPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
                 <button
                   type="button"
-                  onClick={() => setNutritionWizardOpen(true)}
+                  onClick={() => setNutritionConfirmOpen(true)}
                   className="text-left rounded-lg border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 hover:border-emerald-400 dark:bg-emerald-950/20 dark:border-emerald-900 transition-all p-3 group"
                 >
                   <div className="flex items-center gap-2 mb-1">
