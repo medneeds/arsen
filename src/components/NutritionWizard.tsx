@@ -287,6 +287,12 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
   // Free notes
   const [notes, setNotes] = useState<string>("");
 
+  // Oferta hídrica ampliada (catálogo de águas) — opt-in, aditiva.
+  // Pode coexistir com "Água oral livre" e "Água via sonda programada"; cada
+  // entrada vira uma linha extra na prescrição.
+  const [waterOfferEnabled, setWaterOfferEnabled] = useState(false);
+  const [waterOffer, setWaterOffer] = useState<WaterOfferingState>(DEFAULT_WATER_STATE);
+
   // Sugestão automática de modo conforme sistema enteral
   useEffect(() => {
     if (!modalities.has("enteral")) return;
