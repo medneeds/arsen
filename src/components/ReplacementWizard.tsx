@@ -7,6 +7,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { FlaskConical, Sparkles, BookOpen, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MedicationEntry } from "@/data/medicationsDatabase";
+import { useWizardItemQueue } from "@/hooks/useWizardItemQueue";
+import { WizardItemQueue } from "@/components/shared/WizardItemQueue";
+
+interface RepSnapshot {
+  disorder: Disorder;
+  severity: Severity;
+  value: string;
+  notes: string;
+  selectedId: string;
+}
 
 type Disorder = "hipoK" | "hipoMg" | "hipoCa" | "hipoNa" | "hipoP" | "hiperK" | "hiperNa" | "acidose";
 type Severity = "leve" | "moderada" | "grave";
