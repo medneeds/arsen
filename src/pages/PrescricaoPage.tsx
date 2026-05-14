@@ -3542,7 +3542,7 @@ function getDemoPrescriptionItems(bedNumber: string): PrescriptionItem[] {
 
 
 const PrescricaoPage = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { currentHospital, currentState } = useHospital();
   const [searchParams] = useSearchParams();
   const { getCount: getFavoriteCount, trackUse: trackMedicationUse } = useMedicationFavorites();
@@ -5803,6 +5803,11 @@ const PrescricaoPage = () => {
       .filter(Boolean),
     clinicalStatus: 'regular',
   }), [patient, searchParams, initialPatientSector]);
+
+  const pageReady = usePageReady({ loading: authLoading });
+  if (!pageReady) {
+    return <PageLoader message="Carregando prescrição" subMessage={patient?.name || undefined} />;
+  }
 
   return (
     <div className="animate-fade-in">
