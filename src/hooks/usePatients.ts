@@ -123,9 +123,9 @@ export function usePatients(department?: Department, sector?: string) {
     try {
       const dbUpdates: any = {};
       
-      if (updates.bedNumber !== undefined) dbUpdates.bed_number = updates.bedNumber;
+      // Campos fixos no mapa: leito e idade são definidos por cadastro/fluxos próprios.
+      // updatePatient genérico nunca persiste alterações desses campos para evitar edição inline acidental.
       if (updates.name !== undefined) dbUpdates.name = updates.name;
-      if (updates.age !== undefined) dbUpdates.age = typeof updates.age === 'number' ? updates.age.toString() : updates.age;
       if (updates.sector !== undefined) dbUpdates.sector = updates.sector;
       if (updates.diagnoses !== undefined) dbUpdates.diagnoses = updates.diagnoses.join('\n');
       if (updates.medicalHistory !== undefined) dbUpdates.medical_history = updates.medicalHistory.join('\n');
