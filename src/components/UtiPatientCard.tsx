@@ -1044,12 +1044,15 @@ export function UtiPatientCard({
                   {namesHidden ? (
                     <span className="patient-id text-xs md:text-sm font-semibold truncate tracking-widest opacity-70">{displayName}</span>
                   ) : (
-                    <InlineEditableField
-                      value={patient.name}
-                      onUpdate={(v) => handleUpdateField("name", v)}
-                      placeholder="NOME DO PACIENTE"
-                      className="patient-id text-xs md:text-sm font-semibold truncate"
-                    />
+                    /* Nome do paciente é IMUTÁVEL pelo mapa de leitos.
+                       Edição só é permitida via cockpit de prontuário (Edição Avançada → Ficha cadastral),
+                       que sincroniza patients.name e registra no histórico. */
+                    <span
+                      className="patient-id text-xs md:text-sm font-semibold truncate cursor-default"
+                      title="O nome do paciente é fixo no mapa de leitos. Para alterar, use Edição Avançada → Ficha cadastral."
+                    >
+                      {patient.name || <span className="italic text-muted-foreground">SEM NOME</span>}
+                    </span>
                   )}
                   <div className="shrink-0 flex items-center gap-1 text-[10px] md:text-xs text-muted-foreground">
                     <InlineEditableField
