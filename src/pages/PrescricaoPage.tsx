@@ -3806,9 +3806,9 @@ const PrescricaoPage = () => {
       }
     }
 
-    // ----- Controlado Port. 344 — só bloqueia se realmente regulatório -----
+    // ----- Controlado Port. 344 — só bloqueia se realmente regulatório (lista A/B/C) -----
     const cat = findControlledCatalog?.(item.name);
-    if (cat?.controlled && cat?.controlledList && !cat.notification_type) {
+    if (cat?.controlled && cat?.lista && !cat.notification_type) {
       missing.push('tipo de notificação');
     }
 
