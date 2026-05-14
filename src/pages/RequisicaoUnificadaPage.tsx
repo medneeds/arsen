@@ -785,42 +785,88 @@ const RequisicaoUnificadaPage = () => {
 
           {/* Clinical Justification */}
           {activeCategory === "parecer" ? (
-            <Card className="border-l-[4px] border-l-indigo-500 border-indigo-200/70 bg-gradient-to-br from-indigo-50/80 to-white dark:from-indigo-950/30 dark:to-transparent dark:border-indigo-900/50 shadow-sm">
-              <CardHeader className="pb-2 pt-3">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-indigo-900 dark:text-indigo-200">
-                  <ClipboardList className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
-                  Justificativa Clínica para o Parecerista
-                  <span className="text-red-500">*</span>
-                  <Badge variant="outline" className="ml-auto text-[10px] font-normal border-indigo-300 text-indigo-700 dark:text-indigo-300 dark:border-indigo-700">
-                    Imprime no laudo
-                  </Badge>
-                </CardTitle>
-                <p className="text-[11px] text-indigo-800/70 dark:text-indigo-300/70 mt-0.5 leading-snug">
-                  Descreva história resumida, hipótese diagnóstica, exames relevantes e a pergunta objetiva ao especialista. Esse é o único campo que vai para o parecerista.
-                </p>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <Textarea
-                  placeholder="Ex.: Paciente 54a, sepse de foco abdominal D3, em uso de meropenem. Lactato em queda, mas mantém disfunção renal (Cr 2,8). Solicito avaliação da Nefrologia quanto à indicação de TRS."
-                  value={formIndication}
-                  onChange={e => setFormIndication(e.target.value.slice(0, 900))}
-                  rows={6}
-                  maxLength={900}
-                  className="resize-none text-sm bg-white dark:bg-slate-900/60 border-indigo-200 dark:border-indigo-900/60 focus-visible:ring-indigo-400"
-                />
-                <div className="flex justify-between items-center mt-1.5 text-[10px]">
-                  <span className="text-indigo-700/70 dark:text-indigo-300/70">
-                    Limite alinhado ao laudo impresso (1 página A4).
-                  </span>
-                  <span className={cn(
-                    "font-mono tabular-nums",
-                    formIndication.length > 800 ? "text-red-600 font-semibold" : "text-muted-foreground"
-                  )}>
-                    {formIndication.length}/900
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+            (() => {
+              const PARECER_SOFT = 900;     // até aqui: resposta mantém ~78mm
+              const PARECER_MID  = 1600;    // até aqui: resposta encolhe p/ ~60mm
+              const PARECER_HARD = 2400;    // limite absoluto p/ caber em 1 página A4
+              const plain = richHtmlToPlainText(formIndication);
+              const used = plain.length;
+              const overSoft = used > PARECER_SOFT;
+              const overMid  = used > PARECER_MID;
+              const overHard = used > PARECER_HARD;
+              const respApprox = overMid ? "~45 mm" : overSoft ? "~60 mm" : "~78 mm";
+              return (
+                <Card className="border-l-[4px] border-l-indigo-500 border-indigo-200/70 bg-gradient-to-br from-indigo-50/80 to-white dark:from-indigo-950/30 dark:to-transparent dark:border-indigo-900/50 shadow-sm">
+                  <CardHeader className="pb-2 pt-3">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2 text-indigo-900 dark:text-indigo-200">
+                      <ClipboardList className="h-4 w-4 text-indigo-600 dark:text-indigo-300" />
+                      Justificativa Clínica para o Parecerista
+                      <span className="text-red-500">*</span>
+                      <Badge variant="outline" className="ml-auto text-[10px] font-normal border-indigo-300 text-indigo-700 dark:text-indigo-300 dark:border-indigo-700">
+                        Imprime no laudo
+                      </Badge>
+                    </CardTitle>
+                    <p className="text-[11px] text-indigo-800/70 dark:text-indigo-300/70 mt-0.5 leading-snug">
+                      Descreva história resumida, hipótese diagnóstica, exames relevantes e a pergunta objetiva ao especialista. Use <strong>negrito</strong>, <em>itálico</em>, <u>sublinhado</u> e listas para organizar tópicos. <strong>Enter</strong> cria parágrafo · <strong>Shift+Enter</strong> quebra de linha.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-2">
+                    <RichTextEditor
+                      value={formIndication}
+                      onChange={(html) => {
+                        const next = richHtmlToPlainText(html).length > PARECER_HARD
+                          ? formIndication // bloqueia novo conteúdo após o teto
+                          : html;
+                        setFormIndication(next);
+                      }}
+                      placeholder="Ex.: Paciente 54a, sepse de foco abdominal D3, em uso de meropenem. Lactato em queda, mas mantém disfunção renal (Cr 2,8). Solicito avaliação da Nefrologia quanto à indicação de TRS."
+                      minHeight={170}
+                      className="bg-white dark:bg-slate-900/60 border-indigo-200 dark:border-indigo-900/60"
+                    />
+
+                    {/* Barra de progresso dinâmica */}
+                    <div className="h-1.5 w-full rounded-full bg-indigo-100 dark:bg-indigo-950/60 overflow-hidden">
+                      <div
+                        className={cn(
+                          "h-full transition-all duration-200",
+                          overHard ? "bg-red-600" : overMid ? "bg-amber-500" : overSoft ? "bg-indigo-500" : "bg-emerald-500"
+                        )}
+                        style={{ width: `${Math.min(100, (used / PARECER_HARD) * 100)}%` }}
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[10px]">
+                      <span className={cn(
+                        "inline-flex items-center gap-1.5 px-2 py-1 rounded-md font-medium",
+                        overMid ? "bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-900"
+                               : overSoft ? "bg-indigo-50 text-indigo-800 border border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-200 dark:border-indigo-900"
+                               : "bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-900"
+                      )}>
+                        <AlertTriangle className={cn("h-3 w-3", overSoft ? "" : "opacity-50")} />
+                        Espaço de resposta do especialista: <strong className="tabular-nums">{respApprox}</strong>
+                      </span>
+                      <span className={cn(
+                        "font-mono tabular-nums",
+                        overHard ? "text-red-700 font-bold" : overMid ? "text-amber-700 font-semibold" : overSoft ? "text-indigo-700" : "text-muted-foreground"
+                      )}>
+                        {used}/{PARECER_HARD} caracteres
+                      </span>
+                    </div>
+
+                    {overSoft && !overHard && (
+                      <p className="text-[10.5px] leading-snug text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-md px-2 py-1.5">
+                        <strong>Atenção:</strong> ao ultrapassar {PARECER_SOFT} caracteres, o campo destinado à resposta manuscrita do especialista é reduzido para que tudo caiba em <strong>1 página A4</strong>.
+                      </p>
+                    )}
+                    {overHard && (
+                      <p className="text-[10.5px] leading-snug text-red-800 dark:text-red-200 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-md px-2 py-1.5">
+                        <strong>Limite máximo atingido ({PARECER_HARD}).</strong> Conteúdo adicional bloqueado para preservar o bloco-resposta do parecerista. Anexe detalhes na evolução clínica.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })()
           ) : (
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold">
