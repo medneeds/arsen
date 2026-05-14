@@ -518,9 +518,24 @@ export async function printRequisitionGuide(
     </table>
   `;
 
-  const justificationBlock = request.clinical_indication
-    ? `<h2 class="nz-section">Justificativa Clínica</h2>
-       <table class="nz"><tbody><tr><td style="min-height:30pt">${escapeHtml(request.clinical_indication)}</td></tr></tbody></table>`
+  const isParecer = request.category === "parecer";
+
+  // Para parecer, cap o texto da justificativa para garantir 1 página
+  const PARECER_MAX_CHARS = 900;
+  const rawIndication = request.clinical_indication || "";
+  const indicationTruncated =
+    isParecer && rawIndication.length > PARECER_MAX_CHARS
+      ? rawIndication.slice(0, PARECER_MAX_CHARS).trimEnd() + "…"
+      : rawIndication;
+  const indicationOverflowed = isParecer && rawIndication.length > PARECER_MAX_CHARS;
+
+  const justificationBlock = rawIndication
+    ? `<h2 class="nz-section">${isParecer ? "Motivo da Solicitação de Parecer" : "Justificativa Clínica"}</h2>
+       <table class="nz"><tbody><tr><td class="${isParecer ? "parecer-just" : ""}">${escapeHtml(indicationTruncated).replace(/\n/g, "<br/>")}${
+         indicationOverflowed
+           ? `<div style="margin-top:4pt;font-size:7pt;color:#b91c1c;font-style:italic">(Texto truncado em ${PARECER_MAX_CHARS} caracteres para caber em 1 página — anexar detalhamento à evolução clínica.)</div>`
+           : ""
+       }</td></tr></tbody></table>`
     : "";
 
   const itemsCells =
@@ -533,14 +548,36 @@ export async function printRequisitionGuide(
           .join("")
       : `<div class="nz-empty">Nenhum item registrado.</div>`;
 
-  const itemsBlock = `
-    <h2 class="nz-section">Itens Solicitados (${items.length})</h2>
-    <div class="req-grid">${itemsCells}</div>
-  `;
+  const itemsBlock = isParecer
+    ? `<h2 class="nz-section">Especialidade(s) Solicitada(s) (${items.length})</h2>
+       <div class="req-grid">${itemsCells}</div>`
+    : `<h2 class="nz-section">Itens Solicitados (${items.length})</h2>
+       <div class="req-grid">${itemsCells}</div>`;
 
   const notesBlock = cleanNotes
     ? `<h2 class="nz-section">Observações</h2>
        <table class="nz"><tbody><tr><td>${escapeHtml(cleanNotes).replace(/\n/g, "<br/>")}</td></tr></tbody></table>`
+    : "";
+
+  // Bloco específico do parecer: área pautada para resposta manual (~35% da página)
+  const parecerResponseBlock = isParecer
+    ? `<h2 class="nz-section" style="background:#0a1628">Resposta do Parecer (preenchimento manual)</h2>
+       <div class="parecer-response">
+         <div class="parecer-response-lines"></div>
+         <table class="parecer-sign">
+           <tbody>
+             <tr>
+               <td class="psl"><span>Parecerista:</span><div class="psf"></div></td>
+               <td class="psl" style="width:22%"><span>CRM:</span><div class="psf"></div></td>
+               <td class="psl" style="width:18%"><span>Data:</span><div class="psf"></div></td>
+               <td class="psl" style="width:14%"><span>Hora:</span><div class="psf"></div></td>
+             </tr>
+             <tr>
+               <td class="psl" colspan="4" style="height:24pt"><span>Assinatura e carimbo:</span></td>
+             </tr>
+           </tbody>
+         </table>
+       </div>`
     : "";
 
   const bodyHtml = `
@@ -549,6 +586,7 @@ export async function printRequisitionGuide(
     ${justificationBlock}
     ${itemsBlock}
     ${notesBlock}
+    ${parecerResponseBlock}
   `;
 
   const extraStyles = `
@@ -557,6 +595,28 @@ export async function printRequisitionGuide(
     .req-item { display:flex; align-items:center; gap:5pt; padding:4pt 7pt; font-size:8.5pt; border-bottom:0.5pt solid #e2e8f0; border-right:0.5pt solid #e2e8f0; }
     .req-item:nth-child(2n) { border-right:none; }
     .req-num { min-width:14pt; font-size:8.5pt; font-weight:600; color:#0a1628; text-align:right; flex-shrink:0; }
+
+    /* Parecer — caixa de justificativa enxuta + área de resposta manual */
+    .parecer-just { max-height: 52mm; overflow: hidden; font-size: 9pt; line-height: 1.35; }
+    .parecer-response { border: 1pt solid #0a1628; border-radius: 3pt; margin-top: 4pt; padding: 4pt 6pt 6pt; background: #fff; page-break-inside: avoid; }
+    .parecer-response-lines {
+      height: 78mm;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 7.5mm,
+        #94a3b8 7.5mm,
+        #94a3b8 7.6mm
+      );
+      border-bottom: 0.5pt solid #cbd5e1;
+      margin-bottom: 4pt;
+    }
+    .parecer-sign { width: 100%; border-collapse: collapse; font-size: 8pt; margin-top: 3pt; }
+    .parecer-sign .psl { border: 0.5pt solid #94a3b8; padding: 3pt 5pt; vertical-align: top; }
+    .parecer-sign .psl span { font-size: 7pt; color: #475569; text-transform: uppercase; letter-spacing: 0.3pt; font-weight: 600; }
+    .parecer-sign .psf { height: 14pt; }
+    /* Para parecer, o rodapé de assinatura padrão fica oculto (já temos o bloco-resposta) */
+    ${isParecer ? ".nz-signature-area { display:none !important; }" : ""}
   `;
 
   const logoDataUrl = await prepareLogo();
@@ -566,10 +626,12 @@ export async function printRequisitionGuide(
     sectorLabel: sectorName || "Assistência Hospitalar",
     docCodePrefix: docPrefix,
     bodyHtml,
-    signatures: [
-      { label: "Médico Solicitante", caption: "CRM · Carimbo e assinatura" },
-      { label: "Setor Executor", caption: "Recebimento e execução" },
-    ],
+    signatures: isParecer
+      ? [{ label: "Médico Solicitante", caption: "CRM · Carimbo e assinatura" }]
+      : [
+          { label: "Médico Solicitante", caption: "CRM · Carimbo e assinatura" },
+          { label: "Setor Executor", caption: "Recebimento e execução" },
+        ],
     logoDataUrl,
     extraStyles,
   });
