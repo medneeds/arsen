@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Shield, Printer, Plus, Trash2, AlertTriangle, FileText, ClipboardList,
-  Loader2, FlaskConical, Check, ChevronsUpDown, Pill,
+  Loader2, FlaskConical, Check, ChevronsUpDown, Pill, CheckCircle2, AlertCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
