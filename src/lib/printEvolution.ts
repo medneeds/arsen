@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import { toRichHtml, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
+import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
 
 /** Renderiza HTML rico (sanitizado) preservando formatação dos campos editáveis. */
