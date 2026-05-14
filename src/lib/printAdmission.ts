@@ -14,7 +14,7 @@ export interface AdmissionPrintInput {
   height?: string;
   imc?: { value: string; label: string } | null;
   vitals: { pa?: string; fc?: string; fr?: string; spo2?: string; tax?: string; dx?: string };
-  exam: { general?: string; cv?: string; resp?: string; abd?: string; ext?: string };
+  exam: { general?: string; cv?: string; resp?: string; abd?: string; ext?: string; neuro?: string };
   plan: string;
   cidPrimary: string;
   cidSecondary?: string;
