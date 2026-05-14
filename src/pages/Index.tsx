@@ -419,15 +419,23 @@ const Index = () => {
     const safePatient = currentPatient
       ? {
           ...updatedPatient,
+          name: currentPatient.name,
           bedNumber: currentPatient.bedNumber,
           age: currentPatient.age,
           admissionDate: currentPatient.admissionDate,
         }
       : updatedPatient;
+    const {
+      name: _name,
+      bedNumber: _bedNumber,
+      age: _age,
+      admissionDate: _admissionDate,
+      ...mutableUpdates
+    } = safePatient;
     
     try {
       // Update in database
-      await dbUpdatePatient(safePatient.id, safePatient);
+      await dbUpdatePatient(safePatient.id, mutableUpdates);
       
       // Update local state (will be synced by realtime)
       setPatients((prev) =>
