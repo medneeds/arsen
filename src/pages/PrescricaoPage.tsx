@@ -6972,7 +6972,52 @@ const PrescricaoPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Quick Templates Dialog */}
+      {/* Pop-up orientativo após anexar antimicrobianos via Guia ATM */}
+      <AlertDialog
+        open={atbAttachNotice.open}
+        onOpenChange={(v) => setAtbAttachNotice(prev => ({ ...prev, open: v }))}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Antimicrobiano(s) anexado(s) à prescrição</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                {atbAttachNotice.names.length > 0 && (
+                  <div className="rounded-md border bg-muted/40 p-2 text-xs">
+                    <div className="font-semibold mb-1">Itens incluídos:</div>
+                    <ul className="list-disc pl-4 space-y-0.5">
+                      {atbAttachNotice.names.map((n, i) => <li key={i}>{n}</li>)}
+                    </ul>
+                  </div>
+                )}
+                {atbAttachNotice.isFirstDay ? (
+                  <div className="rounded-md border-l-[3px] border-l-amber-500 bg-amber-50/70 dark:bg-amber-950/30 p-2 text-xs leading-relaxed">
+                    <strong>Atenção — D1 (primeiro dia de antibiótico):</strong> ao imprimir a prescrição
+                    do dia, é obrigatório anexar a <strong>Guia ATM em 2 vias</strong> (1 via para a
+                    farmácia/CCIH e 1 via para o prontuário). Marque "Imprimir Guia ATM" no botão de
+                    impressão da prescrição.
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Continuação de antibiótico já em curso. A Guia ATM <strong>não precisa</strong>
+                    ser reimpressa diariamente — apenas no D1, na troca de esquema ou no escalonamento.
+                  </p>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  A duração programada (7, 10, 14 dias) e o sítio infeccioso ficam visíveis no cabeçalho
+                  roxo do item — você pode editar a qualquer momento.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setAtbAttachNotice(prev => ({ ...prev, open: false }))}>
+              Entendi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={quickTemplatesDialogOpen} onOpenChange={setQuickTemplatesDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
           <DialogHeader>
