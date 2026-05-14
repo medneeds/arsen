@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Shield, Printer, Plus, Trash2, AlertTriangle, FileText, ClipboardList,
-  Loader2, FlaskConical, Check, ChevronsUpDown, Pill,
+  Loader2, FlaskConical, Check, ChevronsUpDown, Pill, CheckCircle2, AlertCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -108,6 +108,33 @@ const RESTRICTION_CLASSES = [
   { value: "profilaxia", label: "Profilaxia (máx 24h)", color: "text-blue-600" },
 ];
 
+// === Validação obrigatória para anexar à prescrição ===
+// Campos exigidos pela CCIH/Norma Zero antes de o ATB entrar no corpo da prescrição.
+// Se faltar qualquer um, o "Anexar" é bloqueado e a UI guia o médico.
+const REQUIRED_LABELS: Record<string, string> = {
+  medication: "Antimicrobiano",
+  dose: "Dose",
+  route: "Via",
+  posology: "Posologia",
+  startDate: "Data de início",
+  infectionSite: "Sítio de infecção",
+  justification: "Justificativa clínica",
+};
+
+function getMissingFields(e: AntimicrobialEntry): string[] {
+  const missing: string[] = [];
+  if (!e.medication?.trim()) missing.push(REQUIRED_LABELS.medication);
+  if (!e.dose?.trim()) missing.push(REQUIRED_LABELS.dose);
+  if (!e.route?.trim()) missing.push(REQUIRED_LABELS.route);
+  if (!e.posology?.trim()) missing.push(REQUIRED_LABELS.posology);
+  if (!e.startDate?.trim()) missing.push(REQUIRED_LABELS.startDate);
+  if (!e.infectionSite?.trim()) missing.push(REQUIRED_LABELS.infectionSite);
+  if (!e.justification?.trim()) missing.push(REQUIRED_LABELS.justification);
+  return missing;
+}
+
+const Req = () => <span className="text-red-500 ml-0.5" aria-label="obrigatório">*</span>;
+
 function createEmptyEntry(item?: PrescriptionItem | MedicationEntry): AntimicrobialEntry {
   const isMed = item && 'defaultDose' in item;
   return {
@@ -208,6 +235,19 @@ export function AntimicrobialGuideDialog({
   const [loadingImport, setLoadingImport] = useState<Record<string, 'history' | 'evolution' | 'cultures' | null>>({});
   const [availableCultures, setAvailableCultures] = useState<Array<{ id: string; culture_type: string; collection_date: string | null; status: string; microorganism: string | null; antibiogram: string | null; sensitivity_profile: string | null; result_text: string | null; created_at: string }>>([]);
   const draftKey = patientId ? `atb-draft-${patientId}` : null;
+  const entryRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [showErrors, setShowErrors] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  // Mapa de erros por entrada (sempre calculado, mas só exibido após tentativa de anexar
+  // ou quando o item já tem alguma coisa preenchida — evita poluir a tela inicial).
+  const missingByEntry = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    entries.forEach(e => { map[e.id] = getMissingFields(e); });
+    return map;
+  }, [entries]);
+  const allValid = entries.length > 0 && entries.every(e => missingByEntry[e.id].length === 0);
+  const validCount = entries.filter(e => missingByEntry[e.id].length === 0).length;
 
   useEffect(() => {
     if (!open) return;
@@ -387,22 +427,61 @@ export function AntimicrobialGuideDialog({
     openPrintWindow(html, "Preparando Guia ATM…");
   };
 
-  const validEntries = () => entries.filter(e => e.medication.trim());
+  const validEntries = () => entries.filter(e => getMissingFields(e).length === 0);
 
-  const doAttach = (close: boolean) => {
+  // Centraliza e destaca a primeira entrada incompleta
+  const focusFirstInvalid = (): boolean => {
+    const firstInvalid = entries.find(e => missingByEntry[e.id]?.length > 0);
+    if (!firstInvalid) return false;
+    setHighlightId(firstInvalid.id);
+    setTimeout(() => {
+      entryRefs.current[firstInvalid.id]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+    setTimeout(() => setHighlightId(null), 2500);
+    return true;
+  };
+
+  const doAttach = (close: boolean): boolean => {
+    if (!onConfirm) return false;
+    setShowErrors(true);
+    if (entries.length === 0) {
+      toast.error("Adicione pelo menos um antimicrobiano antes de anexar.");
+      return false;
+    }
     const valid = validEntries();
-    if (valid.length === 0 || !onConfirm) return;
+    if (valid.length !== entries.length) {
+      const firstMissing = entries.find(e => missingByEntry[e.id]?.length > 0);
+      const fields = firstMissing ? missingByEntry[firstMissing.id].join(', ') : '';
+      toast.error("Não é possível anexar: campos obrigatórios em aberto.", {
+        description: fields ? `Faltando: ${fields}` : undefined,
+      });
+      focusFirstInvalid();
+      return false;
+    }
     onConfirm(valid.map(e => ({
       medication: e.medication, dose: e.dose, route: e.route, posology: e.posology,
       startDate: e.startDate, plannedDuration: e.plannedDuration, infectionSite: e.infectionSite,
     })));
     if (draftKey) localStorage.removeItem(draftKey);
     if (close) onOpenChange(false);
+    return true;
   };
 
   const handleAttachOnly = () => doAttach(true);
   const handlePrintOnly = async () => { await handlePrint(); };
-  const handleAttachAndPrint = async () => { await handlePrint(); doAttach(true); };
+  const handleAttachAndPrint = async () => {
+    // Valida primeiro; só imprime se o anexo for válido — evita imprimir Guia
+    // com campos vazios que não vão entrar na prescrição.
+    setShowErrors(true);
+    const valid = entries.length > 0 && entries.every(e => getMissingFields(e).length === 0);
+    if (!valid) {
+      toast.error("Complete os campos obrigatórios antes de imprimir + anexar.");
+      focusFirstInvalid();
+      return;
+    }
+    await handlePrint();
+    doAttach(true);
+  };
   const handleSaveDraft = () => {
     if (!draftKey) { toast.error("Sem paciente vinculado para salvar rascunho"); return; }
     try {
@@ -444,12 +523,61 @@ export function AntimicrobialGuideDialog({
                 )}
               </div>
 
-              {entries.map((entry, idx) => (
-                <div key={entry.id} className="rounded-lg border border-border p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold flex items-center gap-2">
-                      <Badge variant="outline" className="text-violet-600 border-violet-300">ATM {idx + 1}</Badge>
-                      {entry.medication || "Novo antimicrobiano"}
+              {/* Checklist obrigatória — só no modo prescribe (anexar à prescrição) */}
+              {mode === 'prescribe' && (
+                <div className="rounded-lg border border-amber-200 dark:border-amber-800/40 bg-amber-50/60 dark:bg-amber-950/15 p-3 text-xs">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="font-semibold text-amber-800 dark:text-amber-300 mb-1">
+                        Para anexar à prescrição é obrigatório preencher:
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 text-[10.5px]">
+                        {Object.values(REQUIRED_LABELS).map(l => (
+                          <span key={l} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-amber-300 bg-white dark:bg-amber-950/30">
+                            <Req />{l}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="text-[10.5px] text-amber-700 dark:text-amber-400 mt-1.5">
+                        Itens marcados com <Req /> são exigidos pela CCIH/ANVISA. O botão "Anexar" só libera quando todos estiverem preenchidos em <strong>cada</strong> antimicrobiano.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {entries.map((entry, idx) => {
+                const missing = missingByEntry[entry.id] || [];
+                const isComplete = missing.length === 0;
+                const showThisError = mode === 'prescribe' && (showErrors || highlightId === entry.id);
+                const cardCls = cn(
+                  "rounded-lg border p-4 space-y-3 transition-all",
+                  highlightId === entry.id ? "border-red-400 ring-2 ring-red-200 dark:ring-red-900/40" :
+                    showThisError && !isComplete ? "border-amber-300 dark:border-amber-700/60" :
+                    isComplete && mode === 'prescribe' ? "border-emerald-200 dark:border-emerald-800/40" :
+                    "border-border"
+                );
+                return (
+                <div
+                  key={entry.id}
+                  ref={(el) => { entryRefs.current[entry.id] = el; }}
+                  className={cardCls}
+                >
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <h3 className="text-sm font-semibold flex items-center gap-2 min-w-0">
+                      <Badge variant="outline" className="text-violet-600 border-violet-300 shrink-0">ATM {idx + 1}</Badge>
+                      <span className="truncate">{entry.medication || "Novo antimicrobiano"}</span>
+                      {mode === 'prescribe' && (
+                        isComplete ? (
+                          <Badge variant="outline" className="text-emerald-700 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 gap-1 text-[10px] font-normal">
+                            <CheckCircle2 className="h-3 w-3" /> Pronto p/ anexar
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50 dark:bg-amber-950/20 gap-1 text-[10px] font-normal">
+                            <AlertCircle className="h-3 w-3" /> Faltam {missing.length} campo(s)
+                          </Badge>
+                        )
+                      )}
                     </h3>
                     {entries.length > 1 && (
                       <Button variant="ghost" size="sm" onClick={() => removeEntry(entry.id)} className="h-7 text-destructive">
@@ -458,10 +586,18 @@ export function AntimicrobialGuideDialog({
                     )}
                   </div>
 
+                  {showThisError && !isComplete && (
+                    <div className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50/70 dark:bg-amber-950/15 border border-amber-200 dark:border-amber-800/40 rounded px-2 py-1.5">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                      <div>
+                        <strong>Para anexar este antimicrobiano, preencha:</strong> {missing.join(', ')}.
+                      </div>
+                    </div>
+                  )}
                   {/* Antimicrobial picker (combobox) */}
                   <div className="grid grid-cols-4 gap-2">
                     <div className="col-span-2">
-                      <Label className="text-[10px]">Antimicrobiano (selecionar ou digitar)</Label>
+                      <Label className="text-[10px]">Antimicrobiano (selecionar ou digitar){mode === 'prescribe' && <Req />}</Label>
                       <AntimicrobialCombobox
                         value={entry.medication}
                         onSelectMed={(med) => updateEntryFromMed(entry.id, med)}
@@ -473,22 +609,22 @@ export function AntimicrobialGuideDialog({
                       )}
                     </div>
                     <div>
-                      <Label className="text-[10px]">Dose</Label>
+                      <Label className="text-[10px]">Dose{mode === 'prescribe' && <Req />}</Label>
                       <Input value={entry.dose} onChange={e => updateEntry(entry.id, "dose", e.target.value)} className="h-8 text-xs" />
                     </div>
                     <div>
-                      <Label className="text-[10px]">Via</Label>
+                      <Label className="text-[10px]">Via{mode === 'prescribe' && <Req />}</Label>
                       <Input value={entry.route} onChange={e => updateEntry(entry.id, "route", e.target.value)} className="h-8 text-xs" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-4 gap-2">
                     <div>
-                      <Label className="text-[10px]">Posologia</Label>
+                      <Label className="text-[10px]">Posologia{mode === 'prescribe' && <Req />}</Label>
                       <Input value={entry.posology} onChange={e => updateEntry(entry.id, "posology", e.target.value)} className="h-8 text-xs" />
                     </div>
                     <div>
-                      <Label className="text-[10px]">Data de Início</Label>
+                      <Label className="text-[10px]">Data de Início{mode === 'prescribe' && <Req />}</Label>
                       <Input type="date" value={entry.startDate} onChange={e => updateEntry(entry.id, "startDate", e.target.value)} className="h-8 text-xs" />
                     </div>
                     <div>
@@ -520,7 +656,7 @@ export function AntimicrobialGuideDialog({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <Label className="text-[10px]">Sítio de Infecção / Indicação Clínica</Label>
+                      <Label className="text-[10px]">Sítio de Infecção / Indicação Clínica{mode === 'prescribe' && <Req />}</Label>
                       <Select value={entry.infectionSite} onValueChange={v => updateEntry(entry.id, "infectionSite", v)}>
                         <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                         <SelectContent>
@@ -569,7 +705,7 @@ export function AntimicrobialGuideDialog({
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <Label className="text-[10px]">Justificativa Clínica</Label>
+                      <Label className="text-[10px]">Justificativa Clínica{mode === 'prescribe' && <Req />}</Label>
                       {patientId && (
                         <div className="flex items-center gap-1">
                           <Button type="button" variant="outline" size="sm" onClick={() => importAdmissionHistory(entry.id)} disabled={!!loadingImport[entry.id]} className="h-6 text-[10px] gap-1 px-2">
@@ -591,7 +727,8 @@ export function AntimicrobialGuideDialog({
                     <Textarea value={entry.ccihNotes} onChange={e => updateEntry(entry.id, "ccihNotes", e.target.value)} placeholder="Observações da Comissão de Controle de Infecção Hospitalar..." className="text-xs min-h-[40px] resize-none" />
                   </div>
                 </div>
-              ))}
+                );
+              })}
 
               <Button variant="outline" size="sm" onClick={addEntry} className="gap-1.5 w-full text-xs">
                 <Plus className="h-3.5 w-3.5" /> Adicionar Antimicrobiano
@@ -601,8 +738,22 @@ export function AntimicrobialGuideDialog({
 
           {/* === STICKY FOOTER === */}
           <DialogFooter className="px-6 py-3 border-t bg-background shrink-0 flex-row sm:justify-between gap-2">
-            <div className="text-[11px] text-muted-foreground self-center">
-              {entries.filter(e => e.medication.trim()).length} antimicrobiano(s) preenchido(s)
+            <div className="text-[11px] self-center flex items-center gap-2 flex-wrap">
+              {mode === 'prescribe' ? (
+                allValid ? (
+                  <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-medium">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {validCount} de {entries.length} pronto(s) para anexar
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                    <AlertCircle className="h-3.5 w-3.5" />
+                    {validCount} de {entries.length} pronto(s) — complete os campos com <Req /> para liberar
+                  </span>
+                )
+              ) : (
+                <span className="text-muted-foreground">{entries.filter(e => e.medication.trim()).length} antimicrobiano(s) preenchido(s)</span>
+              )}
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-end">
               <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
@@ -618,10 +769,22 @@ export function AntimicrobialGuideDialog({
               </Button>
               {mode === 'prescribe' && onConfirm && (
                 <>
-                  <Button variant="outline" size="sm" onClick={handleAttachOnly} className="gap-1.5 border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-400">
+                  <Button
+                    variant="outline" size="sm"
+                    onClick={handleAttachOnly}
+                    disabled={!allValid}
+                    title={allValid ? undefined : "Preencha os campos obrigatórios em todos os antimicrobianos"}
+                    className="gap-1.5 border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-700 dark:text-violet-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <Shield className="h-3.5 w-3.5" /> Anexar antibióticos à prescrição
                   </Button>
-                  <Button size="sm" onClick={handleAttachAndPrint} className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white">
+                  <Button
+                    size="sm"
+                    onClick={handleAttachAndPrint}
+                    disabled={!allValid}
+                    title={allValid ? undefined : "Preencha os campos obrigatórios em todos os antimicrobianos"}
+                    className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
                     <Printer className="h-3.5 w-3.5" /> Anexar + Imprimir Guia
                   </Button>
                 </>
