@@ -297,6 +297,7 @@ export default function Saps3Page() {
     patientId?: string | null;
     sectorCode?: string;
     age?: string | null;
+    mode?: "admission" | "validation";
   } | null>(null);
 
   // Allocation
