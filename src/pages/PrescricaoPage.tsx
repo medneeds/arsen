@@ -3782,12 +3782,14 @@ const PrescricaoPage = () => {
   //   preserva o snapshot do dia anterior para auditoria/CCIH).
   const persistItems = useCallback(async (
     nextItems: PrescriptionItem[],
-    opts: { mode?: 'update' | 'newVersion'; reason?: string; sigOverride?: DigitalSignature | null } = {}
+    opts: { mode?: 'update' | 'newVersion'; reason?: string; sigOverride?: DigitalSignature | null; silent?: boolean } = {}
   ) => {
     if (!currentHospital || !currentState || !patient.name.trim()) {
-      toast.error("Não foi possível salvar a prescrição", {
-        description: "Falta paciente/hospital ativo. Recarregue a página com o paciente correto antes de prosseguir.",
-      });
+      if (!opts.silent) {
+        toast.error("Não foi possível salvar a prescrição", {
+          description: "Falta paciente/hospital ativo. Recarregue a página com o paciente correto antes de prosseguir.",
+        });
+      }
       throw new Error('persistItems: missing patient/hospital context');
     }
     const mode = opts.mode || 'update';
@@ -3854,12 +3856,99 @@ const PrescricaoPage = () => {
       }
     } catch (err: any) {
       console.error('[persistItems] persist failed', err);
-      toast.error("Erro ao persistir alteração", {
-        description: "A alteração ficou apenas em memória. Salve manualmente para garantir.",
-      });
+      if (!opts.silent) {
+        toast.error("Erro ao persistir alteração", {
+          description: "A alteração ficou apenas em memória. Salve manualmente para garantir.",
+        });
+      }
       throw err;
     }
   }, [currentHospital, currentState, patient, digitalSignature, currentPrescriptionId, user?.id, initialPatientSector]);
+
+  // ============= AUTOSAVE DE RASCUNHO (CRÍTICO) =============
+  // Persiste automaticamente qualquer alteração em `items` ~800ms após a última edição,
+  // mesmo sem validação. Garante que ao trocar de paciente/aba os itens não se percam.
+  // - Não dispara em prescrições já assinadas (digitalSignature !== null) → imutáveis.
+  // - Faz fallback em localStorage caso o save remoto falhe (ex.: rede caiu).
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
+  const [draftSaving, setDraftSaving] = useState(false);
+  const lastPersistedSerializedRef = useRef<string>('');
+  const autosaveSkipFirstRef = useRef(true);
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const draftStorageKey = useMemo(() => {
+    if (!patient.name?.trim()) return null;
+    const dateKey = format(new Date(), 'yyyy-MM-dd');
+    return `rx-draft::${patient.name.trim()}::${dateKey}`;
+  }, [patient.name]);
+
+  useEffect(() => {
+    if (autosaveSkipFirstRef.current) {
+      autosaveSkipFirstRef.current = false;
+      lastPersistedSerializedRef.current = JSON.stringify(items);
+      return;
+    }
+    if (digitalSignature) return;
+    if (!currentHospital || !currentState || !patient.name?.trim()) return;
+
+    const serialized = JSON.stringify(items);
+    if (serialized === lastPersistedSerializedRef.current) return;
+
+    if (draftStorageKey) {
+      try {
+        localStorage.setItem(draftStorageKey, JSON.stringify({
+          items, patient, savedAt: new Date().toISOString(),
+        }));
+      } catch {}
+    }
+
+    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    autosaveTimerRef.current = setTimeout(async () => {
+      setDraftSaving(true);
+      try {
+        await persistItems(items, { mode: 'update', silent: true });
+        lastPersistedSerializedRef.current = serialized;
+        setDraftSavedAt(new Date());
+      } catch (err) {
+        console.warn('[autosave] persistência remota falhou, mantendo backup local', err);
+      } finally {
+        setDraftSaving(false);
+      }
+    }, 800);
+
+    return () => {
+      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
+    };
+  }, [items, digitalSignature, currentHospital, currentState, patient, persistItems, draftStorageKey]);
+
+  // Restaura backup local se DB ainda não trouxe nada (paciente sem prescrição salva hoje)
+  const draftRestoreAttemptedRef = useRef(false);
+  useEffect(() => {
+    if (draftRestoreAttemptedRef.current) return;
+    if (!draftStorageKey) return;
+    if (currentPrescriptionId) { draftRestoreAttemptedRef.current = true; return; }
+    if (items.length > 0) { draftRestoreAttemptedRef.current = true; return; }
+    try {
+      const raw = localStorage.getItem(draftStorageKey);
+      if (!raw) { draftRestoreAttemptedRef.current = true; return; }
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed?.items) && parsed.items.length > 0) {
+        setItems(parsed.items as PrescriptionItem[]);
+        toast.info("Rascunho local restaurado", {
+          description: "Itens não validados foram recuperados deste paciente.",
+        });
+      }
+    } catch {}
+    draftRestoreAttemptedRef.current = true;
+  }, [draftStorageKey, currentPrescriptionId, items.length]);
+
+  // Limpa backup local quando a prescrição é assinada
+  useEffect(() => {
+    if (digitalSignature && draftStorageKey) {
+      try { localStorage.removeItem(draftStorageKey); } catch {}
+    }
+  }, [digitalSignature, draftStorageKey]);
+  // ============= FIM AUTOSAVE =============
 
   // Aplica a validação a um conjunto (sem pedir senha) — usado tanto pelo caminho rápido
   // quanto pelo executeValidation (após senha).
