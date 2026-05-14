@@ -393,14 +393,6 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
           </Button>
         )}
       </div>
-
-      <ExaminusAIDialog
-        open={examinusOpen}
-        onOpenChange={setExaminusOpen}
-        currentExams={richHtmlToPlainText(soap.objective).split("\n").filter(Boolean)}
-        onImportExams={handleImportExams}
-      />
-    </div>
   );
 };
 
