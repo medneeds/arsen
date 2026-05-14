@@ -597,7 +597,7 @@ export function AntimicrobialGuideDialog({
                   {/* Antimicrobial picker (combobox) */}
                   <div className="grid grid-cols-4 gap-2">
                     <div className="col-span-2">
-                      <Label className="text-[10px]">Antimicrobiano (selecionar ou digitar)</Label>
+                      <Label className="text-[10px]">Antimicrobiano (selecionar ou digitar){mode === 'prescribe' && <Req />}</Label>
                       <AntimicrobialCombobox
                         value={entry.medication}
                         onSelectMed={(med) => updateEntryFromMed(entry.id, med)}
