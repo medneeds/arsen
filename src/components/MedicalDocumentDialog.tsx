@@ -156,7 +156,7 @@ export function MedicalDocumentDialog({
     const html = buildNormaZeroDocument({
       title: tpl.label,
       subtitle,
-      sectorLabel: patientSector ? `Assistência — ${patientSector}` : "Assistência Médica",
+      sectorLabel: displaySector ? `Assistência — ${displaySector}` : "Assistência Médica",
       hospitalName,
       docCodePrefix: tpl.prefix,
       bodyHtml,
