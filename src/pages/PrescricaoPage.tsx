@@ -1750,6 +1750,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 <span className="font-normal text-muted-foreground ml-1">({item.presentation})</span>
               )}
             </p>
+            <MedicationFlagChips name={item.name} size="sm" />
             {item.isExtra && (
               <Badge variant="outline" className="text-[9px] px-1.5 bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800">EXTRA</Badge>
             )}
