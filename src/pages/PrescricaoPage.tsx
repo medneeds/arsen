@@ -7425,7 +7425,11 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 {/* Inalação: bloco específico (sem campos de infusão IV) */}
                 {isInhalation && inhalationLine && (
                   <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0891b2', fontWeight: 500 }}>
-                    <span style={{ fontSize: '5.5pt', fontWeight: 800, color: '#fff', backgroundColor: '#0891b2', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px', marginRight: '4px' }}>INALATÓRIO</span>
+                    {item.inhalationConjugatedWithId ? (
+                      <span style={{ fontSize: '5.5pt', fontWeight: 800, color: '#fff', backgroundColor: '#0e7490', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px', marginRight: '4px' }}>↳ MESMA NEB.</span>
+                    ) : (
+                      <span style={{ fontSize: '5.5pt', fontWeight: 800, color: '#fff', backgroundColor: '#0891b2', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px', marginRight: '4px' }}>INALATÓRIO</span>
+                    )}
                     {inhalationLine}
                     {item.spacer && <span style={{ marginLeft: '4px', fontStyle: 'italic', color: '#475569' }}>· c/ espaçador</span>}
                     {item.gargle && <span style={{ marginLeft: '4px', fontStyle: 'italic', color: '#475569' }}>· gargarejo após</span>}
