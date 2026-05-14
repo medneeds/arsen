@@ -7117,9 +7117,12 @@ const PrescricaoPage = () => {
             toast.info(`${suspendIds.length} antibiótico(s) suspenso(s) — preencha o substituto na Guia ATM.`);
           }
           setPendingAtbMode(mode);
-          // Mantém pendingAntimicrobialMed se veio da busca (seed do med no guia).
-          // Se foi disparado pelo botão "Guia ATM" sem med pré-selecionado, fica null.
-          setTimeout(() => setAntimicrobialGuideOpen(true), 150);
+          // Sinaliza transição → onOpenChange do AtmStatus não vai limpar pendingAntimicrobialMed
+          transitioningToAtmGuideRef.current = true;
+          setTimeout(() => {
+            setAntimicrobialGuideOpen(true);
+            transitioningToAtmGuideRef.current = false;
+          }, 150);
         }}
       />
 
