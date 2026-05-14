@@ -1079,14 +1079,14 @@ export function UtiPatientCard({
                   )}
                 </Button>
                 
-                {/* Bed Number - Compact */}
+                {/* Bed Number - Compact (fixed by bed map allocation) */}
                 <div className={cn("shrink-0 px-1.5 py-0.5 rounded border", colors.bedBg)}>
-                  <InlineEditableField
-                    value={patient.bedNumber}
-                    onUpdate={(v) => handleUpdateField("bedNumber", v)}
-                    placeholder="LEITO"
-                    className={cn("text-xs font-bold w-8 md:w-10 text-center", colors.bedText)}
-                  />
+                  <span
+                    className={cn("patient-id block text-xs font-bold min-w-8 md:min-w-10 text-center cursor-default", colors.bedText)}
+                    title="Leito fixo no mapa. Alterações ocorrem apenas por realocação/transferência."
+                  >
+                    {patient.bedNumber || "LEITO"}
+                  </span>
                 </div>
                 
                 {/* Patient Name + Age - Flexible grow */}
@@ -1104,14 +1104,11 @@ export function UtiPatientCard({
                       {patient.name || <span className="italic text-muted-foreground">SEM NOME</span>}
                     </span>
                   )}
-                  <div className="shrink-0 flex items-center gap-1 text-[10px] md:text-xs text-muted-foreground">
-                    <InlineEditableField
-                      value={String(patient.age || "").replace(/\s*anos?\s*$/i, "")}
-                      onUpdate={(v) => handleUpdateField("age", v)}
-                      placeholder="IDADE"
-                      className="w-8 text-center"
-                    />
-                    {patient.age && <span>anos</span>}
+                  <div
+                    className="shrink-0 text-[10px] md:text-xs text-muted-foreground cursor-default"
+                    title="Idade atualizada automaticamente pelo cadastro do paciente."
+                  >
+                    {patient.age ? formatAgeDisplay(patient.age) : "IDADE"}
                   </div>
                 </div>
 
