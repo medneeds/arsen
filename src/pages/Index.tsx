@@ -13,6 +13,8 @@ import { PrintMapPreviewDialog } from "@/components/PrintMapPreviewDialog";
 import { PrintUtiPreviewDialog } from "@/components/PrintUtiPreviewDialog";
 import { RoundSectorPrintDialog } from "@/components/RoundSectorPrintDialog";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { PageLoader } from "@/components/PageLoader";
+import { usePageReady } from "@/hooks/usePageReady";
 import { MainLayout } from "@/components/MainLayout";
 import { ShiftReminderDialog } from "@/components/ShiftReminderDialog";
 import { Patient, SectorType } from "@/types/patient";
