@@ -4744,7 +4744,10 @@ const PrescricaoPage = () => {
             status: 'draft',
             version: nextVersion,
             parent_id: currentPrescriptionId || undefined,
-            department: 'URGÊNCIA E EMERGÊNCIA ADULTO',
+            department:
+              (patient.unit && patient.unit.trim()) ||
+              (initialPatientSector && (sectorMapInit[initialPatientSector] || initialPatientSector)) ||
+              'GERAL',
             hospital_unit_id: currentHospital.id,
             state_id: currentState.id,
             created_by: user?.id || null,
