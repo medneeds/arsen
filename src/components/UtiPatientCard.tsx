@@ -1281,8 +1281,16 @@ export function UtiPatientCard({
                         <DropdownMenuItem onClick={() => setIsReleasePreAdmissionOpen(true)}>
                           <UserMinus className="h-4 w-4 mr-2 text-amber-600" />
                           <div className="flex flex-col">
-                            <span className="text-amber-700 dark:text-amber-300">Liberar leito (pré-admissão)</span>
-                            <span className="text-[10px] font-normal text-muted-foreground">Desocupa o leito sem apagar o prontuário</span>
+                            <span className="text-amber-700 dark:text-amber-300">
+                              {patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito'
+                                ? 'Liberar leito (pós-alta/óbito)'
+                                : 'Liberar leito (pré-admissão)'}
+                            </span>
+                            <span className="text-[10px] font-normal text-muted-foreground">
+                              {patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito'
+                                ? 'Confirmação por senha — preserva o prontuário'
+                                : 'Desocupa o leito sem apagar o prontuário'}
+                            </span>
                           </div>
                         </DropdownMenuItem>
                       )}

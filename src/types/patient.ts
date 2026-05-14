@@ -67,7 +67,9 @@ export interface Patient {
   // UTI bed vacancy status
   isVacant?: boolean;
   // Hospital admission lifecycle: 'pre_admitido' (alocado em leito, aguardando admissão clínica),
-  // 'admitido' (admissão hospitalar concluída — D0), 'suspenso' (admissão suspensa)
-  admissionStatus?: 'pre_admitido' | 'admitido' | 'suspenso';
+  // 'admitido' (admissão hospitalar concluída — D0), 'suspenso' (admissão suspensa),
+  // 'alta_dada' (alta médica/administrativa registrada — leito aguardando liberação),
+  // 'obito' (óbito registrado — leito aguardando preparo)
+  admissionStatus?: 'pre_admitido' | 'admitido' | 'suspenso' | 'alta_dada' | 'obito';
   admittedAt?: string | null;
 }
