@@ -861,6 +861,21 @@ export function PatientCard({ patient, onUpdate, onDelete, onUndelete, selection
   const saveInlineEdit = async () => {
     if (!editingField) return;
 
+    // 🔒 GUARDA FIXA: nome do paciente é IMUTÁVEL pelo mapa de leitos.
+    // Edição apenas via cockpit (Edição Avançada → Ficha cadastral),
+    // que sincroniza patients.name + audita em patient_registry_edit_history.
+    if (editingField === "name") {
+      setEditingField(null);
+      setEditValue("");
+      toastHook({
+        title: "Edição bloqueada",
+        description: "O nome do paciente é fixo no mapa de leitos. Use Edição Avançada → Ficha cadastral.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+
     const updatedPatient = { ...patient };
     
     if (editingField === "name") {
