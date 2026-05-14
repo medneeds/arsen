@@ -645,6 +645,7 @@ function MedicationAutocomplete({
   getFavoriteCount,
   onAssistantClick,
   assistantTooltip,
+  category,
 }: {
   source: MedicationEntry[];
   onSelect: (med: MedicationEntry) => void;
@@ -652,11 +653,13 @@ function MedicationAutocomplete({
   getFavoriteCount?: (id: string) => number;
   onAssistantClick?: () => void;
   assistantTooltip?: string;
+  category?: string;
 }) {
   const [query, setQuery] = useState("");
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const favCount = getFavoriteCount ?? (() => 0);
+  const accent = getCategoryFieldAccent(category);
 
   const filtered = useMemo(() => {
     return fuzzySearch(query, source, favCount, 10);
@@ -682,7 +685,8 @@ function MedicationAutocomplete({
             onBlur={() => setTimeout(() => setFocused(false), 200)}
             placeholder={placeholder}
             className={cn(
-              "pl-9 bg-background/60 border-border/50 h-7 text-xs focus:border-primary/50 transition-colors",
+              "pl-9 bg-background/60 h-7 text-xs transition-colors",
+              category ? `${accent.border} ${accent.ring}` : "border-border/50 focus:border-primary/50",
               onAssistantClick && "pr-9"
             )}
           />
