@@ -5855,7 +5855,7 @@ const PrescricaoPage = () => {
       ` }} />
 
       {/* ===== UNIFIED HEADER — title + context (peso/alergias/data/templates) + actions ===== */}
-      <div className="print:hidden rounded-xl border border-border bg-card/60">
+      <div className="print:hidden rounded-xl border border-border bg-card/60 shadow-[0_4px_18px_-8px_hsl(var(--primary)/0.18),0_1px_2px_-1px_hsl(var(--foreground)/0.06)] hover:shadow-[0_6px_24px_-8px_hsl(var(--primary)/0.22),0_1px_2px_-1px_hsl(var(--foreground)/0.08)] transition-shadow duration-300">
         {/* Row 0 — Title + meta */}
         <div className="hidden sm:flex items-center justify-between gap-3 flex-wrap px-3 pt-2.5 pb-2">
           <div className="flex items-center gap-3 min-w-0">
