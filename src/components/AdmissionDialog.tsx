@@ -176,6 +176,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   const [physResp, setPhysResp] = useState("");
   const [physAbd, setPhysAbd] = useState("");
   const [physExt, setPhysExt] = useState("");
+  const [physNeuro, setPhysNeuro] = useState("");
   const [plan, setPlan] = useState("");
   const [cidPrimary, setCidPrimary] = useState("");
   const [cidSecondary, setCidSecondary] = useState("");
@@ -212,7 +213,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         setPa(d.pa ?? ""); setFc(d.fc ?? ""); setFr(d.fr ?? ""); setSpo2(d.spo2 ?? "");
         setTax(d.tax ?? ""); setDx(d.dx ?? "");
         setPhysGeneral(d.physGeneral ?? ""); setPhysCv(d.physCv ?? "");
-        setPhysResp(d.physResp ?? ""); setPhysAbd(d.physAbd ?? ""); setPhysExt(d.physExt ?? "");
+        setPhysResp(d.physResp ?? ""); setPhysAbd(d.physAbd ?? ""); setPhysExt(d.physExt ?? ""); setPhysNeuro(d.physNeuro ?? "");
         setPlan(d.plan ?? ""); setCidPrimary(d.cidPrimary ?? ""); setCidSecondary(d.cidSecondary ?? "");
         setNoPrediction(!!d.noPrediction);
         if (d.predictionDate) setPredictionDate(d.predictionDate);
