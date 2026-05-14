@@ -17,7 +17,24 @@ interface SectorPatient {
   name: string;
   bed_number: string;
   sector: string;
+  age: string | null;
+  patient_registry_id: string | null;
 }
+
+// Params específicos de um paciente/contexto pontual que NÃO devem persistir
+// ao alternar para outro paciente (evita herdar pré-admissão, alocação,
+// SAPS pendente etc. do paciente anterior).
+const STALE_PATIENT_PARAMS = [
+  "preAdmissionId",
+  "allocationRequestId",
+  "completeSapsId",
+  "fromAllocation",
+  "destinationSector",
+  "selectedBed",
+  "selectedSector",
+  "bed",
+  "patient",
+];
 
 interface PatientSwitcherProps {
   variant?: "default" | "dark";
