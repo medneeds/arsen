@@ -1606,7 +1606,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             <PopoverContent className="w-64 p-3" align="end">
               <p className="text-[11px] font-semibold text-muted-foreground mb-2">Aprazamento</p>
               <div className="grid grid-cols-3 gap-1.5">
-                {['1/1h','2/2h','4/4h','6/6h','8/8h','12/12h','1x/dia','2x/dia','3x/dia','Contínuo','S/N','ACM'].map(opt => (
+                {['1/1h','2/2h','4/4h','6/6h','8/8h','12/12h','1x/dia','2x/dia','3x/dia','Única','Contínuo','S/N','ACM'].map(opt => (
                   <button
                     key={opt}
                     type="button"
