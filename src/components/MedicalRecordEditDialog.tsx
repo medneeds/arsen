@@ -447,6 +447,40 @@ export function MedicalRecordEditDialog({
         if (hErr) throw hErr;
       }
 
+      // ===== Sincroniza identificação do paciente (header/prontuário) =====
+      // Quando há nome/nome social preenchido na ficha, propagamos para patients.name
+      // — é o campo lido pela prescrição, mapa, cockpit e cabeçalhos clínicos.
+      const newName = (reg.full_name || reg.social_name || "").toString().trim().toUpperCase();
+      if (newName) {
+        const { data: curPat } = await supabase
+          .from("patients")
+          .select("name")
+          .eq("id", patientId)
+          .maybeSingle();
+        const prevName = ((curPat as any)?.name || "").toString().trim().toUpperCase();
+        if (prevName !== newName) {
+          await supabase
+            .from("patients")
+            .update({ name: newName } as any)
+            .eq("id", patientId);
+          // Auditoria do nome no histórico do prontuário (se houver)
+          if (record?.id) {
+            await supabase
+              .from("medical_record_edit_history" as any)
+              .insert({
+                medical_record_id: record.id,
+                patient_id: patientId,
+                field_changed: "patient_name",
+                old_value: prevName || null,
+                new_value: newName,
+                reason: `[Sincronizado da ficha cadastral] ${regReason.trim() || "Atualização cadastral"}`,
+                changed_by: userId,
+                changed_by_email: userEmail,
+              } as any);
+          }
+        }
+      }
+
       toast({
         title: createdNewRegistry ? "✅ Ficha cadastral criada" : "✅ Ficha cadastral atualizada",
         description: `${regChanges.length} campo(s) ${createdNewRegistry ? "preenchido(s)" : "alterado(s)"}.`,
