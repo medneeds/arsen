@@ -6444,7 +6444,7 @@ const PrescricaoPage = () => {
               const simple = isSimpleCategory(cat);
               const IconComp = CATEGORY_ICONS[config.icon] || Pill;
 
-              if (catItems.length === 0) return null;
+              if (catItems.length === 0 && !manualOpenCategories.has(cat)) return null;
 
               return (
                 <div key={cat} id={`prescription-cat-${cat}`} className="rounded-xl border border-border bg-card scroll-mt-24">
