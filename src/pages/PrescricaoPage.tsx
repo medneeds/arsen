@@ -1792,10 +1792,10 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 toast.success('Sugestão aplicada', { description: `Fonte: ${ev.source}` });
               };
               return (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-sky-50 border border-sky-200/70 dark:bg-sky-950/20 dark:border-sky-800/40">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-muted/50 border border-border/50 dark:bg-muted/20">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="text-[10px] text-sky-700 dark:text-sky-300 font-medium px-0.5 cursor-help">📚 {ev.source}</span>
+                      <span className="text-[10px] text-muted-foreground font-medium px-0.5 cursor-help uppercase tracking-wide">{ev.source}</span>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-xs text-xs">
                       <div className="space-y-1">
@@ -1813,9 +1813,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                   <Button
                     type="button"
                     size="sm"
-                    variant="outline"
+                    variant="ghost"
                     onClick={(e) => { e.stopPropagation(); apply(); }}
-                    className="h-5 px-2 text-[10px] rounded-full border-sky-300 text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:text-sky-300"
+                    className="h-5 px-2 text-[10px] rounded border-border/60 text-foreground/80 hover:bg-muted hover:text-foreground"
                   >
                     Sugerir
                   </Button>
