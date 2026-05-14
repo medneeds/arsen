@@ -1312,19 +1312,143 @@ export default function Saps3Page() {
                   </div>
                   <Separator />
                   <div>
-                    <Label className="text-sm font-medium mb-2 block">Comorbidades</Label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                      <Label className="text-sm font-medium block">Comorbidades SAPS 3</Label>
+                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-100 text-[10px]">
+                        Pontuam no escore — marque todas que se aplicam
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                       {COMORBIDITY_OPTIONS.map(c => (
-                        <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer rounded-md border border-emerald-100 bg-emerald-50/40 px-2 py-1.5 hover:bg-emerald-50">
                           <Checkbox
                             checked={comorbidities.includes(c.id)}
                             onCheckedChange={(checked) => {
                               setComorbidities(prev => checked ? [...prev, c.id] : prev.filter(x => x !== c.id));
                             }}
                           />
-                          {c.label}
+                          <span className="flex-1 normal-case">{c.label}</span>
+                          <span className="text-[10px] font-mono font-semibold text-emerald-700">+{c.points}</span>
                         </label>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* ─── Antecedentes clínicos (NÃO pontuam) ─── */}
+                  <div className="rounded-lg border border-amber-300 bg-amber-50/60 p-3 space-y-3">
+                    <div className="flex items-start gap-2 flex-wrap">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-amber-900 normal-case">
+                          Antecedentes clínicos — opcional
+                        </p>
+                        <p className="text-[11px] text-amber-800 normal-case">
+                          Não obrigatório · Não pontua no escore SAPS 3 · Útil para perfil epidemiológico do paciente.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {CLINICAL_HISTORY_OPTIONS.map(c => (
+                        <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={clinicalHistory.selected.includes(c.id)}
+                            onCheckedChange={(checked) => {
+                              setClinicalHistory(prev => ({
+                                ...prev,
+                                selected: checked
+                                  ? [...prev.selected, c.id]
+                                  : prev.selected.filter(x => x !== c.id),
+                              }));
+                            }}
+                          />
+                          <span className="normal-case">{c.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div>
+                      <Label className="text-xs text-amber-900 normal-case">Outros antecedentes (texto livre)</Label>
+                      <Input
+                        value={clinicalHistory.livre || ""}
+                        onChange={(e) => setClinicalHistory(prev => ({ ...prev, livre: e.target.value }))}
+                        placeholder="Ex.: Lupus, Doença de Crohn, transplante renal 2018..."
+                        className="bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* ─── Hábitos de vida (NÃO pontuam) ─── */}
+                  <div className="rounded-lg border border-amber-300 bg-amber-50/60 p-3 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-amber-900 normal-case">
+                          Hábitos de vida — opcional
+                        </p>
+                        <p className="text-[11px] text-amber-800 normal-case">
+                          Não obrigatório · Não pontua no escore SAPS 3.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs normal-case">Tabagismo</Label>
+                        <Select
+                          value={lifestyleHabits.tabagismo}
+                          onValueChange={(v: any) => setLifestyleHabits(prev => ({ ...prev, tabagismo: v }))}
+                        >
+                          <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nunca">Nunca fumou</SelectItem>
+                            <SelectItem value="ex">Ex-tabagista</SelectItem>
+                            <SelectItem value="atual">Tabagista atual</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {(lifestyleHabits.tabagismo === "ex" || lifestyleHabits.tabagismo === "atual") && (
+                          <Input
+                            className="mt-1 bg-white"
+                            placeholder="Maços-ano"
+                            value={lifestyleHabits.macos_ano || ""}
+                            onChange={(e) => setLifestyleHabits(prev => ({ ...prev, macos_ano: e.target.value }))}
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <Label className="text-xs normal-case">Etilismo</Label>
+                        <Select
+                          value={lifestyleHabits.etilismo}
+                          onValueChange={(v: any) => setLifestyleHabits(prev => ({ ...prev, etilismo: v }))}
+                        >
+                          <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nunca">Nunca</SelectItem>
+                            <SelectItem value="social">Social</SelectItem>
+                            <SelectItem value="abuso">Abuso</SelectItem>
+                            <SelectItem value="dependencia">Dependência</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs normal-case">Drogas ilícitas</Label>
+                        <Select
+                          value={lifestyleHabits.drogas}
+                          onValueChange={(v: any) => setLifestyleHabits(prev => ({ ...prev, drogas: v }))}
+                        >
+                          <SelectTrigger className="bg-white"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="nunca">Nunca</SelectItem>
+                            <SelectItem value="ex">Ex-usuário</SelectItem>
+                            <SelectItem value="atual">Usuário atual</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {(lifestyleHabits.drogas === "ex" || lifestyleHabits.drogas === "atual") && (
+                          <Input
+                            className="mt-1 bg-white"
+                            placeholder="Detalhe (ex.: maconha, cocaína...)"
+                            value={lifestyleHabits.drogas_detalhe || ""}
+                            onChange={(e) => setLifestyleHabits(prev => ({ ...prev, drogas_detalhe: e.target.value }))}
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
