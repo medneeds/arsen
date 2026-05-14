@@ -31,7 +31,8 @@ import {
   ArrowRight,
   Terminal,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Home as HomeIcon } from "lucide-react";
 import { whitelabel } from "@/config/whitelabel";
 import { BigHelpLogo } from "./BigHelpLogo";
 import socorraoCrossLogo from "@/assets/socorrao-cross-logo.png";
@@ -122,7 +123,8 @@ export function AppSidebar({
   const { open, setOpen, openMobile, setOpenMobile, state } = useSidebar();
   const navigate = useNavigate();
   const { signOut, user, role } = useAuth();
-  const { currentDepartment, setCurrentDepartment } = useDepartment();
+  const { currentDepartment, setCurrentDepartment, currentSectorLabel } = useDepartment();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const isCollapsed = state === "collapsed";
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -243,11 +245,8 @@ export function AppSidebar({
   // ── MENUS POR PERFIL ──
   // MÉDICO: ultra-enxuto. Mapa/Painel acessados via breadcrumb superior.
   // Round e demais módulos acessados via card do paciente / aba Docs.
-  const medicoMenu = [
-    { title: "Início", icon: LayoutDashboard, link: "/", profiles: ["medico"] },
-    { title: "Mapa de Leitos", icon: BedDouble, link: "/mapa", profiles: ["medico"] },
-    { title: "Painel Clínico", icon: ClipboardList, link: "/painel-clinico", profiles: ["medico"] },
-    
+  const medicoMenu: any[] = [
+    // Trio "Início / Mapa / Painel" agora é renderizado como bloco "Setor Ativo" no topo da sidebar
   ];
 
   // GESTOR: organizado em blocos lógicos
@@ -608,6 +607,66 @@ export function AppSidebar({
       </SidebarHeader>
 
       <SidebarContent className="gap-0 py-2">
+        {/* ── Bloco "Setor Ativo": trio Início / Mapa / Painel sincronizado com o setor ── */}
+        {(accessProfile === "medico" || accessProfile === "gestor" || accessProfile === "multi") && (
+          <SidebarGroup className="py-0 my-0 border-b border-border/50">
+            <div className={cn(
+              "px-3 pt-2 pb-1.5",
+              isCollapsed && "px-2"
+            )}>
+              {!isCollapsed && (
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-muted-foreground/70">
+                    Setor Ativo
+                  </span>
+                  <div className="flex-1 h-px bg-gradient-to-r from-primary/30 to-transparent" />
+                </div>
+              )}
+              {!isCollapsed && (
+                <div className="flex items-center gap-1.5 mb-2 px-1.5 py-1 rounded-md bg-primary/10 ring-1 ring-primary/25 shadow-sm">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse flex-shrink-0" />
+                  <span className="text-[10.5px] font-bold uppercase tracking-wide text-primary truncate">
+                    {currentSectorLabel || currentDepartment}
+                  </span>
+                </div>
+              )}
+              <div className={cn(
+                "flex gap-1 rounded-lg p-1 bg-muted/40 border border-border/60",
+                isCollapsed && "flex-col"
+              )}>
+                {[
+                  { title: "Início", icon: HomeIcon, link: "/" },
+                  { title: "Mapa", icon: BedDouble, link: "/mapa" },
+                  ...(accessProfile === "gestor" ? [] : [{ title: "Painel", icon: ClipboardList, link: "/painel-clinico" }]),
+                ].map((tab) => {
+                  const isActive = location.pathname === tab.link;
+                  return (
+                    <button
+                      key={tab.link}
+                      onClick={() => {
+                        navigate(tab.link);
+                        if (isMobile) setOpenMobile(false);
+                      }}
+                      title={`${tab.title} — ${currentSectorLabel || currentDepartment}`}
+                      className={cn(
+                        "flex-1 flex items-center justify-center gap-1 rounded-md px-1.5 py-1.5 text-[10px] font-semibold tracking-wide transition-all duration-200",
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-md ring-1 ring-primary/40"
+                          : "bg-background text-foreground/80 hover:bg-primary/10 hover:text-primary ring-1 ring-border/40 hover:ring-primary/30",
+                        isCollapsed && "w-full"
+                      )}
+                    >
+                      <tab.icon className="h-3.5 w-3.5 flex-shrink-0" />
+                      {!isCollapsed && <span className="truncate">{tab.title}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </SidebarGroup>
+        )}
+
+
         {menuItems.map((section, index) => (
           <div key={section.title}>
             {/* Direct link item (without subitems) */}
