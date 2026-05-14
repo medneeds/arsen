@@ -1,4 +1,4 @@
-import { Wind, Sparkles } from 'lucide-react';
+import { Wind, Sparkles, Link2, Link2Off } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -34,14 +34,28 @@ export interface InhalationItemShape {
   spacer?: boolean;
   gargle?: boolean;
   inhalationOrientation?: string;
+  inhalationConjugatedWithId?: string;
 }
 
 interface Props {
   item: InhalationItemShape;
   onUpdate: (id: string, field: string, value: any) => void;
+  /** ID do item de inalação imediatamente anterior na lista (mesma categoria). */
+  previousInhalationItemId?: string;
+  /** Nome do item anterior — exibido no badge de conjugação. */
+  previousInhalationItemName?: string;
 }
 
-export function InhalationFields({ item, onUpdate }: Props) {
+export function InhalationFields({ item, onUpdate, previousInhalationItemId, previousInhalationItemName }: Props) {
+  const isConjugated = !!item.inhalationConjugatedWithId;
+  const canConjugate = !!previousInhalationItemId && (item.inhalationMode === 'nebulization' || item.inhalationMode === 'nebulization_continuous' || !item.inhalationMode);
+  const toggleConjugate = () => {
+    if (isConjugated) {
+      onUpdate(item.id, 'inhalationConjugatedWithId', undefined);
+    } else if (previousInhalationItemId) {
+      onUpdate(item.id, 'inhalationConjugatedWithId', previousInhalationItemId);
+    }
+  };
   const mode: InhalationMode = (item.inhalationMode as InhalationMode) || 'nebulization';
   const preset = getInhalationDefaults(item.name);
 
@@ -77,7 +91,42 @@ export function InhalationFields({ item, onUpdate }: Props) {
   );
 
   return (
-    <div className="relative rounded-md p-2 border bg-cyan-50/50 dark:bg-cyan-950/20 border-cyan-200/60 dark:border-cyan-900/50 border-l-[3px] border-l-cyan-500/70 dark:border-l-cyan-400/70 space-y-2 [&_input.bg-white]:border-cyan-200/70 [&_input.bg-white]:focus-visible:ring-cyan-400/60 [&_button.bg-white]:border-cyan-200/70 [&_button.bg-white]:focus-visible:ring-cyan-400/60">
+    <div className={
+      "relative rounded-md p-2 border space-y-2 [&_input.bg-white]:border-cyan-200/70 [&_input.bg-white]:focus-visible:ring-cyan-400/60 [&_button.bg-white]:border-cyan-200/70 [&_button.bg-white]:focus-visible:ring-cyan-400/60 " +
+      (isConjugated
+        ? "ml-4 bg-cyan-50/30 dark:bg-cyan-950/10 border-cyan-300/70 border-l-[3px] border-l-cyan-600/80 dark:border-l-cyan-400/80"
+        : "bg-cyan-50/50 dark:bg-cyan-950/20 border-cyan-200/60 dark:border-cyan-900/50 border-l-[3px] border-l-cyan-500/70 dark:border-l-cyan-400/70")
+    }>
+      {/* Conjugação com nebulização anterior */}
+      {(canConjugate || isConjugated) && (
+        <div className={
+          "flex items-center justify-between gap-2 px-2 py-1 rounded text-[10px] " +
+          (isConjugated ? "bg-cyan-100/70 dark:bg-cyan-900/30 border border-cyan-300/60 dark:border-cyan-700/40" : "")
+        }>
+          {isConjugated ? (
+            <span className="flex items-center gap-1 text-cyan-800 dark:text-cyan-200 font-semibold min-w-0">
+              <Link2 className="h-3 w-3 shrink-0" />
+              <span className="truncate">↳ Mesma nebulização de <b>{previousInhalationItemName ?? 'item anterior'}</b></span>
+            </span>
+          ) : (
+            <span className="text-muted-foreground italic">Item independente</span>
+          )}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={toggleConjugate}
+            className={
+              "h-5 px-2 text-[10px] gap-1 shrink-0 " +
+              (isConjugated
+                ? "text-cyan-700 hover:text-cyan-800 hover:bg-cyan-200/40"
+                : "text-muted-foreground hover:text-cyan-700 hover:bg-cyan-100/40")
+            }
+          >
+            {isConjugated ? <><Link2Off className="h-3 w-3" /> Desconjugar</> : <><Link2 className="h-3 w-3" /> Conjugar com a anterior</>}
+          </Button>
+        </div>
+      )}
       {/* Modo de administração */}
       <div className="flex items-center gap-1.5 flex-wrap">
         <Wind className="h-3 w-3 text-primary shrink-0" />

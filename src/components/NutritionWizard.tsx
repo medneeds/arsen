@@ -16,6 +16,15 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { MedicationEntry } from "@/data/medicationsDatabase";
+import {
+  WaterOfferingFields,
+  DEFAULT_WATER_STATE,
+  WATER_TYPES,
+  WATER_ROUTES,
+  buildWaterEntryName,
+  buildWaterInstruction,
+  type WaterOfferingState,
+} from "@/components/shared/WaterOfferingFields";
 
 /**
  * Nutrition Wizard — Terapia Nutricional Hospitalar
@@ -278,6 +287,12 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
   // Free notes
   const [notes, setNotes] = useState<string>("");
 
+  // Oferta hídrica ampliada (catálogo de águas) — opt-in, aditiva.
+  // Pode coexistir com "Água oral livre" e "Água via sonda programada"; cada
+  // entrada vira uma linha extra na prescrição.
+  const [waterOfferEnabled, setWaterOfferEnabled] = useState(false);
+  const [waterOffer, setWaterOffer] = useState<WaterOfferingState>(DEFAULT_WATER_STATE);
+
   // Sugestão automática de modo conforme sistema enteral
   useEffect(() => {
     if (!modalities.has("enteral")) return;
@@ -297,6 +312,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
     setZeroReason("preop"); setZeroSince(""); setZeroHydrate(true); setZeroCustom("");
     setProteinSelected(new Set()); setProteinOverrides({});
     setNotes("");
+    setWaterOfferEnabled(false); setWaterOffer(DEFAULT_WATER_STATE);
   };
 
   const toggleProtein = (key: string) => {
@@ -576,6 +592,27 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
       });
     });
 
+    // ── OFERTA HÍDRICA AMPLIADA (catálogo de águas) ──
+    if (waterOfferEnabled) {
+      const routeLabel = WATER_ROUTES.find(r => r.key === waterOffer.route)?.label || "VO";
+      const isEnteralRoute = ["sng", "sne", "sog", "gtt", "jtt"].includes(waterOffer.route);
+      entries.push({
+        id: `nut-water-offer-${uid()}`,
+        name: buildWaterEntryName(waterOffer),
+        presentation: WATER_TYPES.find(t => t.key === waterOffer.type)?.label || "Água",
+        defaultDose: `${waterOffer.volumePerOffering} mL/oferta`,
+        defaultRoute: routeLabel,
+        defaultPosology: waterOffer.fraction,
+        defaultSchedule: "Conforme aprazamento",
+        instructions: [
+          buildWaterInstruction(waterOffer),
+          isEnteralRoute ? "Lavar a sonda com 20-30 mL antes e após a oferta" : null,
+          waterOffer.type === "destilada" ? "⚠ Água destilada — uso APENAS para manutenção de pérvio (não ingerir)" : null,
+        ].filter(Boolean).join(" · "),
+        category: "nutrition",
+      });
+    }
+
     return entries;
   };
 
@@ -588,6 +625,7 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
     zeroReason, zeroSince, zeroHydrate, zeroCustom,
     proteinSelected, proteinOverrides,
     notes,
+    waterOfferEnabled, waterOffer,
   ]);
 
   const handleConfirm = () => {
@@ -991,6 +1029,42 @@ export function NutritionWizard({ open, onOpenChange, onAdd, patientWeight }: Nu
                   </div>
                 </section>
               )}
+
+              {/* ── Oferta hídrica ampliada (catálogo de águas) — opt-in, aditiva ── */}
+              <section className={cn(
+                "rounded-lg border p-3 space-y-3 transition-all",
+                waterOfferEnabled
+                  ? "border-cyan-400 bg-cyan-50/40 dark:bg-cyan-950/20"
+                  : "border-dashed border-border/60 bg-muted/10"
+              )}>
+                <label className="flex items-start gap-2 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={waterOfferEnabled}
+                    onChange={e => setWaterOfferEnabled(e.target.checked)}
+                    className="rounded mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <div className="font-bold text-cyan-700 dark:text-cyan-300 flex items-center gap-1.5">
+                      <Droplets className="h-3.5 w-3.5" />
+                      Oferta hídrica ampliada (catálogo de águas)
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                      Permite escolher tipo de água (filtrada, mineral, coco, soro caseiro, destilada para sonda…),
+                      via, fracionamento, temperatura e restrição hídrica. Gera uma linha extra na prescrição,
+                      complementando "Água oral livre" ou "Água via sonda programada".
+                    </div>
+                  </div>
+                </label>
+                {waterOfferEnabled && (
+                  <WaterOfferingFields
+                    value={waterOffer}
+                    onChange={setWaterOffer}
+                    accentClassName="border-cyan-500 bg-cyan-100/60 dark:bg-cyan-900/30"
+                    accentTextClassName="text-cyan-700 dark:text-cyan-300"
+                  />
+                )}
+              </section>
             </div>
           )}
 
