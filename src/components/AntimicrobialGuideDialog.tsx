@@ -523,6 +523,29 @@ export function AntimicrobialGuideDialog({
                 )}
               </div>
 
+              {/* Checklist obrigatória — só no modo prescribe (anexar à prescrição) */}
+              {mode === 'prescribe' && (
+                <div className="rounded-lg border border-amber-200 dark:border-amber-800/40 bg-amber-50/60 dark:bg-amber-950/15 p-3 text-xs">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="font-semibold text-amber-800 dark:text-amber-300 mb-1">
+                        Para anexar à prescrição é obrigatório preencher:
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 text-[10.5px]">
+                        {Object.values(REQUIRED_LABELS).map(l => (
+                          <span key={l} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-amber-300 bg-white dark:bg-amber-950/30">
+                            <Req />{l}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="text-[10.5px] text-amber-700 dark:text-amber-400 mt-1.5">
+                        Itens marcados com <Req /> são exigidos pela CCIH/ANVISA. O botão "Anexar" só libera quando todos estiverem preenchidos em <strong>cada</strong> antimicrobiano.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               {entries.map((entry, idx) => (
                 <div key={entry.id} className="rounded-lg border border-border p-4 space-y-3">
                   <div className="flex items-center justify-between">
