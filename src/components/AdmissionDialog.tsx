@@ -493,23 +493,35 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto p-0 gap-0">
-        {/* Cabeçalho elegante */}
-        <DialogHeader className="px-6 pt-5 pb-4 border-b bg-gradient-to-r from-emerald-50/70 via-white to-white">
+        {/* Cabeçalho elegante — identidade unificada */}
+        <DialogHeader className="px-6 pt-5 pb-4 border-b bg-gradient-to-r from-emerald-50/70 via-white to-white space-y-3">
           <DialogTitle className="flex items-center gap-2 uppercase text-slate-800">
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100 text-emerald-700">
               <Stethoscope className="h-4 w-4" />
             </span>
-            Admissão Hospitalar — {patient.name}
+            Admissão Hospitalar
             <Badge variant="outline" className="ml-2 border-emerald-300 bg-emerald-50 text-emerald-700">
               {isUti ? "UTI / UCI" : "ENFERMARIA"}
             </Badge>
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-600">
-            Leito <strong>{patient.bed}</strong> • Esta admissão será registrada como <strong>D0</strong> e aparecerá como primeira entrada na linha do tempo (ADMISSÃO HOSPITALAR). Após assinada, só pode ser editada via adendo ou suspensa com justificativa.
+            Esta admissão será registrada como <strong>D0</strong> e aparecerá como primeira entrada na linha do tempo (ADMISSÃO HOSPITALAR). Após assinada, só pode ser editada via adendo ou suspensa com justificativa.
           </DialogDescription>
 
+          {/* Identificação do paciente — fonte única (mesmo cabeçalho do Painel Clínico) */}
+          <div className="rounded-md border border-emerald-200/60 bg-white/70 p-3">
+            <PatientIdentityHeader
+              patientId={patient.id}
+              fallbackName={patient.name}
+              fallbackBed={patient.bed}
+              fallbackSector={patient.sector}
+              fallbackAge={patient.age}
+              variant="dialog"
+            />
+          </div>
+
           {/* Faixa de status: rascunho automático + pendências */}
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 border border-sky-200 px-2.5 py-1 text-[11px] text-sky-700">
               <Save className="h-3 w-3" />
               {draftSavedAt
