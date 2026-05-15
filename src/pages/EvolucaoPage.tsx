@@ -296,6 +296,8 @@ const EvolucaoPage = () => {
       onPalliativeChange={updateIsPalliative}
       isolationPrecautions={isolationPrecautions}
       onIsolationChange={updateIsolationPrecautions}
+      diagnosticHypotheses={diagnosticHypotheses}
+      onDiagnosticHypothesesChange={setDiagnosticHypotheses}
       showUtiPrediction={isUtiSector}
       replicated={diagnosticsReplicated}
       onClearAll={handleClearDiagnostics}
