@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { detectUnidentified } from "@/lib/unidentifiedDetector";
 
 export interface PatientIdentifiers {
   /** Número de Prontuário (ex: 26-001-000123-4) */
@@ -128,6 +129,15 @@ export function usePatientIdentifiers(
           .limit(1)
           .maybeSingle();
         if (data) registryRow = data;
+      }
+
+      // 1e) GUARDA CRÍTICA: se o paciente é NI (nome detectado como Não Identificado)
+      // e o registryRow encontrado é de um paciente IDENTIFICADO (nome real),
+      // então o vínculo está errado/obsoleto e NÃO devemos usar esse registry —
+      // isso evita que o cabeçalho do PDF venha com dados de outro paciente.
+      const niDetection = detectUnidentified(patientName || "");
+      if (registryRow && niDetection.isUnidentified && !registryRow.is_unidentified) {
+        registryRow = null;
       }
 
       // 2) Prontuário: prefer medical_records linked to registry
