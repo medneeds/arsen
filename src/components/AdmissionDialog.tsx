@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
 import { PatientIdentityHeader } from "./PatientIdentityHeader";
+import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 
 const UTI_SECTORS = ["red", "yellow", "outside", "uti_01", "uti_02", "uci_02"];
 
@@ -156,6 +157,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   const { currentDepartment } = useDepartment();
   const { user } = useAuth();
   const isUti = useMemo(() => UTI_SECTORS.includes(patient.sector), [patient.sector]);
+  const identifiers = usePatientIdentifiers(patient.id, patient.name, currentHospital?.id || null);
 
   // SAPS 3 acknowledgement (apenas UTI/UCI)
   const [sapsAck, setSapsAck] = useState(false);
@@ -347,6 +349,24 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
 
   const buildPrintPayload = () => ({
     patient: { name: patient.name, bed: patient.bed, sector: patient.sector, age: patient.age },
+    identifiers: {
+      prontuario: identifiers.prontuario,
+      atendimento: identifiers.atendimento,
+      socialName: identifiers.registry?.socialName || null,
+      cpf: identifiers.registry?.cpf || null,
+      cns: identifiers.registry?.cns || null,
+      birthDate: identifiers.registry?.birthDate || null,
+      sex: identifiers.registry?.sex || null,
+      motherName: identifiers.registry?.motherName || null,
+      address: [
+        identifiers.registry?.address,
+        identifiers.registry?.neighborhood,
+        identifiers.registry?.city && identifiers.registry?.state
+          ? `${identifiers.registry.city}/${identifiers.registry.state}`
+          : identifiers.registry?.city || identifiers.registry?.state,
+      ].filter(Boolean).join(" — ") || null,
+      phone: identifiers.registry?.phone || null,
+    },
     hospitalName: currentHospital?.name,
     doctorName: user?.user_metadata?.full_name || user?.email || "Médico Assistente",
     isUti,

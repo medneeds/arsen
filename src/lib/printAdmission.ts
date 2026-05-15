@@ -2,6 +2,18 @@ import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/prin
 
 export interface AdmissionPrintInput {
   patient: { name: string; bed?: string; sector?: string; age?: string | number };
+  identifiers?: {
+    prontuario?: string | null;
+    atendimento?: string | null;
+    socialName?: string | null;
+    cpf?: string | null;
+    cns?: string | null;
+    birthDate?: string | null; // ISO yyyy-mm-dd
+    sex?: string | null;
+    motherName?: string | null;
+    address?: string | null;
+    phone?: string | null;
+  };
   hospitalName?: string;
   doctorName?: string;
   doctorCrm?: string;
@@ -52,13 +64,27 @@ export async function printAdmissionNormaZero(d: AdmissionPrintInput) {
     d.imc && `IMC ${d.imc.value} (${d.imc.label})`,
   ].filter(Boolean).join(" • ") || "—";
 
+  const id = d.identifiers || {};
+  const birthFmt = id.birthDate
+    ? (() => { try { return new Date(id.birthDate + "T12:00:00").toLocaleDateString("pt-BR"); } catch { return id.birthDate; } })()
+    : undefined;
+  const displayName = id.socialName ? `${d.patient.name} (NOME SOCIAL: ${id.socialName})` : d.patient.name;
+
   const bodyHtml = `
     <h2 class="nz-section">Identificação</h2>
     <table class="nz">
-      ${row("Paciente", d.patient.name)}
+      ${row("Prontuário", id.prontuario || undefined)}
+      ${row("Atendimento", id.atendimento || undefined)}
+      ${row("Paciente", displayName)}
+      ${row("Nascimento", birthFmt)}
+      ${row("Idade / Sexo", [d.patient.age ? `${d.patient.age}` : null, id.sex || null].filter(Boolean).join(" • ") || undefined)}
+      ${row("CPF", id.cpf || undefined)}
+      ${row("CNS", id.cns || undefined)}
+      ${row("Mãe", id.motherName || undefined)}
+      ${row("Endereço", id.address || undefined)}
+      ${row("Telefone", id.phone || undefined)}
       ${row("Leito", d.patient.bed)}
       ${row("Setor", d.patient.sector)}
-      ${row("Idade", d.patient.age ? String(d.patient.age) : undefined)}
       ${row("Tipo", d.isUti ? "Admissão UTI/UCI (D0)" : "Admissão Enfermaria (D0)")}
     </table>
 
