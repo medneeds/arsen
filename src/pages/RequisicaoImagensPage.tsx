@@ -394,10 +394,20 @@ const RequisicaoImagensPage = () => {
                     <Input value={patientRecord} onChange={(e) => setPatientRecord(e.target.value)} placeholder="000000" />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
                   <div>
                     <Label className="text-xs text-muted-foreground">CNS</Label>
                     <Input value={patientCNS} onChange={(e) => setPatientCNS(e.target.value)} placeholder="Cartão Nacional de Saúde" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">CPF</Label>
+                    <Input
+                      value={patientCPF}
+                      onChange={(e) => setPatientCPF(e.target.value)}
+                      onBlur={(e) => setPatientCPF(formatCPF(e.target.value))}
+                      placeholder="000.000.000-00"
+                      className="font-mono"
+                    />
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Data Nasc.</Label>
