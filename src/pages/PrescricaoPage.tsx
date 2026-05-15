@@ -3561,15 +3561,26 @@ const PrescricaoPage = () => {
   const sectorMapInit: Record<string, string> = { red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2" };
 
   const [patient, setPatient] = useState<PatientHeader>(() => {
+    // ⚠️  CRÍTICO: jamais usar dados-demo quando há patientId real na URL.
+    // Demos antigos (L09/L10/L11 = "Maria das Graças", etc) provocavam o
+    // cabeçalho do PDF a vir com nome de outro paciente em UTI 2 leito 10.
+    // Os campos abaixo serão hidratados pelos efeitos de pré-admissão,
+    // identificadores e auto-load. Aqui só semeamos o que vem da URL.
+    const urlPatientId = searchParams.get('patientId') || '';
+    const hasRealPatient = !!urlPatientId;
+
     const demoPatients: Record<string, Omit<PatientHeader, 'bed' | 'unit'>> = {
-      'L09': { name: initialPatientName || 'Iglesio Ferreira da Silva', birthDate: '1953-07-14', age: '72 anos', sex: 'Masculino', record: 'PRN-2024-08451', admissionDate: '2026-03-15', utiAdmissionDate: '2026-03-15', weight: '78', allergies: 'Dipirona, Sulfa', motherName: 'Maria José da Silva', address: 'Rua das Palmeiras, 456', city: 'São Luís - MA' },
+      'L09': { name: 'Iglesio Ferreira da Silva', birthDate: '1953-07-14', age: '72 anos', sex: 'Masculino', record: 'PRN-2024-08451', admissionDate: '2026-03-15', utiAdmissionDate: '2026-03-15', weight: '78', allergies: 'Dipirona, Sulfa', motherName: 'Maria José da Silva', address: 'Rua das Palmeiras, 456', city: 'São Luís - MA' },
       'L10': { name: 'Maria das Graças Oliveira', birthDate: '1948-02-22', age: '78 anos', sex: 'Feminino', record: 'PRN-2024-09102', admissionDate: '2026-03-14', utiAdmissionDate: '2026-03-14', weight: '62', allergies: 'NDAM', motherName: 'Ana Maria Oliveira', address: 'Av. dos Holandeses, 1200', city: 'São Luís - MA' },
       'L11': { name: 'José Carlos Mendes', birthDate: '1960-11-03', age: '65 anos', sex: 'Masculino', record: 'PRN-2024-07833', admissionDate: '2026-03-16', utiAdmissionDate: '2026-03-16', weight: '85', allergies: 'Penicilina, AAS', motherName: 'Francisca Mendes', address: 'Rua do Sol, 89', city: 'São Luís - MA' },
     };
-    const demo = demoPatients[initialPatientBed] || { name: initialPatientName, birthDate: '1970-01-15', age: '56 anos', sex: 'Masculino', record: 'PRN-2024-00000', admissionDate: '2026-03-17', utiAdmissionDate: '2026-03-17', weight: '70', allergies: 'NDAM', motherName: '', address: '', city: '' };
+    // Só usa demo quando NÃO há paciente real (modo apresentação puro).
+    const demo = !hasRealPatient && demoPatients[initialPatientBed]
+      ? demoPatients[initialPatientBed]
+      : { name: '', birthDate: '', age: '', sex: '', record: '', admissionDate: '', utiAdmissionDate: '', weight: '', allergies: '', motherName: '', address: '', city: '' };
     return {
       ...demo,
-      name: demo.name || initialPatientName,
+      name: hasRealPatient ? initialPatientName : (demo.name || initialPatientName),
       bed: initialPatientBed,
       unit: sectorMapInit[initialPatientSector] || initialPatientSector,
     };
