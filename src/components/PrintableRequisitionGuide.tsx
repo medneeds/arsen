@@ -11,11 +11,70 @@
 
 import React from "react";
 import DOMPurify from "dompurify";
+import { supabase } from "@/integrations/supabase/client";
 
 const PARECER_ALLOWED_TAGS = ["p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "span", "div"];
 function sanitizeRichHtmlPrint(html: string): string {
   if (!html) return "";
   return DOMPurify.sanitize(html, { ALLOWED_TAGS: PARECER_ALLOWED_TAGS, ALLOWED_ATTR: [] });
+}
+
+/** Calcula idade aproximada em anos a partir de ISO date (YYYY-MM-DD). */
+function ageInYears(iso?: string | null): number | null {
+  if (!iso) return null;
+  const d = new Date(iso.length === 10 ? iso + "T12:00:00" : iso);
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age >= 0 ? age : null;
+}
+
+function fmtBirthDate(iso?: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso.length === 10 ? iso + "T12:00:00" : iso);
+  if (isNaN(d.getTime())) return "—";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+
+/** Busca data de nascimento do paciente nos cadastros (registry → patients). */
+async function fetchPatientBirthDate(req: {
+  patient_registry_id?: string | null;
+  patient_id?: string | null;
+}): Promise<string | null> {
+  try {
+    if (req.patient_registry_id) {
+      const { data } = await supabase
+        .from("patient_registry")
+        .select("birth_date")
+        .eq("id", req.patient_registry_id)
+        .maybeSingle();
+      if (data?.birth_date) return data.birth_date as string;
+    }
+    if (req.patient_id) {
+      const { data } = await supabase
+        .from("patients")
+        .select("patient_registry_id, birth_date")
+        .eq("id", req.patient_id)
+        .maybeSingle();
+      const anyData = data as any;
+      if (anyData?.birth_date) return anyData.birth_date as string;
+      if (anyData?.patient_registry_id) {
+        const { data: reg } = await supabase
+          .from("patient_registry")
+          .select("birth_date")
+          .eq("id", anyData.patient_registry_id)
+          .maybeSingle();
+        if (reg?.birth_date) return reg.birth_date as string;
+      }
+    }
+  } catch {
+    /* silencioso */
+  }
+  return null;
 }
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
