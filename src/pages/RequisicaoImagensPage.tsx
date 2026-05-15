@@ -208,6 +208,31 @@ const RequisicaoImagensPage = () => {
 
         setHydratedFromRegistry(true);
 
+        // 2) Hidrata CID-10 + diagnóstico a partir da admissão validada do paciente
+        //    (não sobrescreve campos já preenchidos manualmente).
+        try {
+          const { data: ah } = await supabase
+            .from("admission_histories")
+            .select("cid_primary, cid_secondary, diagnostic_hypothesis, macro_diagnosis, chief_complaint")
+            .eq("patient_id", patientId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (ah) {
+            setCidPrimary((prev) => prev || (ah.cid_primary || ""));
+            setCidSecondary((prev) => prev || (ah.cid_secondary || ""));
+            setDiagnosis((prev) =>
+              prev ||
+              ah.diagnostic_hypothesis ||
+              ah.macro_diagnosis ||
+              ah.chief_complaint ||
+              ""
+            );
+          }
+        } catch (err) {
+          console.error("[APAC] admission hydrate error", err);
+        }
+
         // Notify when key SUS field is missing — APAC requires CNS
         if (!reg?.cns) {
           toast.warning("CNS ausente no prontuário", {
