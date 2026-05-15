@@ -1,0 +1,1 @@
+DELETE FROM public.prescriptions WHERE id='d7600f3c-9e0d-415c-908c-73b3667939d3' AND jsonb_array_length(items) = 0;
