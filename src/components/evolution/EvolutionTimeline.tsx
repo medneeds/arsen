@@ -441,6 +441,8 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           patientBed: evo.patient_bed || undefined,
                           patientSector: evo.patient_sector || undefined,
                           patientRecord: patientRecord || undefined,
+                          cidPrimary,
+                          cidSecondary,
                         });
                       }}
                       title="Imprimir (timbrado Norma Zero)"
