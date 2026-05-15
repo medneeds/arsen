@@ -1181,6 +1181,7 @@ export default function Saps3Page() {
         sectorCode: selectedSector,
         age: age ? `${age} anos` : null,
       });
+      clearDraftAfterSave();
       setSelectedRequest(null);
       loadPendingRequests();
       loadRecords();
