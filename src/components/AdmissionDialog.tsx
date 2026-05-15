@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
+import { PatientIdentityHeader } from "./PatientIdentityHeader";
 
 const UTI_SECTORS = ["red", "yellow", "outside", "uti_01", "uti_02", "uci_02"];
 
