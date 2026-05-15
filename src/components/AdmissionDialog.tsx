@@ -349,6 +349,24 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
 
   const buildPrintPayload = () => ({
     patient: { name: patient.name, bed: patient.bed, sector: patient.sector, age: patient.age },
+    identifiers: {
+      prontuario: identifiers.prontuario,
+      atendimento: identifiers.atendimento,
+      socialName: identifiers.registry?.socialName || null,
+      cpf: identifiers.registry?.cpf || null,
+      cns: identifiers.registry?.cns || null,
+      birthDate: identifiers.registry?.birthDate || null,
+      sex: identifiers.registry?.sex || null,
+      motherName: identifiers.registry?.motherName || null,
+      address: [
+        identifiers.registry?.address,
+        identifiers.registry?.neighborhood,
+        identifiers.registry?.city && identifiers.registry?.state
+          ? `${identifiers.registry.city}/${identifiers.registry.state}`
+          : identifiers.registry?.city || identifiers.registry?.state,
+      ].filter(Boolean).join(" — ") || null,
+      phone: identifiers.registry?.phone || null,
+    },
     hospitalName: currentHospital?.name,
     doctorName: user?.user_metadata?.full_name || user?.email || "Médico Assistente",
     isUti,
