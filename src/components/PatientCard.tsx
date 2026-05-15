@@ -1099,6 +1099,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   };
 
   const removeArrayItem = (field: "diagnoses" | "medicalHistory" | "relevantExams" | "pendencies" | "utiAdmissionDate" | "utiDischargePrediction" | "utiAllergies" | "utiAdmissionReason" | "utiCurrentStatus" | "utiDevices" | "utiSpecialties" | "utiCulturesAntibiotics" | "utiOriginSector", index: number) => {
+    // 🔒 Hipóteses/Diagnósticos são imutáveis no mapa — sincronizadas via evolução clínica.
+    if (field === "diagnoses") {
+      toast.info("Hipóteses são sincronizadas pela evolução clínica. Edite na evolução do paciente.");
+      return;
+    }
     const updatedPatient = { ...patient };
     
     if (field === "diagnoses") {
