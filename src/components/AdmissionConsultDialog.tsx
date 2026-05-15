@@ -177,14 +177,21 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
   const vs = (d0?.vital_signs || {}) as any;
   const pe = (d0?.physical_exam || {}) as any;
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!d0) return;
     const subj: string = soap.subjective || "";
     const obj: string = soap.objective || "";
     const ass: string = soap.assessment || "";
     const planTxt: string = soap.plan || history?.initial_conduct || "";
+    // Leito/setor ATUAIS (após relocações), com fallback para snapshot da prop.
+    const live = await resolveCurrentBedSector(patient.id);
     void printAdmissionNormaZero({
-      patient: { name: patient.name, bed: patient.bed, sector: patient.sector, age: patient.age },
+      patient: {
+        name: patient.name,
+        bed: live.bed || patient.bed,
+        sector: live.sector || patient.sector,
+        age: patient.age,
+      },
       identifiers: {
         prontuario: identifiers.prontuario,
         atendimento: identifiers.atendimento,

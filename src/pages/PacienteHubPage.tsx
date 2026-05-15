@@ -173,8 +173,15 @@ export default function PacienteHubPage() {
     const pe: any = (ev as any)?.physical_exam || {};
     const a: any = ah || {};
 
+    // Leito/setor ATUAIS (após relocações), com fallback para o que veio em ctx.
+    const live = await resolveCurrentBedSector(ctx.patientId);
     await printAdmissionNormaZero({
-      patient: { name: ctx.patientName, bed: ctx.patientBed, sector: ctx.patientSector, age: ctx.patientAge },
+      patient: {
+        name: ctx.patientName,
+        bed: live.bed || ctx.patientBed,
+        sector: live.sector || ctx.patientSector,
+        age: ctx.patientAge,
+      },
       identifiers: {
         prontuario: identifiers.prontuario,
         atendimento: identifiers.atendimento,
