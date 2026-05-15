@@ -30,6 +30,8 @@ import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
 import type { Patient } from "@/types/patient";
 import { getEffectiveAdmissionDate } from "@/lib/dihCalc";
+import { parseDiagnosesText, diagnosesArrayToText } from "@/lib/diagnosesText";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PatientHeader {
   name: string;
@@ -117,6 +119,7 @@ const EvolucaoPage = () => {
   const [newExam, setNewExam] = useState({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
   const [creating, setCreating] = useState(false);
   const [diagnosticsReplicated, setDiagnosticsReplicated] = useState(false);
+  const [diagnosticHypotheses, setDiagnosticHypotheses] = useState("");
 
   // CID state — persisted to admission_histories via usePatientCid
   const {
@@ -149,6 +152,16 @@ const EvolucaoPage = () => {
     setNewVitals({ pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" });
     setNewExam({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
     setDiagnosticsReplicated(false);
+    setDiagnosticHypotheses("");
+  };
+
+  /** Prefill hipóteses ao abrir Nova Evolução: prioriza última evolução com hipóteses,
+   *  senão usa o array atual de patients.diagnoses (vindo da admissão). */
+  const computePrefillHypotheses = (): string => {
+    const lastWithHypo = evolutions.find(e => (e as any).diagnostic_hypotheses);
+    if (lastWithHypo) return (lastWithHypo as any).diagnostic_hypotheses || "";
+    if (livePatient?.diagnoses?.length) return diagnosesArrayToText(livePatient.diagnoses);
+    return "";
   };
 
   // Replicação automática: ao abrir Nova Evolução, se houver evolução anterior,
@@ -162,6 +175,8 @@ const EvolucaoPage = () => {
     if (hasContext && evolutions.length > 0) {
       setDiagnosticsReplicated(true);
     }
+    // Prefill hipóteses (vindas da última evolução com hipóteses ou da admissão)
+    setDiagnosticHypotheses(computePrefillHypotheses());
   };
 
   const handleClearDiagnostics = () => {
@@ -171,6 +186,7 @@ const EvolucaoPage = () => {
     if (hospitalDischargePrediction) updateHospitalDischargePrediction("");
     if (isPalliative) updateIsPalliative(false);
     if (isolationPrecautions) updateIsolationPrecautions("");
+    setDiagnosticHypotheses("");
     setDiagnosticsReplicated(false);
   };
 
@@ -178,7 +194,8 @@ const EvolucaoPage = () => {
     setCreating(true);
     const result = await createEvolution(
       patient.name, patient.bed, patient.unit,
-      newSoap, newVitals, newExam
+      newSoap, newVitals, newExam,
+      diagnosticHypotheses
     );
     setCreating(false);
     if (result) {
@@ -279,6 +296,8 @@ const EvolucaoPage = () => {
       onPalliativeChange={updateIsPalliative}
       isolationPrecautions={isolationPrecautions}
       onIsolationChange={updateIsolationPrecautions}
+      diagnosticHypotheses={diagnosticHypotheses}
+      onDiagnosticHypothesesChange={setDiagnosticHypotheses}
       showUtiPrediction={isUtiSector}
       replicated={diagnosticsReplicated}
       onClearAll={handleClearDiagnostics}

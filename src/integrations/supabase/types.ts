@@ -472,6 +472,7 @@ export type Database = {
           created_by: string
           created_by_name: string | null
           department: string
+          diagnostic_hypotheses: string | null
           evolution_type: string
           hospital_unit_id: string
           id: string
@@ -498,6 +499,7 @@ export type Database = {
           created_by: string
           created_by_name?: string | null
           department?: string
+          diagnostic_hypotheses?: string | null
           evolution_type?: string
           hospital_unit_id: string
           id?: string
@@ -524,6 +526,7 @@ export type Database = {
           created_by?: string
           created_by_name?: string | null
           department?: string
+          diagnostic_hypotheses?: string | null
           evolution_type?: string
           hospital_unit_id?: string
           id?: string

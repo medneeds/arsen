@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
+import { parseDiagnosesText } from "@/lib/diagnosesText";
 
 export interface EvolutionRecord {
   id: string;
@@ -38,6 +39,7 @@ export interface EvolutionRecord {
   };
   status: "draft" | "validated" | "suspended";
   evolution_type?: string;
+  diagnostic_hypotheses?: string | null;
   validated_at: string | null;
   validated_by: string | null;
   validated_by_name: string | null;
@@ -170,7 +172,8 @@ export function useEvolutions(
     patientSector: string,
     soapData?: typeof EMPTY_SOAP,
     vitalSigns?: typeof EMPTY_VITALS,
-    physicalExam?: typeof EMPTY_EXAM
+    physicalExam?: typeof EMPTY_EXAM,
+    diagnosticHypotheses?: string
   ): Promise<EvolutionRecord | null> => {
     if (!user || !currentHospital || !currentState) {
       toast.error("Contexto hospitalar não disponível");
@@ -188,6 +191,7 @@ export function useEvolutions(
           soap_data: soapData || EMPTY_SOAP,
           vital_signs: vitalSigns || EMPTY_VITALS,
           physical_exam: physicalExam || EMPTY_EXAM,
+          diagnostic_hypotheses: diagnosticHypotheses ?? null,
           hospital_unit_id: currentHospital.id,
           state_id: currentState.id,
           created_by: user.id,
@@ -198,6 +202,20 @@ export function useEvolutions(
         .single();
 
       if (error) throw error;
+
+      // Sincroniza hipóteses → mapa de leitos (patients.diagnoses)
+      if (safePatientId && diagnosticHypotheses !== undefined) {
+        const arr = parseDiagnosesText(diagnosticHypotheses);
+        try {
+          await supabase
+            .from("patients")
+            .update({ diagnoses: arr } as any)
+            .eq("id", safePatientId);
+        } catch (syncErr) {
+          console.warn("[useEvolutions] sync diagnoses error", syncErr);
+        }
+      }
+
       toast.success("Evolução criada com sucesso");
       await fetchEvolutions();
       return {
