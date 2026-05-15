@@ -82,11 +82,9 @@ export function useEvolutions(
         .order("created_at", { ascending: false });
 
       if (safePatientId) {
-        // Real DB patient — match by uuid (covers both patient_id set or null with same name+bed).
-        query = query.or(
-          `patient_id.eq.${safePatientId}` +
-          (fbName ? `,and(patient_id.is.null,patient_name.eq.${fbName}${fbBed ? `,patient_bed.eq.${fbBed}` : ""})` : "")
-        );
+        // Real DB patient — match STRICTLY by patient_id to avoid leaking
+        // evolutions of previous patients that occupied the same bed.
+        query = query.eq("patient_id", safePatientId);
       } else if (fbName) {
         // Mock patient (non-UUID id) — match drafts by name + bed (+sector when present).
         query = query.is("patient_id", null).eq("patient_name", fbName);
