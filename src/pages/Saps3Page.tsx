@@ -1014,6 +1014,7 @@ export default function Saps3Page() {
           age: age ? `${age} anos` : null,
           mode: "validation",
         });
+        clearDraftAfterSave();
         setSelectedRequest(null);
         setCompletingSapsId(null);
         setCompletingPatientId(null);
