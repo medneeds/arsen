@@ -141,6 +141,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         onProceed={() => {
           setShowAccessLimits(false);
           setAccessLimitsShown(true);
+          try { sessionStorage.setItem("access_limits_shown", "1"); } catch {}
         }}
       />
     );
