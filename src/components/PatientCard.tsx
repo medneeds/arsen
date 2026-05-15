@@ -1209,7 +1209,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
     }
   };
 
-  const handleDragEndDiagnoses = (event: DragEndEvent) => {
+  const handleDragEndDiagnoses = (_event: DragEndEvent) => {
+    // 🔒 Hipóteses/Diagnósticos são imutáveis no mapa — sem reordenação manual.
+    return;
+  };
+  const _handleDragEndDiagnosesLegacy = (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
