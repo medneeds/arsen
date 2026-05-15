@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { CalendarClock, HeartHandshake, ShieldAlert, Plus, X, Check, RotateCcw, CalendarIcon, Hospital, Activity } from "lucide-react";
+import { CalendarClock, HeartHandshake, ShieldAlert, Plus, X, Check, RotateCcw, CalendarIcon, Hospital, Activity, Stethoscope, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -30,6 +31,10 @@ interface DiagnosticsPanelProps {
 
   isolationPrecautions: string;
   onIsolationChange: (value: string) => void;
+
+  /** Texto livre de hipóteses diagnósticas (uma por linha). Sincroniza com mapa de leitos. */
+  diagnosticHypotheses?: string;
+  onDiagnosticHypothesesChange?: (value: string) => void;
 
   /** Quando true, exibe também o calendário de alta da UTI (setores UTI/UCI). */
   showUtiPrediction?: boolean;
@@ -99,6 +104,8 @@ export function DiagnosticsPanel({
   onPalliativeChange,
   isolationPrecautions,
   onIsolationChange,
+  diagnosticHypotheses = "",
+  onDiagnosticHypothesesChange,
   showUtiPrediction = false,
   onClearAll,
   replicated = false,
