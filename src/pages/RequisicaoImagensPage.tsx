@@ -84,6 +84,13 @@ const INSTITUTION = {
   cnes: "2308762",
 };
 
+/** Formata CPF como 000.000.000-00 (aceita 11 dígitos crus ou já formatado) */
+const formatCPF = (raw: string): string => {
+  const d = (raw || "").replace(/\D/g, "").slice(0, 11);
+  if (d.length !== 11) return raw || "";
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+};
+
 interface SelectedProcedure {
   code: string;
   name: string;
@@ -114,6 +121,7 @@ const RequisicaoImagensPage = () => {
   const [patientName, setPatientName] = useState("");
   const [patientRecord, setPatientRecord] = useState("");
   const [patientCNS, setPatientCNS] = useState("");
+  const [patientCPF, setPatientCPF] = useState("");
   const [patientDOB, setPatientDOB] = useState("");
   const [patientSex, setPatientSex] = useState("");
   const [patientMotherName, setPatientMotherName] = useState("");
@@ -134,18 +142,19 @@ const RequisicaoImagensPage = () => {
   const [cidAssociated, setCidAssociated] = useState("");
   const [observations, setObservations] = useState("");
 
-  // Load doctor profile
+  // Load doctor profile (incl. CPF for SUS APAC field 41)
   useEffect(() => {
     if (!user) return;
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, crm")
+        .select("full_name, crm, cpf")
         .eq("id", user.id)
         .maybeSingle();
       if (data) {
         setDoctorName(data.full_name || "");
         setDoctorCRM(data.crm || "");
+        if (data.cpf) setDoctorCPF(formatCPF(data.cpf));
       }
     };
     load();
@@ -171,6 +180,7 @@ const RequisicaoImagensPage = () => {
     if (mr) setPatientRecord(mr);
 
     if (reg?.cns) setPatientCNS(reg.cns);
+    if (reg?.cpf) setPatientCPF(formatCPF(reg.cpf));
     if (reg?.birthDate) setPatientDOB(reg.birthDate);
     if (reg?.sex) {
       const s = String(reg.sex).toUpperCase().trim();
@@ -191,6 +201,7 @@ const RequisicaoImagensPage = () => {
     identifiers.registry?.fullName,
     identifiers.registry?.socialName,
     identifiers.registry?.cns,
+    identifiers.registry?.cpf,
     identifiers.registry?.birthDate,
     identifiers.registry?.sex,
     identifiers.registry?.motherName,
@@ -383,10 +394,20 @@ const RequisicaoImagensPage = () => {
                     <Input value={patientRecord} onChange={(e) => setPatientRecord(e.target.value)} placeholder="000000" />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
                   <div>
                     <Label className="text-xs text-muted-foreground">CNS</Label>
                     <Input value={patientCNS} onChange={(e) => setPatientCNS(e.target.value)} placeholder="Cartão Nacional de Saúde" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">CPF</Label>
+                    <Input
+                      value={patientCPF}
+                      onChange={(e) => setPatientCPF(e.target.value)}
+                      onBlur={(e) => setPatientCPF(formatCPF(e.target.value))}
+                      placeholder="000.000.000-00"
+                      className="font-mono"
+                    />
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Data Nasc.</Label>
@@ -576,7 +597,13 @@ const RequisicaoImagensPage = () => {
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">CPF</Label>
-                    <Input value={doctorCPF} onChange={(e) => setDoctorCPF(e.target.value)} placeholder="000.000.000-00" className="font-mono" />
+                    <Input
+                      value={doctorCPF}
+                      onChange={(e) => setDoctorCPF(e.target.value)}
+                      onBlur={(e) => setDoctorCPF(formatCPF(e.target.value))}
+                      placeholder="000.000.000-00"
+                      className="font-mono bg-muted/30"
+                    />
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">Data da Solicitação: <strong>{todayFormatted}</strong></p>
