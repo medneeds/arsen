@@ -225,6 +225,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
             patient.admissionStatus === "admitido" ? "Admitido"
             : patient.admissionStatus === "alta_dada" ? "Alta registrada — aguardando liberação"
             : patient.admissionStatus === "obito" ? "Óbito registrado — aguardando liberação"
+            : patient.admissionStatus === "transferencia_externa_pendente" ? "Transferência externa sinalizada — aguardando liberação"
             : "Pré-admitido",
         },
         { icon: FileText, label: "Motivo selecionado", value: reasonLabel, fullWidth: true },
