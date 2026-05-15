@@ -923,7 +923,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 )}
               </CockpitSection>
 
-              <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => goPatient("/alta-desfecho")} />
+              <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => setMovementDialogOpen(true)} />
             </TabsContent>
           </div>
         </Tabs>
