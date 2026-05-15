@@ -69,7 +69,9 @@ export interface Patient {
   // Hospital admission lifecycle: 'pre_admitido' (alocado em leito, aguardando admissão clínica),
   // 'admitido' (admissão hospitalar concluída — D0), 'suspenso' (admissão suspensa),
   // 'alta_dada' (alta médica/administrativa registrada — leito aguardando liberação),
-  // 'obito' (óbito registrado — leito aguardando preparo)
-  admissionStatus?: 'pre_admitido' | 'admitido' | 'suspenso' | 'alta_dada' | 'obito';
+  // 'obito' (óbito registrado — leito aguardando preparo),
+  // 'transferencia_interna_pendente' (transferência interna sinalizada — aguardando relocação física),
+  // 'transferencia_externa_pendente' (transferência externa sinalizada — leito aguardando liberação)
+  admissionStatus?: 'pre_admitido' | 'admitido' | 'suspenso' | 'alta_dada' | 'obito' | 'transferencia_interna_pendente' | 'transferencia_externa_pendente';
   admittedAt?: string | null;
 }
