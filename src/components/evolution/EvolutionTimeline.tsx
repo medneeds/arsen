@@ -440,16 +440,34 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                   {evo.status === "validated" && (
                     <Button
                       variant="ghost" size="icon" className="h-6 w-6"
-                      onClick={e => {
+                      onClick={async e => {
                         e.stopPropagation();
-                        printEvolution(evo, {
-                          patientName: evo.patient_name,
-                          patientBed: evo.patient_bed || undefined,
-                          patientSector: evo.patient_sector || undefined,
-                          patientRecord: patientRecord || undefined,
-                          cidPrimary,
-                          cidSecondary,
-                        });
+                        // Resolve identidade canônica (registry + guarda anti-NI)
+                        // antes de imprimir, em vez de confiar no snapshot gravado
+                        // em evo.patient_name (que pode ser de outro paciente
+                        // após realocações ou reuso de leito de NI).
+                        try {
+                          const resolved = await resolvePatientHeader(
+                            patientId || null,
+                            evo.patient_name || null,
+                            currentHospital?.id || null,
+                          );
+                          await printEvolution(evo, {
+                            patientName: resolved.name || evo.patient_name,
+                            patientBed: evo.patient_bed || undefined,
+                            patientSector: evo.patient_sector || undefined,
+                            patientRecord: resolved.prontuario || patientRecord || undefined,
+                            patientAtendimento: resolved.atendimento || undefined,
+                            patientSocialName: resolved.socialName || undefined,
+                            patientCpf: resolved.cpf || undefined,
+                            patientCns: resolved.cns || undefined,
+                            cidPrimary,
+                            cidSecondary,
+                          });
+                        } catch (err) {
+                          console.error("Falha ao resolver identidade para impressão:", err);
+                          toast.error("Não foi possível resolver os dados do paciente para impressão");
+                        }
                       }}
                       title="Imprimir (timbrado Norma Zero)"
                     >
