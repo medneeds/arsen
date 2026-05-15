@@ -811,8 +811,15 @@ export default function Saps3Page() {
     };
     const t = setTimeout(() => {
       writeSapsDraft(draftKey, payload);
-      setDraftSavedAt(new Date());
-    }, 600);
+      // Evita re-render a cada tecla: só atualiza quando o minuto muda
+      setDraftSavedAt((prev) => {
+        const now = new Date();
+        if (prev && Math.floor(prev.getTime() / 60000) === Math.floor(now.getTime() / 60000)) {
+          return prev;
+        }
+        return now;
+      });
+    }, 1500);
     return () => clearTimeout(t);
   }, [draftKey, draftRestored,
     patientName, age, comorbidities,
@@ -1332,20 +1339,22 @@ export default function Saps3Page() {
                   Cancelar
                 </Button>
               </div>
-              {draftSavedAt && (
-                <div className="mt-3 flex items-center justify-between gap-2 rounded-md border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700/50 px-3 py-2">
-                  <span className="text-xs text-amber-900 dark:text-amber-200">
-                    Rascunho salvo às {format(draftSavedAt, "HH:mm", { locale: ptBR })} — será restaurado automaticamente
-                  </span>
-                  <button
-                    type="button"
-                    onClick={discardDraft}
-                    className="text-xs font-semibold text-amber-900 dark:text-amber-200 underline underline-offset-2 hover:text-amber-700"
-                  >
-                    Descartar
-                  </button>
-                </div>
-              )}
+              <div className="mt-3 min-h-[40px]">
+                {draftSavedAt && (
+                  <div className="flex items-center justify-between gap-2 rounded-md border border-amber-300/60 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700/50 px-3 py-2">
+                    <span className="text-xs text-amber-900 dark:text-amber-200">
+                      Rascunho salvo às {format(draftSavedAt, "HH:mm", { locale: ptBR })} — será restaurado automaticamente
+                    </span>
+                    <button
+                      type="button"
+                      onClick={discardDraft}
+                      className="text-xs font-semibold text-amber-900 dark:text-amber-200 underline underline-offset-2 hover:text-amber-700"
+                    >
+                      Descartar
+                    </button>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
