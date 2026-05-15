@@ -1213,33 +1213,6 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
     // 🔒 Hipóteses/Diagnósticos são imutáveis no mapa — sem reordenação manual.
     return;
   };
-  const _handleDragEndDiagnosesLegacy = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      // Extract index from ID (format: "diagnosis-X")
-      const activeIdParts = String(active.id).split('-');
-      const overIdParts = String(over.id).split('-');
-      const oldIndex = parseInt(activeIdParts[activeIdParts.length - 1]);
-      const newIndex = parseInt(overIdParts[overIdParts.length - 1]);
-
-      if (isNaN(oldIndex) || isNaN(newIndex) || oldIndex < 0 || newIndex < 0 || 
-          oldIndex >= patient.diagnoses.length || newIndex >= patient.diagnoses.length) {
-        return;
-      }
-
-      const updatedPatient = {
-        ...patient,
-        diagnoses: arrayMove(patient.diagnoses, oldIndex, newIndex),
-      };
-
-      onUpdate(updatedPatient);
-      toastHook({
-        title: "Ordem atualizada",
-        description: "A ordem das hipóteses foi reorganizada.",
-      });
-    }
-  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
