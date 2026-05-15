@@ -29,6 +29,58 @@ interface PisImportDialogProps {
   onExtracted: (data: ExtractedPisData) => void;
 }
 
+// Limites coerentes com o teto de body do Edge Function (~6 MB JSON).
+// Base64 cresce ~33%; reservamos folga para headers/JSON wrapping.
+const MAX_FILE_BYTES = 4 * 1024 * 1024; // 4 MB do arquivo bruto
+const MAX_TEXT_CHARS = 60_000;
+
+// Detecta mime real pela extensão quando o browser não preenche file.type
+function inferMime(file: File): string {
+  if (file.type) return file.type;
+  const ext = file.name.toLowerCase().split(".").pop() || "";
+  if (ext === "pdf") return "application/pdf";
+  if (ext === "png") return "image/png";
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+  if (ext === "webp") return "image/webp";
+  return "";
+}
+
+// Lê arquivo como base64 sem travar a UI (FileReader é assíncrono e nativo).
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // result vem como "data:<mime>;base64,XXXX" — extrai só o payload
+      const idx = result.indexOf(",");
+      resolve(idx >= 0 ? result.slice(idx + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error || new Error("Falha ao ler arquivo"));
+    reader.readAsDataURL(file);
+  });
+}
+
+// Extrai texto de PDF no browser usando pdfjs (já instalado).
+async function extractPdfText(file: File): Promise<string> {
+  const pdfjs: any = await import("pdfjs-dist");
+  // Worker via CDN compatível com a versão instalada
+  try {
+    const workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+    pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+  } catch {}
+  const buffer = await file.arrayBuffer();
+  const doc = await pdfjs.getDocument({ data: buffer }).promise;
+  const out: string[] = [];
+  const maxPages = Math.min(doc.numPages, 10); // PIS típico: 1-3 páginas
+  for (let i = 1; i <= maxPages; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    const text = content.items.map((it: any) => it.str).join(" ");
+    out.push(text);
+  }
+  return out.join("\n").replace(/\s+\n/g, "\n").trim();
+}
+
 export function PisImportDialog({ open, onOpenChange, onExtracted }: PisImportDialogProps) {
   const [tab, setTab] = useState<"file" | "text">("file");
   const [isExtracting, setIsExtracting] = useState(false);
@@ -54,7 +106,23 @@ export function PisImportDialog({ open, onOpenChange, onExtracted }: PisImportDi
     setIsExtracting(true);
     try {
       const response = await supabase.functions.invoke("extract-patient-data", { body });
-      if (response.error) throw new Error(response.error.message);
+      // supabase-js não desempacota o body em respostas não-2xx → fazemos isso aqui
+      if (response.error) {
+        let serverMsg = response.error.message || "Falha desconhecida";
+        const ctx: any = (response.error as any).context;
+        try {
+          if (ctx?.body) {
+            const txt = typeof ctx.body === "string" ? ctx.body : await new Response(ctx.body).text();
+            const parsed = JSON.parse(txt);
+            if (parsed?.error) serverMsg = parsed.error;
+          } else if (ctx?.json?.error) {
+            serverMsg = ctx.json.error;
+          }
+        } catch {
+          /* mantém serverMsg padrão */
+        }
+        throw new Error(serverMsg);
+      }
       const data = response.data?.data;
       if (!data) throw new Error("Não foi possível extrair dados");
       onExtracted(data);
@@ -63,24 +131,60 @@ export function PisImportDialog({ open, onOpenChange, onExtracted }: PisImportDi
       onOpenChange(false);
     } catch (err: any) {
       console.error("PIS import error:", err);
-      toast.error("Falha ao importar do PIS", { description: err.message || "Tente novamente" });
+      toast.error("Falha ao importar do PIS", { description: err?.message || "Tente novamente" });
     } finally {
       setIsExtracting(false);
     }
   };
 
   const handleFile = async (file: File) => {
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Arquivo muito grande", { description: "Máximo 10MB" });
+    if (file.size > MAX_FILE_BYTES) {
+      toast.error("Arquivo muito grande", {
+        description: `Máximo 4 MB (este tem ${(file.size / 1024 / 1024).toFixed(1)} MB). Tente reduzir a resolução ou colar o texto.`,
+      });
+      return;
+    }
+    const mime = inferMime(file);
+    if (!mime) {
+      toast.error("Tipo de arquivo não reconhecido", {
+        description: "Use PDF, JPG, PNG ou WEBP.",
+      });
       return;
     }
     setFileName(file.name);
-    const arrayBuffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
-    let binary = "";
-    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-    const base64 = btoa(binary);
-    await callExtract({ imageBase64: base64, mimeType: file.type });
+
+    // PDF → extrai texto no client e envia como rawText (caminho mais confiável)
+    if (mime === "application/pdf") {
+      setIsExtracting(true);
+      try {
+        const text = await extractPdfText(file);
+        setIsExtracting(false);
+        if (text.length < 20) {
+          toast.error("Não foi possível ler o texto do PDF", {
+            description: "Pode ser um PDF escaneado/imagem. Tire uma foto/print da tela e anexe como JPG ou PNG.",
+          });
+          setFileName(null);
+          return;
+        }
+        await callExtract({ rawText: text.slice(0, MAX_TEXT_CHARS) });
+        return;
+      } catch (e: any) {
+        setIsExtracting(false);
+        console.error("PDF parse error:", e);
+        toast.error("Falha ao ler o PDF", { description: "Tente anexar como imagem (JPG/PNG)." });
+        setFileName(null);
+        return;
+      }
+    }
+
+    // Imagem → base64 via FileReader (não trava UI)
+    try {
+      const base64 = await fileToBase64(file);
+      await callExtract({ imageBase64: base64, mimeType: mime });
+    } catch (e: any) {
+      console.error("File read error:", e);
+      toast.error("Falha ao ler arquivo", { description: e?.message || "Tente novamente" });
+    }
   };
 
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -96,7 +200,7 @@ export function PisImportDialog({ open, onOpenChange, onExtracted }: PisImportDi
       toast.error("Texto muito curto", { description: "Cole pelo menos um trecho com nome, data e CPF" });
       return;
     }
-    callExtract({ rawText: trimmed });
+    callExtract({ rawText: trimmed.slice(0, MAX_TEXT_CHARS) });
   };
 
   return (
@@ -137,7 +241,7 @@ export function PisImportDialog({ open, onOpenChange, onExtracted }: PisImportDi
               <input
                 ref={inputRef}
                 type="file"
-                accept="application/pdf,image/*"
+                accept="application/pdf,image/png,image/jpeg,image/webp"
                 className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
               />
@@ -155,7 +259,7 @@ export function PisImportDialog({ open, onOpenChange, onExtracted }: PisImportDi
                 <div className="flex flex-col items-center gap-1.5 text-sm text-muted-foreground">
                   <Upload className="h-6 w-6 text-primary/70" />
                   <span><strong className="text-foreground">Arraste</strong> o arquivo aqui ou <strong className="text-foreground">clique</strong> para selecionar</span>
-                  <span className="text-[11px]">PDF, JPG ou PNG · até 10MB</span>
+                  <span className="text-[11px]">PDF, JPG, PNG ou WEBP · até 4 MB</span>
                 </div>
               )}
             </div>
