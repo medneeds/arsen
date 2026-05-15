@@ -4478,6 +4478,62 @@ const PrescricaoPage = () => {
     }
   }, [registryAtendimento, patient.encounterCode]);
 
+  // 🔄 Fallback de identificação a partir da própria tabela `patients`
+  // (quando o registry não traz birth_date/idade — comum em pacientes NI e
+  // em leitos onde o registry ainda não foi vinculado). Garante que o
+  // cabeçalho exiba idade, data de admissão hospitalar e admissão UTI em
+  // todos os setores (UTI, UCI, UCC, Enf. Transição, Vascular, Neuro etc).
+  useEffect(() => {
+    if (!urlPatientIdForRecord) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('patients')
+        .select('age, admission_date, uti_admission_date, uti_allergies')
+        .eq('id', urlPatientIdForRecord)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      setPatient(prev => {
+        const next = { ...prev };
+        let changed = false;
+        // Idade: se ausente, calcula de birthDate ou usa patients.age.
+        if (!prev.age || !prev.age.trim()) {
+          if (prev.birthDate) {
+            try {
+              const bd = new Date(prev.birthDate + 'T12:00:00');
+              const now = new Date();
+              let years = now.getFullYear() - bd.getFullYear();
+              const m = now.getMonth() - bd.getMonth();
+              if (m < 0 || (m === 0 && now.getDate() < bd.getDate())) years--;
+              if (years > 0 && years < 130) {
+                next.age = years === 1 ? '1 ano' : `${years} anos`;
+                changed = true;
+              }
+            } catch { /* ignore */ }
+          }
+          if (!next.age && data.age) {
+            next.age = data.age;
+            changed = true;
+          }
+        }
+        if ((!prev.admissionDate || !prev.admissionDate.trim()) && data.admission_date) {
+          next.admissionDate = String(data.admission_date).slice(0, 10);
+          changed = true;
+        }
+        if ((!prev.utiAdmissionDate || !prev.utiAdmissionDate.trim()) && data.uti_admission_date) {
+          next.utiAdmissionDate = String(data.uti_admission_date).slice(0, 10);
+          changed = true;
+        }
+        if ((!prev.allergies || !prev.allergies.trim()) && data.uti_allergies) {
+          next.allergies = data.uti_allergies;
+          changed = true;
+        }
+        return changed ? next : prev;
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [urlPatientIdForRecord, registryFull?.birthDate, patient.birthDate]);
+
   // Fetch pre-admission data for risk classification on print
   useEffect(() => {
     const fetchPreAdmission = async () => {
