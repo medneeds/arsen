@@ -6,6 +6,9 @@ import {
   Clock, FileText, AlertTriangle, Loader2, Calendar, Search, Filter, X, Star, Zap, Printer,
 } from "lucide-react";
 import { printEvolution } from "@/lib/printEvolution";
+import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
+import { useHospital } from "@/contexts/HospitalContext";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
