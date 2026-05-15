@@ -301,25 +301,23 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     plan: !plan.trim(),
     cidPrimary: !cidPrimary.trim(),
     prediction: !noPrediction && !predictionDate,
-    sapsAck: isUti && !sapsAck,
   };
-  // Itens obrigatórios para VALIDAR a admissão (CID/previsão são recomendados, não bloqueantes)
+  // Itens obrigatórios para VALIDAR a admissão (CID/previsão/SAPS são recomendados, não bloqueantes)
+  // SAPS 3 segue como tarefa pendente paralela (cronômetro de 24 h), mas não bloqueia validar/imprimir admissão.
   const missingList = [
     missing.hda && "HDA",
     missing.examGeneral && "Estado geral (exame físico)",
     missing.plan && "Conduta inicial",
-    missing.sapsAck && "Ciência da SAPS 3",
   ].filter(Boolean) as string[];
 
   const validate = (): string | null => {
     if (missing.hda) return "História da Doença Atual (HDA) é obrigatória";
     if (missing.examGeneral) return "Estado geral (exame físico) é obrigatório";
     if (missing.plan) return "Conduta inicial é obrigatória";
-    if (missing.sapsAck) return "Declare ciência de que a ficha SAPS 3 está pendente (24h)";
     return null;
   };
 
-  const canValidate = !missing.hda && !missing.examGeneral && !missing.plan && !missing.sapsAck;
+  const canValidate = !missing.hda && !missing.examGeneral && !missing.plan;
 
   const handleSaveDraft = () => {
     try {
