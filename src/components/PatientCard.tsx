@@ -847,6 +847,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
       toast.error("Campo somente leitura no mapa de leitos");
       return;
     }
+    // 🔒 Hipóteses/Diagnósticos são sincronizados pela admissão e evolução clínica.
+    if (field === "diagnoses") {
+      toast.info("Hipóteses são sincronizadas pela admissão / evolução clínica. Edite na evolução do paciente.");
+      return;
+    }
 
     // Porta users can only edit patients they created
     if (!canEdit) {
