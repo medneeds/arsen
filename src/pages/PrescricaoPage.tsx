@@ -5224,7 +5224,7 @@ const PrescricaoPage = () => {
         const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { data, error } = await supabase
           .from('prescriptions')
-          .select('id, created_at')
+          .select('id, created_at, items')
           .eq('hospital_unit_id', currentHospital.id)
           .eq('state_id', currentState.id)
           .eq('patient_name', patient.name.trim())
@@ -5233,7 +5233,11 @@ const PrescricaoPage = () => {
           .limit(1);
         if (error) throw error;
         const last = (data || [])[0];
-        if (last?.id && loadPrescriptionRef.current) {
+        // ⚠️  Não carregar drafts vazios — eles sobrescrevem o demo (L09-L18) e
+        // o cabeçalho com dados obsoletos (ex.: corrupção que trazia birthDate
+        // de outro paciente para o NI do leito 10).
+        const lastItems = Array.isArray(last?.items) ? last!.items : [];
+        if (last?.id && lastItems.length > 0 && loadPrescriptionRef.current) {
           await loadPrescriptionRef.current(last.id);
         }
       } catch (err) {
