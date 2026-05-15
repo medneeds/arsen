@@ -201,6 +201,7 @@ const RequisicaoImagensPage = () => {
     identifiers.registry?.fullName,
     identifiers.registry?.socialName,
     identifiers.registry?.cns,
+    identifiers.registry?.cpf,
     identifiers.registry?.birthDate,
     identifiers.registry?.sex,
     identifiers.registry?.motherName,
