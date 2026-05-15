@@ -990,6 +990,7 @@ export default function Saps3Page() {
 
         if (asPending) {
           // Manter pendente: NÃO mostra animação de validação. Apenas atualiza e volta para a lista.
+          clearDraftAfterSave();
           setSelectedRequest(null);
           setCompletingSapsId(null);
           setCompletingPatientId(null);
