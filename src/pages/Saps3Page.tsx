@@ -497,7 +497,7 @@ export default function Saps3Page() {
       .eq("hospital_unit_id", hospitalId)
       .eq("state_id", stateId)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(200);
     if (data) setRecords(data as any);
   };
 
