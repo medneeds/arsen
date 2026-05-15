@@ -135,18 +135,19 @@ const RequisicaoImagensPage = () => {
   const [cidAssociated, setCidAssociated] = useState("");
   const [observations, setObservations] = useState("");
 
-  // Load doctor profile
+  // Load doctor profile (incl. CPF for SUS APAC field 41)
   useEffect(() => {
     if (!user) return;
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, crm")
+        .select("full_name, crm, cpf")
         .eq("id", user.id)
         .maybeSingle();
       if (data) {
         setDoctorName(data.full_name || "");
         setDoctorCRM(data.crm || "");
+        if (data.cpf) setDoctorCPF(formatCPF(data.cpf));
       }
     };
     load();
