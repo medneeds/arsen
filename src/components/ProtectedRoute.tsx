@@ -82,6 +82,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     } else if (!loading && user && !hasShownLoading) {
       setShowLoadingScreen(true);
       setHasShownLoading(true);
+      try { sessionStorage.setItem("loading_shown", "1"); } catch {}
     }
   }, [user, loading, navigate, hasShownLoading]);
 
