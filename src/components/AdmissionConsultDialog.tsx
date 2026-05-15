@@ -184,6 +184,24 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
     const planTxt: string = soap.plan || history?.initial_conduct || "";
     void printAdmissionNormaZero({
       patient: { name: patient.name, bed: patient.bed, sector: patient.sector, age: patient.age },
+      identifiers: {
+        prontuario: identifiers.prontuario,
+        atendimento: identifiers.atendimento,
+        socialName: identifiers.registry?.socialName || null,
+        cpf: identifiers.registry?.cpf || null,
+        cns: identifiers.registry?.cns || null,
+        birthDate: identifiers.registry?.birthDate || null,
+        sex: identifiers.registry?.sex || null,
+        motherName: identifiers.registry?.motherName || null,
+        address: [
+          identifiers.registry?.address,
+          identifiers.registry?.neighborhood,
+          identifiers.registry?.city && identifiers.registry?.state
+            ? `${identifiers.registry.city}/${identifiers.registry.state}`
+            : identifiers.registry?.city || identifiers.registry?.state,
+        ].filter(Boolean).join(" — ") || null,
+        phone: identifiers.registry?.phone || null,
+      },
       hospitalName: currentHospital?.name,
       doctorName: d0.validated_by_name || d0.created_by_name || "Médico Assistente",
       isUti,
