@@ -38,6 +38,8 @@ interface EvolutionTimelineProps {
   patientRecord?: string;
   cidPrimary?: string;
   cidSecondary?: string;
+  /** ID do paciente — usado para resolver identidade canônica antes de imprimir */
+  patientId?: string | null;
   onUpdate: (id: string, updates: any) => Promise<boolean>;
   onValidate: (id: string) => Promise<boolean>;
   onSuspend: (id: string, reason: string) => Promise<boolean>;
@@ -52,9 +54,10 @@ const STATUS_CONFIG = {
 };
 
 export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
-  evolutions, admissionDate, patientRecord, cidPrimary, cidSecondary, onUpdate, onValidate, onSuspend, onDelete, onDuplicate,
+  evolutions, admissionDate, patientRecord, cidPrimary, cidSecondary, patientId, onUpdate, onValidate, onSuspend, onDelete, onDuplicate,
 }) => {
   const { user } = useAuth();
+  const { currentHospital } = useHospital();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [collapsedDays, setCollapsedDays] = useState<Set<number>>(new Set());
   const [savingId, setSavingId] = useState<string | null>(null);
