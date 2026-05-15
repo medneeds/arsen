@@ -41,10 +41,17 @@ export interface BedReleasePreAdmissionDialogProps {
 }
 
 export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onConfirm }: BedReleasePreAdmissionDialogProps) {
-  const isPostDischarge = patient?.admissionStatus === "alta_dada" || patient?.admissionStatus === "obito";
+  const isPostDischarge =
+    patient?.admissionStatus === "alta_dada"
+    || patient?.admissionStatus === "obito"
+    || patient?.admissionStatus === "transferencia_externa_pendente";
   const REASON_OPTIONS = isPostDischarge ? POST_DISCHARGE_REASONS : PRE_ADMISSION_REASONS;
   const defaultReason = isPostDischarge
-    ? (patient?.admissionStatus === "obito" ? "obito_concluido" : "alta_concluida")
+    ? (patient?.admissionStatus === "obito"
+        ? "obito_concluido"
+        : patient?.admissionStatus === "transferencia_externa_pendente"
+          ? "transferencia_externa_concluida"
+          : "alta_concluida")
     : "paciente_saiu";
 
   const [step, setStep] = useState<"notice" | "form" | "password">("notice");
