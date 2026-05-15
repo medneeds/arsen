@@ -462,6 +462,8 @@ const EvolucaoPage = () => {
               sector: livePatient?.sector || initialPatientSector,
             }) || patient.admissionDate}
             patientRecord={prontuarioReal}
+            cidPrimary={cidPrimary}
+            cidSecondary={cidSecondary}
             onUpdate={updateEvolution}
             onValidate={validateEvolution}
             onSuspend={suspendEvolution}
