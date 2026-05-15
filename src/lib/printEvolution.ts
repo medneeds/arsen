@@ -44,6 +44,14 @@ export interface PrintEvolutionContext {
   patientBed?: string;
   patientSector?: string;
   patientRecord?: string;
+  /** Código de Atendimento (12 dígitos) — opcional */
+  patientAtendimento?: string;
+  /** Nome social — opcional */
+  patientSocialName?: string;
+  /** CPF — opcional */
+  patientCpf?: string;
+  /** CNS — opcional */
+  patientCns?: string;
   cidPrimary?: string;
   cidSecondary?: string;
 }
@@ -60,12 +68,18 @@ export const printEvolution = async (
     ? format(new Date(evo.validated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
     : null;
 
+  // Nome impresso (com nome social, se houver)
+  const baseName = ctx?.patientName || evo.patient_name || "—";
+  const fullName = ctx?.patientSocialName
+    ? `${baseName} (NOME SOCIAL: ${ctx.patientSocialName})`
+    : baseName;
+
   const patientHeader = `
     <table class="nz" style="margin-bottom:8pt">
       <tbody>
         <tr>
           <th style="width:120px">Paciente</th>
-          <td>${escape(ctx?.patientName || evo.patient_name || "—")}</td>
+          <td>${escape(fullName)}</td>
           <th style="width:90px">Leito</th>
           <td style="width:90px">${escape(ctx?.patientBed || evo.patient_bed || "—")}</td>
         </tr>
@@ -74,6 +88,12 @@ export const printEvolution = async (
           <td>${escape(getSectorDisplayLabel(ctx?.patientSector || evo.patient_sector) || "—")}</td>
           <th>Prontuário</th>
           <td>${escape(ctx?.patientRecord || "—")}</td>
+        </tr>
+        <tr>
+          <th>Atendimento</th>
+          <td>${escape(ctx?.patientAtendimento || "—")}</td>
+          <th>${ctx?.patientCpf ? "CPF" : "CNS"}</th>
+          <td>${escape(ctx?.patientCpf || ctx?.patientCns || "—")}</td>
         </tr>
         <tr>
           <th>Registro em</th>
