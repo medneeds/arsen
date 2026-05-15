@@ -39,6 +39,7 @@ import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
 import { Printer } from "lucide-react";
+import { PatientIdentityHeader } from "./PatientIdentityHeader";
 
 interface PatientCockpitProps {
   patient: Patient | null;
@@ -285,29 +286,17 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         )}
         {/* ===== ZONA 1: IDENTIDADE (sticky) ===== */}
         <div className="px-3 sm:px-4 pt-3 sm:pt-4 pb-2.5 sm:pb-3 border-b border-border bg-gradient-to-b from-primary/5 to-transparent">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div className="min-w-0 flex-1">
-              <h3 className="patient-id text-sm font-bold leading-tight text-foreground truncate">
-                {displayName}
-              </h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5 preserve-case">
-                {patient.age ? `${patient.age} anos` : "—"} • {sector} • Leito{" "}
-                <span className="font-medium text-foreground">{patient.bedNumber}</span>
-              </p>
-            </div>
-            <div className={cn("flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap", status.bg)}>
-              <span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} />
-              {status.label}
-            </div>
-          </div>
+          <PatientIdentityHeader
+            patientId={patient.id}
+            fallbackName={patient.name}
+            fallbackBed={patient.bedNumber}
+            fallbackSector={patient.sector}
+            fallbackAge={patient.age}
+            fallbackClinicalStatus={patient.clinicalStatus}
+            variant="cockpit"
+          />
 
-          {/* Identificadores oficiais — sempre visíveis */}
-          <div className="grid grid-cols-1 gap-1 mb-2">
-            <IdRow label="Prontuário" value={prontuario} mono />
-            <IdRow label="Atendimento" value={atendimento} mono />
-          </div>
-
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] mt-2">
             <div className="text-muted-foreground">
               Internação: <span className="text-foreground font-medium"><StayDays admissionDate={patient.admissionDate} /></span>
             </div>
@@ -316,60 +305,15 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             </div>
           </div>
 
-          {/* Botão Ver mais — abre painel completo do prontuário */}
           <button
             type="button"
-            onClick={() => setShowFullId((v) => !v)}
-            className="mt-2 w-full inline-flex items-center justify-between gap-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border/50 hover:bg-muted/40"
+            onClick={() => setRecordEditOpen(true)}
+            title="Editar prontuário e ficha cadastral (auditado)"
+            className="mt-2 w-full inline-flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground px-2 py-1 rounded border border-border/50 hover:bg-muted/40 transition-colors"
           >
-            <span className="inline-flex items-center gap-1.5">
-              <IdCard className="h-3 w-3" />
-              {showFullId ? "Ocultar dados completos" : "Ver dados do prontuário"}
-            </span>
-            <ChevronDown className={cn("h-3 w-3 transition-transform", showFullId && "rotate-180")} />
+            <Pencil className="h-3 w-3" />
+            Editar prontuário / ficha cadastral
           </button>
-
-          {showFullId && (
-            <div className="mt-2 rounded-md border border-border/60 bg-background/60 p-2.5 space-y-1.5 text-[11px]">
-              <FullIdRow label="Nome social" value={registry?.socialName} />
-              <FullIdRow label="CPF" value={registry?.cpf} mono />
-              <FullIdRow label="CNS" value={registry?.cns} mono />
-              <FullIdRow label="Nascimento" value={formatDate(registry?.birthDate || undefined)} />
-              <FullIdRow label="Sexo" value={registry?.sex} />
-              <FullIdRow label="Tipo sanguíneo" value={registry?.bloodType} />
-              <FullIdRow label="Mãe" value={registry?.motherName} />
-              <FullIdRow label="Telefone" value={registry?.phone} />
-              <FullIdRow
-                label="Endereço"
-                value={
-                  [registry?.address, registry?.neighborhood, registry?.city, registry?.state]
-                    .filter(Boolean)
-                    .join(", ") || null
-                }
-              />
-              <FullIdRow label="Alergias" value={registry?.allergies} />
-              <FullIdRow label="Comorbidades" value={registry?.comorbidities} />
-              {registry?.isUnidentified && (
-                <div className="text-[10px] uppercase font-semibold text-warning">
-                  Paciente não identificado · {registry.unidentifiedCode || "—"}
-                </div>
-              )}
-              <div className="pt-1 border-t border-border/40 flex items-center justify-between gap-2">
-                <span className="text-[10px] text-muted-foreground/80 font-mono break-all">
-                  ID interno: {patient.id}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setRecordEditOpen(true)}
-                  title="Editar prontuário e ficha cadastral (auditado)"
-                  className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded border border-border/50 hover:bg-muted/40 transition-colors shrink-0"
-                >
-                  <Pencil className="h-2.5 w-2.5" />
-                  Editar
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ===== ZONA 2: AÇÕES PRIMÁRIAS ===== */}

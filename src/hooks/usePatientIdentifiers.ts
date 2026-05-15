@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface PatientIdentifiers {
@@ -47,6 +47,9 @@ export function usePatientIdentifiers(
     registry: null,
     loading: false,
   });
+
+  const [reloadTick, setReloadTick] = useState(0);
+  const registryIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -166,6 +169,8 @@ export function usePatientIdentifiers(
 
       if (cancelled) return;
 
+      registryIdRef.current = registryRow?.id || null;
+
       setState({
         prontuario,
         atendimento,
@@ -203,7 +208,32 @@ export function usePatientIdentifiers(
     return () => {
       cancelled = true;
     };
-  }, [patientId, patientName, hospitalUnitId]);
+  }, [patientId, patientName, hospitalUnitId, reloadTick]);
+
+  // Realtime: refaz a query quando muda o paciente, prontuário, atendimento ou registry vinculado.
+  useEffect(() => {
+    if (!patientId) return;
+    const bump = () => setReloadTick((t) => t + 1);
+    const channel = supabase
+      .channel(`patient-identifiers-${patientId}`)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "patients", filter: `id=eq.${patientId}` },
+        bump)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "medical_records", filter: `patient_id=eq.${patientId}` },
+        bump)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "patient_encounters", filter: `patient_id=eq.${patientId}` },
+        bump)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "patient_registry" },
+        (payload: any) => {
+          const row = (payload.new || payload.old) as any;
+          if (row?.id && row.id === registryIdRef.current) bump();
+        })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [patientId]);
 
   return state;
 }
