@@ -379,6 +379,10 @@ export default function Saps3Page() {
   const [completingSapsId, setCompletingSapsId] = useState<string | null>(null);
   const [completingPatientId, setCompletingPatientId] = useState<string | null>(null);
 
+  // Rascunho automático em localStorage
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
+  const [draftRestored, setDraftRestored] = useState(false);
+
   // Box I
   const [patientName, setPatientName] = useState("");
   const [age, setAge] = useState<string>("");
