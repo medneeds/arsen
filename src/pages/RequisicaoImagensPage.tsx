@@ -92,9 +92,18 @@ interface SelectedProcedure {
 
 const RequisicaoImagensPage = () => {
   const { user } = useAuth();
+  const { currentHospital } = useHospital();
   const [searchParams] = useSearchParams();
   const printRef = useRef<HTMLDivElement>(null);
-  const [hydratedFromRegistry, setHydratedFromRegistry] = useState(false);
+
+  // Identidade canônica + realtime (refaz quando o prontuário/paciente muda)
+  const urlPatientId = searchParams.get("patientId");
+  const urlPatientName = searchParams.get("patientName");
+  const identifiers = usePatientIdentifiers(
+    urlPatientId,
+    urlPatientName,
+    currentHospital?.id || null,
+  );
 
   // Doctor data from profile
   const [doctorName, setDoctorName] = useState("");
