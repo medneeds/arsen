@@ -1960,106 +1960,36 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                   <div className="flex flex-col md:col-span-5 relative">
                   <div className="flex items-center gap-1 mb-0.5">
                     <span className="text-[10px] font-medium text-muted-foreground">Hipóteses / Diagnósticos</span>
+                    <span
+                      title="Sincronizado da Admissão / Evolução. Edite na evolução clínica."
+                      className="inline-flex items-center gap-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 px-1 py-0 text-[8px] font-medium"
+                    >
+                      🔒 Sincronizado
+                    </span>
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => setExpandedSection('diagnoses')}
-                      className="h-2.5 w-2.5 p-0 text-muted-foreground/40 hover:text-primary opacity-50 hover:opacity-100 transition-opacity print:hidden"
+                      className="h-2.5 w-2.5 p-0 text-muted-foreground/40 hover:text-primary opacity-50 hover:opacity-100 transition-opacity print:hidden ml-auto"
                       title="Visualizar expandido"
                     >
                       <Maximize2 className="h-[2.5px] w-[2.5px]" />
                     </Button>
                   </div>
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEndDiagnoses}
-                  >
-                    <SortableContext
-                      items={patient.diagnoses.map((_, i) => `diagnosis-${i}`)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <ol className="text-xs text-foreground space-y-0.5 print:text-[7.5px] list-none pl-0">
-                        {patient.diagnoses.map((diagnosis, idx) => (
-                          <SortableDiagnosisItemCollapsed
-                            key={`diagnosis-${idx}`}
-                            id={`diagnosis-${idx}`}
-                            index={idx}
-                            diagnosis={diagnosis}
-                            isEditing={editingField === "diagnoses" && editingArrayIndex === idx}
-                            editValue={editValue}
-                            onEdit={() => startEditing("diagnoses", diagnosis, idx)}
-                            onSave={saveInlineEdit}
-                            onCancel={cancelEditing}
-                            onRemove={() => removeArrayItem("diagnoses", idx)}
-                            onAddNew={() => startEditing("diagnoses", "", -2)}
-                            onEditValueChange={(val) => setEditValue(val)}
-                            onKeyDown={handleKeyDown}
-                            inputRef={inputRef}
-                            isLast={idx === patient.diagnoses.length - 1}
-                            onGetCid={(diagnosis, index) => getCidCode(diagnosis, index)}
-                            loadingCid={loadingCid === idx}
-                          />
-                        ))}
-                      </ol>
-                    </SortableContext>
-
-                    {editingField === "diagnoses" && editingArrayIndex === -2 ? (
-                      <li className="text-[10px] text-foreground leading-snug rounded px-1 -mx-1 flex items-start justify-between gap-1 py-0.5 bg-accent/30 border border-primary">
-                        <div className="flex-shrink-0 w-3" />
-                        <div className="flex items-center gap-1 flex-1">
-                          <span className="font-semibold text-muted-foreground flex-shrink-0">{patient.diagnoses.length + 1}.</span>
-                          <AutoResizeTextarea
-                            inputRef={inputRef}
-                            value={editValue}
-                            onChange={(e) => {
-                              const target = e.target as HTMLTextAreaElement;
-                              const start = target.selectionStart ?? 0;
-                              const end = target.selectionEnd ?? 0;
-                              setEditValue(e.target.value);
-                              requestAnimationFrame(() => {
-                                target.setSelectionRange(start, end);
-                              });
-                            }}
-                            onKeyDown={handleKeyDown}
-                            onBlur={saveInlineEdit}
-                            className="text-[10px] text-foreground flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 resize-none"
-                            placeholder="Nova hipótese/diagnóstico"
-                          />
-                        </div>
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={saveInlineEdit}
-                            className="h-4 w-4 text-green-600 hover:bg-green-100 p-0"
-                          >
-                            <Check className="h-2.5 w-2.5" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={cancelEditing}
-                            className="h-4 w-4 text-red-600 hover:bg-red-100 p-0"
-                          >
-                            <X className="h-2.5 w-2.5" />
-                          </Button>
-                        </div>
-                      </li>
-                    ) : null}
-                    
-                    {patient.diagnoses.length === 0 && editingField !== "diagnoses" && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => startEditing("diagnoses", "", -2)}
-                        className="h-5 w-5 text-muted-foreground hover:text-primary print:hidden"
-                        title="Adicionar Hipótese/Diagnóstico"
-                      >
-                        <span className="text-xs">+</span>
-                      </Button>
-                    )}
-                    </DndContext>
+                  {patient.diagnoses.length > 0 ? (
+                    <ol className="text-xs text-foreground space-y-0.5 print:text-[7.5px] list-none pl-0">
+                      {patient.diagnoses.map((diagnosis, idx) => (
+                        <li key={`diagnosis-${idx}`} className="text-[10px] text-foreground leading-snug flex gap-1">
+                          <span className="font-semibold text-muted-foreground flex-shrink-0">{idx + 1}.</span>
+                          <span className="flex-1">{diagnosis}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground/60 italic leading-snug">
+                      Aguardando admissão / evolução
+                    </p>
+                  )}
                   </div>
 
                   {/* Quadro Atual */}
