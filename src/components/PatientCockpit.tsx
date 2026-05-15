@@ -37,6 +37,7 @@ import { Skull, FileSignature, ArrowLeftRight, Pencil } from "lucide-react";
 import { MedicalDocumentDialog } from "./MedicalDocumentDialog";
 import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
+import { PatientMovementDialog } from "./PatientMovementDialog";
 import { Printer } from "lucide-react";
 
 interface PatientCockpitProps {
@@ -107,6 +108,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const [hovering, setHovering] = useState(false);
   const [docDialogOpen, setDocDialogOpen] = useState(false);
   const [roundPrintOpen, setRoundPrintOpen] = useState(false);
+  const [movementDialogOpen, setMovementDialogOpen] = useState(false);
   const isExpanded = variant === "inline" || pinned || hovering;
 
   // Live patient data — sync sector, bed, allergies, medical responsibility, etc.
@@ -404,7 +406,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           <DischargeQuickActions
             patientId={patient.id}
             patientName={patient.name}
-            fallback={() => goPatient("/alta-desfecho")}
+            fallback={() => setMovementDialogOpen(true)}
           />
         </div>
 
@@ -921,7 +923,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 )}
               </CockpitSection>
 
-              <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => goPatient("/alta-desfecho")} />
+              <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => setMovementDialogOpen(true)} />
             </TabsContent>
           </div>
         </Tabs>
@@ -940,6 +942,12 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         onOpenChange={setRecordEditOpen}
         patientId={patient.id}
         patientName={patient.name}
+      />
+      <PatientMovementDialog
+        patient={patient}
+        movementType={null}
+        isOpen={movementDialogOpen}
+        onClose={() => setMovementDialogOpen(false)}
       />
     </TooltipProvider>
   );
