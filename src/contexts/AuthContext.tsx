@@ -224,7 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         "customTemplates",
       ];
       SENSITIVE_KEYS.forEach((k) => localStorage.removeItem(k));
-      ["active_access_profile", "available_access_profiles"].forEach((k) => sessionStorage.removeItem(k));
+      ["active_access_profile", "available_access_profiles", "loading_shown", "access_limits_shown"].forEach((k) => sessionStorage.removeItem(k));
       // Defensive sweep: any cached patient/clinical keys
       Object.keys(localStorage).forEach((k) => {
         if (/^(patient|clinical|prescription|evolution|exam|culture|note|checklist)/i.test(k)) {

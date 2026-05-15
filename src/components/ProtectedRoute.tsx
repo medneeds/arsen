@@ -26,13 +26,18 @@ const LEGACY_GENERIC_USERS = [
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, status } = useAuth();
   const navigate = useNavigate();
+  // Flags persistidos em sessionStorage para que a tela de loading e a
+  // seleção de setor apareçam UMA ÚNICA VEZ por sessão (e não a cada
+  // navegação entre rotas, que remonta o ProtectedRoute).
+  const sessionFlag = (key: string) =>
+    typeof window !== "undefined" && sessionStorage.getItem(key) === "1";
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
-  const [hasShownLoading, setHasShownLoading] = useState(false);
+  const [hasShownLoading, setHasShownLoading] = useState(() => sessionFlag("loading_shown"));
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [checkingTerms, setCheckingTerms] = useState(true);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showAccessLimits, setShowAccessLimits] = useState(false);
-  const [accessLimitsShown, setAccessLimitsShown] = useState(false);
+  const [accessLimitsShown, setAccessLimitsShown] = useState(() => sessionFlag("access_limits_shown"));
 
   // Verificar se é um usuário genérico legado (não precisa de aprovação nem termos)
   const isLegacyGenericUser = user?.email && LEGACY_GENERIC_USERS.includes(user.email.toLowerCase());
@@ -77,6 +82,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     } else if (!loading && user && !hasShownLoading) {
       setShowLoadingScreen(true);
       setHasShownLoading(true);
+      try { sessionStorage.setItem("loading_shown", "1"); } catch {}
     }
   }, [user, loading, navigate, hasShownLoading]);
 
@@ -109,6 +115,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         setShowAccessLimits(true);
       } else if (skipAccessLimits) {
         setAccessLimitsShown(true);
+        try { sessionStorage.setItem("access_limits_shown", "1"); } catch {}
       }
     }} />;
   }
@@ -134,6 +141,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         onProceed={() => {
           setShowAccessLimits(false);
           setAccessLimitsShown(true);
+          try { sessionStorage.setItem("access_limits_shown", "1"); } catch {}
         }}
       />
     );
