@@ -357,6 +357,14 @@ export function PrintableRequisitionGuide({
             </td>
           </tr>
           <tr>
+            <th style={thStyle}>Data Nasc.</th>
+            <td style={tdStyle}>{fmtBirthDate(resolvedBirth)}</td>
+            <th style={thStyle}>Idade</th>
+            <td style={tdStyle}>
+              {ageInYears(resolvedBirth) !== null ? `${ageInYears(resolvedBirth)} anos` : "—"}
+            </td>
+          </tr>
+          <tr>
             <th style={thStyle}>Solicitante</th>
             <td style={tdStyle}>{request.requested_by_name || "—"}</td>
             <th style={thStyle}>Solicitação</th>
