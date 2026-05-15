@@ -174,6 +174,24 @@ export default function PacienteHubPage() {
 
     await printAdmissionNormaZero({
       patient: { name: ctx.patientName, bed: ctx.patientBed, sector: ctx.patientSector, age: ctx.patientAge },
+      identifiers: {
+        prontuario: identifiers.prontuario,
+        atendimento: identifiers.atendimento,
+        socialName: identifiers.registry?.socialName || null,
+        cpf: identifiers.registry?.cpf || null,
+        cns: identifiers.registry?.cns || null,
+        birthDate: identifiers.registry?.birthDate || null,
+        sex: identifiers.registry?.sex || null,
+        motherName: identifiers.registry?.motherName || null,
+        address: [
+          identifiers.registry?.address,
+          identifiers.registry?.neighborhood,
+          identifiers.registry?.city && identifiers.registry?.state
+            ? `${identifiers.registry.city}/${identifiers.registry.state}`
+            : identifiers.registry?.city || identifiers.registry?.state,
+        ].filter(Boolean).join(" — ") || null,
+        phone: identifiers.registry?.phone || null,
+      },
       hospitalName: currentHospital?.name,
       doctorName: (ev as any)?.validated_by_name || "Médico Assistente",
       isUti: ["red", "yellow", "blue", "outside", "uti_01", "uti_02", "uci_01", "uci_02"].includes(ctx.patientSector),
