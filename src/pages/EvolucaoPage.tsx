@@ -155,16 +155,14 @@ const EvolucaoPage = () => {
     setDiagnosticHypotheses("");
   };
 
-  // Prefill hipóteses ao abrir Nova Evolução: prioriza última evolução com hipóteses,
-  // senão usa diagnoses atuais do paciente (vindo da admissão).
-  const prefillDiagnosticHypotheses = useCallbackPrefill(evolutions, livePatient);
-
-  function useCallbackPrefill(evos: typeof evolutions, lp: typeof livePatient): string {
-    const lastWithHypo = evos.find(e => (e as any).diagnostic_hypotheses);
+  /** Prefill hipóteses ao abrir Nova Evolução: prioriza última evolução com hipóteses,
+   *  senão usa o array atual de patients.diagnoses (vindo da admissão). */
+  const computePrefillHypotheses = (): string => {
+    const lastWithHypo = evolutions.find(e => (e as any).diagnostic_hypotheses);
     if (lastWithHypo) return (lastWithHypo as any).diagnostic_hypotheses || "";
-    if (lp?.diagnoses?.length) return diagnosesArrayToText(lp.diagnoses);
+    if (livePatient?.diagnoses?.length) return diagnosesArrayToText(livePatient.diagnoses);
     return "";
-  }
+  };
 
   // Replicação automática: ao abrir Nova Evolução, se houver evolução anterior,
   // assume-se que CIDs/previsões/paliativo/isolamento já estão preservados na admissão
