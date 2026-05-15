@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
 import { useHospital } from "@/contexts/HospitalContext";
+import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 
 type AdmissionStatus = "pre_admitido" | "admitido" | "suspenso" | null;
 
