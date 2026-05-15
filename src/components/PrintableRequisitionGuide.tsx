@@ -109,6 +109,9 @@ interface PrintableRequisitionGuideProps {
     patient_name: string;
     patient_bed?: string | null;
     patient_sector?: string | null;
+    patient_id?: string | null;
+    patient_registry_id?: string | null;
+    patient_birth_date?: string | null; // ISO YYYY-MM-DD (opcional, busca automática se ausente)
     category: string;
     items: any[];
     priority: string;
