@@ -36,6 +36,36 @@ export interface ResolvedPatientHeader {
   registryId: string | null;
 }
 
+/**
+ * Lê o leito + setor ATUAIS do paciente direto da tabela `patients`
+ * (após qualquer relocação/transferência). Use SEMPRE este helper antes
+ * de imprimir documentos clínicos — nunca confie em snapshots gravados em
+ * evoluções/admissões antigas, pois o paciente pode ter mudado de leito
+ * desde então.
+ *
+ * Retorna `{ bed: null, sector: null }` se o paciente não existir mais
+ * (alta) ou se a consulta falhar — o caller deve aplicar fallback para
+ * o snapshot que tiver em mãos.
+ */
+export async function resolveCurrentBedSector(
+  patientId: string | null | undefined,
+): Promise<{ bed: string | null; sector: string | null }> {
+  if (!patientId) return { bed: null, sector: null };
+  try {
+    const { data } = await supabase
+      .from("patients")
+      .select("bed_number, sector")
+      .eq("id", patientId)
+      .maybeSingle();
+    return {
+      bed: (data?.bed_number as string) || null,
+      sector: (data?.sector as string) || null,
+    };
+  } catch {
+    return { bed: null, sector: null };
+  }
+}
+
 export async function resolvePatientHeader(
   patientId: string | null | undefined,
   fallbackName: string | null | undefined,
