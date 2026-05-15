@@ -606,6 +606,10 @@ export async function printRequisitionGuide(
           <th style="width:14%">Leito</th><td style="width:18%">${escapeHtml(request.patient_bed || "—")}</td>
         </tr>
         <tr>
+          <th>Data Nasc.</th><td>${escapeHtml(fmtBirthDate(birthDate))}</td>
+          <th>Idade</th><td>${ageY !== null ? ageY + " anos" : "—"}</td>
+        </tr>
+        <tr>
           <th>Solicitante</th><td>${escapeHtml(request.requested_by_name || "—")}</td>
           <th>Solicitação</th><td>${escapeHtml(createdStr)}</td>
         </tr>
