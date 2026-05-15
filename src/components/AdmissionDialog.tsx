@@ -347,40 +347,50 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   };
 
 
-  const buildPrintPayload = () => ({
-    patient: { name: patient.name, bed: patient.bed, sector: patient.sector, age: patient.age },
-    identifiers: {
-      prontuario: identifiers.prontuario,
-      atendimento: identifiers.atendimento,
-      socialName: identifiers.registry?.socialName || null,
-      cpf: identifiers.registry?.cpf || null,
-      cns: identifiers.registry?.cns || null,
-      birthDate: identifiers.registry?.birthDate || null,
-      sex: identifiers.registry?.sex || null,
-      motherName: identifiers.registry?.motherName || null,
-      address: [
-        identifiers.registry?.address,
-        identifiers.registry?.neighborhood,
-        identifiers.registry?.city && identifiers.registry?.state
-          ? `${identifiers.registry.city}/${identifiers.registry.state}`
-          : identifiers.registry?.city || identifiers.registry?.state,
-      ].filter(Boolean).join(" — ") || null,
-      phone: identifiers.registry?.phone || null,
-    },
-    hospitalName: currentHospital?.name,
-    doctorName: user?.user_metadata?.full_name || user?.email || "Médico Assistente",
-    isUti,
-    hda, amp, muc, allergies, weight, height, imc,
-    vitals: { pa, fc, fr, spo2, tax, dx },
-    exam: { general: physGeneral, cv: physCv, resp: physResp, abd: physAbd, ext: physExt, neuro: physNeuro },
-    plan, cidPrimary, cidSecondary,
-    dischargePredictionLabel,
-    uti: isUti ? { admissionReason, originSector, devices, culturesAtb, specialties } : undefined,
-    sapsPending: isUti, // SAPS 3 sempre pendente em UTI/UCI até finalizar na página /saps3
-  });
+  const buildPrintPayload = async () => {
+    // Leito/setor ATUAIS (após relocações), com fallback para snapshot da prop.
+    const live = await resolveCurrentBedSector(patient.id);
+    return {
+      patient: {
+        name: patient.name,
+        bed: live.bed || patient.bed,
+        sector: live.sector || patient.sector,
+        age: patient.age,
+      },
+      identifiers: {
+        prontuario: identifiers.prontuario,
+        atendimento: identifiers.atendimento,
+        socialName: identifiers.registry?.socialName || null,
+        cpf: identifiers.registry?.cpf || null,
+        cns: identifiers.registry?.cns || null,
+        birthDate: identifiers.registry?.birthDate || null,
+        sex: identifiers.registry?.sex || null,
+        motherName: identifiers.registry?.motherName || null,
+        address: [
+          identifiers.registry?.address,
+          identifiers.registry?.neighborhood,
+          identifiers.registry?.city && identifiers.registry?.state
+            ? `${identifiers.registry.city}/${identifiers.registry.state}`
+            : identifiers.registry?.city || identifiers.registry?.state,
+        ].filter(Boolean).join(" — ") || null,
+        phone: identifiers.registry?.phone || null,
+      },
+      hospitalName: currentHospital?.name,
+      doctorName: user?.user_metadata?.full_name || user?.email || "Médico Assistente",
+      isUti,
+      hda, amp, muc, allergies, weight, height, imc,
+      vitals: { pa, fc, fr, spo2, tax, dx },
+      exam: { general: physGeneral, cv: physCv, resp: physResp, abd: physAbd, ext: physExt, neuro: physNeuro },
+      plan, cidPrimary, cidSecondary,
+      dischargePredictionLabel,
+      uti: isUti ? { admissionReason, originSector, devices, culturesAtb, specialties } : undefined,
+      sapsPending: isUti, // SAPS 3 sempre pendente em UTI/UCI até finalizar na página /saps3
+    };
+  };
 
-  const handlePrint = () => {
-    void printAdmissionNormaZero(buildPrintPayload());
+  const handlePrint = async () => {
+    const payload = await buildPrintPayload();
+    void printAdmissionNormaZero(payload);
   };
 
   const handleSubmit = async () => {
