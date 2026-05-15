@@ -3586,11 +3586,12 @@ const PrescricaoPage = () => {
     };
   });
 
-  // Itens-demo só em modo apresentação (sem patientId real). Caso contrário,
-  // o paciente real receberia uma prescrição-fantasma de demo.
+  // Corpo da prescrição-demo é preservado por leito (L09/L10/L11/L12-L18) mesmo
+  // quando há patientId real, pois a identificação do cabeçalho já é resolvida
+  // separadamente pelo registry (usePatientIdentifiers + sync). Assim o NI do
+  // L10 mantém os itens prescritos sem herdar nome de outro paciente.
   const initialDemoItems = useMemo(() => {
-    const hasRealPatient = !!searchParams.get('patientId');
-    return (!hasRealPatient && initialPatientBed) ? getDemoPrescriptionItems(initialPatientBed) : [];
+    return initialPatientBed ? getDemoPrescriptionItems(initialPatientBed) : [];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [items, setItems] = useState<PrescriptionItem[]>(initialDemoItems);
