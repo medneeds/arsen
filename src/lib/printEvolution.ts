@@ -44,6 +44,8 @@ export interface PrintEvolutionContext {
   patientBed?: string;
   patientSector?: string;
   patientRecord?: string;
+  cidPrimary?: string;
+  cidSecondary?: string;
 }
 
 export const printEvolution = async (
@@ -83,7 +85,23 @@ export const printEvolution = async (
     </table>
   `;
 
-  let bodyHtml = patientHeader;
+  const hypothesesText = (evo as any).diagnostic_hypotheses?.toString().trim() || "";
+  const cidPrimary = ctx?.cidPrimary?.trim() || "";
+  const cidSecondary = ctx?.cidSecondary?.trim() || "";
+  const hasDiagnostics = hypothesesText || cidPrimary || cidSecondary;
+
+  const diagnosticsHtml = hasDiagnostics
+    ? `
+      <h2 class="nz-section">Diagnósticos</h2>
+      <table class="nz" style="font-size:8.5pt;margin-bottom:6pt"><tbody>
+        ${cidPrimary ? `<tr><th style="width:140px">CID-10 Primário</th><td>${escape(cidPrimary)}</td></tr>` : ""}
+        ${cidSecondary ? `<tr><th>CID-10 Secundário</th><td>${escape(cidSecondary)}</td></tr>` : ""}
+        ${hypothesesText ? `<tr><th>Hipóteses Diagnósticas</th><td>${escape(hypothesesText)}</td></tr>` : ""}
+      </tbody></table>
+    `
+    : "";
+
+  let bodyHtml = patientHeader + diagnosticsHtml;
 
   if (intercurrence) {
     bodyHtml += `

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
+import { parseDiagnosesText } from "@/lib/diagnosesText";
 
 const UTI_SECTORS = ["red", "yellow", "outside", "uti_01", "uti_02", "uci_02"];
 
@@ -180,6 +181,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   const [plan, setPlan] = useState("");
   const [cidPrimary, setCidPrimary] = useState("");
   const [cidSecondary, setCidSecondary] = useState("");
+  const [diagnosticHypotheses, setDiagnosticHypotheses] = useState("");
 
   // Discharge prediction — sincronização dias <-> data
   const [noPrediction, setNoPrediction] = useState(false);
@@ -215,6 +217,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         setPhysGeneral(d.physGeneral ?? ""); setPhysCv(d.physCv ?? "");
         setPhysResp(d.physResp ?? ""); setPhysAbd(d.physAbd ?? ""); setPhysExt(d.physExt ?? ""); setPhysNeuro(d.physNeuro ?? "");
         setPlan(d.plan ?? ""); setCidPrimary(d.cidPrimary ?? ""); setCidSecondary(d.cidSecondary ?? "");
+        setDiagnosticHypotheses(d.diagnosticHypotheses ?? "");
         setNoPrediction(!!d.noPrediction);
         if (d.predictionDate) setPredictionDate(d.predictionDate);
         if (d.predictionDays) setPredictionDays(d.predictionDays);
@@ -237,7 +240,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         const payload = {
           hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
           physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
-          plan, cidPrimary, cidSecondary,
+          plan, cidPrimary, cidSecondary, diagnosticHypotheses,
           noPrediction, predictionDate, predictionDays,
           admissionReason, originSector, devices, culturesAtb, specialties,
           savedAt: new Date().toISOString(),
@@ -255,7 +258,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     open, draftHydrated, patient.id,
     hda, amp, muc, allergies, weight, height, pa, fc, fr, spo2, tax, dx,
     physGeneral, physCv, physResp, physAbd, physExt, physNeuro,
-    plan, cidPrimary, cidSecondary,
+    plan, cidPrimary, cidSecondary, diagnosticHypotheses,
     noPrediction, predictionDate, predictionDays,
     admissionReason, originSector, devices, culturesAtb, specialties,
   ]);
@@ -403,6 +406,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         objective: `Antropometria: peso ${weight || "—"} kg, altura ${height || "—"} m${imcLine}\n` +
                    `SSVV admissionais: PA ${pa || "—"} | FC ${fc || "—"} | FR ${fr || "—"} | SpO₂ ${spo2 || "—"} | Tax ${tax || "—"} | Dx ${dx || "—"}`,
         assessment: `CID primário: ${cidPrimary}${cidSecondary ? `\nCID secundário: ${cidSecondary}` : ""}` +
+                    (diagnosticHypotheses.trim() ? `\n\nHipóteses diagnósticas:\n${diagnosticHypotheses.trim()}` : "") +
                     (isUti ? `\n\nMotivo internação UTI: ${admissionReason || "—"}\nOrigem: ${originSector || "—"}\nDispositivos: ${devices || "—"}\nCulturas/ATB: ${culturesAtb || "—"}\nEspecialidades em conjunto: ${specialties || "—"}` : ""),
         plan: `${plan}\n\nPrevisão de alta: ${dischargePredictionLabel}`,
       };
@@ -432,6 +436,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
           state_id: currentState.id,
           department: currentDepartment || patient.department || "URGÊNCIA E EMERGÊNCIA ADULTO",
           evolution_type: "admission",
+          diagnostic_hypotheses: diagnosticHypotheses.trim() || null,
         } as any);
       if (evError) throw evError;
 
@@ -446,11 +451,13 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         sapsStart = (pRow as any)?.created_at || now;
       }
 
+      const parsedDiagnoses = parseDiagnosesText(diagnosticHypotheses);
       const baseUpdate: Record<string, any> = {
         admission_status: "admitido",
         admitted_at: now,
         uti_discharge_prediction: dischargePredictionLabel,
         admission_history: admissionHistoryText,
+        ...(parsedDiagnoses.length > 0 ? { diagnoses: parsedDiagnoses } : {}),
       };
       if (isUti) {
         Object.assign(baseUpdate, {
@@ -640,6 +647,19 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                       placeholder="Opcional" className="mt-1" />
                   </div>
                 </div>
+              </Section>
+
+              <Section icon={Stethoscope} title="Hipóteses Diagnósticas (texto livre)" hint="Uma hipótese por linha — sincroniza automaticamente com o mapa de leitos" tone="blue">
+                <Textarea
+                  value={diagnosticHypotheses}
+                  onChange={(e) => setDiagnosticHypotheses(e.target.value)}
+                  rows={4}
+                  placeholder={"Ex.:\nSepse de foco pulmonar\nSuspeita de TEP associado\nDM2 descompensado"}
+                  className="mt-1 font-mono text-xs"
+                />
+                <p className="text-[11px] text-slate-600 mt-1">
+                  📝 Cada linha vira uma hipótese no card do paciente. Esse campo passa a ser <strong>somente leitura no mapa</strong> e só é atualizado por nova evolução clínica.
+                </p>
               </Section>
 
               <Section icon={CalendarDays} title="Previsão de alta" hint="Dias e data sincronizados" tone="amber">

@@ -33,6 +33,8 @@ interface EvolutionTimelineProps {
   evolutions: EvolutionRecord[];
   admissionDate?: string;
   patientRecord?: string;
+  cidPrimary?: string;
+  cidSecondary?: string;
   onUpdate: (id: string, updates: any) => Promise<boolean>;
   onValidate: (id: string) => Promise<boolean>;
   onSuspend: (id: string, reason: string) => Promise<boolean>;
@@ -47,7 +49,7 @@ const STATUS_CONFIG = {
 };
 
 export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
-  evolutions, admissionDate, patientRecord, onUpdate, onValidate, onSuspend, onDelete, onDuplicate,
+  evolutions, admissionDate, patientRecord, cidPrimary, cidSecondary, onUpdate, onValidate, onSuspend, onDelete, onDuplicate,
 }) => {
   const { user } = useAuth();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -439,6 +441,8 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           patientBed: evo.patient_bed || undefined,
                           patientSector: evo.patient_sector || undefined,
                           patientRecord: patientRecord || undefined,
+                          cidPrimary,
+                          cidSecondary,
                         });
                       }}
                       title="Imprimir (timbrado Norma Zero)"

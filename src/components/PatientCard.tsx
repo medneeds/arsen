@@ -847,6 +847,11 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
       toast.error("Campo somente leitura no mapa de leitos");
       return;
     }
+    // 🔒 Hipóteses/Diagnósticos são sincronizados pela admissão e evolução clínica.
+    if (field === "diagnoses") {
+      toast.info("Hipóteses são sincronizadas pela admissão / evolução clínica. Edite na evolução do paciente.");
+      return;
+    }
 
     // Porta users can only edit patients they created
     if (!canEdit) {
@@ -1094,11 +1099,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   };
 
   const removeArrayItem = (field: "diagnoses" | "medicalHistory" | "relevantExams" | "pendencies" | "utiAdmissionDate" | "utiDischargePrediction" | "utiAllergies" | "utiAdmissionReason" | "utiCurrentStatus" | "utiDevices" | "utiSpecialties" | "utiCulturesAntibiotics" | "utiOriginSector", index: number) => {
-    const updatedPatient = { ...patient };
-    
+    // 🔒 Hipóteses/Diagnósticos são imutáveis no mapa — sincronizadas via evolução clínica.
     if (field === "diagnoses") {
-      updatedPatient.diagnoses = patient.diagnoses.filter((_, i) => i !== index);
-    } else if (field === "medicalHistory") {
+      toast.info("Hipóteses são sincronizadas pela evolução clínica. Edite na evolução do paciente.");
+      return;
+    }
+    const updatedPatient = { ...patient };
+
+    if (field === "medicalHistory") {
       updatedPatient.medicalHistory = patient.medicalHistory.filter((_, i) => i !== index);
     } else if (field === "relevantExams") {
       updatedPatient.relevantExams = patient.relevantExams.filter((_, i) => i !== index);
@@ -1201,32 +1209,9 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
     }
   };
 
-  const handleDragEndDiagnoses = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      // Extract index from ID (format: "diagnosis-X")
-      const activeIdParts = String(active.id).split('-');
-      const overIdParts = String(over.id).split('-');
-      const oldIndex = parseInt(activeIdParts[activeIdParts.length - 1]);
-      const newIndex = parseInt(overIdParts[overIdParts.length - 1]);
-
-      if (isNaN(oldIndex) || isNaN(newIndex) || oldIndex < 0 || newIndex < 0 || 
-          oldIndex >= patient.diagnoses.length || newIndex >= patient.diagnoses.length) {
-        return;
-      }
-
-      const updatedPatient = {
-        ...patient,
-        diagnoses: arrayMove(patient.diagnoses, oldIndex, newIndex),
-      };
-
-      onUpdate(updatedPatient);
-      toastHook({
-        title: "Ordem atualizada",
-        description: "A ordem das hipóteses foi reorganizada.",
-      });
-    }
+  const handleDragEndDiagnoses = (_event: DragEndEvent) => {
+    // 🔒 Hipóteses/Diagnósticos são imutáveis no mapa — sem reordenação manual.
+    return;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
