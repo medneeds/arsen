@@ -657,6 +657,8 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                   📝 Cada linha vira uma hipótese no card do paciente. Esse campo passa a ser <strong>somente leitura no mapa</strong> e só é atualizado por nova evolução clínica.
                 </p>
               </Section>
+
+              <Section icon={CalendarDays} title="Previsão de alta" hint="Dias e data sincronizados" tone="amber">
                 <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
                   <div>
                     <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Dias de internação previstos</Label>
