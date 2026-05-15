@@ -3705,13 +3705,24 @@ const PrescricaoPage = () => {
       unit: sectorMap[newSector] || newSector,
       age: newAge || prev.age,
       // limpa campos que eram do paciente anterior — serão re-hidratados
-      // pelos efeitos de pré-admissão / auto-load / alergias.
+      // pelos efeitos de pré-admissão / auto-load / alergias / registry.
       record: '',
       encounterCode: undefined,
       chiefComplaint: undefined,
       vitalSigns: undefined,
       riskClassification: undefined,
       allergies: '',
+      // ⚠️  Campos vindos do `patient_registry` (sincronizados pelo effect
+      // logo abaixo via usePatientIdentifiers). Limpar aqui evita que dados
+      // de identificação do paciente ANTERIOR (DN, sexo, mãe, endereço, CPF/CNS
+      // exibidos no cabeçalho do PDF) "vazem" por 1-2 frames até o registry
+      // novo ser resolvido. Crítico para troca rápida de leitos via
+      // PatientSwitcher (UTI, UCI, UCC, Enf. Transição, Vascular, Neuro etc).
+      birthDate: '',
+      sex: '',
+      motherName: '',
+      address: '',
+      city: '',
     }));
     setItems([]);
     setCurrentPrescriptionId(null);
