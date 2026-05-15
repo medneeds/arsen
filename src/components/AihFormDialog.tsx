@@ -18,7 +18,6 @@ import {
   FileText, Printer, RotateCcw, Loader2, ClipboardList, Search,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
 
 const AIH_INSTITUTION = {
   solicitante: "HOSPITAL MUNICIPAL DJALMA MARQUES",
@@ -135,41 +134,51 @@ export function AihFormDialog({ open, onOpenChange, patientId, patientName }: Ai
   const loadPatientData = async () => {
     setLoadingPatient(true);
     try {
-      // Identidade canônica unificada (mesmo helper usado pela impressão de
-      // Evolução / Sumário de Alta). Aplica guarda anti-NI e prefere
-      // patient_registry vinculado em patients.patient_registry_id.
-      const header = await resolvePatientHeader(patientId, patientName, null);
+      // Try patient_registry first (via patients.medical_record)
+      const { data: patient } = await supabase
+        .from("patients")
+        .select("medical_record, name, age")
+        .eq("id", patientId)
+        .maybeSingle();
 
-      if (header.name && header.name !== "—") setAihPatientName(header.name);
-      setPatientCNS(header.cns || "");
-      setPatientDOB(header.birthDate || "");
-      setPatientSex(header.sex || "");
-      setPatientMotherName(header.motherName || "");
-      setPatientPhone(header.phone || "");
-      setPatientAddress(header.address || "");
-      // Mantém defaults de cidade/UF caso registry não traga (form AIH BR)
-      // Prontuário oficial vindo do helper (numero_prontuario formatado)
-      if (header.prontuario) setPatientRecord(header.prontuario);
-
-      // Fallback adicional para pre_admissions caso registry não traga endereço/cidade
-      if (!header.address || !header.cns) {
-        const { data: preAdm } = await supabase
-          .from("pre_admissions")
-          .select("cns, birth_date, sex, mother_name, phone, address, city, medical_record")
-          .ilike("patient_name", `%${patientName}%`)
-          .order("created_at", { ascending: false })
-          .limit(1)
+      if (patient?.medical_record) {
+        const { data: registry } = await supabase
+          .from("patient_registry")
+          .select("*")
+          .eq("medical_record", patient.medical_record)
           .maybeSingle();
-        if (preAdm) {
-          if (!header.cns && preAdm.cns) setPatientCNS(preAdm.cns);
-          if (!header.birthDate && preAdm.birth_date) setPatientDOB(preAdm.birth_date);
-          if (!header.sex && preAdm.sex) setPatientSex(preAdm.sex);
-          if (!header.motherName && preAdm.mother_name) setPatientMotherName(preAdm.mother_name);
-          if (!header.phone && preAdm.phone) setPatientPhone(preAdm.phone);
-          if (!header.address && preAdm.address) setPatientAddress(preAdm.address);
-          if (preAdm.city) setPatientCity(preAdm.city);
-          if (!header.prontuario && preAdm.medical_record) setPatientRecord(preAdm.medical_record);
+
+        if (registry) {
+          setPatientCNS(registry.cns || "");
+          setPatientDOB(registry.birth_date || "");
+          setPatientSex(registry.sex || "");
+          setPatientMotherName(registry.mother_name || "");
+          setPatientPhone(registry.phone || "");
+          setPatientAddress(registry.address || "");
+          setPatientCity(registry.city || "São Luís");
+          setPatientRecord(registry.medical_record || "");
+          return;
         }
+      }
+
+      // Fallback: try pre_admissions
+      const { data: preAdm } = await supabase
+        .from("pre_admissions")
+        .select("*")
+        .ilike("patient_name", `%${patientName}%`)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (preAdm) {
+        setPatientCNS(preAdm.cns || "");
+        setPatientDOB(preAdm.birth_date || "");
+        setPatientSex(preAdm.sex || "");
+        setPatientMotherName(preAdm.mother_name || "");
+        setPatientPhone(preAdm.phone || "");
+        setPatientAddress(preAdm.address || "");
+        setPatientCity(preAdm.city || "São Luís");
+        setPatientRecord(preAdm.medical_record || "");
       }
     } catch (err) {
       console.error("Error loading patient data:", err);

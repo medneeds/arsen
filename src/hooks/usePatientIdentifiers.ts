@@ -114,24 +114,21 @@ export function usePatientIdentifiers(
         if (reg) registryRow = reg;
       }
 
-      // 1d) Fallback por nome (último recurso) — exige nome real (não NI)
-      // e unidade hospitalar. É seguro mesmo com patientId presente porque
-      // filtramos `is_unidentified=false` e exigimos detecção de nome real,
-      // o que evita colisão entre pacientes "NÃO IDENTIFICADO".
-      if (!registryRow && patientName && hospitalUnitId) {
-        const niCheck = detectUnidentified(patientName);
-        if (!niCheck.isUnidentified) {
-          const { data } = await supabase
-            .from("patient_registry")
-            .select("*")
-            .ilike("full_name", patientName.trim())
-            .eq("hospital_unit_id", hospitalUnitId)
-            .eq("is_unidentified", false)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          if (data) registryRow = data;
-        }
+      // 1d) Fallback por nome SOMENTE quando não temos patientId.
+      // ⚠️  Crítico: pacientes "Não Identificados" frequentemente compartilham
+      // o mesmo nome ("NÃO IDENTIFICADO", "DESCONHECIDO", etc). Buscar por nome
+      // quando temos patientId pode trazer o registry de OUTRO paciente NI.
+      if (!registryRow && !patientId && patientName && hospitalUnitId) {
+        const { data } = await supabase
+          .from("patient_registry")
+          .select("*")
+          .ilike("full_name", patientName.trim())
+          .eq("hospital_unit_id", hospitalUnitId)
+          .eq("is_unidentified", false)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (data) registryRow = data;
       }
 
       // 1e) GUARDA CRÍTICA: se o paciente é NI (nome detectado como Não Identificado)

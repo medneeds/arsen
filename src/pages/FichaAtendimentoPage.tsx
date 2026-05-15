@@ -12,7 +12,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
-import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
 import { whitelabel, getInstitutionalHeaderLines } from "@/config/whitelabel";
 import socorraoCross from "@/assets/socorrao-cross-logo.png";
 
@@ -397,31 +396,6 @@ const FichaAtendimentoPage = () => {
           const now = new Date();
           const years = now.getFullYear() - birth.getFullYear();
           pd.age = `${years} ano(s)`;
-        }
-
-        // 🔄 SOBREPOSIÇÃO CANÔNICA: aplica identidade do prontuário (mesma fonte
-        // usada por Evolução, Sumário de Alta, AIH e APAC) por cima do que veio
-        // de pre_admissions/patients (que pode estar desatualizado).
-        try {
-          const header = await resolvePatientHeader(patientId, patientName, currentHospital?.id || null);
-          if (header.name && header.name !== "—") pd.name = header.name;
-          if (header.socialName) pd.socialName = header.socialName;
-          if (header.birthDate) {
-            try { pd.birthDate = format(new Date(header.birthDate + "T12:00:00"), "dd/MM/yyyy"); }
-            catch { pd.birthDate = header.birthDate; }
-            // Recompute age from canonical DOB
-            const birth = new Date(header.birthDate + "T12:00:00");
-            const years = new Date().getFullYear() - birth.getFullYear();
-            pd.age = `${years} ano(s)`;
-          }
-          if (header.sex) pd.sex = header.sex;
-          if (header.motherName) pd.motherName = header.motherName;
-          if (header.address) pd.address = header.address;
-          if (header.cpf) pd.cpf = header.cpf;
-          if (header.cns) pd.cns = header.cns;
-          if (header.prontuario) pd.record = header.prontuario;
-        } catch (err) {
-          console.error("[FichaAtendimento] header override error", err);
         }
 
         setPatientData(pd);
