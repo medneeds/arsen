@@ -352,7 +352,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     plan, cidPrimary, cidSecondary,
     dischargePredictionLabel,
     uti: isUti ? { admissionReason, originSector, devices, culturesAtb, specialties } : undefined,
-    sapsPending: isUti && sapsAck,
+    sapsPending: isUti, // SAPS 3 sempre pendente em UTI/UCI até finalizar na página /saps3
   });
 
   const handlePrint = () => {
