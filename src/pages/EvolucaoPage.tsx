@@ -462,6 +462,7 @@ const EvolucaoPage = () => {
               sector: livePatient?.sector || initialPatientSector,
             }) || patient.admissionDate}
             patientRecord={prontuarioReal}
+            patientId={initialPatientId || null}
             cidPrimary={cidPrimary}
             cidSecondary={Array.isArray(cidSecondary) ? cidSecondary.join(", ") : cidSecondary}
             onUpdate={updateEvolution}
