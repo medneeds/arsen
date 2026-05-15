@@ -406,7 +406,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           <DischargeQuickActions
             patientId={patient.id}
             patientName={patient.name}
-            fallback={() => goPatient("/alta-desfecho")}
+            fallback={() => setMovementDialogOpen(true)}
           />
         </div>
 
