@@ -18,6 +18,7 @@ import {
   FileText, Printer, RotateCcw, Loader2, ClipboardList, Search,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
 
 const AIH_INSTITUTION = {
   solicitante: "HOSPITAL MUNICIPAL DJALMA MARQUES",
