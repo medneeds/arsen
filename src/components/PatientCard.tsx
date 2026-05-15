@@ -1105,10 +1105,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
       return;
     }
     const updatedPatient = { ...patient };
-    
-    if (field === "diagnoses") {
-      updatedPatient.diagnoses = patient.diagnoses.filter((_, i) => i !== index);
-    } else if (field === "medicalHistory") {
+
+    if (field === "medicalHistory") {
       updatedPatient.medicalHistory = patient.medicalHistory.filter((_, i) => i !== index);
     } else if (field === "relevantExams") {
       updatedPatient.relevantExams = patient.relevantExams.filter((_, i) => i !== index);
