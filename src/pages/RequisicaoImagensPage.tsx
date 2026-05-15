@@ -180,6 +180,7 @@ const RequisicaoImagensPage = () => {
     if (mr) setPatientRecord(mr);
 
     if (reg?.cns) setPatientCNS(reg.cns);
+    if (reg?.cpf) setPatientCPF(formatCPF(reg.cpf));
     if (reg?.birthDate) setPatientDOB(reg.birthDate);
     if (reg?.sex) {
       const s = String(reg.sex).toUpperCase().trim();
