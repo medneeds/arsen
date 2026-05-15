@@ -218,6 +218,20 @@ export function PrintableRequisitionGuide({
   const docPrefix = CATEGORY_PREFIX[request.category] || "REQ";
   const docCode = React.useMemo(() => generateDocCode(docPrefix), [docPrefix]);
 
+  // Hidrata data de nascimento automaticamente a partir do cadastro do paciente.
+  const [resolvedBirth, setResolvedBirth] = React.useState<string | null>(
+    request.patient_birth_date || null,
+  );
+  React.useEffect(() => {
+    if (request.patient_birth_date) { setResolvedBirth(request.patient_birth_date); return; }
+    let alive = true;
+    fetchPatientBirthDate({
+      patient_registry_id: request.patient_registry_id,
+      patient_id: request.patient_id,
+    }).then((d) => { if (alive) setResolvedBirth(d); });
+    return () => { alive = false; };
+  }, [request.patient_birth_date, request.patient_registry_id, request.patient_id]);
+
   // Roteamento: se a requisição é predominantemente de cultura microbiológica,
   // usa o layout hospitalar dedicado (estrutura tabular tipo formulário).
   if (isCultureRequest(items)) {
@@ -225,6 +239,7 @@ export function PrintableRequisitionGuide({
       patient_name: request.patient_name,
       patient_sector: request.patient_sector,
       patient_bed: request.patient_bed,
+      patient_birth_date: resolvedBirth,
       items,
       clinical_indication: request.clinical_indication,
       notes: request.notes,
