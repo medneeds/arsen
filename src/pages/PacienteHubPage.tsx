@@ -45,6 +45,8 @@ export default function PacienteHubPage() {
     patientAge: params.get("patientAge") || "",
   }), [params]);
 
+  const identifiers = usePatientIdentifiers(ctx.patientId, ctx.patientName, currentHospital?.id || null);
+
   const [admissionStatus, setAdmissionStatus] = useState<AdmissionStatus>(null);
   const [statusLoading, setStatusLoading] = useState(true);
   const [admissionOpen, setAdmissionOpen] = useState(false);
