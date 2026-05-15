@@ -113,13 +113,17 @@ export function usePatientIdentifiers(
         if (reg) registryRow = reg;
       }
 
-      // 1d) Fallback: by full name + hospital_unit_id
-      if (!registryRow && patientName && hospitalUnitId) {
+      // 1d) Fallback por nome SOMENTE quando não temos patientId.
+      // ⚠️  Crítico: pacientes "Não Identificados" frequentemente compartilham
+      // o mesmo nome ("NÃO IDENTIFICADO", "DESCONHECIDO", etc). Buscar por nome
+      // quando temos patientId pode trazer o registry de OUTRO paciente NI.
+      if (!registryRow && !patientId && patientName && hospitalUnitId) {
         const { data } = await supabase
           .from("patient_registry")
           .select("*")
           .ilike("full_name", patientName.trim())
           .eq("hospital_unit_id", hospitalUnitId)
+          .eq("is_unidentified", false)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -152,20 +156,28 @@ export function usePatientIdentifiers(
         prontuario = patientMedicalRecord;
       }
 
-      // 3) Atendimento: latest active patient_encounter
+      // 3) Atendimento: latest active patient_encounter.
+      // ⚠️  Só buscamos por patient_id ou registry_id — NUNCA por patient_name,
+      // pois pacientes não identificados podem compartilhar o mesmo nome
+      // e isso traria o atendimento de outro paciente.
       let atendimento: string | null = null;
-      let encounterQuery = supabase
-        .from("patient_encounters")
-        .select("encounter_code, status, created_at")
-        .order("created_at", { ascending: false })
-        .limit(1);
+      if (patientId || registryRow?.id) {
+        let encounterQuery = supabase
+          .from("patient_encounters")
+          .select("encounter_code, status, created_at")
+          .order("created_at", { ascending: false })
+          .limit(1);
 
-      if (patientId) encounterQuery = encounterQuery.eq("patient_id", patientId);
-      else if (patientName) encounterQuery = encounterQuery.eq("patient_name", patientName.trim());
-      if (hospitalUnitId) encounterQuery = encounterQuery.eq("hospital_unit_id", hospitalUnitId);
+        if (patientId) {
+          encounterQuery = encounterQuery.eq("patient_id", patientId);
+        } else if (registryRow?.id) {
+          encounterQuery = encounterQuery.eq("registry_id", registryRow.id);
+        }
+        if (hospitalUnitId) encounterQuery = encounterQuery.eq("hospital_unit_id", hospitalUnitId);
 
-      const { data: enc } = await encounterQuery.maybeSingle();
-      atendimento = enc?.encounter_code || null;
+        const { data: enc } = await encounterQuery.maybeSingle();
+        atendimento = enc?.encounter_code || null;
+      }
 
       if (cancelled) return;
 
