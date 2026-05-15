@@ -108,6 +108,7 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
   const { user } = useAuth();
   const { currentHospital } = useHospital();
   const isUti = useMemo(() => UTI_SECTORS.includes(patient.sector), [patient.sector]);
+  const identifiers = usePatientIdentifiers(patient.id, patient.name, currentHospital?.id || null);
 
   const [loading, setLoading] = useState(true);
   const [d0, setD0] = useState<AdmissionRow | null>(null);
