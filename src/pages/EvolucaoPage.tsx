@@ -175,6 +175,8 @@ const EvolucaoPage = () => {
     if (hasContext && evolutions.length > 0) {
       setDiagnosticsReplicated(true);
     }
+    // Prefill hipóteses (vindas da última evolução com hipóteses ou da admissão)
+    setDiagnosticHypotheses(computePrefillHypotheses());
   };
 
   const handleClearDiagnostics = () => {
@@ -184,6 +186,7 @@ const EvolucaoPage = () => {
     if (hospitalDischargePrediction) updateHospitalDischargePrediction("");
     if (isPalliative) updateIsPalliative(false);
     if (isolationPrecautions) updateIsolationPrecautions("");
+    setDiagnosticHypotheses("");
     setDiagnosticsReplicated(false);
   };
 
@@ -191,7 +194,8 @@ const EvolucaoPage = () => {
     setCreating(true);
     const result = await createEvolution(
       patient.name, patient.bed, patient.unit,
-      newSoap, newVitals, newExam
+      newSoap, newVitals, newExam,
+      diagnosticHypotheses
     );
     setCreating(false);
     if (result) {
