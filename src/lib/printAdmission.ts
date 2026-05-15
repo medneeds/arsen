@@ -2,6 +2,18 @@ import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/prin
 
 export interface AdmissionPrintInput {
   patient: { name: string; bed?: string; sector?: string; age?: string | number };
+  identifiers?: {
+    prontuario?: string | null;
+    atendimento?: string | null;
+    socialName?: string | null;
+    cpf?: string | null;
+    cns?: string | null;
+    birthDate?: string | null; // ISO yyyy-mm-dd
+    sex?: string | null;
+    motherName?: string | null;
+    address?: string | null;
+    phone?: string | null;
+  };
   hospitalName?: string;
   doctorName?: string;
   doctorCrm?: string;
