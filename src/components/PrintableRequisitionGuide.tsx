@@ -57,16 +57,15 @@ async function fetchPatientBirthDate(req: {
     if (req.patient_id) {
       const { data } = await supabase
         .from("patients")
-        .select("patient_registry_id, birth_date")
+        .select("patient_registry_id")
         .eq("id", req.patient_id)
         .maybeSingle();
-      const anyData = data as any;
-      if (anyData?.birth_date) return anyData.birth_date as string;
-      if (anyData?.patient_registry_id) {
+      const regId = (data as any)?.patient_registry_id;
+      if (regId) {
         const { data: reg } = await supabase
           .from("patient_registry")
           .select("birth_date")
-          .eq("id", anyData.patient_registry_id)
+          .eq("id", regId)
           .maybeSingle();
         if (reg?.birth_date) return reg.birth_date as string;
       }
