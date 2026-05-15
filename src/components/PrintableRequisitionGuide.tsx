@@ -11,11 +11,69 @@
 
 import React from "react";
 import DOMPurify from "dompurify";
+import { supabase } from "@/integrations/supabase/client";
 
 const PARECER_ALLOWED_TAGS = ["p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "span", "div"];
 function sanitizeRichHtmlPrint(html: string): string {
   if (!html) return "";
   return DOMPurify.sanitize(html, { ALLOWED_TAGS: PARECER_ALLOWED_TAGS, ALLOWED_ATTR: [] });
+}
+
+/** Calcula idade aproximada em anos a partir de ISO date (YYYY-MM-DD). */
+function ageInYears(iso?: string | null): number | null {
+  if (!iso) return null;
+  const d = new Date(iso.length === 10 ? iso + "T12:00:00" : iso);
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age >= 0 ? age : null;
+}
+
+function fmtBirthDate(iso?: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso.length === 10 ? iso + "T12:00:00" : iso);
+  if (isNaN(d.getTime())) return "—";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+
+/** Busca data de nascimento do paciente nos cadastros (registry → patients). */
+async function fetchPatientBirthDate(req: {
+  patient_registry_id?: string | null;
+  patient_id?: string | null;
+}): Promise<string | null> {
+  try {
+    if (req.patient_registry_id) {
+      const { data } = await supabase
+        .from("patient_registry")
+        .select("birth_date")
+        .eq("id", req.patient_registry_id)
+        .maybeSingle();
+      if (data?.birth_date) return data.birth_date as string;
+    }
+    if (req.patient_id) {
+      const { data } = await supabase
+        .from("patients")
+        .select("patient_registry_id")
+        .eq("id", req.patient_id)
+        .maybeSingle();
+      const regId = (data as any)?.patient_registry_id;
+      if (regId) {
+        const { data: reg } = await supabase
+          .from("patient_registry")
+          .select("birth_date")
+          .eq("id", regId)
+          .maybeSingle();
+        if (reg?.birth_date) return reg.birth_date as string;
+      }
+    }
+  } catch {
+    /* silencioso */
+  }
+  return null;
 }
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -51,6 +109,9 @@ interface PrintableRequisitionGuideProps {
     patient_name: string;
     patient_bed?: string | null;
     patient_sector?: string | null;
+    patient_id?: string | null;
+    patient_registry_id?: string | null;
+    patient_birth_date?: string | null; // ISO YYYY-MM-DD (opcional, busca automática se ausente)
     category: string;
     items: any[];
     priority: string;
@@ -157,6 +218,20 @@ export function PrintableRequisitionGuide({
   const docPrefix = CATEGORY_PREFIX[request.category] || "REQ";
   const docCode = React.useMemo(() => generateDocCode(docPrefix), [docPrefix]);
 
+  // Hidrata data de nascimento automaticamente a partir do cadastro do paciente.
+  const [resolvedBirth, setResolvedBirth] = React.useState<string | null>(
+    request.patient_birth_date || null,
+  );
+  React.useEffect(() => {
+    if (request.patient_birth_date) { setResolvedBirth(request.patient_birth_date); return; }
+    let alive = true;
+    fetchPatientBirthDate({
+      patient_registry_id: request.patient_registry_id,
+      patient_id: request.patient_id,
+    }).then((d) => { if (alive) setResolvedBirth(d); });
+    return () => { alive = false; };
+  }, [request.patient_birth_date, request.patient_registry_id, request.patient_id]);
+
   // Roteamento: se a requisição é predominantemente de cultura microbiológica,
   // usa o layout hospitalar dedicado (estrutura tabular tipo formulário).
   if (isCultureRequest(items)) {
@@ -164,6 +239,7 @@ export function PrintableRequisitionGuide({
       patient_name: request.patient_name,
       patient_sector: request.patient_sector,
       patient_bed: request.patient_bed,
+      patient_birth_date: resolvedBirth,
       items,
       clinical_indication: request.clinical_indication,
       notes: request.notes,
@@ -278,6 +354,14 @@ export function PrintableRequisitionGuide({
             <th style={{ ...thStyle, width: "14%" }}>Leito</th>
             <td style={{ ...tdStyle, width: "18%" }}>
               {request.patient_bed || "—"}
+            </td>
+          </tr>
+          <tr>
+            <th style={thStyle}>Data Nasc.</th>
+            <td style={tdStyle}>{fmtBirthDate(resolvedBirth)}</td>
+            <th style={thStyle}>Idade</th>
+            <td style={tdStyle}>
+              {ageInYears(resolvedBirth) !== null ? `${ageInYears(resolvedBirth)} anos` : "—"}
             </td>
           </tr>
           <tr>
@@ -466,6 +550,15 @@ export async function printRequisitionGuide(
 ) {
   const items = Array.isArray(request.items) ? request.items : [];
 
+  // Resolve data de nascimento (fallback automático para registry/patients)
+  const birthDate: string | null =
+    request.patient_birth_date ||
+    (await fetchPatientBirthDate({
+      patient_registry_id: request.patient_registry_id,
+      patient_id: request.patient_id,
+    }));
+  const ageY = ageInYears(birthDate);
+
   // Roteamento para layout dedicado de cultura microbiológica (padrão hospitalar)
   if (isCultureRequest(items)) {
     return printCultureRequest(
@@ -473,6 +566,7 @@ export async function printRequisitionGuide(
         patient_name: request.patient_name,
         patient_sector: request.patient_sector,
         patient_bed: request.patient_bed,
+        patient_birth_date: birthDate,
         items,
         clinical_indication: request.clinical_indication,
         notes: request.notes,
@@ -510,6 +604,10 @@ export async function printRequisitionGuide(
         <tr>
           <th>Setor</th><td>${escapeHtml(sectorName || "—")}</td>
           <th style="width:14%">Leito</th><td style="width:18%">${escapeHtml(request.patient_bed || "—")}</td>
+        </tr>
+        <tr>
+          <th>Data Nasc.</th><td>${escapeHtml(fmtBirthDate(birthDate))}</td>
+          <th>Idade</th><td>${ageY !== null ? ageY + " anos" : "—"}</td>
         </tr>
         <tr>
           <th>Solicitante</th><td>${escapeHtml(request.requested_by_name || "—")}</td>
