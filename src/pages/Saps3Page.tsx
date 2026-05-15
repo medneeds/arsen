@@ -664,6 +664,36 @@ export default function Saps3Page() {
     // Caminho B — Fluxo de alocação tradicional OU navegação direta com contexto de paciente
     if (!patientNameFromContext) return;
 
+    // ─── Auto-resume: existe uma ficha SAPS 'pending' deste paciente?
+    // Resolve o problema "fichas preenchidas ontem não ficaram salvas para hoje":
+    // ao reabrir /saps3 com o mesmo paciente, em vez de iniciar uma ficha nova,
+    // entramos automaticamente em modo "completar SAPS pendente" da ficha mais recente.
+    (async () => {
+      if (!hospitalId || !stateId) return;
+      let resumeQuery = supabase
+        .from("saps3_assessments" as any)
+        .select("id")
+        .eq("hospital_unit_id", hospitalId)
+        .eq("state_id", stateId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (patientIdParam) {
+        resumeQuery = resumeQuery.eq("patient_id", patientIdParam);
+      } else {
+        resumeQuery = resumeQuery.ilike("patient_name", patientNameFromContext.trim());
+      }
+      const { data: pendingHit } = await resumeQuery.maybeSingle();
+      const hitId = (pendingHit as any)?.id;
+      if (hitId) {
+        const params = new URLSearchParams(searchParams);
+        params.set("completeSapsId", hitId);
+        navigate(`/saps3?${params.toString()}`, { replace: true });
+        toast.info(`Retomando ficha SAPS 3 pendente de ${patientNameFromContext}`);
+      }
+    })();
+
+
     setCompletingSapsId(null);
     setCompletingPatientId(null);
     setSelectedRequest({
