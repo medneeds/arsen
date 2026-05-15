@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { detectUnidentified } from "@/lib/unidentifiedDetector";
 
 export interface PatientIdentifiers {
   /** Número de Prontuário (ex: 26-001-000123-4) */
