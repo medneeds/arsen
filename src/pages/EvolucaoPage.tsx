@@ -463,7 +463,7 @@ const EvolucaoPage = () => {
             }) || patient.admissionDate}
             patientRecord={prontuarioReal}
             cidPrimary={cidPrimary}
-            cidSecondary={cidSecondary}
+            cidSecondary={Array.isArray(cidSecondary) ? cidSecondary.join(", ") : cidSecondary}
             onUpdate={updateEvolution}
             onValidate={validateEvolution}
             onSuspend={suspendEvolution}
