@@ -30,6 +30,8 @@ import { EvolutionTimeline } from "@/components/evolution/EvolutionTimeline";
 import { DiagnosticsPanel } from "@/components/evolution/DiagnosticsPanel";
 import type { Patient } from "@/types/patient";
 import { getEffectiveAdmissionDate } from "@/lib/dihCalc";
+import { parseDiagnosesText, diagnosesArrayToText } from "@/lib/diagnosesText";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PatientHeader {
   name: string;
@@ -117,6 +119,7 @@ const EvolucaoPage = () => {
   const [newExam, setNewExam] = useState({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
   const [creating, setCreating] = useState(false);
   const [diagnosticsReplicated, setDiagnosticsReplicated] = useState(false);
+  const [diagnosticHypotheses, setDiagnosticHypotheses] = useState("");
 
   // CID state — persisted to admission_histories via usePatientCid
   const {
@@ -149,7 +152,19 @@ const EvolucaoPage = () => {
     setNewVitals({ pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" });
     setNewExam({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
     setDiagnosticsReplicated(false);
+    setDiagnosticHypotheses("");
   };
+
+  // Prefill hipóteses ao abrir Nova Evolução: prioriza última evolução com hipóteses,
+  // senão usa diagnoses atuais do paciente (vindo da admissão).
+  const prefillDiagnosticHypotheses = useCallbackPrefill(evolutions, livePatient);
+
+  function useCallbackPrefill(evos: typeof evolutions, lp: typeof livePatient): string {
+    const lastWithHypo = evos.find(e => (e as any).diagnostic_hypotheses);
+    if (lastWithHypo) return (lastWithHypo as any).diagnostic_hypotheses || "";
+    if (lp?.diagnoses?.length) return diagnosesArrayToText(lp.diagnoses);
+    return "";
+  }
 
   // Replicação automática: ao abrir Nova Evolução, se houver evolução anterior,
   // assume-se que CIDs/previsões/paliativo/isolamento já estão preservados na admissão
