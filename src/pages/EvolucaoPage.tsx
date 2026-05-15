@@ -58,13 +58,24 @@ const EvolucaoPage = () => {
   const sectorMap: Record<string, string> = { red: "UTI 1", yellow: "UTI 2", blue: "UCI 1", outside: "UCI 2" };
 
   const [patient] = useState<PatientHeader>(() => {
+    // ⚠️  CRÍTICO: nunca usar dados-demo (L09/L10/L11 = "Maria das Graças")
+    // quando há patientId real na URL — esse override era a causa do PDF de
+    // evolução vir com cabeçalho de outro paciente em UTI 2 leito 10.
+    const hasRealPatient = !!initialPatientId;
     const demoPatients: Record<string, Omit<PatientHeader, "bed" | "unit">> = {
-      L09: { name: initialPatientName || "Iglesio Ferreira da Silva", birthDate: "1953-07-14", age: "72 anos", sex: "Masculino", record: "PRN-2024-08451", admissionDate: "2026-03-15", weight: "78", allergies: "Dipirona, Sulfa" },
+      L09: { name: "Iglesio Ferreira da Silva", birthDate: "1953-07-14", age: "72 anos", sex: "Masculino", record: "PRN-2024-08451", admissionDate: "2026-03-15", weight: "78", allergies: "Dipirona, Sulfa" },
       L10: { name: "Maria das Graças Oliveira", birthDate: "1948-02-22", age: "78 anos", sex: "Feminino", record: "PRN-2024-09102", admissionDate: "2026-03-14", weight: "62", allergies: "NDAM" },
       L11: { name: "José Carlos Mendes", birthDate: "1960-11-03", age: "65 anos", sex: "Masculino", record: "PRN-2024-07833", admissionDate: "2026-03-16", weight: "85", allergies: "Penicilina, AAS" },
     };
-    const demo = demoPatients[initialPatientBed] || { name: initialPatientName, birthDate: "1970-01-15", age: "56 anos", sex: "Masculino", record: "PRN-2024-00000", admissionDate: "2026-03-17", weight: "70", allergies: "NDAM" };
-    return { ...demo, name: demo.name || initialPatientName, bed: initialPatientBed, unit: sectorMap[initialPatientSector] || initialPatientSector };
+    const demo = !hasRealPatient && demoPatients[initialPatientBed]
+      ? demoPatients[initialPatientBed]
+      : { name: "", birthDate: "", age: "", sex: "", record: "", admissionDate: "", weight: "", allergies: "" };
+    return {
+      ...demo,
+      name: hasRealPatient ? initialPatientName : (demo.name || initialPatientName),
+      bed: initialPatientBed,
+      unit: sectorMap[initialPatientSector] || initialPatientSector,
+    };
   });
 
   const {
