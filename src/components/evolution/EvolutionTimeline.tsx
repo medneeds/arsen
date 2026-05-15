@@ -452,10 +452,24 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             evo.patient_name || null,
                             currentHospital?.id || null,
                           );
+                          // Leito/setor ATUAIS do paciente (após realocações),
+                          // não o snapshot gravado em evo.patient_bed.
+                          let currentBed = evo.patient_bed || undefined;
+                          let currentSector = evo.patient_sector || undefined;
+                          if (patientId) {
+                            const { supabase } = await import("@/integrations/supabase/client");
+                            const { data: pRow } = await supabase
+                              .from("patients")
+                              .select("bed_number, sector")
+                              .eq("id", patientId)
+                              .maybeSingle();
+                            if (pRow?.bed_number) currentBed = pRow.bed_number;
+                            if (pRow?.sector) currentSector = pRow.sector;
+                          }
                           await printEvolution(evo, {
                             patientName: resolved.name || evo.patient_name,
-                            patientBed: evo.patient_bed || undefined,
-                            patientSector: evo.patient_sector || undefined,
+                            patientBed: currentBed,
+                            patientSector: currentSector,
                             patientRecord: resolved.prontuario || patientRecord || undefined,
                             patientAtendimento: resolved.atendimento || undefined,
                             patientSocialName: resolved.socialName || undefined,
