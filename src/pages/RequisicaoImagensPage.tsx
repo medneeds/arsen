@@ -597,7 +597,13 @@ const RequisicaoImagensPage = () => {
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">CPF</Label>
-                    <Input value={doctorCPF} onChange={(e) => setDoctorCPF(e.target.value)} placeholder="000.000.000-00" className="font-mono" />
+                    <Input
+                      value={doctorCPF}
+                      onChange={(e) => setDoctorCPF(e.target.value)}
+                      onBlur={(e) => setDoctorCPF(formatCPF(e.target.value))}
+                      placeholder="000.000.000-00"
+                      className="font-mono bg-muted/30"
+                    />
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">Data da Solicitação: <strong>{todayFormatted}</strong></p>
