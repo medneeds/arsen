@@ -37,6 +37,7 @@ import { Skull, FileSignature, ArrowLeftRight, Pencil } from "lucide-react";
 import { MedicalDocumentDialog } from "./MedicalDocumentDialog";
 import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
+import { PatientMovementDialog } from "./PatientMovementDialog";
 import { Printer } from "lucide-react";
 
 interface PatientCockpitProps {
