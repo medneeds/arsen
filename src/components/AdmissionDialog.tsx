@@ -157,6 +157,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   const { currentDepartment } = useDepartment();
   const { user } = useAuth();
   const isUti = useMemo(() => UTI_SECTORS.includes(patient.sector), [patient.sector]);
+  const identifiers = usePatientIdentifiers(patient.id, patient.name, currentHospital?.id || null);
 
   // SAPS 3 acknowledgement (apenas UTI/UCI)
   const [sapsAck, setSapsAck] = useState(false);
