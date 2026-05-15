@@ -115,6 +115,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
         setShowAccessLimits(true);
       } else if (skipAccessLimits) {
         setAccessLimitsShown(true);
+        try { sessionStorage.setItem("access_limits_shown", "1"); } catch {}
       }
     }} />;
   }
