@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { printAdmissionNormaZero } from "@/lib/printAdmission";
+import { resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 
 interface Props {
