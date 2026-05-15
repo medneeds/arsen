@@ -309,6 +309,25 @@ export function PatientMovementDialog({
         printDischargeDocument(requiredDocType, finalDoc);
       }
 
+      // Sinalização de transferência (interna/externa): marca o paciente ANTES
+      // de qualquer desalocação para que a tarja apareça no mapa de leitos.
+      // - Interna: trigger zera o status quando o leito/setor muda (relocação efetivada).
+      // - Externa: status persiste até o setor administrativo liberar fisicamente o leito.
+      if (
+        (subtypeDef.id === "TRANSFERENCIA_INTERNA" || subtypeDef.id === "TRANSFERENCIA_EXTERNA")
+        && (patient as any).id
+      ) {
+        const newAdmissionStatus =
+          subtypeDef.id === "TRANSFERENCIA_INTERNA"
+            ? "transferencia_interna_pendente"
+            : "transferencia_externa_pendente";
+        const { error: trErr } = await supabase
+          .from("patients")
+          .update({ admission_status: newAdmissionStatus, updated_at: new Date().toISOString() })
+          .eq("id", (patient as any).id);
+        if (trErr) throw trErr;
+      }
+
       toast({
         title: `${subtypeDef.label} registrado(a)`,
         description: requiredDocType
