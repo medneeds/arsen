@@ -84,6 +84,13 @@ const INSTITUTION = {
   cnes: "2308762",
 };
 
+/** Formata CPF como 000.000.000-00 (aceita 11 dígitos crus ou já formatado) */
+const formatCPF = (raw: string): string => {
+  const d = (raw || "").replace(/\D/g, "").slice(0, 11);
+  if (d.length !== 11) return raw || "";
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+};
+
 interface SelectedProcedure {
   code: string;
   name: string;
