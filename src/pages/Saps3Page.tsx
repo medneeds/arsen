@@ -729,7 +729,113 @@ export default function Saps3Page() {
     setPao2Fio2(""); setIsVentilated(false);
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
     toast.info(`Preencha o SAPS 3 para ${patientNameFromContext}`);
-  }, [location.state, searchParams, currentDepartment, currentSectorCode]);
+  }, [location.state, searchParams, currentDepartment, currentSectorCode, hospitalId, stateId, navigate]);
+
+  // ─── Chave estável do rascunho local (autosave) ───
+  const draftKey = useMemo(() => {
+    if (!selectedRequest) return null;
+    return (
+      completingSapsId ||
+      selectedRequest.patient_id ||
+      selectedRequest.id ||
+      `name:${(selectedRequest.patient_name || patientName || "").trim().toLowerCase()}`
+    );
+  }, [selectedRequest, completingSapsId, patientName]);
+
+  // ─── Restore: ao entrar no formulário, hidrata campos do rascunho local
+  // (apenas para fichas novas — em modo "completar SAPS pendente" o DB é fonte da verdade)
+  useEffect(() => {
+    if (!draftKey || draftRestored) return;
+    if (completingSapsId) { setDraftRestored(true); return; }
+    const draft = readSapsDraft(draftKey);
+    if (!draft) { setDraftRestored(true); return; }
+    try {
+      if (draft.patientName) setPatientName(draft.patientName);
+      if (draft.age != null) setAge(draft.age);
+      if (Array.isArray(draft.comorbidities)) setComorbidities(draft.comorbidities);
+      if (draft.clinicalHistory) setClinicalHistory(draft.clinicalHistory);
+      if (draft.lifestyleHabits) setLifestyleHabits(draft.lifestyleHabits);
+      if (typeof draft.vasoactiveOnAdmission === "boolean") setVasoactiveOnAdmission(draft.vasoactiveOnAdmission);
+      if (Array.isArray(draft.vasoactiveDrugs)) setVasoactiveDrugs(draft.vasoactiveDrugs);
+      if (draft.losBeforeIcu != null) setLosBeforeIcu(draft.losBeforeIcu);
+      if (draft.admissionSource != null) setAdmissionSource(draft.admissionSource);
+      if (typeof draft.plannedAdmission === "boolean") setPlannedAdmission(draft.plannedAdmission);
+      if (draft.admissionReason != null) setAdmissionReason(draft.admissionReason);
+      if (draft.admissionReasonDetail != null) setAdmissionReasonDetail(draft.admissionReasonDetail);
+      if (draft.surgicalStatus != null) setSurgicalStatus(draft.surgicalStatus);
+      if (draft.surgeryType != null) setSurgeryType(draft.surgeryType);
+      if (draft.infectionAtAdmission != null) setInfectionAtAdmission(draft.infectionAtAdmission);
+      if (draft.sedationStatus != null) setSedationStatus(draft.sedationStatus);
+      if (draft.gcsO != null) setGcsO(draft.gcsO);
+      if (draft.gcsV != null) setGcsV(draft.gcsV);
+      if (draft.gcsM != null) setGcsM(draft.gcsM);
+      if (draft.rassScore != null) setRassScore(draft.rassScore);
+      if (draft.consciousnessReason != null) setConsciousnessReason(draft.consciousnessReason);
+      if (draft.gcsPreSedation != null) setGcsPreSedation(draft.gcsPreSedation);
+      if (draft.hrHighest != null) setHrHighest(draft.hrHighest);
+      if (draft.sbpLowest != null) setSbpLowest(draft.sbpLowest);
+      if (draft.bilirubinHighest != null) setBilirubinHighest(draft.bilirubinHighest);
+      if (draft.tempLowest != null) setTempLowest(draft.tempLowest);
+      if (draft.creatinineHighest != null) setCreatinineHighest(draft.creatinineHighest);
+      if (draft.leukocytes != null) setLeukocytes(draft.leukocytes);
+      if (draft.phLowest != null) setPhLowest(draft.phLowest);
+      if (draft.plateletsLowest != null) setPlateletsLowest(draft.plateletsLowest);
+      if (draft.pao2Fio2 != null) setPao2Fio2(draft.pao2Fio2);
+      if (typeof draft.isVentilated === "boolean") setIsVentilated(draft.isVentilated);
+      if (draft.selectedSector) setSelectedSector(draft.selectedSector);
+      if (draft.selectedBed) setSelectedBed(draft.selectedBed);
+      setDraftSavedAt(draft.savedAt ? new Date(draft.savedAt) : new Date());
+      toast.info("Rascunho local restaurado — continue de onde parou");
+    } catch {}
+    setDraftRestored(true);
+  }, [draftKey, completingSapsId, draftRestored]);
+
+  // ─── Reset do flag de restauração quando troca de paciente/ficha ───
+  useEffect(() => { setDraftRestored(false); }, [draftKey]);
+
+  // ─── Autosave: serializa o formulário em localStorage com debounce 600 ms
+  useEffect(() => {
+    if (!draftKey || !draftRestored) return;
+    const payload = {
+      patientName, age, comorbidities,
+      clinicalHistory, lifestyleHabits,
+      vasoactiveOnAdmission, vasoactiveDrugs,
+      losBeforeIcu, admissionSource, plannedAdmission,
+      admissionReason, admissionReasonDetail, surgicalStatus, surgeryType,
+      infectionAtAdmission,
+      sedationStatus, gcsO, gcsV, gcsM, rassScore, consciousnessReason, gcsPreSedation,
+      hrHighest, sbpLowest, bilirubinHighest, tempLowest, creatinineHighest, leukocytes,
+      phLowest, plateletsLowest, pao2Fio2, isVentilated,
+      selectedSector, selectedBed,
+      savedAt: new Date().toISOString(),
+    };
+    const t = setTimeout(() => {
+      writeSapsDraft(draftKey, payload);
+      setDraftSavedAt(new Date());
+    }, 600);
+    return () => clearTimeout(t);
+  }, [draftKey, draftRestored,
+    patientName, age, comorbidities,
+    clinicalHistory, lifestyleHabits,
+    vasoactiveOnAdmission, vasoactiveDrugs,
+    losBeforeIcu, admissionSource, plannedAdmission,
+    admissionReason, admissionReasonDetail, surgicalStatus, surgeryType,
+    infectionAtAdmission,
+    sedationStatus, gcsO, gcsV, gcsM, rassScore, consciousnessReason, gcsPreSedation,
+    hrHighest, sbpLowest, bilirubinHighest, tempLowest, creatinineHighest, leukocytes,
+    phLowest, plateletsLowest, pao2Fio2, isVentilated,
+    selectedSector, selectedBed]);
+
+  // ─── Helpers para limpar o rascunho após salvar/cancelar
+  const discardDraft = () => {
+    if (draftKey) clearSapsDraft(draftKey);
+    setDraftSavedAt(null);
+    toast.success("Rascunho descartado");
+  };
+  const clearDraftAfterSave = () => {
+    if (draftKey) clearSapsDraft(draftKey);
+    setDraftSavedAt(null);
+  };
 
   // ─── Start admission from pending request ───
   const startAdmission = (req: PendingRequest) => {
