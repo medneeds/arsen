@@ -436,6 +436,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
           state_id: currentState.id,
           department: currentDepartment || patient.department || "URGÊNCIA E EMERGÊNCIA ADULTO",
           evolution_type: "admission",
+          diagnostic_hypotheses: diagnosticHypotheses.trim() || null,
         } as any);
       if (evError) throw evError;
 
