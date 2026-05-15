@@ -322,6 +322,26 @@ function resolveSectorFromContext(input: string | null | undefined, fallbackSect
   return resolveSectorValue(input) || resolveSectorValue(fallbackSector) || "";
 }
 
+/* ───────── Draft (rascunho) — persistência local ─────────
+ * Resolve o problema reportado: "fichas SAPS preenchidas ontem não ficaram
+ * salvas para hoje". Antes, se o usuário fechasse o navegador sem clicar em
+ * "Pré-admitir com SAPS pendente" ou "Pré-admitir no leito", todos os campos
+ * digitados eram perdidos. Agora cada keystroke é serializado em localStorage. */
+const SAPS_DRAFT_PREFIX = "saps3_draft:v1:";
+const sapsDraftKeyFor = (key: string) => `${SAPS_DRAFT_PREFIX}${key}`;
+function readSapsDraft(key: string): any | null {
+  try {
+    const raw = localStorage.getItem(sapsDraftKeyFor(key));
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function writeSapsDraft(key: string, payload: any) {
+  try { localStorage.setItem(sapsDraftKeyFor(key), JSON.stringify(payload)); } catch {}
+}
+function clearSapsDraft(key: string) {
+  try { localStorage.removeItem(sapsDraftKeyFor(key)); } catch {}
+}
+
 export default function Saps3Page() {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
@@ -358,6 +378,10 @@ export default function Saps3Page() {
   // Modo "completar SAPS pendente" (paciente já admitido) — carregado via URL
   const [completingSapsId, setCompletingSapsId] = useState<string | null>(null);
   const [completingPatientId, setCompletingPatientId] = useState<string | null>(null);
+
+  // Rascunho automático em localStorage
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
+  const [draftRestored, setDraftRestored] = useState(false);
 
   // Box I
   const [patientName, setPatientName] = useState("");
@@ -497,7 +521,7 @@ export default function Saps3Page() {
       .eq("hospital_unit_id", hospitalId)
       .eq("state_id", stateId)
       .order("created_at", { ascending: false })
-      .limit(50);
+      .limit(200);
     if (data) setRecords(data as any);
   };
 
@@ -640,6 +664,36 @@ export default function Saps3Page() {
     // Caminho B — Fluxo de alocação tradicional OU navegação direta com contexto de paciente
     if (!patientNameFromContext) return;
 
+    // ─── Auto-resume: existe uma ficha SAPS 'pending' deste paciente?
+    // Resolve o problema "fichas preenchidas ontem não ficaram salvas para hoje":
+    // ao reabrir /saps3 com o mesmo paciente, em vez de iniciar uma ficha nova,
+    // entramos automaticamente em modo "completar SAPS pendente" da ficha mais recente.
+    (async () => {
+      if (!hospitalId || !stateId) return;
+      let resumeQuery = supabase
+        .from("saps3_assessments" as any)
+        .select("id")
+        .eq("hospital_unit_id", hospitalId)
+        .eq("state_id", stateId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (patientIdParam) {
+        resumeQuery = resumeQuery.eq("patient_id", patientIdParam);
+      } else {
+        resumeQuery = resumeQuery.ilike("patient_name", patientNameFromContext.trim());
+      }
+      const { data: pendingHit } = await resumeQuery.maybeSingle();
+      const hitId = (pendingHit as any)?.id;
+      if (hitId) {
+        const params = new URLSearchParams(searchParams);
+        params.set("completeSapsId", hitId);
+        navigate(`/saps3?${params.toString()}`, { replace: true });
+        toast.info(`Retomando ficha SAPS 3 pendente de ${patientNameFromContext}`);
+      }
+    })();
+
+
     setCompletingSapsId(null);
     setCompletingPatientId(null);
     setSelectedRequest({
@@ -675,7 +729,113 @@ export default function Saps3Page() {
     setPao2Fio2(""); setIsVentilated(false);
     setBox1Open(true); setBox2Open(true); setBox3Open(true);
     toast.info(`Preencha o SAPS 3 para ${patientNameFromContext}`);
-  }, [location.state, searchParams, currentDepartment, currentSectorCode]);
+  }, [location.state, searchParams, currentDepartment, currentSectorCode, hospitalId, stateId, navigate]);
+
+  // ─── Chave estável do rascunho local (autosave) ───
+  const draftKey = useMemo(() => {
+    if (!selectedRequest) return null;
+    return (
+      completingSapsId ||
+      selectedRequest.patient_id ||
+      selectedRequest.id ||
+      `name:${(selectedRequest.patient_name || patientName || "").trim().toLowerCase()}`
+    );
+  }, [selectedRequest, completingSapsId, patientName]);
+
+  // ─── Restore: ao entrar no formulário, hidrata campos do rascunho local
+  // (apenas para fichas novas — em modo "completar SAPS pendente" o DB é fonte da verdade)
+  useEffect(() => {
+    if (!draftKey || draftRestored) return;
+    if (completingSapsId) { setDraftRestored(true); return; }
+    const draft = readSapsDraft(draftKey);
+    if (!draft) { setDraftRestored(true); return; }
+    try {
+      if (draft.patientName) setPatientName(draft.patientName);
+      if (draft.age != null) setAge(draft.age);
+      if (Array.isArray(draft.comorbidities)) setComorbidities(draft.comorbidities);
+      if (draft.clinicalHistory) setClinicalHistory(draft.clinicalHistory);
+      if (draft.lifestyleHabits) setLifestyleHabits(draft.lifestyleHabits);
+      if (typeof draft.vasoactiveOnAdmission === "boolean") setVasoactiveOnAdmission(draft.vasoactiveOnAdmission);
+      if (Array.isArray(draft.vasoactiveDrugs)) setVasoactiveDrugs(draft.vasoactiveDrugs);
+      if (draft.losBeforeIcu != null) setLosBeforeIcu(draft.losBeforeIcu);
+      if (draft.admissionSource != null) setAdmissionSource(draft.admissionSource);
+      if (typeof draft.plannedAdmission === "boolean") setPlannedAdmission(draft.plannedAdmission);
+      if (draft.admissionReason != null) setAdmissionReason(draft.admissionReason);
+      if (draft.admissionReasonDetail != null) setAdmissionReasonDetail(draft.admissionReasonDetail);
+      if (draft.surgicalStatus != null) setSurgicalStatus(draft.surgicalStatus);
+      if (draft.surgeryType != null) setSurgeryType(draft.surgeryType);
+      if (draft.infectionAtAdmission != null) setInfectionAtAdmission(draft.infectionAtAdmission);
+      if (draft.sedationStatus != null) setSedationStatus(draft.sedationStatus);
+      if (draft.gcsO != null) setGcsO(draft.gcsO);
+      if (draft.gcsV != null) setGcsV(draft.gcsV);
+      if (draft.gcsM != null) setGcsM(draft.gcsM);
+      if (draft.rassScore != null) setRassScore(draft.rassScore);
+      if (draft.consciousnessReason != null) setConsciousnessReason(draft.consciousnessReason);
+      if (draft.gcsPreSedation != null) setGcsPreSedation(draft.gcsPreSedation);
+      if (draft.hrHighest != null) setHrHighest(draft.hrHighest);
+      if (draft.sbpLowest != null) setSbpLowest(draft.sbpLowest);
+      if (draft.bilirubinHighest != null) setBilirubinHighest(draft.bilirubinHighest);
+      if (draft.tempLowest != null) setTempLowest(draft.tempLowest);
+      if (draft.creatinineHighest != null) setCreatinineHighest(draft.creatinineHighest);
+      if (draft.leukocytes != null) setLeukocytes(draft.leukocytes);
+      if (draft.phLowest != null) setPhLowest(draft.phLowest);
+      if (draft.plateletsLowest != null) setPlateletsLowest(draft.plateletsLowest);
+      if (draft.pao2Fio2 != null) setPao2Fio2(draft.pao2Fio2);
+      if (typeof draft.isVentilated === "boolean") setIsVentilated(draft.isVentilated);
+      if (draft.selectedSector) setSelectedSector(draft.selectedSector);
+      if (draft.selectedBed) setSelectedBed(draft.selectedBed);
+      setDraftSavedAt(draft.savedAt ? new Date(draft.savedAt) : new Date());
+      toast.info("Rascunho local restaurado — continue de onde parou");
+    } catch {}
+    setDraftRestored(true);
+  }, [draftKey, completingSapsId, draftRestored]);
+
+  // ─── Reset do flag de restauração quando troca de paciente/ficha ───
+  useEffect(() => { setDraftRestored(false); }, [draftKey]);
+
+  // ─── Autosave: serializa o formulário em localStorage com debounce 600 ms
+  useEffect(() => {
+    if (!draftKey || !draftRestored) return;
+    const payload = {
+      patientName, age, comorbidities,
+      clinicalHistory, lifestyleHabits,
+      vasoactiveOnAdmission, vasoactiveDrugs,
+      losBeforeIcu, admissionSource, plannedAdmission,
+      admissionReason, admissionReasonDetail, surgicalStatus, surgeryType,
+      infectionAtAdmission,
+      sedationStatus, gcsO, gcsV, gcsM, rassScore, consciousnessReason, gcsPreSedation,
+      hrHighest, sbpLowest, bilirubinHighest, tempLowest, creatinineHighest, leukocytes,
+      phLowest, plateletsLowest, pao2Fio2, isVentilated,
+      selectedSector, selectedBed,
+      savedAt: new Date().toISOString(),
+    };
+    const t = setTimeout(() => {
+      writeSapsDraft(draftKey, payload);
+      setDraftSavedAt(new Date());
+    }, 600);
+    return () => clearTimeout(t);
+  }, [draftKey, draftRestored,
+    patientName, age, comorbidities,
+    clinicalHistory, lifestyleHabits,
+    vasoactiveOnAdmission, vasoactiveDrugs,
+    losBeforeIcu, admissionSource, plannedAdmission,
+    admissionReason, admissionReasonDetail, surgicalStatus, surgeryType,
+    infectionAtAdmission,
+    sedationStatus, gcsO, gcsV, gcsM, rassScore, consciousnessReason, gcsPreSedation,
+    hrHighest, sbpLowest, bilirubinHighest, tempLowest, creatinineHighest, leukocytes,
+    phLowest, plateletsLowest, pao2Fio2, isVentilated,
+    selectedSector, selectedBed]);
+
+  // ─── Helpers para limpar o rascunho após salvar/cancelar
+  const discardDraft = () => {
+    if (draftKey) clearSapsDraft(draftKey);
+    setDraftSavedAt(null);
+    toast.success("Rascunho descartado");
+  };
+  const clearDraftAfterSave = () => {
+    if (draftKey) clearSapsDraft(draftKey);
+    setDraftSavedAt(null);
+  };
 
   // ─── Start admission from pending request ───
   const startAdmission = (req: PendingRequest) => {
@@ -830,6 +990,7 @@ export default function Saps3Page() {
 
         if (asPending) {
           // Manter pendente: NÃO mostra animação de validação. Apenas atualiza e volta para a lista.
+          clearDraftAfterSave();
           setSelectedRequest(null);
           setCompletingSapsId(null);
           setCompletingPatientId(null);
@@ -853,6 +1014,7 @@ export default function Saps3Page() {
           age: age ? `${age} anos` : null,
           mode: "validation",
         });
+        clearDraftAfterSave();
         setSelectedRequest(null);
         setCompletingSapsId(null);
         setCompletingPatientId(null);
@@ -1019,6 +1181,7 @@ export default function Saps3Page() {
         sectorCode: selectedSector,
         age: age ? `${age} anos` : null,
       });
+      clearDraftAfterSave();
       setSelectedRequest(null);
       loadPendingRequests();
       loadRecords();
