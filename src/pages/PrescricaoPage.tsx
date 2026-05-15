@@ -3586,7 +3586,13 @@ const PrescricaoPage = () => {
     };
   });
 
-  const initialDemoItems = useMemo(() => initialPatientBed ? getDemoPrescriptionItems(initialPatientBed) : [], []);
+  // Itens-demo só em modo apresentação (sem patientId real). Caso contrário,
+  // o paciente real receberia uma prescrição-fantasma de demo.
+  const initialDemoItems = useMemo(() => {
+    const hasRealPatient = !!searchParams.get('patientId');
+    return (!hasRealPatient && initialPatientBed) ? getDemoPrescriptionItems(initialPatientBed) : [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [items, setItems] = useState<PrescriptionItem[]>(initialDemoItems);
   const [activeTab, setActiveTab] = useState<PrescriptionCategory>(initialDemoItems.length > 0 ? 'medication' : 'nutrition');
   // Sugestões de posologia para o último item adicionado
