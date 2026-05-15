@@ -4422,11 +4422,50 @@ const PrescricaoPage = () => {
 
   // Sincroniza Nº de Prontuário (cadastro/registry) com o cabeçalho do PDF
   const urlPatientIdForRecord = searchParams.get('patientId');
-  const { prontuario: registryProntuario, atendimento: registryAtendimento } = usePatientIdentifiers(
+  const {
+    prontuario: registryProntuario,
+    atendimento: registryAtendimento,
+    registry: registryFull,
+  } = usePatientIdentifiers(
     urlPatientIdForRecord,
     patient.name || null,
     currentHospital?.id ?? null,
   );
+
+  // ⚠️  Sincroniza nome canônico, nome social, mãe, endereço, nascimento e sexo
+  // a partir do `patient_registry` resolvido (com guarda anti-NI). Isso garante
+  // que o cabeçalho do PDF de prescrição/evolução jamais apareça com dados de
+  // outro paciente — bug observado em UTI 2 leito 10 e potencialmente em
+  // UCI 1/2, UCC, Enfermaria de Transição, Vascular, Neuro, Clín. Cirúrgica.
+  useEffect(() => {
+    if (!registryFull || !urlPatientIdForRecord) return;
+    setPatient(prev => {
+      const next = { ...prev };
+      let changed = false;
+      const apply = (key: keyof PatientHeader, value: string | null | undefined) => {
+        const v = (value ?? '').toString();
+        if (v && v !== (prev[key] as string | undefined)) {
+          (next as any)[key] = v;
+          changed = true;
+        }
+      };
+      apply('name', registryFull.fullName);
+      apply('motherName', registryFull.motherName);
+      apply('birthDate', registryFull.birthDate);
+      apply('sex', registryFull.sex);
+      const composedAddress = [registryFull.address, registryFull.neighborhood]
+        .filter(Boolean)
+        .join(', ');
+      apply('address', composedAddress);
+      const composedCity =
+        registryFull.city && registryFull.state
+          ? `${registryFull.city}/${registryFull.state}`
+          : registryFull.city || registryFull.state || '';
+      apply('city', composedCity);
+      return changed ? next : prev;
+    });
+  }, [registryFull, urlPatientIdForRecord]);
+
   useEffect(() => {
     if (registryProntuario && registryProntuario !== patient.record) {
       setPatient(prev => ({ ...prev, record: registryProntuario }));
