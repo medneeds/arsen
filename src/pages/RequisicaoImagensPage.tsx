@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useHospital } from "@/contexts/HospitalContext";
+import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
