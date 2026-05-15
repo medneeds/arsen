@@ -811,8 +811,15 @@ export default function Saps3Page() {
     };
     const t = setTimeout(() => {
       writeSapsDraft(draftKey, payload);
-      setDraftSavedAt(new Date());
-    }, 600);
+      // Evita re-render a cada tecla: só atualiza quando o minuto muda
+      setDraftSavedAt((prev) => {
+        const now = new Date();
+        if (prev && Math.floor(prev.getTime() / 60000) === Math.floor(now.getTime() / 60000)) {
+          return prev;
+        }
+        return now;
+      });
+    }, 1500);
     return () => clearTimeout(t);
   }, [draftKey, draftRestored,
     patientName, age, comorbidities,
