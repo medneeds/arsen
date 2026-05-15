@@ -114,6 +114,7 @@ const RequisicaoImagensPage = () => {
   const [patientName, setPatientName] = useState("");
   const [patientRecord, setPatientRecord] = useState("");
   const [patientCNS, setPatientCNS] = useState("");
+  const [patientCPF, setPatientCPF] = useState("");
   const [patientDOB, setPatientDOB] = useState("");
   const [patientSex, setPatientSex] = useState("");
   const [patientMotherName, setPatientMotherName] = useState("");
