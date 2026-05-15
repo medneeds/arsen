@@ -645,7 +645,18 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                 </div>
               </Section>
 
-              <Section icon={CalendarDays} title="Previsão de alta" hint="Dias e data sincronizados" tone="amber">
+              <Section icon={Stethoscope} title="Hipóteses Diagnósticas (texto livre)" hint="Uma hipótese por linha — sincroniza automaticamente com o mapa de leitos" tone="blue">
+                <Textarea
+                  value={diagnosticHypotheses}
+                  onChange={(e) => setDiagnosticHypotheses(e.target.value)}
+                  rows={4}
+                  placeholder={"Ex.:\nSepse de foco pulmonar\nSuspeita de TEP associado\nDM2 descompensado"}
+                  className="mt-1 font-mono text-xs"
+                />
+                <p className="text-[11px] text-slate-600 mt-1">
+                  📝 Cada linha vira uma hipótese no card do paciente. Esse campo passa a ser <strong>somente leitura no mapa</strong> e só é atualizado por nova evolução clínica.
+                </p>
+              </Section>
                 <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
                   <div>
                     <Label className="text-xs flex items-center gap-1"><Hash className="h-3 w-3" /> Dias de internação previstos</Label>
