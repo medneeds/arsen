@@ -48,6 +48,9 @@ export function usePatientIdentifiers(
     loading: false,
   });
 
+  const [reloadTick, setReloadTick] = useState(0);
+  const registryIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
     if (!patientId && !patientName) {
