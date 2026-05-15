@@ -301,25 +301,23 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     plan: !plan.trim(),
     cidPrimary: !cidPrimary.trim(),
     prediction: !noPrediction && !predictionDate,
-    sapsAck: isUti && !sapsAck,
   };
-  // Itens obrigatórios para VALIDAR a admissão (CID/previsão são recomendados, não bloqueantes)
+  // Itens obrigatórios para VALIDAR a admissão (CID/previsão/SAPS são recomendados, não bloqueantes)
+  // SAPS 3 segue como tarefa pendente paralela (cronômetro de 24 h), mas não bloqueia validar/imprimir admissão.
   const missingList = [
     missing.hda && "HDA",
     missing.examGeneral && "Estado geral (exame físico)",
     missing.plan && "Conduta inicial",
-    missing.sapsAck && "Ciência da SAPS 3",
   ].filter(Boolean) as string[];
 
   const validate = (): string | null => {
     if (missing.hda) return "História da Doença Atual (HDA) é obrigatória";
     if (missing.examGeneral) return "Estado geral (exame físico) é obrigatório";
     if (missing.plan) return "Conduta inicial é obrigatória";
-    if (missing.sapsAck) return "Declare ciência de que a ficha SAPS 3 está pendente (24h)";
     return null;
   };
 
-  const canValidate = !missing.hda && !missing.examGeneral && !missing.plan && !missing.sapsAck;
+  const canValidate = !missing.hda && !missing.examGeneral && !missing.plan;
 
   const handleSaveDraft = () => {
     try {
@@ -354,7 +352,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
     plan, cidPrimary, cidSecondary,
     dischargePredictionLabel,
     uti: isUti ? { admissionReason, originSector, devices, culturesAtb, specialties } : undefined,
-    sapsPending: isUti && sapsAck,
+    sapsPending: isUti, // SAPS 3 sempre pendente em UTI/UCI até finalizar na página /saps3
   });
 
   const handlePrint = () => {
@@ -686,17 +684,18 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
                   <div><Label className="text-xs">Especialidades em conjunto</Label><Input value={specialties} onChange={e => setSpecialties(e.target.value)} className="mt-1" /></div>
                 </Section>
 
-                <Section icon={ShieldCheck} title="Ficha SAPS 3 — Ciência" tone="amber">
+                <Section icon={ShieldCheck} title="Ficha SAPS 3 — Aviso" tone="amber">
                   <p className="text-[11px] text-slate-700 leading-relaxed">
-                    A admissão UTI/UCI exige a <strong>Ficha SAPS 3</strong>. O preenchimento pode ser concluído em até{" "}
+                    A admissão UTI/UCI gera automaticamente uma <strong>Ficha SAPS 3 pendente</strong>, com prazo de{" "}
                     <strong className="text-amber-700">24 horas</strong> a partir da pré-admissão (janela operacional / AMIB).
-                    Após esse prazo, prescrição, evolução, requisições, docs e histórico serão <strong>bloqueados</strong> até a finalização.
+                    A admissão pode ser <strong>validada e impressa normalmente</strong>; a SAPS 3 segue como tarefa paralela
+                    no Painel Clínico até ser finalizada em <code>/saps3</code>.
                   </p>
                   <label className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50/70 p-3 cursor-pointer select-none">
                     <Checkbox checked={sapsAck} onCheckedChange={v => setSapsAck(v === true)} className="mt-0.5" />
                     <span className="text-xs text-slate-800">
-                      <strong className="uppercase tracking-wide text-amber-800">Declaro ciência</strong> de que a ficha SAPS 3 está pendente
-                      e me comprometo a finalizá-la <strong>dentro de 24 h</strong> a partir da pré-admissão.
+                      <strong className="uppercase tracking-wide text-amber-800">Ciência (opcional)</strong> — declaro estar
+                      ciente de que a ficha SAPS 3 está pendente e deve ser finalizada em até 24 h.
                     </span>
                   </label>
                 </Section>
