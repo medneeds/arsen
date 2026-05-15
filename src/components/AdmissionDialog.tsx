@@ -217,6 +217,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         setPhysGeneral(d.physGeneral ?? ""); setPhysCv(d.physCv ?? "");
         setPhysResp(d.physResp ?? ""); setPhysAbd(d.physAbd ?? ""); setPhysExt(d.physExt ?? ""); setPhysNeuro(d.physNeuro ?? "");
         setPlan(d.plan ?? ""); setCidPrimary(d.cidPrimary ?? ""); setCidSecondary(d.cidSecondary ?? "");
+        setDiagnosticHypotheses(d.diagnosticHypotheses ?? "");
         setNoPrediction(!!d.noPrediction);
         if (d.predictionDate) setPredictionDate(d.predictionDate);
         if (d.predictionDays) setPredictionDays(d.predictionDays);
