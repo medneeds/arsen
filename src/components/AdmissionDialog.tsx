@@ -449,11 +449,13 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         sapsStart = (pRow as any)?.created_at || now;
       }
 
+      const parsedDiagnoses = parseDiagnosesText(diagnosticHypotheses);
       const baseUpdate: Record<string, any> = {
         admission_status: "admitido",
         admitted_at: now,
         uti_discharge_prediction: dischargePredictionLabel,
         admission_history: admissionHistoryText,
+        ...(parsedDiagnoses.length > 0 ? { diagnoses: parsedDiagnoses } : {}),
       };
       if (isUti) {
         Object.assign(baseUpdate, {
