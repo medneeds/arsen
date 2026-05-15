@@ -1383,7 +1383,9 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             isDeleting && "animate-[slide-out-left_0.3s_ease-out_forwards]",
             allocationStatusBarConfig && "rounded-t-none",
             patient.admissionStatus === 'alta_dada' && "ring-1 ring-emerald-400/40 bg-emerald-50/30 dark:bg-emerald-950/10 grayscale-[15%] opacity-95",
-            patient.admissionStatus === 'obito' && "ring-1 ring-slate-500/50 bg-slate-100/50 dark:bg-slate-900/30 grayscale-[35%] opacity-90"
+            patient.admissionStatus === 'obito' && "ring-1 ring-slate-500/50 bg-slate-100/50 dark:bg-slate-900/30 grayscale-[35%] opacity-90",
+            patient.admissionStatus === 'transferencia_interna_pendente' && "ring-1 ring-sky-400/50 bg-sky-50/30 dark:bg-sky-950/10",
+            patient.admissionStatus === 'transferencia_externa_pendente' && "ring-1 ring-indigo-400/50 bg-indigo-50/30 dark:bg-indigo-950/10"
           )}
         >
         <DischargeStatusRibbon status={patient.admissionStatus} />

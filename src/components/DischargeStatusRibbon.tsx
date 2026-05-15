@@ -1,6 +1,14 @@
 import { cn } from "@/lib/utils";
 
-type DischargeStatus = "alta_dada" | "obito" | "transferido" | undefined | null | string;
+type DischargeStatus =
+  | "alta_dada"
+  | "obito"
+  | "transferido"
+  | "transferencia_interna_pendente"
+  | "transferencia_externa_pendente"
+  | undefined
+  | null
+  | string;
 
 interface DischargeStatusRibbonProps {
   status: DischargeStatus;
@@ -17,13 +25,27 @@ interface DischargeStatusRibbonProps {
  * Pré-requisito: o card pai precisa ter `relative` e `overflow-hidden`.
  */
 export function DischargeStatusRibbon({ status, className }: DischargeStatusRibbonProps) {
-  if (status !== "alta_dada" && status !== "obito" && status !== "transferido") return null;
+  const known = [
+    "alta_dada",
+    "obito",
+    "transferido",
+    "transferencia_interna_pendente",
+    "transferencia_externa_pendente",
+  ];
+  if (!status || !known.includes(status)) return null;
 
   const config = {
     alta_dada: { label: "ALTA", bg: "bg-emerald-600" },
     obito: { label: "ÓBITO", bg: "bg-slate-700" },
     transferido: { label: "TRANSF.", bg: "bg-sky-600" },
-  }[status as "alta_dada" | "obito" | "transferido"];
+    transferencia_interna_pendente: { label: "TRANSF. INT.", bg: "bg-sky-600" },
+    transferencia_externa_pendente: { label: "TRANSF. EXT.", bg: "bg-indigo-600" },
+  }[status as
+    | "alta_dada"
+    | "obito"
+    | "transferido"
+    | "transferencia_interna_pendente"
+    | "transferencia_externa_pendente"];
 
   return (
     <div
