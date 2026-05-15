@@ -322,6 +322,26 @@ function resolveSectorFromContext(input: string | null | undefined, fallbackSect
   return resolveSectorValue(input) || resolveSectorValue(fallbackSector) || "";
 }
 
+/* ───────── Draft (rascunho) — persistência local ─────────
+ * Resolve o problema reportado: "fichas SAPS preenchidas ontem não ficaram
+ * salvas para hoje". Antes, se o usuário fechasse o navegador sem clicar em
+ * "Pré-admitir com SAPS pendente" ou "Pré-admitir no leito", todos os campos
+ * digitados eram perdidos. Agora cada keystroke é serializado em localStorage. */
+const SAPS_DRAFT_PREFIX = "saps3_draft:v1:";
+const sapsDraftKeyFor = (key: string) => `${SAPS_DRAFT_PREFIX}${key}`;
+function readSapsDraft(key: string): any | null {
+  try {
+    const raw = localStorage.getItem(sapsDraftKeyFor(key));
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function writeSapsDraft(key: string, payload: any) {
+  try { localStorage.setItem(sapsDraftKeyFor(key), JSON.stringify(payload)); } catch {}
+}
+function clearSapsDraft(key: string) {
+  try { localStorage.removeItem(sapsDraftKeyFor(key)); } catch {}
+}
+
 export default function Saps3Page() {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
