@@ -550,6 +550,15 @@ export async function printRequisitionGuide(
 ) {
   const items = Array.isArray(request.items) ? request.items : [];
 
+  // Resolve data de nascimento (fallback automático para registry/patients)
+  const birthDate: string | null =
+    request.patient_birth_date ||
+    (await fetchPatientBirthDate({
+      patient_registry_id: request.patient_registry_id,
+      patient_id: request.patient_id,
+    }));
+  const ageY = ageInYears(birthDate);
+
   // Roteamento para layout dedicado de cultura microbiológica (padrão hospitalar)
   if (isCultureRequest(items)) {
     return printCultureRequest(
@@ -557,6 +566,7 @@ export async function printRequisitionGuide(
         patient_name: request.patient_name,
         patient_sector: request.patient_sector,
         patient_bed: request.patient_bed,
+        patient_birth_date: birthDate,
         items,
         clinical_indication: request.clinical_indication,
         notes: request.notes,
