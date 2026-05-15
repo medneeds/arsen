@@ -943,6 +943,12 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         patientId={patient.id}
         patientName={patient.name}
       />
+      <PatientMovementDialog
+        patient={patient}
+        movementType={null}
+        isOpen={movementDialogOpen}
+        onClose={() => setMovementDialogOpen(false)}
+      />
     </TooltipProvider>
   );
 }
