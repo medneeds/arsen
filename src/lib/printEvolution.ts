@@ -44,6 +44,8 @@ export interface PrintEvolutionContext {
   patientBed?: string;
   patientSector?: string;
   patientRecord?: string;
+  cidPrimary?: string;
+  cidSecondary?: string;
 }
 
 export const printEvolution = async (
