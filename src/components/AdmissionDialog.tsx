@@ -181,6 +181,7 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
   const [plan, setPlan] = useState("");
   const [cidPrimary, setCidPrimary] = useState("");
   const [cidSecondary, setCidSecondary] = useState("");
+  const [diagnosticHypotheses, setDiagnosticHypotheses] = useState("");
 
   // Discharge prediction — sincronização dias <-> data
   const [noPrediction, setNoPrediction] = useState(false);
