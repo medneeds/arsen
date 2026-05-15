@@ -39,6 +39,7 @@ import { PatientRoundPrintDialog } from "./PatientRoundPrintDialog";
 import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
 import { Printer } from "lucide-react";
+import { PatientIdentityHeader } from "./PatientIdentityHeader";
 
 interface PatientCockpitProps {
   patient: Patient | null;
