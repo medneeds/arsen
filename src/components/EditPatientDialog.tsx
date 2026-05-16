@@ -65,11 +65,8 @@ export function EditPatientDialog({
   // Sub-dialog states
   const [responsibilityOpen, setResponsibilityOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
-  const [movementOpen, setMovementOpen] = useState(false);
   const [recordEditOpen, setRecordEditOpen] = useState(false);
-  const [movementType, setMovementType] = useState<
-    "ALTA" | "ÓBITO" | "TRANSFERÊNCIA" | null
-  >(null);
+  const [operationalRelocOpen, setOperationalRelocOpen] = useState(false);
 
   useEffect(() => {
     if (open) setFormData(patient);
@@ -80,11 +77,6 @@ export function EditPatientDialog({
   const handleSave = () => {
     onSave(formData);
     onOpenChange(false);
-  };
-
-  const openMovement = (type: "ALTA" | "ÓBITO" | "TRANSFERÊNCIA") => {
-    setMovementType(type);
-    setMovementOpen(true);
   };
 
   const utiAdmissionDate = (formData.utiAdmissionDate || [])[0] || "";
