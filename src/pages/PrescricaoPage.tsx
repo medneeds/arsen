@@ -5275,7 +5275,7 @@ const PrescricaoPage = () => {
     try {
       let query = supabase
         .from('prescriptions')
-        .select('id, patient_name, status, version, created_at, digital_signature')
+        .select('id, patient_name, status, version, created_at, digital_signature, items')
         .eq('hospital_unit_id', currentHospital.id)
         .eq('state_id', currentState.id)
         .eq('patient_name', patient.name.trim())
@@ -5290,10 +5290,17 @@ const PrescricaoPage = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      setSavedPrescriptions((data || []).map(d => ({
-        ...d,
-        digital_signature: d.digital_signature as unknown as DigitalSignature | null,
-      })));
+      setSavedPrescriptions((data || []).map(d => {
+        const items = (Array.isArray(d.items) ? d.items : []) as PrescriptionItem[];
+        const hasValidatedItem = items.some((it: any) => it && it.validated === true);
+        const isValidated = d.status !== 'draft' || !!d.digital_signature || hasValidatedItem;
+        return {
+          ...d,
+          items,
+          digital_signature: d.digital_signature as unknown as DigitalSignature | null,
+          isValidated,
+        };
+      }));
     } catch (err) {
       console.error('Error fetching prescriptions:', err);
     } finally {
