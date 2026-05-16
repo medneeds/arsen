@@ -5916,6 +5916,65 @@ const PrescricaoPage = () => {
     return () => clearTimeout(handle);
   }, [patient.allergies, allergiesPatientId]);
 
+  // ===== Sincroniza PESO (kg) com a Cockpit (patients.uti_weight_kg) =====
+  // Mesmo padrão de alergias: hidratação inicial + realtime + write debounced.
+  // Fonte única: numeric no DB; UI mantém string para edição amigável.
+  const lastSyncedWeightRef = useRef<string | null>(null);
+  const weightHydratedRef = useRef(false);
+
+  useEffect(() => {
+    if (!allergiesPatientId) return;
+    let cancelled = false;
+    const applyRemote = (raw: number | string | null | undefined) => {
+      if (cancelled) return;
+      const remoteStr = raw === null || raw === undefined || raw === '' ? '' : String(raw).replace('.', ',');
+      if (weightHydratedRef.current && remoteStr === (lastSyncedWeightRef.current ?? '')) return;
+      lastSyncedWeightRef.current = remoteStr;
+      weightHydratedRef.current = true;
+      setPatient(prev => (prev.weight === remoteStr ? prev : { ...prev, weight: remoteStr }));
+    };
+
+    (async () => {
+      const { data, error } = await supabase
+        .from('patients')
+        .select('uti_weight_kg' as any)
+        .eq('id', allergiesPatientId)
+        .maybeSingle();
+      if (!error) applyRemote((data as any)?.uti_weight_kg as number | null);
+      else weightHydratedRef.current = true;
+    })();
+
+    const channel = supabase
+      .channel(`prescricao-weight-${allergiesPatientId}`)
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'patients', filter: `id=eq.${allergiesPatientId}` },
+        (payload) => applyRemote((payload.new as any)?.uti_weight_kg))
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, [allergiesPatientId]);
+
+  useEffect(() => {
+    if (!allergiesPatientId || !weightHydratedRef.current) return;
+    const raw = (patient.weight ?? '').trim();
+    const nextStr = raw; // canonical UI string (with comma)
+    if (nextStr === (lastSyncedWeightRef.current ?? '')) return;
+    const parsed = raw === '' ? null : Number(raw.replace(',', '.'));
+    if (parsed !== null && (!isFinite(parsed) || parsed <= 0 || parsed > 500)) return; // ignora valor inválido
+    const handle = setTimeout(async () => {
+      const { error } = await supabase
+        .from('patients')
+        .update({ uti_weight_kg: parsed } as any)
+        .eq('id', allergiesPatientId);
+      if (!error) {
+        lastSyncedWeightRef.current = nextStr;
+      } else {
+        console.error('Falha ao sincronizar peso com Cockpit:', error);
+        toast.error('Não foi possível sincronizar peso com a Cockpit', { description: error.message });
+      }
+    }, 500);
+    return () => clearTimeout(handle);
+  }, [patient.weight, allergiesPatientId]);
+
 
   const isSimpleCategory = (cat: PrescriptionCategory) => ['care'].includes(cat);
   const canPrescribe = patient.weight.trim() !== '' && patient.allergies.trim() !== '';
