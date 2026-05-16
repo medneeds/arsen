@@ -2114,9 +2114,25 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           )}
           <div
             {...(isLocked ? ({ inert: '' } as any) : {})}
-            className={cn(isLocked && "opacity-80")}
+            className={cn(
+              isLocked && "opacity-80",
+              !isLocked && missingFields.length > 0 && "rounded-md ring-1 ring-red-300/70 ring-offset-1 ring-offset-background p-1.5 -m-1.5"
+            )}
             aria-disabled={isLocked || undefined}
           >
+          {!isLocked && missingFields.length > 0 && item.status === 'active' && (
+            <div className="mb-1.5 flex items-start gap-1.5 px-2 py-1 rounded bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-900">
+              <AlertTriangle className="h-3 w-3 mt-0.5 text-red-600 dark:text-red-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide">
+                  Pendente para validação — preencha:
+                </p>
+                <p className="text-[10px] text-red-700/90 dark:text-red-300/90">
+                  {missingFields.join(' · ')}
+                </p>
+              </div>
+            </div>
+          )}
           {item.status === 'active' && item.category === 'nutrition' && (
             <NutritionFields item={item} onUpdate={onUpdate} />
           )}
