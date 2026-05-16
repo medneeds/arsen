@@ -6109,6 +6109,18 @@ const PrescricaoPage = () => {
                       </button>
                     ))}
                   </div>
+                ) : historyDate && prescriptionDateKeys.size > 0 ? (
+                  <div className="px-1 py-2 space-y-1.5">
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">
+                      Nenhuma prescrição nesta data.
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Existem prescrições deste paciente em {prescriptionDateKeys.size} {prescriptionDateKeys.size === 1 ? 'outra data' : 'outras datas'} (marcadas no calendário com ●).
+                    </p>
+                    <Button variant="outline" size="sm" className="w-full h-7 text-[11px] mt-1" onClick={() => setHistoryDate(undefined)}>
+                      Limpar filtro e ver todas
+                    </Button>
+                  </div>
                 ) : (
                   <p className="text-[11px] text-muted-foreground italic px-1 py-2">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
                 )}
