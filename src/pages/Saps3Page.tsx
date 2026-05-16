@@ -988,20 +988,53 @@ export default function Saps3Page() {
     pending_since: statusVal === 'pending' ? new Date().toISOString() : null,
   });
 
+  // ─── Checklist de validação (tempo real) ───
+  type MissingItem = { id: string; label: string; anchor: string; hint?: string };
+  const missingFields = useMemo<MissingItem[]>(() => {
+    const out: MissingItem[] = [];
+    if (!patientName.trim()) out.push({ id: "name", label: "Nome do paciente", anchor: "saps-banner" });
+    if (!hospitalId || !stateId) out.push({ id: "hosp", label: "Hospital / Estado", anchor: "saps-banner", hint: "Selecione no topo da página" });
+    if (!completingSapsId) {
+      if (!selectedSector) out.push({ id: "sector", label: "Setor da UTI", anchor: "saps-bed" });
+      if (!selectedBed) out.push({ id: "bed", label: "Leito de destino", anchor: "saps-bed" });
+    }
+    if (!sedationStatus) {
+      out.push({ id: "sed", label: "Avaliação de consciência (sedoanalgesia/VM)", anchor: "saps-conscious", hint: "Escolha Não / Sedoanalgesia / Intubado sem sedação" });
+    } else if (sedationStatus === "no" && (!gcsO || !gcsV || !gcsM)) {
+      out.push({ id: "gcs", label: "Glasgow completo (O, V, M)", anchor: "saps-conscious", hint: "Preencha as 3 componentes (faixas: O 1-4, V 1-5, M 1-6)" });
+    } else if (sedationStatus === "intubated_no_sedation" && (!gcsO || !gcsM)) {
+      out.push({ id: "gcst", label: "Glasgow-T (Ocular e Motor)", anchor: "saps-conscious", hint: "V é fixo em 1T quando intubado sem sedação" });
+    } else if (sedationStatus === "sedated" && rassScore === "") {
+      out.push({ id: "rass", label: "Pontuação RASS", anchor: "saps-conscious", hint: "Selecione um valor de -5 a +4" });
+    }
+    return out;
+  }, [patientName, hospitalId, stateId, completingSapsId, selectedSector, selectedBed, sedationStatus, gcsO, gcsV, gcsM, rassScore]);
+
+  const focusAnchor = (anchor: string) => {
+    if (typeof document === "undefined") return;
+    const el = document.querySelector(`[data-saps-anchor="${anchor}"]`) as HTMLElement | null;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("ring-2", "ring-destructive", "ring-offset-2", "transition-all");
+    window.setTimeout(() => {
+      el.classList.remove("ring-2", "ring-destructive", "ring-offset-2");
+    }, 2400);
+  };
+
   // ─── Save: SAPS3 + finalize allocation/admission ───
   const handleSave = async (asPending = false) => {
-    if (!patientName.trim()) { toast.error("Nome do paciente é obrigatório"); return; }
-    // No fluxo "completar SAPS pendente" o paciente já está no leito — não exigimos seleção de setor/leito.
+    // Validação unificada — pendente exige apenas identidade + leito; finalização exige checklist completa.
+    if (!patientName.trim()) { toast.error("Nome do paciente é obrigatório"); focusAnchor("saps-banner"); return; }
+    if (!hospitalId || !stateId) { toast.error("Hospital / Estado não selecionado"); focusAnchor("saps-banner"); return; }
     if (!completingSapsId) {
-      if (!selectedSector) { toast.error("Selecione o setor da UTI"); return; }
-      if (!selectedBed) { toast.error("Selecione o leito"); return; }
+      if (!selectedSector) { toast.error("Selecione o setor da UTI"); focusAnchor("saps-bed"); return; }
+      if (!selectedBed) { toast.error("Selecione o leito"); focusAnchor("saps-bed"); return; }
     }
-    if (!hospitalId || !stateId) { toast.error("Hospital/Estado não selecionado"); return; }
-    if (!asPending) {
-      if (!sedationStatus) { toast.error("Responda a avaliação de consciência (sedoanalgesia/VM)"); return; }
-      if (sedationStatus === "no" && (!gcsO || !gcsV || !gcsM)) { toast.error("Preencha O, V e M do Glasgow"); return; }
-      if (sedationStatus === "intubated_no_sedation" && (!gcsO || !gcsM)) { toast.error("Preencha Ocular e Motor do Glasgow (Verbal = 1T)"); return; }
-      if (sedationStatus === "sedated" && rassScore === "") { toast.error("Selecione a pontuação RASS (-5 a +4)"); return; }
+    if (!asPending && missingFields.length > 0) {
+      const first = missingFields[0];
+      toast.error(`Faltam ${missingFields.length} item(s) para validar: ${missingFields.map(f => f.label).join(" · ")}`, { duration: 6000 });
+      focusAnchor(first.anchor);
+      return;
     }
 
     // ─── Caminho "Completar SAPS pendente" — apenas atualiza a ficha existente ───
