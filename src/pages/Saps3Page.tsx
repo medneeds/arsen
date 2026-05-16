@@ -476,6 +476,7 @@ export default function Saps3Page() {
   const [box1Open, setBox1Open] = useState(true);
   const [box2Open, setBox2Open] = useState(true);
   const [box3Open, setBox3Open] = useState(true);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   // ─── Calculated Scores ───
   const scores = useMemo(() => {
