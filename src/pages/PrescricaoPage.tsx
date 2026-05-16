@@ -5329,6 +5329,34 @@ const PrescricaoPage = () => {
       if (!snap || snap.status !== 'draft') {
         throw new Error("Esta prescrição não está mais como rascunho.");
       }
+      // 🔒 Blindagem 1: nunca apagar se tiver assinatura digital (mesmo que status==='draft' por bug)
+      if (snap.digital_signature) {
+        throw new Error("Esta prescrição possui ASSINATURA DIGITAL e não pode ser excluída — mesmo marcada como rascunho.");
+      }
+      // 🔒 Blindagem 2: nunca apagar se houver versões filhas (qualquer prescrição com parent_id apontando para esta)
+      const { data: children, error: childErr } = await supabase
+        .from('prescriptions')
+        .select('id, version, status')
+        .eq('parent_id', draftToDelete.id)
+        .limit(5);
+      if (childErr) throw childErr;
+      if (children && children.length > 0) {
+        const desc = children.map((c: any) => `v${c.version} (${c.status})`).join(', ');
+        throw new Error(`Esta prescrição tem ${children.length} versão(ões) derivada(s): ${desc}. Exclusão bloqueada para preservar o histórico clínico.`);
+      }
+      // 🔒 Blindagem 3: nunca apagar se houver, para o mesmo paciente/unidade, uma prescrição assinada mais recente
+      const { data: signedAfter, error: signedErr } = await supabase
+        .from('prescriptions')
+        .select('id, version, status')
+        .eq('patient_name', snap.patient_name)
+        .eq('hospital_unit_id', snap.hospital_unit_id)
+        .neq('status', 'draft')
+        .gte('created_at', snap.created_at)
+        .limit(1);
+      if (signedErr) throw signedErr;
+      if (signedAfter && signedAfter.length > 0) {
+        throw new Error("Há uma prescrição assinada/validada deste paciente posterior a este rascunho. Exclusão bloqueada por segurança — abra o item correto para conferir.");
+      }
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth.user?.id;
       if (!uid) throw new Error("Sessão expirada.");
