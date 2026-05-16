@@ -94,9 +94,9 @@ export const MOVEMENT_SUBTYPES: SubtypeDef[] = [
   // Saída
   {
     id: "ALTA_HOSPITALAR",
-    label: "Alta Hospitalar",
-    shortLabel: "Alta",
-    description: "Alta médica com sumário de alta e orientações",
+    label: "Alta Médica",
+    shortLabel: "Alta Médica",
+    description: "Decisão clínica de alta com sumário de alta e orientações — leito é liberado em etapa administrativa no Mapa",
     icon: Home,
     category: "SAIDA",
     linksToDischargeSummary: true,

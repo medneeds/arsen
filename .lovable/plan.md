@@ -1,58 +1,124 @@
-# Correção crítica: identidade nos cabeçalhos de PDF
+# Plano — Reorganização da Transferência Interna e Separação Ato Médico × Ato Administrativo
 
-## Problema raiz
+## Princípio guia
 
-Hoje cada gerador de PDF (admissão, evolução, prescrição, requisições, round) recebe o nome/leito/prontuário do paciente de uma fonte **diferente**:
+```text
+PAINEL CLÍNICO  ─────────► sinaliza decisão clínica (ato médico)
+  (cockpit)              ► marca tarja no Mapa
+                         ► NÃO libera leito
 
-- **Admissão** → já usa `usePatientIdentifiers` (corrigido).
-- **Evolução** (`printEvolution`) → usa `evo.patient_name` (snapshot histórico gravado na linha) como fallback. Se o snapshot estiver errado (ex: paciente NI que herdou o nome de outro), o PDF imprime errado.
-- **Prescrição extra** (`printExtraPrescription`) → recebe `patient.name/record` da página, sem garantir que vem do registry resolvido.
-- **Requisições** (Imagens, Laboratório, Cultura, Hemocomponentes, Parecer, AIH, SAT) → cada diálogo monta o cabeçalho lendo direto de `patients` ou `patient_registry` por caminhos diferentes.
-- **Round** (`printRound`) → idem, fonte ad-hoc.
-
-Resultado: em UTI 2 (e potencialmente UCI 1/2, UCC, Enfermaria de Transição, Vascular, Neuro, etc.) o paciente "Não Identificado" aparece com o cabeçalho de outro paciente no PDF.
-
-## Solução: fonte única + guarda anti-NI
-
-### 1) `usePatientIdentifiers` — já corrigido, manter
-Já bloqueia vínculo errado quando o paciente atual é NI mas o `patient_registry` vinculado é de identificado. Adicionar log diagnóstico opcional (sem alterar comportamento) para facilitar debug futuro.
-
-### 2) Helper único `resolvePatientHeader(patientId, fallbackName, hospitalUnitId)`
-Criar `src/lib/resolvePatientHeader.ts` — versão **imperativa** (Promise) do hook, para uso em handlers de impressão (que não podem usar hooks). Mesma lógica que `usePatientIdentifiers`, retornando:
+MAPA DE LEITOS  ─────────► executa a liberação física (ato administrativo)
+  (recepção/enf/médico)  ► repointPatientHistory + zera leito
+                         ► finaliza o ciclo
 ```
-{ name, socialName, prontuario, atendimento, cpf, cns, birthDate, sex,
-  motherName, address, phone, bed, sector, age, isUnidentified, unidentifiedCode }
+
+Toda transferência/alta/óbito vira fluxo de **2 etapas**: sinalização (Painel) → liberação (Mapa). Médico tem autonomia em ambos os lados. NIR sai 100% do fluxo crítico (vira opcional futuro).
+
+---
+
+## Camada 1 — Layout (Painel Clínico)
+
+**`PatientCockpit` → "Abrir alta, movimentações e desfechos"**
+
+- Renomear botão "Alta hospitalar" → **"Alta médica"**.
+- Submenu "Transferências" mantém Interna / Externa.
+- **Transferência interna**: seletor de destino (unidade → setor → leito livre) usando o mesmo componente do `UtiReallocationDialog`. Ao confirmar:
+  - Grava tarja "TRANSF. INT → SETOR X / LEITO Y" no leito origem.
+  - **Não desaloca**. Apenas sinaliza.
+- **Alta médica / Óbito / Evasão**: gravam tarja correspondente, **sem** mexer em `bed_number`/`sector`.
+- **Botão "Desfazer sinalização"** aparece enquanto a tarja está ativa e o leito ainda não foi liberado (reversibilidade).
+- Botão opcional "Solicitar regulação NIR" — não bloqueia nada, só registra `metadata.nir_requested=true`.
+
+## Camada 1 — Layout (Mapa de Leitos)
+
+**Card do leito com tarja ativa** ganha ação primária **"Liberar leito"** (recepção/enfermagem/admin/médico):
+
+- Abre `BedReleasePreAdmissionDialog` já com motivo pré-preenchido pela tarja.
+- Confirmação → executa `executeBedRelease(patientId, reason)` (camada 3).
+- Após liberar: leito vira livre de verdade, paciente vai pro prontuário sem resíduo.
+
+**"Edição avançada" do Mapa**:
+- **Remover** aba/seção de movimentações e desfechos.
+- Manter apenas: nome, nº prontuário, data de admissão, sexo, DOB, mãe, endereço, CID, observações cadastrais.
+- Banner discreto: "Para movimentar/dar alta/registrar óbito, use o Painel Clínico do paciente."
+
+**Remanejamento operacional** (transferência sem decisão clínica, ex.: reforma do quarto):
+- Ação separada no Mapa: **"Remanejar leito (operacional)"** — visível para recepção/enfermagem/admin/médico.
+- Diálogo dedicado (`OperationalRelocationDialog`): seletor de leito destino + motivo operacional obrigatório (reforma, manutenção, isolamento, conforto).
+- Executa `repointPatientHistory` + move dados clínicos. **Sem** tarja médica. Registra em `patient_movements` com tipo `remanejamento_operacional`.
+
+---
+
+## Camada 2 — Dados
+
+**Sem migrations destrutivas.** Apenas:
+
+- Reutilizar `patients.admission_status` com valores já existentes (`alta_dada`, `obito`, `transferencia_interna_pendente`, `transferencia_externa_pendente`) + adicionar valor `evasao` se necessário (campo é `text`).
+- `patient_movements.metadata` ganha chaves: `flow_version='v2_unified'`, `signaled_by` (user/role), `nir_requested` (bool), `target_sector`/`target_bed` (quando transferência interna).
+- (Opcional, **fora desta sprint**) índice parcial `(hospital_unit_id, sector, bed_number) WHERE admission_status='admitido'` — trava física contra resíduo. Deixar pra sprint seguinte para reduzir risco.
+
+## Camada 3 — Movimentação (helpers únicos)
+
+Criar **`src/lib/bedLifecycle.ts`** com 3 funções, fonte única da verdade:
+
+```ts
+// Sinaliza no Painel (não toca leito)
+signalClinicalDecision(patientId, kind, payload)
+  // kind: 'alta_medica' | 'transf_interna' | 'transf_externa' | 'obito' | 'evasao'
+  // → INSERT patient_movements + UPDATE patients.admission_status
+
+// Desfaz sinalização enquanto leito não liberado
+revokeClinicalDecision(patientId, reason)
+  // → INSERT patient_movements (tipo 'revogacao') + UPDATE admission_status='admitido'
+
+// Libera leito fisicamente (Mapa)
+executeBedRelease(patientId, reason, byRole)
+  // → se houver target (transf interna): repointPatientHistory
+  // → zera bed_number/sector
+  // → INSERT patient_movements (tipo 'liberacao_leito')
+  // → preserva histórico via prontuário
+
+// Remanejamento operacional (Mapa, sem decisão clínica)
+executeOperationalRelocation(sourcePatientId, targetBed, reason)
+  // → repointPatientHistory obrigatório
+  // → copia dados clínicos para slot destino
+  // → zera leito origem
+  // → INSERT patient_movements (tipo 'remanejamento_operacional')
 ```
-Inclui a **mesma guarda crítica** (`detectUnidentified` + `is_unidentified`).
 
-### 3) Atualizar todos os geradores de PDF para usar o helper
+**Consumidores** (todos passam a usar os helpers):
+- `PatientMovementDialog` (Painel) → `signalClinicalDecision`.
+- Botão "Desfazer" no Painel → `revokeClinicalDecision`.
+- `BedReleasePreAdmissionDialog` (Mapa) → `executeBedRelease`.
+- `OperationalRelocationDialog` (Mapa, novo) → `executeOperationalRelocation`.
+- `UtiReallocationDialog` e `BedReallocationDialog` continuam funcionando, mas internamente passam a chamar o helper (sem mudar UX).
 
-| Arquivo | Mudança |
-|---|---|
-| `src/components/evolution/EvolutionTimeline.tsx` (handler do botão Imprimir) | Resolver via helper antes de chamar `printEvolution`; nunca usar `evo.patient_name` direto. |
-| `src/lib/printEvolution.ts` | Cabeçalho recebe `prontuario`, `atendimento`, `socialName`, `cpf`, `cns` (mesmo padrão do `printAdmission`). |
-| `src/pages/PrescricaoPage.tsx` (chamada `printExtraPrescription`) | Resolver via helper; passar nome do registry. |
-| `src/lib/printExtraPrescription.ts` | Cabeçalho passa a incluir `prontuario` + `atendimento` + nome social (atualmente só nome/leito/record). |
-| `src/components/PrintableRequisitionGuide.tsx` | Resolver via helper para todos os tipos (Imagens, Lab, Cultura, Hemocomp, Parecer). |
-| `src/components/AihFormDialog.tsx`, `CultureRequestDialog.tsx`, `SatRequestDialog.tsx`, `HemocomponentRequestDialog.tsx` | Substituir leitura ad-hoc por `resolvePatientHeader`. |
-| `src/lib/printRound.ts` + `PatientRoundPrintDialog`, `RoundSectorPrintDialog` | Idem. |
+## Camada 4 — Auditoria
 
-### 4) Validação manual obrigatória após a mudança
-Validar com paciente NI em **UTI 2 leito 10** + 1 paciente identificado em cada um dos setores: UCI 1, UCI 2, UCC, Enfermaria de Transição, Vascular, Neuro 01/02, Clínica Cirúrgica.
+- `patient_movements` registra **toda** transição com `metadata.flow_version='v2_unified'`.
+- Distinção clara: `signaled_by` (médico no Painel) vs `released_by` (quem apertou no Mapa).
+- Tarjas no Mapa leem direto de `admission_status` + último `patient_movements` ativo (sem flag duplicada).
+- Aba "Histórico de movimentações" do paciente já existente exibe a cadeia completa: sinalização → liberação.
 
-## Detalhes técnicos
+---
 
-- O helper compartilha o código com o hook (extrair função pura `fetchPatientIdentifiersOnce` e o hook chama ela internamente — zero divergência).
-- Nenhuma migration; é só código frontend/lib.
-- Sem mudança de layout de PDF: apenas troca de **fonte de dados** dos campos já existentes nos cabeçalhos. Onde adicionarmos `prontuario/atendimento` (Evolução, Prescrição), o impacto visual é uma linha a mais no cabeçalho.
+## O que NÃO será tocado nesta sprint
 
-## Fora de escopo
+- Transferências externas (mantém fluxo atual).
+- `repointPatientHistory` (reutilizado como está).
+- Schema do banco (sem migration).
+- RLS / autenticação / perfis.
+- Layout das demais páginas (Prescrição, Evolução, etc.).
+- Farmácia, dispensação, impressão.
+- Painel do NIR (continua existindo, só perde papel obrigatório).
+- Trava física `1-paciente-por-leito` (sprint seguinte).
 
-- Não vou repintar nem reorganizar os PDFs.
-- Não vou alterar o cabeçalho do cockpit (já corrigido).
-- Não vou mexer em SAPS 3 nem no fluxo de admissão (já corrigidos).
+## Ordem de execução
 
-## Confirmar antes de executar
-
-1. Posso adicionar `Prontuário` + `Atendimento` no cabeçalho do PDF de **evolução** e **prescrição extra** (hoje não têm)? Isso é uma alteração visual pequena.
-2. Confirma que quer cobrir **todos** os geradores listados na tabela acima?
+1. Criar `src/lib/bedLifecycle.ts` com os 4 helpers.
+2. Refatorar `PatientMovementDialog` para usar `signalClinicalDecision` + renomear "Alta hospitalar" → "Alta médica" + adicionar botão "Desfazer sinalização".
+3. Refatorar `BedReleasePreAdmissionDialog` para usar `executeBedRelease`.
+4. Criar `OperationalRelocationDialog` + entry-point no Mapa.
+5. Remover aba de movimentações/desfechos da "Edição avançada" do Mapa, adicionar banner.
+6. Garantir que `UtiReallocationDialog` e `BedReallocationDialog` chamem os helpers.
+7. Validar manualmente: L11 (Idenilton) + um caso de transferência UTI + um remanejamento operacional + reversão de alta médica.
