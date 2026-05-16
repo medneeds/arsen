@@ -2114,9 +2114,25 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           )}
           <div
             {...(isLocked ? ({ inert: '' } as any) : {})}
-            className={cn(isLocked && "opacity-80")}
+            className={cn(
+              isLocked && "opacity-80",
+              !isLocked && missingFields.length > 0 && "rounded-md ring-1 ring-red-300/70 ring-offset-1 ring-offset-background p-1.5 -m-1.5"
+            )}
             aria-disabled={isLocked || undefined}
           >
+          {!isLocked && missingFields.length > 0 && item.status === 'active' && (
+            <div className="mb-1.5 flex items-start gap-1.5 px-2 py-1 rounded bg-red-50 border border-red-200 dark:bg-red-950/30 dark:border-red-900">
+              <AlertTriangle className="h-3 w-3 mt-0.5 text-red-600 dark:text-red-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold text-red-700 dark:text-red-300 uppercase tracking-wide">
+                  Pendente para validação — preencha:
+                </p>
+                <p className="text-[10px] text-red-700/90 dark:text-red-300/90">
+                  {missingFields.join(' · ')}
+                </p>
+              </div>
+            </div>
+          )}
           {item.status === 'active' && item.category === 'nutrition' && (
             <NutritionFields item={item} onUpdate={onUpdate} />
           )}
@@ -3854,73 +3870,72 @@ const PrescricaoPage = () => {
     }
 
     // ============= INALAÇÃO =============
+    // Escape universal removido: cada campo estruturado deve ser preenchido.
     if (item.category === 'inhalation') {
       const mode = (item as any).inhalationMode || 'nebulization';
       if (mode === 'nebulization' || mode === 'nebulization_continuous') {
-        if (empty((item as any).nebDose) && empty(item.dose) && !anyInstruction(item)) {
+        if (empty((item as any).nebDose) && empty(item.dose)) {
           missing.push('dose');
         }
-        if (empty((item as any).inhalationInterface) && !anyInstruction(item)) {
+        if (empty((item as any).inhalationInterface)) {
           missing.push('interface');
         }
         if (mode === 'nebulization_continuous'
-          && empty(item.posology) && empty((item as any).inhalationDuration) && !anyInstruction(item)) {
+          && empty(item.posology) && empty((item as any).inhalationDuration)) {
           missing.push('duração');
-        } else if (mode === 'nebulization'
-          && empty(item.posology) && !anyInstruction(item)) {
+        } else if (mode === 'nebulization' && empty(item.posology)) {
           missing.push('frequência');
         }
       } else if (mode === 'pmdi' || mode === 'dpi') {
-        if (empty((item as any).puffs) && empty(item.dose) && !anyInstruction(item)) {
+        if (empty((item as any).puffs) && empty(item.dose)) {
           missing.push(mode === 'pmdi' ? 'puffs' : 'inalações');
         }
-        if (empty(item.posology) && !anyInstruction(item)) missing.push('frequência');
+        if (empty(item.posology)) missing.push('frequência');
       }
       return missing;
     }
 
     // ============= HIDRATAÇÃO / REPOSIÇÃO =============
+    // Escape universal removido.
     if (item.category === 'hydration') {
-      if (empty(item.volumeTotal) && !anyInstruction(item)) missing.push('volume');
-      if (empty(item.posology) && !anyInstruction(item)) missing.push('fases / intervalo');
-      if (empty(item.infusionTime) && empty(item.infusionRate) && !anyInstruction(item)) {
+      if (empty(item.volumeTotal)) missing.push('volume');
+      if (empty(item.posology)) missing.push('fases / intervalo');
+      if (empty(item.infusionTime) && empty(item.infusionRate)) {
         missing.push('tempo ou vazão');
       }
       return missing;
     }
 
     // ============= NUTRIÇÃO =============
+    // Escape universal removido.
     if (item.category === 'nutrition') {
       const subType = (item as any).nutritionType as string | undefined;
-      // Dieta zero / VO simples: nome basta
       if (subType === 'zero') return missing;
-      // Enteral: volume/dia OU velocidade
       if (subType === 'diet_enteral') {
-        if (empty((item as any).nutVolDay) && empty(item.volumeTotal) && empty(item.infusionRate) && !anyInstruction(item)) {
+        if (empty((item as any).nutVolDay) && empty(item.volumeTotal) && empty(item.infusionRate)) {
           missing.push('volume/dia ou velocidade');
         }
         return missing;
       }
-      // Parenteral (NPT): volume + tempo
       if (subType === 'npt') {
-        if (empty(item.volumeTotal) && !anyInstruction(item)) missing.push('volume');
-        if (empty(item.infusionTime) && empty(item.infusionRate) && !anyInstruction(item)) {
+        if (empty(item.volumeTotal)) missing.push('volume');
+        if (empty(item.infusionTime) && empty(item.infusionRate)) {
           missing.push('tempo ou vazão');
         }
         return missing;
       }
-      // VO fracionada / outros
-      if (empty(item.posology) && empty((item as any).nutVolDay) && empty(item.volumeTotal) && !anyInstruction(item)) {
+      if (empty(item.posology) && empty((item as any).nutVolDay) && empty(item.volumeTotal)) {
         missing.push('volume ou fracionamento');
       }
       return missing;
     }
 
     // ============= HEMOTERAPIA =============
+    // Escape universal removido.
     if (item.category === 'hemotherapy') {
-      if (empty(item.dose) && !anyInstruction(item)) missing.push('produto/quantidade');
-      if (empty(item.route) && !anyInstruction(item)) missing.push('via');
-      if (empty(item.posology) && empty(item.infusionTime) && !anyInstruction(item)) {
+      if (empty(item.dose)) missing.push('produto/quantidade');
+      if (empty(item.route)) missing.push('via');
+      if (empty(item.posology) && empty(item.infusionTime)) {
         missing.push('tempo de transfusão');
       }
       return missing;
@@ -3954,28 +3969,28 @@ const PrescricaoPage = () => {
     }
 
     // ----- IV intermitente (ampola/frasco) -----
+    // Escape universal removido.
     if (ptype === 'iv_intermittent') {
-      if (empty(item.diluent) && !anyInstruction(item)) missing.push('diluente');
-      // Aceita volume informado em QUALQUER campo equivalente: diluentVolume OU volumeTotal
+      if (empty(item.diluent)) missing.push('diluente');
       const hasAnyVolumeIVI = has(item.diluentVolume) || has(item.volumeTotal);
-      if (item.diluent && item.diluent !== 'sem_diluente' && !hasAnyVolumeIVI && !anyInstruction(item)) {
+      if (item.diluent && item.diluent !== 'sem_diluente' && !hasAnyVolumeIVI) {
         missing.push('volume de diluição');
       }
-      if (empty(item.infusionTime) && empty(item.infusionRate) && !anyInstruction(item)) {
+      if (empty(item.infusionTime) && empty(item.infusionRate)) {
         missing.push('tempo ou vazão');
       }
     }
 
     // ----- IV contínua (BIC) -----
+    // Escape universal removido.
     if (ptype === 'iv_continuous') {
-      if (empty(item.diluent) && !anyInstruction(item)) missing.push('diluente');
-      if (empty(item.volumeTotal) && empty(item.diluentVolume) && !anyInstruction(item)) {
+      if (empty(item.diluent)) missing.push('diluente');
+      if (empty(item.volumeTotal) && empty(item.diluentVolume)) {
         missing.push('volume total');
       }
-      if (empty(item.infusionTime) && empty(item.infusionRate) && !anyInstruction(item)) {
+      if (empty(item.infusionTime) && empty(item.infusionRate)) {
         missing.push('tempo ou vazão');
       }
-      // Posologia em contínua é redundante (rate define) — remove se aparecer
       const idx = missing.indexOf('posologia');
       if (idx >= 0) missing.splice(idx, 1);
     }
