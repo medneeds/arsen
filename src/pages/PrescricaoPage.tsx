@@ -3769,7 +3769,8 @@ const PrescricaoPage = () => {
   const [repeatSourceItems, setRepeatSourceItems] = useState<PrescriptionItem[]>([]);
   const [repeatSourceMeta, setRepeatSourceMeta] = useState<{ date: string; version: number } | null>(null);
   const [repeatSelectedIds, setRepeatSelectedIds] = useState<Set<string>>(new Set());
-  const [savedPrescriptions, setSavedPrescriptions] = useState<Array<{ id: string; patient_name: string; status: string; version: number; created_at: string; digital_signature: DigitalSignature | null }>>([]);
+  const [savedPrescriptions, setSavedPrescriptions] = useState<Array<{ id: string; patient_name: string; status: string; version: number; created_at: string; digital_signature: DigitalSignature | null; items: PrescriptionItem[]; isValidated: boolean }>>([]);
+  const [previewPrescription, setPreviewPrescription] = useState<null | { id: string; patient_name: string; status: string; version: number; created_at: string; digital_signature: DigitalSignature | null; items: PrescriptionItem[]; isValidated: boolean }>(null);
   const [loadingList, setLoadingList] = useState(false);
   const [versionHistory, setVersionHistory] = useState<Array<{ id: string; version: number; status: string; created_at: string; digital_signature: DigitalSignature | null }>>([]);
   const [showHistory, setShowHistory] = useState(false);
