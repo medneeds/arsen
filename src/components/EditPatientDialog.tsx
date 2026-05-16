@@ -33,6 +33,7 @@ import { InternmentStatusDialog } from "./InternmentStatusDialog";
 import { AdmissionDateEditor } from "./AdmissionDateEditor";
 import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
 import { OperationalRelocationDialog } from "./OperationalRelocationDialog";
+import { DateBRPicker } from "./ui/DateBRPicker";
 import { FileText } from "lucide-react";
 
 interface EditPatientDialogProps {
