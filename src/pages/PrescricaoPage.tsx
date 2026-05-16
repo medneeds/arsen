@@ -6308,14 +6308,29 @@ const PrescricaoPage = () => {
                           className="flex-1 text-left min-w-0"
                         >
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
-                              {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
-                            </Badge>
+                            {p.isValidated ? (
+                              <Badge variant="default" className="text-[9px] h-4 px-1.5 bg-emerald-600 hover:bg-emerald-600">
+                                ✓ Oficial validada
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-700 dark:text-amber-300">
+                                Rascunho
+                              </Badge>
+                            )}
                             <span className="text-[9px] text-muted-foreground">v{p.version}</span>
                             <span className="text-[9px] text-muted-foreground ml-auto">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
                           </div>
                         </button>
-                        {p.status === 'draft' && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setPreviewPrescription(p); }}
+                          className="shrink-0 p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                          title="Visualizar prescrição"
+                          aria-label="Visualizar prescrição"
+                        >
+                          <Eye className="h-3 w-3" />
+                        </button>
+                        {!p.isValidated && (
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); setDraftToDelete(p); setDraftDeleteReason(""); }}
