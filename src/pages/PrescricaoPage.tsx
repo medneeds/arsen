@@ -6127,6 +6127,17 @@ const PrescricaoPage = () => {
               </div>
             </PopoverContent>
           </Popover>
+          {historyDate && savedPrescriptions.length === 0 && prescriptionDateKeys.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setHistoryDate(undefined)}
+              className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 text-[10px] font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
+              title="Existem prescrições em outras datas — clique para limpar o filtro"
+            >
+              <AlertTriangle className="h-3 w-3" />
+              Filtro oculta {prescriptionDateKeys.size} {prescriptionDateKeys.size === 1 ? 'data' : 'datas'} — limpar
+            </button>
+          )}
           <Button
             variant="outline"
             size="sm"
