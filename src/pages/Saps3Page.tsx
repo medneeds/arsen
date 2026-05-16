@@ -1095,7 +1095,7 @@ export default function Saps3Page() {
         loadRecords();
         toast.success("Ficha SAPS 3 validada com sucesso.");
       } catch (err: any) {
-        toast.error("Erro ao salvar: " + err.message);
+        toast.error(humanizeSaveError(err), { duration: 7000 });
       } finally {
         setSaving(false);
       }
@@ -1264,7 +1264,7 @@ export default function Saps3Page() {
       if (createdSapsId) {
         await supabase.from("saps3_assessments" as any).delete().eq("id", createdSapsId);
       }
-      toast.error("Erro ao salvar: " + err.message);
+      toast.error(humanizeSaveError(err), { duration: 7000 });
     } finally {
       setSaving(false);
     }
