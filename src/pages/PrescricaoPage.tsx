@@ -6125,7 +6125,20 @@ const PrescricaoPage = () => {
             </span>
           )}
 
-          <span className="h-5 w-px bg-border/60 mx-0.5" />
+      {/* Banner didático — peso e alergias obrigatórios para liberar a prescrição */}
+      {(!patient.weight.trim() || !patient.allergies.trim()) && (
+        <div className="print:hidden flex items-start gap-2 rounded-lg border border-amber-300/70 bg-amber-50/80 dark:border-amber-500/40 dark:bg-amber-950/20 px-3 py-2 text-amber-900 dark:text-amber-200">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          <div className="text-[12px] leading-snug">
+            <strong className="font-semibold">PESO e ALERGIAS</strong> são obrigatórios para liberar o ato de prescrição (validar / assinar / imprimir).{' '}
+            <span className="opacity-80">
+              Falta: {!patient.weight.trim() && !patient.allergies.trim() ? 'peso e alergias' : !patient.weight.trim() ? 'peso' : 'alergias'}.
+            </span>
+          </div>
+        </div>
+      )}
+
+      <span className="h-5 w-px bg-border/60 mx-0.5" />
 
           <Popover>
             <PopoverTrigger asChild>
