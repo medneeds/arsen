@@ -33,6 +33,7 @@ import { InternmentStatusDialog } from "./InternmentStatusDialog";
 import { AdmissionDateEditor } from "./AdmissionDateEditor";
 import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
 import { OperationalRelocationDialog } from "./OperationalRelocationDialog";
+import { DateBRPicker } from "./ui/DateBRPicker";
 import { FileText } from "lucide-react";
 
 interface EditPatientDialogProps {
@@ -218,19 +219,21 @@ export function EditPatientDialog({
                       <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" />
                       Previsão de Alta
                     </Label>
-                    <Input
+                    <DateBRPicker
                       value={utiDischargePrediction}
-                      onChange={(e) =>
+                      onChange={(v) =>
                         setFormData({
                           ...formData,
-                          utiDischargePrediction: [e.target.value],
+                          utiDischargePrediction: [v],
                         })
                       }
+                      baseDate={isUti ? utiAdmissionDate : (formData.admissionDate || "")}
+                      presets={[3, 5, 7, 10]}
                       placeholder="DD/MM/AAAA"
-                      className="h-9 text-xs uppercase"
                     />
                     <p className="text-[10px] text-muted-foreground italic">
-                      Sincronizada com a Evolução Médica. Edite aqui para sobrescrever manualmente.
+                      Calendário e atalhos (+3d / +5d / +7d / +10d) a partir da admissão no setor.
+                      Sincroniza com o card e com a Evolução Médica.
                     </p>
                   </div>
                 </div>

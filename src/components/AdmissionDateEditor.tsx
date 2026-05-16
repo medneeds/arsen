@@ -10,7 +10,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Pencil, History, CalendarClock, AlertTriangle } from "lucide-react";
+import { Pencil, History, CalendarClock, AlertTriangle, Calendar as CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -276,23 +279,50 @@ export function AdmissionDateEditor({ patientId, value, onChange }: AdmissionDat
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Data (DD/MM/AAAA)</Label>
-                <Input
-                  value={editDate}
-                  onChange={(e) => {
-                    // Mantém apenas dígitos e insere barras nas posições 2 e 4
-                    const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
-                    let masked = digits;
-                    if (digits.length > 4) masked = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-                    else if (digits.length > 2) masked = `${digits.slice(0, 2)}/${digits.slice(2)}`;
-                    setEditDate(masked);
-                  }}
-                  placeholder="DD/MM/AAAA"
-                  maxLength={10}
-                  inputMode="numeric"
-                  pattern="\d{2}/\d{2}/\d{4}"
-                  className="h-9 text-xs uppercase tabular-nums tracking-wider"
-                />
-                <p className="text-[10px] text-muted-foreground">Dia · Mês · Ano</p>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    value={editDate}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
+                      let masked = digits;
+                      if (digits.length > 4) masked = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+                      else if (digits.length > 2) masked = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+                      setEditDate(masked);
+                    }}
+                    placeholder="DD/MM/AAAA"
+                    maxLength={10}
+                    inputMode="numeric"
+                    pattern="\d{2}/\d{2}/\d{4}"
+                    className="h-9 text-xs uppercase tabular-nums tracking-wider"
+                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button type="button" variant="outline" size="sm" className="h-9 px-2 shrink-0" title="Abrir calendário">
+                        <CalendarIcon className="h-3.5 w-3.5" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 pointer-events-auto" align="end">
+                      <Calendar
+                        mode="single"
+                        selected={(() => {
+                          const m = editDate.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+                          if (!m) return undefined;
+                          return new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]));
+                        })()}
+                        onSelect={(d) => {
+                          if (!d) return;
+                          const dd = String(d.getDate()).padStart(2, "0");
+                          const mm = String(d.getMonth() + 1).padStart(2, "0");
+                          setEditDate(`${dd}/${mm}/${d.getFullYear()}`);
+                        }}
+                        disabled={(d) => d > new Date()}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Dia · Mês · Ano (não permite data futura)</p>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Hora (HH:MM 24h)</Label>
