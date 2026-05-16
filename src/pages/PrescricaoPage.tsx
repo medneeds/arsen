@@ -3854,73 +3854,72 @@ const PrescricaoPage = () => {
     }
 
     // ============= INALAÇÃO =============
+    // Escape universal removido: cada campo estruturado deve ser preenchido.
     if (item.category === 'inhalation') {
       const mode = (item as any).inhalationMode || 'nebulization';
       if (mode === 'nebulization' || mode === 'nebulization_continuous') {
-        if (empty((item as any).nebDose) && empty(item.dose) && !anyInstruction(item)) {
+        if (empty((item as any).nebDose) && empty(item.dose)) {
           missing.push('dose');
         }
-        if (empty((item as any).inhalationInterface) && !anyInstruction(item)) {
+        if (empty((item as any).inhalationInterface)) {
           missing.push('interface');
         }
         if (mode === 'nebulization_continuous'
-          && empty(item.posology) && empty((item as any).inhalationDuration) && !anyInstruction(item)) {
+          && empty(item.posology) && empty((item as any).inhalationDuration)) {
           missing.push('duração');
-        } else if (mode === 'nebulization'
-          && empty(item.posology) && !anyInstruction(item)) {
+        } else if (mode === 'nebulization' && empty(item.posology)) {
           missing.push('frequência');
         }
       } else if (mode === 'pmdi' || mode === 'dpi') {
-        if (empty((item as any).puffs) && empty(item.dose) && !anyInstruction(item)) {
+        if (empty((item as any).puffs) && empty(item.dose)) {
           missing.push(mode === 'pmdi' ? 'puffs' : 'inalações');
         }
-        if (empty(item.posology) && !anyInstruction(item)) missing.push('frequência');
+        if (empty(item.posology)) missing.push('frequência');
       }
       return missing;
     }
 
     // ============= HIDRATAÇÃO / REPOSIÇÃO =============
+    // Escape universal removido.
     if (item.category === 'hydration') {
-      if (empty(item.volumeTotal) && !anyInstruction(item)) missing.push('volume');
-      if (empty(item.posology) && !anyInstruction(item)) missing.push('fases / intervalo');
-      if (empty(item.infusionTime) && empty(item.infusionRate) && !anyInstruction(item)) {
+      if (empty(item.volumeTotal)) missing.push('volume');
+      if (empty(item.posology)) missing.push('fases / intervalo');
+      if (empty(item.infusionTime) && empty(item.infusionRate)) {
         missing.push('tempo ou vazão');
       }
       return missing;
     }
 
     // ============= NUTRIÇÃO =============
+    // Escape universal removido.
     if (item.category === 'nutrition') {
       const subType = (item as any).nutritionType as string | undefined;
-      // Dieta zero / VO simples: nome basta
       if (subType === 'zero') return missing;
-      // Enteral: volume/dia OU velocidade
       if (subType === 'diet_enteral') {
-        if (empty((item as any).nutVolDay) && empty(item.volumeTotal) && empty(item.infusionRate) && !anyInstruction(item)) {
+        if (empty((item as any).nutVolDay) && empty(item.volumeTotal) && empty(item.infusionRate)) {
           missing.push('volume/dia ou velocidade');
         }
         return missing;
       }
-      // Parenteral (NPT): volume + tempo
       if (subType === 'npt') {
-        if (empty(item.volumeTotal) && !anyInstruction(item)) missing.push('volume');
-        if (empty(item.infusionTime) && empty(item.infusionRate) && !anyInstruction(item)) {
+        if (empty(item.volumeTotal)) missing.push('volume');
+        if (empty(item.infusionTime) && empty(item.infusionRate)) {
           missing.push('tempo ou vazão');
         }
         return missing;
       }
-      // VO fracionada / outros
-      if (empty(item.posology) && empty((item as any).nutVolDay) && empty(item.volumeTotal) && !anyInstruction(item)) {
+      if (empty(item.posology) && empty((item as any).nutVolDay) && empty(item.volumeTotal)) {
         missing.push('volume ou fracionamento');
       }
       return missing;
     }
 
     // ============= HEMOTERAPIA =============
+    // Escape universal removido.
     if (item.category === 'hemotherapy') {
-      if (empty(item.dose) && !anyInstruction(item)) missing.push('produto/quantidade');
-      if (empty(item.route) && !anyInstruction(item)) missing.push('via');
-      if (empty(item.posology) && empty(item.infusionTime) && !anyInstruction(item)) {
+      if (empty(item.dose)) missing.push('produto/quantidade');
+      if (empty(item.route)) missing.push('via');
+      if (empty(item.posology) && empty(item.infusionTime)) {
         missing.push('tempo de transfusão');
       }
       return missing;
