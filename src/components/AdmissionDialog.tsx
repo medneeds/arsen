@@ -423,7 +423,10 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
       const { error: ahError } = await supabase
         .from("admission_histories")
         .insert(admissionPayload as any);
-      if (ahError) console.warn("admission_histories:", ahError);
+      if (ahError) {
+        console.error("admission_histories insert failed:", ahError);
+        throw new Error(`Falha ao gravar história admissional: ${ahError.message}`);
+      }
 
       const imcLine = imc ? ` | IMC ${imc.value} (${imc.label})` : "";
       const admissionHistoryText = [
