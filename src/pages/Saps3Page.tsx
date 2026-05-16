@@ -2109,6 +2109,44 @@ export default function Saps3Page() {
             </Card>
           </Collapsible>
 
+          {/* ── Checklist de validação em tempo real ── */}
+          <Card className={missingFields.length === 0
+            ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/20"
+            : "border-amber-300 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-950/20"}>
+            <CardContent className="py-3 px-4">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                  {missingFields.length === 0 ? (
+                    <><CheckCircle2 className="h-4 w-4 text-emerald-600" /><span className="text-emerald-800 dark:text-emerald-300">Pronto para validar — todos os itens preenchidos</span></>
+                  ) : (
+                    <><AlertTriangle className="h-4 w-4 text-amber-600" /><span className="text-amber-800 dark:text-amber-300">Faltam {missingFields.length} item(s) para validar</span></>
+                  )}
+                </p>
+                <span className="text-[10px] text-muted-foreground">A "Pré-admitir com SAPS pendente" exige apenas nome + leito.</span>
+              </div>
+              {missingFields.length > 0 && (
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  {missingFields.map(f => (
+                    <li key={f.id}>
+                      <button
+                        type="button"
+                        onClick={() => focusAnchor(f.anchor)}
+                        className="w-full text-left flex items-start gap-2 rounded-md border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-amber-950/30 px-2.5 py-1.5 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                      >
+                        <XCircle className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400 mt-0.5 shrink-0" />
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-xs font-medium text-amber-900 dark:text-amber-200">{f.label}</span>
+                          {f.hint && <span className="block text-[10px] text-amber-700 dark:text-amber-400">{f.hint}</span>}
+                        </span>
+                        <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 shrink-0">Ir →</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Save */}
           <div className="flex gap-3 justify-end flex-wrap">
             <Button variant="outline" onClick={() => setSelectedRequest(null)}>Cancelar</Button>
