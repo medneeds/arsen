@@ -6065,6 +6065,19 @@ const PrescricaoPage = () => {
         }
       ` }} />
 
+      {/* Banner didático — peso e alergias obrigatórios para liberar a prescrição */}
+      {(!patient.weight.trim() || !patient.allergies.trim()) && (
+        <div className="print:hidden mb-2 flex items-start gap-2 rounded-lg border border-amber-300/70 bg-amber-50/80 dark:border-amber-500/40 dark:bg-amber-950/20 px-3 py-2 text-amber-900 dark:text-amber-200">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          <div className="text-[12px] leading-snug">
+            <strong className="font-semibold">PESO e ALERGIAS</strong> são obrigatórios para liberar o ato de prescrição (validar, assinar ou imprimir).{' '}
+            <span className="opacity-80">
+              Falta: {!patient.weight.trim() && !patient.allergies.trim() ? 'peso e alergias' : !patient.weight.trim() ? 'peso' : 'alergias'}.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* ===== UNIFIED HEADER — title + context (peso/alergias/data/templates) + actions ===== */}
       <div className="print:hidden rounded-xl border border-border bg-card/60 shadow-[0_4px_18px_-8px_hsl(var(--primary)/0.18),0_1px_2px_-1px_hsl(var(--foreground)/0.06)] hover:shadow-[0_6px_24px_-8px_hsl(var(--primary)/0.22),0_1px_2px_-1px_hsl(var(--foreground)/0.08)] transition-shadow duration-300">
         {/* Row 0 — Title + meta */}
