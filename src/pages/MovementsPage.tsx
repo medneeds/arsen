@@ -297,7 +297,7 @@ export default function MovementsPage() {
 
       toast({
         title: "Paciente realocado com sucesso",
-        description: `${snapshot.name} foi realocado de volta ao setor ${snapshot.sector}.`,
+        description: `${snapshot.name} foi realocado de volta ao setor ${sectorLabelFromCode(snapshot.sector)}.`,
       });
 
       fetchMovements();

@@ -40,6 +40,7 @@ import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
 import { Printer } from "lucide-react";
 import { PatientIdentityHeader } from "./PatientIdentityHeader";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 
 interface PatientCockpitProps {
   patient: Patient | null;
@@ -197,7 +198,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   }
 
   const status = clinicalStatusConfig[patient.clinicalStatus || "regular"] || clinicalStatusConfig.regular;
-  const sector = sectorLabels[patient.sector] || patient.sector;
+  const sector = sectorLabelFromCode(patient.sector);
   const allergies = parseList(patient.utiAllergies);
   const diagnoses = parseList(patient.diagnoses);
   const medHistory = parseList(patient.medicalHistory);

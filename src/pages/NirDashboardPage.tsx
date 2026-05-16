@@ -568,7 +568,7 @@ export default function NirDashboardPage() {
               <ul className="divide-y">
                 {(alertList.items as any[]).map((s, i) => (
                   <li key={i} className="py-2 flex items-center justify-between">
-                    <span className="text-sm font-medium capitalize">{s.sector}</span>
+                    <span className="text-sm font-medium">{sectorLabelFromCode(s.sector)}</span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground">{s.occupied}/{s.total}</span>
                       <Badge variant={s.rate >= 95 ? "destructive" : "outline"} className="text-[10px]">{s.rate}%</Badge>
@@ -580,7 +580,7 @@ export default function NirDashboardPage() {
               <ul className="divide-y">
                 {(alertList.items as any[]).map((b) => (
                   <li key={b.id} className="py-2">
-                    <p className="text-sm font-semibold">Leito {b.bed_number} — <span className="capitalize">{b.sector}</span></p>
+                    <p className="text-sm font-semibold">Leito {b.bed_number} — <span>{sectorLabelFromCode(b.sector)}</span></p>
                     <p className="text-xs text-muted-foreground">{b.block_reason || "Aguardando higienização"}</p>
                   </li>
                 ))}
