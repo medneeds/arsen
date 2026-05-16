@@ -264,6 +264,15 @@ export function PatientMovementDialog({
         department: patientDepartment,
         state_id: currentState.id,
         hospital_unit_id: currentHospital.id,
+        metadata: {
+          flow_version: "v2_unified",
+          stage: "signal",
+          signaled_by: user?.id ?? null,
+          // Para transferência interna, registramos destino estruturado
+          target_sector: subtypeDef.id === "TRANSFERENCIA_INTERNA" ? (finalDestination || null) : null,
+          target_bed: null,
+          nir_requested: false,
+        } as any,
       }).select("id").single();
       if (error) throw error;
 
