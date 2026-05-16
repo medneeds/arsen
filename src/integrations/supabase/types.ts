@@ -2548,6 +2548,7 @@ export type Database = {
           uti_discharge_prediction: string | null
           uti_origin_sector: string | null
           uti_specialties: string | null
+          uti_weight_kg: number | null
         }
         Insert: {
           admission_date?: string | null
@@ -2603,6 +2604,7 @@ export type Database = {
           uti_discharge_prediction?: string | null
           uti_origin_sector?: string | null
           uti_specialties?: string | null
+          uti_weight_kg?: number | null
         }
         Update: {
           admission_date?: string | null
@@ -2658,6 +2660,7 @@ export type Database = {
           uti_discharge_prediction?: string | null
           uti_origin_sector?: string | null
           uti_specialties?: string | null
+          uti_weight_kg?: number | null
         }
         Relationships: [
           {
