@@ -72,9 +72,9 @@ export function useEvolutions(
   const fbBed = fallback?.patientBed?.trim() || null;
   const fbSector = fallback?.patientSector?.trim() || null;
 
-  const fetchEvolutions = useCallback(async () => {
+  const loadEvolutions = useCallback(async (silent: boolean = false) => {
     if (!currentHospital || !currentState) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       let query = supabase
         .from("clinical_evolutions")
@@ -84,17 +84,14 @@ export function useEvolutions(
         .order("created_at", { ascending: false });
 
       if (safePatientId) {
-        // Real DB patient — match STRICTLY by patient_id to avoid leaking
-        // evolutions of previous patients that occupied the same bed.
         query = query.eq("patient_id", safePatientId);
       } else if (fbName) {
-        // Mock patient (non-UUID id) — match drafts by name + bed (+sector when present).
         query = query.is("patient_id", null).eq("patient_name", fbName);
         if (fbBed) query = query.eq("patient_bed", fbBed);
         if (fbSector) query = query.eq("patient_sector", fbSector);
       } else {
         setEvolutions([]);
-        setLoading(false);
+        if (!silent) setLoading(false);
         return;
       }
 
@@ -109,7 +106,6 @@ export function useEvolutions(
         physical_exam: { ...EMPTY_EXAM, ...(d.physical_exam as any) },
       }));
 
-      // ── Injeta D0 (admission_histories) caso ainda não exista evolução do tipo "admission" ──
       const hasAdmissionEvo = mapped.some(e => (e as any).evolution_type === "admission");
       if (!hasAdmissionEvo && safePatientId) {
         const { data: ah } = await supabase
@@ -151,16 +147,18 @@ export function useEvolutions(
         }
       }
 
-      // Reordena (mais recente primeiro), mantendo D0 na posição cronológica correta
       mapped.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       setEvolutions(mapped);
     } catch (err: any) {
       console.error("Error fetching evolutions:", err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [safePatientId, fbName, fbBed, fbSector, currentHospital, currentState]);
+
+  const fetchEvolutions = useCallback(() => loadEvolutions(false), [loadEvolutions]);
+  const refreshSilently = useCallback(() => loadEvolutions(true), [loadEvolutions]);
 
   useEffect(() => {
     fetchEvolutions();
@@ -217,7 +215,7 @@ export function useEvolutions(
       }
 
       toast.success("Evolução criada com sucesso");
-      await fetchEvolutions();
+      await refreshSilently();
       return {
         ...data,
         soap_data: { ...EMPTY_SOAP, ...(data.soap_data as any) },
@@ -245,7 +243,7 @@ export function useEvolutions(
         .eq("id", id);
       if (error) throw error;
       toast.success("Evolução salva");
-      await fetchEvolutions();
+      await refreshSilently();
       return true;
     } catch (err: any) {
       toast.error("Erro ao salvar: " + err.message);
@@ -268,7 +266,7 @@ export function useEvolutions(
         .eq("id", id);
       if (error) throw error;
       toast.success("Evolução validada e assinada");
-      await fetchEvolutions();
+      await refreshSilently();
       return true;
     } catch (err: any) {
       toast.error("Erro ao validar: " + err.message);
@@ -290,7 +288,7 @@ export function useEvolutions(
         .eq("id", id);
       if (error) throw error;
       toast.success("Evolução suspensa");
-      await fetchEvolutions();
+      await refreshSilently();
       return true;
     } catch (err: any) {
       toast.error("Erro ao suspender: " + err.message);
@@ -306,7 +304,7 @@ export function useEvolutions(
         .eq("id", id);
       if (error) throw error;
       toast.success("Rascunho excluído");
-      await fetchEvolutions();
+      await refreshSilently();
       return true;
     } catch (err: any) {
       toast.error("Erro ao excluir: " + err.message);
