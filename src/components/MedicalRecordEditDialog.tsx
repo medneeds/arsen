@@ -444,27 +444,43 @@ export function MedicalRecordEditDialog({
         if ((pat as any)?.patient_registry_id) {
           registryId = (pat as any).patient_registry_id;
         } else {
-          const seedName = (reg.full_name || (pat as any)?.name || "PACIENTE SEM IDENTIFICAÇÃO").toString().toUpperCase().trim();
-          const insertPayload: Record<string, any> = {
-            full_name: seedName,
-            hospital_unit_id: (pat as any)?.hospital_unit_id || null,
-            state_id: (pat as any)?.state_id || null,
-            is_unidentified: false,
-            created_by: userId,
-          };
-          // Aplica desde já os campos preenchidos no formulário
-          for (const k of REG_EDITABLE) {
-            const v = (reg as any)[k];
-            if (v != null && String(v).trim() !== "") insertPayload[k as string] = v;
+          // Antes de criar, verifica se já existe registry órfão com mesmo medical_record
+          // (UNIQUE em patient_registry.medical_record) — reutiliza em vez de duplicar.
+          const mrCandidate = (reg.medical_record || "").toString().trim();
+          if (mrCandidate) {
+            const { data: existingByMr } = await supabase
+              .from("patient_registry")
+              .select("id")
+              .eq("medical_record", mrCandidate)
+              .maybeSingle();
+            if ((existingByMr as any)?.id) {
+              registryId = (existingByMr as any).id;
+              toast({ title: "Ficha existente vinculada", description: "Já havia ficha cadastral com este prontuário — vinculamos ao paciente em vez de duplicar." });
+            }
           }
-          const { data: newReg, error: insErr } = await supabase
-            .from("patient_registry")
-            .insert(insertPayload as any)
-            .select("id")
-            .single();
-          if (insErr) throw insErr;
-          registryId = (newReg as any).id;
-          createdNewRegistry = true;
+
+          if (!registryId) {
+            const seedName = (reg.full_name || (pat as any)?.name || "PACIENTE SEM IDENTIFICAÇÃO").toString().toUpperCase().trim();
+            const insertPayload: Record<string, any> = {
+              full_name: seedName,
+              hospital_unit_id: (pat as any)?.hospital_unit_id || null,
+              state_id: (pat as any)?.state_id || null,
+              is_unidentified: false,
+              created_by: userId,
+            };
+            for (const k of REG_EDITABLE) {
+              const v = (reg as any)[k];
+              if (v != null && String(v).trim() !== "") insertPayload[k as string] = v;
+            }
+            const { data: newReg, error: insErr } = await supabase
+              .from("patient_registry")
+              .insert(insertPayload as any)
+              .select("id")
+              .single();
+            if (insErr) throw insErr;
+            registryId = (newReg as any).id;
+            createdNewRegistry = true;
+          }
 
           // Vincula ao paciente
           await supabase
