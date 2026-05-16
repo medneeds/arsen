@@ -215,7 +215,7 @@ export function useEvolutions(
       }
 
       toast.success("Evolução criada com sucesso");
-      await fetchEvolutions();
+      await refreshSilently();
       return {
         ...data,
         soap_data: { ...EMPTY_SOAP, ...(data.soap_data as any) },
@@ -243,7 +243,7 @@ export function useEvolutions(
         .eq("id", id);
       if (error) throw error;
       toast.success("Evolução salva");
-      await fetchEvolutions();
+      await refreshSilently();
       return true;
     } catch (err: any) {
       toast.error("Erro ao salvar: " + err.message);
@@ -266,7 +266,7 @@ export function useEvolutions(
         .eq("id", id);
       if (error) throw error;
       toast.success("Evolução validada e assinada");
-      await fetchEvolutions();
+      await refreshSilently();
       return true;
     } catch (err: any) {
       toast.error("Erro ao validar: " + err.message);
@@ -288,7 +288,7 @@ export function useEvolutions(
         .eq("id", id);
       if (error) throw error;
       toast.success("Evolução suspensa");
-      await fetchEvolutions();
+      await refreshSilently();
       return true;
     } catch (err: any) {
       toast.error("Erro ao suspender: " + err.message);
@@ -304,7 +304,7 @@ export function useEvolutions(
         .eq("id", id);
       if (error) throw error;
       toast.success("Rascunho excluído");
-      await fetchEvolutions();
+      await refreshSilently();
       return true;
     } catch (err: any) {
       toast.error("Erro ao excluir: " + err.message);
