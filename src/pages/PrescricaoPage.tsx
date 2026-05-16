@@ -5341,6 +5341,11 @@ const PrescricaoPage = () => {
       if (snap.digital_signature) {
         throw new Error("Esta prescrição possui ASSINATURA DIGITAL e não pode ser excluída — mesmo marcada como rascunho.");
       }
+      // 🔒 Blindagem 1b: nunca apagar se houver QUALQUER item já validado pela farmácia (prescrição oficial do dia)
+      const snapItems = Array.isArray((snap as any).items) ? ((snap as any).items as any[]) : [];
+      if (snapItems.some(it => it && it.validated === true)) {
+        throw new Error("Esta prescrição possui itens VALIDADOS pela farmácia — é a prescrição oficial do dia e não pode ser excluída.");
+      }
       // 🔒 Blindagem 2: nunca apagar se houver versões filhas (qualquer prescrição com parent_id apontando para esta)
       const { data: children, error: childErr } = await supabase
         .from('prescriptions')
