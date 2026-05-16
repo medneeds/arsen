@@ -3953,28 +3953,28 @@ const PrescricaoPage = () => {
     }
 
     // ----- IV intermitente (ampola/frasco) -----
+    // Escape universal removido.
     if (ptype === 'iv_intermittent') {
-      if (empty(item.diluent) && !anyInstruction(item)) missing.push('diluente');
-      // Aceita volume informado em QUALQUER campo equivalente: diluentVolume OU volumeTotal
+      if (empty(item.diluent)) missing.push('diluente');
       const hasAnyVolumeIVI = has(item.diluentVolume) || has(item.volumeTotal);
-      if (item.diluent && item.diluent !== 'sem_diluente' && !hasAnyVolumeIVI && !anyInstruction(item)) {
+      if (item.diluent && item.diluent !== 'sem_diluente' && !hasAnyVolumeIVI) {
         missing.push('volume de diluição');
       }
-      if (empty(item.infusionTime) && empty(item.infusionRate) && !anyInstruction(item)) {
+      if (empty(item.infusionTime) && empty(item.infusionRate)) {
         missing.push('tempo ou vazão');
       }
     }
 
     // ----- IV contínua (BIC) -----
+    // Escape universal removido.
     if (ptype === 'iv_continuous') {
-      if (empty(item.diluent) && !anyInstruction(item)) missing.push('diluente');
-      if (empty(item.volumeTotal) && empty(item.diluentVolume) && !anyInstruction(item)) {
+      if (empty(item.diluent)) missing.push('diluente');
+      if (empty(item.volumeTotal) && empty(item.diluentVolume)) {
         missing.push('volume total');
       }
-      if (empty(item.infusionTime) && empty(item.infusionRate) && !anyInstruction(item)) {
+      if (empty(item.infusionTime) && empty(item.infusionRate)) {
         missing.push('tempo ou vazão');
       }
-      // Posologia em contínua é redundante (rate define) — remove se aparecer
       const idx = missing.indexOf('posologia');
       if (idx >= 0) missing.splice(idx, 1);
     }
