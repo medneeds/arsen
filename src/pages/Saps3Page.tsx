@@ -1475,7 +1475,7 @@ export default function Saps3Page() {
           </Card>
 
           {/* Bed Selection / Allocation Confirmation */}
-          <Card>
+          <Card data-saps-anchor="saps-bed">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Bed className="h-5 w-5 text-primary" />
