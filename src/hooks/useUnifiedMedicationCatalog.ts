@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ALL_ITEMS_BY_CATEGORY,
@@ -178,32 +178,70 @@ function dedupeMerge(local: MedicationEntry[], remote: MedicationEntry[]): Medic
 let cachedRows: { catalog: CatalogRow[]; presentations: PresentationRow[] } | null = null;
 let cachedPromise: Promise<{ catalog: CatalogRow[]; presentations: PresentationRow[] }> | null = null;
 
-async function loadCatalogOnce() {
-  if (cachedRows) return cachedRows;
+/** Subscribers notificados quando o cache é (re)populado — usado para revalidar
+ *  componentes que carregaram o hook antes da sessão Supabase chegar. */
+const cacheSubscribers = new Set<() => void>();
+function notifyCacheSubscribers() {
+  for (const cb of cacheSubscribers) {
+    try { cb(); } catch { /* noop */ }
+  }
+}
+
+async function fetchCatalogNow() {
+  const [{ data: catalog, error: e1 }, { data: pres, error: e2 }] = await Promise.all([
+    supabase
+      .from("medication_catalog")
+      .select("id, generic_name, nome_comercial, therapeutic_class, pharmacological_group, controlled, high_alert, requires_dilution, notes, lista, notification_type")
+      .order("generic_name"),
+    supabase
+      .from("medication_presentations")
+      .select("medication_id, form, concentration, unit, route, pharmaceutical_form, default_route, default_dose, standard_dilution, max_daily_dose, infusion_time"),
+  ]);
+  if (e1) throw e1;
+  if (e2) throw e2;
+  return {
+    catalog: (catalog ?? []) as CatalogRow[],
+    presentations: (pres ?? []) as PresentationRow[],
+  };
+}
+
+async function loadCatalogOnce(force = false) {
+  if (!force && cachedRows && cachedRows.catalog.length > 0) return cachedRows;
   if (cachedPromise) return cachedPromise;
   cachedPromise = (async () => {
-    const [{ data: catalog, error: e1 }, { data: pres, error: e2 }] = await Promise.all([
-      supabase
-        .from("medication_catalog")
-        .select("id, generic_name, nome_comercial, therapeutic_class, pharmacological_group, controlled, high_alert, requires_dilution, notes, lista, notification_type")
-        .order("generic_name"),
-      supabase
-        .from("medication_presentations")
-        .select("medication_id, form, concentration, unit, route, pharmaceutical_form, default_route, default_dose, standard_dilution, max_daily_dose, infusion_time"),
-    ]);
-    if (e1) throw e1;
-    if (e2) throw e2;
-    cachedRows = {
-      catalog: (catalog ?? []) as CatalogRow[],
-      presentations: (pres ?? []) as PresentationRow[],
-    };
-    return cachedRows;
+    let result = await fetchCatalogNow();
+    // Se voltou vazio (sessão/RLS ainda não pronta), tenta de novo 1x após 1.2s
+    // antes de cachear — evita travar a busca em estado vazio até refresh manual.
+    if (result.catalog.length === 0) {
+      await new Promise((r) => setTimeout(r, 1200));
+      const retry = await fetchCatalogNow();
+      if (retry.catalog.length > 0) result = retry;
+    }
+    // Só cacheia se tem conteúdo — vazio não vira cache permanente.
+    if (result.catalog.length > 0) {
+      cachedRows = result;
+      notifyCacheSubscribers();
+    }
+    return result;
   })();
   try {
     return await cachedPromise;
   } finally {
     cachedPromise = null;
   }
+}
+
+// Quando a sessão Supabase fica disponível depois do primeiro carregamento,
+// força revalidação se o cache ainda estiver vazio. Instalado 1x.
+let authListenerInstalled = false;
+function installAuthListener() {
+  if (authListenerInstalled) return;
+  authListenerInstalled = true;
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session?.user && (!cachedRows || cachedRows.catalog.length === 0)) {
+      loadCatalogOnce(true).then(notifyCacheSubscribers).catch(() => { /* noop */ });
+    }
+  });
 }
 
 export interface UnifiedCatalog {
@@ -216,6 +254,7 @@ export interface UnifiedCatalog {
   medications: MedicationEntry[];
   controlledItems: ControlledCatalogItem[];
   findControlledByName: (name: string) => ControlledCatalogItem | undefined;
+  refetch: () => Promise<void>;
 }
 
 export function useUnifiedMedicationCatalog(): UnifiedCatalog {
@@ -226,28 +265,47 @@ export function useUnifiedMedicationCatalog(): UnifiedCatalog {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    installAuthListener();
     let alive = true;
-    if (cachedRows) {
+
+    const applyCache = () => {
+      if (!alive || !cachedRows) return;
       setRows(cachedRows);
       setLoading(false);
-      return;
+    };
+    cacheSubscribers.add(applyCache);
+
+    if (cachedRows && cachedRows.catalog.length > 0) {
+      setRows(cachedRows);
+      setLoading(false);
+    } else {
+      loadCatalogOnce()
+        .then((r) => {
+          if (alive) {
+            setRows(r);
+            setLoading(false);
+          }
+        })
+        .catch((e) => {
+          if (alive) {
+            setError(e?.message ?? "Falha ao carregar catálogo");
+            setLoading(false);
+          }
+        });
     }
-    loadCatalogOnce()
-      .then((r) => {
-        if (alive) {
-          setRows(r);
-          setLoading(false);
-        }
-      })
-      .catch((e) => {
-        if (alive) {
-          setError(e?.message ?? "Falha ao carregar catálogo");
-          setLoading(false);
-        }
-      });
     return () => {
       alive = false;
+      cacheSubscribers.delete(applyCache);
     };
+  }, []);
+
+  const refetch = useCallback(async () => {
+    try {
+      const r = await loadCatalogOnce(true);
+      setRows(r);
+    } catch (e: any) {
+      setError(e?.message ?? "Falha ao recarregar catálogo");
+    }
   }, []);
 
   const byCategory = useMemo<Record<PrescriptionCategory, MedicationEntry[]>>(() => {
@@ -347,5 +405,6 @@ export function useUnifiedMedicationCatalog(): UnifiedCatalog {
     medications: byCategory.medication,
     controlledItems,
     findControlledByName,
+    refetch,
   };
 }

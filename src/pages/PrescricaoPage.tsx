@@ -1351,15 +1351,19 @@ function HydrationFields({
   const dripVal = dripMode === 'BIC' ? mlh : gtt;
   const volTotal24 = volPhase * phases;
 
-  // Auto-sync calculated drip rate into infusionRate (via effect, NUNCA durante o render
-  // — fazer setState/onUpdate no corpo do componente cria loop de re-render que rouba foco
-  // dos inputs e impede a edição dos campos).
+  // Auto-sync calculated drip rate into infusionRate.
+  // ⚠️ Não incluir `onUpdate` nas deps — a referência muda a cada render do pai
+  // e dispararia este effect em loop, causando re-renders que roubam o foco
+  // do <Input> ativo (sintoma: clique no campo não habilita digitação).
   const calcRateStr = isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '';
+  const lastSyncedRateRef = React.useRef<string>('');
   React.useEffect(() => {
-    if (calcRateStr && calcRateStr !== item.infusionRate) {
+    if (calcRateStr && calcRateStr !== item.infusionRate && calcRateStr !== lastSyncedRateRef.current) {
+      lastSyncedRateRef.current = calcRateStr;
       onUpdate(item.id, 'infusionRate', calcRateStr);
     }
-  }, [calcRateStr, item.infusionRate, item.id, onUpdate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calcRateStr, item.infusionRate, item.id]);
 
   const handlePhasesChange = (v: string) => {
     const opt = HYDRATION_PHASE_OPTIONS.find(o => String(o.phases) === v);
@@ -1513,9 +1517,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   // Compute lock state for the row (mirrors ValidationDot logic).
   // Once an item is validated within the current 05h window, the row is read-only:
   // dose/route/posology/instructions/flags/deletion are blocked.
+  // Lock só vale se o item foi REALMENTE validado (flag true) E tem `validatedAt`
+  // VÁLIDO (Date parseável). Isso evita travar item recém-adicionado se vier
+  // algum `validatedAt` sujo do banco — sintoma: "clico no campo e não digita".
   const renewalCutoffNow = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
-  const validatedAfterCutoffNow = !!(item.validatedAt && new Date(item.validatedAt) > renewalCutoffNow);
-  const isLocked = !!item.validated && (!isPastRenewalTime || validatedAfterCutoffNow);
+  const validatedAtDate = item.validatedAt ? new Date(item.validatedAt) : null;
+  const validatedAtIsValid = !!(validatedAtDate && !isNaN(validatedAtDate.getTime()));
+  const validatedAfterCutoffNow = validatedAtIsValid && validatedAtDate! > renewalCutoffNow;
+  const isLocked = !!item.validated && validatedAtIsValid && (!isPastRenewalTime || validatedAfterCutoffNow);
 
   const style = {
     transform: CSS.Transform.toString(transform),
