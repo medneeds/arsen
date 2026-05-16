@@ -1,0 +1,1 @@
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS uti_weight_kg numeric(6,2);
