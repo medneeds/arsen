@@ -299,7 +299,7 @@ export function useUnifiedMedicationCatalog(): UnifiedCatalog {
     };
   }, []);
 
-  const refetch = React.useCallback(async () => {
+  const refetch = useCallback(async () => {
     try {
       const r = await loadCatalogOnce(true);
       setRows(r);
