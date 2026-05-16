@@ -7050,7 +7050,51 @@ const PrescricaoPage = () => {
         }}
       />
 
-      {/* Nutrition entry-flow confirmation: assistente vs manual */}
+      {/* Exclusão auditada de rascunho */}
+      <AlertDialog open={!!draftToDelete} onOpenChange={(o) => { if (!o && !draftDeleting) { setDraftToDelete(null); setDraftDeleteReason(""); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4 text-destructive" />
+              Excluir rascunho de prescrição
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                {draftToDelete && (
+                  <>Você vai excluir o rascunho <strong>v{draftToDelete.version}</strong> de <strong>{draftToDelete.patient_name}</strong> criado em {format(new Date(draftToDelete.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}.</>
+                )}
+              </span>
+              <span className="block text-amber-700 dark:text-amber-400 text-xs">
+                Esta ação é irreversível na interface, mas o conteúdo completo do rascunho e seu motivo ficam registrados em auditoria (resgate forense por administradores).
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium">Motivo da exclusão <span className="text-destructive">*</span></label>
+            <textarea
+              value={draftDeleteReason}
+              onChange={(e) => setDraftDeleteReason(e.target.value)}
+              placeholder="Ex.: Rascunho duplicado / criado por engano / paciente trocado..."
+              rows={3}
+              className="w-full text-xs rounded-md border border-input bg-background px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-ring"
+              disabled={draftDeleting}
+            />
+            <p className="text-[10px] text-muted-foreground">Mínimo 5 caracteres. Será gravado na auditoria.</p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={draftDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmDeleteDraft(); }}
+              disabled={draftDeleting || draftDeleteReason.trim().length < 5}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {draftDeleting ? "Excluindo..." : "Excluir rascunho"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
       <AlertDialog open={nutritionConfirmOpen} onOpenChange={setNutritionConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
