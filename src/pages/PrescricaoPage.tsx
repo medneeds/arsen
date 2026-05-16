@@ -7150,6 +7150,89 @@ const PrescricaoPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Visualização compacta de prescrição (oficial ou rascunho) */}
+      <Dialog open={!!previewPrescription} onOpenChange={(o) => { if (!o) setPreviewPrescription(null); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-sm">
+              <Eye className="h-4 w-4 text-primary" />
+              Visualização compacta da prescrição
+              {previewPrescription && (
+                previewPrescription.isValidated ? (
+                  <Badge className="text-[9px] h-4 px-1.5 bg-emerald-600 hover:bg-emerald-600">✓ Oficial validada</Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-700 dark:text-amber-300">Rascunho</Badge>
+                )
+              )}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              {previewPrescription && (
+                <>
+                  <strong>{previewPrescription.patient_name}</strong> · v{previewPrescription.version} · {format(new Date(previewPrescription.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                  {previewPrescription.digital_signature && <> · 🔏 Assinada</>}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto -mx-6 px-6">
+            {previewPrescription && previewPrescription.items.length > 0 ? (
+              <table className="w-full text-[11px] border-collapse">
+                <thead className="sticky top-0 bg-background z-10">
+                  <tr className="border-b text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <th className="py-1.5 pr-2 w-6">#</th>
+                    <th className="py-1.5 pr-2">Item</th>
+                    <th className="py-1.5 pr-2">Via</th>
+                    <th className="py-1.5 pr-2">Posologia</th>
+                    <th className="py-1.5 pr-2 w-12 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {previewPrescription.items.map((it, idx) => (
+                    <tr key={it.id} className={cn("border-b last:border-0 align-top", it.status === 'suspended' && "opacity-50 line-through")}>
+                      <td className="py-1.5 pr-2 text-muted-foreground tabular-nums">{idx + 1}</td>
+                      <td className="py-1.5 pr-2">
+                        <div className="font-medium uppercase">{it.name || '—'}</div>
+                        {(it.dose || it.presentation) && (
+                          <div className="text-[10px] text-muted-foreground">{[it.presentation, it.dose].filter(Boolean).join(' · ')}</div>
+                        )}
+                        {it.instructions && (
+                          <div className="text-[10px] text-muted-foreground italic mt-0.5">{it.instructions}</div>
+                        )}
+                      </td>
+                      <td className="py-1.5 pr-2 uppercase text-[10px]">{it.route || '—'}</td>
+                      <td className="py-1.5 pr-2 text-[10px]">{it.posology || it.schedule || '—'}</td>
+                      <td className="py-1.5 pr-2 text-center">
+                        {it.validated ? (
+                          <Badge className="text-[9px] h-4 px-1 bg-emerald-600 hover:bg-emerald-600">VAL</Badge>
+                        ) : it.status === 'suspended' ? (
+                          <Badge variant="outline" className="text-[9px] h-4 px-1">SUSP</Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-[10px]">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-xs text-muted-foreground italic py-4 text-center">Prescrição sem itens.</p>
+            )}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPreviewPrescription(null)}>Fechar</Button>
+            {previewPrescription && (
+              <Button
+                size="sm"
+                onClick={() => { loadPrescription(previewPrescription.id); setPreviewPrescription(null); }}
+              >
+                Abrir no editor
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
 
       <AlertDialog open={nutritionConfirmOpen} onOpenChange={setNutritionConfirmOpen}>
         <AlertDialogContent>
