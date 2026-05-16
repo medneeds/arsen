@@ -35,7 +35,40 @@ import {
   Clock,
   UserCheck,
   AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  HelpCircle,
+  Info,
 } from "lucide-react";
+
+// ─── Tradução de erros Postgres em mensagens humanas ───
+function humanizeSaveError(err: any): string {
+  if (!err) return "Erro desconhecido ao salvar a ficha.";
+  const code: string = err.code || err?.error?.code || "";
+  const msg: string = err.message || err?.error?.message || String(err);
+  if (code === "23502" || /not[-_ ]null/i.test(msg)) {
+    const col = msg.match(/column "([^"]+)"/i)?.[1];
+    return col
+      ? `Campo obrigatório vazio no banco: "${col}". Verifique a checklist de validação acima dos botões.`
+      : "Há um campo obrigatório não preenchido. Verifique a checklist de validação.";
+  }
+  if (code === "23514" || /check constraint/i.test(msg)) {
+    return "Algum valor está fora da faixa esperada (ex.: GCS 3-15, RASS -5 a +4, idade ≥ 0). Revise os campos numéricos.";
+  }
+  if (code === "23505" || /duplicate key/i.test(msg)) {
+    return "Já existe um registro idêntico para este paciente. Recarregue a página.";
+  }
+  if (code === "42501" || /row[-_ ]level security|permission denied/i.test(msg)) {
+    return "Sem permissão para validar esta ficha. Verifique seu perfil de acesso ou contate o administrador.";
+  }
+  if (code === "PGRST116" || /not found/i.test(msg)) {
+    return "Ficha SAPS não encontrada — pode ter sido excluída por outro usuário. Recarregue a página.";
+  }
+  if (/network|fetch|timeout/i.test(msg)) {
+    return "Falha de rede ao salvar. Verifique sua conexão e tente novamente — o rascunho está preservado.";
+  }
+  return `Erro ao salvar: ${msg}`;
+}
 import {
   Collapsible,
   CollapsibleContent,
