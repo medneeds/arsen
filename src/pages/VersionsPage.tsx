@@ -19,6 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 
 export default function VersionsPage() {
   const { versions, isLoading, fetchVersions, deleteVersion } = usePatientVersions();
@@ -479,7 +480,7 @@ export default function VersionsPage() {
                         Leito {patient.bedNumber} - {patient.name}
                         {patient.age && <span className="text-sm text-muted-foreground">({formatAgeDisplay(patient.age)})</span>}
                       </CardTitle>
-                      <Badge variant="outline" className="uppercase">{patient.sector}</Badge>
+                      <Badge variant="outline" className="uppercase">{sectorLabelFromCode(patient.sector)}</Badge>
                     </div>
                   </div>
                 </CardHeader>

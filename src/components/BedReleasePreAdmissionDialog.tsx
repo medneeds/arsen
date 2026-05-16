@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { Patient } from "@/types/patient";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 
 const PRE_ADMISSION_REASONS = [
   { value: "paciente_saiu", label: "Paciente saiu antes da admissão (evasão / saída a pedido)" },
@@ -217,7 +218,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       summary={[
         { icon: UserMinus, label: "Paciente", value: patient.name || "—" },
         { icon: Bed, label: "Leito atual", value: patient.bedNumber || "—" },
-        { icon: Stethoscope, label: "Setor", value: (patient as any).department || patient.sector || "—" },
+        { icon: Stethoscope, label: "Setor", value: (patient as any).department || sectorLabelFromCode(patient.sector) || "—" },
         {
           icon: ClipboardList,
           label: "Status atual",

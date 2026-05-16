@@ -14,6 +14,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
 import { whitelabel, getInstitutionalHeaderLines } from "@/config/whitelabel";
 import socorraoCross from "@/assets/socorrao-cross-logo.png";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 
 interface Encounter {
   id: string;
@@ -178,19 +179,10 @@ const FichaAtendimentoPage = () => {
           if (!pd.age && p.age) pd.age = String(p.age);
 
           // Build evolution encounter from patient data
-          const sectorMap: Record<string, string> = {
-            red: "PS Sala Vermelha",
-            yellow: "PS Sala Amarela",
-            blue: "PS Sala Azul",
-            outside: "PS Observação",
-            sala_vermelha: "PS Sala Vermelha",
-            sala_laranja: "PS Sala Laranja",
-          };
-
           if (p.admission_history) {
             allEncounters.push({
               id: `patient-evolution-${p.id}`,
-              sector: sectorMap[p.sector] || p.sector,
+              sector: sectorLabelFromCode(p.sector),
               professionalName: "",
               professionalCRM: "",
               startTime: p.admission_date || p.created_at,
