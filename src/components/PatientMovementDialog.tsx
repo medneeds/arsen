@@ -718,18 +718,18 @@ export function PatientMovementDialog({
             ];
             if (subtypeDef.id === "TRANSFERENCIA_INTERNA") {
               base.push(
-                { icon: ArrowRightLeft, text: <>O paciente será marcado como em <strong>trânsito interno</strong> para o setor destino. O leito atual <strong>permanece reservado</strong> até a confirmação administrativa de chegada.</> },
-                { icon: Bed, text: <>A liberação do leito de origem e a alocação efetiva no leito de destino são feitas em <strong>etapa separada</strong> pela equipe NIR/regulação.</> },
+                { icon: ArrowRightLeft, text: <>O paciente será marcado como em <strong>trânsito interno</strong> para o setor destino. O leito atual <strong>permanece reservado</strong> até a liberação no Mapa.</> },
+                { icon: Bed, text: <>A <strong>liberação física do leito</strong> é feita no <strong>Mapa de Leitos</strong> pela recepção, enfermagem ou pelo próprio médico — não há mais dependência do NIR.</> },
               );
             } else if (subtypeDef.id === "TRANSFERENCIA_EXTERNA") {
               base.push(
                 { icon: Building2, text: <>O paciente será marcado como <strong>transferido para outra instituição</strong>. O censo do hospital reflete a saída assistencial, mas o registro permanece consultável.</> },
-                { icon: Bed, text: <>O leito vai para <strong>limpeza/disponibilização</strong> conforme rotina do setor administrativo — não é apagado neste momento.</> },
+                { icon: Bed, text: <>A <strong>liberação do leito</strong> é feita no <strong>Mapa de Leitos</strong> após a saída efetiva do paciente — recepção, enfermagem ou médico podem executar.</> },
               );
             } else if (subtypeDef.id === "EVASAO") {
               base.push(
                 { icon: AlertTriangle, text: <>Esta é uma <strong>saída sem alta médica</strong>. Recomenda-se descrever nas observações o contexto (local, horário, ciência da equipe e família, se houver).</> },
-                { icon: Bed, text: <>O leito será liberado pela equipe administrativa em etapa posterior. O prontuário continua disponível para auditoria.</> },
+                { icon: Bed, text: <>A <strong>liberação do leito</strong> é feita no Mapa após a saída — preserva o prontuário e marca o evento na auditoria.</> },
               );
             }
             base.push(
