@@ -340,25 +340,20 @@ export function EditPatientDialog({
         onSuccess={() => setStatusOpen(false)}
       />
 
-      <PatientMovementDialog
-        patient={patient}
-        movementType={movementType}
-        isOpen={movementOpen}
-        onClose={() => {
-          setMovementOpen(false);
-          setMovementType(null);
-        }}
-        onSuccess={() => {
-          setMovementOpen(false);
-          setMovementType(null);
-          onOpenChange(false);
-        }}
-      />
       <MedicalRecordEditDialog
         open={recordEditOpen}
         onOpenChange={setRecordEditOpen}
         patientId={patient.id}
         patientName={patient.name}
+      />
+      <OperationalRelocationDialog
+        patient={patient}
+        open={operationalRelocOpen}
+        onOpenChange={setOperationalRelocOpen}
+        onSuccess={() => {
+          setOperationalRelocOpen(false);
+          onOpenChange(false);
+        }}
       />
     </>
   );
