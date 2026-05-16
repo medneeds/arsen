@@ -4315,6 +4315,80 @@ const PrescricaoPage = () => {
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
   const [pendingAlerts, setPendingAlerts] = useState<ClinicalAlert[]>([]);
 
+  // === Exclusão auditada de rascunhos (acessível via popup do Calendário) ===
+  const [draftToDelete, setDraftToDelete] = useState<{ id: string; patient_name: string; version: number; status: string; created_at: string } | null>(null);
+  const [draftDeleteReason, setDraftDeleteReason] = useState("");
+  const [draftDeleting, setDraftDeleting] = useState(false);
+
+  const confirmDeleteDraft = useCallback(async () => {
+    if (!draftToDelete) return;
+    const reason = draftDeleteReason.trim();
+    if (reason.length < 5) {
+      toast.error("Informe o motivo da exclusão (mínimo 5 caracteres).");
+      return;
+    }
+    if (draftToDelete.status !== 'draft') {
+      toast.error("Apenas rascunhos podem ser excluídos.");
+      return;
+    }
+    setDraftDeleting(true);
+    try {
+      // Busca snapshot completo antes de apagar (resgate forense)
+      const { data: snap, error: snapErr } = await supabase
+        .from('prescriptions')
+        .select('*')
+        .eq('id', draftToDelete.id)
+        .single();
+      if (snapErr) throw snapErr;
+      if (!snap || snap.status !== 'draft') {
+        throw new Error("Esta prescrição não está mais como rascunho.");
+      }
+
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) throw new Error("Sessão expirada.");
+
+      // Registra auditoria ANTES do delete
+      const { error: auditErr } = await supabase
+        .from('prescription_draft_deletion_audit')
+        .insert([{
+          prescription_id: draftToDelete.id,
+          prescription_snapshot: snap as any,
+          patient_name: snap.patient_name,
+          patient_id: (snap as any).patient_id ?? null,
+          version: snap.version,
+          deleted_by: uid,
+          deleted_by_name: currentDoctor?.name ?? auth.user?.email ?? null,
+          reason,
+        }]);
+      if (auditErr) throw auditErr;
+
+      const { error: delErr } = await supabase
+        .from('prescriptions')
+        .delete()
+        .eq('id', draftToDelete.id);
+      if (delErr) throw delErr;
+
+      // Se o rascunho excluído estava carregado, limpa estado da página
+      if (currentPrescriptionId === draftToDelete.id) {
+        setItems([]);
+        setSelectedIds(new Set());
+        setCurrentPrescriptionId(null);
+        setDigitalSignature(null);
+      }
+
+      toast.success("Rascunho excluído", { description: `v${draftToDelete.version} — motivo registrado em auditoria.` });
+      setDraftToDelete(null);
+      setDraftDeleteReason("");
+      fetchPrescriptions();
+    } catch (err: any) {
+      console.error('[deleteDraft]', err);
+      toast.error("Não foi possível excluir o rascunho", { description: err?.message ?? String(err) });
+    } finally {
+      setDraftDeleting(false);
+    }
+  }, [draftToDelete, draftDeleteReason, currentDoctor, currentPrescriptionId, fetchPrescriptions]);
+
   // Continua o fluxo de validação após (eventual) checagem de alertas:
   // se sessão ativa → aplica direto; senão → pede senha.
   const proceedValidation = useCallback((action: { type: 'all' } | { type: 'item'; itemId: string }) => {
