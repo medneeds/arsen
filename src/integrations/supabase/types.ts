@@ -2929,6 +2929,45 @@ export type Database = {
           },
         ]
       }
+      prescription_draft_deletion_audit: {
+        Row: {
+          created_at: string
+          deleted_by: string
+          deleted_by_name: string | null
+          id: string
+          patient_id: string | null
+          patient_name: string | null
+          prescription_id: string
+          prescription_snapshot: Json
+          reason: string
+          version: number | null
+        }
+        Insert: {
+          created_at?: string
+          deleted_by: string
+          deleted_by_name?: string | null
+          id?: string
+          patient_id?: string | null
+          patient_name?: string | null
+          prescription_id: string
+          prescription_snapshot: Json
+          reason: string
+          version?: number | null
+        }
+        Update: {
+          created_at?: string
+          deleted_by?: string
+          deleted_by_name?: string | null
+          id?: string
+          patient_id?: string | null
+          patient_name?: string | null
+          prescription_id?: string
+          prescription_snapshot?: Json
+          reason?: string
+          version?: number | null
+        }
+        Relationships: []
+      }
       prescription_quick_templates: {
         Row: {
           clinical_category: string
