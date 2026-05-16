@@ -2161,7 +2161,7 @@ export default function Saps3Page() {
                 ? (completingSapsId ? "Salvando..." : "Pré-admitindo...")
                 : (completingSapsId ? "Manter como pendente" : "Pré-admitir com SAPS pendente")}
             </Button>
-            <Button onClick={() => handleSave(false)} disabled={saving || (!completingSapsId && !selectedBed)} className="gap-2">
+            <Button onClick={() => handleSave(false)} disabled={saving} className="gap-2">
               <Save className="h-4 w-4" />
               {saving
                 ? (completingSapsId ? "Validando..." : "Pré-admitindo...")
