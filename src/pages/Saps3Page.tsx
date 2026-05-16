@@ -35,7 +35,40 @@ import {
   Clock,
   UserCheck,
   AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  HelpCircle,
+  Info,
 } from "lucide-react";
+
+// ─── Tradução de erros Postgres em mensagens humanas ───
+function humanizeSaveError(err: any): string {
+  if (!err) return "Erro desconhecido ao salvar a ficha.";
+  const code: string = err.code || err?.error?.code || "";
+  const msg: string = err.message || err?.error?.message || String(err);
+  if (code === "23502" || /not[-_ ]null/i.test(msg)) {
+    const col = msg.match(/column "([^"]+)"/i)?.[1];
+    return col
+      ? `Campo obrigatório vazio no banco: "${col}". Verifique a checklist de validação acima dos botões.`
+      : "Há um campo obrigatório não preenchido. Verifique a checklist de validação.";
+  }
+  if (code === "23514" || /check constraint/i.test(msg)) {
+    return "Algum valor está fora da faixa esperada (ex.: GCS 3-15, RASS -5 a +4, idade ≥ 0). Revise os campos numéricos.";
+  }
+  if (code === "23505" || /duplicate key/i.test(msg)) {
+    return "Já existe um registro idêntico para este paciente. Recarregue a página.";
+  }
+  if (code === "42501" || /row[-_ ]level security|permission denied/i.test(msg)) {
+    return "Sem permissão para validar esta ficha. Verifique seu perfil de acesso ou contate o administrador.";
+  }
+  if (code === "PGRST116" || /not found/i.test(msg)) {
+    return "Ficha SAPS não encontrada — pode ter sido excluída por outro usuário. Recarregue a página.";
+  }
+  if (/network|fetch|timeout/i.test(msg)) {
+    return "Falha de rede ao salvar. Verifique sua conexão e tente novamente — o rascunho está preservado.";
+  }
+  return `Erro ao salvar: ${msg}`;
+}
 import {
   Collapsible,
   CollapsibleContent,
@@ -443,6 +476,7 @@ export default function Saps3Page() {
   const [box1Open, setBox1Open] = useState(true);
   const [box2Open, setBox2Open] = useState(true);
   const [box3Open, setBox3Open] = useState(true);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   // ─── Calculated Scores ───
   const scores = useMemo(() => {
@@ -954,20 +988,53 @@ export default function Saps3Page() {
     pending_since: statusVal === 'pending' ? new Date().toISOString() : null,
   });
 
+  // ─── Checklist de validação (tempo real) ───
+  type MissingItem = { id: string; label: string; anchor: string; hint?: string };
+  const missingFields = useMemo<MissingItem[]>(() => {
+    const out: MissingItem[] = [];
+    if (!patientName.trim()) out.push({ id: "name", label: "Nome do paciente", anchor: "saps-banner" });
+    if (!hospitalId || !stateId) out.push({ id: "hosp", label: "Hospital / Estado", anchor: "saps-banner", hint: "Selecione no topo da página" });
+    if (!completingSapsId) {
+      if (!selectedSector) out.push({ id: "sector", label: "Setor da UTI", anchor: "saps-bed" });
+      if (!selectedBed) out.push({ id: "bed", label: "Leito de destino", anchor: "saps-bed" });
+    }
+    if (!sedationStatus) {
+      out.push({ id: "sed", label: "Avaliação de consciência (sedoanalgesia/VM)", anchor: "saps-conscious", hint: "Escolha Não / Sedoanalgesia / Intubado sem sedação" });
+    } else if (sedationStatus === "no" && (!gcsO || !gcsV || !gcsM)) {
+      out.push({ id: "gcs", label: "Glasgow completo (O, V, M)", anchor: "saps-conscious", hint: "Preencha as 3 componentes (faixas: O 1-4, V 1-5, M 1-6)" });
+    } else if (sedationStatus === "intubated_no_sedation" && (!gcsO || !gcsM)) {
+      out.push({ id: "gcst", label: "Glasgow-T (Ocular e Motor)", anchor: "saps-conscious", hint: "V é fixo em 1T quando intubado sem sedação" });
+    } else if (sedationStatus === "sedated" && rassScore === "") {
+      out.push({ id: "rass", label: "Pontuação RASS", anchor: "saps-conscious", hint: "Selecione um valor de -5 a +4" });
+    }
+    return out;
+  }, [patientName, hospitalId, stateId, completingSapsId, selectedSector, selectedBed, sedationStatus, gcsO, gcsV, gcsM, rassScore]);
+
+  const focusAnchor = (anchor: string) => {
+    if (typeof document === "undefined") return;
+    const el = document.querySelector(`[data-saps-anchor="${anchor}"]`) as HTMLElement | null;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("ring-2", "ring-destructive", "ring-offset-2", "transition-all");
+    window.setTimeout(() => {
+      el.classList.remove("ring-2", "ring-destructive", "ring-offset-2");
+    }, 2400);
+  };
+
   // ─── Save: SAPS3 + finalize allocation/admission ───
   const handleSave = async (asPending = false) => {
-    if (!patientName.trim()) { toast.error("Nome do paciente é obrigatório"); return; }
-    // No fluxo "completar SAPS pendente" o paciente já está no leito — não exigimos seleção de setor/leito.
+    // Validação unificada — pendente exige apenas identidade + leito; finalização exige checklist completa.
+    if (!patientName.trim()) { toast.error("Nome do paciente é obrigatório"); focusAnchor("saps-banner"); return; }
+    if (!hospitalId || !stateId) { toast.error("Hospital / Estado não selecionado"); focusAnchor("saps-banner"); return; }
     if (!completingSapsId) {
-      if (!selectedSector) { toast.error("Selecione o setor da UTI"); return; }
-      if (!selectedBed) { toast.error("Selecione o leito"); return; }
+      if (!selectedSector) { toast.error("Selecione o setor da UTI"); focusAnchor("saps-bed"); return; }
+      if (!selectedBed) { toast.error("Selecione o leito"); focusAnchor("saps-bed"); return; }
     }
-    if (!hospitalId || !stateId) { toast.error("Hospital/Estado não selecionado"); return; }
-    if (!asPending) {
-      if (!sedationStatus) { toast.error("Responda a avaliação de consciência (sedoanalgesia/VM)"); return; }
-      if (sedationStatus === "no" && (!gcsO || !gcsV || !gcsM)) { toast.error("Preencha O, V e M do Glasgow"); return; }
-      if (sedationStatus === "intubated_no_sedation" && (!gcsO || !gcsM)) { toast.error("Preencha Ocular e Motor do Glasgow (Verbal = 1T)"); return; }
-      if (sedationStatus === "sedated" && rassScore === "") { toast.error("Selecione a pontuação RASS (-5 a +4)"); return; }
+    if (!asPending && missingFields.length > 0) {
+      const first = missingFields[0];
+      toast.error(`Faltam ${missingFields.length} item(s) para validar: ${missingFields.map(f => f.label).join(" · ")}`, { duration: 6000 });
+      focusAnchor(first.anchor);
+      return;
     }
 
     // ─── Caminho "Completar SAPS pendente" — apenas atualiza a ficha existente ───
@@ -1028,7 +1095,7 @@ export default function Saps3Page() {
         loadRecords();
         toast.success("Ficha SAPS 3 validada com sucesso.");
       } catch (err: any) {
-        toast.error("Erro ao salvar: " + err.message);
+        toast.error(humanizeSaveError(err), { duration: 7000 });
       } finally {
         setSaving(false);
       }
@@ -1197,7 +1264,7 @@ export default function Saps3Page() {
       if (createdSapsId) {
         await supabase.from("saps3_assessments" as any).delete().eq("id", createdSapsId);
       }
-      toast.error("Erro ao salvar: " + err.message);
+      toast.error(humanizeSaveError(err), { duration: 7000 });
     } finally {
       setSaving(false);
     }
@@ -1315,7 +1382,56 @@ export default function Saps3Page() {
       {isFormMode && (
         <div className="space-y-4">
           {/* Patient info banner */}
-          <Card className={completingSapsId ? "border-emerald-300 bg-emerald-50/60 dark:border-emerald-700 dark:bg-emerald-900/15" : "border-primary/30 bg-primary/5"}>
+          {/* ── Guia "Como preencher" — recolhido por padrão, zero impacto no layout ── */}
+          <Collapsible open={helpOpen} onOpenChange={setHelpOpen}>
+            <Card className="border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-950/20">
+              <CollapsibleTrigger asChild>
+                <button type="button" className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left hover:bg-sky-100/60 dark:hover:bg-sky-900/30 transition-colors rounded-lg">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-sky-900 dark:text-sky-200">
+                    <HelpCircle className="h-4 w-4" />
+                    Como preencher a ficha SAPS 3 sem travar a validação
+                  </span>
+                  {helpOpen ? <ChevronUp className="h-4 w-4 text-sky-700 dark:text-sky-300" /> : <ChevronDown className="h-4 w-4 text-sky-700 dark:text-sky-300" />}
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0 pb-4 text-xs text-sky-900 dark:text-sky-200 space-y-3">
+                  <div>
+                    <p className="font-semibold mb-1">Mínimo obrigatório para <u>validar</u> (status “concluído”)</p>
+                    <ul className="list-disc pl-5 space-y-0.5">
+                      <li><b>Nome do paciente</b>, <b>Hospital/Estado</b> e <b>Leito</b> (este último só quando ainda não houver alocação).</li>
+                      <li><b>Avaliação de consciência</b>: escolha um dos 3 caminhos e preencha as componentes correspondentes.</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-semibold mb-1">Quando usar cada caminho de consciência</p>
+                    <ul className="list-disc pl-5 space-y-0.5">
+                      <li><b>Não (GCS completo)</b> — paciente acordado/colaborativo. Faixas: Ocular 1-4, Verbal 1-5, Motor 1-6.</li>
+                      <li><b>Sedoanalgesia ± VM (RASS)</b> — paciente sedado. Selecione o RASS atual (-5 a +4). O GCS pré-sedação é opcional, mas ajuda no cálculo.</li>
+                      <li><b>Intubado sem sedação (GCS-T)</b> — IOT sem sedação contínua. Preencha apenas Ocular e Motor; Verbal vira <b>1T</b> automaticamente.</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-semibold mb-1">Os 5 erros que mais bloqueiam a finalização</p>
+                    <ul className="list-disc pl-5 space-y-0.5">
+                      <li>Esquecer de marcar o caminho de consciência (botão cinza no topo da Box III).</li>
+                      <li>Reabrir uma ficha pendente e clicar “Validar” antes de revisar — o sistema agora rehidrata os campos automaticamente, mas confira a checklist abaixo.</li>
+                      <li>Tentar validar com hospital/estado vazio no seletor superior (toca a sessão).</li>
+                      <li>Leito que ficou ocupado por outro fluxo desde que você abriu a tela — o sistema avisa e basta escolher outro.</li>
+                      <li>Valores fora da faixa (RASS &gt; +4, GCS &gt; 15, idade negativa). O banco bloqueia e a mensagem agora aparece traduzida.</li>
+                    </ul>
+                  </div>
+                  <div className="rounded-md bg-white/70 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 p-2.5">
+                    <p className="font-semibold flex items-center gap-1.5 mb-0.5"><Info className="h-3.5 w-3.5" /> Pré-admitir com SAPS pendente</p>
+                    <p>Use quando os exames laboratoriais (gasometria, hemograma, creatinina, bilirrubina) ainda não chegaram. O paciente é alocado e um cronômetro fica ativo até a validação. Para essa via, basta nome + leito.</p>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Patient info banner */}
+          <Card data-saps-anchor="saps-banner" className={completingSapsId ? "border-emerald-300 bg-emerald-50/60 dark:border-emerald-700 dark:bg-emerald-900/15" : "border-primary/30 bg-primary/5"}>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -1359,7 +1475,7 @@ export default function Saps3Page() {
           </Card>
 
           {/* Bed Selection / Allocation Confirmation */}
-          <Card>
+          <Card data-saps-anchor="saps-bed">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Bed className="h-5 w-5 text-primary" />
@@ -1830,7 +1946,7 @@ export default function Saps3Page() {
               <CollapsibleContent>
                 <CardContent className="space-y-4 pt-0">
                   {/* ── Avaliação de consciência guiada (GCS / GCS-T / RASS) ── */}
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-4">
+                  <div data-saps-anchor="saps-conscious" className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-4">
                     <div className="flex items-start gap-2">
                       <Brain className="h-4 w-4 text-primary mt-0.5" />
                       <div className="flex-1">
@@ -1993,6 +2109,44 @@ export default function Saps3Page() {
             </Card>
           </Collapsible>
 
+          {/* ── Checklist de validação em tempo real ── */}
+          <Card className={missingFields.length === 0
+            ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/20"
+            : "border-amber-300 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-950/20"}>
+            <CardContent className="py-3 px-4">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                  {missingFields.length === 0 ? (
+                    <><CheckCircle2 className="h-4 w-4 text-emerald-600" /><span className="text-emerald-800 dark:text-emerald-300">Pronto para validar — todos os itens preenchidos</span></>
+                  ) : (
+                    <><AlertTriangle className="h-4 w-4 text-amber-600" /><span className="text-amber-800 dark:text-amber-300">Faltam {missingFields.length} item(s) para validar</span></>
+                  )}
+                </p>
+                <span className="text-[10px] text-muted-foreground">A "Pré-admitir com SAPS pendente" exige apenas nome + leito.</span>
+              </div>
+              {missingFields.length > 0 && (
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  {missingFields.map(f => (
+                    <li key={f.id}>
+                      <button
+                        type="button"
+                        onClick={() => focusAnchor(f.anchor)}
+                        className="w-full text-left flex items-start gap-2 rounded-md border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-amber-950/30 px-2.5 py-1.5 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                      >
+                        <XCircle className="h-3.5 w-3.5 text-amber-700 dark:text-amber-400 mt-0.5 shrink-0" />
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-xs font-medium text-amber-900 dark:text-amber-200">{f.label}</span>
+                          {f.hint && <span className="block text-[10px] text-amber-700 dark:text-amber-400">{f.hint}</span>}
+                        </span>
+                        <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 shrink-0">Ir →</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Save */}
           <div className="flex gap-3 justify-end flex-wrap">
             <Button variant="outline" onClick={() => setSelectedRequest(null)}>Cancelar</Button>
@@ -2007,7 +2161,7 @@ export default function Saps3Page() {
                 ? (completingSapsId ? "Salvando..." : "Pré-admitindo...")
                 : (completingSapsId ? "Manter como pendente" : "Pré-admitir com SAPS pendente")}
             </Button>
-            <Button onClick={() => handleSave(false)} disabled={saving || (!completingSapsId && !selectedBed)} className="gap-2">
+            <Button onClick={() => handleSave(false)} disabled={saving} className="gap-2">
               <Save className="h-4 w-4" />
               {saving
                 ? (completingSapsId ? "Validando..." : "Pré-admitindo...")
