@@ -4586,6 +4586,7 @@ export type Database = {
         Args: { p_email: string; p_new_password: string }
         Returns: Json
       }
+      archive_bed_history: { Args: { p_patient_id: string }; Returns: string }
       bump_quick_template_use: {
         Args: { _template_id: string }
         Returns: undefined
