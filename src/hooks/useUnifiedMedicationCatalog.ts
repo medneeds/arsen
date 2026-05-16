@@ -405,5 +405,6 @@ export function useUnifiedMedicationCatalog(): UnifiedCatalog {
     medications: byCategory.medication,
     controlledItems,
     findControlledByName,
+    refetch,
   };
 }
