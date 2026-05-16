@@ -1382,7 +1382,56 @@ export default function Saps3Page() {
       {isFormMode && (
         <div className="space-y-4">
           {/* Patient info banner */}
-          <Card className={completingSapsId ? "border-emerald-300 bg-emerald-50/60 dark:border-emerald-700 dark:bg-emerald-900/15" : "border-primary/30 bg-primary/5"}>
+          {/* ── Guia "Como preencher" — recolhido por padrão, zero impacto no layout ── */}
+          <Collapsible open={helpOpen} onOpenChange={setHelpOpen}>
+            <Card className="border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-950/20">
+              <CollapsibleTrigger asChild>
+                <button type="button" className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left hover:bg-sky-100/60 dark:hover:bg-sky-900/30 transition-colors rounded-lg">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-sky-900 dark:text-sky-200">
+                    <HelpCircle className="h-4 w-4" />
+                    Como preencher a ficha SAPS 3 sem travar a validação
+                  </span>
+                  {helpOpen ? <ChevronUp className="h-4 w-4 text-sky-700 dark:text-sky-300" /> : <ChevronDown className="h-4 w-4 text-sky-700 dark:text-sky-300" />}
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0 pb-4 text-xs text-sky-900 dark:text-sky-200 space-y-3">
+                  <div>
+                    <p className="font-semibold mb-1">Mínimo obrigatório para <u>validar</u> (status “concluído”)</p>
+                    <ul className="list-disc pl-5 space-y-0.5">
+                      <li><b>Nome do paciente</b>, <b>Hospital/Estado</b> e <b>Leito</b> (este último só quando ainda não houver alocação).</li>
+                      <li><b>Avaliação de consciência</b>: escolha um dos 3 caminhos e preencha as componentes correspondentes.</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-semibold mb-1">Quando usar cada caminho de consciência</p>
+                    <ul className="list-disc pl-5 space-y-0.5">
+                      <li><b>Não (GCS completo)</b> — paciente acordado/colaborativo. Faixas: Ocular 1-4, Verbal 1-5, Motor 1-6.</li>
+                      <li><b>Sedoanalgesia ± VM (RASS)</b> — paciente sedado. Selecione o RASS atual (-5 a +4). O GCS pré-sedação é opcional, mas ajuda no cálculo.</li>
+                      <li><b>Intubado sem sedação (GCS-T)</b> — IOT sem sedação contínua. Preencha apenas Ocular e Motor; Verbal vira <b>1T</b> automaticamente.</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-semibold mb-1">Os 5 erros que mais bloqueiam a finalização</p>
+                    <ul className="list-disc pl-5 space-y-0.5">
+                      <li>Esquecer de marcar o caminho de consciência (botão cinza no topo da Box III).</li>
+                      <li>Reabrir uma ficha pendente e clicar “Validar” antes de revisar — o sistema agora rehidrata os campos automaticamente, mas confira a checklist abaixo.</li>
+                      <li>Tentar validar com hospital/estado vazio no seletor superior (toca a sessão).</li>
+                      <li>Leito que ficou ocupado por outro fluxo desde que você abriu a tela — o sistema avisa e basta escolher outro.</li>
+                      <li>Valores fora da faixa (RASS &gt; +4, GCS &gt; 15, idade negativa). O banco bloqueia e a mensagem agora aparece traduzida.</li>
+                    </ul>
+                  </div>
+                  <div className="rounded-md bg-white/70 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 p-2.5">
+                    <p className="font-semibold flex items-center gap-1.5 mb-0.5"><Info className="h-3.5 w-3.5" /> Pré-admitir com SAPS pendente</p>
+                    <p>Use quando os exames laboratoriais (gasometria, hemograma, creatinina, bilirrubina) ainda não chegaram. O paciente é alocado e um cronômetro fica ativo até a validação. Para essa via, basta nome + leito.</p>
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Patient info banner */}
+          <Card data-saps-anchor="saps-banner" className={completingSapsId ? "border-emerald-300 bg-emerald-50/60 dark:border-emerald-700 dark:bg-emerald-900/15" : "border-primary/30 bg-primary/5"}>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center justify-between">
                 <div>
