@@ -267,58 +267,48 @@ export function EditPatientDialog({
                 )}
               </section>
 
-              {/* Bloco 3: Ações de Movimentação */}
+              {/* Bloco 3: Remanejamento operacional (administrativo, sem decisão clínica) */}
               {patient.name && (
                 <section className="space-y-2 p-3 rounded-lg border bg-card">
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     <ArrowRightLeft className="h-4 w-4 text-primary" />
-                    Ações de Movimentação
+                    Remanejamento Operacional
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    Os fluxos abaixo liberam automaticamente o leito e limpam
-                    os dados clínicos quando concluídos.
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                    Use somente para <strong>mudança de leito por motivo operacional</strong>
+                    (reforma, manutenção, isolamento, conforto) — sem decisão clínica.
+                    O histórico do paciente é preservado integralmente.
                   </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openMovement("TRANSFERÊNCIA")}
-                      className="h-9 text-xs gap-1.5 justify-start"
-                    >
-                      <ArrowRightLeft className="h-3.5 w-3.5 text-primary" />
-                      Transferir
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openMovement("ALTA")}
-                      className="h-9 text-xs gap-1.5 justify-start"
-                    >
-                      <LogOut className="h-3.5 w-3.5 text-primary" />
-                      Alta / Desfecho
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openMovement("ÓBITO")}
-                      className="h-9 text-xs gap-1.5 justify-start"
-                    >
-                      <Skull className="h-3.5 w-3.5 text-destructive" />
-                      Óbito
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setStatusOpen(true)}
-                      className="h-9 text-xs gap-1.5 justify-start"
-                    >
-                      <RefreshCw className="h-3.5 w-3.5 text-primary" />
-                      Reavaliar Internação
-                    </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setOperationalRelocOpen(true)}
+                    className="w-full h-9 text-xs gap-1.5 justify-start"
+                  >
+                    <ArrowRightLeft className="h-3.5 w-3.5 text-primary" />
+                    Remanejar para outro leito (operacional)
+                  </Button>
+                </section>
+              )}
+
+              {/* Banner: decisões clínicas migraram para o Painel Clínico */}
+              {patient.name && (
+                <section className="space-y-2 p-3 rounded-lg border border-amber-300/60 bg-amber-50/60 dark:bg-amber-950/20">
+                  <div className="flex items-start gap-2 text-xs leading-relaxed">
+                    <ClipboardList className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-semibold text-amber-900 dark:text-amber-200">
+                        Decisões clínicas migraram para o Painel Clínico
+                      </p>
+                      <p className="mt-1 text-muted-foreground">
+                        <strong>Alta médica</strong>, <strong>transferências</strong>,
+                        <strong> óbito</strong> e <strong>evasão</strong> agora são
+                        registrados pelo botão <em>"Abrir alta, movimentações e desfechos"</em>
+                        no Painel Clínico do paciente. Após a sinalização, qualquer perfil
+                        habilitado (recepção, enfermagem, médico) libera o leito por aqui.
+                      </p>
+                    </div>
                   </div>
                 </section>
               )}
