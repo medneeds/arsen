@@ -22,21 +22,17 @@ import {
   IdCard,
   ClipboardList,
   Stethoscope,
-  CalendarClock,
   CalendarCheck,
   ArrowRightLeft,
-  LogOut,
-  Skull,
-  RefreshCw,
   UserCog,
 } from "lucide-react";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
 import { MedicalResponsibilityDialog } from "./MedicalResponsibilityDialog";
-import { PatientMovementDialog } from "./PatientMovementDialog";
 import { InternmentStatusDialog } from "./InternmentStatusDialog";
 import { AdmissionDateEditor } from "./AdmissionDateEditor";
 import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
+import { OperationalRelocationDialog } from "./OperationalRelocationDialog";
 import { FileText } from "lucide-react";
 
 interface EditPatientDialogProps {
