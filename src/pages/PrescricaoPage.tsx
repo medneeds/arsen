@@ -6187,22 +6187,38 @@ const PrescricaoPage = () => {
                 {savedPrescriptions.length > 0 ? (
                   <div className="space-y-1">
                     {savedPrescriptions.map(p => (
-                      <button
+                      <div
                         key={p.id}
-                        onClick={() => loadPrescription(p.id)}
                         className={cn(
-                          "w-full text-left px-2 py-1.5 rounded-md border text-xs transition-colors hover:bg-accent/50",
-                          currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border"
+                          "w-full flex items-center gap-1 px-2 py-1.5 rounded-md border text-xs transition-colors",
+                          currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border hover:bg-accent/50"
                         )}
                       >
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
-                            {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
-                          </Badge>
-                          <span className="text-[9px] text-muted-foreground">v{p.version}</span>
-                          <span className="text-[9px] text-muted-foreground ml-auto">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
-                        </div>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => loadPrescription(p.id)}
+                          className="flex-1 text-left min-w-0"
+                        >
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
+                              {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
+                            </Badge>
+                            <span className="text-[9px] text-muted-foreground">v{p.version}</span>
+                            <span className="text-[9px] text-muted-foreground ml-auto">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                          </div>
+                        </button>
+                        {p.status === 'draft' && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setDraftToDelete(p); setDraftDeleteReason(""); }}
+                            className="shrink-0 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                            title="Excluir rascunho"
+                            aria-label="Excluir rascunho"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
                     ))}
                   </div>
                 ) : historyDate && prescriptionDateKeys.size > 0 ? (
