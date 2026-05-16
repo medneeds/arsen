@@ -1517,9 +1517,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   // Compute lock state for the row (mirrors ValidationDot logic).
   // Once an item is validated within the current 05h window, the row is read-only:
   // dose/route/posology/instructions/flags/deletion are blocked.
+  // Lock só vale se o item foi REALMENTE validado (flag true) E tem `validatedAt`
+  // VÁLIDO (Date parseável). Isso evita travar item recém-adicionado se vier
+  // algum `validatedAt` sujo do banco — sintoma: "clico no campo e não digita".
   const renewalCutoffNow = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
-  const validatedAfterCutoffNow = !!(item.validatedAt && new Date(item.validatedAt) > renewalCutoffNow);
-  const isLocked = !!item.validated && (!isPastRenewalTime || validatedAfterCutoffNow);
+  const validatedAtDate = item.validatedAt ? new Date(item.validatedAt) : null;
+  const validatedAtIsValid = !!(validatedAtDate && !isNaN(validatedAtDate.getTime()));
+  const validatedAfterCutoffNow = validatedAtIsValid && validatedAtDate! > renewalCutoffNow;
+  const isLocked = !!item.validated && validatedAtIsValid && (!isPastRenewalTime || validatedAfterCutoffNow);
 
   const style = {
     transform: CSS.Transform.toString(transform),
