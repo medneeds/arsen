@@ -14,6 +14,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
 import { whitelabel, getInstitutionalHeaderLines } from "@/config/whitelabel";
 import socorraoCross from "@/assets/socorrao-cross-logo.png";
+import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 
 interface Encounter {
   id: string;
