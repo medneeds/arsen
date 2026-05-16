@@ -1351,15 +1351,19 @@ function HydrationFields({
   const dripVal = dripMode === 'BIC' ? mlh : gtt;
   const volTotal24 = volPhase * phases;
 
-  // Auto-sync calculated drip rate into infusionRate (via effect, NUNCA durante o render
-  // — fazer setState/onUpdate no corpo do componente cria loop de re-render que rouba foco
-  // dos inputs e impede a edição dos campos).
+  // Auto-sync calculated drip rate into infusionRate.
+  // ⚠️ Não incluir `onUpdate` nas deps — a referência muda a cada render do pai
+  // e dispararia este effect em loop, causando re-renders que roubam o foco
+  // do <Input> ativo (sintoma: clique no campo não habilita digitação).
   const calcRateStr = isFinite(dripVal) && dripVal > 0 ? dripVal.toFixed(0) : '';
+  const lastSyncedRateRef = React.useRef<string>('');
   React.useEffect(() => {
-    if (calcRateStr && calcRateStr !== item.infusionRate) {
+    if (calcRateStr && calcRateStr !== item.infusionRate && calcRateStr !== lastSyncedRateRef.current) {
+      lastSyncedRateRef.current = calcRateStr;
       onUpdate(item.id, 'infusionRate', calcRateStr);
     }
-  }, [calcRateStr, item.infusionRate, item.id, onUpdate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calcRateStr, item.infusionRate, item.id]);
 
   const handlePhasesChange = (v: string) => {
     const opt = HYDRATION_PHASE_OPTIONS.find(o => String(o.phases) === v);
