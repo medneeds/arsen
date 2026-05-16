@@ -4315,6 +4315,8 @@ const PrescricaoPage = () => {
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
   const [pendingAlerts, setPendingAlerts] = useState<ClinicalAlert[]>([]);
 
+  // === Exclusão auditada de rascunhos — handler definido abaixo (após fetchPrescriptions) ===
+
   // Continua o fluxo de validação após (eventual) checagem de alertas:
   // se sessão ativa → aplica direto; senão → pede senha.
   const proceedValidation = useCallback((action: { type: 'all' } | { type: 'item'; itemId: string }) => {
@@ -5300,6 +5302,76 @@ const PrescricaoPage = () => {
 
   useEffect(() => { fetchPrescriptions(); }, [fetchPrescriptions]);
 
+  // === Exclusão auditada de rascunhos (acessível via popup do Calendário) ===
+  const [draftToDelete, setDraftToDelete] = useState<{ id: string; patient_name: string; version: number; status: string; created_at: string } | null>(null);
+  const [draftDeleteReason, setDraftDeleteReason] = useState("");
+  const [draftDeleting, setDraftDeleting] = useState(false);
+
+  const confirmDeleteDraft = useCallback(async () => {
+    if (!draftToDelete) return;
+    const reason = draftDeleteReason.trim();
+    if (reason.length < 5) {
+      toast.error("Informe o motivo da exclusão (mínimo 5 caracteres).");
+      return;
+    }
+    if (draftToDelete.status !== 'draft') {
+      toast.error("Apenas rascunhos podem ser excluídos.");
+      return;
+    }
+    setDraftDeleting(true);
+    try {
+      const { data: snap, error: snapErr } = await supabase
+        .from('prescriptions')
+        .select('*')
+        .eq('id', draftToDelete.id)
+        .single();
+      if (snapErr) throw snapErr;
+      if (!snap || snap.status !== 'draft') {
+        throw new Error("Esta prescrição não está mais como rascunho.");
+      }
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) throw new Error("Sessão expirada.");
+
+      const { error: auditErr } = await supabase
+        .from('prescription_draft_deletion_audit')
+        .insert([{
+          prescription_id: draftToDelete.id,
+          prescription_snapshot: snap as any,
+          patient_name: snap.patient_name,
+          patient_id: (snap as any).patient_id ?? null,
+          version: snap.version,
+          deleted_by: uid,
+          deleted_by_name: auth.user?.email ?? null,
+          reason,
+        }]);
+      if (auditErr) throw auditErr;
+
+      const { error: delErr } = await supabase
+        .from('prescriptions')
+        .delete()
+        .eq('id', draftToDelete.id);
+      if (delErr) throw delErr;
+
+      if (currentPrescriptionId === draftToDelete.id) {
+        setItems([]);
+        setSelectedIds(new Set());
+        setCurrentPrescriptionId(null);
+        setDigitalSignature(null);
+      }
+
+      toast.success("Rascunho excluído", { description: `v${draftToDelete.version} — motivo registrado em auditoria.` });
+      setDraftToDelete(null);
+      setDraftDeleteReason("");
+      fetchPrescriptions();
+    } catch (err: any) {
+      console.error('[deleteDraft]', err);
+      toast.error("Não foi possível excluir o rascunho", { description: err?.message ?? String(err) });
+    } finally {
+      setDraftDeleting(false);
+    }
+  }, [draftToDelete, draftDeleteReason, currentPrescriptionId, fetchPrescriptions]);
+
   // Auto-hidrata a última prescrição do paciente nas últimas 24h ao abrir o cockpit.
   // Garante que prescrições validadas/impressas continuem visíveis até o corte das 05h
   // mesmo se o médico fechar a aba e reabrir, e impede duplicatas.
@@ -6187,22 +6259,38 @@ const PrescricaoPage = () => {
                 {savedPrescriptions.length > 0 ? (
                   <div className="space-y-1">
                     {savedPrescriptions.map(p => (
-                      <button
+                      <div
                         key={p.id}
-                        onClick={() => loadPrescription(p.id)}
                         className={cn(
-                          "w-full text-left px-2 py-1.5 rounded-md border text-xs transition-colors hover:bg-accent/50",
-                          currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border"
+                          "w-full flex items-center gap-1 px-2 py-1.5 rounded-md border text-xs transition-colors",
+                          currentPrescriptionId === p.id ? "border-primary bg-primary/5" : "border-border hover:bg-accent/50"
                         )}
                       >
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
-                            {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
-                          </Badge>
-                          <span className="text-[9px] text-muted-foreground">v{p.version}</span>
-                          <span className="text-[9px] text-muted-foreground ml-auto">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
-                        </div>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => loadPrescription(p.id)}
+                          className="flex-1 text-left min-w-0"
+                        >
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Badge variant={p.status === 'signed' ? 'default' : 'outline'} className="text-[9px] h-4 px-1.5">
+                              {p.status === 'signed' ? '✓ Assinada' : 'Rascunho'}
+                            </Badge>
+                            <span className="text-[9px] text-muted-foreground">v{p.version}</span>
+                            <span className="text-[9px] text-muted-foreground ml-auto">{format(new Date(p.created_at), "dd/MM HH:mm", { locale: ptBR })}</span>
+                          </div>
+                        </button>
+                        {p.status === 'draft' && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setDraftToDelete(p); setDraftDeleteReason(""); }}
+                            className="shrink-0 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                            title="Excluir rascunho"
+                            aria-label="Excluir rascunho"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
                     ))}
                   </div>
                 ) : historyDate && prescriptionDateKeys.size > 0 ? (
@@ -6962,7 +7050,51 @@ const PrescricaoPage = () => {
         }}
       />
 
-      {/* Nutrition entry-flow confirmation: assistente vs manual */}
+      {/* Exclusão auditada de rascunho */}
+      <AlertDialog open={!!draftToDelete} onOpenChange={(o) => { if (!o && !draftDeleting) { setDraftToDelete(null); setDraftDeleteReason(""); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4 text-destructive" />
+              Excluir rascunho de prescrição
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                {draftToDelete && (
+                  <>Você vai excluir o rascunho <strong>v{draftToDelete.version}</strong> de <strong>{draftToDelete.patient_name}</strong> criado em {format(new Date(draftToDelete.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}.</>
+                )}
+              </span>
+              <span className="block text-amber-700 dark:text-amber-400 text-xs">
+                Esta ação é irreversível na interface, mas o conteúdo completo do rascunho e seu motivo ficam registrados em auditoria (resgate forense por administradores).
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium">Motivo da exclusão <span className="text-destructive">*</span></label>
+            <textarea
+              value={draftDeleteReason}
+              onChange={(e) => setDraftDeleteReason(e.target.value)}
+              placeholder="Ex.: Rascunho duplicado / criado por engano / paciente trocado..."
+              rows={3}
+              className="w-full text-xs rounded-md border border-input bg-background px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-ring"
+              disabled={draftDeleting}
+            />
+            <p className="text-[10px] text-muted-foreground">Mínimo 5 caracteres. Será gravado na auditoria.</p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={draftDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); confirmDeleteDraft(); }}
+              disabled={draftDeleting || draftDeleteReason.trim().length < 5}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {draftDeleting ? "Excluindo..." : "Excluir rascunho"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
       <AlertDialog open={nutritionConfirmOpen} onOpenChange={setNutritionConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
