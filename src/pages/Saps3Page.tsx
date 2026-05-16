@@ -1946,7 +1946,7 @@ export default function Saps3Page() {
               <CollapsibleContent>
                 <CardContent className="space-y-4 pt-0">
                   {/* ── Avaliação de consciência guiada (GCS / GCS-T / RASS) ── */}
-                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-4">
+                  <div data-saps-anchor="saps-conscious" className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-4">
                     <div className="flex items-start gap-2">
                       <Brain className="h-4 w-4 text-primary mt-0.5" />
                       <div className="flex-1">
