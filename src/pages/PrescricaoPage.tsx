@@ -6109,12 +6109,35 @@ const PrescricaoPage = () => {
                       </button>
                     ))}
                   </div>
+                ) : historyDate && prescriptionDateKeys.size > 0 ? (
+                  <div className="px-1 py-2 space-y-1.5">
+                    <p className="text-[11px] text-amber-700 dark:text-amber-400 font-medium">
+                      Nenhuma prescrição nesta data.
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Existem prescrições deste paciente em {prescriptionDateKeys.size} {prescriptionDateKeys.size === 1 ? 'outra data' : 'outras datas'} (marcadas no calendário com ●).
+                    </p>
+                    <Button variant="outline" size="sm" className="w-full h-7 text-[11px] mt-1" onClick={() => setHistoryDate(undefined)}>
+                      Limpar filtro e ver todas
+                    </Button>
+                  </div>
                 ) : (
                   <p className="text-[11px] text-muted-foreground italic px-1 py-2">Nenhuma prescrição encontrada{historyDate ? ' nesta data' : ''}.</p>
                 )}
               </div>
             </PopoverContent>
           </Popover>
+          {historyDate && savedPrescriptions.length === 0 && prescriptionDateKeys.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setHistoryDate(undefined)}
+              className="inline-flex items-center gap-1 h-7 px-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 text-[10px] font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
+              title="Existem prescrições em outras datas — clique para limpar o filtro"
+            >
+              <AlertTriangle className="h-3 w-3" />
+              Filtro oculta {prescriptionDateKeys.size} {prescriptionDateKeys.size === 1 ? 'data' : 'datas'} — limpar
+            </button>
+          )}
           <Button
             variant="outline"
             size="sm"
