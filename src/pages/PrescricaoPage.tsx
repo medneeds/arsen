@@ -5291,7 +5291,7 @@ const PrescricaoPage = () => {
       const { data, error } = await query;
       if (error) throw error;
       setSavedPrescriptions((data || []).map(d => {
-        const items = (Array.isArray(d.items) ? d.items : []) as PrescriptionItem[];
+        const items = (Array.isArray(d.items) ? d.items : []) as unknown as PrescriptionItem[];
         const hasValidatedItem = items.some((it: any) => it && it.validated === true);
         const isValidated = d.status !== 'draft' || !!d.digital_signature || hasValidatedItem;
         return {
