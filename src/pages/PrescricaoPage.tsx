@@ -6145,6 +6145,7 @@ const PrescricaoPage = () => {
           .from('prescriptions')
           .insert({
             patient_name: patient.name.trim(),
+            patient_registry_id: patientRegistryId,
             patient_data: patient as any,
             items: renewedItems as any,
             digital_signature: null,
