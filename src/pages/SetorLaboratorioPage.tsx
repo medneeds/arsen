@@ -614,7 +614,7 @@ const SetorLaboratorioPage = () => {
                 variant="outline"
                 size="sm"
                 className="gap-1.5 text-xs mr-auto"
-                onClick={() => printRequisitionGuide(selectedRequest, (s) => getSectorLabel(s))}
+                onClick={() => printRequisitionGuideWithGasometriaPrompt(selectedRequest, (s) => getSectorLabel(s))}
               >
                 <Printer className="h-3.5 w-3.5" /> Imprimir Guia
               </Button>
