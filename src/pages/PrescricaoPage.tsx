@@ -1581,10 +1581,14 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     const renewalCutoff = setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0);
     const validatedAfterCutoff = !!(item.validatedAt && new Date(item.validatedAt) > renewalCutoff);
     const isValidated = !!item.validated && (!isPastRenewalTime || validatedAfterCutoff);
-    const isBlocked = !isValidated && missingFields.length > 0;
+    const isSuspended = item.status === 'suspended';
+    const isBlocked = !isValidated && !isSuspended && missingFields.length > 0;
 
-    const canClick = !isValidated && !isBlocked && prescriptionLocked;
-    const tooltipMsg = isValidated
+    // Item suspenso NUNCA pode ser revalidado pelo clique no ponto — precisa ser reativado primeiro.
+    const canClick = !isValidated && !isSuspended && !isBlocked && prescriptionLocked;
+    const tooltipMsg = isSuspended
+      ? "Item suspenso — reative para validar"
+      : isValidated
       ? "Validado — para retirar, suspenda o item"
       : isBlocked
       ? `Bloqueado — preencha: ${missingFields.join(', ')}`
@@ -1602,12 +1606,12 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             className={cn(
               "shrink-0 transition-transform",
               canClick ? "hover:scale-125 cursor-pointer" : "cursor-not-allowed",
-              (isValidated || isBlocked) && "cursor-default"
+              (isValidated || isBlocked || isSuspended) && "cursor-default"
             )}
           >
             <Circle className={cn(
               "h-3 w-3 fill-current",
-              isValidated ? "text-emerald-500" : isBlocked ? "text-red-500 animate-pulse" : "text-amber-500"
+              isSuspended ? "text-muted-foreground/60" : isValidated ? "text-emerald-500" : isBlocked ? "text-red-500 animate-pulse" : "text-amber-500"
             )} />
           </button>
         </TooltipTrigger>
@@ -6771,10 +6775,11 @@ const PrescricaoPage = () => {
               <span className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase mr-1">Ir para:</span>
               {/* Grupo 1: Suporte (dieta + hidratação + reposição) */}
               {(['nutrition', 'hydration', 'replacement'] as PrescriptionCategory[]).map(cat => {
-                const count = itemsByCategory[cat].length;
+                const activeItemsCat = itemsByCategory[cat].filter(i => i.status !== 'suspended');
+                const count = activeItemsCat.length;
                 if (count === 0) return null;
                 const config = CATEGORY_CONFIG[cat];
-                const validatedCount = itemsByCategory[cat].filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
+                const validatedCount = activeItemsCat.filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
                 const ok = validatedCount === count;
                 const hasWizard = cat === 'nutrition' || cat === 'hydration' || cat === 'replacement';
                 return (
@@ -6809,10 +6814,11 @@ const PrescricaoPage = () => {
               )}
               {/* Grupo 2: Medicações (com ênfase em ATB e alto alerta) */}
               {(['medication', 'antimicrobial', 'high_alert', 'inhalation', 'hemotherapy'] as PrescriptionCategory[]).map(cat => {
-                const count = itemsByCategory[cat].length;
+                const activeItemsCat = itemsByCategory[cat].filter(i => i.status !== 'suspended');
+                const count = activeItemsCat.length;
                 if (count === 0) return null;
                 const config = CATEGORY_CONFIG[cat];
-                const validatedCount = itemsByCategory[cat].filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
+                const validatedCount = activeItemsCat.filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
                 const ok = validatedCount === count;
                 const emphasis = cat === 'antimicrobial' || cat === 'high_alert';
                 return (
@@ -6843,10 +6849,11 @@ const PrescricaoPage = () => {
               )}
               {/* Grupo 3: Cuidados + não padrão */}
               {(['care', 'nonstandard'] as PrescriptionCategory[]).map(cat => {
-                const count = itemsByCategory[cat].length;
+                const activeItemsCat = itemsByCategory[cat].filter(i => i.status !== 'suspended');
+                const count = activeItemsCat.length;
                 if (count === 0) return null;
                 const config = CATEGORY_CONFIG[cat];
-                const validatedCount = itemsByCategory[cat].filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
+                const validatedCount = activeItemsCat.filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
                 const ok = validatedCount === count;
                 return (
                   <button
