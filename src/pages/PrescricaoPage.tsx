@@ -5537,7 +5537,7 @@ const PrescricaoPage = () => {
     try {
       let query = supabase
         .from('prescriptions')
-        .select('id, patient_name, status, version, created_at, digital_signature, items')
+        .select('id, patient_name, status, version, created_at, updated_at, digital_signature, items')
         .eq('hospital_unit_id', currentHospital.id)
         .eq('state_id', currentState.id)
         .order('created_at', { ascending: false })
@@ -5554,7 +5554,24 @@ const PrescricaoPage = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      setSavedPrescriptions((data || []).map(d => {
+
+      // Filtro defensivo: oculta rascunhos órfãos (sem validação, sem assinatura,
+      // updated_at > 24h e fora do dia clínico corrente). Cron move-os para
+      // prescriptions_archive a cada 30min, mas a UI já os esconde imediatamente.
+      const clinicalDayStartMs = getClinicalDayWindowSP().start.getTime();
+      const cutoff24hMs = Date.now() - 24 * 60 * 60 * 1000;
+
+      setSavedPrescriptions((data || []).filter((d: any) => {
+        const items = (Array.isArray(d.items) ? d.items : []) as unknown as PrescriptionItem[];
+        const hasValidatedItem = items.some((it: any) => it && it.validated === true);
+        const isOrphanDraft =
+          d.status === 'draft'
+          && !d.digital_signature
+          && !hasValidatedItem
+          && new Date(d.updated_at).getTime() < cutoff24hMs
+          && new Date(d.updated_at).getTime() < clinicalDayStartMs;
+        return !isOrphanDraft;
+      }).map(d => {
         const items = (Array.isArray(d.items) ? d.items : []) as unknown as PrescriptionItem[];
         const hasValidatedItem = items.some((it: any) => it && it.validated === true);
         const isValidated = d.status !== 'draft' || !!d.digital_signature || hasValidatedItem;
