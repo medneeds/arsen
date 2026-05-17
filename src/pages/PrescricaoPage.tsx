@@ -4158,6 +4158,20 @@ const PrescricaoPage = () => {
       }
 
       if (currentPrescriptionId) {
+        // 🔒 B1 — blindagem: nunca rebaixar uma prescrição já SIGNED via update.
+        // Só permite update se for newVersion (tratado acima) OU se o caller traz uma
+        // assinatura válida (sig). Autosave (sig=null) em registro signed → skip silencioso.
+        try {
+          const { data: existing } = await supabase
+            .from('prescriptions')
+            .select('status')
+            .eq('id', currentPrescriptionId)
+            .single();
+          if ((existing as any)?.status === 'signed' && !sig) {
+            // Registro já assinado e não há nova assinatura → não rebaixar.
+            return;
+          }
+        } catch {}
         const { error } = await supabase
           .from('prescriptions')
           .update(basePayload)
@@ -4193,6 +4207,8 @@ const PrescricaoPage = () => {
   const lastPersistedSerializedRef = useRef<string>('');
   const autosaveSkipFirstRef = useRef(true);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 🔒 B2 — cache "existe signed hoje?" por (paciente+dia) para evitar query a cada keystroke.
+  const signedTodayCacheRef = useRef<{ key: string; exists: boolean } | null>(null);
 
   const draftStorageKey = useMemo(() => {
     if (!patient.name?.trim()) return null;
@@ -4222,6 +4238,36 @@ const PrescricaoPage = () => {
 
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     autosaveTimerRef.current = setTimeout(async () => {
+      // 🔒 B2 — se ainda não há prescription id (nada carregado) e já existe SIGNED
+      // hoje para este paciente+unidade, não criar draft paralelo. A assinada é a verdade.
+      if (!currentPrescriptionId && currentHospital && currentState && patient.name?.trim()) {
+        const dayKey = format(new Date(), 'yyyy-MM-dd');
+        const cacheKey = `${currentHospital.id}::${currentState.id}::${patient.name.trim()}::${dayKey}`;
+        let signedExists = signedTodayCacheRef.current?.key === cacheKey
+          ? signedTodayCacheRef.current.exists
+          : null;
+        if (signedExists === null) {
+          try {
+            const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+            const { count } = await supabase
+              .from('prescriptions')
+              .select('id', { count: 'exact', head: true })
+              .eq('hospital_unit_id', currentHospital.id)
+              .eq('state_id', currentState.id)
+              .eq('patient_name', patient.name.trim())
+              .eq('status', 'signed')
+              .gte('created_at', dayStart.toISOString());
+            signedExists = (count || 0) > 0;
+            signedTodayCacheRef.current = { key: cacheKey, exists: signedExists };
+          } catch {
+            signedExists = false;
+          }
+        }
+        if (signedExists) {
+          lastPersistedSerializedRef.current = serialized;
+          return;
+        }
+      }
       setDraftSaving(true);
       try {
         await persistItems(items, { mode: 'update', silent: true });
