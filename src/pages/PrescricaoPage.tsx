@@ -1472,6 +1472,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   onUpdate,
   onRemove,
   onToggleFlag,
+  onTogglePrintOnly,
   isSimple,
   isCompact,
   selected,
