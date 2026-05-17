@@ -572,8 +572,10 @@ function buildPrepDescription(item: PrescriptionItem): string {
     parts.push(`${routeShort(item.route)}.`);
   }
 
-  // 3) TEMPO / VAZÃO
-  if (item.infusionTime || item.infusionRate) {
+  // 3) TEMPO / VAZÃO  (ou Bolus EV)
+  if (item.ivBolus) {
+    parts.push('EV em bolus.');
+  } else if (item.infusionTime || item.infusionRate) {
     const unit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
     const modeLabel = item.infusionMode === 'gts' ? 'gts/min' : 'mL/h';
     if (item.infusionTime && item.infusionRate) {
