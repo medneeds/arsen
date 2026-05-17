@@ -23,7 +23,7 @@ export function sanitizeRichHtml(html: string): string {
 export function toRichHtml(value: string | null | undefined): string {
   if (!value) return "";
   const v = String(value);
-  if (/<\/?(p|br|strong|em|u|ul|ol|li|b|i)[\s>/]/i.test(v)) {
+  if (/<\/?(p|br|strong|em|u|ul|ol|li|b|i|div|span)[\s>/]/i.test(v)) {
     return sanitizeRichHtml(v);
   }
   // texto puro
