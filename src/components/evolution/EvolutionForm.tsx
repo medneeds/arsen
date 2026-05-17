@@ -58,6 +58,14 @@ interface EvolutionFormProps {
   hasUnsaved?: boolean;
   /** Render slot for the Diagnostics panel — placed as 1st collapsible section. */
   diagnosticsSlot?: React.ReactNode;
+  /** Dispositivos invasivos (lista catálogo + custom). */
+  devices?: EvolutionDevice[];
+  onDevicesChange?: (next: EvolutionDevice[]) => void;
+  /** Resultado de culturas (HTML rico). */
+  culturesHtml?: string;
+  onCulturesChange?: (html: string) => void;
+  /** Data de admissão no setor — base p/ presets do date picker dos dispositivos. */
+  admissionDate?: string | null;
 }
 
 type SectionKey = 'vitals' | 'evolucao' | 'objective' | 'plan' | 'review';
