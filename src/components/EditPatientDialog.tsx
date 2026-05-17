@@ -38,6 +38,7 @@ import { DateBRPicker } from "./ui/DateBRPicker";
 import { FileText } from "lucide-react";
 import { PisRegistrySyncDialog, computePisDiff, type PisSourceRow } from "./PisRegistrySyncDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { PatientIdentityHeader } from "./PatientIdentityHeader";
 
 interface EditPatientDialogProps {
   patient: Patient;
@@ -208,7 +209,20 @@ export function EditPatientDialog({
                     <p className="font-medium uppercase">
                       {patient.name || "—"}
                     </p>
-                  </div>
+                </div>
+                {/* Painel cadastral completo (sempre visível) — sincronizado com Cockpit */}
+                <div className="pt-2 border-t border-border/40">
+                  <PatientIdentityHeader
+                    patientId={patient.id}
+                    fallbackName={patient.name}
+                    fallbackBed={patient.bedNumber}
+                    fallbackSector={patient.sector}
+                    fallbackClinicalStatus={patient.clinicalStatus}
+                    variant="dialog"
+                    alwaysExpanded
+                    showFullDetailsToggle={false}
+                  />
+                </div>
                 </div>
                 <div className="flex items-center justify-between gap-2 pt-1">
                   <p className="text-[10px] text-muted-foreground italic flex-1">
