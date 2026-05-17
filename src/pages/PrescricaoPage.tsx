@@ -4800,14 +4800,17 @@ const PrescricaoPage = () => {
     const fetchPreAdmission = async () => {
       if (!currentHospital || !currentState || !patient.name.trim()) return;
       try {
-        const { data } = await supabase
+        let paQ = supabase
           .from('pre_admissions')
           .select('chief_complaint, vital_signs, risk_classification')
           .eq('hospital_unit_id', currentHospital.id)
           .eq('state_id', currentState.id)
-          .eq('patient_name', patient.name.trim())
           .order('created_at', { ascending: false })
           .limit(1);
+        paQ = patientRegistryId
+          ? paQ.eq('patient_registry_id', patientRegistryId)
+          : paQ.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
+        const { data } = await paQ;
         if (data && data.length > 0) {
           const pa = data[0];
           const vs = pa.vital_signs as Record<string, string> | null;
