@@ -165,7 +165,11 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                 <AlertTriangle className="h-5 w-5 text-amber-600" />
               </div>
               <AlertDialogTitle className="text-base">
-                {isPostDischarge ? "Liberar leito após alta/óbito" : "Atenção: liberar leito sem alta"}
+                {isExceptional
+                  ? "Liberação excepcional — paciente admitido sem alta"
+                  : isPostDischarge
+                    ? "Liberar leito após alta/óbito"
+                    : "Atenção: liberar leito sem alta"}
               </AlertDialogTitle>
             </div>
             <AlertDialogDescription asChild>
@@ -174,13 +178,21 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                   Você está prestes a <strong>desocupar o leito {patient.bedNumber || "—"}</strong> ocupado por{" "}
                   <strong>{patient.name || "este paciente"}</strong>.
                 </p>
-                {blockReleaseHard ? (
-                  <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-destructive">
-                    <p className="font-semibold">Esta ação não está disponível.</p>
-                    <p className="mt-1">
-                      O paciente está <strong>admitido</strong>. Registre primeiro a <strong>Alta Médica</strong> ou <strong>Óbito</strong> pelo Painel Clínico — depois você poderá liberar o leito por aqui.
-                    </p>
-                  </div>
+                {isExceptional ? (
+                  <>
+                    <div className="rounded-md border border-amber-500/50 bg-amber-50 dark:bg-amber-950/30 p-2 text-amber-900 dark:text-amber-100">
+                      <p className="font-semibold">Caminho excepcional (autonomia médica/administrativa)</p>
+                      <p className="mt-1">
+                        O paciente está marcado como <strong>admitido</strong> — sem alta/óbito persistido no sistema. Use este fluxo apenas quando a sinalização de alta no Painel não chegou a ser concluída (documento não assinado) ou em situação operacional crítica.
+                      </p>
+                    </div>
+                    <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                      <li>O <strong>prontuário do paciente é preservado</strong> — nenhuma evolução/prescrição/exame é apagado.</li>
+                      <li>O movimento será registrado como <strong>LIBERAÇÃO ADMINISTRATIVA EXCEPCIONAL</strong> com sua justificativa, autor e horário.</li>
+                      <li>Será obrigatório <strong>descrever a justificativa</strong> (mínimo 10 caracteres) e <strong>confirmar com sua senha</strong>.</li>
+                      <li>Recomenda-se completar/registrar a alta médica formal pelo Painel Clínico assim que possível.</li>
+                    </ul>
+                  </>
                 ) : isPostDischarge ? (
                   <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
                     <li>O documento de <strong>{patient.admissionStatus === "obito" ? "óbito" : "alta"}</strong> já foi <strong>assinado e gravado</strong> no prontuário.</li>
@@ -220,11 +232,17 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       onOpenChange={(v) => (!submitting ? onOpenChange(v) : undefined)}
       onConfirm={goToPasswordStep}
       isSubmitting={submitting}
-      title={isPostDischarge ? "Liberar leito após alta/óbito" : "Liberar leito (pré-admissão)"}
+      title={
+        isExceptional
+          ? "Liberação excepcional do leito"
+          : isPostDischarge ? "Liberar leito após alta/óbito" : "Liberar leito (pré-admissão)"
+      }
       description={
-        isPostDischarge
-          ? "O documento clínico já foi registrado — esta etapa apenas libera o leito no mapa."
-          : "O paciente ainda não concluiu a admissão hospitalar — você pode desocupar o leito sem apagar o prontuário."
+        isExceptional
+          ? "Paciente admitido sem alta/óbito registrado. Justifique o motivo da liberação administrativa — ficará no histórico imutável."
+          : isPostDischarge
+            ? "O documento clínico já foi registrado — esta etapa apenas libera o leito no mapa."
+            : "O paciente ainda não concluiu a admissão hospitalar — você pode desocupar o leito sem apagar o prontuário."
       }
       tone="warning"
       confirmLabel="Avançar para senha"
