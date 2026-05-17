@@ -6596,40 +6596,27 @@ const PrescricaoPage = () => {
         );
       })()}
 
-      {/* Ribbon — Prescrição validada do dia clínico atual (read-only + Editar/Nova versão) */}
-      {digitalSignature && (
-        <div className="print:hidden mb-2 flex items-center justify-between gap-3 rounded-lg border border-emerald-300/70 bg-emerald-50/80 dark:border-emerald-500/40 dark:bg-emerald-950/20 px-3 py-2 text-emerald-900 dark:text-emerald-200">
-          <div className="flex items-start gap-2 min-w-0">
-            <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0" />
-            <div className="text-[12px] leading-snug min-w-0">
-              <strong className="font-semibold">PRESCRIÇÃO VALIDADA HOJE</strong>
-              {" — assinada por "}
-              <span className="font-semibold">{digitalSignature.doctorName}</span>
-              {digitalSignature.crm && <> (CRM {digitalSignature.crm})</>}
-              {" às "}
-              <span className="font-mono">{digitalSignature.signedAt}</span>.
-              {" "}<span className="opacity-80">Continua válida até nova versão ser assinada.</span>
-            </div>
+      {/* Ribbon — Prescrição validada do dia clínico atual (informativa, read-only).
+          Assinatura digital foi removida da UI: assinatura legal é manual (carimbo + caneta no PDF impresso).
+          Para incluir item novo: basta adicionar pelo caminho normal — o item entra pendente (bolinha amarela)
+          e bloqueia a impressão até ser validado. */}
+      {allItemsValidated && (
+        <div className="print:hidden mb-2 flex items-center gap-2 rounded-lg border border-emerald-300/70 bg-emerald-50/80 dark:border-emerald-500/40 dark:bg-emerald-950/20 px-3 py-2 text-emerald-900 dark:text-emerald-200">
+          <ShieldCheck className="h-4 w-4 shrink-0" />
+          <div className="text-[12px] leading-snug min-w-0">
+            <strong className="font-semibold">PRESCRIÇÃO VALIDADA HOJE</strong>
+            {digitalSignature && (
+              <>
+                {" — registrada por "}
+                <span className="font-semibold">{digitalSignature.doctorName}</span>
+                {digitalSignature.crm && <> (CRM {digitalSignature.crm})</>}
+                {" às "}
+                <span className="font-mono">{digitalSignature.signedAt}</span>
+              </>
+            )}
+            {". "}
+            <span className="opacity-80">A assinatura legal é feita manualmente (carimbo + caneta) no PDF impresso.</span>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs border-emerald-400/70 text-emerald-800 hover:text-emerald-900 hover:bg-emerald-100/60 dark:text-emerald-100 dark:hover:bg-emerald-900/30 shrink-0"
-            onClick={async () => {
-              try {
-                await persistItems(items, { mode: 'newVersion' });
-                setDigitalSignature(null);
-                toast.success('Nova versão criada', {
-                  description: 'A prescrição anterior continua assinada e preservada. Faça as alterações e assine novamente.',
-                });
-              } catch {
-                // persistItems já reportou o erro
-              }
-            }}
-          >
-            <Pencil className="h-3 w-3" /> EDITAR / NOVA VERSÃO
-          </Button>
         </div>
       )}
 
@@ -6992,7 +6979,10 @@ const PrescricaoPage = () => {
                   size="sm"
                   onClick={() => {
                     if (!allItemsValidated) {
-                      toast.error("Valide a prescrição antes de imprimir", { description: "Use o botão 'Validar' para validar com sua senha." });
+                      const pending = items.filter(i => i.status === 'active' && !isItemValidatedToday(i)).length;
+                      toast.error("Impressão bloqueada — há itens pendentes", {
+                        description: `${pending} ${pending === 1 ? 'item aguarda' : 'itens aguardam'} validação. Valide ou exclua os itens pendentes antes de imprimir.`,
+                      });
                       return;
                     }
                     handlePrint();
@@ -7922,15 +7912,8 @@ const PrescricaoPage = () => {
           </span>
         </div>
         <div className="flex gap-2">
-          {/* "Renovar" e "Salvar" removidos — renovação e salvamento são automáticos. */}
-          <Button
-            variant={digitalSignature ? "outline" : "default"}
-            size="sm"
-            onClick={handleRequestSign}
-            className={cn("gap-1.5 text-xs", digitalSignature && "border-green-300 text-green-700 hover:text-green-800")}
-          >
-            {digitalSignature ? <><ShieldCheck className="h-3 w-3" /> Reassinar</> : <><Fingerprint className="h-3 w-3" /> Assinar</>}
-          </Button>
+          {/* "Renovar", "Salvar" e "Assinar" removidos — renovação e salvamento são automáticos;
+              a assinatura legal é manual (carimbo + caneta) no PDF impresso. O ato no sistema é VALIDAR. */}
         </div>
       </div>
 
