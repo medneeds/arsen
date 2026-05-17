@@ -110,6 +110,10 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [extraBedRequested, setExtraBedRequested] = useState(false);
   const [bedsLoaded, setBedsLoaded] = useState(false);
 
+  // Sincronização PIS → patient_registry antes de admitir
+  const [pisSyncOpen, setPisSyncOpen] = useState(false);
+  const [pisSyncSkipped, setPisSyncSkipped] = useState(false);
+
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment, currentSectorCode } = useDepartment();
   const { user } = useAuth();
