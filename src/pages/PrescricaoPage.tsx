@@ -3036,6 +3036,7 @@ function ExtraPrescriptionDialog({
                       onUpdate={updateExtraItem}
                       onRemove={removeExtraItem}
                       onToggleFlag={toggleExtraFlag}
+                      onTogglePrintOnly={togglePrintOnly}
                       isSimple={false}
                       isCompact={false}
                       selected={false}
