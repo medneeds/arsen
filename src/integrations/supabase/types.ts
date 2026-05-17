@@ -2935,6 +2935,51 @@ export type Database = {
           },
         ]
       }
+      prescription_affinity_audit: {
+        Row: {
+          created_at: string
+          hospital_unit_id: string | null
+          id: string
+          operation: string
+          patient_name_attempted: string | null
+          patient_name_corrected: string | null
+          patient_registry_id: string | null
+          payload: Json | null
+          performed_by: string | null
+          reason: string
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          created_at?: string
+          hospital_unit_id?: string | null
+          id?: string
+          operation: string
+          patient_name_attempted?: string | null
+          patient_name_corrected?: string | null
+          patient_registry_id?: string | null
+          payload?: Json | null
+          performed_by?: string | null
+          reason: string
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          created_at?: string
+          hospital_unit_id?: string | null
+          id?: string
+          operation?: string
+          patient_name_attempted?: string | null
+          patient_name_corrected?: string | null
+          patient_registry_id?: string | null
+          payload?: Json | null
+          performed_by?: string | null
+          reason?: string
+          record_id?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       prescription_draft_deletion_audit: {
         Row: {
           created_at: string
