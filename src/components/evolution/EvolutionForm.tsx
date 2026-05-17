@@ -251,35 +251,6 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             {diagnosticsSlot}
           </SectionItem>
         )}
-        {/* Dispositivos & Culturas — movido p/ entre Exames Complementares e Evolução (abaixo) */}
-        <SectionItem
-          id="evolucao"
-          icon={NotebookPen}
-          iconColor="text-blue-500"
-          label="Evolução"
-          hint="Relato clínico completo: sinais vitais, exame físico, queixas, hipóteses e avaliação"
-          complete={completion.evolucao}
-          required
-        >
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-muted-foreground">
-              {richHtmlToPlainText(evolucaoText).length}/10+ caracteres
-            </span>
-            <FieldTemplates
-              scope="evolution.subjective"
-              currentValue={evolucaoText}
-              onApply={(v) => handleEvolucaoChange(v)}
-              hospitalUnitId={hospitalId}
-            />
-          </div>
-          <RichTextEditor
-            value={evolucaoText}
-            onChange={(html) => handleEvolucaoChange(html)}
-            placeholder="Relato clínico do plantão: sinais vitais relevantes, exame físico dirigido, queixas, evolução percebida, hipóteses diagnósticas, raciocínio clínico..."
-            minHeight={220}
-          />
-        </SectionItem>
-
         <SectionItem
           id="complementares"
           icon={Stethoscope}
@@ -307,6 +278,61 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             onChange={(html) => onSOAPChange('objective', html)}
             placeholder="Cole resultados laboratoriais ou de imagem..."
             minHeight={120}
+          />
+        </SectionItem>
+
+        {onDevicesChange && onCulturesChange && (
+          <SectionItem
+            id="devices"
+            icon={Activity}
+            iconColor="text-rose-500"
+            label="Dispositivos & Culturas"
+            hint="Dispositivos invasivos com data de inserção (D{n} automático) + resultado de culturas — opcional"
+            complete={(devices?.length ?? 0) > 0}
+            required={false}
+            customStatus={
+              (devices && devices.length > 0) ? (
+                <span className="text-[10px] text-rose-600 dark:text-rose-400">
+                  {devices.length} dispositivo{devices.length > 1 ? "s" : ""}
+                </span>
+              ) : undefined
+            }
+          >
+            <DevicesCulturesSection
+              devices={devices || []}
+              onDevicesChange={onDevicesChange}
+              culturesHtml={culturesHtml || ""}
+              onCulturesChange={onCulturesChange}
+              admissionDate={admissionDate || undefined}
+            />
+          </SectionItem>
+        )}
+
+        <SectionItem
+          id="evolucao"
+          icon={NotebookPen}
+          iconColor="text-blue-500"
+          label="Evolução"
+          hint="Relato clínico completo: sinais vitais, exame físico, queixas, hipóteses e avaliação"
+          complete={completion.evolucao}
+          required
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-muted-foreground">
+              {richHtmlToPlainText(evolucaoText).length}/10+ caracteres
+            </span>
+            <FieldTemplates
+              scope="evolution.subjective"
+              currentValue={evolucaoText}
+              onApply={(v) => handleEvolucaoChange(v)}
+              hospitalUnitId={hospitalId}
+            />
+          </div>
+          <RichTextEditor
+            value={evolucaoText}
+            onChange={(html) => handleEvolucaoChange(html)}
+            placeholder="Relato clínico do plantão: sinais vitais relevantes, exame físico dirigido, queixas, evolução percebida, hipóteses diagnósticas, raciocínio clínico..."
+            minHeight={220}
           />
         </SectionItem>
 
