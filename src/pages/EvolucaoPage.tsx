@@ -253,9 +253,19 @@ const EvolucaoPage = () => {
   };
 
   const handleDuplicate = async (source: EvolutionRecord) => {
-    setNewSoap({ ...source.soap_data });
+    const srcSoap: any = source.soap_data || {};
+    // Separa devices/culturesHtml do SOAP base p/ que não vazem como chaves SOAP
+    const { devices: srcDevices, culturesHtml: srcCulturesHtml, ...soapBase } = srcSoap;
+    setNewSoap({ ...soapBase });
     setNewVitals({ ...source.vital_signs });
     setNewExam({ ...source.physical_exam });
+    // Importa dispositivos (preservando datas reais — D{n} é recalculado em leitura)
+    // e resultado de culturas do modelo copiado. Campos opcionais permanecem editáveis.
+    setNewDevices(Array.isArray(srcDevices) ? srcDevices : []);
+    setNewCulturesHtml(typeof srcCulturesHtml === "string" ? srcCulturesHtml : "");
+    // Também replica hipóteses diagnósticas se vierem na evolução fonte
+    const srcHypo = (source as any).diagnostic_hypotheses;
+    if (typeof srcHypo === "string") setDiagnosticHypotheses(srcHypo);
     setShowNewForm(true);
     setDiagnosticsReplicated(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
