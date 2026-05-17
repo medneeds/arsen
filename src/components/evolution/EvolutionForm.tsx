@@ -18,6 +18,9 @@ import { cn } from "@/lib/utils";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import { FieldTemplates } from "@/components/FieldTemplates";
 import { useHospital } from "@/contexts/HospitalContext";
+import { DevicesCulturesSection } from "@/components/evolution/DevicesCulturesSection";
+import type { EvolutionDevice } from "@/lib/devicesCatalog";
+import { Activity } from "lucide-react";
 
 interface SOAPData {
   subjective: string;
