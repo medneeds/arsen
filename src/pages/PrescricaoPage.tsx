@@ -5891,6 +5891,46 @@ const PrescricaoPage = () => {
     setRepeatSourceMeta(null);
   }, [repeatSelectedIds, repeatSourceItems]);
 
+  // === FASE 3.1 — Restaurar prescrição como rascunho (SOMAR sem duplicar) ===
+  // Mescla itens da prescrição-fonte na lista atual usando assinatura
+  // (name|dose|route|posology) normalizada. Itens já presentes são ignorados.
+  // NÃO sobrescreve assinatura nem cria nova versão — apenas adiciona em memória.
+  const restoreFromPrescription = useCallback((source: { id: string; version: number; items: PrescriptionItem[] }) => {
+    const norm = (s: string | undefined) => (s || "").trim().toUpperCase().replace(/\s+/g, " ");
+    const sig = (it: PrescriptionItem) =>
+      `${norm(it.name)}|${norm(it.dose)}|${norm(it.route)}|${norm(it.posology)}`;
+    const currentSigs = new Set(items.map(sig));
+    let added = 0;
+    let skipped = 0;
+    const cloned: PrescriptionItem[] = [];
+    for (const it of source.items) {
+      if (!it?.name) { skipped++; continue; }
+      if (currentSigs.has(sig(it))) { skipped++; continue; }
+      currentSigs.add(sig(it));
+      cloned.push({
+        ...it,
+        id: crypto.randomUUID(),
+        status: 'active',
+        suspensionReason: undefined,
+        suspendedAt: undefined,
+        validated: false,
+        validatedAt: undefined,
+        isExtra: false,
+      });
+      added++;
+    }
+    if (added === 0) {
+      toast.info("Nenhum item novo para somar", {
+        description: skipped > 0 ? `${skipped} item(ns) já existem no rascunho atual.` : undefined,
+      });
+      return;
+    }
+    setItems(prev => [...prev, ...cloned]);
+    toast.success(`v${source.version} restaurada — ${added} item(ns) somado(s)`, {
+      description: skipped > 0 ? `${skipped} duplicado(s) ignorado(s).` : "Revise e assine quando estiver pronto.",
+    });
+  }, [items]);
+
   // Keep keyboard-shortcut handlers in sync with latest closures
   useEffect(() => {
     shortcutHandlersRef.current = {
@@ -6478,6 +6518,83 @@ const PrescricaoPage = () => {
           </div>
         </div>
       )}
+
+      {/* === FASE 3.1 — Strip "VALIDADAS HOJE" (sempre visível, sem precisar do calendário) === */}
+      {(() => {
+        const dayStart = getClinicalDayWindowSP().start.getTime();
+        const todays = savedPrescriptions.filter(
+          p => p.isValidated && new Date(p.created_at).getTime() >= dayStart,
+        );
+        if (todays.length === 0) return null;
+        return (
+          <div className="print:hidden mb-2 rounded-lg border border-emerald-200/70 bg-emerald-50/40 dark:border-emerald-500/30 dark:bg-emerald-950/10 px-3 py-2">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase text-emerald-800 dark:text-emerald-300">
+                <ShieldCheck className="h-3 w-3" />
+                Validadas hoje
+                <span className="font-mono text-emerald-700/70 dark:text-emerald-300/70">({todays.length})</span>
+              </div>
+              <span className="text-[10px] text-emerald-700/70 dark:text-emerald-300/70 italic">
+                Clique em "Abrir" para visualizar a versão no editor.
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {todays.map(p => {
+                const isCurrent = currentPrescriptionId === p.id;
+                const doctor = p.digital_signature?.doctorName || "—";
+                return (
+                  <div
+                    key={p.id}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md border bg-card/80 px-2 py-1 text-[11px] transition-colors",
+                      isCurrent ? "border-primary ring-1 ring-primary/30" : "border-emerald-200/70 dark:border-emerald-500/30 hover:border-emerald-400",
+                    )}
+                  >
+                    <Badge className="text-[9px] h-4 px-1.5 bg-emerald-600 hover:bg-emerald-600 shrink-0">v{p.version}</Badge>
+                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                      {format(new Date(p.created_at), "HH:mm", { locale: ptBR })}
+                    </span>
+                    <span className="text-[10px] text-foreground/80 truncate max-w-[160px]" title={doctor}>
+                      {doctor}
+                    </span>
+                    {isCurrent && (
+                      <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">Atual</Badge>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPreviewPrescription(p)}
+                      className="shrink-0 p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                      title="Visualizar prescrição"
+                      aria-label="Visualizar prescrição"
+                    >
+                      <Eye className="h-3 w-3" />
+                    </button>
+                    {!isCurrent && (
+                      <button
+                        type="button"
+                        onClick={() => loadPrescription(p.id)}
+                        className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border border-emerald-300/70 text-emerald-800 hover:bg-emerald-100/60 dark:text-emerald-200 dark:border-emerald-500/40 dark:hover:bg-emerald-900/30 transition-colors"
+                        title="Abrir esta versão no editor"
+                      >
+                        Abrir
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => restoreFromPrescription(p)}
+                      className="shrink-0 p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                      title="Somar itens desta versão no rascunho atual (sem duplicar)"
+                      aria-label="Restaurar somando itens"
+                    >
+                      <CopyPlus className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Ribbon — Prescrição validada do dia clínico atual (read-only + Editar/Nova versão) */}
       {digitalSignature && (
@@ -7550,14 +7667,27 @@ const PrescricaoPage = () => {
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" size="sm" onClick={() => setPreviewPrescription(null)}>Fechar</Button>
             {previewPrescription && (
-              <Button
-                size="sm"
-                onClick={() => { loadPrescription(previewPrescription.id); setPreviewPrescription(null); }}
-              >
-                Abrir no editor
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-emerald-300/70 text-emerald-800 hover:bg-emerald-100/60 dark:text-emerald-200 dark:border-emerald-500/40 dark:hover:bg-emerald-900/30"
+                  onClick={() => { restoreFromPrescription(previewPrescription); setPreviewPrescription(null); }}
+                  title="Soma os itens desta versão no rascunho atual, ignorando duplicados"
+                >
+                  <CopyPlus className="h-3.5 w-3.5" />
+                  Restaurar (somar)
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => { loadPrescription(previewPrescription.id); setPreviewPrescription(null); }}
+                >
+                  Abrir no editor
+                </Button>
+              </>
             )}
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
 
