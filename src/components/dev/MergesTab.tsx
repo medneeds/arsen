@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, RefreshCw, ChevronDown, ChevronRight, GitMerge } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, RefreshCw, ChevronDown, ChevronRight, GitMerge, ScanSearch, History } from "lucide-react";
 import { toast } from "sonner";
+import { DiagnosticPanel } from "./merges/DiagnosticPanel";
 
 interface MergeRow {
   id: string;
@@ -74,16 +76,30 @@ export function MergesTab() {
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <GitMerge className="h-4 w-4" />
-          <span>Histórico de mesclagens de prontuário. Snapshots arquivados (inclui CPF/CNS originais) ficam disponíveis aqui para sempre.</span>
+    <Tabs defaultValue="diagnostic" className="space-y-3">
+      <TabsList>
+        <TabsTrigger value="diagnostic" className="gap-1.5">
+          <ScanSearch className="h-3.5 w-3.5" /> Diagnóstico
+        </TabsTrigger>
+        <TabsTrigger value="history" className="gap-1.5">
+          <History className="h-3.5 w-3.5" /> Histórico
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="diagnostic">
+        <DiagnosticPanel />
+      </TabsContent>
+
+      <TabsContent value="history" className="space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <GitMerge className="h-4 w-4" />
+            <span>Histórico de mesclagens. Snapshots arquivados (CPF/CNS originais) ficam disponíveis aqui para sempre.</span>
+          </div>
+          <Button size="sm" variant="outline" onClick={refresh} disabled={loading}>
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} /> Atualizar
+          </Button>
         </div>
-        <Button size="sm" variant="outline" onClick={refresh} disabled={loading}>
-          <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} /> Atualizar
-        </Button>
-      </div>
 
       <Input
         placeholder="Filtrar por operador, ação, registry id ou conteúdo do snapshot..."
@@ -180,6 +196,7 @@ export function MergesTab() {
           </ScrollArea>
         </CardContent>
       </Card>
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 }

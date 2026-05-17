@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -96,6 +96,7 @@ async function fetchCounts(registryId: string): Promise<CountsRow> {
 export default function MergeRegistriesPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Authorization gate
   const [authorized, setAuthorized] = useState<boolean | null>(null);
@@ -214,6 +215,28 @@ export default function MergeRegistriesPage() {
     else { setPair(null); setACounts(null); setBCounts(null); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIds]);
+
+  // Pré-seleção via querystring (?a=<uuid>&b=<uuid>) — usado pelo Diagnóstico do Dev Console
+  useEffect(() => {
+    if (authorized !== true) return;
+    const a = searchParams.get("a");
+    const b = searchParams.get("b");
+    if (!a || !b || a === b) return;
+    if (results.length > 0 && results.some((r) => r.id === a) && results.some((r) => r.id === b)) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from("patient_registry")
+        .select("*")
+        .in("id", [a, b]);
+      if (error || !data || data.length < 2) {
+        toast({ title: "Não foi possível carregar o par", description: error?.message || "Registros não encontrados", variant: "destructive" });
+        return;
+      }
+      setResults(data as RegistryRow[]);
+      setSelectedIds([a, b]);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authorized, searchParams]);
 
   const winnerRow = pair && winner ? (winner === "a" ? pair.a : pair.b) : null;
   const loserRow = pair && winner ? (winner === "a" ? pair.b : pair.a) : null;
