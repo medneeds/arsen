@@ -26,6 +26,7 @@ import { format, addDays, differenceInCalendarDays, startOfDay } from "date-fns"
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
+import { PisRegistrySyncDialog, computePisDiff, type PisSourceRow } from "@/components/PisRegistrySyncDialog";
 
 interface PreAdmissionFull {
   id: string;
