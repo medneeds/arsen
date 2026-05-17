@@ -3639,6 +3639,42 @@ const PrescricaoPage = () => {
   // Dispara uma única vez por (paciente + dia), persistido em sessionStorage.
   const [atbEndNotice, setAtbEndNotice] = useState<{ open: boolean; schemes: Array<{ name: string; startDate: string; dayN: number; total: number }> }>({ open: false, schemes: [] });
   const atbEndNoticeShownRef = useRef<Set<string>>(new Set());
+  // Fase E: scanner que detecta esquemas ATB no último dia (D = total) e abre pop-up único.
+  useEffect(() => {
+    if (!patient?.name?.trim()) return;
+    if (!items?.length) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const sessionKey = `atb-end-notice::${patient.name.trim()}::${dayKey}`;
+    if (atbEndNoticeShownRef.current.has(sessionKey)) return;
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage.getItem(sessionKey) === '1') {
+        atbEndNoticeShownRef.current.add(sessionKey);
+        return;
+      }
+    } catch { /* sessionStorage indisponível */ }
+    const ending: Array<{ name: string; startDate: string; dayN: number; total: number }> = [];
+    for (const it of items) {
+      if (it.category !== 'antimicrobial') continue;
+      if (it.status && it.status !== 'active') continue;
+      if (!it.atbStartDate) continue;
+      const total = parseInt(it.atbPlannedDays || '', 10);
+      if (!Number.isFinite(total) || total <= 0) continue;
+      const start = new Date(it.atbStartDate + 'T00:00:00');
+      if (isNaN(start.getTime())) continue;
+      start.setHours(0, 0, 0, 0);
+      const dayN = Math.floor((today.getTime() - start.getTime()) / 86400000) + 1;
+      if (dayN === total) {
+        ending.push({ name: it.name, startDate: it.atbStartDate, dayN, total });
+      }
+    }
+    if (ending.length === 0) return;
+    atbEndNoticeShownRef.current.add(sessionKey);
+    try { window.sessionStorage.setItem(sessionKey, '1'); } catch { /* noop */ }
+    setAtbEndNotice({ open: true, schemes: ending });
+  }, [items, patient?.name]);
+
   // Detecta se o item de cuidado é de controle glicêmico (HGT / glicemia capilar)
   const isGlycemicControlName = useCallback((name: string) => {
     const n = (name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
