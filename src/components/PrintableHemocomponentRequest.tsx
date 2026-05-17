@@ -577,7 +577,7 @@ export async function printHemocomponentRequest(
         <div>${cb(c?.admin_schedule === "8_8h")} 8/8 Horas</div>
         <div>${cb(c?.admin_schedule === "continuo")} Contínuo</div>`;
     } else {
-      body = `<div style="min-height:32pt">&nbsp;</div>`;
+      body = `<div style="min-height:22pt">&nbsp;</div>`;
     }
     return `<td class="cell">${body}</td>`;
   }).join("");
