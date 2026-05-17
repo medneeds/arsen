@@ -5902,8 +5902,10 @@ const PrescricaoPage = () => {
 
   const confirmRenewal = useCallback(async (includeSuspended: boolean) => {
     const sourceItems = (includeSuspended ? items : items.filter(i => i.status === 'active'))
-      // Exclude extra "Agora" items — they are one-time and should NOT renew
-      .filter(i => !(i.isExtra && i.flags.includes('ag' as PrescriptionFlag)));
+      // Itens NÃO renovam para o dia seguinte:
+      //  • "Agora" (AG) — dose única / pontual
+      //  • "Carro de Parada" (CP) — emergência, não faz parte da rotina diária
+      .filter(i => !i.flags.includes('ag') && !i.flags.includes('cp'));
     const renewedItems: PrescriptionItem[] = sourceItems.map(item => ({
       ...item,
       id: crypto.randomUUID(),
