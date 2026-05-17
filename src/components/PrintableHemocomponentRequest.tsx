@@ -275,64 +275,48 @@ export function PrintableHemocomponentRequest({
           ))}
         </colgroup>
         <tbody>
-          {/* ── Identificação do Paciente ── */}
+          {/* ── Identificação do Paciente (compacta: 4 linhas) ── */}
           <tr><td style={sectionBand} colSpan={12}>Identificação do Paciente</td></tr>
           <tr>
             <td style={labelCell} colSpan={2}>Nome:</td>
-            <td style={valueCell} colSpan={10}>{(request.patient_name || "").toUpperCase()}</td>
-          </tr>
-          <tr>
-            <td style={labelCell} colSpan={2}>Nome social:</td>
-            <td style={valueCell} colSpan={10}>{request.patient_social_name || ""}</td>
+            <td style={valueCell} colSpan={10}>
+              {(request.patient_name || "").toUpperCase()}
+              {request.patient_social_name ? ` (social: ${request.patient_social_name})` : ""}
+            </td>
           </tr>
           <tr>
             <td style={labelCell} colSpan={2}>Nascimento:</td>
             <td style={valueCell} colSpan={2}>{fmtDate(request.patient_birth_date)}</td>
             <td style={labelCell} colSpan={1}>Sexo:</td>
-            <td style={cellBase} colSpan={3}>
+            <td style={cellBase} colSpan={2}>
               <Checkbox checked={isSexFem(request.patient_sex)} /> Fem
-              <span style={{ display: "inline-block", width: 14 }} />
+              <span style={{ display: "inline-block", width: 10 }} />
               <Checkbox checked={isSexMasc(request.patient_sex)} /> Masc
             </td>
-            <td style={labelCell} colSpan={2}>Grupo (ABO/RH):</td>
-            <td style={valueCell} colSpan={2}>{request.patient_blood_group || ""}</td>
-          </tr>
-          <tr>
-            <td style={labelCell} colSpan={2}>N° prontuário:</td>
-            <td style={valueCell} colSpan={3}>{request.patient_record || ""}</td>
-            <td style={labelCell} colSpan={1}>Raça:</td>
-            <td style={cellBase} colSpan={2}>{request.patient_race || ""}</td>
+            <td style={labelCell} colSpan={2}>ABO/RH:</td>
+            <td style={valueCell} colSpan={1}>{request.patient_blood_group || ""}</td>
             <td style={labelCell} colSpan={1}>Peso:</td>
-            <td style={valueCell} colSpan={3}>{request.patient_weight ?? ""}</td>
+            <td style={valueCell} colSpan={1}>{request.patient_weight ?? ""}</td>
           </tr>
           <tr>
+            <td style={labelCell} colSpan={2}>Prontuário:</td>
+            <td style={valueCell} colSpan={3}>{request.patient_record || ""}</td>
             <td style={labelCell} colSpan={2}>Unidade:</td>
-            <td style={valueCell} colSpan={6}>{sectorName || ""}</td>
+            <td style={valueCell} colSpan={3}>{sectorName || ""}</td>
             <td style={labelCell} colSpan={1}>Leito:</td>
-            <td style={valueCell} colSpan={3}>{request.patient_bed || ""}</td>
+            <td style={valueCell} colSpan={1}>{request.patient_bed || ""}</td>
           </tr>
           <tr>
             <td style={labelCell} colSpan={2}>Diagnóstico:</td>
             <td style={cellBase} colSpan={10}>{request.patient_diagnosis || ""}</td>
           </tr>
 
-          {/* ── Dados da Transfusão ── */}
-          <tr><td style={sectionBand} colSpan={12}>Dados da Transfusão · Setor onde será realizada</td></tr>
+          {/* ── Setor onde a transfusão será realizada (linha única) ── */}
           <tr>
-            {SECTOR_GROUPS.map((g) => (
-              <td key={g.title} style={subheadCell} colSpan={3}>{g.title}</td>
-            ))}
-          </tr>
-          <tr>
-            {SECTOR_GROUPS.map((g) => (
-              <td key={g.title} style={{ ...cellBase, padding: "5px 8px" }} colSpan={3}>
-                {g.items.map((it) => (
-                  <div key={it.key} style={{ fontSize: "8pt", padding: "1.5px 0", display: "flex", alignItems: "center" }}>
-                    <Checkbox checked={isSectorChecked(request, it.key)} /> {it.label}
-                  </div>
-                ))}
-              </td>
-            ))}
+            <td style={labelCell} colSpan={2}>Setor da transfusão:</td>
+            <td style={valueCell} colSpan={10}>
+              {sectorName || "—"}{request.patient_bed ? ` · Leito ${request.patient_bed}` : ""}
+            </td>
           </tr>
 
           {/* ── Hemocomponentes Solicitados ── */}
@@ -387,7 +371,7 @@ export function PrintableHemocomponentRequest({
                       <div><Checkbox checked={c?.admin_schedule === "continuo"} /> Contínuo</div>
                     </>
                   )}
-                  {k === "crio" && <div style={{ minHeight: 38 }}>&nbsp;</div>}
+                  {k === "crio" && <div style={{ minHeight: 22 }}>&nbsp;</div>}
                 </td>
               );
             })}
@@ -593,7 +577,7 @@ export async function printHemocomponentRequest(
         <div>${cb(c?.admin_schedule === "8_8h")} 8/8 Horas</div>
         <div>${cb(c?.admin_schedule === "continuo")} Contínuo</div>`;
     } else {
-      body = `<div style="min-height:32pt">&nbsp;</div>`;
+      body = `<div style="min-height:22pt">&nbsp;</div>`;
     }
     return `<td class="cell">${body}</td>`;
   }).join("");
@@ -634,30 +618,30 @@ export async function printHemocomponentRequest(
         <col style="width:8.333%"/><col style="width:8.333%"/><col style="width:8.337%"/>
       </colgroup>
       <tbody>
-        <!-- Identificação -->
+        <!-- Identificação (compacta: 4 linhas) -->
         <tr><td colspan="12" class="band">Identificação do Paciente</td></tr>
-        <tr><th colspan="2">Nome:</th><td colspan="10" class="bold">${escapeHtml((request.patient_name || "").toUpperCase())}</td></tr>
-        <tr><th colspan="2">Nome social:</th><td colspan="10">${escapeHtml(request.patient_social_name || "")}</td></tr>
+        <tr>
+          <th colspan="2">Nome:</th>
+          <td colspan="10" class="bold">${escapeHtml((request.patient_name || "").toUpperCase())}${request.patient_social_name ? ` (social: ${escapeHtml(request.patient_social_name)})` : ""}</td>
+        </tr>
         <tr>
           <th colspan="2">Nascimento:</th><td colspan="2" class="bold">${escapeHtml(fmtDate(request.patient_birth_date))}</td>
-          <th colspan="1">Sexo:</th><td colspan="3">${cb(isSexFem(request.patient_sex))} Fem &nbsp; ${cb(isSexMasc(request.patient_sex))} Masc</td>
-          <th colspan="2">Grupo (ABO/RH):</th><td colspan="2" class="bold">${escapeHtml(request.patient_blood_group || "")}</td>
+          <th colspan="1">Sexo:</th><td colspan="2">${cb(isSexFem(request.patient_sex))} Fem &nbsp; ${cb(isSexMasc(request.patient_sex))} Masc</td>
+          <th colspan="2">ABO/RH:</th><td colspan="1" class="bold">${escapeHtml(request.patient_blood_group || "")}</td>
+          <th colspan="1">Peso:</th><td colspan="1" class="bold">${escapeHtml(String(request.patient_weight ?? ""))}</td>
         </tr>
         <tr>
-          <th colspan="2">N° prontuário:</th><td colspan="3" class="bold">${escapeHtml(request.patient_record || "")}</td>
-          <th colspan="1">Raça:</th><td colspan="2">${escapeHtml(request.patient_race || "")}</td>
-          <th colspan="1">Peso:</th><td colspan="3" class="bold">${escapeHtml(String(request.patient_weight ?? ""))}</td>
-        </tr>
-        <tr>
-          <th colspan="2">Unidade:</th><td colspan="6" class="bold">${escapeHtml(sectorName || "")}</td>
-          <th colspan="1">Leito:</th><td colspan="3" class="bold">${escapeHtml(request.patient_bed || "")}</td>
+          <th colspan="2">Prontuário:</th><td colspan="3" class="bold">${escapeHtml(request.patient_record || "")}</td>
+          <th colspan="2">Unidade:</th><td colspan="3" class="bold">${escapeHtml(sectorName || "")}</td>
+          <th colspan="1">Leito:</th><td colspan="1" class="bold">${escapeHtml(request.patient_bed || "")}</td>
         </tr>
         <tr><th colspan="2">Diagnóstico:</th><td colspan="10">${escapeHtml(request.patient_diagnosis || "")}</td></tr>
 
-        <!-- Dados da Transfusão -->
-        <tr><td colspan="12" class="band">Dados da Transfusão · Setor onde será realizada</td></tr>
-        <tr>${SECTOR_GROUPS.map((g) => `<td colspan="3" class="sub">${escapeHtml(g.title)}</td>`).join("")}</tr>
-        <tr>${SECTOR_GROUPS.map((g) => `<td colspan="3" class="cell">${g.items.map((it) => `<div class="opt">${cb(isSectorChecked(request, it.key))} ${escapeHtml(it.label)}</div>`).join("")}</td>`).join("")}</tr>
+        <!-- Setor da transfusão (linha única, já é o setor do paciente) -->
+        <tr>
+          <th colspan="2">Setor da transfusão:</th>
+          <td colspan="10" class="bold">${escapeHtml(sectorName || "—")}${request.patient_bed ? ` · Leito ${escapeHtml(request.patient_bed)}` : ""}</td>
+        </tr>
 
         <!-- Hemocomponentes -->
         <tr><td colspan="12" class="band">Hemocomponentes Solicitados</td></tr>
@@ -672,7 +656,7 @@ export async function printHemocomponentRequest(
           if (k === "hemacias") body = `<div>${cb(c?.desleucocitado)} Desleucocitado / Filtrado</div><div>${cb(c?.lavado)} Lavado</div><div>${cb(c?.irradiado)} Irradiado</div>`;
           else if (k === "plaquetas") body = `<div>${cb(c?.desleucocitado)} Desleucocitado / Filtrado</div><div>${cb(c?.irradiado)} Irradiado</div>`;
           else if (k === "plasma") body = `<div class="muted-bold">Administração de:</div><div>${cb(c?.admin_schedule === "8_8h")} 8/8 Horas</div><div>${cb(c?.admin_schedule === "continuo")} Contínuo</div>`;
-          else body = `<div style="min-height:32pt">&nbsp;</div>`;
+          else body = `<div style="min-height:22pt">&nbsp;</div>`;
           return `<td colspan="3" class="cell">${body}</td>`;
         }).join("")}</tr>
         <tr>${COMPONENT_KEYS.map(() => `<td colspan="3" class="sub">Justificativa Laboratorial</td>`).join("")}</tr>
@@ -722,22 +706,22 @@ export async function printHemocomponentRequest(
   `;
 
   const extraStyles = `
-    @page { size: A4 portrait; margin: 10mm 11mm; }
-    table.nz.hemo { width:100%; border-collapse:collapse; font-size:8.5pt; border:1pt solid #1e293b; margin-top:6pt; table-layout:fixed; }
-    table.nz.hemo th, table.nz.hemo td { border:1pt solid #1e293b; padding:3pt 5pt; color:#0a1628; vertical-align:top; text-align:left; font-weight:500; background:#fff; word-wrap:break-word; }
+    @page { size: A4 portrait; margin: 8mm 9mm; }
+    table.nz.hemo { width:100%; border-collapse:collapse; font-size:8pt; border:1pt solid #1e293b; margin-top:5pt; table-layout:fixed; }
+    table.nz.hemo th, table.nz.hemo td { border:1pt solid #1e293b; padding:2.5pt 4pt; color:#0a1628; vertical-align:top; text-align:left; font-weight:500; background:#fff; word-wrap:break-word; }
     table.nz.hemo th { font-weight:500; white-space:nowrap; }
     table.nz.hemo td.bold, table.nz.hemo .bold { font-weight:700; }
-    table.nz.hemo td.band { background:#e2e8f0; text-align:center; font-weight:800; text-transform:uppercase; letter-spacing:0.5pt; padding:4pt; font-size:9pt; }
-    table.nz.hemo td.sub { background:#f8fafc; text-align:center; font-weight:700; text-transform:uppercase; font-size:8pt; padding:3pt; letter-spacing:0.3pt; }
-    table.nz.hemo td.cell { padding:4pt 6pt; }
-    table.nz.hemo .opt { font-size:8pt; padding:1pt 0; line-height:1.3; }
+    table.nz.hemo td.band { background:#e2e8f0; text-align:center; font-weight:800; text-transform:uppercase; letter-spacing:0.4pt; padding:3pt; font-size:8.5pt; }
+    table.nz.hemo td.sub { background:#f8fafc; text-align:center; font-weight:700; text-transform:uppercase; font-size:7.5pt; padding:2.5pt; letter-spacing:0.3pt; }
+    table.nz.hemo td.cell { padding:3pt 5pt; }
+    table.nz.hemo .opt { font-size:7.5pt; padding:1pt 0; line-height:1.25; }
     table.nz.hemo .muted-bold { font-weight:600; margin-bottom:2pt; }
-    table.nz.hemo td.sig-cell { text-align:center; vertical-align:top; padding:5pt; }
-    table.nz.hemo .sig-meta { font-size:8pt; margin-bottom:2pt; text-align:left; }
-    table.nz.hemo .sig-line { border-top:1pt solid #0a1628; margin-top:24pt; padding-top:3pt; font-size:7.5pt; text-align:center; }
-    table.nz.hemo .sig-name { font-weight:700; font-size:8pt; margin-top:1pt; }
-    table.nz.hemo .sig-crm { font-weight:500; font-size:7.5pt; color:#475569; }
-    table.nz.hemo td.legal { font-size:7pt; line-height:1.4; padding:5pt 7pt; text-align:justify; }
+    table.nz.hemo td.sig-cell { text-align:center; vertical-align:top; padding:4pt; }
+    table.nz.hemo .sig-meta { font-size:7.5pt; margin-bottom:2pt; text-align:left; }
+    table.nz.hemo .sig-line { border-top:1pt solid #0a1628; margin-top:20pt; padding-top:3pt; font-size:7pt; text-align:center; }
+    table.nz.hemo .sig-name { font-weight:700; font-size:7.5pt; margin-top:1pt; }
+    table.nz.hemo .sig-crm { font-weight:500; font-size:7pt; color:#475569; }
+    table.nz.hemo td.legal { font-size:6.5pt; line-height:1.35; padding:4pt 6pt; text-align:justify; }
     table.nz.hemo td.legal p { margin:0 0 3pt 0; }
     .cb { display:inline-block; width:8pt; height:8pt; border:1pt solid #0a1628; margin-right:4pt; vertical-align:middle; }
     .cb.on { background:#0a1628; }

@@ -478,25 +478,17 @@ export function HemocomponentRequestDialog({
                   <Separator />
 
                   <div>
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">Setor(es) onde a transfusão será realizada</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
-                      {SECTOR_GROUPS.map((g) => (
-                        <div key={g.title} className="border rounded-md p-2.5">
-                          <div className="text-[10px] font-bold uppercase text-center mb-1.5 text-muted-foreground">{g.title}</div>
-                          <div className="space-y-1">
-                            {g.items.map((it) => (
-                              <div key={it.key} className="flex items-center gap-2">
-                                <Checkbox
-                                  id={`sec-${it.key}`}
-                                  checked={(data.transfusion_sectors || []).includes(it.key)}
-                                  onCheckedChange={(c) => toggleSector(it.key, !!c)}
-                                />
-                                <Label htmlFor={`sec-${it.key}`} className="text-xs cursor-pointer">{it.label}</Label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">Setor onde a transfusão será realizada</Label>
+                    <div className="mt-2 flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                      <Droplet className="h-4 w-4 text-rose-500 shrink-0" />
+                      <span className="font-semibold">{data.patient_unit || "—"}</span>
+                      {data.patient_bed && (
+                        <>
+                          <span className="text-muted-foreground">·</span>
+                          <span>Leito <strong>{data.patient_bed}</strong></span>
+                        </>
+                      )}
+                      <span className="ml-auto text-[10px] uppercase text-muted-foreground">setor atual do paciente</span>
                     </div>
                   </div>
 
