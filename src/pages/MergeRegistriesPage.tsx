@@ -501,6 +501,12 @@ export default function MergeRegistriesPage() {
             { label: "CPF e CNS do perdedor serão liberados e preservados na auditoria." },
             { label: "Esta ação é registrada na auditoria imutável de mesclagens." },
           ]}
+          consequences={[
+            { text: "Repointa evoluções, prescrições, exames, culturas, atendimentos e movimentações para o vencedor." },
+            { text: "Marca o cadastro perdedor como mesclado (merged_into_registry_id) — não apaga nenhum dado." },
+            { text: "Promove o prontuário escolhido a primário e mantém os demais como histórico arquivado." },
+            { text: "Registra cada campo alterado no histórico de edição com origem 'merge'." },
+          ]}
         />
       )}
     </div>
