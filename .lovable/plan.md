@@ -1,118 +1,172 @@
-## Entendimento
+# Plano — Blindagem de leitura + Prescrição do dia + Rollover 05h
 
-Hoje a aba **Mesclagens** do Dev Console mostra só o histórico (`patient_merge_audit`). Você quer um **diagnosticador ativo** dentro dela:
+## 0. Princípio inegociável (antes de tudo)
 
-1. **Varrer** prontuários em busca de duplicatas.
-2. **Segmentar** o resultado por **setor** (e por critério de match).
-3. **Agir** caso a caso (abrir o wizard `/mesclar-prontuarios`) **ou** em bloco quando o match é cirurgicamente seguro.
+**Nada é deletado. Nada é sobrescrito destrutivamente.** Toda "renovação" é uma nova linha em `prescriptions` com `parent_id` apontando para a anterior. Toda prescrição assinada permanece imutável no banco para sempre — só muda o que a UI **mostra como vigente hoje**.
 
-O wizard de mesclagem que já existe **não muda**. A aba ganha um modo "Diagnóstico" acima do histórico atual.
+Se em qualquer ponto deste plano um passo parecer apagar/substituir histórico, é bug do plano — pare e me avise.
 
 ---
 
-## Contrato (4 camadas)
+## 1. Internação no código (explicação didática que você pediu)
 
-- **Layout** — só `MergesTab.tsx` (1 arquivo). Ganha 2 sub-abas internas: **Diagnóstico** (novo) e **Histórico** (já existe).
-- **Dados** — 1 RPC nova `scan_duplicate_registries(p_sector_code text default null, p_match_mode text default 'strict')` retornando grupos de duplicatas. Zero alteração de tabela, zero coluna nova.
-- **Movimentação** — zero. Varredura é só leitura. Ação 1-a-1 redireciona ao wizard. Ação em bloco chama `merge_patient_registries` já existente, 1 mesclagem por vez dentro de uma transação por par.
-- **Auditoria** — toda mesclagem (1-a-1 ou bloco) passa pelo RPC `merge_patient_registries`, que já registra `patient_merge_audit` + `patient_registry_edit_history`. Bloco escreve 1 linha extra em `patient_merge_audit` com `action='bulk_merge_batch'` agrupando os pares por `batch_id` para auditoria do lote.
-
----
-
-## Critérios de match (segmentados, transparentes)
-
-Cada grupo de duplicatas vem **rotulado com a regra** que disparou — o usuário sabe o porquê.
-
-| Regra | Critério | Confiança | Default |
-|---|---|---|---|
-| **R1 CPF idêntico** | CPF não-nulo + igual entre 2+ registros | Altíssima | ✅ |
-| **R2 CNS idêntico** | CNS não-nulo + igual | Altíssima | ✅ |
-| **R3 Nome + DOB + Mãe** | nome normalizado (NFD upper) + DOB + nome da mãe normalizado, todos iguais | Alta | ✅ |
-| **R4 Nome + DOB** | nome + DOB iguais, sem mãe | Média | ✅ |
-| **R5 Prontuário legado igual** | `numero_prontuario_legado` igual entre 2+ | Média (depende da unidade) | ✅ |
-| **R6 Nome similar + DOB** | `similarity(nome) ≥ 0.85` + DOB igual (pg_trgm) | Baixa — só sugestão | ⛔ off por padrão |
-
-R6 fica desligada por padrão (toggle "Incluir similaridade fonética"). Sem alucinação.
-
----
-
-## Segmentação por setor
-
-Filtro de setor lê **o leito ATUAL** de cada registry via `patients.bed_number` → `sector_code`. Opções:
-
-- **Todos os setores** (default — visão global da plataforma)
-- **Setor específico** (dropdown reusa `hospitalSectors.ts`)
-- **Sem leito ativo** (apenas registries sem `patients` alocado)
-- **Apenas ambos com leito** (casos críticos que bloqueiam a mesclagem direta)
-
-O filtro de setor compõe com o filtro de regra (R1…R6) e com busca textual livre.
-
----
-
-## UX da sub-aba "Diagnóstico"
+Três entidades distintas no banco, e o sistema **nunca pode confundi-las**:
 
 ```text
-┌─ Barra de filtros ───────────────────────────────────────────────┐
-│ [Setor ▾] [Regras: R1✓ R2✓ R3✓ R4✓ R5✓ R6☐] [□ Sem leito]      │
-│ [🔍 Buscar nome/CPF/CNS]              [↻ Rodar varredura]        │
-└──────────────────────────────────────────────────────────────────┘
-
-┌─ KPIs do scan ───────────────────────────────────────────────────┐
-│ 24 grupos · 53 registros duplicados · 18 com leito · 6 críticos │
-└──────────────────────────────────────────────────────────────────┘
-
-┌─ Grupo #1 · R1 CPF idêntico · UTI 2 · 2 registros ─── [Expandir]┐
-│ ANTONIO REGINALDO · CPF 123.456.789-00                           │
-│ ├─ Registry A · prontuário 178085-1 · leito L15 UTI 2 · ativo   │
-│ └─ Registry B · prontuário 1780851 · sem leito · criado 12/03   │
-│ [Sugerido: vencedor A (com leito) · arquivar B]                  │
-│ [Mesclar agora →]  [Adicionar ao lote ☐]                         │
-└──────────────────────────────────────────────────────────────────┘
+patient_registry      → IDENTIDADE clínica permanente (CPF, CNS, nome, DOB, mãe)
+   │                    Vive para sempre. Um humano = um registry.
+   │
+   ├── patient_encounters   → INTERNAÇÃO/ATENDIMENTO (episódio assistencial)
+   │                          encounter_code 12 dígitos. Abre na admissão,
+   │                          fecha na alta. Sobrevive a trocas de leito.
+   │
+   └── patients              → OCUPAÇÃO DE LEITO (linha do mapa de leitos)
+                              `patients.id` muda quando o paciente troca de leito.
+                              `patients.patient_registry_id` aponta pro registry.
 ```
 
-Cada grupo expandido mostra **lado-a-lado todos os campos divergentes** (mesma `CompareRegistriesTable` do wizard), com a **sugestão didática** do vencedor (heurística: tem leito ativo > mais campos preenchidos > mais antigo).
+- **Prescrição, evolução, exame, cultura, movimento** → todos guardam `patient_registry_id` (identidade) e opcionalmente `patient_id` (leito do momento).
+- **Bug histórico**: a URL passa `?patientId=<patients.id>` (leito), e a página filtrava queries por `patient_registry_id = patients.id`. IDs diferentes → 0 linhas → "sumiu". Os dados nunca sumiram, só a query estava filtrando pelo ID errado.
+- **Blindagem do banco já aplicada**: triggers `enforce_prescription_patient_affinity` e `enforce_encounter_patient_affinity` impedem GRAVAR prescrição/encounter cujo `patient_registry_id` esteja em unidade hospitalar diferente, e auditam tudo em `prescription_affinity_audit`.
+
+Falta agora blindar a **leitura**.
 
 ---
 
-## Ações
+## 2. Item 1 — Helper único `useResolvedRegistryId`
 
-### 1-a-1 (sempre disponível)
-Botão **"Mesclar agora"** → abre `/mesclar-prontuarios` já com os 2 IDs pré-selecionados (via querystring `?a=<uuid>&b=<uuid>`). Fluxo completo do wizard, sem atalho.
+### O que faz
+Um único hook que recebe `patients.id` (vindo da URL) e devolve o `patient_registry_id` correto, com cache, com guarda contra race condition (troca rápida de paciente) e com logging.
 
-### Em bloco (apenas para matches R1/R2 com sugestão clara)
-- Checkbox **"Adicionar ao lote"** em cada grupo.
-- Bloqueado para grupos onde **ambos têm leito ativo** (precisa decisão humana) ou onde a sugestão é ambígua.
-- Barra fixa no rodapé: `12 grupos selecionados · [Revisar lote] [Executar lote]`.
-- **Revisar lote** abre `BulkMergeReviewDialog`: lista todos os pares + motivo único obrigatório (≥20 chars) + checkbox "Entendo que isto é irreversível e auditado".
-- **Executar lote** chama `merge_patient_registries` em loop sequencial, mostrando progresso (✓ / ✗ por par). Se 1 falhar, segue os outros e relata no final.
+### Onde fica
+- `src/hooks/useResolvedRegistryId.ts` (novo) — fonte única da verdade.
+
+### Como funciona
+1. Entrada: `bedRowId` (UUID de `patients.id`) vindo da URL/contexto.
+2. SELECT `patients.patient_registry_id, patients.hospital_unit_id, patients.name` por `id = bedRowId`.
+3. Saída: `{ registryId, hospitalUnitId, patientName, isResolving, error }`.
+4. Cancela resposta antiga quando `bedRowId` muda (evita "vazamento" de paciente A para tela do paciente B).
+5. Cache em memória (Map) com TTL curto (30 s) para evitar round-trip extra ao re-renderizar.
+6. Realtime opcional em `patients` filtrado por `id=eq.<bedRowId>` para reagir a relocação ao vivo (já temos `usePatientLive` — vamos reaproveitar a subscrição, não duplicar).
+
+### Onde substituir o uso direto de `urlPatientId` em filtros de queries clínicas
+Vou varrer e trocar **só** filtros do tipo `.eq('patient_registry_id', urlPatientId)` por `.eq('patient_registry_id', registryId)` vindo do helper. Não toco filtros legítimos por `patient_id` (esses devem continuar como `patients.id`).
+
+Páginas/hooks alvo (lista preliminar — confirmo no momento da execução com `rg`):
+- `src/pages/PrescricaoPage.tsx` (já corrigido ad-hoc — passa a usar o hook)
+- `src/pages/EvolucaoPage.tsx`
+- `src/pages/PainelClinicoPage.tsx` (aba Resumo)
+- `src/pages/RequisicaoLaboratorioPage.tsx`, `RequisicaoImagensPage.tsx`, `RequisicaoParecerPage.tsx`
+- `src/hooks/useEvolutions.ts`, `useLatestEvolution.ts`, `useActivePrescription.ts`, `useConductHistory.ts`, `usePatientSpecialRequests.ts`, `usePatientNirRequest.ts`, `usePatientPendingItems.ts`, `usePatientDocuments.ts`, `usePatientDischargeDocs.ts`, `usePatientCid.ts`, `usePatientDiagnosticContext.ts`, `usePatientMovements.ts`
+- `src/components/ficha/*` se houver consulta direta
+
+### Garantia de não-quebra
+- Nenhuma escrita é alterada — só leitura.
+- Quando o helper ainda está resolvendo (`isResolving = true`), as listas mostram skeleton em vez de "vazio" (evita o pavor visual de "sumiu").
+- Se o SELECT falhar, mostramos um banner âmbar "Não foi possível resolver o prontuário deste leito — tente recarregar" e **não escondemos** nada que já estivesse renderizado.
 
 ---
 
-## Arquivos tocados
+## 3. Item 2 — Prescrição do dia carrega sozinha
 
-- `src/components/dev/MergesTab.tsx` — adiciona sub-abas Diagnóstico/Histórico, mantém histórico atual intacto.
-- `src/components/dev/merges/DiagnosticPanel.tsx` *(novo)* — filtros + lista de grupos + barra de lote.
-- `src/components/dev/merges/DuplicateGroupCard.tsx` *(novo)* — card expansível por grupo, reusa `CompareRegistriesTable`.
-- `src/components/dev/merges/BulkMergeReviewDialog.tsx` *(novo)* — pop-up de confirmação do lote (padrão `MovementConfirmDialog`).
-- `src/pages/MergeRegistriesPage.tsx` — ler `?a=&b=` da URL para pré-selecionar (já existe a UI, só faltava o atalho).
-- 1 migration: RPC `scan_duplicate_registries(p_sector_code, p_match_mode, p_include_similarity)` SECURITY DEFINER, restrita a admin+dev.
+### Definição de "vigente hoje" (confirmada por você)
+Uma prescrição é **vigente** quando:
+- `status = 'signed'` (assinada pelo médico) — farmácia **não** é mais pré-requisito.
+- `created_at` (ou `signed_at` se preenchido) dentro da janela do **dia clínico** (ver §4 sobre rollover 05h).
+- `patient_registry_id` = registry resolvido pelo helper.
+- `hospital_unit_id` = unidade atual.
+
+Se houver mais de uma assinada no dia → carrega **a mais recente** e mostra badge "Versão N de hoje • assinada às HH:MM" + link "ver versões anteriores do dia" (read-only).
+
+### Corpo da prescrição carregado
+- Todos os itens **internos** (`items[]` do JSONB) entram no corpo.
+- Itens marcados como **"extra de impressão"** (flag `printOnly: true` ou categoria `extras_impressao` — confirmo o nome exato lendo `prescription_presentation.ts`) **NÃO** entram no corpo editável. Ficam num bloco separado "Itens extras impressos hoje" para o médico ter ciência, mas não poluem a edição.
+
+### Fluxo de UI
+1. Abriu `PrescricaoPage` com paciente X.
+2. Helper resolve `registryId`.
+3. Query: `prescriptions WHERE patient_registry_id = registryId AND status = 'signed' AND created_at >= <início_dia_clinico> ORDER BY created_at DESC LIMIT 1`.
+4. Se achou → carrega **read-only** com botão primário "Editar / Nova versão".
+5. Se não achou → abre em branco (ou herda do rollover, ver §4).
+6. Calendário continua existindo na lateral para ver dias anteriores, mas **não** é mais o único caminho para o dia de hoje.
+
+### "Editar / Nova versão"
+- Cria nova linha `prescriptions` com `status = 'draft'`, `parent_id = <id da vigente>`, copiando `items`, `patient_data`, peso, alergias, diagnósticos, observações.
+- A vigente continua intacta no banco.
+- Ao assinar a nova versão, ela vira a nova vigente do dia. A anterior fica acessível via badge "ver versões anteriores do dia".
 
 ---
 
-## Arquivos que NÃO serão tocados
+## 4. Rollover automático às 05:00 (renovação diária)
 
-- `merge_patient_registries` (RPC já existente, não rescrevo).
-- `patient_merge_audit`, `patient_registry`, `medical_records`, `patient_registry_edit_history` — zero alteração de schema.
-- `MergeRegistriesPage` apenas lê novos query params; o wizard em si (`MergeWizard`, `CompareRegistriesTable`) **não muda**.
-- Nenhum fluxo clínico, nenhum print, nenhum fluxo de leito/admissão/transferência.
-- Aba Histórico atual da MergesTab — preservada como está.
+### Conceito
+O "dia clínico" começa às **05:00 local** e termina às 04:59:59 do dia seguinte. Isso bate com o turno médico (médico chega de manhã e quer ver a prescrição "do dia novo" como rascunho herdado, não um corpo vazio).
+
+### Implementação — duas camadas (defesa em profundidade)
+
+**Camada A — Backend (fonte da verdade, garante consistência mesmo se ninguém abrir a tela):**
+- Função Postgres `rollover_daily_prescriptions(p_hospital_unit_id uuid)` que:
+  1. Para cada paciente internado na unidade com `admission_status = 'admitido'`,
+  2. Encontra a última prescrição `signed` cujo dia clínico já passou e que **ainda não tem filha do dia novo**,
+  3. Cria uma cópia como `status = 'draft'`, `parent_id` apontando para a anterior, `created_at = now()`, copiando `items`, peso, alergias, diagnósticos.
+  4. Idempotente: rodar 10x no mesmo dia produz no máximo 1 draft filha por paciente.
+- Agendamento via `pg_cron` diariamente às 05:00 local (UTC-3) = 08:00 UTC.
+- Auditoria: cada draft criada registra em `prescription_affinity_audit` com `reason = 'DAILY_ROLLOVER_05H'`.
+
+**Camada B — Frontend (fallback didático):**
+- Quando `PrescricaoPage` abre e não acha vigente do dia mas acha draft filha gerada pelo rollover → carrega a draft com banner azul "Renovação automática das 05h — revise e assine para validar o dia de hoje".
+- Se não achou nem vigente nem draft do rollover (ex: cron falhou) → carrega a última `signed` do dia anterior como **template em memória** (não grava nada) e mostra banner âmbar "Rollover pendente — gerando rascunho a partir da última prescrição assinada".
+
+### Por que isso é seguro
+- A prescrição assinada do dia anterior **nunca** é alterada.
+- A draft do dia novo é uma linha **nova** com `parent_id`.
+- Se o médico não fizer nada, a draft permanece como draft (não vira vigente sozinha).
+- Se a unidade quiser auditar "o que foi prescrito ontem", a `signed` original do dia anterior continua intacta no banco e no calendário.
 
 ---
 
-## 3 pontos a confirmar antes de eu executar
+## 5. Proteção contra perda de dados (sua maior preocupação)
 
-1. **R6 similaridade fonética** — ok deixar como toggle opt-in (off por padrão) ou prefere nem expor por enquanto?
-2. **Bloco automatizado** — restringir só a **R1 (CPF idêntico)** ou liberar também **R2 (CNS idêntico)**? R3+ sempre exige decisão humana 1-a-1.
-3. **Heurística do vencedor** — "tem leito ativo > mais campos preenchidos > mais antigo" te parece a ordem certa, ou prefere "tem leito ativo > mais recente > mais campos"?
+| Risco | Mitigação |
+|---|---|
+| Query com ID errado "esconde" dados | Helper único + skeleton enquanto resolve + banner em erro (nunca "vazio silencioso") |
+| Nova versão sobrescreve a anterior | `parent_id` + INSERT (nunca UPDATE destrutivo em `items`) |
+| Rollover apaga prescrição antiga | Cron só faz INSERT de draft filha; nunca UPDATE/DELETE na pai |
+| Rollover roda 2x e duplica | Guarda `WHERE NOT EXISTS (filha do dia novo)` torna idempotente |
+| Cron falha | Frontend detecta e carrega template em memória (sem gravar) |
+| Troca rápida de paciente vaza dados | Helper cancela resposta antiga via flag `cancelled` |
+| Gravação cross-unidade | Trigger de afinidade já bloqueia (RAISE EXCEPTION) |
+| Helper retorna registry errado | Adiciono assert: `if (resolvedRegistryId && resolvedHospitalUnitId !== currentHospitalUnitId) → erro visível, não carrega nada` |
 
-Aguardo "ok" + respostas dos 3 pontos.
+---
+
+## 6. Ordem de execução (faseada, cada fase é reversível)
+
+1. **Fase 1 — Helper (sem mudar comportamento ainda):** criar `useResolvedRegistryId.ts`, usar **apenas** em `PrescricaoPage` (já fizemos ad-hoc, agora migra para o hook).
+2. **Fase 2 — Persistência do dia:** lógica de "carregar vigente do dia" + botão "Editar / Nova versão" + tratamento de itens `printOnly`.
+3. **Fase 3 — Migração ampla do helper:** trocar todos os filtros listados em §2 para usar o helper. Smoke test em paciente conhecido (JACKSON) antes de prosseguir.
+4. **Fase 4 — Rollover backend:** migration cria `rollover_daily_prescriptions()` + `pg_cron` job. Roda **dry-run** primeiro (uma flag `p_dry_run boolean`) que só retorna quantas filhas seriam criadas, sem inserir.
+5. **Fase 5 — Rollover frontend fallback:** banner azul/âmbar.
+
+Cada fase você confirma "ok" antes de eu seguir para a próxima.
+
+---
+
+## 7. O que **NÃO** será tocado neste plano (princípios imutáveis)
+
+- Camada de **Layout**: nenhuma mudança visual além dos banners citados e da badge "Versão N de hoje".
+- Camada de **Movimentação**: nada em fluxos de alta, transferência, leito.
+- Camada de **Auditoria**: só **adicionamos** entradas (`DAILY_ROLLOVER_05H`); não removemos nada.
+- `src/integrations/supabase/client.ts`, `types.ts`, `.env`, `supabase/config.toml` (project-level).
+- Catálogo de medicamentos, validação farmacêutica, MAV/Port.344, insulinoterapia — fora do escopo.
+
+---
+
+## 8. Perguntas finais antes de codar
+
+1. **Fuso do rollover**: confirmar `America/Sao_Paulo` (UTC-3 sem horário de verão) para o cron das 05h?
+2. **Itens "extras de impressão"**: você lembra se a flag é `printOnly` no JSONB do item, ou se é uma categoria/seção separada? (Posso descobrir lendo o código, mas se você souber de cabeça acelera.)
+3. **Janela do dia clínico**: 05:00 → 04:59:59 do dia seguinte fecha bem com o turno? Ou prefere 06:00 / 07:00?
+4. **Fase 1 isolada primeiro** (só helper em PrescricaoPage, valido com você no JACKSON), e só depois eu sigo para as demais fases — ok?
+
+Se responder "ok seguir" sem ressalvas, eu assumo: fuso SP, descubro a flag dos extras lendo o código, janela 05–05, e executo em fases pedindo "ok" entre cada uma.
