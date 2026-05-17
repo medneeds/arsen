@@ -5671,7 +5671,7 @@ const PrescricaoPage = () => {
         console.error('[autoLoadPrescription] failed', err);
       }
     })();
-  }, [currentHospital, currentState, patient.name, currentPrescriptionId]);
+  }, [currentHospital, currentState, patient.name, patientRegistryId, currentPrescriptionId]);
 
   // Fetch version history for a prescription (by patient_name in same hospital)
   const fetchVersionHistory = useCallback(async (prescriptionId: string) => {
