@@ -5181,8 +5181,9 @@ const PrescricaoPage = () => {
       });
       toast.success("Item suspenso");
     }
-    // Persiste imediatamente — suspensão é ato auditável e imutável entre sessões
-    if (nextItems.length) persistItems(nextItems, { mode: 'update', reason });
+    // Persiste imediatamente — suspensão é ato auditável e imutável entre sessões.
+    // Fase C: se a prescrição atual está SIGNED, promove automaticamente para nova versão.
+    if (nextItems.length) persistItems(nextItems, { mode: 'update', reason, autoNewVersionIfSigned: true });
     setSuspendDialogOpen(false);
     setSuspendTarget({});
   }, [suspendTarget, selectedIds, persistItems]);
