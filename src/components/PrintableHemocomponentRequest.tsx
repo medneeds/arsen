@@ -275,64 +275,48 @@ export function PrintableHemocomponentRequest({
           ))}
         </colgroup>
         <tbody>
-          {/* ── Identificação do Paciente ── */}
+          {/* ── Identificação do Paciente (compacta: 4 linhas) ── */}
           <tr><td style={sectionBand} colSpan={12}>Identificação do Paciente</td></tr>
           <tr>
             <td style={labelCell} colSpan={2}>Nome:</td>
-            <td style={valueCell} colSpan={10}>{(request.patient_name || "").toUpperCase()}</td>
-          </tr>
-          <tr>
-            <td style={labelCell} colSpan={2}>Nome social:</td>
-            <td style={valueCell} colSpan={10}>{request.patient_social_name || ""}</td>
+            <td style={valueCell} colSpan={10}>
+              {(request.patient_name || "").toUpperCase()}
+              {request.patient_social_name ? ` (social: ${request.patient_social_name})` : ""}
+            </td>
           </tr>
           <tr>
             <td style={labelCell} colSpan={2}>Nascimento:</td>
             <td style={valueCell} colSpan={2}>{fmtDate(request.patient_birth_date)}</td>
             <td style={labelCell} colSpan={1}>Sexo:</td>
-            <td style={cellBase} colSpan={3}>
+            <td style={cellBase} colSpan={2}>
               <Checkbox checked={isSexFem(request.patient_sex)} /> Fem
-              <span style={{ display: "inline-block", width: 14 }} />
+              <span style={{ display: "inline-block", width: 10 }} />
               <Checkbox checked={isSexMasc(request.patient_sex)} /> Masc
             </td>
-            <td style={labelCell} colSpan={2}>Grupo (ABO/RH):</td>
-            <td style={valueCell} colSpan={2}>{request.patient_blood_group || ""}</td>
-          </tr>
-          <tr>
-            <td style={labelCell} colSpan={2}>N° prontuário:</td>
-            <td style={valueCell} colSpan={3}>{request.patient_record || ""}</td>
-            <td style={labelCell} colSpan={1}>Raça:</td>
-            <td style={cellBase} colSpan={2}>{request.patient_race || ""}</td>
+            <td style={labelCell} colSpan={2}>ABO/RH:</td>
+            <td style={valueCell} colSpan={1}>{request.patient_blood_group || ""}</td>
             <td style={labelCell} colSpan={1}>Peso:</td>
-            <td style={valueCell} colSpan={3}>{request.patient_weight ?? ""}</td>
+            <td style={valueCell} colSpan={1}>{request.patient_weight ?? ""}</td>
           </tr>
           <tr>
+            <td style={labelCell} colSpan={2}>Prontuário:</td>
+            <td style={valueCell} colSpan={3}>{request.patient_record || ""}</td>
             <td style={labelCell} colSpan={2}>Unidade:</td>
-            <td style={valueCell} colSpan={6}>{sectorName || ""}</td>
+            <td style={valueCell} colSpan={3}>{sectorName || ""}</td>
             <td style={labelCell} colSpan={1}>Leito:</td>
-            <td style={valueCell} colSpan={3}>{request.patient_bed || ""}</td>
+            <td style={valueCell} colSpan={1}>{request.patient_bed || ""}</td>
           </tr>
           <tr>
             <td style={labelCell} colSpan={2}>Diagnóstico:</td>
             <td style={cellBase} colSpan={10}>{request.patient_diagnosis || ""}</td>
           </tr>
 
-          {/* ── Dados da Transfusão ── */}
-          <tr><td style={sectionBand} colSpan={12}>Dados da Transfusão · Setor onde será realizada</td></tr>
+          {/* ── Setor onde a transfusão será realizada (linha única) ── */}
           <tr>
-            {SECTOR_GROUPS.map((g) => (
-              <td key={g.title} style={subheadCell} colSpan={3}>{g.title}</td>
-            ))}
-          </tr>
-          <tr>
-            {SECTOR_GROUPS.map((g) => (
-              <td key={g.title} style={{ ...cellBase, padding: "5px 8px" }} colSpan={3}>
-                {g.items.map((it) => (
-                  <div key={it.key} style={{ fontSize: "8pt", padding: "1.5px 0", display: "flex", alignItems: "center" }}>
-                    <Checkbox checked={isSectorChecked(request, it.key)} /> {it.label}
-                  </div>
-                ))}
-              </td>
-            ))}
+            <td style={labelCell} colSpan={2}>Setor da transfusão:</td>
+            <td style={valueCell} colSpan={10}>
+              {sectorName || "—"}{request.patient_bed ? ` · Leito ${request.patient_bed}` : ""}
+            </td>
           </tr>
 
           {/* ── Hemocomponentes Solicitados ── */}
