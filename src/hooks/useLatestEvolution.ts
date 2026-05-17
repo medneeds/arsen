@@ -63,6 +63,7 @@ export function useLatestEvolution(
     const { data, error } = await q;
     if (!error && data && data.length > 0) {
       const row: any = data[0];
+      const soap: any = row.soap_data || {};
       setEvolution({
         id: row.id,
         status: row.status || "draft",
@@ -70,6 +71,8 @@ export function useLatestEvolution(
         createdByName: row.created_by_name,
         validatedAt: row.validated_at,
         preview: buildPreview(row.soap_data),
+        devices: Array.isArray(soap.devices) ? soap.devices : [],
+        culturesHtml: typeof soap.culturesHtml === "string" ? soap.culturesHtml : "",
       });
       lastSeenIdRef.current = row.id;
     } else {
