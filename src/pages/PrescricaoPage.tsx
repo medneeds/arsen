@@ -6775,10 +6775,11 @@ const PrescricaoPage = () => {
               <span className="text-[10px] font-semibold text-muted-foreground tracking-wider uppercase mr-1">Ir para:</span>
               {/* Grupo 1: Suporte (dieta + hidratação + reposição) */}
               {(['nutrition', 'hydration', 'replacement'] as PrescriptionCategory[]).map(cat => {
-                const count = itemsByCategory[cat].length;
+                const activeItemsCat = itemsByCategory[cat].filter(i => i.status !== 'suspended');
+                const count = activeItemsCat.length;
                 if (count === 0) return null;
                 const config = CATEGORY_CONFIG[cat];
-                const validatedCount = itemsByCategory[cat].filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
+                const validatedCount = activeItemsCat.filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
                 const ok = validatedCount === count;
                 const hasWizard = cat === 'nutrition' || cat === 'hydration' || cat === 'replacement';
                 return (
