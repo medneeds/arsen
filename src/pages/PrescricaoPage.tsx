@@ -7363,6 +7363,7 @@ const PrescricaoPage = () => {
                             onUpdate={updateItem}
                             onRemove={removeItem}
                             onToggleFlag={toggleFlag}
+                            onTogglePrintOnly={togglePrintOnly}
                             isSimple={simple}
                             isCompact={compactView && !expandedCategories.has(cat)}
                             selected={selectedIds.has(item.id)}
