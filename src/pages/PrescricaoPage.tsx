@@ -3635,6 +3635,10 @@ const PrescricaoPage = () => {
   const [insulinSchemePromptOpen, setInsulinSchemePromptOpen] = useState(false);
   // Pop-up orientativo após anexar antimicrobianos: lembra de imprimir Guia ATM 2 vias se D1
   const [atbAttachNotice, setAtbAttachNotice] = useState<{ open: boolean; isFirstDay: boolean; names: string[] }>({ open: false, isFirstDay: false, names: [] });
+  // Fase E: pop-up didático "esquema ATB termina hoje" (último dia D = total).
+  // Dispara uma única vez por (paciente + dia), persistido em sessionStorage.
+  const [atbEndNotice, setAtbEndNotice] = useState<{ open: boolean; schemes: Array<{ name: string; startDate: string; dayN: number; total: number }> }>({ open: false, schemes: [] });
+  const atbEndNoticeShownRef = useRef<Set<string>>(new Set());
   // Detecta se o item de cuidado é de controle glicêmico (HGT / glicemia capilar)
   const isGlycemicControlName = useCallback((name: string) => {
     const n = (name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
