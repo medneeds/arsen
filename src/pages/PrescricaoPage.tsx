@@ -4389,21 +4389,25 @@ const PrescricaoPage = () => {
       // hoje para este paciente+unidade, não criar draft paralelo. A assinada é a verdade.
       if (!currentPrescriptionId && currentHospital && currentState && patient.name?.trim()) {
         const dayKey = format(new Date(), 'yyyy-MM-dd');
-        const cacheKey = `${currentHospital.id}::${currentState.id}::${patient.name.trim()}::${dayKey}`;
+        const affinityKey = patientRegistryId || `name:${patient.name.trim()}`;
+        const cacheKey = `${currentHospital.id}::${currentState.id}::${affinityKey}::${dayKey}`;
         let signedExists = signedTodayCacheRef.current?.key === cacheKey
           ? signedTodayCacheRef.current.exists
           : null;
         if (signedExists === null) {
           try {
             const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
-            const { count } = await supabase
+            let q = supabase
               .from('prescriptions')
               .select('id', { count: 'exact', head: true })
               .eq('hospital_unit_id', currentHospital.id)
               .eq('state_id', currentState.id)
-              .eq('patient_name', patient.name.trim())
               .eq('status', 'signed')
               .gte('created_at', dayStart.toISOString());
+            q = patientRegistryId
+              ? q.eq('patient_registry_id', patientRegistryId)
+              : q.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
+            const { count } = await q;
             signedExists = (count || 0) > 0;
             signedTodayCacheRef.current = { key: cacheKey, exists: signedExists };
           } catch {
