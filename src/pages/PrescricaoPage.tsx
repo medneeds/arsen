@@ -5640,8 +5640,8 @@ const PrescricaoPage = () => {
     }
   }, [draftToDelete, draftDeleteReason, currentPrescriptionId, fetchPrescriptions]);
 
-  // Auto-hidrata a última prescrição do paciente nas últimas 24h ao abrir o cockpit.
-  // Garante que prescrições validadas/impressas continuem visíveis até o corte das 05h
+  // Auto-hidrata a última prescrição do paciente dentro do DIA CLÍNICO atual (05:00 → 04:59 SP).
+  // Garante que prescrições validadas/impressas continuem visíveis até o corte das 05h SP
   // mesmo se o médico fechar a aba e reabrir, e impede duplicatas.
   const autoLoadAttemptedRef = useRef(false);
   const loadPrescriptionRef = useRef<((id: string) => Promise<void>) | null>(null);
@@ -5652,7 +5652,7 @@ const PrescricaoPage = () => {
     autoLoadAttemptedRef.current = true;
     (async () => {
       try {
-        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const since = getClinicalDayWindowSP().start.toISOString();
         let alQ = supabase
           .from('prescriptions')
           .select('id, created_at, items')
