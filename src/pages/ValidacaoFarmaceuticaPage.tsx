@@ -250,7 +250,8 @@ const ValidacaoFarmaceuticaPage = () => {
     }
   };
 
-  const activeItems = selectedPrescription?.items.filter((i) => !i.suspended) || [];
+  // Itens marcados como "só impressão" não vão à dispensação/validação farmacêutica
+  const activeItems = selectedPrescription?.items.filter((i) => !i.suspended && !i.printOnly) || [];
   const highAlertItems = activeItems.filter((i) => i.highAlert);
 
   return (
