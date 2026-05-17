@@ -94,8 +94,16 @@ export function usePatients(department?: Department, sector?: string) {
         admittedAt: (p as any).admitted_at ?? null,
       }));
 
+      // Filtrar shells de leitos arquivados (ARQ-* / ARCHIVED-*) — linhas residuais
+      // de histórico que NÃO devem aparecer no mapa de leitos. Permanecem no banco
+      // para preservar a auditoria de patient_movements.
+      const visiblePatients = mappedPatients.filter(p => {
+        const bn = (p.bedNumber || '').toUpperCase();
+        return !bn.startsWith('ARQ-') && !bn.startsWith('ARCHIVED-');
+      });
+
       // Sort by display_order first, then by bed_number as tiebreaker
-      const sortedPatients = mappedPatients.sort((a, b) => {
+      const sortedPatients = visiblePatients.sort((a, b) => {
         const orderDiff = (a.displayOrder || 0) - (b.displayOrder || 0);
         if (orderDiff !== 0) return orderDiff;
         // Tiebreaker: sort by bed number numerically
