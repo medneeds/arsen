@@ -98,8 +98,11 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   onSave, onValidate, saving, readOnly = false, isValidated = false,
   autoSave = false, hasUnsaved = false,
   diagnosticsSlot,
+  devices, onDevicesChange,
+  culturesHtml, onCulturesChange,
+  admissionDate,
 }) => {
-  const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'evolucao', 'complementares', 'plan']);
+  const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'devices', 'evolucao', 'complementares', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
   const { currentHospital } = useHospital();
   const hospitalId = currentHospital?.id ?? null;
