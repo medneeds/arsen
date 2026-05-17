@@ -25,6 +25,10 @@ export interface DateBRPickerProps {
   allowClear?: boolean;
   /** Permite escolher data anterior a hoje. Default: true. */
   allowPast?: boolean;
+  /** Onde renderizar os presets. "below" (default) = abaixo do campo; "popover" = dentro do calendário. */
+  presetsPlacement?: "below" | "popover";
+  /** Rótulo curto exibido antes dos presets. Default: "A partir da admissão no setor:" */
+  presetsLabel?: string;
 }
 
 function parseBR(s: string): Date | undefined {
@@ -77,6 +81,8 @@ export function DateBRPicker({
   className,
   allowClear = true,
   allowPast = true,
+  presetsPlacement = "below",
+  presetsLabel = "A partir da admissão no setor:",
 }: DateBRPickerProps) {
   const [open, setOpen] = useState(false);
   const [internal, setInternal] = useState(value || "");
@@ -100,89 +106,115 @@ export function DateBRPicker({
     setOpen(false);
   };
 
+  const baseBR = toBR(base);
+  const hasBase = !!parseBase(baseDate);
+
   return (
-    <div className={cn("flex items-center gap-1.5", className)}>
-      <Input
-        value={internal}
-        onChange={(e) => {
-          const masked = maskBR(e.target.value);
-          setInternal(masked);
-          if (masked === "" || /^\d{2}\/\d{2}\/\d{4}$/.test(masked)) onChange(masked);
-        }}
-        onBlur={() => {
-          // normaliza caso usuário tenha deixado parcial
-          if (internal && !/^\d{2}\/\d{2}\/\d{4}$/.test(internal)) {
-            setInternal(value || "");
-          }
-        }}
-        placeholder={placeholder}
-        inputMode="numeric"
-        pattern="\d{2}/\d{2}/\d{4}"
-        maxLength={10}
-        className="h-9 text-xs uppercase tabular-nums tracking-wider"
-      />
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <div className="flex items-center gap-1.5">
+        <Input
+          value={internal}
+          onChange={(e) => {
+            const masked = maskBR(e.target.value);
+            setInternal(masked);
+            if (masked === "" || /^\d{2}\/\d{2}\/\d{4}$/.test(masked)) onChange(masked);
+          }}
+          onBlur={() => {
+            if (internal && !/^\d{2}\/\d{2}\/\d{4}$/.test(internal)) {
+              setInternal(value || "");
+            }
+          }}
+          placeholder={placeholder}
+          inputMode="numeric"
+          pattern="\d{2}/\d{2}/\d{4}"
+          maxLength={10}
+          className="h-9 text-xs uppercase tabular-nums tracking-wider"
+        />
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 px-2 shrink-0"
+              title="Abrir calendário"
+            >
+              <CalendarIcon className="h-3.5 w-3.5" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 pointer-events-auto" align="end">
+            {presetsPlacement === "popover" && presets.length > 0 && (
+              <div className="flex flex-wrap gap-1 p-2 border-b bg-muted/30">
+                <span className="text-[10px] text-muted-foreground self-center mr-1 uppercase">
+                  {presetsLabel}
+                </span>
+                {presets.map((d) => (
+                  <Button
+                    key={d}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-[11px]"
+                    onClick={() => applyPreset(d)}
+                  >
+                    +{d}d
+                  </Button>
+                ))}
+              </div>
+            )}
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              defaultMonth={selectedDate || base}
+              onSelect={(d) => {
+                if (d) {
+                  applyDate(d);
+                  setOpen(false);
+                }
+              }}
+              disabled={allowPast ? undefined : (d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
+        {allowClear && internal && (
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-9 px-2 shrink-0"
-            title="Abrir calendário"
-          >
-            <CalendarIcon className="h-3.5 w-3.5" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 pointer-events-auto" align="end">
-          {presets.length > 0 && (
-            <div className="flex flex-wrap gap-1 p-2 border-b bg-muted/30">
-              <span className="text-[10px] text-muted-foreground self-center mr-1 uppercase">
-                A partir da admissão:
-              </span>
-              {presets.map((d) => (
-                <Button
-                  key={d}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 text-[11px]"
-                  onClick={() => applyPreset(d)}
-                >
-                  +{d}d
-                </Button>
-              ))}
-            </div>
-          )}
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            defaultMonth={selectedDate || base}
-            onSelect={(d) => {
-              if (d) {
-                applyDate(d);
-                setOpen(false);
-              }
+            className="h-9 px-2 shrink-0 text-muted-foreground"
+            onClick={() => {
+              setInternal("");
+              onChange("");
             }}
-            disabled={allowPast ? undefined : (d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
-            initialFocus
-            className={cn("p-3 pointer-events-auto")}
-          />
-        </PopoverContent>
-      </Popover>
-      {allowClear && internal && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-9 px-2 shrink-0 text-muted-foreground"
-          onClick={() => {
-            setInternal("");
-            onChange("");
-          }}
-          title="Limpar"
-        >
-          <X className="h-3.5 w-3.5" />
-        </Button>
+            title="Limpar"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </div>
+
+      {presetsPlacement === "below" && presets.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1 pl-0.5">
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wide mr-1">
+            {presetsLabel}{hasBase ? ` ${baseBR}` : ""}
+          </span>
+          {presets.map((d) => (
+            <Button
+              key={d}
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-6 px-2 text-[11px] tabular-nums"
+              onClick={() => applyPreset(d)}
+              disabled={!hasBase}
+              title={hasBase ? `Soma ${d} dias a ${baseBR}` : "Sem data base"}
+            >
+              +{d}d
+            </Button>
+          ))}
+        </div>
       )}
     </div>
   );
