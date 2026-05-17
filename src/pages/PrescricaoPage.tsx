@@ -4100,7 +4100,19 @@ const PrescricaoPage = () => {
   //   preserva o snapshot do dia anterior para auditoria/CCIH).
   const persistItems = useCallback(async (
     nextItems: PrescriptionItem[],
-    opts: { mode?: 'update' | 'newVersion'; reason?: string; sigOverride?: DigitalSignature | null; silent?: boolean } = {}
+    opts: {
+      mode?: 'update' | 'newVersion';
+      reason?: string;
+      sigOverride?: DigitalSignature | null;
+      silent?: boolean;
+      /**
+       * 🔒 Fase C — quando true, se o registro atual está SIGNED e não há nova
+       * assinatura (sig=null), em vez do skip B1 promove automaticamente para
+       * `newVersion` (parent_id + bump version). Usado por mutações conscientes
+       * sobre prescrição assinada (suspender/reativar item). Autosave NÃO usa.
+       */
+      autoNewVersionIfSigned?: boolean;
+    } = {}
   ) => {
     if (!currentHospital || !currentState || !patient.name.trim()) {
       if (!opts.silent) {
@@ -4110,7 +4122,7 @@ const PrescricaoPage = () => {
       }
       throw new Error('persistItems: missing patient/hospital context');
     }
-    const mode = opts.mode || 'update';
+    let mode = opts.mode || 'update';
     const sig = opts.sigOverride !== undefined ? opts.sigOverride : digitalSignature;
     // Departamento real do paciente (UCC, UTI, etc.) em vez do hardcoded
     const resolvedDepartment =
@@ -4118,6 +4130,26 @@ const PrescricaoPage = () => {
       (initialPatientSector && (sectorMapInit[initialPatientSector] || initialPatientSector)) ||
       'GERAL';
     try {
+      // 🔒 Fase C — pré-checagem de status para decidir se update vira newVersion.
+      // Roda apenas quando há id, modo update, sem nova assinatura e autoNewVersionIfSigned ligado.
+      if (
+        mode === 'update' &&
+        currentPrescriptionId &&
+        !sig &&
+        opts.autoNewVersionIfSigned
+      ) {
+        try {
+          const { data: existing } = await supabase
+            .from('prescriptions')
+            .select('status')
+            .eq('id', currentPrescriptionId)
+            .single();
+          if ((existing as any)?.status === 'signed') {
+            mode = 'newVersion';
+          }
+        } catch {}
+      }
+
       const basePayload = {
         patient_name: patient.name.trim(),
         patient_data: patient as any,
@@ -4161,6 +4193,7 @@ const PrescricaoPage = () => {
         // 🔒 B1 — blindagem: nunca rebaixar uma prescrição já SIGNED via update.
         // Só permite update se for newVersion (tratado acima) OU se o caller traz uma
         // assinatura válida (sig). Autosave (sig=null) em registro signed → skip silencioso.
+        // Fase C: se autoNewVersionIfSigned estava ligado, já foi promovido acima.
         try {
           const { data: existing } = await supabase
             .from('prescriptions')
@@ -5148,8 +5181,9 @@ const PrescricaoPage = () => {
       });
       toast.success("Item suspenso");
     }
-    // Persiste imediatamente — suspensão é ato auditável e imutável entre sessões
-    if (nextItems.length) persistItems(nextItems, { mode: 'update', reason });
+    // Persiste imediatamente — suspensão é ato auditável e imutável entre sessões.
+    // Fase C: se a prescrição atual está SIGNED, promove automaticamente para nova versão.
+    if (nextItems.length) persistItems(nextItems, { mode: 'update', reason, autoNewVersionIfSigned: true });
     setSuspendDialogOpen(false);
     setSuspendTarget({});
   }, [suspendTarget, selectedIds, persistItems]);
@@ -5163,7 +5197,7 @@ const PrescricaoPage = () => {
       );
       return nextItems;
     });
-    if (nextItems.length) persistItems(nextItems, { mode: 'update' });
+    if (nextItems.length) persistItems(nextItems, { mode: 'update', autoNewVersionIfSigned: true });
     toast.success("Item reativado");
   }, [persistItems]);
 
