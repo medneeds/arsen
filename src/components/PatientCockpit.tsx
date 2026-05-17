@@ -7,9 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Activity, AlertTriangle, ArrowRight, BedDouble, ChevronDown, ChevronRight,
-  ClipboardList, Copy, Droplet, FileText, Heart, IdCard, LogOut, NotebookPen, Pill, Plus, Route,
+  ClipboardList, Copy, Droplet, FileText, FlaskConical, Heart, IdCard, LogOut, NotebookPen, Pill, Plus, Route,
   ShieldAlert, Stethoscope, Syringe, TestTubes, TrendingUp, User2, Users
 } from "lucide-react";
+import { calcDIH } from "@/lib/dihCalc";
+import { deviceAlertTone } from "@/lib/devicesCatalog";
 import { differenceInDays, parseISO, isValid, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
