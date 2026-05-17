@@ -1492,7 +1492,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   onToggleSelect: (id: string) => void;
   onDuplicate: (id: string) => void;
   onRequestSuspend: (id: string) => void;
-  onReactivate: (id: string) => void;
+  onReactivate?: (id: string) => void;
   onToggleValidation: (id: string) => void;
   onAssistant?: (id: string) => void;
   onEditInsulin?: (id: string) => void;
@@ -1553,15 +1553,13 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         <DropdownMenuItem onClick={() => onDuplicate(item.id)} className="text-xs gap-2">
           <CopyPlus className="h-3.5 w-3.5" /> Duplicar item
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        {item.status === 'active' ? (
-          <DropdownMenuItem onClick={() => onRequestSuspend(item.id)} className="text-xs gap-2 text-yellow-600">
-            <Pause className="h-3.5 w-3.5" /> Suspender item
-          </DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem onClick={() => onReactivate(item.id)} className="text-xs gap-2 text-green-600">
-            <Play className="h-3.5 w-3.5" /> Reativar item
-          </DropdownMenuItem>
+        {item.status === 'active' && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onRequestSuspend(item.id)} className="text-xs gap-2 text-yellow-600">
+              <Pause className="h-3.5 w-3.5" /> Suspender item
+            </DropdownMenuItem>
+          </>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -1587,7 +1585,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
     // Item suspenso NUNCA pode ser revalidado pelo clique no ponto — precisa ser reativado primeiro.
     const canClick = !isValidated && !isSuspended && !isBlocked && prescriptionLocked;
     const tooltipMsg = isSuspended
-      ? "Item suspenso — reative para validar"
+      ? "Item suspenso — para retomar, adicione um novo item (mesma medicação com ajustes se necessário)"
       : isValidated
       ? "Validado — para retirar, suspenda o item"
       : isBlocked
@@ -2959,7 +2957,7 @@ function ExtraPrescriptionDialog({
                       onToggleSelect={noop}
                       onDuplicate={duplicateExtraItem}
                       onRequestSuspend={noop}
-                      onReactivate={noop}
+                      
                       onToggleValidation={noop}
                       isPastRenewalTime={false}
                       prescriptionLocked={false}
@@ -5232,18 +5230,9 @@ const PrescricaoPage = () => {
     setSuspendTarget({});
   }, [suspendTarget, selectedIds, persistItems]);
 
-  // Reactivate
-  const reactivateItem = useCallback((id: string) => {
-    let nextItems: PrescriptionItem[] = [];
-    setItems(prev => {
-      nextItems = prev.map(item =>
-        item.id === id ? { ...item, status: 'active' as const, suspensionReason: undefined, suspendedAt: undefined } : item
-      );
-      return nextItems;
-    });
-    if (nextItems.length) persistItems(nextItems, { mode: 'update', autoNewVersionIfSigned: true });
-    toast.success("Item reativado");
-  }, [persistItems]);
+  // Reactivate: REMOVIDO por regra clínica. Item suspenso é irreversível —
+  // o médico deve criar um novo item (mesma medicação com ajustes se necessário).
+  // O suspenso permanece visível com line-through como registro histórico.
 
   // Selection
   const toggleSelect = useCallback((id: string) => {
@@ -7175,7 +7164,7 @@ const PrescricaoPage = () => {
                             onToggleSelect={toggleSelect}
                             onDuplicate={duplicateItem}
                             onRequestSuspend={requestSuspendItem}
-                            onReactivate={reactivateItem}
+                            
                             onAssistant={(id) => setItemAssistantTargetId(id)}
                             onEditInsulin={(id) => { setEditingInsulinItemId(id); setPendingInsulinMed(null); setInsulinDialogOpen(true); }}
                             onUpdateInsulinPlan={updateInsulinPlan}
