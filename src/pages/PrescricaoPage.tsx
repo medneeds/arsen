@@ -6519,6 +6519,83 @@ const PrescricaoPage = () => {
         </div>
       )}
 
+      {/* === FASE 3.1 — Strip "VALIDADAS HOJE" (sempre visível, sem precisar do calendário) === */}
+      {(() => {
+        const dayStart = getClinicalDayWindowSP().start.getTime();
+        const todays = savedPrescriptions.filter(
+          p => p.isValidated && new Date(p.created_at).getTime() >= dayStart,
+        );
+        if (todays.length === 0) return null;
+        return (
+          <div className="print:hidden mb-2 rounded-lg border border-emerald-200/70 bg-emerald-50/40 dark:border-emerald-500/30 dark:bg-emerald-950/10 px-3 py-2">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase text-emerald-800 dark:text-emerald-300">
+                <ShieldCheck className="h-3 w-3" />
+                Validadas hoje
+                <span className="font-mono text-emerald-700/70 dark:text-emerald-300/70">({todays.length})</span>
+              </div>
+              <span className="text-[10px] text-emerald-700/70 dark:text-emerald-300/70 italic">
+                Clique em "Abrir" para visualizar a versão no editor.
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {todays.map(p => {
+                const isCurrent = currentPrescriptionId === p.id;
+                const doctor = p.digital_signature?.doctorName || "—";
+                return (
+                  <div
+                    key={p.id}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md border bg-card/80 px-2 py-1 text-[11px] transition-colors",
+                      isCurrent ? "border-primary ring-1 ring-primary/30" : "border-emerald-200/70 dark:border-emerald-500/30 hover:border-emerald-400",
+                    )}
+                  >
+                    <Badge className="text-[9px] h-4 px-1.5 bg-emerald-600 hover:bg-emerald-600 shrink-0">v{p.version}</Badge>
+                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">
+                      {format(new Date(p.created_at), "HH:mm", { locale: ptBR })}
+                    </span>
+                    <span className="text-[10px] text-foreground/80 truncate max-w-[160px]" title={doctor}>
+                      {doctor}
+                    </span>
+                    {isCurrent && (
+                      <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">Atual</Badge>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPreviewPrescription(p)}
+                      className="shrink-0 p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                      title="Visualizar prescrição"
+                      aria-label="Visualizar prescrição"
+                    >
+                      <Eye className="h-3 w-3" />
+                    </button>
+                    {!isCurrent && (
+                      <button
+                        type="button"
+                        onClick={() => loadPrescription(p.id)}
+                        className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium border border-emerald-300/70 text-emerald-800 hover:bg-emerald-100/60 dark:text-emerald-200 dark:border-emerald-500/40 dark:hover:bg-emerald-900/30 transition-colors"
+                        title="Abrir esta versão no editor"
+                      >
+                        Abrir
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => restoreFromPrescription(p)}
+                      className="shrink-0 p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                      title="Somar itens desta versão no rascunho atual (sem duplicar)"
+                      aria-label="Restaurar somando itens"
+                    >
+                      <CopyPlus className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Ribbon — Prescrição validada do dia clínico atual (read-only + Editar/Nova versão) */}
       {digitalSignature && (
         <div className="print:hidden mb-2 flex items-center justify-between gap-3 rounded-lg border border-emerald-300/70 bg-emerald-50/80 dark:border-emerald-500/40 dark:bg-emerald-950/20 px-3 py-2 text-emerald-900 dark:text-emerald-200">
