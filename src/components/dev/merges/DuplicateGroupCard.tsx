@@ -128,6 +128,17 @@ export function DuplicateGroupCard({ group, selectedPair, onSelectPair, onMergeN
 
       {open && (
         <div className="border-t border-border p-3 space-y-3 bg-muted/10">
+          {group.requires_human_review && (
+            <div className="text-xs bg-orange-50 dark:bg-orange-950/20 border border-orange-400/40 rounded p-2 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
+              <div>
+                <b>Revisão humana obrigatória.</b>{" "}
+                {group.rule === "R8"
+                  ? "Nome e mãe coincidem, mas a data de nascimento difere — pode ser parente (pai/mãe/filho/irmão homônimo). NÃO mescle sem investigar manualmente."
+                  : "Match por similaridade fonética. Confira ortografia antes de mesclar."}
+              </div>
+            </div>
+          )}
           {/* Tabela comparativa */}
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
