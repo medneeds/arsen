@@ -4158,6 +4158,20 @@ const PrescricaoPage = () => {
       }
 
       if (currentPrescriptionId) {
+        // 🔒 B1 — blindagem: nunca rebaixar uma prescrição já SIGNED via update.
+        // Só permite update se for newVersion (tratado acima) OU se o caller traz uma
+        // assinatura válida (sig). Autosave (sig=null) em registro signed → skip silencioso.
+        try {
+          const { data: existing } = await supabase
+            .from('prescriptions')
+            .select('status')
+            .eq('id', currentPrescriptionId)
+            .single();
+          if ((existing as any)?.status === 'signed' && !sig) {
+            // Registro já assinado e não há nova assinatura → não rebaixar.
+            return;
+          }
+        } catch {}
         const { error } = await supabase
           .from('prescriptions')
           .update(basePayload)
