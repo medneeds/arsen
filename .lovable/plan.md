@@ -1,105 +1,118 @@
-## Contrato (4 camadas — Princípios Imutáveis)
+## Entendimento
 
-- **Layout**: nova página `/mesclar-prontuarios` + entrada em `/recepcao` (aba "Prontuários") e `/gestao-usuarios` (área admin). Nenhuma outra tela é alterada.
-- **Dados**: apenas RPC `merge_patient_registries` nova + reuso das tabelas existentes (`patient_registry`, `patient_registry_edit_history`, `patient_merge_audit`). Nada é deletado.
-- **Movimentação**: zero impacto em leito/admissão/transferência. Mesclagem é só de identidade/histórico, não move paciente.
-- **Auditoria**: `patient_merge_audit` (já existe) + `patient_registry_edit_history` com `source='merge'` para cada campo enriquecido. Snapshot completo do registry secundário arquivado em `patient_merge_audit.source_snapshot` (consultável pelo dev para sempre).
+Hoje a aba **Mesclagens** do Dev Console mostra só o histórico (`patient_merge_audit`). Você quer um **diagnosticador ativo** dentro dela:
 
----
+1. **Varrer** prontuários em busca de duplicatas.
+2. **Segmentar** o resultado por **setor** (e por critério de match).
+3. **Agir** caso a caso (abrir o wizard `/mesclar-prontuarios`) **ou** em bloco quando o match é cirurgicamente seguro.
 
-## Fluxo de UI (4 etapas no mesmo diálogo)
-
-```
-[1 Buscar]  →  [2 Comparar lado-a-lado]  →  [3 Decidir campos vencedores]  →  [4 Confirmar]
-```
-
-### Etapa 1 — Buscar duplicatas
-- Campo de busca por CPF, CNS, nome+DOB ou nº prontuário.
-- Lista até 5 registros candidatos (reusa `check_patient_duplicate` + busca livre adicional).
-- Usuário marca 2 registros para comparar.
-
-### Etapa 2 — Comparar lado-a-lado
-Tabela 3 colunas: **Campo** | **Registro A** | **Registro B**. Linhas:
-- Identidade: nome, nome social, DOB, sexo, mãe, CPF, CNS, telefone, endereço, raça/cor, RG.
-- Prontuário: `numero_prontuario` (do `medical_records`) + `medical_record` legacy + `numero_prontuario_legado`.
-- Vínculo clínico: nº de evoluções, prescrições, exames, encounters, admissões — só leitura, ajuda na decisão.
-- Status: criado em, última edição, vínculo a `patient_id` ativo (alocado em leito?).
-
-### Etapa 3 — Decisões (cada uma com motivo)
-- **Vencedor (registry principal)** — radio A/B. Sugestão automática: o que está vinculado a `patients` com `bed_number` (alocado).
-- **Prontuário predominante** — radio separado entre `numero_prontuario` de A e B. Não força o do vencedor (pergunta explícita do usuário).
-- **Por campo divergente** — para cada linha em que A ≠ B, radio "manter A | manter B | manter vazio". Default: valor do vencedor (se não-nulo) ou do perdedor (se vencedor estiver vazio).
-- **Motivo geral** (mínimo 10 chars) — obrigatório.
-
-### Etapa 4 — Confirmar (MovementConfirmDialog)
-Resumo didático:
-- Quem fica como ativo (com leito/setor se houver).
-- Quais campos serão enriquecidos no vencedor.
-- Qual `numero_prontuario` será predominante.
-- Quantos vínculos (evoluções/prescrições/exames/encounters) serão repointados.
-- Aviso: "O registro secundário será **arquivado** (não apagado) e ficará acessível para o desenvolvedor via Console."
+O wizard de mesclagem que já existe **não muda**. A aba ganha um modo "Diagnóstico" acima do histórico atual.
 
 ---
 
-## Regras de negócio
+## Contrato (4 camadas)
 
-1. **Arquivamento, nunca delete.** O registry perdedor recebe:
-   - `merged_into_registry_id = <vencedor>`, `merged_at = now()`, `merged_by = auth.uid()`.
-   - CPF/CNS são **liberados** (postos em `null`) e preservados em `notes` JSON: `{archived_cpf, archived_cns, archived_medical_record}` para futura consulta.
-   - Snapshot completo do `to_jsonb(perdedor)` salvo em `patient_merge_audit.source_snapshot`.
+- **Layout** — só `MergesTab.tsx` (1 arquivo). Ganha 2 sub-abas internas: **Diagnóstico** (novo) e **Histórico** (já existe).
+- **Dados** — 1 RPC nova `scan_duplicate_registries(p_sector_code text default null, p_match_mode text default 'strict')` retornando grupos de duplicatas. Zero alteração de tabela, zero coluna nova.
+- **Movimentação** — zero. Varredura é só leitura. Ação 1-a-1 redireciona ao wizard. Ação em bloco chama `merge_patient_registries` já existente, 1 mesclagem por vez dentro de uma transação por par.
+- **Auditoria** — toda mesclagem (1-a-1 ou bloco) passa pelo RPC `merge_patient_registries`, que já registra `patient_merge_audit` + `patient_registry_edit_history`. Bloco escreve 1 linha extra em `patient_merge_audit` com `action='bulk_merge_batch'` agrupando os pares por `batch_id` para auditoria do lote.
 
-2. **Prontuário secundário arquivado.** O `medical_records` do perdedor:
-   - **Se for o predominante escolhido** → fica vinculado ao vencedor (`patient_registry_id = vencedor`).
-   - **Se NÃO for** → permanece com `patient_registry_id = vencedor` também (todos os medical_records do perdedor migram), mas só o predominante é exposto como "principal" via flag `is_primary = true` (nova coluna booleana). Demais ficam visíveis no DevConsole e no histórico do paciente como "prontuários históricos".
+---
 
-3. **Repoint de vínculos** (similar à `merge_unidentified_patient` existente, mas generalizada):
-   - `patient_encounters.registry_id` → vencedor.
-   - `patients.patient_registry_id` → vencedor.
-   - `clinical_evolutions`, `exam_requests`, `culture_results`, `admission_histories`, `conduct_history`, `patient_movements`, `medical_records`, `dhd_patients`, `discharge_documents`, `pre_admissions`, `medical_record_edit_history`, `patient_registry_edit_history`, `patient_admission_date_history`, `patient_versions` → todos repointam o `patient_registry_id`.
+## Critérios de match (segmentados, transparentes)
 
-4. **Auditoria por campo enriquecido**: cada campo modificado no vencedor gera 1 linha em `patient_registry_edit_history` com `source='merge'`, `old_value`, `new_value`, `reason = "Mesclagem com registro <perdedor> — <motivo do usuário>"`.
+Cada grupo de duplicatas vem **rotulado com a regra** que disparou — o usuário sabe o porquê.
 
-5. **Bloqueios de segurança**:
-   - Não permite mesclar se ambos os registros têm `patients` ativos em leitos diferentes (precisa liberar 1 antes).
-   - Não permite mesclar se um dos dois já está mesclado (`merged_into_registry_id IS NOT NULL`).
-   - Não permite mesclar 2 registros do mesmo `patient_id`.
-   - Só admin/gestor/recepção podem executar (`has_role` + `access_profile`).
+| Regra | Critério | Confiança | Default |
+|---|---|---|---|
+| **R1 CPF idêntico** | CPF não-nulo + igual entre 2+ registros | Altíssima | ✅ |
+| **R2 CNS idêntico** | CNS não-nulo + igual | Altíssima | ✅ |
+| **R3 Nome + DOB + Mãe** | nome normalizado (NFD upper) + DOB + nome da mãe normalizado, todos iguais | Alta | ✅ |
+| **R4 Nome + DOB** | nome + DOB iguais, sem mãe | Média | ✅ |
+| **R5 Prontuário legado igual** | `numero_prontuario_legado` igual entre 2+ | Média (depende da unidade) | ✅ |
+| **R6 Nome similar + DOB** | `similarity(nome) ≥ 0.85` + DOB igual (pg_trgm) | Baixa — só sugestão | ⛔ off por padrão |
+
+R6 fica desligada por padrão (toggle "Incluir similaridade fonética"). Sem alucinação.
+
+---
+
+## Segmentação por setor
+
+Filtro de setor lê **o leito ATUAL** de cada registry via `patients.bed_number` → `sector_code`. Opções:
+
+- **Todos os setores** (default — visão global da plataforma)
+- **Setor específico** (dropdown reusa `hospitalSectors.ts`)
+- **Sem leito ativo** (apenas registries sem `patients` alocado)
+- **Apenas ambos com leito** (casos críticos que bloqueiam a mesclagem direta)
+
+O filtro de setor compõe com o filtro de regra (R1…R6) e com busca textual livre.
+
+---
+
+## UX da sub-aba "Diagnóstico"
+
+```text
+┌─ Barra de filtros ───────────────────────────────────────────────┐
+│ [Setor ▾] [Regras: R1✓ R2✓ R3✓ R4✓ R5✓ R6☐] [□ Sem leito]      │
+│ [🔍 Buscar nome/CPF/CNS]              [↻ Rodar varredura]        │
+└──────────────────────────────────────────────────────────────────┘
+
+┌─ KPIs do scan ───────────────────────────────────────────────────┐
+│ 24 grupos · 53 registros duplicados · 18 com leito · 6 críticos │
+└──────────────────────────────────────────────────────────────────┘
+
+┌─ Grupo #1 · R1 CPF idêntico · UTI 2 · 2 registros ─── [Expandir]┐
+│ ANTONIO REGINALDO · CPF 123.456.789-00                           │
+│ ├─ Registry A · prontuário 178085-1 · leito L15 UTI 2 · ativo   │
+│ └─ Registry B · prontuário 1780851 · sem leito · criado 12/03   │
+│ [Sugerido: vencedor A (com leito) · arquivar B]                  │
+│ [Mesclar agora →]  [Adicionar ao lote ☐]                         │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+Cada grupo expandido mostra **lado-a-lado todos os campos divergentes** (mesma `CompareRegistriesTable` do wizard), com a **sugestão didática** do vencedor (heurística: tem leito ativo > mais campos preenchidos > mais antigo).
+
+---
+
+## Ações
+
+### 1-a-1 (sempre disponível)
+Botão **"Mesclar agora"** → abre `/mesclar-prontuarios` já com os 2 IDs pré-selecionados (via querystring `?a=<uuid>&b=<uuid>`). Fluxo completo do wizard, sem atalho.
+
+### Em bloco (apenas para matches R1/R2 com sugestão clara)
+- Checkbox **"Adicionar ao lote"** em cada grupo.
+- Bloqueado para grupos onde **ambos têm leito ativo** (precisa decisão humana) ou onde a sugestão é ambígua.
+- Barra fixa no rodapé: `12 grupos selecionados · [Revisar lote] [Executar lote]`.
+- **Revisar lote** abre `BulkMergeReviewDialog`: lista todos os pares + motivo único obrigatório (≥20 chars) + checkbox "Entendo que isto é irreversível e auditado".
+- **Executar lote** chama `merge_patient_registries` em loop sequencial, mostrando progresso (✓ / ✗ por par). Se 1 falhar, segue os outros e relata no final.
 
 ---
 
 ## Arquivos tocados
 
-**Backend (1 migration)**
-- `merge_patient_registries(p_winner_id, p_loser_id, p_predominant_medical_record, p_field_choices jsonb, p_reason text)` — RPC nova, security definer.
-- `ALTER TABLE medical_records ADD COLUMN is_primary boolean DEFAULT true` (default true para não quebrar nada existente; só a mesclagem rebaixa para false).
-
-**Frontend (3 arquivos novos + 2 inserções)**
-- `src/pages/MergeRegistriesPage.tsx` *(novo)* — página `/mesclar-prontuarios`.
-- `src/components/merge/MergeWizard.tsx` *(novo)* — diálogo 4 etapas.
-- `src/components/merge/CompareRegistriesTable.tsx` *(novo)* — tabela lado-a-lado.
-- `src/pages/ReceptionPage.tsx` — botão "Mesclar prontuários" na aba Prontuários (apenas link/rota).
-- `src/pages/UserManagementPage.tsx` — link discreto na barra superior (admin/gestor).
-- `src/App.tsx` — rota nova `/mesclar-prontuarios` (guard admin/gestor/recepção).
-
-**DevConsole (1 inserção)**
-- `src/pages/DevConsolePage.tsx` — nova aba "Mesclagens" listando `patient_merge_audit` + `source_snapshot` expandível (consulta de prontuário secundário arquivado).
+- `src/components/dev/MergesTab.tsx` — adiciona sub-abas Diagnóstico/Histórico, mantém histórico atual intacto.
+- `src/components/dev/merges/DiagnosticPanel.tsx` *(novo)* — filtros + lista de grupos + barra de lote.
+- `src/components/dev/merges/DuplicateGroupCard.tsx` *(novo)* — card expansível por grupo, reusa `CompareRegistriesTable`.
+- `src/components/dev/merges/BulkMergeReviewDialog.tsx` *(novo)* — pop-up de confirmação do lote (padrão `MovementConfirmDialog`).
+- `src/pages/MergeRegistriesPage.tsx` — ler `?a=&b=` da URL para pré-selecionar (já existe a UI, só faltava o atalho).
+- 1 migration: RPC `scan_duplicate_registries(p_sector_code, p_match_mode, p_include_similarity)` SECURITY DEFINER, restrita a admin+dev.
 
 ---
 
 ## Arquivos que NÃO serão tocados
 
-- `EditPatientDialog`, `MedicalRecordEditDialog`, `PatientIdentityHeader`, `usePatientIdentifiers`, `resolvePatientHeader`.
-- `printAdmission`, `printEvolution`, `PrescricaoPage`, `Saps3Page`, `HemocomponentRequestDialog`.
-- Nenhum fluxo de leito (`UtiReallocationDialog`, `AdmitPatientDialog`, `BedReleasePreAdmissionDialog`).
-- `merge_unidentified_patient` (continua existindo para o caso NI → identificado; não substituir).
-- Catálogo de medicamentos, prescrição, evolução, exames, requisições, validação farmacêutica.
+- `merge_patient_registries` (RPC já existente, não rescrevo).
+- `patient_merge_audit`, `patient_registry`, `medical_records`, `patient_registry_edit_history` — zero alteração de schema.
+- `MergeRegistriesPage` apenas lê novos query params; o wizard em si (`MergeWizard`, `CompareRegistriesTable`) **não muda**.
+- Nenhum fluxo clínico, nenhum print, nenhum fluxo de leito/admissão/transferência.
+- Aba Histórico atual da MergesTab — preservada como está.
 
 ---
 
-## Pontos a confirmar antes de executar
+## 3 pontos a confirmar antes de eu executar
 
-1. **Coluna `is_primary` em `medical_records`** — ok criar ou prefere outro mecanismo (ex.: campo `archived_at` no medical_record perdedor)?
-2. **Quem pode acessar `/mesclar-prontuarios`** — admin + gestor + recepção? Ou só admin + gestor?
-3. **Aba "Mesclagens" no DevConsole** — ok exibir snapshot completo (inclui CPF/CNS arquivados) para o perfil desenvolvedor?
+1. **R6 similaridade fonética** — ok deixar como toggle opt-in (off por padrão) ou prefere nem expor por enquanto?
+2. **Bloco automatizado** — restringir só a **R1 (CPF idêntico)** ou liberar também **R2 (CNS idêntico)**? R3+ sempre exige decisão humana 1-a-1.
+3. **Heurística do vencedor** — "tem leito ativo > mais campos preenchidos > mais antigo" te parece a ordem certa, ou prefere "tem leito ativo > mais recente > mais campos"?
 
-Aguardo "ok" + respostas dos 3 pontos para implementar em uma única migration + os 6 arquivos de frontend.
+Aguardo "ok" + respostas dos 3 pontos.
