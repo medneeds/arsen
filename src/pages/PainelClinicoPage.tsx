@@ -96,9 +96,8 @@ const getResponsibleDoctor = (patient: Patient): string => {
   return "—";
 };
 
-const getPrescriptionStatus = (patient: Patient): { label: string; variant: "default" | "secondary" | "outline" | "destructive"; dotColor: string; pulsing: boolean } => {
-  const scheduleItems = parseTextArray(patient.schedule);
-  if (scheduleItems.length > 0) {
+const getPrescriptionStatus = (status: TodaysPrescriptionStatus): { label: string; variant: "default" | "secondary" | "outline" | "destructive"; dotColor: string; pulsing: boolean } => {
+  if (status === "signed") {
     return { label: "Validada", variant: "default", dotColor: "bg-emerald-500", pulsing: false };
   }
   return { label: "Pendente", variant: "secondary", dotColor: "bg-amber-500", pulsing: true };
