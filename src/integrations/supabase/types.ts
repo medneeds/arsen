@@ -3257,6 +3257,72 @@ export type Database = {
           },
         ]
       }
+      prescriptions_archive: {
+        Row: {
+          archive_reason: string
+          archived_at: string
+          created_by: string | null
+          department: string
+          digital_signature: Json | null
+          encounter_id: string | null
+          hospital_unit_id: string
+          id: string
+          items: Json
+          notes: string | null
+          original_created_at: string
+          original_updated_at: string
+          parent_id: string | null
+          patient_data: Json
+          patient_name: string
+          patient_registry_id: string | null
+          state_id: string
+          status: string
+          version: number
+        }
+        Insert: {
+          archive_reason?: string
+          archived_at?: string
+          created_by?: string | null
+          department: string
+          digital_signature?: Json | null
+          encounter_id?: string | null
+          hospital_unit_id: string
+          id: string
+          items: Json
+          notes?: string | null
+          original_created_at: string
+          original_updated_at: string
+          parent_id?: string | null
+          patient_data: Json
+          patient_name: string
+          patient_registry_id?: string | null
+          state_id: string
+          status: string
+          version: number
+        }
+        Update: {
+          archive_reason?: string
+          archived_at?: string
+          created_by?: string | null
+          department?: string
+          digital_signature?: Json | null
+          encounter_id?: string | null
+          hospital_unit_id?: string
+          id?: string
+          items?: Json
+          notes?: string | null
+          original_created_at?: string
+          original_updated_at?: string
+          parent_id?: string | null
+          patient_data?: Json
+          patient_name?: string
+          patient_registry_id?: string | null
+          state_id?: string
+          status?: string
+          version?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           access_profile: string | null
@@ -4680,6 +4746,12 @@ export type Database = {
         Returns: Json
       }
       archive_bed_history: { Args: { p_patient_id: string }; Returns: string }
+      archive_orphan_drafts: {
+        Args: never
+        Returns: {
+          archived_count: number
+        }[]
+      }
       bump_quick_template_use: {
         Args: { _template_id: string }
         Returns: undefined
