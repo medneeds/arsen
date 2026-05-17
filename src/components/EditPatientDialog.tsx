@@ -38,6 +38,7 @@ import { DateBRPicker } from "./ui/DateBRPicker";
 import { FileText } from "lucide-react";
 import { PisRegistrySyncDialog, computePisDiff, type PisSourceRow } from "./PisRegistrySyncDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { PatientIdentityHeader } from "./PatientIdentityHeader";
 
 interface EditPatientDialogProps {
   patient: Patient;
