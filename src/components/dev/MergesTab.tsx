@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, RefreshCw, ChevronDown, ChevronRight, GitMerge } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, RefreshCw, ChevronDown, ChevronRight, GitMerge, ScanSearch, History } from "lucide-react";
 import { toast } from "sonner";
+import { DiagnosticPanel } from "./merges/DiagnosticPanel";
 
 interface MergeRow {
   id: string;
