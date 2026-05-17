@@ -5526,7 +5526,7 @@ const PrescricaoPage = () => {
     } finally {
       setLoadingList(false);
     }
-  }, [currentHospital, currentState, patient.name, historyDate]);
+  }, [currentHospital, currentState, patient.name, patientRegistryId, historyDate]);
 
   useEffect(() => { fetchPrescriptions(); }, [fetchPrescriptions]);
 
