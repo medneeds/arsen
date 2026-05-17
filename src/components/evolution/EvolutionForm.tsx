@@ -193,7 +193,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     );
   }
 
-  const expandAll = () => setOpenSections(['diagnostics', 'evolucao', 'complementares', 'plan', 'review']);
+  const expandAll = () => setOpenSections(['diagnostics', 'devices', 'evolucao', 'complementares', 'plan', 'review']);
   const collapseAll = () => setOpenSections([]);
 
   return (
