@@ -5770,7 +5770,7 @@ const PrescricaoPage = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [currentHospital, currentState, patient.name, currentPrescriptionId]);
+  }, [currentHospital, currentState, patient.name, patientRegistryId, currentPrescriptionId]);
 
   // ===== Repeat previous prescription =====
   const openRepeatDialog = useCallback(async () => {
