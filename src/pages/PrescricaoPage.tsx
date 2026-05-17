@@ -1725,6 +1725,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         {item.isExtra && (
           <Badge variant="outline" className="text-[9px] px-1.5 bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800">EXTRA</Badge>
         )}
+        {item.printOnly && (
+          <Badge variant="outline" className="text-[9px] px-1.5 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-300 dark:border-indigo-800 gap-1">
+            <Printer className="h-2.5 w-2.5" /> SÓ IMPRESSÃO
+          </Badge>
+        )}
         {item.status === 'suspended' && (
            <Badge variant="destructive" className="text-[9px] px-1.5">Suspenso</Badge>
         )}
