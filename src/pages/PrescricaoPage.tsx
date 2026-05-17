@@ -5197,7 +5197,7 @@ const PrescricaoPage = () => {
       );
       return nextItems;
     });
-    if (nextItems.length) persistItems(nextItems, { mode: 'update' });
+    if (nextItems.length) persistItems(nextItems, { mode: 'update', autoNewVersionIfSigned: true });
     toast.success("Item reativado");
   }, [persistItems]);
 
