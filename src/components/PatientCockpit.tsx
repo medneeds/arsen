@@ -804,6 +804,49 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               <CockpitSection icon={Activity} title="Dispositivos" count={devices.length}>
                 <ItemList items={devices} emptyMsg="Sem dispositivos invasivos registrados." />
               </CockpitSection>
+              {evolution && evolution.devices.length > 0 && (
+                <CockpitSection
+                  icon={Activity}
+                  title="Dispositivos (última evolução)"
+                  count={evolution.devices.length}
+                >
+                  <ul className="space-y-1">
+                    {evolution.devices.map((d, idx) => {
+                      const days = d.insertedAt ? calcDIH(d.insertedAt) : null;
+                      const tone = deviceAlertTone(days);
+                      return (
+                        <li
+                          key={`${d.id}-${idx}`}
+                          className="flex items-center justify-between gap-2 text-[11px] py-0.5"
+                        >
+                          <span className="truncate text-foreground">{d.label || "—"}</span>
+                          {days !== null && (
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "h-4 px-1 text-[9px] font-semibold border",
+                                tone === "ok" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
+                                tone === "amber" && "bg-amber-500/10 text-amber-700 border-amber-500/40 dark:text-amber-400",
+                                tone === "red" && "bg-red-500/10 text-red-700 border-red-500/40 dark:text-red-400",
+                              )}
+                            >
+                              D{days}
+                            </Badge>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </CockpitSection>
+              )}
+              {evolution && evolution.culturesHtml && (
+                <CockpitSection icon={FlaskConical} title="Últimas culturas" count={0}>
+                  <div
+                    className="text-[11px] leading-snug text-foreground/90 prose-sm max-w-none [&_p]:my-1"
+                    dangerouslySetInnerHTML={{ __html: evolution.culturesHtml }}
+                  />
+                </CockpitSection>
+              )}
             </TabsContent>
 
             {/* ABA CONDUTAS: condutas do dia + pendências */}
