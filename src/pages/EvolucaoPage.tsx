@@ -470,6 +470,18 @@ const EvolucaoPage = () => {
               onSave={handleCreateEvolution}
               saving={creating}
               diagnosticsSlot={diagnosticsSlot}
+              devices={newDevices}
+              onDevicesChange={setNewDevices}
+              culturesHtml={newCulturesHtml}
+              onCulturesChange={setNewCulturesHtml}
+              admissionDate={
+                getEffectiveAdmissionDate({
+                  utiAdmissionDate: livePatient?.utiAdmissionDate,
+                  admittedAt: livePatient?.admittedAt,
+                  admissionDate: livePatient?.admissionDate || patient.admissionDate,
+                  sector: livePatient?.sector || initialPatientSector,
+                }) || patient.admissionDate
+              }
             />
           </div>
         )}
