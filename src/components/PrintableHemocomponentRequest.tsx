@@ -706,22 +706,22 @@ export async function printHemocomponentRequest(
   `;
 
   const extraStyles = `
-    @page { size: A4 portrait; margin: 10mm 11mm; }
-    table.nz.hemo { width:100%; border-collapse:collapse; font-size:8.5pt; border:1pt solid #1e293b; margin-top:6pt; table-layout:fixed; }
-    table.nz.hemo th, table.nz.hemo td { border:1pt solid #1e293b; padding:3pt 5pt; color:#0a1628; vertical-align:top; text-align:left; font-weight:500; background:#fff; word-wrap:break-word; }
+    @page { size: A4 portrait; margin: 8mm 9mm; }
+    table.nz.hemo { width:100%; border-collapse:collapse; font-size:8pt; border:1pt solid #1e293b; margin-top:5pt; table-layout:fixed; }
+    table.nz.hemo th, table.nz.hemo td { border:1pt solid #1e293b; padding:2.5pt 4pt; color:#0a1628; vertical-align:top; text-align:left; font-weight:500; background:#fff; word-wrap:break-word; }
     table.nz.hemo th { font-weight:500; white-space:nowrap; }
     table.nz.hemo td.bold, table.nz.hemo .bold { font-weight:700; }
-    table.nz.hemo td.band { background:#e2e8f0; text-align:center; font-weight:800; text-transform:uppercase; letter-spacing:0.5pt; padding:4pt; font-size:9pt; }
-    table.nz.hemo td.sub { background:#f8fafc; text-align:center; font-weight:700; text-transform:uppercase; font-size:8pt; padding:3pt; letter-spacing:0.3pt; }
-    table.nz.hemo td.cell { padding:4pt 6pt; }
-    table.nz.hemo .opt { font-size:8pt; padding:1pt 0; line-height:1.3; }
+    table.nz.hemo td.band { background:#e2e8f0; text-align:center; font-weight:800; text-transform:uppercase; letter-spacing:0.4pt; padding:3pt; font-size:8.5pt; }
+    table.nz.hemo td.sub { background:#f8fafc; text-align:center; font-weight:700; text-transform:uppercase; font-size:7.5pt; padding:2.5pt; letter-spacing:0.3pt; }
+    table.nz.hemo td.cell { padding:3pt 5pt; }
+    table.nz.hemo .opt { font-size:7.5pt; padding:1pt 0; line-height:1.25; }
     table.nz.hemo .muted-bold { font-weight:600; margin-bottom:2pt; }
-    table.nz.hemo td.sig-cell { text-align:center; vertical-align:top; padding:5pt; }
-    table.nz.hemo .sig-meta { font-size:8pt; margin-bottom:2pt; text-align:left; }
-    table.nz.hemo .sig-line { border-top:1pt solid #0a1628; margin-top:24pt; padding-top:3pt; font-size:7.5pt; text-align:center; }
-    table.nz.hemo .sig-name { font-weight:700; font-size:8pt; margin-top:1pt; }
-    table.nz.hemo .sig-crm { font-weight:500; font-size:7.5pt; color:#475569; }
-    table.nz.hemo td.legal { font-size:7pt; line-height:1.4; padding:5pt 7pt; text-align:justify; }
+    table.nz.hemo td.sig-cell { text-align:center; vertical-align:top; padding:4pt; }
+    table.nz.hemo .sig-meta { font-size:7.5pt; margin-bottom:2pt; text-align:left; }
+    table.nz.hemo .sig-line { border-top:1pt solid #0a1628; margin-top:20pt; padding-top:3pt; font-size:7pt; text-align:center; }
+    table.nz.hemo .sig-name { font-weight:700; font-size:7.5pt; margin-top:1pt; }
+    table.nz.hemo .sig-crm { font-weight:500; font-size:7pt; color:#475569; }
+    table.nz.hemo td.legal { font-size:6.5pt; line-height:1.35; padding:4pt 6pt; text-align:justify; }
     table.nz.hemo td.legal p { margin:0 0 3pt 0; }
     .cb { display:inline-block; width:8pt; height:8pt; border:1pt solid #0a1628; margin-right:4pt; vertical-align:middle; }
     .cb.on { background:#0a1628; }
