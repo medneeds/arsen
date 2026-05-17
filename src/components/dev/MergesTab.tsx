@@ -158,7 +158,7 @@ export function MergesTab() {
                           </td>
                         </tr>
                       )}
-                    </FragmentRow>
+                    </Fragment>
                   );
                 })}
                 {filtered.length === 0 && !loading && (
