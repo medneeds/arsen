@@ -1194,6 +1194,16 @@ export default function Saps3Page() {
         admittedPatientId = (insertedRow as any)?.id ?? null;
       }
 
+      // Repointa patient_id na ficha SAPS recém-criada — essencial para que o
+      // "Finalizar SAPS 3" no Painel/Hub consiga encontrar a ficha pendente
+      // pelo patient_id (e não cair em fluxo de pré-admissão de novo).
+      if (createdSapsId && admittedPatientId) {
+        await supabase
+          .from("saps3_assessments" as any)
+          .update({ patient_id: admittedPatientId } as any)
+          .eq("id", createdSapsId);
+      }
+
       // Origem 1: solicitação de leito (door patient) → marca aprovada e remove a linha "porta"
       if (selectedRequest?.allocation_request_id) {
         await supabase
