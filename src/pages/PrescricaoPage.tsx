@@ -4207,6 +4207,8 @@ const PrescricaoPage = () => {
   const lastPersistedSerializedRef = useRef<string>('');
   const autosaveSkipFirstRef = useRef(true);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 🔒 B2 — cache "existe signed hoje?" por (paciente+dia) para evitar query a cada keystroke.
+  const signedTodayCacheRef = useRef<{ key: string; exists: boolean } | null>(null);
 
   const draftStorageKey = useMemo(() => {
     if (!patient.name?.trim()) return null;
