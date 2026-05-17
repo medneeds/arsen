@@ -58,6 +58,7 @@ import { ExtraPrescriptionChooserDialog } from "@/components/ExtraPrescriptionCh
 import { printExtraPrescription } from "@/lib/printExtraPrescription";
 import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
+import { usePatientLive } from "@/hooks/usePatientLive";
 import {
   DndContext,
   closestCenter,
@@ -4658,6 +4659,27 @@ const PrescricaoPage = () => {
     currentHospital?.id ?? null,
   );
 
+  // ⚠️  Sincroniza LEITO + UNIDADE em tempo real a partir da tabela `patients`.
+  // Antes deste sync, `patient.bed`/`patient.unit` só eram alimentados pelo
+  // searchParam inicial ou por `loadPrescription` (que herdava o snapshot
+  // antigo). Resultado: PDF do L07 saía com bed="L05" após troca rápida de
+  // paciente ou autoload de prescrição com bed obsoleto.
+  // Agora, sempre que o paciente é relocado/transferido, o cabeçalho do PDF
+  // reflete o leito ATUAL — mesmo blindagem do helper `resolveCurrentBedSector`
+  // usado em `printAdmission`/`printEvolution`.
+  const { patient: livePatientForBed } = usePatientLive(urlPatientIdForRecord);
+  useEffect(() => {
+    if (!livePatientForBed) return;
+    const liveBed = livePatientForBed.bedNumber || '';
+    const liveSector = (livePatientForBed.sector as string) || '';
+    const liveUnit = sectorMapInit[liveSector] || liveSector;
+    setPatient(prev => {
+      if (prev.bed === liveBed && prev.unit === liveUnit) return prev;
+      return { ...prev, bed: liveBed, unit: liveUnit };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [livePatientForBed?.bedNumber, livePatientForBed?.sector]);
+
   // ⚠️  Sincroniza nome canônico, nome social, mãe, endereço, nascimento e sexo
   // a partir do `patient_registry` resolvido (com guarda anti-NI). Isso garante
   // que o cabeçalho do PDF de prescrição/evolução jamais apareça com dados de
@@ -5666,7 +5688,16 @@ const PrescricaoPage = () => {
         .single();
       if (error) throw error;
       if (data) {
-        setPatient(data.patient_data as unknown as PatientHeader);
+        // ⚠️  Preserva LEITO + UNIDADE vivos (vindos do `patients` via
+        // usePatientLive) — nunca herda o snapshot histórico do `patient_data`,
+        // que pode estar desatualizado se o paciente foi relocado desde a
+        // gravação. Mesma blindagem usada para imprimir admissão/evolução.
+        const snapshot = data.patient_data as unknown as PatientHeader;
+        setPatient(prev => ({
+          ...snapshot,
+          bed: prev.bed || snapshot.bed,
+          unit: prev.unit || snapshot.unit,
+        }));
         setItems(data.items as unknown as PrescriptionItem[]);
         setDigitalSignature(data.digital_signature as unknown as DigitalSignature | null);
         setCurrentPrescriptionId(data.id);
