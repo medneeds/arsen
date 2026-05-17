@@ -73,6 +73,7 @@ export function DiagnosticPanel() {
     try {
       const activeRules = Array.from(rules);
       if (includeSimilarity) activeRules.push("R6");
+      if (includeHomonym) activeRules.push("R8");
       const { data, error } = await (supabase as any).rpc("scan_duplicate_registries", {
         p_sector_code: sectorCode,
         p_rules: activeRules,
