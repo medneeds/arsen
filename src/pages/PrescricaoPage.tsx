@@ -177,6 +177,7 @@ interface PrescriptionItem {
   validated?: boolean;
   validatedAt?: string;
   isExtra?: boolean;          // Prescrição extra avulsa
+  printOnly?: boolean;        // Só imprime — não entra em validação clínica nem em dispensação farmacêutica
   // === Diferenciação regulatória (MAV / Portaria 344) ===
   securityCategory?: 'MAV' | 'PORT_344' | 'MAV_PORT_344';
   controlled?: boolean;        // Portaria 344/98
@@ -1471,6 +1472,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   onUpdate,
   onRemove,
   onToggleFlag,
+  onTogglePrintOnly,
   isSimple,
   isCompact,
   selected,
@@ -1493,6 +1495,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   onUpdate: (id: string, field: keyof PrescriptionItem, value: string) => void;
   onRemove: (id: string) => void;
   onToggleFlag: (id: string, flag: PrescriptionFlag) => void;
+  onTogglePrintOnly?: (id: string) => void;
   isSimple?: boolean;
   isCompact?: boolean;
   selected: boolean;
@@ -1567,6 +1570,12 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               <Pause className="h-3.5 w-3.5" /> Suspender item
             </DropdownMenuItem>
           </>
+        )}
+        {onTogglePrintOnly && (
+          <DropdownMenuItem onClick={() => onTogglePrintOnly(item.id)} className="text-xs gap-2 text-indigo-600 focus:text-indigo-700">
+            <Printer className="h-3.5 w-3.5" />
+            {item.printOnly ? "Desmarcar 'Só impressão'" : "Marcar como 'Só impressão'"}
+          </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -1715,6 +1724,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         )}
         {item.isExtra && (
           <Badge variant="outline" className="text-[9px] px-1.5 bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800">EXTRA</Badge>
+        )}
+        {item.printOnly && (
+          <Badge variant="outline" className="text-[9px] px-1.5 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-300 dark:border-indigo-800 gap-1">
+            <Printer className="h-2.5 w-2.5" /> SÓ IMPRESSÃO
+          </Badge>
         )}
         {item.status === 'suspended' && (
            <Badge variant="destructive" className="text-[9px] px-1.5">Suspenso</Badge>
@@ -1977,6 +1991,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           <MedicationFlagChips name={item.name} className="shrink-0" size="xs" />
           {item.isExtra && (
             <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-muted/50 text-muted-foreground border-border/50">EXTRA</Badge>
+          )}
+          {item.printOnly && (
+            <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-300 dark:border-indigo-800">SÓ IMPRESSÃO</Badge>
           )}
           {item.flags.length > 0 && item.flags.map(fk => {
             const f = PRESCRIPTION_FLAGS.find(pf => pf.key === fk);
@@ -2814,6 +2831,10 @@ function ExtraPrescriptionDialog({
     }));
   };
 
+  const toggleExtraPrintOnly = (id: string) => {
+    setExtraItems(prev => prev.map(i => i.id === id ? { ...i, printOnly: !i.printOnly } : i));
+  };
+
   const removeExtraItem = (id: string) => {
     setExtraItems(prev => prev.filter(i => i.id !== id));
   };
@@ -3019,6 +3040,7 @@ function ExtraPrescriptionDialog({
                       onUpdate={updateExtraItem}
                       onRemove={removeExtraItem}
                       onToggleFlag={toggleExtraFlag}
+                      onTogglePrintOnly={toggleExtraPrintOnly}
                       isSimple={false}
                       isCompact={false}
                       selected={false}
@@ -3982,6 +4004,10 @@ const PrescricaoPage = () => {
       missing.push('nome');
       return missing;
     }
+
+    // printOnly: item de impressão extra (orientações, dispositivos já em uso, observações).
+    // Não exige posologia/via/dose — só o nome/descrição. Não vai para farmácia.
+    if (item.printOnly) return [];
 
     // ============= CUIDADOS / NÃO-PADRONIZADO =============
     if (item.category === 'care' || item.category === 'nonstandard') {
@@ -5284,6 +5310,17 @@ const PrescricaoPage = () => {
         ? item.flags.filter(f => f !== flag)
         : [...item.flags, flag];
       return { ...item, flags };
+    }));
+  }, [isItemEditLocked]);
+
+  const togglePrintOnly = useCallback((id: string) => {
+    setItems((prev) => prev.map((item) => {
+      if (item.id !== id) return item;
+      if (isItemEditLocked(item)) {
+        toast.error("Item validado", { description: "Marcação 'Só impressão' não pode ser alterada após validação." });
+        return item;
+      }
+      return { ...item, printOnly: !item.printOnly };
     }));
   }, [isItemEditLocked]);
 
@@ -7331,6 +7368,7 @@ const PrescricaoPage = () => {
                             onUpdate={updateItem}
                             onRemove={removeItem}
                             onToggleFlag={toggleFlag}
+                            onTogglePrintOnly={togglePrintOnly}
                             isSimple={simple}
                             isCompact={compactView && !expandedCategories.has(cat)}
                             selected={selectedIds.has(item.id)}

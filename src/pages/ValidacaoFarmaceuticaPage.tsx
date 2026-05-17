@@ -36,6 +36,7 @@ interface PrescriptionItem {
   suspended?: boolean;
   highAlert?: boolean;
   flags?: string[];
+  printOnly?: boolean;
 }
 
 interface PrescriptionWithValidation {
@@ -249,7 +250,8 @@ const ValidacaoFarmaceuticaPage = () => {
     }
   };
 
-  const activeItems = selectedPrescription?.items.filter((i) => !i.suspended) || [];
+  // Itens marcados como "só impressão" não vão à dispensação/validação farmacêutica
+  const activeItems = selectedPrescription?.items.filter((i) => !i.suspended && !i.printOnly) || [];
   const highAlertItems = activeItems.filter((i) => i.highAlert);
 
   return (
@@ -320,8 +322,8 @@ const ValidacaoFarmaceuticaPage = () => {
               const status = getValidationStatus(p);
               const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.pending;
               const StatusIcon = config.icon;
-              const activeCount = p.items.filter((i) => !i.suspended).length;
-              const highAlertCount = p.items.filter((i) => i.highAlert && !i.suspended).length;
+              const activeCount = p.items.filter((i) => !i.suspended && !i.printOnly).length;
+              const highAlertCount = p.items.filter((i) => i.highAlert && !i.suspended && !i.printOnly).length;
 
               return (
                 <Card
