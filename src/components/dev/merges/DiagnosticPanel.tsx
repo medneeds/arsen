@@ -197,9 +197,20 @@ export function DiagnosticPanel() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Switch id="sim" checked={includeSimilarity} onCheckedChange={setIncludeSimilarity} />
-            <Label htmlFor="sim" className="text-xs">Incluir R6 similaridade fonética (≥ 0.85 + DOB)</Label>
+          <div className="flex flex-col gap-1">
+            <Label className="text-[10px] uppercase text-muted-foreground">Regras especiais (opt-in)</Label>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <Switch id="sim" checked={includeSimilarity} onCheckedChange={setIncludeSimilarity} />
+                <Label htmlFor="sim" className="text-xs">R6 similaridade fonética (≥ 0.85 + DOB)</Label>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Switch id="hom" checked={includeHomonym} onCheckedChange={setIncludeHomonym} />
+                <Label htmlFor="hom" className="text-xs text-orange-700 dark:text-orange-400">
+                  R8 homônimo/familiar (nome+mãe sem DOB · só revisão humana)
+                </Label>
+              </div>
+            </div>
           </div>
 
           <div className="ml-auto">
