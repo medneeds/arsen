@@ -3820,6 +3820,10 @@ const PrescricaoPage = () => {
   // dependentes de `patient.name` re-disparem (auto-load das últimas 24h,
   // pré-admissão, lista de prescrições, dispensações).
   const urlPatientId = searchParams.get('patientId') || '';
+  // 🔒 Chave de afinidade ROBUSTA — UUID do patient_registry vindo da URL.
+  // Substitui o uso de `patient_name` (string) que cruzava prontuários de
+  // homônimos entre leitos. Quando ausente, queries caem no fallback por nome.
+  const patientRegistryId = useMemo(() => asUuidOrNull(urlPatientId), [urlPatientId]);
   const lastSyncedPatientIdRef = useRef<string>(urlPatientId);
   useEffect(() => {
     if (!urlPatientId || urlPatientId === lastSyncedPatientIdRef.current) return;
