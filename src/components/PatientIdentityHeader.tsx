@@ -189,6 +189,36 @@ export function PatientIdentityHeader({
           )}
         </>
       )}
+
+      {/* Painel completo sempre aberto (usado em telas onde a revisão cadastral é prioritária) */}
+      {alwaysExpanded && (
+        <div className="mt-2 rounded-md border border-border/60 bg-background/60 p-2.5 space-y-1.5 text-[11px]">
+          <FullIdRow label="Nome social" value={registry?.socialName} />
+          <FullIdRow label="CPF" value={registry?.cpf} mono />
+          <FullIdRow label="CNS" value={registry?.cns} mono />
+          <FullIdRow label="Nascimento" value={formatDate(registry?.birthDate || undefined)} />
+          <FullIdRow label="Sexo" value={registry?.sex} />
+          <FullIdRow label="Tipo sanguíneo" value={registry?.bloodType} />
+          <FullIdRow label="Mãe" value={registry?.motherName} />
+          <FullIdRow label="Telefone" value={registry?.phone} />
+          <FullIdRow
+            label="Endereço"
+            value={
+              [registry?.address, registry?.neighborhood, registry?.city, registry?.state]
+                .filter(Boolean)
+                .join(", ") || null
+            }
+          />
+          <FullIdRow label="Alergias" value={registry?.allergies} />
+          <FullIdRow label="Comorbidades" value={registry?.comorbidities} />
+          {registry?.isUnidentified && (
+            <div className="text-[10px] uppercase font-semibold text-warning inline-flex items-center gap-1">
+              <ShieldAlert className="h-3 w-3" />
+              Paciente não identificado · {registry.unidentifiedCode || "—"}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
