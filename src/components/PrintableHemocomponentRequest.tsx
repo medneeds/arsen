@@ -371,7 +371,7 @@ export function PrintableHemocomponentRequest({
                       <div><Checkbox checked={c?.admin_schedule === "continuo"} /> Contínuo</div>
                     </>
                   )}
-                  {k === "crio" && <div style={{ minHeight: 38 }}>&nbsp;</div>}
+                  {k === "crio" && <div style={{ minHeight: 22 }}>&nbsp;</div>}
                 </td>
               );
             })}
