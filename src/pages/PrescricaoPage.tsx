@@ -3820,10 +3820,39 @@ const PrescricaoPage = () => {
   // dependentes de `patient.name` re-disparem (auto-load das últimas 24h,
   // pré-admissão, lista de prescrições, dispensações).
   const urlPatientId = searchParams.get('patientId') || '';
-  // 🔒 Chave de afinidade ROBUSTA — UUID do patient_registry vindo da URL.
-  // Substitui o uso de `patient_name` (string) que cruzava prontuários de
-  // homônimos entre leitos. Quando ausente, queries caem no fallback por nome.
-  const patientRegistryId = useMemo(() => asUuidOrNull(urlPatientId), [urlPatientId]);
+  // 🔒 Chave de afinidade ROBUSTA — UUID do patient_registry vinculado ao leito.
+  // ATENÇÃO: `urlPatientId` é `patients.id` (linha do leito), NÃO é
+  // `patient_registry.id`. Precisamos resolver o registry_id real consultando
+  // a tabela `patients` — usar `urlPatientId` direto fazia todas as queries
+  // de prescrição/validação/dispensação voltarem vazias (homônimos OK, mas
+  // o paciente original também não achava o próprio histórico).
+  const [resolvedRegistryId, setResolvedRegistryId] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const bedRowId = asUuidOrNull(urlPatientId);
+    if (!bedRowId) {
+      setResolvedRegistryId(null);
+      return;
+    }
+    (async () => {
+      const { data, error } = await supabase
+        .from('patients')
+        .select('patient_registry_id')
+        .eq('id', bedRowId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        console.error('[PrescricaoPage] resolve registry_id failed', error);
+        setResolvedRegistryId(null);
+        return;
+      }
+      setResolvedRegistryId((data?.patient_registry_id as string | null) || null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [urlPatientId]);
+  const patientRegistryId = resolvedRegistryId;
   const lastSyncedPatientIdRef = useRef<string>(urlPatientId);
   useEffect(() => {
     if (!urlPatientId || urlPatientId === lastSyncedPatientIdRef.current) return;
