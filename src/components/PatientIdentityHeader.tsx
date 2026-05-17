@@ -192,27 +192,48 @@ export function PatientIdentityHeader({
 
       {/* Painel completo sempre aberto (usado em telas onde a revisão cadastral é prioritária) */}
       {alwaysExpanded && (
-        <div className="mt-2 rounded-md border border-border/60 bg-background/60 p-2.5 space-y-1.5 text-[11px]">
-          <FullIdRow label="Nome social" value={registry?.socialName} />
-          <FullIdRow label="CPF" value={registry?.cpf} mono />
-          <FullIdRow label="CNS" value={registry?.cns} mono />
-          <FullIdRow label="Nascimento" value={formatDate(registry?.birthDate || undefined)} />
-          <FullIdRow label="Sexo" value={registry?.sex} />
-          <FullIdRow label="Tipo sanguíneo" value={registry?.bloodType} />
-          <FullIdRow label="Mãe" value={registry?.motherName} />
-          <FullIdRow label="Telefone" value={registry?.phone} />
-          <FullIdRow
+        <div className="mt-2 rounded-md border border-border/60 bg-background/60 p-3 text-[11px]">
+          {/* Linha 1: documentos */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2">
+            <CompactIdRow label="CPF" value={registry?.cpf} mono />
+            <CompactIdRow label="CNS" value={registry?.cns} mono />
+            <CompactIdRow label="Nascimento" value={formatDate(registry?.birthDate || undefined)} />
+            <CompactIdRow label="Sexo" value={registry?.sex} />
+            <CompactIdRow label="Tipo sanguíneo" value={registry?.bloodType} />
+            <CompactIdRow label="Telefone" value={registry?.phone} />
+          </div>
+
+          <div className="my-2 border-t border-border/40" />
+
+          {/* Linha 2: filiação + nome social (campos longos, 2 col) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+            <CompactIdRow label="Nome social" value={registry?.socialName} />
+            <CompactIdRow label="Mãe" value={registry?.motherName} />
+          </div>
+
+          <div className="my-2 border-t border-border/40" />
+
+          {/* Linha 3: endereço completo */}
+          <CompactIdRow
             label="Endereço"
             value={
               [registry?.address, registry?.neighborhood, registry?.city, registry?.state]
                 .filter(Boolean)
                 .join(", ") || null
             }
+            wide
           />
-          <FullIdRow label="Alergias" value={registry?.allergies} />
-          <FullIdRow label="Comorbidades" value={registry?.comorbidities} />
+
+          <div className="my-2 border-t border-border/40" />
+
+          {/* Linha 4: clínico */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+            <CompactIdRow label="Alergias" value={registry?.allergies} />
+            <CompactIdRow label="Comorbidades" value={registry?.comorbidities} />
+          </div>
+
           {registry?.isUnidentified && (
-            <div className="text-[10px] uppercase font-semibold text-warning inline-flex items-center gap-1">
+            <div className="mt-2 text-[10px] uppercase font-semibold text-warning inline-flex items-center gap-1">
               <ShieldAlert className="h-3 w-3" />
               Paciente não identificado · {registry.unidentifiedCode || "—"}
             </div>
