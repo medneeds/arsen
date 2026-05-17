@@ -6979,7 +6979,10 @@ const PrescricaoPage = () => {
                   size="sm"
                   onClick={() => {
                     if (!allItemsValidated) {
-                      toast.error("Valide a prescrição antes de imprimir", { description: "Use o botão 'Validar' para validar com sua senha." });
+                      const pending = items.filter(i => i.status === 'active' && !isItemValidatedToday(i)).length;
+                      toast.error("Impressão bloqueada — há itens pendentes", {
+                        description: `${pending} ${pending === 1 ? 'item aguarda' : 'itens aguardam'} validação. Valide ou exclua os itens pendentes antes de imprimir.`,
+                      });
                       return;
                     }
                     handlePrint();
