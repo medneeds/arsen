@@ -5496,9 +5496,11 @@ const PrescricaoPage = () => {
         .select('id, patient_name, status, version, created_at, digital_signature, items')
         .eq('hospital_unit_id', currentHospital.id)
         .eq('state_id', currentState.id)
-        .eq('patient_name', patient.name.trim())
         .order('created_at', { ascending: false })
         .limit(30);
+      query = patientRegistryId
+        ? query.eq('patient_registry_id', patientRegistryId)
+        : query.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
 
       if (historyDate) {
         const dayStart = startOfDay(historyDate).toISOString();
