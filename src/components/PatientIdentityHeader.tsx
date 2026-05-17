@@ -75,10 +75,11 @@ export function PatientIdentityHeader({
   variant = "dialog",
   className,
   showFullDetailsToggle = true,
+  alwaysExpanded = false,
 }: PatientIdentityHeaderProps) {
   const { namesHidden } = usePrivacy();
   const { currentHospital } = useHospital();
-  const [showFullId, setShowFullId] = useState(false);
+  const [showFullId, setShowFullId] = useState(alwaysExpanded);
 
   const { patient: livePatient } = usePatientLive(patientId || null);
   const { prontuario, atendimento, registry } = usePatientIdentifiers(
