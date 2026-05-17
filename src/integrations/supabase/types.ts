@@ -2303,6 +2303,7 @@ export type Database = {
           id: string
           is_unidentified: boolean
           medical_record: string | null
+          merge_archive: Json | null
           merged_at: string | null
           merged_by: string | null
           merged_into_registry_id: string | null
@@ -2335,6 +2336,7 @@ export type Database = {
           id?: string
           is_unidentified?: boolean
           medical_record?: string | null
+          merge_archive?: Json | null
           merged_at?: string | null
           merged_by?: string | null
           merged_into_registry_id?: string | null
@@ -2367,6 +2369,7 @@ export type Database = {
           id?: string
           is_unidentified?: boolean
           medical_record?: string | null
+          merge_archive?: Json | null
           merged_at?: string | null
           merged_by?: string | null
           merged_into_registry_id?: string | null
