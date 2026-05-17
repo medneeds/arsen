@@ -1045,7 +1045,12 @@ const AdminDashboardPage = () => {
                 />
               </TabsContent>
 
-              <TabsContent value="prontuarios" className="mt-0">
+              <TabsContent value="prontuarios" className="mt-0 space-y-2">
+                <div className="flex justify-end">
+                  <Button variant="outline" size="sm" asChild>
+                    <a href="/mesclar-prontuarios">Mesclar prontuários duplicados</a>
+                  </Button>
+                </div>
                 <MedicalRecordsList
                   onStartEncounter={(p) => {
                     setSelectedPatient(p as any);
