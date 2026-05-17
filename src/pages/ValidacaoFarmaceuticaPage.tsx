@@ -36,6 +36,7 @@ interface PrescriptionItem {
   suspended?: boolean;
   highAlert?: boolean;
   flags?: string[];
+  printOnly?: boolean;
 }
 
 interface PrescriptionWithValidation {
