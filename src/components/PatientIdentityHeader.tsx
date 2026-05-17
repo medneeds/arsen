@@ -278,3 +278,46 @@ function FullIdRow({ label, value, mono }: { label: string; value?: string | nul
     </div>
   );
 }
+
+/** Linha compacta vertical (label em cima, valor embaixo) — para grid multi-coluna. */
+function CompactIdRow({
+  label,
+  value,
+  mono,
+  wide,
+}: {
+  label: string;
+  value?: string | null;
+  mono?: boolean;
+  wide?: boolean;
+}) {
+  const has = !!value;
+  return (
+    <div className={cn("group flex flex-col gap-0.5 min-w-0", wide && "col-span-full")}>
+      <span className="text-muted-foreground uppercase tracking-wide text-[10px] leading-none">
+        {label}
+      </span>
+      <div className="flex items-center gap-1 min-w-0">
+        <span
+          className={cn(
+            "text-foreground break-words leading-snug",
+            mono && "font-mono",
+            !has && "text-muted-foreground/60 italic",
+          )}
+        >
+          {value || "—"}
+        </span>
+        {has && (
+          <button
+            type="button"
+            onClick={() => copyValue(value, label)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-muted/60 shrink-0"
+            title={`Copiar ${label}`}
+          >
+            <Copy className="h-3 w-3 text-muted-foreground" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
