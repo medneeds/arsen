@@ -3984,6 +3984,10 @@ const PrescricaoPage = () => {
       return missing;
     }
 
+    // printOnly: item de impressão extra (orientações, dispositivos já em uso, observações).
+    // Não exige posologia/via/dose — só o nome/descrição. Não vai para farmácia.
+    if (item.printOnly) return [];
+
     // ============= CUIDADOS / NÃO-PADRONIZADO =============
     if (item.category === 'care' || item.category === 'nonstandard') {
       // Apenas o nome é necessário — texto livre opcional.
