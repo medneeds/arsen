@@ -844,7 +844,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 <CockpitSection icon={FlaskConical} title="Últimas culturas" count={0}>
                   <div
                     className="text-[11px] leading-snug text-foreground/90 prose-sm max-w-none [&_p]:my-1"
-                    dangerouslySetInnerHTML={{ __html: evolution.culturesHtml }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(evolution.culturesHtml) }}
                   />
                 </CockpitSection>
               )}
