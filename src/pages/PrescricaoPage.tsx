@@ -2388,6 +2388,63 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               <div className="flex items-center gap-2 flex-wrap pt-1.5 border-t border-border/40">
                 <Droplets className="h-3 w-3 text-muted-foreground shrink-0" />
                 <span className="text-[10px] text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wide">Infusão EV</span>
+                {(() => {
+                  // Bolus toggle: habilitado só p/ IV intermitente NÃO antimicrobiano e posologia ≠ Contínuo
+                  const canBolusToggle =
+                    ptype === 'iv_intermittent'
+                    && item.category !== 'antimicrobial'
+                    && item.posology !== 'Contínuo';
+                  if (!canBolusToggle) return null;
+                  const isBolus = !!item.ivBolus;
+                  const nameLower = (item.name || '').toLowerCase();
+                  const isBolusSafeDrug = /\b(atropina|adrenalina|epinefrina)\b/.test(nameLower);
+                  return (
+                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20">
+                      <span className={`text-[10px] font-medium ${!isBolus ? 'text-slate-700 dark:text-slate-200' : 'text-muted-foreground'}`}>Tempo</span>
+                      <Switch
+                        checked={isBolus}
+                        onCheckedChange={(v) => {
+                          onUpdate(item.id, "ivBolus", v as any);
+                          if (v) {
+                            // limpa tempo/vazão p/ evitar inconsistência impressa
+                            onUpdate(item.id, "infusionTime", "");
+                            onUpdate(item.id, "infusionRate", "");
+                          }
+                        }}
+                        className="h-4 w-8 data-[state=checked]:bg-amber-500"
+                      />
+                      <span className={`text-[10px] font-semibold ${isBolus ? 'text-amber-700 dark:text-amber-300' : 'text-muted-foreground'}`}>Bolus</span>
+                      {isBolus && !isBolusSafeDrug && (
+                        <span className="flex items-center gap-1 ml-1 text-[10px] text-amber-700 dark:text-amber-300" title="Bolus EV é tipicamente reservado para drogas como atropina e adrenalina. Confirme a indicação antes de prescrever.">
+                          <AlertTriangle className="h-3 w-3" />
+                          confirmar indicação
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
+                {item.ivBolus ? (
+                  <>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-muted-foreground font-medium">Vol. final:</span>
+                      <Input
+                        value={item.volumeTotal || ''}
+                        onChange={(e) => {
+                          const newVol = e.target.value;
+                          onUpdate(item.id, "volumeTotal", newVol);
+                          const tempItem = { ...item, volumeTotal: newVol };
+                          const autoConc = calcConcentration(tempItem);
+                          if (autoConc) onUpdate(item.id, "concentration", autoConc);
+                        }}
+                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-16 text-center font-medium"
+                        placeholder="opcional"
+                      />
+                      <span className="text-[10px] text-muted-foreground">mL</span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">EV em bolus</span>
+                  </>
+                ) : (
+                  <>
                 <div className="flex items-center gap-1">
                   <span className="text-[10px] text-muted-foreground font-medium">Vol. final:</span>
                   <Input
@@ -2495,6 +2552,8 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                 )}
                 {item.posology === 'Contínuo' && item.volumeTotal && (
                   <span className="text-[10px] text-muted-foreground ml-auto">infusão contínua 24h</span>
+                )}
+                  </>
                 )}
               </div>
               )}
