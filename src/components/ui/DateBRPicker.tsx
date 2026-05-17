@@ -25,6 +25,10 @@ export interface DateBRPickerProps {
   allowClear?: boolean;
   /** Permite escolher data anterior a hoje. Default: true. */
   allowPast?: boolean;
+  /** Onde renderizar os presets. "below" (default) = abaixo do campo; "popover" = dentro do calendário. */
+  presetsPlacement?: "below" | "popover";
+  /** Rótulo curto exibido antes dos presets. Default: "A partir da admissão no setor:" */
+  presetsLabel?: string;
 }
 
 function parseBR(s: string): Date | undefined {
