@@ -110,9 +110,8 @@ export function MergesTab() {
                 {filtered.map((r) => {
                   const isOpen = expanded.has(r.id);
                   return (
-                    <>
+                    <FragmentRow key={r.id} isOpen={isOpen}>
                       <tr
-                        key={r.id}
                         className="border-b border-border/50 hover:bg-muted/30 cursor-pointer"
                         onClick={() => toggle(r.id)}
                       >
