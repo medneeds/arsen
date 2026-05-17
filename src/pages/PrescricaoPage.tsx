@@ -6442,6 +6442,43 @@ const PrescricaoPage = () => {
         </div>
       )}
 
+      {/* Ribbon — Prescrição validada do dia clínico atual (read-only + Editar/Nova versão) */}
+      {digitalSignature && (
+        <div className="print:hidden mb-2 flex items-center justify-between gap-3 rounded-lg border border-emerald-300/70 bg-emerald-50/80 dark:border-emerald-500/40 dark:bg-emerald-950/20 px-3 py-2 text-emerald-900 dark:text-emerald-200">
+          <div className="flex items-start gap-2 min-w-0">
+            <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0" />
+            <div className="text-[12px] leading-snug min-w-0">
+              <strong className="font-semibold">PRESCRIÇÃO VALIDADA HOJE</strong>
+              {" — assinada por "}
+              <span className="font-semibold">{digitalSignature.doctorName}</span>
+              {digitalSignature.crm && <> (CRM {digitalSignature.crm})</>}
+              {" às "}
+              <span className="font-mono">{digitalSignature.signedAt}</span>.
+              {" "}<span className="opacity-80">Continua válida até nova versão ser assinada.</span>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs border-emerald-400/70 text-emerald-800 hover:text-emerald-900 hover:bg-emerald-100/60 dark:text-emerald-100 dark:hover:bg-emerald-900/30 shrink-0"
+            onClick={async () => {
+              try {
+                await persistItems(items, { mode: 'newVersion' });
+                setDigitalSignature(null);
+                toast.success('Nova versão criada', {
+                  description: 'A prescrição anterior continua assinada e preservada. Faça as alterações e assine novamente.',
+                });
+              } catch {
+                // persistItems já reportou o erro
+              }
+            }}
+          >
+            <Pencil className="h-3 w-3" /> EDITAR / NOVA VERSÃO
+          </Button>
+        </div>
+      )}
+
       {/* ===== UNIFIED HEADER — title + context (peso/alergias/data/templates) + actions ===== */}
       <div className="print:hidden rounded-xl border border-border bg-card/60 shadow-[0_4px_18px_-8px_hsl(var(--primary)/0.18),0_1px_2px_-1px_hsl(var(--foreground)/0.06)] hover:shadow-[0_6px_24px_-8px_hsl(var(--primary)/0.22),0_1px_2px_-1px_hsl(var(--foreground)/0.08)] transition-shadow duration-300">
         {/* Row 0 — Title + meta */}
