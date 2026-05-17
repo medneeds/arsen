@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { usePatients } from "@/hooks/usePatients";
+import { useTodaysPrescriptions, type TodaysPrescriptionStatus } from "@/hooks/useTodaysPrescriptions";
+import { useHospital } from "@/contexts/HospitalContext";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { Patient } from "@/types/patient";
 import { differenceInDays, parseISO, formatDistanceToNow } from "date-fns";
@@ -94,9 +96,8 @@ const getResponsibleDoctor = (patient: Patient): string => {
   return "—";
 };
 
-const getPrescriptionStatus = (patient: Patient): { label: string; variant: "default" | "secondary" | "outline" | "destructive"; dotColor: string; pulsing: boolean } => {
-  const scheduleItems = parseTextArray(patient.schedule);
-  if (scheduleItems.length > 0) {
+const getPrescriptionStatus = (status: TodaysPrescriptionStatus): { label: string; variant: "default" | "secondary" | "outline" | "destructive"; dotColor: string; pulsing: boolean } => {
+  if (status === "signed") {
     return { label: "Validada", variant: "default", dotColor: "bg-emerald-500", pulsing: false };
   }
   return { label: "Pendente", variant: "secondary", dotColor: "bg-amber-500", pulsing: true };
@@ -139,6 +140,8 @@ export default function PainelClinicoPage() {
   const scopedDepartment = currentSectorCode ? undefined : currentDepartment;
   const scopedSector = currentSectorCode || undefined;
   const { patients: dbPatients, isLoading, updatePatient } = usePatients(scopedDepartment, scopedSector);
+  const { currentHospital } = useHospital();
+  const { getStatus: getTodaysPrescriptionStatus } = useTodaysPrescriptions(currentHospital?.id ?? null);
   const navigate = useNavigate();
 
   // Gestor não acessa o Painel Clínico — redireciona para o Mapa de Leitos
@@ -290,7 +293,7 @@ export default function PainelClinicoPage() {
             <div className="md:hidden flex flex-col gap-2">
               {filteredPatients.map(patient => {
                 const days = calcDaysInternment(patient.admissionDate);
-                const prescStatus = getPrescriptionStatus(patient);
+                const prescStatus = getPrescriptionStatus(getTodaysPrescriptionStatus(patient.name));
                 const pendencies = parseTextArray(patient.pendencies);
                 const saps = sapsScores[patient.name];
                 return (
@@ -355,7 +358,7 @@ export default function PainelClinicoPage() {
               <TableBody>
                 {filteredPatients.map(patient => {
                   const days = calcDaysInternment(patient.admissionDate);
-                  const prescStatus = getPrescriptionStatus(patient);
+                  const prescStatus = getPrescriptionStatus(getTodaysPrescriptionStatus(patient.name));
                   const pendencies = parseTextArray(patient.pendencies);
                   
                   return (
