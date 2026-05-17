@@ -146,6 +146,7 @@ import { ReplacementWizard } from "@/components/ReplacementWizard";
 import { ItemAssistantWizard, type AssistantPatch } from "@/components/ItemAssistantWizard";
 import type { Patient } from "@/types/patient";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
+import { Switch } from "@/components/ui/switch";
 
 // --- Types ---
 interface DigitalSignature {
