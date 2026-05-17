@@ -497,9 +497,9 @@ export default function MergeRegistriesPage() {
             { label: "Histórico clínico migrado", value: `${(loserCounts?.evolutions ?? 0)} evoluções · ${(loserCounts?.prescriptions ?? 0)} prescrições · ${(loserCounts?.exams ?? 0)} exames · ${(loserCounts?.encounters ?? 0)} atendimentos` },
           ]}
           warnings={[
-            "O cadastro perdedor NÃO será apagado — fica arquivado e consultável pelo desenvolvedor.",
-            "CPF e CNS do perdedor serão liberados e preservados na auditoria.",
-            "Esta ação é registrada na auditoria imutável de mesclagens.",
+            { label: "O cadastro perdedor NÃO será apagado — fica arquivado e consultável pelo desenvolvedor." },
+            { label: "CPF e CNS do perdedor serão liberados e preservados na auditoria." },
+            { label: "Esta ação é registrada na auditoria imutável de mesclagens." },
           ]}
         />
       )}
