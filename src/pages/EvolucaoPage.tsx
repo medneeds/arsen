@@ -164,6 +164,8 @@ const EvolucaoPage = () => {
     setNewSoap({ subjective: "", objective: "", assessment: "", plan: "" });
     setNewVitals({ pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" });
     setNewExam({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
+    setNewDevices([]);
+    setNewCulturesHtml("");
     setDiagnosticsReplicated(false);
     setDiagnosticHypotheses("");
   };
