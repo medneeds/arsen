@@ -140,6 +140,8 @@ export default function PainelClinicoPage() {
   const scopedDepartment = currentSectorCode ? undefined : currentDepartment;
   const scopedSector = currentSectorCode || undefined;
   const { patients: dbPatients, isLoading, updatePatient } = usePatients(scopedDepartment, scopedSector);
+  const { currentHospital } = useHospital();
+  const { getStatus: getTodaysPrescriptionStatus } = useTodaysPrescriptions(currentHospital?.id ?? null);
   const navigate = useNavigate();
 
   // Gestor não acessa o Painel Clínico — redireciona para o Mapa de Leitos
