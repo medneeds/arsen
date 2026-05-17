@@ -3820,6 +3820,10 @@ const PrescricaoPage = () => {
   // dependentes de `patient.name` re-disparem (auto-load das últimas 24h,
   // pré-admissão, lista de prescrições, dispensações).
   const urlPatientId = searchParams.get('patientId') || '';
+  // 🔒 Chave de afinidade ROBUSTA — UUID do patient_registry vindo da URL.
+  // Substitui o uso de `patient_name` (string) que cruzava prontuários de
+  // homônimos entre leitos. Quando ausente, queries caem no fallback por nome.
+  const patientRegistryId = useMemo(() => asUuidOrNull(urlPatientId), [urlPatientId]);
   const lastSyncedPatientIdRef = useRef<string>(urlPatientId);
   useEffect(() => {
     if (!urlPatientId || urlPatientId === lastSyncedPatientIdRef.current) return;
@@ -4261,6 +4265,7 @@ const PrescricaoPage = () => {
 
       const basePayload = {
         patient_name: patient.name.trim(),
+        patient_registry_id: patientRegistryId,
         patient_data: patient as any,
         items: nextItems as any,
         digital_signature: sig as any,
@@ -4384,21 +4389,25 @@ const PrescricaoPage = () => {
       // hoje para este paciente+unidade, não criar draft paralelo. A assinada é a verdade.
       if (!currentPrescriptionId && currentHospital && currentState && patient.name?.trim()) {
         const dayKey = format(new Date(), 'yyyy-MM-dd');
-        const cacheKey = `${currentHospital.id}::${currentState.id}::${patient.name.trim()}::${dayKey}`;
+        const affinityKey = patientRegistryId || `name:${patient.name.trim()}`;
+        const cacheKey = `${currentHospital.id}::${currentState.id}::${affinityKey}::${dayKey}`;
         let signedExists = signedTodayCacheRef.current?.key === cacheKey
           ? signedTodayCacheRef.current.exists
           : null;
         if (signedExists === null) {
           try {
             const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
-            const { count } = await supabase
+            let q = supabase
               .from('prescriptions')
               .select('id', { count: 'exact', head: true })
               .eq('hospital_unit_id', currentHospital.id)
               .eq('state_id', currentState.id)
-              .eq('patient_name', patient.name.trim())
               .eq('status', 'signed')
               .gte('created_at', dayStart.toISOString());
+            q = patientRegistryId
+              ? q.eq('patient_registry_id', patientRegistryId)
+              : q.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
+            const { count } = await q;
             signedExists = (count || 0) > 0;
             signedTodayCacheRef.current = { key: cacheKey, exists: signedExists };
           } catch {
@@ -4608,15 +4617,19 @@ const PrescricaoPage = () => {
     try {
       // Check if patient already has an active encounter
       const patientId = searchParams.get('patientId');
-      const { data: existing } = await supabase
+      const registryUuid = asUuidOrNull(patientId);
+      let existingQ = supabase
         .from('patient_encounters')
         .select('encounter_code')
         .eq('hospital_unit_id', currentHospital.id)
         .eq('state_id', currentState.id)
-        .eq('patient_name', patient.name.trim())
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(1);
+      existingQ = registryUuid
+        ? existingQ.eq('registry_id', registryUuid)
+        : existingQ.eq('patient_name', patient.name.trim()).is('registry_id', null);
+      const { data: existing } = await existingQ;
       
       if (existing && existing.length > 0) {
         setPatient(prev => ({ ...prev, encounterCode: existing[0].encounter_code }));
@@ -4628,7 +4641,8 @@ const PrescricaoPage = () => {
         .from('patient_encounters')
         .insert({
           patient_name: patient.name.trim(),
-          patient_id: asUuidOrNull(patientId) ?? undefined,
+          patient_id: registryUuid ?? undefined,
+          registry_id: registryUuid ?? undefined,
           hospital_unit_id: currentHospital.id,
           state_id: currentState.id,
           created_by: user?.id || undefined,
@@ -4786,14 +4800,17 @@ const PrescricaoPage = () => {
     const fetchPreAdmission = async () => {
       if (!currentHospital || !currentState || !patient.name.trim()) return;
       try {
-        const { data } = await supabase
+        let paQ = supabase
           .from('pre_admissions')
           .select('chief_complaint, vital_signs, risk_classification')
           .eq('hospital_unit_id', currentHospital.id)
           .eq('state_id', currentState.id)
-          .eq('patient_name', patient.name.trim())
           .order('created_at', { ascending: false })
           .limit(1);
+        paQ = patientRegistryId
+          ? paQ.eq('patient_registry_id', patientRegistryId)
+          : paQ.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
+        const { data } = await paQ;
         if (data && data.length > 0) {
           const pa = data[0];
           const vs = pa.vital_signs as Record<string, string> | null;
@@ -5479,9 +5496,11 @@ const PrescricaoPage = () => {
         .select('id, patient_name, status, version, created_at, digital_signature, items')
         .eq('hospital_unit_id', currentHospital.id)
         .eq('state_id', currentState.id)
-        .eq('patient_name', patient.name.trim())
         .order('created_at', { ascending: false })
         .limit(30);
+      query = patientRegistryId
+        ? query.eq('patient_registry_id', patientRegistryId)
+        : query.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
 
       if (historyDate) {
         const dayStart = startOfDay(historyDate).toISOString();
@@ -5507,7 +5526,7 @@ const PrescricaoPage = () => {
     } finally {
       setLoadingList(false);
     }
-  }, [currentHospital, currentState, patient.name, historyDate]);
+  }, [currentHospital, currentState, patient.name, patientRegistryId, historyDate]);
 
   useEffect(() => { fetchPrescriptions(); }, [fetchPrescriptions]);
 
@@ -5627,15 +5646,18 @@ const PrescricaoPage = () => {
     (async () => {
       try {
         const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        const { data, error } = await supabase
+        let alQ = supabase
           .from('prescriptions')
           .select('id, created_at, items')
           .eq('hospital_unit_id', currentHospital.id)
           .eq('state_id', currentState.id)
-          .eq('patient_name', patient.name.trim())
           .gte('created_at', since)
           .order('created_at', { ascending: false })
           .limit(1);
+        alQ = patientRegistryId
+          ? alQ.eq('patient_registry_id', patientRegistryId)
+          : alQ.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
+        const { data, error } = await alQ;
         if (error) throw error;
         const last = (data || [])[0];
         // ⚠️  Não carregar drafts vazios — eles sobrescrevem o demo (L09-L18) e
@@ -5649,7 +5671,7 @@ const PrescricaoPage = () => {
         console.error('[autoLoadPrescription] failed', err);
       }
     })();
-  }, [currentHospital, currentState, patient.name, currentPrescriptionId]);
+  }, [currentHospital, currentState, patient.name, patientRegistryId, currentPrescriptionId]);
 
   // Fetch version history for a prescription (by patient_name in same hospital)
   const fetchVersionHistory = useCallback(async (prescriptionId: string) => {
@@ -5657,17 +5679,20 @@ const PrescricaoPage = () => {
     try {
       const { data: current } = await supabase
         .from('prescriptions')
-        .select('patient_name')
+        .select('patient_name, patient_registry_id')
         .eq('id', prescriptionId)
         .single();
       if (!current) return;
-      const { data } = await supabase
+      let vhQ = supabase
         .from('prescriptions')
         .select('id, version, status, created_at, digital_signature')
-        .eq('patient_name', current.patient_name)
         .eq('hospital_unit_id', currentHospital.id)
         .eq('state_id', currentState.id)
         .order('version', { ascending: true });
+      vhQ = current.patient_registry_id
+        ? vhQ.eq('patient_registry_id', current.patient_registry_id)
+        : vhQ.eq('patient_name', current.patient_name).is('patient_registry_id', null);
+      const { data } = await vhQ;
       setVersionHistory((data || []).map(v => ({
         ...v,
         digital_signature: v.digital_signature as unknown as DigitalSignature | null,
@@ -5723,15 +5748,18 @@ const PrescricaoPage = () => {
     (async () => {
       try {
         const since = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
-        const { data, error } = await supabase
+        let dkQ = supabase
           .from('prescriptions')
           .select('created_at')
           .eq('hospital_unit_id', currentHospital.id)
           .eq('state_id', currentState.id)
-          .eq('patient_name', patient.name.trim())
           .gte('created_at', since)
           .order('created_at', { ascending: false })
           .limit(500);
+        dkQ = patientRegistryId
+          ? dkQ.eq('patient_registry_id', patientRegistryId)
+          : dkQ.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
+        const { data, error } = await dkQ;
         if (error) throw error;
         if (cancelled) return;
         const keys = new Set<string>();
@@ -5742,7 +5770,7 @@ const PrescricaoPage = () => {
       }
     })();
     return () => { cancelled = true; };
-  }, [currentHospital, currentState, patient.name, currentPrescriptionId]);
+  }, [currentHospital, currentState, patient.name, patientRegistryId, currentPrescriptionId]);
 
   // ===== Repeat previous prescription =====
   const openRepeatDialog = useCallback(async () => {
@@ -5759,9 +5787,11 @@ const PrescricaoPage = () => {
         .select('id, items, version, created_at')
         .eq('hospital_unit_id', currentHospital.id)
         .eq('state_id', currentState.id)
-        .eq('patient_name', patient.name.trim())
         .order('created_at', { ascending: false })
         .limit(5);
+      query = patientRegistryId
+        ? query.eq('patient_registry_id', patientRegistryId)
+        : query.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
       if (currentPrescriptionId) {
         query = query.neq('id', currentPrescriptionId);
       }
@@ -5885,6 +5915,7 @@ const PrescricaoPage = () => {
     try {
       const payload = {
         patient_name: patient.name.trim(),
+        patient_registry_id: patientRegistryId,
         patient_data: patient as any,
         items: items as any,
         digital_signature: digitalSignature as any,
@@ -6114,6 +6145,7 @@ const PrescricaoPage = () => {
           .from('prescriptions')
           .insert({
             patient_name: patient.name.trim(),
+            patient_registry_id: patientRegistryId,
             patient_data: patient as any,
             items: renewedItems as any,
             digital_signature: null,
