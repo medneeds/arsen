@@ -96,6 +96,7 @@ async function fetchCounts(registryId: string): Promise<CountsRow> {
 export default function MergeRegistriesPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // Authorization gate
   const [authorized, setAuthorized] = useState<boolean | null>(null);
