@@ -3635,6 +3635,46 @@ const PrescricaoPage = () => {
   const [insulinSchemePromptOpen, setInsulinSchemePromptOpen] = useState(false);
   // Pop-up orientativo após anexar antimicrobianos: lembra de imprimir Guia ATM 2 vias se D1
   const [atbAttachNotice, setAtbAttachNotice] = useState<{ open: boolean; isFirstDay: boolean; names: string[] }>({ open: false, isFirstDay: false, names: [] });
+  // Fase E: pop-up didático "esquema ATB termina hoje" (último dia D = total).
+  // Dispara uma única vez por (paciente + dia), persistido em sessionStorage.
+  const [atbEndNotice, setAtbEndNotice] = useState<{ open: boolean; schemes: Array<{ name: string; startDate: string; dayN: number; total: number }> }>({ open: false, schemes: [] });
+  const atbEndNoticeShownRef = useRef<Set<string>>(new Set());
+  // Fase E: scanner que detecta esquemas ATB no último dia (D = total) e abre pop-up único.
+  useEffect(() => {
+    if (!patient?.name?.trim()) return;
+    if (!items?.length) return;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const sessionKey = `atb-end-notice::${patient.name.trim()}::${dayKey}`;
+    if (atbEndNoticeShownRef.current.has(sessionKey)) return;
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage.getItem(sessionKey) === '1') {
+        atbEndNoticeShownRef.current.add(sessionKey);
+        return;
+      }
+    } catch { /* sessionStorage indisponível */ }
+    const ending: Array<{ name: string; startDate: string; dayN: number; total: number }> = [];
+    for (const it of items) {
+      if (it.category !== 'antimicrobial') continue;
+      if (it.status && it.status !== 'active') continue;
+      if (!it.atbStartDate) continue;
+      const total = parseInt(it.atbPlannedDays || '', 10);
+      if (!Number.isFinite(total) || total <= 0) continue;
+      const start = new Date(it.atbStartDate + 'T00:00:00');
+      if (isNaN(start.getTime())) continue;
+      start.setHours(0, 0, 0, 0);
+      const dayN = Math.floor((today.getTime() - start.getTime()) / 86400000) + 1;
+      if (dayN === total) {
+        ending.push({ name: it.name, startDate: it.atbStartDate, dayN, total });
+      }
+    }
+    if (ending.length === 0) return;
+    atbEndNoticeShownRef.current.add(sessionKey);
+    try { window.sessionStorage.setItem(sessionKey, '1'); } catch { /* noop */ }
+    setAtbEndNotice({ open: true, schemes: ending });
+  }, [items, patient?.name]);
+
   // Detecta se o item de cuidado é de controle glicêmico (HGT / glicemia capilar)
   const isGlycemicControlName = useCallback((name: string) => {
     const n = (name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -8073,7 +8113,53 @@ const PrescricaoPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Fase E: pop-up didático "esquema ATB termina hoje" */}
+      <AlertDialog
+        open={atbEndNotice.open}
+        onOpenChange={(v) => setAtbEndNotice(prev => ({ ...prev, open: v }))}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Esquema antimicrobiano termina hoje</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <div className="rounded-md border-l-[3px] border-l-amber-500 bg-amber-50/70 dark:bg-amber-950/30 p-2 text-xs leading-relaxed">
+                  Os seguintes esquemas chegam ao <strong>último dia previsto</strong> nesta data.
+                  Avalie a conduta: <strong>suspensão</strong>, <strong>descalonamento</strong>,
+                  <strong> troca para via oral</strong> ou <strong>prorrogação justificada</strong>
+                  (com novo registro de duração e indicação clínica).
+                </div>
+                <div className="rounded-md border bg-muted/40 p-2 text-xs">
+                  <div className="font-semibold mb-1">Esquemas que terminam hoje:</div>
+                  <ul className="list-disc pl-4 space-y-0.5">
+                    {atbEndNotice.schemes.map((s, i) => {
+                      const [y, m, d] = s.startDate.split('-');
+                      const startBr = (y && m && d) ? `${d}/${m}/${y}` : s.startDate;
+                      return (
+                        <li key={i}>
+                          <strong>{s.name}</strong> — início {startBr} (D{s.dayN}/{s.total})
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Este aviso aparece apenas uma vez por paciente a cada dia. Nenhuma alteração foi feita
+                  na prescrição — a decisão clínica é sua.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setAtbEndNotice(prev => ({ ...prev, open: false }))}>
+              Ciente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={quickTemplatesDialogOpen} onOpenChange={setQuickTemplatesDialogOpen}>
+
         <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
