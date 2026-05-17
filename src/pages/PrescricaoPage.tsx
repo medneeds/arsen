@@ -177,6 +177,7 @@ interface PrescriptionItem {
   validated?: boolean;
   validatedAt?: string;
   isExtra?: boolean;          // Prescrição extra avulsa
+  printOnly?: boolean;        // Só imprime — não entra em validação clínica nem em dispensação farmacêutica
   // === Diferenciação regulatória (MAV / Portaria 344) ===
   securityCategory?: 'MAV' | 'PORT_344' | 'MAV_PORT_344';
   controlled?: boolean;        // Portaria 344/98
