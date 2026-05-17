@@ -196,6 +196,7 @@ export function MergesTab() {
           </ScrollArea>
         </CardContent>
       </Card>
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 }
