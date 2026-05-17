@@ -5679,17 +5679,20 @@ const PrescricaoPage = () => {
     try {
       const { data: current } = await supabase
         .from('prescriptions')
-        .select('patient_name')
+        .select('patient_name, patient_registry_id')
         .eq('id', prescriptionId)
         .single();
       if (!current) return;
-      const { data } = await supabase
+      let vhQ = supabase
         .from('prescriptions')
         .select('id, version, status, created_at, digital_signature')
-        .eq('patient_name', current.patient_name)
         .eq('hospital_unit_id', currentHospital.id)
         .eq('state_id', currentState.id)
         .order('version', { ascending: true });
+      vhQ = current.patient_registry_id
+        ? vhQ.eq('patient_registry_id', current.patient_registry_id)
+        : vhQ.eq('patient_name', current.patient_name).is('patient_registry_id', null);
+      const { data } = await vhQ;
       setVersionHistory((data || []).map(v => ({
         ...v,
         digital_signature: v.digital_signature as unknown as DigitalSignature | null,
