@@ -1495,6 +1495,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
   onUpdate: (id: string, field: keyof PrescriptionItem, value: string) => void;
   onRemove: (id: string) => void;
   onToggleFlag: (id: string, flag: PrescriptionFlag) => void;
+  onTogglePrintOnly?: (id: string) => void;
   isSimple?: boolean;
   isCompact?: boolean;
   selected: boolean;
