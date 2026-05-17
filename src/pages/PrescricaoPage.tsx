@@ -5292,6 +5292,17 @@ const PrescricaoPage = () => {
     }));
   }, [isItemEditLocked]);
 
+  const togglePrintOnly = useCallback((id: string) => {
+    setItems((prev) => prev.map((item) => {
+      if (item.id !== id) return item;
+      if (isItemEditLocked(item)) {
+        toast.error("Item validado", { description: "Marcação 'Só impressão' não pode ser alterada após validação." });
+        return item;
+      }
+      return { ...item, printOnly: !item.printOnly };
+    }));
+  }, [isItemEditLocked]);
+
 
   // Individual duplicate
   const duplicateItem = useCallback((id: string) => {
