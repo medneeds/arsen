@@ -18,6 +18,9 @@ import { cn } from "@/lib/utils";
 import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
 import { FieldTemplates } from "@/components/FieldTemplates";
 import { useHospital } from "@/contexts/HospitalContext";
+import { DevicesCulturesSection } from "@/components/evolution/DevicesCulturesSection";
+import type { EvolutionDevice } from "@/lib/devicesCatalog";
+import { Activity } from "lucide-react";
 
 interface SOAPData {
   subjective: string;
@@ -55,6 +58,14 @@ interface EvolutionFormProps {
   hasUnsaved?: boolean;
   /** Render slot for the Diagnostics panel — placed as 1st collapsible section. */
   diagnosticsSlot?: React.ReactNode;
+  /** Dispositivos invasivos (lista catálogo + custom). */
+  devices?: EvolutionDevice[];
+  onDevicesChange?: (next: EvolutionDevice[]) => void;
+  /** Resultado de culturas (HTML rico). */
+  culturesHtml?: string;
+  onCulturesChange?: (html: string) => void;
+  /** Data de admissão no setor — base p/ presets do date picker dos dispositivos. */
+  admissionDate?: string | null;
 }
 
 type SectionKey = 'vitals' | 'evolucao' | 'objective' | 'plan' | 'review';
@@ -87,8 +98,11 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   onSave, onValidate, saving, readOnly = false, isValidated = false,
   autoSave = false, hasUnsaved = false,
   diagnosticsSlot,
+  devices, onDevicesChange,
+  culturesHtml, onCulturesChange,
+  admissionDate,
 }) => {
-  const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'evolucao', 'complementares', 'plan']);
+  const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'devices', 'evolucao', 'complementares', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
   const { currentHospital } = useHospital();
   const hospitalId = currentHospital?.id ?? null;
@@ -179,7 +193,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     );
   }
 
-  const expandAll = () => setOpenSections(['diagnostics', 'evolucao', 'complementares', 'plan', 'review']);
+  const expandAll = () => setOpenSections(['diagnostics', 'devices', 'evolucao', 'complementares', 'plan', 'review']);
   const collapseAll = () => setOpenSections([]);
 
   return (
@@ -235,6 +249,32 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             required={false}
           >
             {diagnosticsSlot}
+          </SectionItem>
+        )}
+        {onDevicesChange && onCulturesChange && (
+          <SectionItem
+            id="devices"
+            icon={Activity}
+            iconColor="text-rose-500"
+            label="Dispositivos & Culturas"
+            hint="Dispositivos invasivos com data de inserção (D{n} automático) + resultado de culturas"
+            complete={(devices?.length ?? 0) > 0}
+            required={false}
+            customStatus={
+              (devices && devices.length > 0) ? (
+                <span className="text-[10px] text-rose-600 dark:text-rose-400">
+                  {devices.length} dispositivo{devices.length > 1 ? "s" : ""}
+                </span>
+              ) : undefined
+            }
+          >
+            <DevicesCulturesSection
+              devices={devices || []}
+              onDevicesChange={onDevicesChange}
+              culturesHtml={culturesHtml || ""}
+              onCulturesChange={onCulturesChange}
+              admissionDate={admissionDate || undefined}
+            />
           </SectionItem>
         )}
         <SectionItem

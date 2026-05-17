@@ -128,6 +128,8 @@ const EvolucaoPage = () => {
   const [newSoap, setNewSoap] = useState({ subjective: "", objective: "", assessment: "", plan: "" });
   const [newVitals, setNewVitals] = useState({ pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" });
   const [newExam, setNewExam] = useState({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
+  const [newDevices, setNewDevices] = useState<import("@/lib/devicesCatalog").EvolutionDevice[]>([]);
+  const [newCulturesHtml, setNewCulturesHtml] = useState("");
   const [creating, setCreating] = useState(false);
   const [diagnosticsReplicated, setDiagnosticsReplicated] = useState(false);
   const [diagnosticHypotheses, setDiagnosticHypotheses] = useState("");
@@ -162,6 +164,8 @@ const EvolucaoPage = () => {
     setNewSoap({ subjective: "", objective: "", assessment: "", plan: "" });
     setNewVitals({ pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" });
     setNewExam({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
+    setNewDevices([]);
+    setNewCulturesHtml("");
     setDiagnosticsReplicated(false);
     setDiagnosticHypotheses("");
   };
@@ -188,6 +192,16 @@ const EvolucaoPage = () => {
     }
     // Prefill hipóteses (vindas da última evolução com hipóteses ou da admissão)
     setDiagnosticHypotheses(computePrefillHypotheses());
+    // Prefill dispositivos & culturas a partir da última evolução com esses dados
+    const lastWithDevicesOrCultures = evolutions.find((e) => {
+      const s: any = e.soap_data || {};
+      return (Array.isArray(s.devices) && s.devices.length > 0) || !!s.culturesHtml;
+    });
+    if (lastWithDevicesOrCultures) {
+      const s: any = lastWithDevicesOrCultures.soap_data || {};
+      if (Array.isArray(s.devices)) setNewDevices(s.devices);
+      if (typeof s.culturesHtml === "string") setNewCulturesHtml(s.culturesHtml);
+    }
   };
 
   const handleClearDiagnostics = () => {
@@ -203,9 +217,15 @@ const EvolucaoPage = () => {
 
   const handleCreateEvolution = async () => {
     setCreating(true);
+    // Estende soap_data com devices + culturesHtml (JSONB preserva chaves extras)
+    const soapWithExtras = {
+      ...newSoap,
+      devices: newDevices,
+      culturesHtml: newCulturesHtml,
+    } as any;
     const result = await createEvolution(
       patient.name, patient.bed, patient.unit,
-      newSoap, newVitals, newExam,
+      soapWithExtras, newVitals, newExam,
       diagnosticHypotheses
     );
     setCreating(false);
@@ -450,6 +470,18 @@ const EvolucaoPage = () => {
               onSave={handleCreateEvolution}
               saving={creating}
               diagnosticsSlot={diagnosticsSlot}
+              devices={newDevices}
+              onDevicesChange={setNewDevices}
+              culturesHtml={newCulturesHtml}
+              onCulturesChange={setNewCulturesHtml}
+              admissionDate={
+                getEffectiveAdmissionDate({
+                  utiAdmissionDate: livePatient?.utiAdmissionDate,
+                  admittedAt: livePatient?.admittedAt,
+                  admissionDate: livePatient?.admissionDate || patient.admissionDate,
+                  sector: livePatient?.sector || initialPatientSector,
+                }) || patient.admissionDate
+              }
             />
           </div>
         )}
