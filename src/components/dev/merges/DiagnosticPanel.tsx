@@ -48,6 +48,7 @@ export function DiagnosticPanel() {
   const [sectorCode, setSectorCode] = useState<string>("__all__");
   const [rules, setRules] = useState<Set<Rule>>(new Set(ALL_RULES));
   const [includeSimilarity, setIncludeSimilarity] = useState(false);
+  const [includeHomonym, setIncludeHomonym] = useState(false);
   const [textFilter, setTextFilter] = useState("");
 
   const [loading, setLoading] = useState(false);
