@@ -141,7 +141,7 @@ export function PatientIdentityHeader({
       </div>
 
       {/* ===== Painel "Ver dados do prontuário" ===== */}
-      {showFullDetailsToggle && (
+      {showFullDetailsToggle && !alwaysExpanded && (
         <>
           <button
             type="button"
