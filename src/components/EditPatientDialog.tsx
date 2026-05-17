@@ -25,6 +25,7 @@ import {
   CalendarCheck,
   ArrowRightLeft,
   UserCog,
+  RefreshCw,
 } from "lucide-react";
 import { useDepartment } from "@/contexts/DepartmentContext";
 import { getSectorDisplayLabel } from "@/utils/bedNaming";
@@ -35,6 +36,8 @@ import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
 import { OperationalRelocationDialog } from "./OperationalRelocationDialog";
 import { DateBRPicker } from "./ui/DateBRPicker";
 import { FileText } from "lucide-react";
+import { PisRegistrySyncDialog, computePisDiff, type PisSourceRow } from "./PisRegistrySyncDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EditPatientDialogProps {
   patient: Patient;
