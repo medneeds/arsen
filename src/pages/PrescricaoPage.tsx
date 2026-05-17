@@ -7667,14 +7667,27 @@ const PrescricaoPage = () => {
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" size="sm" onClick={() => setPreviewPrescription(null)}>Fechar</Button>
             {previewPrescription && (
-              <Button
-                size="sm"
-                onClick={() => { loadPrescription(previewPrescription.id); setPreviewPrescription(null); }}
-              >
-                Abrir no editor
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-emerald-300/70 text-emerald-800 hover:bg-emerald-100/60 dark:text-emerald-200 dark:border-emerald-500/40 dark:hover:bg-emerald-900/30"
+                  onClick={() => { restoreFromPrescription(previewPrescription); setPreviewPrescription(null); }}
+                  title="Soma os itens desta versão no rascunho atual, ignorando duplicados"
+                >
+                  <CopyPlus className="h-3.5 w-3.5" />
+                  Restaurar (somar)
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => { loadPrescription(previewPrescription.id); setPreviewPrescription(null); }}
+                >
+                  Abrir no editor
+                </Button>
+              </>
             )}
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
 
