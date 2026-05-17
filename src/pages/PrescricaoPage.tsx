@@ -4403,7 +4403,7 @@ const PrescricaoPage = () => {
           : null;
         if (signedExists === null) {
           try {
-            const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+            const dayStart = getClinicalDayWindowSP().start;
             let q = supabase
               .from('prescriptions')
               .select('id', { count: 'exact', head: true })
