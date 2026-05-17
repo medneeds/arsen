@@ -90,6 +90,7 @@ export default function DevConsolePage() {
                 { v: "pendencies", icon: ListChecks, label: "Pendências" },
                 { v: "health", icon: Activity, label: "Saúde" },
                 { v: "logs", icon: Database, label: "Logs" },
+                { v: "merges", icon: GitMerge, label: "Mesclagens" },
                 { v: "ai", icon: Bot, label: "Console IA" },
                 { v: "actions", icon: Users, label: "Ações" },
                 { v: "customization", icon: Sliders, label: "Personalização" },
@@ -109,6 +110,7 @@ export default function DevConsolePage() {
           <TabsContent value="pendencies"><PendenciesTab /></TabsContent>
           <TabsContent value="health"><HealthTab /></TabsContent>
           <TabsContent value="logs"><LogsTab /></TabsContent>
+          <TabsContent value="merges"><MergesTab /></TabsContent>
           <TabsContent value="ai"><AiTab /></TabsContent>
           <TabsContent value="actions"><ActionsTab /></TabsContent>
           <TabsContent value="customization"><CustomizationTab /></TabsContent>
