@@ -59,6 +59,7 @@ import { printExtraPrescription } from "@/lib/printExtraPrescription";
 import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { usePatientLive } from "@/hooks/usePatientLive";
+import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 import {
   DndContext,
   closestCenter,
@@ -3826,33 +3827,9 @@ const PrescricaoPage = () => {
   // a tabela `patients` — usar `urlPatientId` direto fazia todas as queries
   // de prescrição/validação/dispensação voltarem vazias (homônimos OK, mas
   // o paciente original também não achava o próprio histórico).
-  const [resolvedRegistryId, setResolvedRegistryId] = useState<string | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    const bedRowId = asUuidOrNull(urlPatientId);
-    if (!bedRowId) {
-      setResolvedRegistryId(null);
-      return;
-    }
-    (async () => {
-      const { data, error } = await supabase
-        .from('patients')
-        .select('patient_registry_id')
-        .eq('id', bedRowId)
-        .maybeSingle();
-      if (cancelled) return;
-      if (error) {
-        console.error('[PrescricaoPage] resolve registry_id failed', error);
-        setResolvedRegistryId(null);
-        return;
-      }
-      setResolvedRegistryId((data?.patient_registry_id as string | null) || null);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [urlPatientId]);
-  const patientRegistryId = resolvedRegistryId;
+  // 🔒 Resolução blindada via helper único — fonte da verdade para registry_id.
+  // Ver src/hooks/useResolvedRegistryId.ts para detalhes da garantia anti-vazamento.
+  const { registryId: patientRegistryId } = useResolvedRegistryId(urlPatientId);
   const lastSyncedPatientIdRef = useRef<string>(urlPatientId);
   useEffect(() => {
     if (!urlPatientId || urlPatientId === lastSyncedPatientIdRef.current) return;
