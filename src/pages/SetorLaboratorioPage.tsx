@@ -27,6 +27,7 @@ import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
 import { printRequisitionGuide } from "@/components/PrintableRequisitionGuide";
+import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
 
 const getSectorLabel = getSectorDisplayLabel;
 
@@ -613,7 +614,7 @@ const SetorLaboratorioPage = () => {
                 variant="outline"
                 size="sm"
                 className="gap-1.5 text-xs mr-auto"
-                onClick={() => printRequisitionGuide(selectedRequest, (s) => getSectorLabel(s))}
+                onClick={() => printRequisitionGuideWithGasometriaPrompt(selectedRequest, (s) => getSectorLabel(s))}
               >
                 <Printer className="h-3.5 w-3.5" /> Imprimir Guia
               </Button>

@@ -37,6 +37,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 import { printRequisitionGuide, PrintableRequisitionGuide } from "@/components/PrintableRequisitionGuide";
+import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
 import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
 
@@ -1290,7 +1291,7 @@ const RequisicaoUnificadaPage = () => {
                 size="sm"
                 variant="outline"
                 className="gap-1.5 text-xs mr-auto"
-                onClick={() => printRequisitionGuide(viewingRequest, (s) => getSectorLabel(s))}
+                onClick={() => printRequisitionGuideWithGasometriaPrompt(viewingRequest, (s) => getSectorLabel(s))}
               >
                 <Printer className="h-3.5 w-3.5" /> Imprimir Guia
               </Button>
@@ -2008,7 +2009,7 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
               size="sm"
               variant="ghost"
               className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-              onClick={(e) => { e.stopPropagation(); printRequisitionGuide(request, (s) => getSectorLabel(s)); }}
+              onClick={(e) => { e.stopPropagation(); printRequisitionGuideWithGasometriaPrompt(request, (s) => getSectorLabel(s)); }}
               title="Imprimir Guia"
             >
               <Printer className="h-3.5 w-3.5" />
