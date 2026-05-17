@@ -14,8 +14,8 @@ import { HOSPITAL_SECTOR_GROUPS, sectorLabelFromCode } from "@/lib/hospitalSecto
 import { DuplicateGroupCard, type ScanGroup } from "./DuplicateGroupCard";
 import { BulkMergeReviewDialog, type BulkPair } from "./BulkMergeReviewDialog";
 
-const ALL_RULES = ["R1", "R2", "R3", "R4", "R5"] as const;
-type Rule = typeof ALL_RULES[number] | "R6";
+const ALL_RULES = ["R1", "R2", "R3", "R4", "R5", "R7"] as const;
+type Rule = typeof ALL_RULES[number] | "R6" | "R8";
 
 const RULE_LABEL: Record<Rule, string> = {
   R1: "R1 CPF",
@@ -24,10 +24,13 @@ const RULE_LABEL: Record<Rule, string> = {
   R4: "R4 Nome+DOB",
   R5: "R5 Prontuário legado",
   R6: "R6 Similaridade",
+  R7: "R7 Prontuário (dígitos)",
+  R8: "R8 Homônimo/familiar",
 };
 
-// Bulk só para R1 e R2 (matches cirurgicamente claros)
-const BULK_ELIGIBLE_RULES = new Set<Rule>(["R1", "R2"]);
+// Bulk só para regras cirurgicamente claras (CPF/CNS normalizado + prontuário dígito-puro).
+// R8 NUNCA é elegível para bloco — sempre exige revisão humana.
+const BULK_ELIGIBLE_RULES = new Set<Rule>(["R1", "R2", "R7"]);
 
 function pickSuggestedWinner(members: ScanGroup["members"]) {
   const ranked = [...members].sort((a, b) => {
