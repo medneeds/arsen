@@ -4080,7 +4080,8 @@ const PrescricaoPage = () => {
       if (item.diluent && item.diluent !== 'sem_diluente' && !hasAnyVolumeIVI) {
         missing.push('volume de diluição');
       }
-      if (empty(item.infusionTime) && empty(item.infusionRate)) {
+      // Bolus EV: remove a obrigatoriedade de tempo/vazão (administração direta)
+      if (!item.ivBolus && empty(item.infusionTime) && empty(item.infusionRate)) {
         missing.push('tempo ou vazão');
       }
     }
