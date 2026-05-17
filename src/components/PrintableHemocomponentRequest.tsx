@@ -618,30 +618,30 @@ export async function printHemocomponentRequest(
         <col style="width:8.333%"/><col style="width:8.333%"/><col style="width:8.337%"/>
       </colgroup>
       <tbody>
-        <!-- Identificação -->
+        <!-- Identificação (compacta: 4 linhas) -->
         <tr><td colspan="12" class="band">Identificação do Paciente</td></tr>
-        <tr><th colspan="2">Nome:</th><td colspan="10" class="bold">${escapeHtml((request.patient_name || "").toUpperCase())}</td></tr>
-        <tr><th colspan="2">Nome social:</th><td colspan="10">${escapeHtml(request.patient_social_name || "")}</td></tr>
+        <tr>
+          <th colspan="2">Nome:</th>
+          <td colspan="10" class="bold">${escapeHtml((request.patient_name || "").toUpperCase())}${request.patient_social_name ? ` (social: ${escapeHtml(request.patient_social_name)})` : ""}</td>
+        </tr>
         <tr>
           <th colspan="2">Nascimento:</th><td colspan="2" class="bold">${escapeHtml(fmtDate(request.patient_birth_date))}</td>
-          <th colspan="1">Sexo:</th><td colspan="3">${cb(isSexFem(request.patient_sex))} Fem &nbsp; ${cb(isSexMasc(request.patient_sex))} Masc</td>
-          <th colspan="2">Grupo (ABO/RH):</th><td colspan="2" class="bold">${escapeHtml(request.patient_blood_group || "")}</td>
+          <th colspan="1">Sexo:</th><td colspan="2">${cb(isSexFem(request.patient_sex))} Fem &nbsp; ${cb(isSexMasc(request.patient_sex))} Masc</td>
+          <th colspan="2">ABO/RH:</th><td colspan="1" class="bold">${escapeHtml(request.patient_blood_group || "")}</td>
+          <th colspan="1">Peso:</th><td colspan="1" class="bold">${escapeHtml(String(request.patient_weight ?? ""))}</td>
         </tr>
         <tr>
-          <th colspan="2">N° prontuário:</th><td colspan="3" class="bold">${escapeHtml(request.patient_record || "")}</td>
-          <th colspan="1">Raça:</th><td colspan="2">${escapeHtml(request.patient_race || "")}</td>
-          <th colspan="1">Peso:</th><td colspan="3" class="bold">${escapeHtml(String(request.patient_weight ?? ""))}</td>
-        </tr>
-        <tr>
-          <th colspan="2">Unidade:</th><td colspan="6" class="bold">${escapeHtml(sectorName || "")}</td>
-          <th colspan="1">Leito:</th><td colspan="3" class="bold">${escapeHtml(request.patient_bed || "")}</td>
+          <th colspan="2">Prontuário:</th><td colspan="3" class="bold">${escapeHtml(request.patient_record || "")}</td>
+          <th colspan="2">Unidade:</th><td colspan="3" class="bold">${escapeHtml(sectorName || "")}</td>
+          <th colspan="1">Leito:</th><td colspan="1" class="bold">${escapeHtml(request.patient_bed || "")}</td>
         </tr>
         <tr><th colspan="2">Diagnóstico:</th><td colspan="10">${escapeHtml(request.patient_diagnosis || "")}</td></tr>
 
-        <!-- Dados da Transfusão -->
-        <tr><td colspan="12" class="band">Dados da Transfusão · Setor onde será realizada</td></tr>
-        <tr>${SECTOR_GROUPS.map((g) => `<td colspan="3" class="sub">${escapeHtml(g.title)}</td>`).join("")}</tr>
-        <tr>${SECTOR_GROUPS.map((g) => `<td colspan="3" class="cell">${g.items.map((it) => `<div class="opt">${cb(isSectorChecked(request, it.key))} ${escapeHtml(it.label)}</div>`).join("")}</td>`).join("")}</tr>
+        <!-- Setor da transfusão (linha única, já é o setor do paciente) -->
+        <tr>
+          <th colspan="2">Setor da transfusão:</th>
+          <td colspan="10" class="bold">${escapeHtml(sectorName || "—")}${request.patient_bed ? ` · Leito ${escapeHtml(request.patient_bed)}` : ""}</td>
+        </tr>
 
         <!-- Hemocomponentes -->
         <tr><td colspan="12" class="band">Hemocomponentes Solicitados</td></tr>
