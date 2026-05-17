@@ -5787,9 +5787,11 @@ const PrescricaoPage = () => {
         .select('id, items, version, created_at')
         .eq('hospital_unit_id', currentHospital.id)
         .eq('state_id', currentState.id)
-        .eq('patient_name', patient.name.trim())
         .order('created_at', { ascending: false })
         .limit(5);
+      query = patientRegistryId
+        ? query.eq('patient_registry_id', patientRegistryId)
+        : query.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
       if (currentPrescriptionId) {
         query = query.neq('id', currentPrescriptionId);
       }
