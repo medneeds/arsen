@@ -251,32 +251,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             {diagnosticsSlot}
           </SectionItem>
         )}
-        {onDevicesChange && onCulturesChange && (
-          <SectionItem
-            id="devices"
-            icon={Activity}
-            iconColor="text-rose-500"
-            label="Dispositivos & Culturas"
-            hint="Dispositivos invasivos com data de inserção (D{n} automático) + resultado de culturas"
-            complete={(devices?.length ?? 0) > 0}
-            required={false}
-            customStatus={
-              (devices && devices.length > 0) ? (
-                <span className="text-[10px] text-rose-600 dark:text-rose-400">
-                  {devices.length} dispositivo{devices.length > 1 ? "s" : ""}
-                </span>
-              ) : undefined
-            }
-          >
-            <DevicesCulturesSection
-              devices={devices || []}
-              onDevicesChange={onDevicesChange}
-              culturesHtml={culturesHtml || ""}
-              onCulturesChange={onCulturesChange}
-              admissionDate={admissionDate || undefined}
-            />
-          </SectionItem>
-        )}
+        {/* Dispositivos & Culturas — movido p/ entre Exames Complementares e Evolução (abaixo) */}
         <SectionItem
           id="evolucao"
           icon={NotebookPen}
