@@ -4238,6 +4238,36 @@ const PrescricaoPage = () => {
 
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     autosaveTimerRef.current = setTimeout(async () => {
+      // 🔒 B2 — se ainda não há prescription id (nada carregado) e já existe SIGNED
+      // hoje para este paciente+unidade, não criar draft paralelo. A assinada é a verdade.
+      if (!currentPrescriptionId && currentHospital && currentState && patient.name?.trim()) {
+        const dayKey = format(new Date(), 'yyyy-MM-dd');
+        const cacheKey = `${currentHospital.id}::${currentState.id}::${patient.name.trim()}::${dayKey}`;
+        let signedExists = signedTodayCacheRef.current?.key === cacheKey
+          ? signedTodayCacheRef.current.exists
+          : null;
+        if (signedExists === null) {
+          try {
+            const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+            const { count } = await supabase
+              .from('prescriptions')
+              .select('id', { count: 'exact', head: true })
+              .eq('hospital_unit_id', currentHospital.id)
+              .eq('state_id', currentState.id)
+              .eq('patient_name', patient.name.trim())
+              .eq('status', 'signed')
+              .gte('created_at', dayStart.toISOString());
+            signedExists = (count || 0) > 0;
+            signedTodayCacheRef.current = { key: cacheKey, exists: signedExists };
+          } catch {
+            signedExists = false;
+          }
+        }
+        if (signedExists) {
+          lastPersistedSerializedRef.current = serialized;
+          return;
+        }
+      }
       setDraftSaving(true);
       try {
         await persistItems(items, { mode: 'update', silent: true });
