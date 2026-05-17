@@ -217,9 +217,15 @@ const EvolucaoPage = () => {
 
   const handleCreateEvolution = async () => {
     setCreating(true);
+    // Estende soap_data com devices + culturesHtml (JSONB preserva chaves extras)
+    const soapWithExtras = {
+      ...newSoap,
+      devices: newDevices,
+      culturesHtml: newCulturesHtml,
+    } as any;
     const result = await createEvolution(
       patient.name, patient.bed, patient.unit,
-      newSoap, newVitals, newExam,
+      soapWithExtras, newVitals, newExam,
       diagnosticHypotheses
     );
     setCreating(false);
