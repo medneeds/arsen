@@ -87,36 +87,37 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
 
   const alreadyAdmitted = patient.admissionStatus === "admitido";
 
-  // Bloqueio: admitido SEM alta/óbito registrado (fluxo errado)
-  const blockers: MovementBlocker[] =
-    patient.admissionStatus === "admitido"
-      ? [
-          {
-            label: "Paciente admitido sem alta/óbito registrado",
-            reason:
-              "Registre a Alta Médica ou Óbito pelo Painel Clínico → Movimentações antes de liberar o leito.",
-          },
-        ]
-      : [];
-
   // Bloqueio: motivo "outro" exige nota
+  const blockers: MovementBlocker[] = [];
   if (reason === "outro" && reasonNote.trim().length < 5) {
     blockers.push({
       label: "Detalhe o motivo",
       reason: 'Ao selecionar "Outro motivo" é obrigatório descrever o que aconteceu (mínimo 5 caracteres).',
     });
   }
+  // No fluxo excepcional (admitido sem alta) a justificativa é SEMPRE obrigatória
+  if (isExceptional && reasonNote.trim().length < 10) {
+    blockers.push({
+      label: "Justificativa obrigatória",
+      reason: "Liberação excepcional (paciente admitido sem alta registrada) exige descrição clínica/administrativa detalhada (mínimo 10 caracteres). Ficará registrado no histórico imutável.",
+    });
+  }
 
-  const warnings: MovementWarning[] =
-    reason === "obito_pre_admissao"
-      ? [
-          {
-            label: "Óbito antes da admissão",
-            detail:
-              "Mesmo sem admissão hospitalar formal, registre o óbito pelo fluxo da Alta/Desfecho para gerar a Declaração de Óbito.",
-          },
-        ]
-      : [];
+  const warnings: MovementWarning[] = [];
+  if (reason === "obito_pre_admissao") {
+    warnings.push({
+      label: "Óbito antes da admissão",
+      detail:
+        "Mesmo sem admissão hospitalar formal, registre o óbito pelo fluxo da Alta/Desfecho para gerar a Declaração de Óbito.",
+    });
+  }
+  if (isExceptional) {
+    warnings.push({
+      label: "Liberação excepcional sem alta médica registrada",
+      detail:
+        "Esta é uma ação de autonomia médica/administrativa para destravar o leito quando a sinalização de alta não foi persistida (ex.: documento de alta não chegou a ser assinado). O ideal é sempre completar o fluxo pelo Painel Clínico — use este caminho apenas em situação operacional crítica.",
+    });
+  }
 
   const reasonLabel = REASON_OPTIONS.find((r) => r.value === reason)?.label ?? reason;
 
@@ -144,9 +145,9 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
     }
   };
 
-  // Bloqueio "já admitido" só vale para o fluxo pré-admissão clássico.
-  // Pós-alta/óbito é justamente o caso de admitido + alta concluída → liberação permitida.
-  const blockReleaseHard = alreadyAdmitted && !isPostDischarge;
+  // Não há mais bloqueio "hard" — admin/médico podem prosseguir no caminho excepcional
+  // com justificativa obrigatória, senha e auditoria diferenciada.
+  const blockReleaseHard = false;
 
   return (
     <>
