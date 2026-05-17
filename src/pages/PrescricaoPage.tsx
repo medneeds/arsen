@@ -4265,6 +4265,7 @@ const PrescricaoPage = () => {
 
       const basePayload = {
         patient_name: patient.name.trim(),
+        patient_registry_id: patientRegistryId,
         patient_data: patient as any,
         items: nextItems as any,
         digital_signature: sig as any,
