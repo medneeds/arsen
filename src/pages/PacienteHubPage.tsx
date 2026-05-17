@@ -130,17 +130,36 @@ export default function PacienteHubPage() {
     const qs = new URLSearchParams();
     Object.entries(ctx).forEach(([k, v]) => v && qs.set(k, v));
     // Busca a ficha SAPS pendente do paciente para abrir direto no formulário (caminho A)
-    if (ctx.patientId) {
+    if (ctx.patientId || ctx.patientName) {
       try {
-        const { data } = await supabase
-          .from("saps3_assessments" as any)
-          .select("id")
-          .eq("patient_id", ctx.patientId)
-          .eq("status", "pending")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        const sapsId = (data as any)?.id;
+        let sapsId: string | null = null;
+
+        // Tentativa 1: por patient_id (ideal)
+        if (ctx.patientId) {
+          const { data } = await supabase
+            .from("saps3_assessments" as any)
+            .select("id")
+            .eq("patient_id", ctx.patientId)
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          sapsId = (data as any)?.id || null;
+        }
+
+        // Tentativa 2 (fallback p/ fichas legadas com patient_id NULL): por nome
+        if (!sapsId && ctx.patientName) {
+          const { data } = await supabase
+            .from("saps3_assessments" as any)
+            .select("id")
+            .ilike("patient_name", ctx.patientName.trim())
+            .eq("status", "pending")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          sapsId = (data as any)?.id || null;
+        }
+
         if (sapsId) qs.set("completeSapsId", sapsId);
         else qs.set("fromAllocation", "true"); // fallback caminho B
       } catch {
