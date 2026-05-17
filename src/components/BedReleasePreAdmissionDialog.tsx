@@ -34,6 +34,14 @@ const POST_DISCHARGE_REASONS = [
   { value: "outro", label: "Outro motivo" },
 ];
 
+const EXCEPTIONAL_REASONS = [
+  { value: "alta_sinalizada_nao_persistida", label: "Alta sinalizada no Painel mas não persistida (documento não assinado)" },
+  { value: "paciente_ja_saiu", label: "Paciente já saiu fisicamente — leito retido indevidamente" },
+  { value: "erro_admissao", label: "Admissão registrada por engano (paciente errado/duplicado)" },
+  { value: "regularizacao_administrativa", label: "Regularização administrativa do censo" },
+  { value: "outro", label: "Outro motivo (descreva)" },
+];
+
 export interface BedReleasePreAdmissionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -46,14 +54,19 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
     patient?.admissionStatus === "alta_dada"
     || patient?.admissionStatus === "obito"
     || patient?.admissionStatus === "transferencia_externa_pendente";
-  const REASON_OPTIONS = isPostDischarge ? POST_DISCHARGE_REASONS : PRE_ADMISSION_REASONS;
-  const defaultReason = isPostDischarge
-    ? (patient?.admissionStatus === "obito"
-        ? "obito_concluido"
-        : patient?.admissionStatus === "transferencia_externa_pendente"
-          ? "transferencia_externa_concluida"
-          : "alta_concluida")
-    : "paciente_saiu";
+  const isExceptional = patient?.admissionStatus === "admitido";
+  const REASON_OPTIONS = isExceptional
+    ? EXCEPTIONAL_REASONS
+    : isPostDischarge ? POST_DISCHARGE_REASONS : PRE_ADMISSION_REASONS;
+  const defaultReason = isExceptional
+    ? "alta_sinalizada_nao_persistida"
+    : isPostDischarge
+      ? (patient?.admissionStatus === "obito"
+          ? "obito_concluido"
+          : patient?.admissionStatus === "transferencia_externa_pendente"
+            ? "transferencia_externa_concluida"
+            : "alta_concluida")
+      : "paciente_saiu";
 
   const [step, setStep] = useState<"notice" | "form" | "password">("notice");
   const [reason, setReason] = useState<string>(defaultReason);
