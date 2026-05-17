@@ -31,22 +31,25 @@ export type ScanMember = {
 };
 
 export type ScanGroup = {
-  rule: "R1" | "R2" | "R3" | "R4" | "R5" | "R6";
+  rule: "R1" | "R2" | "R3" | "R4" | "R5" | "R6" | "R7" | "R8";
   key: string;
   group_hash: string;
   members: ScanMember[];
   member_count: number;
   both_with_bed: boolean;
   sectors: string[] | null;
+  requires_human_review?: boolean;
 };
 
 const RULE_LABEL: Record<ScanGroup["rule"], { text: string; tone: string }> = {
-  R1: { text: "CPF idêntico", tone: "bg-emerald-600 text-white" },
-  R2: { text: "CNS idêntico", tone: "bg-emerald-600 text-white" },
+  R1: { text: "CPF idêntico (normalizado)", tone: "bg-emerald-600 text-white" },
+  R2: { text: "CNS idêntico (normalizado)", tone: "bg-emerald-600 text-white" },
   R3: { text: "Nome + DOB + Mãe", tone: "bg-blue-600 text-white" },
   R4: { text: "Nome + DOB", tone: "bg-amber-600 text-white" },
   R5: { text: "Prontuário legado igual", tone: "bg-violet-600 text-white" },
   R6: { text: "Similaridade fonética", tone: "bg-slate-600 text-white" },
+  R7: { text: "Prontuário (só dígitos) igual", tone: "bg-teal-600 text-white" },
+  R8: { text: "Homônimo/familiar (sem DOB)", tone: "bg-orange-600 text-white" },
 };
 
 const COMPARE_FIELDS: { key: keyof ScanMember; label: string }[] = [
@@ -125,6 +128,17 @@ export function DuplicateGroupCard({ group, selectedPair, onSelectPair, onMergeN
 
       {open && (
         <div className="border-t border-border p-3 space-y-3 bg-muted/10">
+          {group.requires_human_review && (
+            <div className="text-xs bg-orange-50 dark:bg-orange-950/20 border border-orange-400/40 rounded p-2 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-600 shrink-0 mt-0.5" />
+              <div>
+                <b>Revisão humana obrigatória.</b>{" "}
+                {group.rule === "R8"
+                  ? "Nome e mãe coincidem, mas a data de nascimento difere — pode ser parente (pai/mãe/filho/irmão homônimo). NÃO mescle sem investigar manualmente."
+                  : "Match por similaridade fonética. Confira ortografia antes de mesclar."}
+              </div>
+            </div>
+          )}
           {/* Tabela comparativa */}
           <div className="overflow-x-auto">
             <table className="w-full text-xs">

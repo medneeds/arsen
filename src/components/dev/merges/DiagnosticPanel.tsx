@@ -14,8 +14,8 @@ import { HOSPITAL_SECTOR_GROUPS, sectorLabelFromCode } from "@/lib/hospitalSecto
 import { DuplicateGroupCard, type ScanGroup } from "./DuplicateGroupCard";
 import { BulkMergeReviewDialog, type BulkPair } from "./BulkMergeReviewDialog";
 
-const ALL_RULES = ["R1", "R2", "R3", "R4", "R5"] as const;
-type Rule = typeof ALL_RULES[number] | "R6";
+const ALL_RULES = ["R1", "R2", "R3", "R4", "R5", "R7"] as const;
+type Rule = typeof ALL_RULES[number] | "R6" | "R8";
 
 const RULE_LABEL: Record<Rule, string> = {
   R1: "R1 CPF",
@@ -24,10 +24,13 @@ const RULE_LABEL: Record<Rule, string> = {
   R4: "R4 Nome+DOB",
   R5: "R5 Prontuário legado",
   R6: "R6 Similaridade",
+  R7: "R7 Prontuário (dígitos)",
+  R8: "R8 Homônimo/familiar",
 };
 
-// Bulk só para R1 e R2 (matches cirurgicamente claros)
-const BULK_ELIGIBLE_RULES = new Set<Rule>(["R1", "R2"]);
+// Bulk só para regras cirurgicamente claras (CPF/CNS normalizado + prontuário dígito-puro).
+// R8 NUNCA é elegível para bloco — sempre exige revisão humana.
+const BULK_ELIGIBLE_RULES = new Set<Rule>(["R1", "R2", "R7"]);
 
 function pickSuggestedWinner(members: ScanGroup["members"]) {
   const ranked = [...members].sort((a, b) => {
@@ -45,6 +48,7 @@ export function DiagnosticPanel() {
   const [sectorCode, setSectorCode] = useState<string>("__all__");
   const [rules, setRules] = useState<Set<Rule>>(new Set(ALL_RULES));
   const [includeSimilarity, setIncludeSimilarity] = useState(false);
+  const [includeHomonym, setIncludeHomonym] = useState(false);
   const [textFilter, setTextFilter] = useState("");
 
   const [loading, setLoading] = useState(false);
@@ -69,6 +73,7 @@ export function DiagnosticPanel() {
     try {
       const activeRules = Array.from(rules);
       if (includeSimilarity) activeRules.push("R6");
+      if (includeHomonym) activeRules.push("R8");
       const { data, error } = await (supabase as any).rpc("scan_duplicate_registries", {
         p_sector_code: sectorCode,
         p_rules: activeRules,
@@ -192,9 +197,20 @@ export function DiagnosticPanel() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Switch id="sim" checked={includeSimilarity} onCheckedChange={setIncludeSimilarity} />
-            <Label htmlFor="sim" className="text-xs">Incluir R6 similaridade fonética (≥ 0.85 + DOB)</Label>
+          <div className="flex flex-col gap-1">
+            <Label className="text-[10px] uppercase text-muted-foreground">Regras especiais (opt-in)</Label>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <Switch id="sim" checked={includeSimilarity} onCheckedChange={setIncludeSimilarity} />
+                <Label htmlFor="sim" className="text-xs">R6 similaridade fonética (≥ 0.85 + DOB)</Label>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Switch id="hom" checked={includeHomonym} onCheckedChange={setIncludeHomonym} />
+                <Label htmlFor="hom" className="text-xs text-orange-700 dark:text-orange-400">
+                  R8 homônimo/familiar (nome+mãe sem DOB · só revisão humana)
+                </Label>
+              </div>
+            </div>
           </div>
 
           <div className="ml-auto">
