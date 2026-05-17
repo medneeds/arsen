@@ -1571,6 +1571,12 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             </DropdownMenuItem>
           </>
         )}
+        {onTogglePrintOnly && (
+          <DropdownMenuItem onClick={() => onTogglePrintOnly(item.id)} className="text-xs gap-2 text-indigo-600 focus:text-indigo-700">
+            <Printer className="h-3.5 w-3.5" />
+            {item.printOnly ? "Desmarcar 'Só impressão'" : "Marcar como 'Só impressão'"}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => onRemove(item.id)}
