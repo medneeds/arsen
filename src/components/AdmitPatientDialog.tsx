@@ -475,6 +475,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const airwayStatus = pa.airway_intubated ? "IOT/Intubado" : pa.airway_obstruction ? "Obstruída" : pa.airway_patent ? "Pérvias" : "—";
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
