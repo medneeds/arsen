@@ -243,6 +243,36 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
       return;
     }
 
+    // Sincronização PIS → patient_registry (antes da admissão)
+    // Se houver registry vinculado e divergência, abre diff. Se o usuário pular, segue direto.
+    if (!pisSyncSkipped && (fullData as any).patient_registry_id) {
+      try {
+        const { data: regRow } = await supabase
+          .from("patient_registry")
+          .select("id, full_name, social_name, mother_name, birth_date, sex, cpf, cns, phone, address, neighborhood, city, state, medical_record")
+          .eq("id", (fullData as any).patient_registry_id)
+          .maybeSingle();
+        const pisSrc: PisSourceRow = {
+          patient_name: fullData.patient_name,
+          social_name: fullData.social_name ?? null,
+          mother_name: fullData.mother_name,
+          birth_date: fullData.birth_date,
+          sex: fullData.sex,
+          cpf: fullData.cpf,
+          cns: fullData.cns,
+          phone: fullData.phone,
+          medical_record: fullData.medical_record,
+        };
+        const diff = computePisDiff(regRow as any, pisSrc);
+        if (diff.length > 0) {
+          setPisSyncOpen(true);
+          return;
+        }
+      } catch (e) {
+        console.warn("[admit-pis-check] ignorado:", e);
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const age = calcAge(fullData.birth_date);
