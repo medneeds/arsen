@@ -2009,7 +2009,7 @@ function RequestCard({ request, category, onViewResult, onCancel, showResult }: 
               size="sm"
               variant="ghost"
               className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-              onClick={(e) => { e.stopPropagation(); printRequisitionGuide(request, (s) => getSectorLabel(s)); }}
+              onClick={(e) => { e.stopPropagation(); printRequisitionGuideWithGasometriaPrompt(request, (s) => getSectorLabel(s)); }}
               title="Imprimir Guia"
             >
               <Printer className="h-3.5 w-3.5" />
