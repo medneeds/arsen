@@ -193,6 +193,7 @@ interface PrescriptionItem {
   infusionRate?: string;      // Vazão editável (mL/h ou gts/min)
   volumeTotal?: string;       // Volume total (mL)
   concentration?: string;     // Concentração calculada ou manual
+  ivBolus?: boolean;          // Marca administração EV em bolus (sem tempo de infusão / gotejamento). Só p/ IV intermitente não-antimicrobiano e posologia ≠ Contínuo.
   // Nutrition-specific optional fields
   nutritionType?: 'diet_enteral' | 'diet_oral' | 'water' | 'npt' | 'zero';
   nutVolDay?: string;         // Volume total / dia (mL)
