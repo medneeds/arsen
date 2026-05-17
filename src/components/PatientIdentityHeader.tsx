@@ -33,6 +33,8 @@ export interface PatientIdentityHeaderProps {
   className?: string;
   /** Mostra/oculta o painel "Ver dados do prontuário" (default: true) */
   showFullDetailsToggle?: boolean;
+  /** Quando true, renderiza o painel completo sempre aberto (sem botão de toggle). */
+  alwaysExpanded?: boolean;
 }
 
 const clinicalStatusConfig: Record<string, { label: string; dot: string; bg: string }> = {
