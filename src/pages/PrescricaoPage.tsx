@@ -6814,10 +6814,11 @@ const PrescricaoPage = () => {
               )}
               {/* Grupo 2: Medicações (com ênfase em ATB e alto alerta) */}
               {(['medication', 'antimicrobial', 'high_alert', 'inhalation', 'hemotherapy'] as PrescriptionCategory[]).map(cat => {
-                const count = itemsByCategory[cat].length;
+                const activeItemsCat = itemsByCategory[cat].filter(i => i.status !== 'suspended');
+                const count = activeItemsCat.length;
                 if (count === 0) return null;
                 const config = CATEGORY_CONFIG[cat];
-                const validatedCount = itemsByCategory[cat].filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
+                const validatedCount = activeItemsCat.filter(i => i.validated && (!isPastRenewalTime || (i.validatedAt && new Date(i.validatedAt) > setSeconds(setMinutes(setHours(startOfDay(new Date()), 5), 0), 0)))).length;
                 const ok = validatedCount === count;
                 const emphasis = cat === 'antimicrobial' || cat === 'high_alert';
                 return (
