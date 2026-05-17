@@ -34,6 +34,14 @@ const POST_DISCHARGE_REASONS = [
   { value: "outro", label: "Outro motivo" },
 ];
 
+const EXCEPTIONAL_REASONS = [
+  { value: "alta_sinalizada_nao_persistida", label: "Alta sinalizada no Painel mas não persistida (documento não assinado)" },
+  { value: "paciente_ja_saiu", label: "Paciente já saiu fisicamente — leito retido indevidamente" },
+  { value: "erro_admissao", label: "Admissão registrada por engano (paciente errado/duplicado)" },
+  { value: "regularizacao_administrativa", label: "Regularização administrativa do censo" },
+  { value: "outro", label: "Outro motivo (descreva)" },
+];
+
 export interface BedReleasePreAdmissionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -46,14 +54,19 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
     patient?.admissionStatus === "alta_dada"
     || patient?.admissionStatus === "obito"
     || patient?.admissionStatus === "transferencia_externa_pendente";
-  const REASON_OPTIONS = isPostDischarge ? POST_DISCHARGE_REASONS : PRE_ADMISSION_REASONS;
-  const defaultReason = isPostDischarge
-    ? (patient?.admissionStatus === "obito"
-        ? "obito_concluido"
-        : patient?.admissionStatus === "transferencia_externa_pendente"
-          ? "transferencia_externa_concluida"
-          : "alta_concluida")
-    : "paciente_saiu";
+  const isExceptional = patient?.admissionStatus === "admitido";
+  const REASON_OPTIONS = isExceptional
+    ? EXCEPTIONAL_REASONS
+    : isPostDischarge ? POST_DISCHARGE_REASONS : PRE_ADMISSION_REASONS;
+  const defaultReason = isExceptional
+    ? "alta_sinalizada_nao_persistida"
+    : isPostDischarge
+      ? (patient?.admissionStatus === "obito"
+          ? "obito_concluido"
+          : patient?.admissionStatus === "transferencia_externa_pendente"
+            ? "transferencia_externa_concluida"
+            : "alta_concluida")
+      : "paciente_saiu";
 
   const [step, setStep] = useState<"notice" | "form" | "password">("notice");
   const [reason, setReason] = useState<string>(defaultReason);
@@ -74,36 +87,37 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
 
   const alreadyAdmitted = patient.admissionStatus === "admitido";
 
-  // Bloqueio: admitido SEM alta/óbito registrado (fluxo errado)
-  const blockers: MovementBlocker[] =
-    patient.admissionStatus === "admitido"
-      ? [
-          {
-            label: "Paciente admitido sem alta/óbito registrado",
-            reason:
-              "Registre a Alta Médica ou Óbito pelo Painel Clínico → Movimentações antes de liberar o leito.",
-          },
-        ]
-      : [];
-
   // Bloqueio: motivo "outro" exige nota
+  const blockers: MovementBlocker[] = [];
   if (reason === "outro" && reasonNote.trim().length < 5) {
     blockers.push({
       label: "Detalhe o motivo",
       reason: 'Ao selecionar "Outro motivo" é obrigatório descrever o que aconteceu (mínimo 5 caracteres).',
     });
   }
+  // No fluxo excepcional (admitido sem alta) a justificativa é SEMPRE obrigatória
+  if (isExceptional && reasonNote.trim().length < 10) {
+    blockers.push({
+      label: "Justificativa obrigatória",
+      reason: "Liberação excepcional (paciente admitido sem alta registrada) exige descrição clínica/administrativa detalhada (mínimo 10 caracteres). Ficará registrado no histórico imutável.",
+    });
+  }
 
-  const warnings: MovementWarning[] =
-    reason === "obito_pre_admissao"
-      ? [
-          {
-            label: "Óbito antes da admissão",
-            detail:
-              "Mesmo sem admissão hospitalar formal, registre o óbito pelo fluxo da Alta/Desfecho para gerar a Declaração de Óbito.",
-          },
-        ]
-      : [];
+  const warnings: MovementWarning[] = [];
+  if (reason === "obito_pre_admissao") {
+    warnings.push({
+      label: "Óbito antes da admissão",
+      detail:
+        "Mesmo sem admissão hospitalar formal, registre o óbito pelo fluxo da Alta/Desfecho para gerar a Declaração de Óbito.",
+    });
+  }
+  if (isExceptional) {
+    warnings.push({
+      label: "Liberação excepcional sem alta médica registrada",
+      detail:
+        "Esta é uma ação de autonomia médica/administrativa para destravar o leito quando a sinalização de alta não foi persistida (ex.: documento de alta não chegou a ser assinado). O ideal é sempre completar o fluxo pelo Painel Clínico — use este caminho apenas em situação operacional crítica.",
+    });
+  }
 
   const reasonLabel = REASON_OPTIONS.find((r) => r.value === reason)?.label ?? reason;
 
@@ -131,9 +145,9 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
     }
   };
 
-  // Bloqueio "já admitido" só vale para o fluxo pré-admissão clássico.
-  // Pós-alta/óbito é justamente o caso de admitido + alta concluída → liberação permitida.
-  const blockReleaseHard = alreadyAdmitted && !isPostDischarge;
+  // Não há mais bloqueio "hard" — admin/médico podem prosseguir no caminho excepcional
+  // com justificativa obrigatória, senha e auditoria diferenciada.
+  const blockReleaseHard = false;
 
   return (
     <>
@@ -151,7 +165,11 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                 <AlertTriangle className="h-5 w-5 text-amber-600" />
               </div>
               <AlertDialogTitle className="text-base">
-                {isPostDischarge ? "Liberar leito após alta/óbito" : "Atenção: liberar leito sem alta"}
+                {isExceptional
+                  ? "Liberação excepcional — paciente admitido sem alta"
+                  : isPostDischarge
+                    ? "Liberar leito após alta/óbito"
+                    : "Atenção: liberar leito sem alta"}
               </AlertDialogTitle>
             </div>
             <AlertDialogDescription asChild>
@@ -160,13 +178,21 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                   Você está prestes a <strong>desocupar o leito {patient.bedNumber || "—"}</strong> ocupado por{" "}
                   <strong>{patient.name || "este paciente"}</strong>.
                 </p>
-                {blockReleaseHard ? (
-                  <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-destructive">
-                    <p className="font-semibold">Esta ação não está disponível.</p>
-                    <p className="mt-1">
-                      O paciente está <strong>admitido</strong>. Registre primeiro a <strong>Alta Médica</strong> ou <strong>Óbito</strong> pelo Painel Clínico — depois você poderá liberar o leito por aqui.
-                    </p>
-                  </div>
+                {isExceptional ? (
+                  <>
+                    <div className="rounded-md border border-amber-500/50 bg-amber-50 dark:bg-amber-950/30 p-2 text-amber-900 dark:text-amber-100">
+                      <p className="font-semibold">Caminho excepcional (autonomia médica/administrativa)</p>
+                      <p className="mt-1">
+                        O paciente está marcado como <strong>admitido</strong> — sem alta/óbito persistido no sistema. Use este fluxo apenas quando a sinalização de alta no Painel não chegou a ser concluída (documento não assinado) ou em situação operacional crítica.
+                      </p>
+                    </div>
+                    <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+                      <li>O <strong>prontuário do paciente é preservado</strong> — nenhuma evolução/prescrição/exame é apagado.</li>
+                      <li>O movimento será registrado como <strong>LIBERAÇÃO ADMINISTRATIVA EXCEPCIONAL</strong> com sua justificativa, autor e horário.</li>
+                      <li>Será obrigatório <strong>descrever a justificativa</strong> (mínimo 10 caracteres) e <strong>confirmar com sua senha</strong>.</li>
+                      <li>Recomenda-se completar/registrar a alta médica formal pelo Painel Clínico assim que possível.</li>
+                    </ul>
+                  </>
                 ) : isPostDischarge ? (
                   <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
                     <li>O documento de <strong>{patient.admissionStatus === "obito" ? "óbito" : "alta"}</strong> já foi <strong>assinado e gravado</strong> no prontuário.</li>
@@ -206,11 +232,17 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       onOpenChange={(v) => (!submitting ? onOpenChange(v) : undefined)}
       onConfirm={goToPasswordStep}
       isSubmitting={submitting}
-      title={isPostDischarge ? "Liberar leito após alta/óbito" : "Liberar leito (pré-admissão)"}
+      title={
+        isExceptional
+          ? "Liberação excepcional do leito"
+          : isPostDischarge ? "Liberar leito após alta/óbito" : "Liberar leito (pré-admissão)"
+      }
       description={
-        isPostDischarge
-          ? "O documento clínico já foi registrado — esta etapa apenas libera o leito no mapa."
-          : "O paciente ainda não concluiu a admissão hospitalar — você pode desocupar o leito sem apagar o prontuário."
+        isExceptional
+          ? "Paciente admitido sem alta/óbito registrado. Justifique o motivo da liberação administrativa — ficará no histórico imutável."
+          : isPostDischarge
+            ? "O documento clínico já foi registrado — esta etapa apenas libera o leito no mapa."
+            : "O paciente ainda não concluiu a admissão hospitalar — você pode desocupar o leito sem apagar o prontuário."
       }
       tone="warning"
       confirmLabel="Avançar para senha"

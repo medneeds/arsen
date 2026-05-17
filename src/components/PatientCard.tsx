@@ -3392,8 +3392,8 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       Movimentações de alta, óbito e transferência são realizadas pelo Painel Clínico (Cockpit).
                     </p>
 
-                    {/* LIBERAR LEITO — habilitado para pré-admissão E para pós-alta/óbito (com senha) */}
-                    {patient.admissionStatus !== 'admitido' && onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (
+                    {/* LIBERAR LEITO — pré-admissão, pós-alta/óbito, ou excepcional (admin/médico) */}
+                    {onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
@@ -3406,12 +3406,16 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                           <span className="text-amber-700 dark:text-amber-300">
                             {patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito'
                               ? 'Liberar leito (pós-alta/óbito)'
-                              : 'Liberar leito (pré-admissão)'}
+                              : patient.admissionStatus === 'admitido'
+                                ? 'Liberar leito (excepcional)'
+                                : 'Liberar leito (pré-admissão)'}
                           </span>
                           <span className="text-[10px] font-normal text-muted-foreground">
                             {patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito'
                               ? 'Confirmação por senha — preserva o prontuário'
-                              : 'Desocupa o leito sem apagar o prontuário'}
+                              : patient.admissionStatus === 'admitido'
+                                ? 'Autonomia médica — exige justificativa + senha'
+                                : 'Desocupa o leito sem apagar o prontuário'}
                           </span>
                         </div>
                       </DropdownMenuItem>
