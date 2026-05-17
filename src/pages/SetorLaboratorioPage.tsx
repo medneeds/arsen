@@ -27,6 +27,7 @@ import { PlatformHeader } from "@/components/layout/PlatformHeader";
 import { useHospital } from "@/contexts/HospitalContext";
 import { SECTOR_BED_CONFIG, getSectorDisplayLabel } from "@/utils/bedNaming";
 import { printRequisitionGuide } from "@/components/PrintableRequisitionGuide";
+import { printRequisitionGuideWithGasometriaPrompt } from "@/lib/printRequisitionWithGasometriaPrompt";
 
 const getSectorLabel = getSectorDisplayLabel;
 
