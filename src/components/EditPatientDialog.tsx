@@ -161,6 +161,33 @@ export function EditPatientDialog({
 
           <div className="flex-1 overflow-y-auto px-1 -mx-1">
             <div className="space-y-4 py-3">
+              {/* Banner: PIS divergente (sincronização pendente) */}
+              {pisDiffCount > 0 && registryId && pisSource && (
+                <section className="p-3 rounded-lg border border-amber-400/70 bg-amber-50/80 dark:bg-amber-950/30">
+                  <div className="flex items-start gap-2.5">
+                    <RefreshCw className="h-4 w-4 text-amber-700 mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">
+                        {pisDiffCount} campo(s) do PIS pendentes de sincronização
+                      </p>
+                      <p className="text-[11px] text-amber-800/90 dark:text-amber-200/80 mt-0.5 leading-snug">
+                        Os dados vindos da pré-admissão (PIS) divergem do prontuário central.
+                        Revise e sincronize para manter o cadastro 100% alinhado.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setPisSyncOpen(true)}
+                      className="h-8 text-[11px] gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Revisar e sincronizar
+                    </Button>
+                  </div>
+                </section>
+              )}
+
               {/* Bloco 1: Identificação (somente leitura) */}
               <section className="space-y-2 p-3 rounded-lg border bg-muted/30">
                 <div className="flex items-center gap-2 text-sm font-semibold">
