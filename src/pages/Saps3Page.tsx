@@ -702,8 +702,15 @@ export default function Saps3Page() {
     // Resolve o problema "fichas preenchidas ontem não ficaram salvas para hoje":
     // ao reabrir /saps3 com o mesmo paciente, em vez de iniciar uma ficha nova,
     // entramos automaticamente em modo "completar SAPS pendente" da ficha mais recente.
+    //
+    // GUARDA: só auto-resume quando há `patientIdParam` (paciente JÁ ADMITIDO).
+    // No fluxo de NOVA pré-admissão (fromAllocation=true + preAdmissionId, sem patientId),
+    // o paciente ainda não existe em `patients` — auto-resume sequestraria o fluxo para
+    // "completar SAPS" e o handleSave cairia no early-return que só faz UPDATE no
+    // saps3_assessments, sem inserir o paciente no leito nem marcar a pré-admissão.
     (async () => {
       if (!hospitalId || !stateId) return;
+      if (!patientIdParam) return;
       let resumeQuery = supabase
         .from("saps3_assessments" as any)
         .select("id")
