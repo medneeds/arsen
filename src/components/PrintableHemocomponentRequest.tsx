@@ -656,7 +656,7 @@ export async function printHemocomponentRequest(
           if (k === "hemacias") body = `<div>${cb(c?.desleucocitado)} Desleucocitado / Filtrado</div><div>${cb(c?.lavado)} Lavado</div><div>${cb(c?.irradiado)} Irradiado</div>`;
           else if (k === "plaquetas") body = `<div>${cb(c?.desleucocitado)} Desleucocitado / Filtrado</div><div>${cb(c?.irradiado)} Irradiado</div>`;
           else if (k === "plasma") body = `<div class="muted-bold">Administração de:</div><div>${cb(c?.admin_schedule === "8_8h")} 8/8 Horas</div><div>${cb(c?.admin_schedule === "continuo")} Contínuo</div>`;
-          else body = `<div style="min-height:32pt">&nbsp;</div>`;
+          else body = `<div style="min-height:22pt">&nbsp;</div>`;
           return `<td colspan="3" class="cell">${body}</td>`;
         }).join("")}</tr>
         <tr>${COMPONENT_KEYS.map(() => `<td colspan="3" class="sub">Justificativa Laboratorial</td>`).join("")}</tr>
