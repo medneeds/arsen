@@ -59,6 +59,7 @@ import { printExtraPrescription } from "@/lib/printExtraPrescription";
 import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { usePatientLive } from "@/hooks/usePatientLive";
+import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 import {
   DndContext,
   closestCenter,
