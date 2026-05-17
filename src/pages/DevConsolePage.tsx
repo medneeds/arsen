@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Activity, Database, Users, AlertTriangle, Bot, Send, RefreshCw, ShieldAlert, Terminal, Sliders, ListChecks, ShieldCheck } from "lucide-react";
+import { Loader2, Activity, Database, Users, AlertTriangle, Bot, Send, RefreshCw, ShieldAlert, Terminal, Sliders, ListChecks, ShieldCheck, GitMerge } from "lucide-react";
 import { CustomizationTab } from "@/components/dev/CustomizationTab";
 import { PendenciesTab } from "@/components/dev/PendenciesTab";
+import { MergesTab } from "@/components/dev/MergesTab";
 import IpAllowlistPage from "@/pages/admin/IpAllowlistPage";
 import { toast } from "sonner";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -89,6 +90,7 @@ export default function DevConsolePage() {
                 { v: "pendencies", icon: ListChecks, label: "Pendências" },
                 { v: "health", icon: Activity, label: "Saúde" },
                 { v: "logs", icon: Database, label: "Logs" },
+                { v: "merges", icon: GitMerge, label: "Mesclagens" },
                 { v: "ai", icon: Bot, label: "Console IA" },
                 { v: "actions", icon: Users, label: "Ações" },
                 { v: "customization", icon: Sliders, label: "Personalização" },
@@ -108,6 +110,7 @@ export default function DevConsolePage() {
           <TabsContent value="pendencies"><PendenciesTab /></TabsContent>
           <TabsContent value="health"><HealthTab /></TabsContent>
           <TabsContent value="logs"><LogsTab /></TabsContent>
+          <TabsContent value="merges"><MergesTab /></TabsContent>
           <TabsContent value="ai"><AiTab /></TabsContent>
           <TabsContent value="actions"><ActionsTab /></TabsContent>
           <TabsContent value="customization"><CustomizationTab /></TabsContent>
