@@ -26,6 +26,7 @@ import { format, addDays, differenceInCalendarDays, startOfDay } from "date-fns"
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { SECTOR_BED_CONFIG } from "@/utils/bedNaming";
+import { PisRegistrySyncDialog, computePisDiff, type PisSourceRow } from "@/components/PisRegistrySyncDialog";
 
 interface PreAdmissionFull {
   id: string;
@@ -108,6 +109,10 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const [sectorFullAlert, setSectorFullAlert] = useState(false);
   const [extraBedRequested, setExtraBedRequested] = useState(false);
   const [bedsLoaded, setBedsLoaded] = useState(false);
+
+  // Sincronização PIS → patient_registry antes de admitir
+  const [pisSyncOpen, setPisSyncOpen] = useState(false);
+  const [pisSyncSkipped, setPisSyncSkipped] = useState(false);
 
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment, currentSectorCode } = useDepartment();
@@ -236,6 +241,36 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         variant: "destructive",
       });
       return;
+    }
+
+    // Sincronização PIS → patient_registry (antes da admissão)
+    // Se houver registry vinculado e divergência, abre diff. Se o usuário pular, segue direto.
+    if (!pisSyncSkipped && (fullData as any).patient_registry_id) {
+      try {
+        const { data: regRow } = await supabase
+          .from("patient_registry")
+          .select("id, full_name, social_name, mother_name, birth_date, sex, cpf, cns, phone, address, neighborhood, city, state, medical_record")
+          .eq("id", (fullData as any).patient_registry_id)
+          .maybeSingle();
+        const pisSrc: PisSourceRow = {
+          patient_name: fullData.patient_name,
+          social_name: fullData.social_name ?? null,
+          mother_name: fullData.mother_name,
+          birth_date: fullData.birth_date,
+          sex: fullData.sex,
+          cpf: fullData.cpf,
+          cns: fullData.cns,
+          phone: fullData.phone,
+          medical_record: fullData.medical_record,
+        };
+        const diff = computePisDiff(regRow as any, pisSrc);
+        if (diff.length > 0) {
+          setPisSyncOpen(true);
+          return;
+        }
+      } catch (e) {
+        console.warn("[admit-pis-check] ignorado:", e);
+      }
     }
 
     setIsSubmitting(true);
@@ -440,6 +475,7 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
   const airwayStatus = pa.airway_intubated ? "IOT/Intubado" : pa.airway_obstruction ? "Obstruída" : pa.airway_patent ? "Pérvias" : "—";
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
@@ -876,5 +912,30 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <PisRegistrySyncDialog
+      open={pisSyncOpen}
+      onOpenChange={setPisSyncOpen}
+      registryId={(fullData as any)?.patient_registry_id ?? null}
+      patientId={null}
+      pisSource={fullData ? {
+        patient_name: fullData.patient_name,
+        social_name: fullData.social_name ?? null,
+        mother_name: fullData.mother_name,
+        birth_date: fullData.birth_date,
+        sex: fullData.sex,
+        cpf: fullData.cpf,
+        cns: fullData.cns,
+        phone: fullData.phone,
+        medical_record: fullData.medical_record,
+      } : null}
+      contextLabel="Puxada da pré-admissão"
+      onResolved={() => {
+        // Após resolver (salvar ou pular), retoma a admissão sem reabrir o diff.
+        setPisSyncSkipped(true);
+        setTimeout(() => { void handleAdmit(); }, 50);
+      }}
+    />
+    </>
   );
 }
