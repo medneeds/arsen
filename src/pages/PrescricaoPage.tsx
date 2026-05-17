@@ -1992,6 +1992,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
           {item.isExtra && (
             <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-muted/50 text-muted-foreground border-border/50">EXTRA</Badge>
           )}
+          {item.printOnly && (
+            <Badge variant="outline" className="text-[8px] px-1 shrink-0 bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-300 dark:border-indigo-800">SÓ IMPRESSÃO</Badge>
+          )}
           {item.flags.length > 0 && item.flags.map(fk => {
             const f = PRESCRIPTION_FLAGS.find(pf => pf.key === fk);
             return f ? <Badge key={fk} variant="outline" className="text-[8px] px-1 shrink-0 text-muted-foreground border-border/50">{f.label}</Badge> : null;
