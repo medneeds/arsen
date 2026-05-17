@@ -5891,6 +5891,46 @@ const PrescricaoPage = () => {
     setRepeatSourceMeta(null);
   }, [repeatSelectedIds, repeatSourceItems]);
 
+  // === FASE 3.1 — Restaurar prescrição como rascunho (SOMAR sem duplicar) ===
+  // Mescla itens da prescrição-fonte na lista atual usando assinatura
+  // (name|dose|route|posology) normalizada. Itens já presentes são ignorados.
+  // NÃO sobrescreve assinatura nem cria nova versão — apenas adiciona em memória.
+  const restoreFromPrescription = useCallback((source: { id: string; version: number; items: PrescriptionItem[] }) => {
+    const norm = (s: string | undefined) => (s || "").trim().toUpperCase().replace(/\s+/g, " ");
+    const sig = (it: PrescriptionItem) =>
+      `${norm(it.name)}|${norm(it.dose)}|${norm(it.route)}|${norm(it.posology)}`;
+    const currentSigs = new Set(items.map(sig));
+    let added = 0;
+    let skipped = 0;
+    const cloned: PrescriptionItem[] = [];
+    for (const it of source.items) {
+      if (!it?.name) { skipped++; continue; }
+      if (currentSigs.has(sig(it))) { skipped++; continue; }
+      currentSigs.add(sig(it));
+      cloned.push({
+        ...it,
+        id: crypto.randomUUID(),
+        status: 'active',
+        suspensionReason: undefined,
+        suspendedAt: undefined,
+        validated: false,
+        validatedAt: undefined,
+        isExtra: false,
+      });
+      added++;
+    }
+    if (added === 0) {
+      toast.info("Nenhum item novo para somar", {
+        description: skipped > 0 ? `${skipped} item(ns) já existem no rascunho atual.` : undefined,
+      });
+      return;
+    }
+    setItems(prev => [...prev, ...cloned]);
+    toast.success(`v${source.version} restaurada — ${added} item(ns) somado(s)`, {
+      description: skipped > 0 ? `${skipped} duplicado(s) ignorado(s).` : "Revise e assine quando estiver pronto.",
+    });
+  }, [items]);
+
   // Keep keyboard-shortcut handlers in sync with latest closures
   useEffect(() => {
     shortcutHandlersRef.current = {
