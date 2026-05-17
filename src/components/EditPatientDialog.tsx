@@ -445,6 +445,18 @@ export function EditPatientDialog({
           onOpenChange(false);
         }}
       />
+      <PisRegistrySyncDialog
+        open={pisSyncOpen}
+        onOpenChange={setPisSyncOpen}
+        registryId={registryId}
+        patientId={patient.id}
+        pisSource={pisSource}
+        contextLabel="Edição Avançada"
+        onResolved={() => {
+          // Re-checa para esconder o banner se tudo foi sincronizado
+          setCheckNonce((n) => n + 1);
+        }}
+      />
     </>
   );
 }
