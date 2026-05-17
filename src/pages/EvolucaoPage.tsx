@@ -128,6 +128,8 @@ const EvolucaoPage = () => {
   const [newSoap, setNewSoap] = useState({ subjective: "", objective: "", assessment: "", plan: "" });
   const [newVitals, setNewVitals] = useState({ pa: "", fc: "", fr: "", temp: "", spo2: "", glasgow: "", diurese: "", dor: "" });
   const [newExam, setNewExam] = useState({ general: "", cardiovascular: "", respiratory: "", abdomen: "", neurological: "", extremities: "", skin: "", other: "" });
+  const [newDevices, setNewDevices] = useState<import("@/lib/devicesCatalog").EvolutionDevice[]>([]);
+  const [newCulturesHtml, setNewCulturesHtml] = useState("");
   const [creating, setCreating] = useState(false);
   const [diagnosticsReplicated, setDiagnosticsReplicated] = useState(false);
   const [diagnosticHypotheses, setDiagnosticHypotheses] = useState("");
