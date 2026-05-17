@@ -5646,15 +5646,18 @@ const PrescricaoPage = () => {
     (async () => {
       try {
         const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        const { data, error } = await supabase
+        let alQ = supabase
           .from('prescriptions')
           .select('id, created_at, items')
           .eq('hospital_unit_id', currentHospital.id)
           .eq('state_id', currentState.id)
-          .eq('patient_name', patient.name.trim())
           .gte('created_at', since)
           .order('created_at', { ascending: false })
           .limit(1);
+        alQ = patientRegistryId
+          ? alQ.eq('patient_registry_id', patientRegistryId)
+          : alQ.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
+        const { data, error } = await alQ;
         if (error) throw error;
         const last = (data || [])[0];
         // ⚠️  Não carregar drafts vazios — eles sobrescrevem o demo (L09-L18) e
