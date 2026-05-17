@@ -31,22 +31,25 @@ export type ScanMember = {
 };
 
 export type ScanGroup = {
-  rule: "R1" | "R2" | "R3" | "R4" | "R5" | "R6";
+  rule: "R1" | "R2" | "R3" | "R4" | "R5" | "R6" | "R7" | "R8";
   key: string;
   group_hash: string;
   members: ScanMember[];
   member_count: number;
   both_with_bed: boolean;
   sectors: string[] | null;
+  requires_human_review?: boolean;
 };
 
 const RULE_LABEL: Record<ScanGroup["rule"], { text: string; tone: string }> = {
-  R1: { text: "CPF idêntico", tone: "bg-emerald-600 text-white" },
-  R2: { text: "CNS idêntico", tone: "bg-emerald-600 text-white" },
+  R1: { text: "CPF idêntico (normalizado)", tone: "bg-emerald-600 text-white" },
+  R2: { text: "CNS idêntico (normalizado)", tone: "bg-emerald-600 text-white" },
   R3: { text: "Nome + DOB + Mãe", tone: "bg-blue-600 text-white" },
   R4: { text: "Nome + DOB", tone: "bg-amber-600 text-white" },
   R5: { text: "Prontuário legado igual", tone: "bg-violet-600 text-white" },
   R6: { text: "Similaridade fonética", tone: "bg-slate-600 text-white" },
+  R7: { text: "Prontuário (só dígitos) igual", tone: "bg-teal-600 text-white" },
+  R8: { text: "Homônimo/familiar (sem DOB)", tone: "bg-orange-600 text-white" },
 };
 
 const COMPARE_FIELDS: { key: keyof ScanMember; label: string }[] = [
