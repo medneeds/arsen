@@ -192,6 +192,16 @@ const EvolucaoPage = () => {
     }
     // Prefill hipóteses (vindas da última evolução com hipóteses ou da admissão)
     setDiagnosticHypotheses(computePrefillHypotheses());
+    // Prefill dispositivos & culturas a partir da última evolução com esses dados
+    const lastWithDevicesOrCultures = evolutions.find((e) => {
+      const s: any = e.soap_data || {};
+      return (Array.isArray(s.devices) && s.devices.length > 0) || !!s.culturesHtml;
+    });
+    if (lastWithDevicesOrCultures) {
+      const s: any = lastWithDevicesOrCultures.soap_data || {};
+      if (Array.isArray(s.devices)) setNewDevices(s.devices);
+      if (typeof s.culturesHtml === "string") setNewCulturesHtml(s.culturesHtml);
+    }
   };
 
   const handleClearDiagnostics = () => {
