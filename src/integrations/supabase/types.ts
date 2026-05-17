@@ -1583,6 +1583,7 @@ export type Database = {
           hospital_unit_id: string | null
           id: string
           is_legacy: boolean
+          is_primary: boolean
           numero_base: string | null
           numero_prontuario: string
           numero_prontuario_legado: string | null
@@ -1601,6 +1602,7 @@ export type Database = {
           hospital_unit_id?: string | null
           id?: string
           is_legacy?: boolean
+          is_primary?: boolean
           numero_base?: string | null
           numero_prontuario: string
           numero_prontuario_legado?: string | null
@@ -1619,6 +1621,7 @@ export type Database = {
           hospital_unit_id?: string | null
           id?: string
           is_legacy?: boolean
+          is_primary?: boolean
           numero_base?: string | null
           numero_prontuario?: string
           numero_prontuario_legado?: string | null
@@ -4720,6 +4723,16 @@ export type Database = {
       is_username_available: {
         Args: { p_exclude_user?: string; p_username: string }
         Returns: boolean
+      }
+      merge_patient_registries: {
+        Args: {
+          p_field_choices: Json
+          p_loser_id: string
+          p_predominant_medical_record_id: string
+          p_reason: string
+          p_winner_id: string
+        }
+        Returns: Json
       }
       merge_unidentified_patient: {
         Args: { p_ni_id: string; p_target_id: string }
