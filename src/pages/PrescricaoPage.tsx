@@ -2831,6 +2831,10 @@ function ExtraPrescriptionDialog({
     }));
   };
 
+  const toggleExtraPrintOnly = (id: string) => {
+    setExtraItems(prev => prev.map(i => i.id === id ? { ...i, printOnly: !i.printOnly } : i));
+  };
+
   const removeExtraItem = (id: string) => {
     setExtraItems(prev => prev.filter(i => i.id !== id));
   };
