@@ -4617,15 +4617,19 @@ const PrescricaoPage = () => {
     try {
       // Check if patient already has an active encounter
       const patientId = searchParams.get('patientId');
-      const { data: existing } = await supabase
+      const registryUuid = asUuidOrNull(patientId);
+      let existingQ = supabase
         .from('patient_encounters')
         .select('encounter_code')
         .eq('hospital_unit_id', currentHospital.id)
         .eq('state_id', currentState.id)
-        .eq('patient_name', patient.name.trim())
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(1);
+      existingQ = registryUuid
+        ? existingQ.eq('registry_id', registryUuid)
+        : existingQ.eq('patient_name', patient.name.trim()).is('registry_id', null);
+      const { data: existing } = await existingQ;
       
       if (existing && existing.length > 0) {
         setPatient(prev => ({ ...prev, encounterCode: existing[0].encounter_code }));
@@ -4637,7 +4641,8 @@ const PrescricaoPage = () => {
         .from('patient_encounters')
         .insert({
           patient_name: patient.name.trim(),
-          patient_id: asUuidOrNull(patientId) ?? undefined,
+          patient_id: registryUuid ?? undefined,
+          registry_id: registryUuid ?? undefined,
           hospital_unit_id: currentHospital.id,
           state_id: currentState.id,
           created_by: user?.id || undefined,
