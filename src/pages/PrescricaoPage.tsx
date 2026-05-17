@@ -4163,7 +4163,32 @@ const PrescricaoPage = () => {
       };
 
       if (mode === 'newVersion' && currentPrescriptionId) {
-...
+        // Busca version atual para incrementar
+        let nextVersion = 2;
+        try {
+          const { data: parentData } = await supabase
+            .from('prescriptions')
+            .select('version')
+            .eq('id', currentPrescriptionId)
+            .single();
+          nextVersion = ((parentData as any)?.version || 1) + 1;
+        } catch {}
+        const { data, error } = await supabase
+          .from('prescriptions')
+          .insert({
+            ...basePayload,
+            version: nextVersion,
+            parent_id: currentPrescriptionId,
+          } as any)
+          .select('id')
+          .single();
+        if (error) throw error;
+        if (data) {
+          setCurrentPrescriptionId(data.id);
+        }
+        return;
+      }
+
       if (currentPrescriptionId) {
         // 🔒 B1 — blindagem: nunca rebaixar uma prescrição já SIGNED via update.
         // Só permite update se for newVersion (tratado acima) OU se o caller traz uma
