@@ -1899,7 +1899,9 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
         compactParts.push(dil);
       }
       if (item.volumeTotal) compactParts.push(`vol ${item.volumeTotal}mL`);
-      if (item.infusionTime) {
+      if (item.ivBolus) {
+        compactParts.push('EV em bolus');
+      } else if (item.infusionTime) {
         const tUnit = item.infusionTimeUnit === 'h' ? 'h' : 'min';
         let inf = `correr em ${item.infusionTime}${tUnit}`;
         if (item.infusionRate) {
