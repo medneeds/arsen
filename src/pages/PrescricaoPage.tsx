@@ -5688,7 +5688,16 @@ const PrescricaoPage = () => {
         .single();
       if (error) throw error;
       if (data) {
-        setPatient(data.patient_data as unknown as PatientHeader);
+        // ⚠️  Preserva LEITO + UNIDADE vivos (vindos do `patients` via
+        // usePatientLive) — nunca herda o snapshot histórico do `patient_data`,
+        // que pode estar desatualizado se o paciente foi relocado desde a
+        // gravação. Mesma blindagem usada para imprimir admissão/evolução.
+        const snapshot = data.patient_data as unknown as PatientHeader;
+        setPatient(prev => ({
+          ...snapshot,
+          bed: prev.bed || snapshot.bed,
+          unit: prev.unit || snapshot.unit,
+        }));
         setItems(data.items as unknown as PrescriptionItem[]);
         setDigitalSignature(data.digital_signature as unknown as DigitalSignature | null);
         setCurrentPrescriptionId(data.id);
