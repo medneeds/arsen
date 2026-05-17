@@ -8113,7 +8113,53 @@ const PrescricaoPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Fase E: pop-up didático "esquema ATB termina hoje" */}
+      <AlertDialog
+        open={atbEndNotice.open}
+        onOpenChange={(v) => setAtbEndNotice(prev => ({ ...prev, open: v }))}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Esquema antimicrobiano termina hoje</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <div className="rounded-md border-l-[3px] border-l-amber-500 bg-amber-50/70 dark:bg-amber-950/30 p-2 text-xs leading-relaxed">
+                  Os seguintes esquemas chegam ao <strong>último dia previsto</strong> nesta data.
+                  Avalie a conduta: <strong>suspensão</strong>, <strong>descalonamento</strong>,
+                  <strong> troca para via oral</strong> ou <strong>prorrogação justificada</strong>
+                  (com novo registro de duração e indicação clínica).
+                </div>
+                <div className="rounded-md border bg-muted/40 p-2 text-xs">
+                  <div className="font-semibold mb-1">Esquemas que terminam hoje:</div>
+                  <ul className="list-disc pl-4 space-y-0.5">
+                    {atbEndNotice.schemes.map((s, i) => {
+                      const [y, m, d] = s.startDate.split('-');
+                      const startBr = (y && m && d) ? `${d}/${m}/${y}` : s.startDate;
+                      return (
+                        <li key={i}>
+                          <strong>{s.name}</strong> — início {startBr} (D{s.dayN}/{s.total})
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Este aviso aparece apenas uma vez por paciente a cada dia. Nenhuma alteração foi feita
+                  na prescrição — a decisão clínica é sua.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setAtbEndNotice(prev => ({ ...prev, open: false }))}>
+              Ciente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Dialog open={quickTemplatesDialogOpen} onOpenChange={setQuickTemplatesDialogOpen}>
+
         <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
