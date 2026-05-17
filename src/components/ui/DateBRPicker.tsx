@@ -81,6 +81,8 @@ export function DateBRPicker({
   className,
   allowClear = true,
   allowPast = true,
+  presetsPlacement = "below",
+  presetsLabel = "A partir da admissão no setor:",
 }: DateBRPickerProps) {
   const [open, setOpen] = useState(false);
   const [internal, setInternal] = useState(value || "");
