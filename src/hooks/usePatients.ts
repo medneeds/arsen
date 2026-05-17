@@ -481,20 +481,30 @@ export function usePatients(department?: Department, sector?: string) {
         .eq('id', patientId)
         .maybeSingle();
 
+      const currentStatus = (full as any)?.admission_status;
       const isPostDischargeRelease =
-        (full as any)?.admission_status === 'alta_dada' || (full as any)?.admission_status === 'obito';
+        currentStatus === 'alta_dada' || currentStatus === 'obito';
+      const isExceptionalRelease = currentStatus === 'admitido';
 
       // 1) Audita a ação
       const reasonLabel = opts.reason || 'Liberação de pré-admissão';
       const noteLines = [reasonLabel, opts.reasonNote].filter(Boolean).join(' — ');
+      const movementType = isExceptionalRelease
+        ? 'LIBERAÇÃO ADMINISTRATIVA EXCEPCIONAL'
+        : isPostDischargeRelease
+          ? 'LIBERAÇÃO PÓS-ALTA/ÓBITO'
+          : 'LIBERAÇÃO PRÉ-ADMISSÃO';
+      const destinationLabel = isExceptionalRelease
+        ? 'PRONTUÁRIO PRESERVADO — LEITO LIBERADO SEM ALTA FORMAL'
+        : 'PRONTUÁRIO PRESERVADO — LEITO LIBERADO';
       const { error: movementError } = await supabase.from('patient_movements').insert({
         patient_id: patientId,
         patient_registry_id: (full as any)?.patient_registry_id ?? null,
         patient_name: (full as any)?.name || target?.name || '',
         patient_bed: (full as any)?.bed_number || target?.bedNumber || null,
         patient_sector: (full as any)?.sector || target?.sector || null,
-        movement_type: isPostDischargeRelease ? 'LIBERAÇÃO PÓS-ALTA/ÓBITO' : 'LIBERAÇÃO PRÉ-ADMISSÃO',
-        destination: 'PRONTUÁRIO PRESERVADO — LEITO LIBERADO',
+        movement_type: movementType,
+        destination: destinationLabel,
         notes: noteLines || null,
         responsible_doctor: null,
         created_by: authUser?.id ?? null,
