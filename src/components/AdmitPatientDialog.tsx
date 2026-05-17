@@ -912,5 +912,30 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <PisRegistrySyncDialog
+      open={pisSyncOpen}
+      onOpenChange={setPisSyncOpen}
+      registryId={(fullData as any)?.patient_registry_id ?? null}
+      patientId={null}
+      pisSource={fullData ? {
+        patient_name: fullData.patient_name,
+        social_name: fullData.social_name ?? null,
+        mother_name: fullData.mother_name,
+        birth_date: fullData.birth_date,
+        sex: fullData.sex,
+        cpf: fullData.cpf,
+        cns: fullData.cns,
+        phone: fullData.phone,
+        medical_record: fullData.medical_record,
+      } : null}
+      contextLabel="Puxada da pré-admissão"
+      onResolved={() => {
+        // Após resolver (salvar ou pular), retoma a admissão sem reabrir o diff.
+        setPisSyncSkipped(true);
+        setTimeout(() => { void handleAdmit(); }, 50);
+      }}
+    />
+    </>
   );
 }
