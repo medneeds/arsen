@@ -109,7 +109,8 @@ export function PatientIdentityHeader({
       )}>
         <div className="min-w-0 flex-1">
           <h3 className={cn(
-            "patient-id font-bold leading-tight text-foreground truncate",
+            "patient-id font-bold leading-tight text-foreground",
+            alwaysExpanded ? "text-base sm:text-lg break-words" : "truncate",
             isCockpit ? "text-sm" : "text-base"
           )}>
             {displayName}

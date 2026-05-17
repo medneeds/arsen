@@ -148,7 +148,7 @@ export function EditPatientDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="text-base sm:text-lg flex items-center gap-2">
               <BedDouble className="h-5 w-5 text-primary" />
@@ -189,46 +189,13 @@ export function EditPatientDialog({
                 </section>
               )}
 
-              {/* Bloco 1: Identificação (somente leitura) */}
-              <section className="space-y-2 p-3 rounded-lg border bg-muted/30">
-                <div className="flex items-center gap-2 text-sm font-semibold">
-                  <IdCard className="h-4 w-4 text-primary" />
-                  Identificação do Leito
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <p className="text-muted-foreground">Setor</p>
-                    <p className="font-medium uppercase">{sectorLabel}</p>
+              {/* Bloco 1: Identificação (somente leitura) — painel cadastral completo sincronizado com o Cockpit */}
+              <section className="space-y-3 px-3 py-3 rounded-lg border bg-muted/30">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <IdCard className="h-4 w-4 text-primary" />
+                    Identificação do Paciente
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Leito</p>
-                    <p className="font-medium uppercase">{patient.bedNumber}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-muted-foreground">Paciente</p>
-                    <p className="font-medium uppercase">
-                      {patient.name || "—"}
-                    </p>
-                </div>
-                {/* Painel cadastral completo (sempre visível) — sincronizado com Cockpit */}
-                <div className="pt-2 border-t border-border/40">
-                  <PatientIdentityHeader
-                    patientId={patient.id}
-                    fallbackName={patient.name}
-                    fallbackBed={patient.bedNumber}
-                    fallbackSector={patient.sector}
-                    fallbackClinicalStatus={patient.clinicalStatus}
-                    variant="dialog"
-                    alwaysExpanded
-                    showFullDetailsToggle={false}
-                  />
-                </div>
-                </div>
-                <div className="flex items-center justify-between gap-2 pt-1">
-                  <p className="text-[10px] text-muted-foreground italic flex-1">
-                    Nome e código de atendimento são definidos no fluxo de admissão. O
-                    número do prontuário pode ser editado abaixo (auditado).
-                  </p>
                   {patient.name && (
                     <Button
                       type="button"
@@ -242,6 +209,23 @@ export function EditPatientDialog({
                     </Button>
                   )}
                 </div>
+
+                <PatientIdentityHeader
+                  patientId={patient.id}
+                  fallbackName={patient.name}
+                  fallbackBed={patient.bedNumber}
+                  fallbackSector={patient.sector}
+                  fallbackClinicalStatus={patient.clinicalStatus}
+                  variant="dialog"
+                  alwaysExpanded
+                  showFullDetailsToggle={false}
+                />
+
+                <p className="text-[10px] text-muted-foreground italic leading-snug">
+                  Nome e código de atendimento são definidos no fluxo de admissão. O número do prontuário
+                  pode ser editado pelo botão acima (auditado). Use este painel para conferir se o cadastro
+                  está completo antes de prescrever ou evoluir.
+                </p>
               </section>
 
               {/* Bloco 2: Dados Administrativos */}
