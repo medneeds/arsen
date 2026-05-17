@@ -45,6 +45,7 @@ const DhdRegistrationPage = lazy(() => import("./pages/DhdRegistrationPage"));
 const DhdHistoryPage = lazy(() => import("./pages/DhdHistoryPage"));
 const AuditLogsPage = lazy(() => import("./pages/AuditLogsPage"));
 const UserManagementPage = lazy(() => import("./pages/UserManagementPage"));
+const MergeRegistriesPage = lazy(() => import("./pages/MergeRegistriesPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const AdminStatesPage = lazy(() => import("./pages/AdminStatesPage"));
 const AdminUnitsPage = lazy(() => import("./pages/AdminUnitsPage"));
