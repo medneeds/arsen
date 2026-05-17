@@ -148,7 +148,7 @@ export function EditPatientDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="text-base sm:text-lg flex items-center gap-2">
               <BedDouble className="h-5 w-5 text-primary" />
