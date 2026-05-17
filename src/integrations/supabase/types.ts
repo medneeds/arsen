@@ -4761,6 +4761,16 @@ export type Database = {
         }
         Returns: Json
       }
+      scan_duplicate_registries: {
+        Args: {
+          p_include_similarity?: boolean
+          p_limit_groups?: number
+          p_rules?: string[]
+          p_sector_code?: string
+          p_similarity_threshold?: number
+        }
+        Returns: Json
+      }
       search_movements_global: {
         Args: {
           p_hospital_unit_id: string
