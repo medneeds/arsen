@@ -1291,7 +1291,7 @@ const RequisicaoUnificadaPage = () => {
                 size="sm"
                 variant="outline"
                 className="gap-1.5 text-xs mr-auto"
-                onClick={() => printRequisitionGuide(viewingRequest, (s) => getSectorLabel(s))}
+                onClick={() => printRequisitionGuideWithGasometriaPrompt(viewingRequest, (s) => getSectorLabel(s))}
               >
                 <Printer className="h-3.5 w-3.5" /> Imprimir Guia
               </Button>
