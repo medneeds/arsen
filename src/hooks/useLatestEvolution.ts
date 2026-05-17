@@ -2,6 +2,13 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+export interface LatestEvolutionDevice {
+  id: string;
+  label: string;
+  insertedAt: string;
+  custom?: boolean;
+}
+
 export interface LatestEvolutionSummary {
   id: string;
   status: string;
@@ -10,6 +17,10 @@ export interface LatestEvolutionSummary {
   validatedAt: string | null;
   /** SOAP "A" (avaliação) ou primeiro trecho útil para preview */
   preview: string;
+  /** Dispositivos invasivos registrados na última evolução (JSONB extra). */
+  devices: LatestEvolutionDevice[];
+  /** HTML rico com resultados de culturas registrados na última evolução. */
+  culturesHtml: string;
 }
 
 /**
