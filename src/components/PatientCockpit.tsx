@@ -43,6 +43,8 @@ import { MedicalRecordEditDialog } from "./MedicalRecordEditDialog";
 import { PatientMovementDialog } from "./PatientMovementDialog";
 import { Printer } from "lucide-react";
 import { PatientIdentityHeader } from "./PatientIdentityHeader";
+import { SuspendDischargeDialog } from "./SuspendDischargeDialog";
+import { Ban } from "lucide-react";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 
 interface PatientCockpitProps {
