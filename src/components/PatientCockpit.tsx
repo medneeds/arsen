@@ -952,6 +952,7 @@ function DischargeQuickActions({ patientId, patientName, fallback }: { patientId
   const { data: docs } = usePatientDischargeDocs(patientId, patientName);
   const latestAlta = docs?.find((d) => d.document_type === "alta_hospitalar" || d.document_type === "alta_pedido");
   const latestObito = docs?.find((d) => d.document_type === "obito");
+  const [suspendOpen, setSuspendOpen] = useState(false);
 
   if (latestObito) {
     return (
@@ -963,10 +964,34 @@ function DischargeQuickActions({ patientId, patientName, fallback }: { patientId
   }
   if (latestAlta) {
     return (
-      <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
-        onClick={() => printDischargeDocument(latestAlta.document_type, latestAlta.content)}>
-        <FileSignature className="h-3.5 w-3.5" /> Ver alta ({DISCHARGE_DOC_SHORT[latestAlta.document_type]})
-      </Button>
+      <>
+        <div className="grid grid-cols-2 gap-1.5 w-full">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs gap-1.5 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+            onClick={() => printDischargeDocument(latestAlta.document_type, latestAlta.content)}
+          >
+            <FileSignature className="h-3.5 w-3.5" /> Ver alta ({DISCHARGE_DOC_SHORT[latestAlta.document_type]})
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs gap-1.5 border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+            onClick={() => setSuspendOpen(true)}
+          >
+            <Ban className="h-3.5 w-3.5" /> Suspender alta
+          </Button>
+        </div>
+        <SuspendDischargeDialog
+          open={suspendOpen}
+          onOpenChange={setSuspendOpen}
+          docId={latestAlta.id}
+          patientId={patientId}
+          patientName={patientName}
+          docTypeLabel={DISCHARGE_DOC_SHORT[latestAlta.document_type]}
+        />
+      </>
     );
   }
   return (
