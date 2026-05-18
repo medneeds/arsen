@@ -20,6 +20,7 @@ export function usePatientDischargeDocs(patientId?: string | null, patientName?:
       let q = supabase
         .from("discharge_documents")
         .select("id, document_type, patient_name, signed_by_name, signed_by_crm, signed_at, content")
+        .is("suspended_at", null)
         .order("signed_at", { ascending: false })
         .limit(10);
       if (patientId) q = q.eq("patient_id", patientId);
