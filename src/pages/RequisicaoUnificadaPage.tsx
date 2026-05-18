@@ -1438,6 +1438,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
 
   const [apacPatientName, setApacPatientName] = useState(initialPatientName);
   const [patientRecord, setPatientRecord] = useState("");
+  const [patientCPF, setPatientCPF] = useState("");
   const [patientCNS, setPatientCNS] = useState("");
   const [patientDOB, setPatientDOB] = useState("");
   const [patientSex, setPatientSex] = useState("");
@@ -1467,6 +1468,67 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     };
     load();
   }, [user]);
+
+  // Auto-hidratação do prontuário do paciente vinculado (patient_registry via patients.patient_registry_id)
+  useEffect(() => {
+    const validPid = asUuidOrNull(patientId);
+    if (!validPid) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: pat } = await supabase
+          .from("patients")
+          .select("patient_registry_id, medical_record, name")
+          .eq("id", validPid)
+          .maybeSingle();
+        if (!pat || cancelled) return;
+        const registryId = (pat as any).patient_registry_id as string | null;
+
+        // Diagnóstico/CID via admissão mais recente
+        const { data: adm } = await supabase
+          .from("admission_histories")
+          .select("diagnostic_hypothesis, primary_cid10, secondary_cid10")
+          .eq("patient_id", validPid)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (adm && !cancelled) {
+          setDiagnosis(prev => prev || (adm as any).diagnostic_hypothesis || "");
+          setCidPrimary(prev => prev || (adm as any).primary_cid10 || "");
+          setCidSecondary(prev => prev || (adm as any).secondary_cid10 || "");
+        }
+
+        if (!registryId) {
+          // Sem registry: ao menos hidrata prontuário se vier no patients
+          if ((pat as any).medical_record) setPatientRecord(prev => prev || (pat as any).medical_record);
+          return;
+        }
+
+        const { data: reg } = await supabase
+          .from("patient_registry")
+          .select("medical_record, full_name, cpf, cns, birth_date, sex, mother_name, phone, address, city, state")
+          .eq("id", registryId)
+          .maybeSingle();
+        if (!reg || cancelled) return;
+
+        const r = reg as any;
+        setPatientRecord(prev => prev || r.medical_record || (pat as any).medical_record || "");
+        setApacPatientName(prev => prev || r.full_name || "");
+        setPatientCPF(prev => prev || r.cpf || "");
+        setPatientCNS(prev => prev || r.cns || "");
+        setPatientDOB(prev => prev || (r.birth_date ? String(r.birth_date).slice(0, 10) : ""));
+        setPatientSex(prev => prev || (r.sex === "M" || r.sex === "F" ? r.sex : ""));
+        setPatientMotherName(prev => prev || r.mother_name || "");
+        setPatientPhone(prev => prev || r.phone || "");
+        setPatientAddress(prev => prev || r.address || "");
+        if (r.city) setPatientCity(prev => (prev && prev !== "São Luís" ? prev : r.city));
+        if (r.state) setPatientUF(prev => (prev && prev !== "MA" ? prev : r.state));
+      } catch {
+        /* hidratação silenciosa */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [patientId]);
 
   const addProcedure = (proc: { code: string; name: string }) => {
     if (selectedProcedures.find((p) => p.code === proc.code)) { toast.info("Procedimento já adicionado"); return; }
