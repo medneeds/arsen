@@ -1468,7 +1468,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
     if (!needsPicker || !currentHospital?.id || !currentState?.id) return;
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from("patients")
         .select("id, name, bed_number, sector, medical_record")
         .eq("unit_id", currentHospital.id)
