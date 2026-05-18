@@ -205,6 +205,8 @@ export function UtiReallocationDialog({
           uti_daily_conducts: null,
           clinical_status: null,
           psm_status: null,
+          // Limpa flag de desfecho na origem para não deixar tarja órfã caso o leito seja reocupado.
+          admission_status: null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', patient.id);
