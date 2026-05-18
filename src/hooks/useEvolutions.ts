@@ -8,6 +8,7 @@ import { parseDiagnosesText } from "@/lib/diagnosesText";
 export interface EvolutionRecord {
   id: string;
   patient_id: string | null;
+  patient_registry_id?: string | null;
   patient_name: string;
   patient_bed: string | null;
   patient_sector: string | null;
