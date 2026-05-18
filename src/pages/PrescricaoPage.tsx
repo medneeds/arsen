@@ -7929,8 +7929,15 @@ const PrescricaoPage = () => {
           </span>
         </div>
         <div className="flex gap-2">
-          {/* "Renovar", "Salvar" e "Assinar" removidos — renovação e salvamento são automáticos;
-              a assinatura legal é manual (carimbo + caneta) no PDF impresso. O ato no sistema é VALIDAR. */}
+          <Button
+            size="sm"
+            onClick={handleRequestSign}
+            disabled={!canPrescribe || !!digitalSignature || activeItemsCount === 0}
+            className="gap-1.5 text-xs"
+          >
+            <ShieldCheck className="h-3.5 w-3.5" />
+            {digitalSignature ? "Assinada" : "Assinar Prescrição"}
+          </Button>
         </div>
       </div>
 
