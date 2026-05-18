@@ -36,6 +36,11 @@ interface Props {
   activeItems: AtmStatusItem[];
   onSuspendItem?: (itemId: string) => void;
   /**
+   * Reimpressão (2ª via) da Guia ATM de um antibiótico já validado e em curso.
+   * Usa dados preservados no item; campos não persistidos saem em branco.
+   */
+  onReprintItem?: (item: AtmStatusItem) => void;
+  /**
    * Dispara o fluxo de nova ATB. Recebe o modo escolhido e os ids selecionados
    * para suspensão (apenas em modo 'troca').
    */
