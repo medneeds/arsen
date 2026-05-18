@@ -113,6 +113,7 @@ export default function DevConsolePage() {
           <TabsContent value="health"><HealthTab /></TabsContent>
           <TabsContent value="logs"><LogsTab /></TabsContent>
           <TabsContent value="merges"><MergesTab /></TabsContent>
+          <TabsContent value="signaling"><ClearSignalingTab /></TabsContent>
           <TabsContent value="ai"><AiTab /></TabsContent>
           <TabsContent value="actions"><ActionsTab /></TabsContent>
           <TabsContent value="customization"><CustomizationTab /></TabsContent>
