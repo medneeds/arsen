@@ -1460,6 +1460,34 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const [patientCity, setPatientCity] = useState("São Luís");
   const [patientUF, setPatientUF] = useState("MA");
 
+  // ── Seletor de paciente (apenas quando entrou em /requisicoes sem patientId) ──
+  const [unitPatients, setUnitPatients] = useState<Array<{ id: string; name: string; bed_number: string | null; sector: string | null; medical_record: string | null }>>([]);
+  const [pickerSearch, setPickerSearch] = useState("");
+  const needsPicker = !asUuidOrNull(patientId);
+  useEffect(() => {
+    if (!needsPicker || !currentHospital?.id || !currentState?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("patients")
+        .select("id, name, bed_number, sector, medical_record")
+        .eq("unit_id", currentHospital.id)
+        .eq("state_id", currentState.id)
+        .order("bed_number", { ascending: true })
+        .limit(500);
+      if (!cancelled && data) setUnitPatients(data as any);
+    })();
+    return () => { cancelled = true; };
+  }, [needsPicker, currentHospital?.id, currentState?.id]);
+  const filteredPickerPatients = useMemo(() => {
+    const q = pickerSearch.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (!q) return unitPatients.slice(0, 50);
+    return unitPatients.filter(p => {
+      const hay = `${p.name || ""} ${p.bed_number || ""} ${p.medical_record || ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return hay.includes(q);
+    }).slice(0, 50);
+  }, [unitPatients, pickerSearch]);
+
   const [selectedProcedures, setSelectedProcedures] = useState<ApacSelectedProcedure[]>([]);
   const [searchProcedure, setSearchProcedure] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
