@@ -25,7 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { ANTIMICROBIAL_OPTIONS, type MedicationEntry } from "@/data/medicationsDatabase";
 import { useUnifiedMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
-import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { printAtmGuide } from "@/lib/printAtmGuide";
 import { cn } from "@/lib/utils";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 
