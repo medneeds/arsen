@@ -1922,7 +1922,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                 <td colSpan={2}><span className="lbl">4 — Nº do Prontuário</span><div className="val">{patientRecord}</div></td>
               </tr>
               <tr>
-                <td colSpan={2}><span className="lbl">5 — Cartão Nacional de Saúde (CNS)</span><div className="val">{patientCNS}</div></td>
+                <td><span className="lbl">5a — CPF</span><div className="val-mono">{patientCPF}</div></td>
+                <td><span className="lbl">5 — Cartão Nacional de Saúde (CNS)</span><div className="val">{patientCNS}</div></td>
                 <td><span className="lbl">6 — Data de Nascimento</span><div className="val">{patientDOB ? format(new Date(patientDOB + "T12:00:00"), "dd/MM/yyyy") : ""}</div></td>
                 <td colSpan={2}><span className="lbl">7 — Sexo</span><div className="val">{patientSex === "M" ? "Masculino" : patientSex === "F" ? "Feminino" : ""}</div></td>
               </tr>
