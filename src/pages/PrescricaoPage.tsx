@@ -8160,6 +8160,31 @@ const PrescricaoPage = () => {
           setItems(prev => prev.map(it => it.id === id ? { ...it, status: 'suspended' } : it));
           toast.success("Antibiótico suspenso");
         }}
+        onReprintItem={async (it) => {
+          try {
+            const { printAtmGuide } = await import("@/lib/printAtmGuide");
+            await printAtmGuide({
+              patient,
+              entries: [{
+                medication: it.name,
+                dose: it.dose,
+                route: it.route,
+                posology: it.posology,
+                startDate: it.atbStartDate,
+                plannedDuration: it.atbPlannedDays,
+                infectionSite: it.atbInfectionSite,
+              }],
+              doctorName: digitalSignature?.doctorName || '',
+              doctorCrm: digitalSignature?.crm || '',
+              hospitalName: currentHospital?.name,
+              reprint: true,
+            });
+            toast.success("2ª via da Guia ATM enviada para impressão");
+          } catch (err) {
+            console.error(err);
+            toast.error("Falha ao reimprimir Guia ATM");
+          }
+        }}
         onStartNew={(mode, suspendIds) => {
           if (mode === 'troca' && suspendIds.length > 0) {
             setItems(prev => prev.map(it => suspendIds.includes(it.id) ? { ...it, status: 'suspended' } : it));

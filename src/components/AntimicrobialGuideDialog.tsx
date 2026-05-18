@@ -25,7 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { ANTIMICROBIAL_OPTIONS, type MedicationEntry } from "@/data/medicationsDatabase";
 import { useUnifiedMedicationCatalog } from "@/hooks/useUnifiedMedicationCatalog";
-import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/printNormaZero";
+import { printAtmGuide } from "@/lib/printAtmGuide";
 import { cn } from "@/lib/utils";
 import { useCurrentDoctor } from "@/hooks/useCurrentDoctor";
 
@@ -403,28 +403,13 @@ export function AntimicrobialGuideDialog({
   const handlePrint = async (sourceEntries: AntimicrobialEntry[] = entries) => {
     const valid = sourceEntries.filter(e => e.medication.trim());
     if (valid.length === 0) return;
-    const logoData = await prepareLogo();
-    const html = buildNormaZeroDocument({
-      title: "GUIA DE USO DE ANTIMICROBIANOS",
-      subtitle: hospitalName ? `${hospitalName} — Comissão de Controle de Infecção Hospitalar (CCIH)` : "Comissão de Controle de Infecção Hospitalar (CCIH)",
-      sectorLabel: `CCIH · ${patient.unit || 'Unidade'}`,
+    await printAtmGuide({
+      patient,
+      entries: valid,
+      doctorName,
+      doctorCrm,
       hospitalName,
-      docCodePrefix: "ATM",
-      bodyHtml: buildAtmBodyHtml({ patient, entries: valid, doctorName, doctorCrm, today }),
-      signatures: [
-        { label: "Médico Prescritor", caption: doctorName ? `${doctorName} — CRM ${doctorCrm || '____'}` : undefined },
-        { label: "Farmacêutico Clínico", caption: "CRF: ____________" },
-        { label: "CCIH — Aprovação", caption: "Data: ___/___/______" },
-      ],
-      logoDataUrl: logoData,
-      orientation: "portrait",
-      extraStyles: `
-        .atm-block { margin-bottom: 8px; page-break-inside: avoid; }
-        .atm-section { background:#ea580c; color:#fff; font-weight:800; font-size:7.5pt; padding:4px 6px; text-transform:uppercase; letter-spacing:0.5px; }
-        .atm-warn { color:#dc2626; font-weight:700; }
-      `,
     });
-    openPrintWindow(html, "Preparando Guia ATM…");
   };
 
   const validEntries = () => entries.filter(e => getMissingFields(e).length === 0);

@@ -5,7 +5,7 @@
 import React, { useMemo, useState } from "react";
 import { differenceInCalendarDays, format, parseISO, differenceInHours } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Shield, Activity, Plus, AlertTriangle, Clock, Ban, ChevronRight, CalendarDays, Timer } from "lucide-react";
+import { Shield, Activity, Plus, AlertTriangle, Clock, Ban, ChevronRight, CalendarDays, Timer, Printer } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -36,6 +36,11 @@ interface Props {
   activeItems: AtmStatusItem[];
   onSuspendItem?: (itemId: string) => void;
   /**
+   * Reimpressão (2ª via) da Guia ATM de um antibiótico já validado e em curso.
+   * Usa dados preservados no item; campos não persistidos saem em branco.
+   */
+  onReprintItem?: (item: AtmStatusItem) => void;
+  /**
    * Dispara o fluxo de nova ATB. Recebe o modo escolhido e os ids selecionados
    * para suspensão (apenas em modo 'troca').
    */
@@ -63,7 +68,7 @@ function endDate(startDate?: string, plannedDays?: string): string | null {
 }
 
 export function AtmStatusDialog({
-  open, onOpenChange, activeItems, onSuspendItem, onStartNew,
+  open, onOpenChange, activeItems, onSuspendItem, onReprintItem, onStartNew,
 }: Props) {
   const [tab, setTab] = useState<'status' | 'nova'>('status');
   const [novaMode, setNovaMode] = useState<'acrescimo' | 'troca'>('acrescimo');
@@ -234,23 +239,36 @@ export function AtmStatusDialog({
                               </div>
                             )}
                           </div>
-                          {onSuspendItem && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => onSuspendItem(it.id)}
-                              className="h-7 text-[11px] gap-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                            >
-                              <Ban className="h-3 w-3" /> Suspender
-                            </Button>
-                          )}
+                          <div className="flex flex-col gap-1 items-end shrink-0">
+                            {onReprintItem && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onReprintItem(it)}
+                                className="h-7 text-[11px] gap-1 text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-950/30"
+                                title="Reimprimir 2ª via da Guia ATM já validada"
+                              >
+                                <Printer className="h-3 w-3" /> Reimprimir
+                              </Button>
+                            )}
+                            {onSuspendItem && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onSuspendItem(it.id)}
+                                className="h-7 text-[11px] gap-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                              >
+                                <Ban className="h-3 w-3" /> Suspender
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
                 <div className="mt-3 p-2 rounded-md bg-muted/40 text-[11px] text-muted-foreground">
-                  <strong>Importante:</strong> guias já autorizadas não são editadas aqui — para acréscimo, troca ou nova solicitação use a aba <strong>Nova ATB</strong>.
+                  <strong>Importante:</strong> guias já autorizadas não são editadas aqui — use <strong>Reimprimir</strong> para gerar 2ª via, ou a aba <strong>Nova ATB</strong> para acréscimo/troca.
                 </div>
               </ScrollArea>
             )}
