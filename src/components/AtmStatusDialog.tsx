@@ -260,7 +260,6 @@ export function AtmStatusDialog({
                               >
                                 <Ban className="h-3 w-3" /> Suspender
                               </Button>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -269,13 +268,6 @@ export function AtmStatusDialog({
                 </div>
                 <div className="mt-3 p-2 rounded-md bg-muted/40 text-[11px] text-muted-foreground">
                   <strong>Importante:</strong> guias já autorizadas não são editadas aqui — use <strong>Reimprimir</strong> para gerar 2ª via, ou a aba <strong>Nova ATB</strong> para acréscimo/troca.
-                </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-3 p-2 rounded-md bg-muted/40 text-[11px] text-muted-foreground">
-                  <strong>Importante:</strong> guias já autorizadas não são editadas aqui — para acréscimo, troca ou nova solicitação use a aba <strong>Nova ATB</strong>.
                 </div>
               </ScrollArea>
             )}
