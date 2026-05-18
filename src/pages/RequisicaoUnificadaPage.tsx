@@ -1540,7 +1540,7 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const removeProcedure = (code: string) => setSelectedProcedures((prev) => prev.filter((p) => p.code !== code));
 
   const resetApacForm = () => {
-    setApacPatientName(initialPatientName); setPatientRecord(""); setPatientCNS("");
+    setApacPatientName(initialPatientName); setPatientRecord(""); setPatientCPF(""); setPatientCNS("");
     setPatientDOB(""); setPatientSex(""); setPatientMotherName("");
     setPatientPhone(""); setPatientAddress("");
     setSelectedProcedures([]); setDiagnosis(""); setCidPrimary(""); setCidSecondary(""); setCidAssociated(""); setObservations("");
