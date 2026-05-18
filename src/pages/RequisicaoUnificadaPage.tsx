@@ -1759,7 +1759,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                   <Input value={patientRecord} onChange={(e) => setPatientRecord(e.target.value)} />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
+                <div><Label className="text-xs text-muted-foreground">CPF</Label><Input value={patientCPF} onChange={(e) => setPatientCPF(e.target.value)} placeholder="000.000.000-00" /></div>
                 <div><Label className="text-xs text-muted-foreground">CNS</Label><Input value={patientCNS} onChange={(e) => setPatientCNS(e.target.value)} /></div>
                 <div><Label className="text-xs text-muted-foreground">Data Nasc.</Label><Input type="date" value={patientDOB} onChange={(e) => setPatientDOB(e.target.value)} /></div>
                 <div>
