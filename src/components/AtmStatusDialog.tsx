@@ -260,6 +260,7 @@ export function AtmStatusDialog({
                               >
                                 <Ban className="h-3 w-3" /> Suspender
                               </Button>
+                            )}
                           </div>
                         </div>
                       </div>
