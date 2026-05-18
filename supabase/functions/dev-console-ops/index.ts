@@ -241,6 +241,205 @@ Deno.serve(async (req) => {
         return json({ ok: true, result: data });
       }
 
+      // ---- READ: lista pacientes com sinalização de saída ativa ----
+      case "list_patients_with_signaling": {
+        const DISCHARGE_STATUSES = [
+          "alta_dada", "obito", "transferido",
+          "transferencia_interna_pendente", "transferencia_externa_pendente",
+        ];
+        const SIGNAL_MOVS = [
+          "ALTA_HOSPITALAR", "OBITO", "TRANSFERENCIA_INTERNA", "TRANSFERENCIA_EXTERNA",
+          "LIBERAÇÃO PÓS-ALTA/ÓBITO", "LIBERAÇÃO PRÉ-ADMISSÃO",
+        ];
+
+        const [{ data: movs }, { data: docs }, { data: byStatus }] = await Promise.all([
+          supa.from("patient_movements")
+            .select("patient_id, movement_type, created_at")
+            .eq("release_status", "pending_release")
+            .in("movement_type", SIGNAL_MOVS)
+            .order("created_at", { ascending: false }),
+          supa.from("discharge_documents")
+            .select("patient_id, document_type, created_at")
+            .in("document_type", ["alta_hospitalar", "obito"])
+            .order("created_at", { ascending: false }),
+          supa.from("patients")
+            .select("id, name, bed_number, sector, admission_status")
+            .in("admission_status", DISCHARGE_STATUSES),
+        ]);
+
+        const agg: Record<string, {
+          movementsCount: number;
+          documentsCount: number;
+          lastMovementType?: string;
+          lastSignalAt?: string;
+        }> = {};
+
+        for (const m of movs ?? []) {
+          const pid = m.patient_id as string;
+          agg[pid] = agg[pid] ?? { movementsCount: 0, documentsCount: 0 };
+          agg[pid].movementsCount++;
+          if (!agg[pid].lastSignalAt || (m.created_at as string) > agg[pid].lastSignalAt!) {
+            agg[pid].lastSignalAt = m.created_at as string;
+            agg[pid].lastMovementType = m.movement_type as string;
+          }
+        }
+        for (const d of docs ?? []) {
+          const pid = d.patient_id as string;
+          agg[pid] = agg[pid] ?? { movementsCount: 0, documentsCount: 0 };
+          agg[pid].documentsCount++;
+          if (!agg[pid].lastSignalAt || (d.created_at as string) > agg[pid].lastSignalAt!) {
+            agg[pid].lastSignalAt = d.created_at as string;
+            agg[pid].lastMovementType = (d.document_type as string).toUpperCase();
+          }
+        }
+        for (const p of byStatus ?? []) {
+          agg[p.id as string] = agg[p.id as string] ?? { movementsCount: 0, documentsCount: 0 };
+        }
+
+        const ids = Object.keys(agg);
+        if (ids.length === 0) return json({ patients: [] });
+
+        const { data: pats } = await supa
+          .from("patients")
+          .select("id, name, bed_number, sector, admission_status, updated_at")
+          .in("id", ids);
+
+        const patients = (pats ?? []).map((p) => ({
+          id: p.id,
+          name: p.name,
+          bed_number: p.bed_number,
+          sector: p.sector,
+          admission_status: p.admission_status,
+          movementsCount: agg[p.id as string]?.movementsCount ?? 0,
+          documentsCount: agg[p.id as string]?.documentsCount ?? 0,
+          lastMovementType: agg[p.id as string]?.lastMovementType ?? null,
+          lastSignalAt: agg[p.id as string]?.lastSignalAt ?? null,
+          updated_at: p.updated_at,
+        })).sort((a, b) =>
+          (b.lastSignalAt ?? "").localeCompare(a.lastSignalAt ?? "")
+        );
+
+        return json({ patients });
+      }
+
+      // ---- SENSITIVE: limpa sinalizações de saída (movimentações + documentos) ----
+      case "clear_patient_signaling": {
+        const DISCHARGE_STATUSES = [
+          "alta_dada", "obito", "transferido",
+          "transferencia_interna_pendente", "transferencia_externa_pendente",
+        ];
+        const SIGNAL_MOVS = [
+          "ALTA_HOSPITALAR", "OBITO", "TRANSFERENCIA_INTERNA", "TRANSFERENCIA_EXTERNA",
+          "LIBERAÇÃO PÓS-ALTA/ÓBITO", "LIBERAÇÃO PRÉ-ADMISSÃO",
+        ];
+
+        const dryRun = Boolean(params.dryRun);
+        const ids: string[] = Array.isArray(params.patientIds)
+          ? (params.patientIds as string[])
+          : params.patientId ? [String(params.patientId)] : [];
+
+        if (ids.length === 0) return json({ error: "patientId ou patientIds requerido" }, 400);
+        if (!dryRun && !confirm) return json({ error: "Confirmation required", needsConfirm: true }, 400);
+
+        const { data: pats, error: patErr } = await supa
+          .from("patients")
+          .select("id, name, bed_number, sector, admission_status")
+          .in("id", ids);
+        if (patErr) return json({ error: patErr.message }, 500);
+
+        const results: Array<{
+          patientId: string; name: string; bed: string | null; sector: string | null;
+          previousStatus: string | null;
+          movementsToDelete: number; documentsToDelete: number;
+          statusReset: boolean;
+          executed: boolean;
+        }> = [];
+
+        let totalMovs = 0;
+        let totalDocs = 0;
+
+        for (const p of pats ?? []) {
+          const pid = p.id as string;
+          const { data: pendingMovs } = await supa
+            .from("patient_movements")
+            .select("id")
+            .eq("patient_id", pid)
+            .eq("release_status", "pending_release")
+            .in("movement_type", SIGNAL_MOVS);
+          const { data: pendingDocs } = await supa
+            .from("discharge_documents")
+            .select("id")
+            .eq("patient_id", pid)
+            .in("document_type", ["alta_hospitalar", "obito"]);
+
+          const movsN = (pendingMovs ?? []).length;
+          const docsN = (pendingDocs ?? []).length;
+          const willReset = DISCHARGE_STATUSES.includes(p.admission_status as string);
+
+          if (!dryRun) {
+            if (movsN > 0) {
+              await supa.from("patient_movements")
+                .delete()
+                .eq("patient_id", pid)
+                .eq("release_status", "pending_release")
+                .in("movement_type", SIGNAL_MOVS);
+            }
+            if (docsN > 0) {
+              await supa.from("discharge_documents")
+                .delete()
+                .eq("patient_id", pid)
+                .in("document_type", ["alta_hospitalar", "obito"]);
+            }
+            if (willReset) {
+              await supa.from("patients")
+                .update({ admission_status: "admitido", updated_at: new Date().toISOString() })
+                .eq("id", pid);
+            }
+          }
+
+          totalMovs += movsN;
+          totalDocs += docsN;
+          results.push({
+            patientId: pid,
+            name: p.name as string,
+            bed: (p.bed_number as string) ?? null,
+            sector: (p.sector as string) ?? null,
+            previousStatus: (p.admission_status as string) ?? null,
+            movementsToDelete: movsN,
+            documentsToDelete: docsN,
+            statusReset: willReset,
+            executed: !dryRun,
+          });
+        }
+
+        if (!dryRun) {
+          try {
+            await supa.from("audit_logs").insert({
+              action: "DEV_CLEAR_SIGNALING",
+              table_name: "patient_movements",
+              user_email: userData.user.email ?? null,
+              user_role: "dev",
+              record_id: ids.join(","),
+              changed_fields: ["pending_movements_deleted", "discharge_documents_deleted", "admission_status_reset"],
+              new_values: { results, totals: { movementsDeleted: totalMovs, documentsDeleted: totalDocs, patientsAffected: results.length } },
+            });
+          } catch (e) {
+            console.warn("[clear_patient_signaling] audit insert failed", e);
+          }
+        }
+
+        return json({
+          ok: true,
+          dryRun,
+          results,
+          totals: {
+            movementsDeleted: totalMovs,
+            documentsDeleted: totalDocs,
+            patientsAffected: results.length,
+          },
+        });
+      }
+
       default:
         return json({ error: `Unknown action: ${action}` }, 400);
     }
