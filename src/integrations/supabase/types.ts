@@ -1020,6 +1020,10 @@ export type Database = {
           signed_by_crm: string | null
           signed_by_name: string | null
           state_id: string
+          suspended_at: string | null
+          suspended_by: string | null
+          suspended_by_name: string | null
+          suspension_reason: string | null
           updated_at: string
         }
         Insert: {
@@ -1043,6 +1047,10 @@ export type Database = {
           signed_by_crm?: string | null
           signed_by_name?: string | null
           state_id: string
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspended_by_name?: string | null
+          suspension_reason?: string | null
           updated_at?: string
         }
         Update: {
@@ -1066,6 +1074,10 @@ export type Database = {
           signed_by_crm?: string | null
           signed_by_name?: string | null
           state_id?: string
+          suspended_at?: string | null
+          suspended_by?: string | null
+          suspended_by_name?: string | null
+          suspension_reason?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -5002,6 +5014,10 @@ export type Database = {
       setup_visitante_user: { Args: never; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      suspend_discharge_document: {
+        Args: { p_doc_id: string; p_reason: string }
+        Returns: Json
+      }
       track_medication_use: {
         Args: {
           p_category: string
