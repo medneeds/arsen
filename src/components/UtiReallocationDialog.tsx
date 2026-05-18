@@ -151,6 +151,9 @@ export function UtiReallocationDialog({
           uti_daily_conducts: patient.utiDailyConducts?.join('\n') || null,
           clinical_status: patient.clinicalStatus || null,
           psm_status: patient.psmStatus || null,
+          // Preserva flag de desfecho (óbito/alta/transferência pendente) ao mover paciente entre leitos.
+          // Sem isto, a tarja some do mapa de leitos e o botão "Liberar leito" desaparece.
+          admission_status: patient.admissionStatus ?? 'admitido',
           updated_at: new Date().toISOString(),
         })
         .eq('id', targetBedPatient.id);
