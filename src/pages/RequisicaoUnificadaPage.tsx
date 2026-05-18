@@ -694,7 +694,18 @@ const RequisicaoUnificadaPage = () => {
 
       {/* ── APAC mode: show embedded APAC form ── */}
       {activeCategory === "apac" ? (
-        <ApacEmbeddedForm patientName={formPatientName} patientBed={formPatientBed} patientSector={formPatientSector} patientId={formPatientId} />
+        <ApacEmbeddedForm
+          patientName={formPatientName}
+          patientBed={formPatientBed}
+          patientSector={formPatientSector}
+          patientId={formPatientId}
+          onSelectPatient={(p) => {
+            setFormPatientId(p.id);
+            setFormPatientName(p.name || "");
+            setFormPatientBed(p.bed_number || "");
+            setFormPatientSector(p.sector || "");
+          }}
+        />
       ) : (
       <>
       {/* ── Sub Tabs: Solicitar | Solicitados | Resultados ── */}
@@ -1421,11 +1432,12 @@ function CollapsibleInfoCard({ title, summary, badge, children }: { title: strin
   );
 }
 
-function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patientSector, patientId }: {
+function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patientSector, patientId, onSelectPatient }: {
   patientName: string;
   patientBed: string;
   patientSector: string;
   patientId: string | null;
+  onSelectPatient?: (p: { id: string; name: string; bed_number: string | null; sector: string | null }) => void;
 }) {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
@@ -1447,6 +1459,34 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   const [patientAddress, setPatientAddress] = useState("");
   const [patientCity, setPatientCity] = useState("São Luís");
   const [patientUF, setPatientUF] = useState("MA");
+
+  // ── Seletor de paciente (apenas quando entrou em /requisicoes sem patientId) ──
+  const [unitPatients, setUnitPatients] = useState<Array<{ id: string; name: string; bed_number: string | null; sector: string | null; medical_record: string | null }>>([]);
+  const [pickerSearch, setPickerSearch] = useState("");
+  const needsPicker = !asUuidOrNull(patientId);
+  useEffect(() => {
+    if (!needsPicker || !currentHospital?.id || !currentState?.id) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("patients")
+        .select("id, name, bed_number, sector, medical_record")
+        .eq("unit_id", currentHospital.id)
+        .eq("state_id", currentState.id)
+        .order("bed_number", { ascending: true })
+        .limit(500);
+      if (!cancelled && data) setUnitPatients(data as any);
+    })();
+    return () => { cancelled = true; };
+  }, [needsPicker, currentHospital?.id, currentState?.id]);
+  const filteredPickerPatients = useMemo(() => {
+    const q = pickerSearch.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (!q) return unitPatients.slice(0, 50);
+    return unitPatients.filter(p => {
+      const hay = `${p.name || ""} ${p.bed_number || ""} ${p.medical_record || ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return hay.includes(q);
+    }).slice(0, 50);
+  }, [unitPatients, pickerSearch]);
 
   const [selectedProcedures, setSelectedProcedures] = useState<ApacSelectedProcedure[]>([]);
   const [searchProcedure, setSearchProcedure] = useState("");
@@ -1749,6 +1789,39 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
             badge={patientRecord ? `Pront. ${patientRecord}` : undefined}
           >
             <div className="space-y-3">
+              {needsPicker && (
+                <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <Label className="text-xs font-semibold text-amber-800 dark:text-amber-300">Selecione o paciente para sincronizar prontuário, CPF, CNS, mãe e endereço</Label>
+                  </div>
+                  <Input
+                    value={pickerSearch}
+                    onChange={(e) => setPickerSearch(e.target.value)}
+                    placeholder="Buscar por nome, leito ou prontuário..."
+                    className="h-8 text-xs"
+                  />
+                  <div className="max-h-48 overflow-y-auto rounded border border-border bg-background divide-y divide-border">
+                    {filteredPickerPatients.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">Nenhum paciente encontrado nesta unidade.</div>
+                    ) : (
+                      filteredPickerPatients.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => { onSelectPatient?.({ id: p.id, name: p.name, bed_number: p.bed_number, sector: p.sector }); setPickerSearch(""); }}
+                          className="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left hover:bg-muted/60 transition"
+                        >
+                          <span className="text-xs font-medium truncate">{p.name}</span>
+                          <span className="text-[10px] text-muted-foreground shrink-0 font-mono">
+                            {p.bed_number || "—"}{p.medical_record ? ` · ${p.medical_record}` : ""}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-3 gap-3">
                 <div className="col-span-2">
                   <Label className="text-xs text-muted-foreground">Nome do Paciente *</Label>
