@@ -468,6 +468,9 @@ export type Database = {
       }
       clinical_evolutions: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_from_patient_id: string | null
           created_at: string
           created_by: string
           created_by_name: string | null
@@ -482,6 +485,9 @@ export type Database = {
           patient_registry_id: string | null
           patient_sector: string | null
           physical_exam: Json
+          repoint_reason: string | null
+          repointed_at: string | null
+          repointed_from_patient_id: string | null
           soap_data: Json
           state_id: string
           status: string
@@ -495,6 +501,9 @@ export type Database = {
           vital_signs: Json
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           created_at?: string
           created_by: string
           created_by_name?: string | null
@@ -509,6 +518,9 @@ export type Database = {
           patient_registry_id?: string | null
           patient_sector?: string | null
           physical_exam?: Json
+          repoint_reason?: string | null
+          repointed_at?: string | null
+          repointed_from_patient_id?: string | null
           soap_data?: Json
           state_id: string
           status?: string
@@ -522,6 +534,9 @@ export type Database = {
           vital_signs?: Json
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           created_at?: string
           created_by?: string
           created_by_name?: string | null
@@ -536,6 +551,9 @@ export type Database = {
           patient_registry_id?: string | null
           patient_sector?: string | null
           physical_exam?: Json
+          repoint_reason?: string | null
+          repointed_at?: string | null
+          repointed_from_patient_id?: string | null
           soap_data?: Json
           state_id?: string
           status?: string
@@ -656,6 +674,9 @@ export type Database = {
       culture_results: {
         Row: {
           antibiogram: string | null
+          archive_reason: string | null
+          archived_at: string | null
+          archived_from_patient_id: string | null
           collection_date: string | null
           created_at: string
           culture_type: string
@@ -671,6 +692,9 @@ export type Database = {
           patient_sector: string
           read_at: string | null
           read_by_doctor: boolean | null
+          repoint_reason: string | null
+          repointed_at: string | null
+          repointed_from_patient_id: string | null
           result_files: Json | null
           result_text: string | null
           sensitivity_profile: string | null
@@ -682,6 +706,9 @@ export type Database = {
         }
         Insert: {
           antibiogram?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           collection_date?: string | null
           created_at?: string
           culture_type?: string
@@ -697,6 +724,9 @@ export type Database = {
           patient_sector: string
           read_at?: string | null
           read_by_doctor?: boolean | null
+          repoint_reason?: string | null
+          repointed_at?: string | null
+          repointed_from_patient_id?: string | null
           result_files?: Json | null
           result_text?: string | null
           sensitivity_profile?: string | null
@@ -708,6 +738,9 @@ export type Database = {
         }
         Update: {
           antibiogram?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           collection_date?: string | null
           created_at?: string
           culture_type?: string
@@ -723,6 +756,9 @@ export type Database = {
           patient_sector?: string
           read_at?: string | null
           read_by_doctor?: boolean | null
+          repoint_reason?: string | null
+          repointed_at?: string | null
+          repointed_from_patient_id?: string | null
           result_files?: Json | null
           result_text?: string | null
           sensitivity_profile?: string | null
@@ -1109,6 +1145,9 @@ export type Database = {
       }
       exam_requests: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_from_patient_id: string | null
           category: string
           clinical_indication: string | null
           completed_at: string | null
@@ -1125,6 +1164,9 @@ export type Database = {
           patient_registry_id: string | null
           patient_sector: string | null
           priority: string
+          repoint_reason: string | null
+          repointed_at: string | null
+          repointed_from_patient_id: string | null
           requested_by: string | null
           requested_by_name: string | null
           result_data: Json | null
@@ -1134,6 +1176,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           category?: string
           clinical_indication?: string | null
           completed_at?: string | null
@@ -1150,6 +1195,9 @@ export type Database = {
           patient_registry_id?: string | null
           patient_sector?: string | null
           priority?: string
+          repoint_reason?: string | null
+          repointed_at?: string | null
+          repointed_from_patient_id?: string | null
           requested_by?: string | null
           requested_by_name?: string | null
           result_data?: Json | null
@@ -1159,6 +1207,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           category?: string
           clinical_indication?: string | null
           completed_at?: string | null
@@ -1175,6 +1226,9 @@ export type Database = {
           patient_registry_id?: string | null
           patient_sector?: string | null
           priority?: string
+          repoint_reason?: string | null
+          repointed_at?: string | null
+          repointed_from_patient_id?: string | null
           requested_by?: string | null
           requested_by_name?: string | null
           result_data?: Json | null
@@ -3163,6 +3217,9 @@ export type Database = {
       }
       prescriptions: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_from_patient_id: string | null
           created_at: string
           created_by: string | null
           department: string
@@ -3176,12 +3233,18 @@ export type Database = {
           patient_data: Json
           patient_name: string
           patient_registry_id: string | null
+          repoint_reason: string | null
+          repointed_at: string | null
+          repointed_from_patient_id: string | null
           state_id: string
           status: string
           updated_at: string
           version: number
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           created_at?: string
           created_by?: string | null
           department?: string
@@ -3195,12 +3258,18 @@ export type Database = {
           patient_data?: Json
           patient_name: string
           patient_registry_id?: string | null
+          repoint_reason?: string | null
+          repointed_at?: string | null
+          repointed_from_patient_id?: string | null
           state_id: string
           status?: string
           updated_at?: string
           version?: number
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           created_at?: string
           created_by?: string | null
           department?: string
@@ -3214,6 +3283,9 @@ export type Database = {
           patient_data?: Json
           patient_name?: string
           patient_registry_id?: string | null
+          repoint_reason?: string | null
+          repointed_at?: string | null
+          repointed_from_patient_id?: string | null
           state_id?: string
           status?: string
           updated_at?: string
