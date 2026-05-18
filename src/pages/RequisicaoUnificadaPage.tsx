@@ -1432,11 +1432,12 @@ function CollapsibleInfoCard({ title, summary, badge, children }: { title: strin
   );
 }
 
-function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patientSector, patientId }: {
+function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patientSector, patientId, onSelectPatient }: {
   patientName: string;
   patientBed: string;
   patientSector: string;
   patientId: string | null;
+  onSelectPatient?: (p: { id: string; name: string; bed_number: string | null; sector: string | null }) => void;
 }) {
   const { user } = useAuth();
   const { currentHospital, currentState } = useHospital();
