@@ -520,6 +520,11 @@ export function usePatients(department?: Department, sector?: string) {
         department: patientDepartment,
         state_id: currentState.id,
         hospital_unit_id: currentHospital.id,
+        // Esta função É a liberação efetiva — fecha o ciclo de release_status
+        // para não deixar movimento em 'pending_release' órfão para sempre.
+        release_status: 'released',
+        released_at: new Date().toISOString(),
+        released_by: authUser?.id ?? null,
       });
       if (movementError) throw movementError;
 
