@@ -239,17 +239,37 @@ export function AtmStatusDialog({
                               </div>
                             )}
                           </div>
-                          {onSuspendItem && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => onSuspendItem(it.id)}
-                              className="h-7 text-[11px] gap-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                            >
-                              <Ban className="h-3 w-3" /> Suspender
-                            </Button>
-                          )}
+                          <div className="flex flex-col gap-1 items-end shrink-0">
+                            {onReprintItem && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onReprintItem(it)}
+                                className="h-7 text-[11px] gap-1 text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-950/30"
+                                title="Reimprimir 2ª via da Guia ATM já validada"
+                              >
+                                <Printer className="h-3 w-3" /> Reimprimir
+                              </Button>
+                            )}
+                            {onSuspendItem && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onSuspendItem(it.id)}
+                                className="h-7 text-[11px] gap-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                              >
+                                <Ban className="h-3 w-3" /> Suspender
+                              </Button>
+                            )}
+                          </div>
                         </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 p-2 rounded-md bg-muted/40 text-[11px] text-muted-foreground">
+                  <strong>Importante:</strong> guias já autorizadas não são editadas aqui — use <strong>Reimprimir</strong> para gerar 2ª via, ou a aba <strong>Nova ATB</strong> para acréscimo/troca.
+                </div>
                       </div>
                     );
                   })}
