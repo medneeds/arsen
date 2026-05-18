@@ -694,7 +694,18 @@ const RequisicaoUnificadaPage = () => {
 
       {/* ── APAC mode: show embedded APAC form ── */}
       {activeCategory === "apac" ? (
-        <ApacEmbeddedForm patientName={formPatientName} patientBed={formPatientBed} patientSector={formPatientSector} patientId={formPatientId} />
+        <ApacEmbeddedForm
+          patientName={formPatientName}
+          patientBed={formPatientBed}
+          patientSector={formPatientSector}
+          patientId={formPatientId}
+          onSelectPatient={(p) => {
+            setFormPatientId(p.id);
+            setFormPatientName(p.name || "");
+            setFormPatientBed(p.bed_number || "");
+            setFormPatientSector(p.sector || "");
+          }}
+        />
       ) : (
       <>
       {/* ── Sub Tabs: Solicitar | Solicitados | Resultados ── */}
