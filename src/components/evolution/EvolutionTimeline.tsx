@@ -451,6 +451,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                             patientId || null,
                             evo.patient_name || null,
                             currentHospital?.id || null,
+                            (evo as any).patient_registry_id || null,
                           );
                           // Leito/setor ATUAIS do paciente (após realocações),
                           // não o snapshot gravado em evo.patient_bed.

@@ -70,6 +70,7 @@ export async function resolvePatientHeader(
   patientId: string | null | undefined,
   fallbackName: string | null | undefined,
   hospitalUnitId: string | null | undefined,
+  registryIdHint?: string | null,
 ): Promise<ResolvedPatientHeader> {
   const empty: ResolvedPatientHeader = {
     name: fallbackName || "—",
@@ -88,7 +89,7 @@ export async function resolvePatientHeader(
     registryId: null,
   };
 
-  if (!patientId && !fallbackName) return empty;
+  if (!patientId && !fallbackName && !registryIdHint) return empty;
 
   let registryRow: any = null;
   let patientMedicalRecord: string | null = null;
@@ -112,6 +113,20 @@ export async function resolvePatientHeader(
       if (reg) registryRow = reg;
     }
   }
+
+  // 1a-bis) Hint vindo do próprio registro (ex: evolution.patient_registry_id).
+  // Usado quando o paciente já foi desalocado (patient_id pode estar nulo ou
+  // não bater mais com o registry original). Aplica a mesma guarda anti-NI
+  // do bloco 1e mais abaixo.
+  if (!registryRow && registryIdHint) {
+    const { data: reg } = await supabase
+      .from("patient_registry")
+      .select("*")
+      .eq("id", registryIdHint)
+      .maybeSingle();
+    if (reg) registryRow = reg;
+  }
+
 
   // 1b) medical_records.patient_id
   if (!registryRow && patientId) {
