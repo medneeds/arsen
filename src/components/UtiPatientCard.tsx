@@ -1381,6 +1381,16 @@ export function UtiPatientCard({
         onSuccess={handleReallocationSuccess}
       />
 
+      {/* Sinalização de transferência interna (etapa 1 de 2) — fila virtual no destino */}
+      <SignalInternalTransferDialog
+        patient={patient}
+        open={isSignalTransferOpen}
+        onOpenChange={setIsSignalTransferOpen}
+        onSuccess={handleReallocationSuccess}
+      />
+
+
+
 
       {/* Cadastro de Paciente (a partir de leito vago no mapa) */}
       <PatientRegistrationDialog
