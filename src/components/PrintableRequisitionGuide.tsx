@@ -40,13 +40,14 @@ function fmtBirthDate(iso?: string | null): string {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
-/** Busca data de nascimento e nº de prontuário do paciente (registry → patients). */
+/** Busca data de nascimento, nº de prontuário e nº de atendimento (registry → patients → encounters). */
 async function fetchPatientIdentifiers(req: {
   patient_registry_id?: string | null;
   patient_id?: string | null;
-}): Promise<{ birth_date: string | null; medical_record: string | null }> {
+}): Promise<{ birth_date: string | null; medical_record: string | null; encounter_code: string | null }> {
   let birth_date: string | null = null;
   let medical_record: string | null = null;
+  let encounter_code: string | null = null;
   try {
     let regId = req.patient_registry_id || null;
     if (req.patient_id) {
@@ -67,10 +68,22 @@ async function fetchPatientIdentifiers(req: {
       if ((reg as any)?.birth_date) birth_date = (reg as any).birth_date;
       if (!medical_record && (reg as any)?.medical_record) medical_record = (reg as any).medical_record;
     }
+    // Atendimento — apenas via patient_id ou registry_id (nunca por nome)
+    if (req.patient_id || regId) {
+      let q = supabase
+        .from("patient_encounters")
+        .select("encounter_code, created_at")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (req.patient_id) q = q.eq("patient_id", req.patient_id);
+      else if (regId) q = q.eq("registry_id", regId);
+      const { data: enc } = await q.maybeSingle();
+      encounter_code = (enc as any)?.encounter_code || null;
+    }
   } catch {
     /* silencioso */
   }
-  return { birth_date, medical_record };
+  return { birth_date, medical_record, encounter_code };
 }
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -222,6 +235,9 @@ export function PrintableRequisitionGuide({
   const [resolvedRecord, setResolvedRecord] = React.useState<string | null>(
     (request as any).patient_medical_record || null,
   );
+  const [resolvedEncounter, setResolvedEncounter] = React.useState<string | null>(
+    (request as any).patient_encounter_code || null,
+  );
   React.useEffect(() => {
     let alive = true;
     fetchPatientIdentifiers({
@@ -231,11 +247,13 @@ export function PrintableRequisitionGuide({
       if (!alive) return;
       if (!request.patient_birth_date) setResolvedBirth(d.birth_date);
       if (!(request as any).patient_medical_record) setResolvedRecord(d.medical_record);
+      if (!(request as any).patient_encounter_code) setResolvedEncounter(d.encounter_code);
     });
     if (request.patient_birth_date) setResolvedBirth(request.patient_birth_date);
     if ((request as any).patient_medical_record) setResolvedRecord((request as any).patient_medical_record);
+    if ((request as any).patient_encounter_code) setResolvedEncounter((request as any).patient_encounter_code);
     return () => { alive = false; };
-  }, [request.patient_birth_date, (request as any).patient_medical_record, request.patient_registry_id, request.patient_id]);
+  }, [request.patient_birth_date, (request as any).patient_medical_record, (request as any).patient_encounter_code, request.patient_registry_id, request.patient_id]);
 
   // Roteamento: se a requisição é predominantemente de cultura microbiológica,
   // usa o layout hospitalar dedicado (estrutura tabular tipo formulário).
@@ -363,8 +381,12 @@ export function PrintableRequisitionGuide({
           </tr>
           <tr>
             <th style={thStyle}>Nº Prontuário</th>
-            <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontWeight: 600 }} colSpan={3}>
+            <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontWeight: 600 }}>
               {resolvedRecord || "—"}
+            </td>
+            <th style={thStyle}>Nº Atendimento</th>
+            <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontWeight: 600 }}>
+              {resolvedEncounter || "—"}
             </td>
           </tr>
           <tr>
@@ -569,6 +591,8 @@ export async function printRequisitionGuide(
   const birthDate: string | null = request.patient_birth_date || resolvedIds.birth_date;
   const medicalRecord: string | null =
     (request as any).patient_medical_record || resolvedIds.medical_record;
+  const encounterCode: string | null =
+    (request as any).patient_encounter_code || resolvedIds.encounter_code;
   const ageY = ageInYears(birthDate);
 
   // Roteamento para layout dedicado de cultura microbiológica (padrão hospitalar)
@@ -619,7 +643,9 @@ export async function printRequisitionGuide(
         </tr>
         <tr>
           <th>Nº Prontuário</th>
-          <td colspan="3" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(medicalRecord || "—")}</td>
+          <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(medicalRecord || "—")}</td>
+          <th>Nº Atendimento</th>
+          <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(encounterCode || "—")}</td>
         </tr>
         <tr>
           <th>Data Nasc.</th><td>${escapeHtml(fmtBirthDate(birthDate))}</td>
