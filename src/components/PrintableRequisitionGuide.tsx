@@ -591,6 +591,8 @@ export async function printRequisitionGuide(
   const birthDate: string | null = request.patient_birth_date || resolvedIds.birth_date;
   const medicalRecord: string | null =
     (request as any).patient_medical_record || resolvedIds.medical_record;
+  const encounterCode: string | null =
+    (request as any).patient_encounter_code || resolvedIds.encounter_code;
   const ageY = ageInYears(birthDate);
 
   // Roteamento para layout dedicado de cultura microbiológica (padrão hospitalar)
