@@ -440,6 +440,147 @@ Deno.serve(async (req) => {
         });
       }
 
+      // ---- READ: lista evoluções residuais por leito ----
+      // Detecta clinical_evolutions cujo (patient_bed, patient_sector) bate com um
+      // leito ATUALMENTE ocupado por outro paciente (ou paciente NULL).
+      // Não toca prescrições/admissões/movs — escopo cirúrgico em evoluções.
+      case "list_bed_residual_history": {
+        // 1) leitos atualmente ocupados
+        const { data: occupied, error: occErr } = await supa
+          .from("patients")
+          .select("id, name, bed_number, sector, hospital_unit_id")
+          .eq("is_vacant", false)
+          .not("bed_number", "is", null)
+          .not("sector", "is", null);
+        if (occErr) return json({ error: occErr.message }, 500);
+
+        // 2) evoluções não arquivadas com bed/sector preenchidos
+        const { data: evos, error: evoErr } = await supa
+          .from("clinical_evolutions")
+          .select("id, patient_id, patient_name, patient_bed, patient_sector, created_at, evolution_type, status")
+          .is("archived_at", null)
+          .not("patient_bed", "is", null)
+          .not("patient_sector", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(5000);
+        if (evoErr) return json({ error: evoErr.message }, 500);
+
+        // 3) índice por (sector|bed) → paciente atual
+        const key = (s: string | null, b: string | null) => `${(s ?? "").toLowerCase()}|${b ?? ""}`;
+        const currentByBed = new Map<string, { id: string; name: string }>();
+        for (const p of occupied ?? []) {
+          currentByBed.set(key(p.sector as string, p.bed_number as string), {
+            id: p.id as string,
+            name: p.name as string,
+          });
+        }
+
+        // 4) agrupar evoluções contaminadas por leito
+        type ResidualBed = {
+          sector: string; bed: string;
+          currentPatientId: string | null; currentPatientName: string | null;
+          contaminatedCount: number;
+          originPatients: { name: string; patient_id: string | null; count: number }[];
+          evolutionIds: string[];
+        };
+        const byBed = new Map<string, ResidualBed>();
+        for (const e of evos ?? []) {
+          const k = key(e.patient_sector as string, e.patient_bed as string);
+          const current = currentByBed.get(k);
+          if (!current) continue; // leito vazio agora — fora de escopo
+          const evPid = (e.patient_id as string | null) ?? null;
+          if (evPid === current.id) continue; // evolução pertence ao ocupante atual — OK
+          let bucket = byBed.get(k);
+          if (!bucket) {
+            bucket = {
+              sector: e.patient_sector as string,
+              bed: e.patient_bed as string,
+              currentPatientId: current.id,
+              currentPatientName: current.name,
+              contaminatedCount: 0,
+              originPatients: [],
+              evolutionIds: [],
+            };
+            byBed.set(k, bucket);
+          }
+          bucket.contaminatedCount++;
+          bucket.evolutionIds.push(e.id as string);
+          const originName = (e.patient_name as string) ?? "—";
+          const origin = bucket.originPatients.find(
+            (o) => o.name === originName && o.patient_id === evPid,
+          );
+          if (origin) origin.count++;
+          else bucket.originPatients.push({ name: originName, patient_id: evPid, count: 1 });
+        }
+
+        const beds = Array.from(byBed.values()).sort(
+          (a, b) => b.contaminatedCount - a.contaminatedCount,
+        );
+        return json({ beds, totalEvolutions: beds.reduce((s, b) => s + b.contaminatedCount, 0) });
+      }
+
+      // ---- SENSITIVE: arquiva evoluções residuais de um leito ----
+      case "archive_bed_residual_history": {
+        const dryRun = Boolean(params.dryRun);
+        const evolutionIds: string[] = Array.isArray(params.evolutionIds)
+          ? (params.evolutionIds as string[])
+          : [];
+        if (evolutionIds.length === 0) return json({ error: "evolutionIds requerido" }, 400);
+        if (!dryRun && !confirm) return json({ error: "Confirmation required", needsConfirm: true }, 400);
+
+        const { data: targets, error: tErr } = await supa
+          .from("clinical_evolutions")
+          .select("id, patient_id, patient_name, patient_bed, patient_sector, created_at, archived_at")
+          .in("id", evolutionIds);
+        if (tErr) return json({ error: tErr.message }, 500);
+
+        const eligible = (targets ?? []).filter((t) => !t.archived_at);
+
+        const results = eligible.map((t) => ({
+          id: t.id as string,
+          patient_name: t.patient_name as string,
+          patient_bed: t.patient_bed as string,
+          patient_sector: t.patient_sector as string,
+          created_at: t.created_at as string,
+          executed: !dryRun,
+        }));
+
+        if (!dryRun && eligible.length > 0) {
+          const reason = String(params.reason ?? "dev_console_residual_cleanup");
+          const nowIso = new Date().toISOString();
+          for (const t of eligible) {
+            await supa
+              .from("clinical_evolutions")
+              .update({
+                archived_at: nowIso,
+                archived_from_patient_id: t.patient_id ?? null,
+                archive_reason: reason,
+              })
+              .eq("id", t.id as string);
+          }
+          try {
+            await supa.from("audit_logs").insert({
+              action: "DEV_ARCHIVE_RESIDUAL_HISTORY",
+              table_name: "clinical_evolutions",
+              user_email: userData.user.email ?? null,
+              user_role: "dev",
+              record_id: eligible.map((t) => t.id).join(","),
+              changed_fields: ["archived_at", "archived_from_patient_id", "archive_reason"],
+              new_values: { results, reason, count: eligible.length },
+            });
+          } catch (e) {
+            console.warn("[archive_bed_residual_history] audit insert failed", e);
+          }
+        }
+
+        return json({
+          ok: true,
+          dryRun,
+          results,
+          totals: { evolutionsArchived: eligible.length, skipped: (targets ?? []).length - eligible.length },
+        });
+      }
+
       default:
         return json({ error: `Unknown action: ${action}` }, 400);
     }
