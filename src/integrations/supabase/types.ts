@@ -476,6 +476,7 @@ export type Database = {
           created_by_name: string | null
           department: string
           diagnostic_hypotheses: string | null
+          encounter_id: string | null
           evolution_type: string
           hospital_unit_id: string
           id: string
@@ -509,6 +510,7 @@ export type Database = {
           created_by_name?: string | null
           department?: string
           diagnostic_hypotheses?: string | null
+          encounter_id?: string | null
           evolution_type?: string
           hospital_unit_id: string
           id?: string
@@ -542,6 +544,7 @@ export type Database = {
           created_by_name?: string | null
           department?: string
           diagnostic_hypotheses?: string | null
+          encounter_id?: string | null
           evolution_type?: string
           hospital_unit_id?: string
           id?: string
@@ -567,6 +570,13 @@ export type Database = {
           vital_signs?: Json
         }
         Relationships: [
+          {
+            foreignKeyName: "clinical_evolutions_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "patient_encounters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "clinical_evolutions_hospital_unit_id_fkey"
             columns: ["hospital_unit_id"]
@@ -603,6 +613,7 @@ export type Database = {
           changed_by_email: string | null
           created_at: string
           department: string
+          encounter_id: string | null
           field_name: string
           hospital_unit_id: string
           id: string
@@ -617,6 +628,7 @@ export type Database = {
           changed_by_email?: string | null
           created_at?: string
           department?: string
+          encounter_id?: string | null
           field_name: string
           hospital_unit_id: string
           id?: string
@@ -631,6 +643,7 @@ export type Database = {
           changed_by_email?: string | null
           created_at?: string
           department?: string
+          encounter_id?: string | null
           field_name?: string
           hospital_unit_id?: string
           id?: string
@@ -641,6 +654,13 @@ export type Database = {
           state_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "conduct_history_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "patient_encounters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "conduct_history_hospital_unit_id_fkey"
             columns: ["hospital_unit_id"]
@@ -681,6 +701,7 @@ export type Database = {
           created_at: string
           culture_type: string
           department: string
+          encounter_id: string | null
           hospital_unit_id: string
           id: string
           microorganism: string | null
@@ -713,6 +734,7 @@ export type Database = {
           created_at?: string
           culture_type?: string
           department?: string
+          encounter_id?: string | null
           hospital_unit_id: string
           id?: string
           microorganism?: string | null
@@ -745,6 +767,7 @@ export type Database = {
           created_at?: string
           culture_type?: string
           department?: string
+          encounter_id?: string | null
           hospital_unit_id?: string
           id?: string
           microorganism?: string | null
@@ -769,6 +792,13 @@ export type Database = {
           uploaded_by_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "culture_results_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "patient_encounters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "culture_results_hospital_unit_id_fkey"
             columns: ["hospital_unit_id"]
@@ -1166,6 +1196,7 @@ export type Database = {
           completed_by: string | null
           created_at: string
           department: string
+          encounter_id: string | null
           hospital_unit_id: string
           id: string
           items: Json
@@ -1197,6 +1228,7 @@ export type Database = {
           completed_by?: string | null
           created_at?: string
           department?: string
+          encounter_id?: string | null
           hospital_unit_id: string
           id?: string
           items?: Json
@@ -1228,6 +1260,7 @@ export type Database = {
           completed_by?: string | null
           created_at?: string
           department?: string
+          encounter_id?: string | null
           hospital_unit_id?: string
           id?: string
           items?: Json
@@ -1250,6 +1283,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "exam_requests_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "patient_encounters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "exam_requests_hospital_unit_id_fkey"
             columns: ["hospital_unit_id"]
@@ -2368,6 +2408,7 @@ export type Database = {
           created_by: string | null
           department: string
           destination: string | null
+          encounter_id: string | null
           hospital_unit_id: string
           id: string
           movement_type: string
@@ -2390,6 +2431,7 @@ export type Database = {
           created_by?: string | null
           department?: string
           destination?: string | null
+          encounter_id?: string | null
           hospital_unit_id: string
           id?: string
           movement_type: string
@@ -2412,6 +2454,7 @@ export type Database = {
           created_by?: string | null
           department?: string
           destination?: string | null
+          encounter_id?: string | null
           hospital_unit_id?: string
           id?: string
           movement_type?: string
@@ -2430,6 +2473,13 @@ export type Database = {
           state_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "patient_movements_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "patient_encounters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "patient_movements_hospital_unit_id_fkey"
             columns: ["hospital_unit_id"]
@@ -5066,6 +5116,10 @@ export type Database = {
           p_target_patient_id: string
         }
         Returns: Json
+      }
+      resolve_active_encounter_for_patient: {
+        Args: { p_patient_id: string }
+        Returns: string
       }
       scan_duplicate_registries: {
         Args: {
