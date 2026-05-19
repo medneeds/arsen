@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
+import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 
 export interface EvolutionRecord {
   id: string;
