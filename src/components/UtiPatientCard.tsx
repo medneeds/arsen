@@ -1184,7 +1184,17 @@ export function UtiPatientCard({
                     <>
                       <DropdownMenuItem onClick={() => setIsReallocationDialogOpen(true)}>
                         <Shuffle className="h-4 w-4 mr-2 text-teal-600" />
-                        Realocar / Permutar leito
+                        <div className="flex flex-col">
+                          <span className="text-teal-700 dark:text-teal-300">Transferir agora (direto)</span>
+                          <span className="text-[10px] font-normal text-muted-foreground">Escolhe leito UTI 1 / UTI 2 e move na hora</span>
+                        </div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setIsSignalTransferOpen(true)}>
+                        <ArrowRightLeft className="h-4 w-4 mr-2 text-sky-600" />
+                        <div className="flex flex-col">
+                          <span className="text-sky-700 dark:text-sky-300">Sinalizar pré-admissão para outro setor</span>
+                          <span className="text-[10px] font-normal text-muted-foreground">Libera o leito; destino aloca em 2ª etapa</span>
+                        </div>
                       </DropdownMenuItem>
                       {onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (
                         <DropdownMenuItem onClick={() => setIsReleasePreAdmissionOpen(true)}>
