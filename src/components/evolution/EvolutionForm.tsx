@@ -21,6 +21,11 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { DevicesCulturesSection } from "@/components/evolution/DevicesCulturesSection";
 import { deviceAlertTone, type EvolutionDevice } from "@/lib/devicesCatalog";
 import { Activity } from "lucide-react";
+import { printEvolution } from "@/lib/printEvolution";
+import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import type { EvolutionRecord } from "@/hooks/useEvolutions";
 
 interface SOAPData {
   subjective: string;
