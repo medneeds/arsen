@@ -71,6 +71,15 @@ interface EvolutionFormProps {
   onCulturesChange?: (html: string) => void;
   /** Data de admissão no setor — base p/ presets do date picker dos dispositivos. */
   admissionDate?: string | null;
+  /** Registro da evolução (usado para impressão unificada via printEvolution). */
+  evo?: EvolutionRecord;
+  /** UUID do paciente — chave do resolver de identidade na impressão. */
+  patientId?: string | null;
+  /** Prontuário fallback (usado se o resolver não encontrar). */
+  patientRecord?: string | null;
+  /** CIDs ativos — incluídos no bloco "Diagnósticos" do PDF. */
+  cidPrimary?: string | null;
+  cidSecondary?: string | null;
 }
 
 type SectionKey = 'vitals' | 'evolucao' | 'objective' | 'plan' | 'review';
