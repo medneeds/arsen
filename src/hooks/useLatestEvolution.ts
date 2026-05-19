@@ -89,7 +89,7 @@ export function useLatestEvolution(
       setEvolution(null);
     }
     setLoading(false);
-  }, [patientId, patientName, hospitalUnitId]);
+  }, [patientId, patientName, hospitalUnitId, activeEncounterId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
