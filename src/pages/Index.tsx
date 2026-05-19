@@ -1040,7 +1040,7 @@ const Index = () => {
 
 
               {/* Pre-admission section — filtra por setor ativo (exceto UE Vertical/Horizontal que mostram todos) */}
-              <div className="print:hidden">
+              <div className="print:hidden space-y-3">
                 <PreAdmissionSection
                   ref={preAdmissionRef}
                   sectorFilterLabel={
@@ -1049,6 +1049,7 @@ const Index = () => {
                       : SECTOR_VISUAL[activeSector]?.title
                   }
                 />
+                <InternalTransferQueueSection sectorCode={activeSector} />
               </div>
 
               {SECTOR_VISUAL[activeSector]?.isUti ? (
