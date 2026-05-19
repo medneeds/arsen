@@ -9,6 +9,8 @@ export interface EvolutionRecord {
   id: string;
   patient_id: string | null;
   patient_registry_id?: string | null;
+  archived_at?: string | null;
+  archive_reason?: string | null;
   patient_name: string;
   patient_bed: string | null;
   patient_sector: string | null;
@@ -108,7 +110,7 @@ export function useEvolutions(
         soap_data: { ...EMPTY_SOAP, ...(d.soap_data as any) },
         vital_signs: { ...EMPTY_VITALS, ...(d.vital_signs as any) },
         physical_exam: { ...EMPTY_EXAM, ...(d.physical_exam as any) },
-      }));
+      })).filter((e: any) => !e.archived_at);
 
       const hasAdmissionEvo = mapped.some(e => (e as any).evolution_type === "admission");
       if (!hasAdmissionEvo && safePatientId) {
