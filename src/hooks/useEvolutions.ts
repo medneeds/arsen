@@ -9,6 +9,8 @@ export interface EvolutionRecord {
   id: string;
   patient_id: string | null;
   patient_registry_id?: string | null;
+  archived_at?: string | null;
+  archive_reason?: string | null;
   patient_name: string;
   patient_bed: string | null;
   patient_sector: string | null;
@@ -108,7 +110,7 @@ export function useEvolutions(
         soap_data: { ...EMPTY_SOAP, ...(d.soap_data as any) },
         vital_signs: { ...EMPTY_VITALS, ...(d.vital_signs as any) },
         physical_exam: { ...EMPTY_EXAM, ...(d.physical_exam as any) },
-      }));
+      })).filter((e: any) => !e.archived_at);
 
       const hasAdmissionEvo = mapped.some(e => (e as any).evolution_type === "admission");
       if (!hasAdmissionEvo && safePatientId) {
@@ -240,6 +242,12 @@ export function useEvolutions(
       physical_exam?: any;
     }
   ) => {
+    const target = evolutions.find((e) => e.id === id);
+    if (target?.archived_at) {
+      toast.error("Evolução arquivada não pode ser editada");
+      await refreshSilently();
+      return false;
+    }
     try {
       const { error } = await supabase
         .from("clinical_evolutions")
@@ -257,6 +265,12 @@ export function useEvolutions(
 
   const validateEvolution = async (id: string) => {
     if (!user) return false;
+    const target = evolutions.find((e) => e.id === id);
+    if (target?.archived_at) {
+      toast.error("Evolução arquivada não pode ser validada");
+      await refreshSilently();
+      return false;
+    }
     try {
       const doctorName = user.user_metadata?.full_name || "Dr. Carlos Eduardo Mendes";
       const { error } = await supabase
@@ -322,6 +336,11 @@ export function useEvolutions(
     patientBed: string,
     patientSector: string
   ) => {
+    if (source.archived_at) {
+      toast.error("Evolução arquivada não pode ser duplicada");
+      await refreshSilently();
+      return null;
+    }
     return createEvolution(
       patientName,
       patientBed,
