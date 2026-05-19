@@ -3792,6 +3792,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
         }}
       />
 
+      <SignalInternalTransferDialog
+        patient={patient}
+        open={signalTransferOpen}
+        onOpenChange={setSignalTransferOpen}
+        onSuccess={() => onRefetch?.()}
+      />
+
+
       <BedReleasePreAdmissionDialog
         open={isReleasePreAdmissionOpen}
         onOpenChange={setIsReleasePreAdmissionOpen}
