@@ -82,6 +82,9 @@ export function useEvolutions(
         .select("*")
         .eq("hospital_unit_id", currentHospital.id)
         .eq("state_id", currentState.id)
+        // ⚠️ Nunca trazer evoluções arquivadas (paciente anterior do leito,
+        // reverts de re-bind incorreto, etc). Auditoria preservada no banco.
+        .is("archived_at", null)
         .order("created_at", { ascending: false });
 
       if (safePatientId) {
