@@ -215,19 +215,27 @@ export function PrintableRequisitionGuide({
   const docPrefix = CATEGORY_PREFIX[request.category] || "REQ";
   const docCode = React.useMemo(() => generateDocCode(docPrefix), [docPrefix]);
 
-  // Hidrata data de nascimento automaticamente a partir do cadastro do paciente.
+  // Hidrata data de nascimento e nº de prontuário a partir do cadastro do paciente.
   const [resolvedBirth, setResolvedBirth] = React.useState<string | null>(
     request.patient_birth_date || null,
   );
+  const [resolvedRecord, setResolvedRecord] = React.useState<string | null>(
+    (request as any).patient_medical_record || null,
+  );
   React.useEffect(() => {
-    if (request.patient_birth_date) { setResolvedBirth(request.patient_birth_date); return; }
     let alive = true;
-    fetchPatientBirthDate({
+    fetchPatientIdentifiers({
       patient_registry_id: request.patient_registry_id,
       patient_id: request.patient_id,
-    }).then((d) => { if (alive) setResolvedBirth(d); });
+    }).then((d) => {
+      if (!alive) return;
+      if (!request.patient_birth_date) setResolvedBirth(d.birth_date);
+      if (!(request as any).patient_medical_record) setResolvedRecord(d.medical_record);
+    });
+    if (request.patient_birth_date) setResolvedBirth(request.patient_birth_date);
+    if ((request as any).patient_medical_record) setResolvedRecord((request as any).patient_medical_record);
     return () => { alive = false; };
-  }, [request.patient_birth_date, request.patient_registry_id, request.patient_id]);
+  }, [request.patient_birth_date, (request as any).patient_medical_record, request.patient_registry_id, request.patient_id]);
 
   // Roteamento: se a requisição é predominantemente de cultura microbiológica,
   // usa o layout hospitalar dedicado (estrutura tabular tipo formulário).
