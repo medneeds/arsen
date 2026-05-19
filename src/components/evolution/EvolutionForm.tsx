@@ -19,7 +19,7 @@ import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/prin
 import { FieldTemplates } from "@/components/FieldTemplates";
 import { useHospital } from "@/contexts/HospitalContext";
 import { DevicesCulturesSection } from "@/components/evolution/DevicesCulturesSection";
-import type { EvolutionDevice } from "@/lib/devicesCatalog";
+import { deviceAlertTone, type EvolutionDevice } from "@/lib/devicesCatalog";
 import { Activity } from "lucide-react";
 
 interface SOAPData {
