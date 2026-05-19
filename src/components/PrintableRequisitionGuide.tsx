@@ -643,7 +643,9 @@ export async function printRequisitionGuide(
         </tr>
         <tr>
           <th>Nº Prontuário</th>
-          <td colspan="3" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(medicalRecord || "—")}</td>
+          <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(medicalRecord || "—")}</td>
+          <th>Nº Atendimento</th>
+          <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(encounterCode || "—")}</td>
         </tr>
         <tr>
           <th>Data Nasc.</th><td>${escapeHtml(fmtBirthDate(birthDate))}</td>
