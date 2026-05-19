@@ -12,7 +12,7 @@ import {
   ShieldAlert, Stethoscope, Syringe, TestTubes, TrendingUp, User2, Users
 } from "lucide-react";
 import { calcDIH } from "@/lib/dihCalc";
-import { deviceAlertTone } from "@/lib/devicesCatalog";
+import { deviceAlertTone, DEVICES_CATALOG } from "@/lib/devicesCatalog";
 import { differenceInDays, parseISO, isValid, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -241,7 +241,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           variant === "fixed" && [
             "hidden lg:flex shrink-0 border-l border-border bg-card sticky top-0 h-screen",
             "transition-[width] duration-200 ease-out overflow-hidden",
-            isExpanded ? "w-80" : "w-12",
+            isExpanded ? "w-96" : "w-12",
           ],
           variant === "inline" && "w-full h-full bg-card border border-border rounded-lg overflow-hidden",
           "flex-col print:hidden",
@@ -804,48 +804,94 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               <CockpitSection icon={TestTubes} title="Exames relevantes" count={exams.length}>
                 <ItemList items={exams} emptyMsg="Sem exames destacados." />
               </CockpitSection>
-              <CockpitSection icon={Activity} title="Dispositivos" count={devices.length}>
-                <ItemList items={devices} emptyMsg="Sem dispositivos invasivos registrados." />
-              </CockpitSection>
-              {evolution && evolution.devices.length > 0 && (
-                <CockpitSection
-                  icon={Activity}
-                  title="Dispositivos (última evolução)"
-                  count={evolution.devices.length}
-                >
-                  <ul className="space-y-1">
-                    {evolution.devices.map((d, idx) => {
-                      const days = d.insertedAt ? calcDIH(d.insertedAt) : null;
-                      const tone = deviceAlertTone(days);
-                      return (
-                        <li
-                          key={`${d.id}-${idx}`}
-                          className="flex items-center justify-between gap-2 text-[11px] py-0.5"
-                        >
-                          <span className="truncate text-foreground">{d.label || "—"}</span>
-                          {days !== null && (
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "h-4 px-1 text-[9px] font-semibold border",
-                                tone === "ok" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
-                                tone === "amber" && "bg-amber-500/10 text-amber-700 border-amber-500/40 dark:text-amber-400",
-                                tone === "red" && "bg-red-500/10 text-red-700 border-red-500/40 dark:text-red-400",
-                              )}
-                            >
-                              D{days}
-                            </Badge>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </CockpitSection>
-              )}
+              {/* DISPOSITIVOS — unificado: evolução é fonte primária; legado entra como fallback */}
+              {(() => {
+                const evoDevices = evolution?.devices || [];
+                const hasEvoDevices = evoDevices.length > 0;
+                const fallbackDevices = hasEvoDevices ? [] : devices;
+                const total = hasEvoDevices ? evoDevices.length : fallbackDevices.length;
+                return (
+                  <CockpitSection icon={Activity} title="Dispositivos invasivos" count={total}>
+                    {total === 0 ? (
+                      <p className="text-[11px] text-muted-foreground italic">Sem dispositivos invasivos registrados.</p>
+                    ) : hasEvoDevices ? (
+                      <ul className="space-y-1">
+                        {[...evoDevices]
+                          .sort((a, b) => {
+                            const da = a.insertedAt ? calcDIH(a.insertedAt) ?? -1 : -1;
+                            const db = b.insertedAt ? calcDIH(b.insertedAt) ?? -1 : -1;
+                            return db - da; // mais antigos no topo (maior risco IRAS)
+                          })
+                          .map((d, idx) => {
+                            const days = d.insertedAt ? calcDIH(d.insertedAt) : null;
+                            const tone = deviceAlertTone(days);
+                            const catalogHint = DEVICES_CATALOG.find((c) => c.id === d.id)?.hint;
+                            let insertedBR = "";
+                            try {
+                              if (d.insertedAt) {
+                                const dt = d.insertedAt.includes("/")
+                                  ? null
+                                  : parseISO(d.insertedAt);
+                                if (dt && isValid(dt)) insertedBR = format(dt, "dd/MM", { locale: ptBR });
+                                else if (d.insertedAt.includes("/")) insertedBR = d.insertedAt.slice(0, 5);
+                              }
+                            } catch { /* ignore */ }
+                            return (
+                              <li
+                                key={`${d.id}-${idx}`}
+                                className="flex items-center justify-between gap-2 text-[11px] py-1 border-b border-border/40 last:border-0"
+                              >
+                                <div className="flex flex-col min-w-0 flex-1">
+                                  <span className="truncate font-medium text-foreground">{d.label || "—"}</span>
+                                  {(catalogHint || insertedBR) && (
+                                    <span className="text-[9px] text-muted-foreground truncate">
+                                      {catalogHint}
+                                      {catalogHint && insertedBR ? " · " : ""}
+                                      {insertedBR && `inserido ${insertedBR}`}
+                                    </span>
+                                  )}
+                                </div>
+                                {days !== null && (
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "h-5 px-1.5 text-[9px] font-semibold border shrink-0",
+                                      tone === "ok" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
+                                      tone === "amber" && "bg-amber-500/10 text-amber-700 border-amber-500/40 dark:text-amber-400",
+                                      tone === "red" && "bg-red-500/10 text-red-700 border-red-500/40 dark:text-red-400",
+                                    )}
+                                  >
+                                    D{days}
+                                  </Badge>
+                                )}
+                              </li>
+                            );
+                          })}
+                      </ul>
+                    ) : (
+                      <ItemList items={fallbackDevices} emptyMsg="Sem dispositivos invasivos registrados." />
+                    )}
+                  </CockpitSection>
+                );
+              })()}
               {evolution && evolution.culturesHtml && (
-                <CockpitSection icon={FlaskConical} title="Últimas culturas" count={0}>
+                <CockpitSection icon={FlaskConical} title="Culturas (última evolução)" count={0}>
+                  {(evolution.createdByName || evolution.validatedAt || evolution.createdAt) && (
+                    <p className="text-[9px] text-muted-foreground mb-1.5 preserve-case">
+                      {(() => {
+                        const ref = evolution.validatedAt || evolution.createdAt;
+                        try {
+                          const dt = parseISO(ref);
+                          if (isValid(dt)) {
+                            return `Registrado em ${format(dt, "dd/MM 'às' HH:mm", { locale: ptBR })}${evolution.createdByName ? ` · ${evolution.createdByName}` : ""}`;
+                          }
+                        } catch { /* ignore */ }
+                        return evolution.createdByName ? `Por ${evolution.createdByName}` : "";
+                      })()}
+                    </p>
+                  )}
                   <div
-                    className="text-[11px] leading-snug text-foreground/90 prose-sm max-w-none [&_p]:my-1"
+                    className="text-[11px] leading-snug text-foreground/90 prose-sm max-w-none [&_p]:my-1 [&_strong]:font-semibold"
                     dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(evolution.culturesHtml) }}
                   />
                 </CockpitSection>
