@@ -63,8 +63,12 @@ export function useLatestEvolution(
       .is("archived_at", null)
       .order("created_at", { ascending: false })
       .limit(1);
-    if (patientId) q = q.eq("patient_id", patientId);
-    else if (patientName) q = q.eq("patient_name", patientName.trim());
+    if (patientId) {
+      q = q.eq("patient_id", patientId);
+      if (activeEncounterId) {
+        q = q.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
+      }
+    } else if (patientName) q = q.eq("patient_name", patientName.trim());
 
     const { data, error } = await q;
     if (!error && data && data.length > 0) {
