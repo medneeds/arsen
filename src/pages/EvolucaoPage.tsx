@@ -550,8 +550,7 @@ const EvolucaoPage = () => {
           <p>Médico responsável — CRM</p>
         </div>
       </div>
-    </div>
-  );
+
       {/* Confirmação leve antes de duplicar uma evolução */}
       <AlertDialog open={!!pendingDuplicate} onOpenChange={(open) => { if (!open) setPendingDuplicate(null); }}>
         <AlertDialogContent>
