@@ -235,6 +235,9 @@ export function PrintableRequisitionGuide({
   const [resolvedRecord, setResolvedRecord] = React.useState<string | null>(
     (request as any).patient_medical_record || null,
   );
+  const [resolvedEncounter, setResolvedEncounter] = React.useState<string | null>(
+    (request as any).patient_encounter_code || null,
+  );
   React.useEffect(() => {
     let alive = true;
     fetchPatientIdentifiers({
@@ -244,11 +247,13 @@ export function PrintableRequisitionGuide({
       if (!alive) return;
       if (!request.patient_birth_date) setResolvedBirth(d.birth_date);
       if (!(request as any).patient_medical_record) setResolvedRecord(d.medical_record);
+      if (!(request as any).patient_encounter_code) setResolvedEncounter(d.encounter_code);
     });
     if (request.patient_birth_date) setResolvedBirth(request.patient_birth_date);
     if ((request as any).patient_medical_record) setResolvedRecord((request as any).patient_medical_record);
+    if ((request as any).patient_encounter_code) setResolvedEncounter((request as any).patient_encounter_code);
     return () => { alive = false; };
-  }, [request.patient_birth_date, (request as any).patient_medical_record, request.patient_registry_id, request.patient_id]);
+  }, [request.patient_birth_date, (request as any).patient_medical_record, (request as any).patient_encounter_code, request.patient_registry_id, request.patient_id]);
 
   // Roteamento: se a requisição é predominantemente de cultura microbiológica,
   // usa o layout hospitalar dedicado (estrutura tabular tipo formulário).
