@@ -21,6 +21,11 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { DevicesCulturesSection } from "@/components/evolution/DevicesCulturesSection";
 import { deviceAlertTone, type EvolutionDevice } from "@/lib/devicesCatalog";
 import { Activity } from "lucide-react";
+import { printEvolution } from "@/lib/printEvolution";
+import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import type { EvolutionRecord } from "@/hooks/useEvolutions";
 
 interface SOAPData {
   subjective: string;
@@ -66,6 +71,15 @@ interface EvolutionFormProps {
   onCulturesChange?: (html: string) => void;
   /** Data de admissão no setor — base p/ presets do date picker dos dispositivos. */
   admissionDate?: string | null;
+  /** Registro da evolução (usado para impressão unificada via printEvolution). */
+  evo?: EvolutionRecord;
+  /** UUID do paciente — chave do resolver de identidade na impressão. */
+  patientId?: string | null;
+  /** Prontuário fallback (usado se o resolver não encontrar). */
+  patientRecord?: string | null;
+  /** CIDs ativos — incluídos no bloco "Diagnósticos" do PDF. */
+  cidPrimary?: string | null;
+  cidSecondary?: string | null;
 }
 
 type SectionKey = 'vitals' | 'evolucao' | 'objective' | 'plan' | 'review';
@@ -101,6 +115,11 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   devices, onDevicesChange,
   culturesHtml, onCulturesChange,
   admissionDate,
+  evo,
+  patientId,
+  patientRecord,
+  cidPrimary,
+  cidSecondary,
 }) => {
   const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'devices', 'evolucao', 'complementares', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
@@ -153,38 +172,55 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
         <ReadOnlyView soap={soap} vitals={vitals} physicalExam={physicalExam} devices={devices} culturesHtml={culturesHtml} />
         {isValidated && (
           <div className="flex items-center gap-2 justify-end">
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={async () => {
-              const logo = await prepareLogo();
-              const escape = (s: string) => (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br/>");
-              const vitalsRow = [
-                vitals.pa && `PA ${vitals.pa}`, vitals.fc && `FC ${vitals.fc}`, vitals.fr && `FR ${vitals.fr}`,
-                vitals.temp && `T ${vitals.temp}°C`, vitals.spo2 && `SpO₂ ${vitals.spo2}%`,
-                vitals.glasgow && `Glasgow ${vitals.glasgow}`, vitals.diurese && `Diurese ${vitals.diurese} mL/24h`,
-                vitals.dor && `Dor ${vitals.dor}`,
-              ].filter(Boolean).join(" • ");
-              const examRows = EXAM_FIELDS.filter(f => physicalExam[f.key])
-                .map(f => `<tr><th style="width:130px">${f.label}</th><td>${escape(physicalExam[f.key])}</td></tr>`).join("");
-              const evolucaoHtml = [soap.subjective, soap.assessment]
-                .map(t => sanitizeRichHtml(toRichHtml(t)))
-                .filter(Boolean).join("");
-              const objectiveHtml = sanitizeRichHtml(toRichHtml(soap.objective));
-              const planHtml = sanitizeRichHtml(toRichHtml(soap.plan));
-              const bodyHtml = `
-                ${vitalsRow ? `<h2 class="nz-section">Sinais Vitais</h2><div style="padding:6pt 8pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:9pt">${vitalsRow}</div>` : ""}
-                <h2 class="nz-section">Evolução</h2>
-                <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${evolucaoHtml || "<em>—</em>"}</div>
-                ${examRows ? `<h2 class="nz-section">Exame Físico</h2><table class="nz"><tbody>${examRows}</tbody></table>` : ""}
-                ${richHtmlToPlainText(soap.objective) ? `<h2 class="nz-section">Exames Complementares</h2><div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${objectiveHtml}</div>` : ""}
-                <h2 class="nz-section">Plano</h2>
-                <div style="padding:8pt 10pt;background:#f8fafc;border:1px solid #e2e8f0;border-radius:3pt;font-size:10pt;line-height:1.5">${planHtml || "<em>—</em>"}</div>
-              `;
-              const html = buildNormaZeroDocument({
-                title: "Evolução Clínica", subtitle: "Registro de evolução",
-                sectorLabel: "Assistência Médica", docCodePrefix: "EVOL", bodyHtml,
-                logoDataUrl: logo, signatures: [{ label: "Médico Assistente", caption: "CRM e assinatura" }],
-              });
-              openPrintWindow(html, "Preparando evolução…");
-            }}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={async () => {
+                // Unificado com o botão de impressão da Timeline (printEvolution):
+                // mesma resolução de identidade (resolvePatientHeader) + leitura
+                // ao vivo de leito/setor em `patients`. Garante cabeçalho
+                // sincronizado com o paciente real, sem usar snapshots vazios.
+                if (!evo) {
+                  toast.error("Evolução ainda não foi salva — não é possível imprimir");
+                  return;
+                }
+                try {
+                  const resolved = await resolvePatientHeader(
+                    patientId || null,
+                    evo.patient_name || null,
+                    hospitalId,
+                    (evo as any).patient_registry_id || null,
+                  );
+                  let currentBed = evo.patient_bed || undefined;
+                  let currentSector = evo.patient_sector || undefined;
+                  if (patientId) {
+                    const { data: pRow } = await supabase
+                      .from("patients")
+                      .select("bed_number, sector")
+                      .eq("id", patientId)
+                      .maybeSingle();
+                    if (pRow?.bed_number) currentBed = pRow.bed_number;
+                    if (pRow?.sector) currentSector = pRow.sector;
+                  }
+                  await printEvolution(evo, {
+                    patientName: resolved.name || evo.patient_name,
+                    patientBed: currentBed,
+                    patientSector: currentSector,
+                    patientRecord: resolved.prontuario || patientRecord || undefined,
+                    patientAtendimento: resolved.atendimento || undefined,
+                    patientSocialName: resolved.socialName || undefined,
+                    patientCpf: resolved.cpf || undefined,
+                    patientCns: resolved.cns || undefined,
+                    cidPrimary: cidPrimary || undefined,
+                    cidSecondary: cidSecondary || undefined,
+                  });
+                } catch (err) {
+                  console.error("[EvolutionForm] Falha ao imprimir evolução:", err);
+                  toast.error("Não foi possível resolver os dados do paciente para impressão");
+                }
+              }}
+            >
               <Printer className="h-3.5 w-3.5" /> Imprimir Evolução
             </Button>
           </div>
