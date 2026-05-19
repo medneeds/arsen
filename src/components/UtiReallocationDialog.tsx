@@ -426,7 +426,10 @@ export function UtiReallocationDialog({
               ? [{ icon: AlertTriangle, text: <>Como há mudança de unidade de UTI, a <strong>responsabilidade médica e a equipe assistencial</strong> serão atualizadas conforme escala da unidade destino.</> }]
               : []),
             { icon: Eye, text: <>O paciente continua visível em todos os módulos (mapa, prescrição, evolução, exames).</> },
-            { icon: History, text: <>O histórico clínico longitudinal é preservado integralmente.</> },
+            { icon: History, text: <>O histórico clínico longitudinal e o <strong>mesmo número de atendimento</strong> são preservados até o desfecho final.</> },
+            ...(requiresSaps(classifyTransfer(patient.sector, targetBedPatient.sector))
+              ? [{ icon: AlertTriangle, text: <>Como é uma <strong>escalada para setor crítico</strong> ({classificationLabel(classifyTransfer(patient.sector, targetBedPatient.sector))}), o paciente entrará no destino com status <strong>SAPS 3 pendente</strong> — o preenchimento da ficha será cobrado por timer após a alocação.</> }]
+              : []),
           ]}
           warnings={targetUnit !== currentUtiUnit
             ? [{ label: "Mudança de unidade", detail: "verifique a escala médica e o handover com a equipe receptora antes de confirmar." }]
