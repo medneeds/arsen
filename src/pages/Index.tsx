@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { SectorSection } from "@/components/SectorSection";
 import { UtiSectorSection } from "@/components/UtiSectorSection";
 import { PreAdmissionSection, type PreAdmissionSectionHandle } from "@/components/PreAdmissionSection";
+import { InternalTransferQueueSection } from "@/components/InternalTransferQueueSection";
 import { PatientCard } from "@/components/PatientCard";
 import { PatientSidebar } from "@/components/PatientSidebar";
 import { PrintLayout } from "@/components/PrintLayout";
@@ -1040,7 +1041,7 @@ const Index = () => {
 
 
               {/* Pre-admission section — filtra por setor ativo (exceto UE Vertical/Horizontal que mostram todos) */}
-              <div className="print:hidden">
+              <div className="print:hidden space-y-3">
                 <PreAdmissionSection
                   ref={preAdmissionRef}
                   sectorFilterLabel={
@@ -1049,6 +1050,7 @@ const Index = () => {
                       : SECTOR_VISUAL[activeSector]?.title
                   }
                 />
+                <InternalTransferQueueSection sectorCode={activeSector} />
               </div>
 
               {SECTOR_VISUAL[activeSector]?.isUti ? (

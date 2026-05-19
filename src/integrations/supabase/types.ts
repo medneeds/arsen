@@ -1407,6 +1407,108 @@ export type Database = {
           },
         ]
       }
+      internal_transfer_requests: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          classification: string
+          completed_at: string | null
+          completed_by: string | null
+          completed_target_patient_id: string | null
+          created_at: string
+          department: string | null
+          encounter_code: string | null
+          hospital_unit_id: string
+          id: string
+          patient_name: string
+          patient_snapshot: Json
+          reason: string | null
+          requires_saps: boolean
+          signaled_at: string
+          signaled_by: string | null
+          source_bed: string | null
+          source_patient_id: string
+          source_sector: string | null
+          state_id: string
+          status: string
+          target_sector_code: string
+          target_sector_label: string | null
+          updated_at: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          classification: string
+          completed_at?: string | null
+          completed_by?: string | null
+          completed_target_patient_id?: string | null
+          created_at?: string
+          department?: string | null
+          encounter_code?: string | null
+          hospital_unit_id: string
+          id?: string
+          patient_name: string
+          patient_snapshot?: Json
+          reason?: string | null
+          requires_saps?: boolean
+          signaled_at?: string
+          signaled_by?: string | null
+          source_bed?: string | null
+          source_patient_id: string
+          source_sector?: string | null
+          state_id: string
+          status?: string
+          target_sector_code: string
+          target_sector_label?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          classification?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          completed_target_patient_id?: string | null
+          created_at?: string
+          department?: string | null
+          encounter_code?: string | null
+          hospital_unit_id?: string
+          id?: string
+          patient_name?: string
+          patient_snapshot?: Json
+          reason?: string | null
+          requires_saps?: boolean
+          signaled_at?: string
+          signaled_by?: string | null
+          source_bed?: string | null
+          source_patient_id?: string
+          source_sector?: string | null
+          state_id?: string
+          status?: string
+          target_sector_code?: string
+          target_sector_label?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_transfer_requests_completed_target_patient_id_fkey"
+            columns: ["completed_target_patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_transfer_requests_source_patient_id_fkey"
+            columns: ["source_patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       internment_requests: {
         Row: {
           content: string
