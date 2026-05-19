@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { SectorSection } from "@/components/SectorSection";
 import { UtiSectorSection } from "@/components/UtiSectorSection";
 import { PreAdmissionSection, type PreAdmissionSectionHandle } from "@/components/PreAdmissionSection";
+import { InternalTransferQueueSection } from "@/components/InternalTransferQueueSection";
 import { PatientCard } from "@/components/PatientCard";
 import { PatientSidebar } from "@/components/PatientSidebar";
 import { PrintLayout } from "@/components/PrintLayout";
