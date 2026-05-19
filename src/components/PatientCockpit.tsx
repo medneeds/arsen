@@ -381,6 +381,85 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
             value="Alto • Profilaxia ativa"
           />
 
+          {/* DISPOSITIVOS INVASIVOS — sincronizado com a última evolução (fonte primária) ou fallback legado */}
+          {(() => {
+            const evoDevices = evolution?.devices || [];
+            const hasEvoDevices = evoDevices.length > 0;
+            const fallbackDevices = hasEvoDevices ? [] : devices;
+            const total = hasEvoDevices ? evoDevices.length : fallbackDevices.length;
+            if (total === 0) return null;
+            return (
+              <div className="rounded-md border border-border/70 bg-muted/30 px-2 py-1.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Activity className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Dispositivos invasivos
+                  </span>
+                  <span className="text-[9px] text-muted-foreground">({total})</span>
+                </div>
+                {hasEvoDevices ? (
+                  <ul className="space-y-0.5">
+                    {[...evoDevices]
+                      .sort((a, b) => {
+                        const da = a.insertedAt ? calcDIH(a.insertedAt) ?? -1 : -1;
+                        const db = b.insertedAt ? calcDIH(b.insertedAt) ?? -1 : -1;
+                        return db - da;
+                      })
+                      .map((d, idx) => {
+                        const days = d.insertedAt ? calcDIH(d.insertedAt) : null;
+                        const tone = deviceAlertTone(days);
+                        const catalogHint = DEVICES_CATALOG.find((c) => c.id === d.id)?.hint;
+                        let insertedBR = "";
+                        try {
+                          if (d.insertedAt) {
+                            const dt = d.insertedAt.includes("/") ? null : parseISO(d.insertedAt);
+                            if (dt && isValid(dt)) insertedBR = format(dt, "dd/MM", { locale: ptBR });
+                            else if (d.insertedAt.includes("/")) insertedBR = d.insertedAt.slice(0, 5);
+                          }
+                        } catch { /* ignore */ }
+                        return (
+                          <li
+                            key={`${d.id}-${idx}`}
+                            className="flex items-center justify-between gap-2 text-[11px] py-0.5"
+                          >
+                            <div className="flex flex-col min-w-0 flex-1">
+                              <span className="truncate font-medium text-foreground leading-tight">{d.label || "—"}</span>
+                              {(catalogHint || insertedBR) && (
+                                <span className="text-[9px] text-muted-foreground truncate leading-tight">
+                                  {catalogHint}
+                                  {catalogHint && insertedBR ? " · " : ""}
+                                  {insertedBR && `inserido ${insertedBR}`}
+                                </span>
+                              )}
+                            </div>
+                            {days !== null && (
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "h-4 px-1 text-[9px] font-semibold border shrink-0",
+                                  tone === "ok" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
+                                  tone === "amber" && "bg-amber-500/10 text-amber-700 border-amber-500/40 dark:text-amber-400",
+                                  tone === "red" && "bg-red-500/10 text-red-700 border-red-500/40 dark:text-red-400",
+                                )}
+                              >
+                                D{days}
+                              </Badge>
+                            )}
+                          </li>
+                        );
+                      })}
+                  </ul>
+                ) : (
+                  <ul className="space-y-0.5">
+                    {fallbackDevices.map((label, idx) => (
+                      <li key={idx} className="text-[11px] text-foreground truncate">{label}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })()}
+
           {pendencies.length > 0 && (
             <AlertChip
               icon={ClipboardList}
@@ -733,18 +812,15 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           </div>
         )}
 
-        <Tabs defaultValue="resumo" className="flex-1 min-h-0 flex flex-col">
-          <TabsList className="mx-2 sm:mx-3 mt-2 grid grid-cols-4 h-9 sm:h-8 p-0.5 sticky top-0 z-10 shrink-0">
+        <Tabs defaultValue="resumo" className="flex flex-col">
+          <TabsList className="mx-2 sm:mx-3 mt-2 grid grid-cols-4 h-9 sm:h-8 p-0.5 shrink-0">
             <TabsTrigger value="resumo" className="text-[11px] h-8 sm:h-7 px-1">Resumo</TabsTrigger>
             <TabsTrigger value="exames" className="text-[11px] h-8 sm:h-7 px-1">Exames</TabsTrigger>
             <TabsTrigger value="condutas" className="text-[11px] h-8 sm:h-7 px-1">Condutas</TabsTrigger>
             <TabsTrigger value="trajeto" className="text-[11px] h-8 sm:h-7 px-1">Trajeto</TabsTrigger>
           </TabsList>
 
-          <div
-            className="flex-1 min-h-0 mt-1 overflow-y-auto overscroll-contain pb-[max(env(safe-area-inset-bottom),0.75rem)]"
-            style={{ WebkitOverflowScrolling: "touch" }}
-          >
+          <div className="mt-1 pb-3">
             {/* ABA RESUMO: diagnósticos + antecedentes + responsável */}
             <TabsContent value="resumo" className="px-2.5 sm:px-3 pb-3 space-y-3 mt-2 data-[state=inactive]:hidden">
               <CockpitSection icon={Stethoscope} title="Diagnósticos" count={diagnoses.length}>
@@ -804,76 +880,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               <CockpitSection icon={TestTubes} title="Exames relevantes" count={exams.length}>
                 <ItemList items={exams} emptyMsg="Sem exames destacados." />
               </CockpitSection>
-              {/* DISPOSITIVOS — unificado: evolução é fonte primária; legado entra como fallback */}
-              {(() => {
-                const evoDevices = evolution?.devices || [];
-                const hasEvoDevices = evoDevices.length > 0;
-                const fallbackDevices = hasEvoDevices ? [] : devices;
-                const total = hasEvoDevices ? evoDevices.length : fallbackDevices.length;
-                return (
-                  <CockpitSection icon={Activity} title="Dispositivos invasivos" count={total}>
-                    {total === 0 ? (
-                      <p className="text-[11px] text-muted-foreground italic">Sem dispositivos invasivos registrados.</p>
-                    ) : hasEvoDevices ? (
-                      <ul className="space-y-1">
-                        {[...evoDevices]
-                          .sort((a, b) => {
-                            const da = a.insertedAt ? calcDIH(a.insertedAt) ?? -1 : -1;
-                            const db = b.insertedAt ? calcDIH(b.insertedAt) ?? -1 : -1;
-                            return db - da; // mais antigos no topo (maior risco IRAS)
-                          })
-                          .map((d, idx) => {
-                            const days = d.insertedAt ? calcDIH(d.insertedAt) : null;
-                            const tone = deviceAlertTone(days);
-                            const catalogHint = DEVICES_CATALOG.find((c) => c.id === d.id)?.hint;
-                            let insertedBR = "";
-                            try {
-                              if (d.insertedAt) {
-                                const dt = d.insertedAt.includes("/")
-                                  ? null
-                                  : parseISO(d.insertedAt);
-                                if (dt && isValid(dt)) insertedBR = format(dt, "dd/MM", { locale: ptBR });
-                                else if (d.insertedAt.includes("/")) insertedBR = d.insertedAt.slice(0, 5);
-                              }
-                            } catch { /* ignore */ }
-                            return (
-                              <li
-                                key={`${d.id}-${idx}`}
-                                className="flex items-center justify-between gap-2 text-[11px] py-1 border-b border-border/40 last:border-0"
-                              >
-                                <div className="flex flex-col min-w-0 flex-1">
-                                  <span className="truncate font-medium text-foreground">{d.label || "—"}</span>
-                                  {(catalogHint || insertedBR) && (
-                                    <span className="text-[9px] text-muted-foreground truncate">
-                                      {catalogHint}
-                                      {catalogHint && insertedBR ? " · " : ""}
-                                      {insertedBR && `inserido ${insertedBR}`}
-                                    </span>
-                                  )}
-                                </div>
-                                {days !== null && (
-                                  <Badge
-                                    variant="outline"
-                                    className={cn(
-                                      "h-5 px-1.5 text-[9px] font-semibold border shrink-0",
-                                      tone === "ok" && "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
-                                      tone === "amber" && "bg-amber-500/10 text-amber-700 border-amber-500/40 dark:text-amber-400",
-                                      tone === "red" && "bg-red-500/10 text-red-700 border-red-500/40 dark:text-red-400",
-                                    )}
-                                  >
-                                    D{days}
-                                  </Badge>
-                                )}
-                              </li>
-                            );
-                          })}
-                      </ul>
-                    ) : (
-                      <ItemList items={fallbackDevices} emptyMsg="Sem dispositivos invasivos registrados." />
-                    )}
-                  </CockpitSection>
-                );
-              })()}
+              {/* Dispositivos invasivos foi promovido p/ a zona de alertas (após Risco TEV). */}
               {evolution && evolution.culturesHtml && (
                 <CockpitSection icon={FlaskConical} title="Culturas (última evolução)" count={0}>
                   {(evolution.createdByName || evolution.validatedAt || evolution.createdAt) && (
