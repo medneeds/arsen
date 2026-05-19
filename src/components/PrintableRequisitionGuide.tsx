@@ -40,40 +40,37 @@ function fmtBirthDate(iso?: string | null): string {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
-/** Busca data de nascimento do paciente nos cadastros (registry → patients). */
-async function fetchPatientBirthDate(req: {
+/** Busca data de nascimento e nº de prontuário do paciente (registry → patients). */
+async function fetchPatientIdentifiers(req: {
   patient_registry_id?: string | null;
   patient_id?: string | null;
-}): Promise<string | null> {
+}): Promise<{ birth_date: string | null; medical_record: string | null }> {
+  let birth_date: string | null = null;
+  let medical_record: string | null = null;
   try {
-    if (req.patient_registry_id) {
-      const { data } = await supabase
-        .from("patient_registry")
-        .select("birth_date")
-        .eq("id", req.patient_registry_id)
-        .maybeSingle();
-      if (data?.birth_date) return data.birth_date as string;
-    }
+    let regId = req.patient_registry_id || null;
     if (req.patient_id) {
-      const { data } = await supabase
+      const { data: pat } = await supabase
         .from("patients")
-        .select("patient_registry_id")
+        .select("patient_registry_id, medical_record")
         .eq("id", req.patient_id)
         .maybeSingle();
-      const regId = (data as any)?.patient_registry_id;
-      if (regId) {
-        const { data: reg } = await supabase
-          .from("patient_registry")
-          .select("birth_date")
-          .eq("id", regId)
-          .maybeSingle();
-        if (reg?.birth_date) return reg.birth_date as string;
-      }
+      if (!regId && (pat as any)?.patient_registry_id) regId = (pat as any).patient_registry_id;
+      if (!medical_record && (pat as any)?.medical_record) medical_record = (pat as any).medical_record;
+    }
+    if (regId) {
+      const { data: reg } = await supabase
+        .from("patient_registry")
+        .select("birth_date, medical_record")
+        .eq("id", regId)
+        .maybeSingle();
+      if ((reg as any)?.birth_date) birth_date = (reg as any).birth_date;
+      if (!medical_record && (reg as any)?.medical_record) medical_record = (reg as any).medical_record;
     }
   } catch {
     /* silencioso */
   }
-  return null;
+  return { birth_date, medical_record };
 }
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -218,19 +215,27 @@ export function PrintableRequisitionGuide({
   const docPrefix = CATEGORY_PREFIX[request.category] || "REQ";
   const docCode = React.useMemo(() => generateDocCode(docPrefix), [docPrefix]);
 
-  // Hidrata data de nascimento automaticamente a partir do cadastro do paciente.
+  // Hidrata data de nascimento e nº de prontuário a partir do cadastro do paciente.
   const [resolvedBirth, setResolvedBirth] = React.useState<string | null>(
     request.patient_birth_date || null,
   );
+  const [resolvedRecord, setResolvedRecord] = React.useState<string | null>(
+    (request as any).patient_medical_record || null,
+  );
   React.useEffect(() => {
-    if (request.patient_birth_date) { setResolvedBirth(request.patient_birth_date); return; }
     let alive = true;
-    fetchPatientBirthDate({
+    fetchPatientIdentifiers({
       patient_registry_id: request.patient_registry_id,
       patient_id: request.patient_id,
-    }).then((d) => { if (alive) setResolvedBirth(d); });
+    }).then((d) => {
+      if (!alive) return;
+      if (!request.patient_birth_date) setResolvedBirth(d.birth_date);
+      if (!(request as any).patient_medical_record) setResolvedRecord(d.medical_record);
+    });
+    if (request.patient_birth_date) setResolvedBirth(request.patient_birth_date);
+    if ((request as any).patient_medical_record) setResolvedRecord((request as any).patient_medical_record);
     return () => { alive = false; };
-  }, [request.patient_birth_date, request.patient_registry_id, request.patient_id]);
+  }, [request.patient_birth_date, (request as any).patient_medical_record, request.patient_registry_id, request.patient_id]);
 
   // Roteamento: se a requisição é predominantemente de cultura microbiológica,
   // usa o layout hospitalar dedicado (estrutura tabular tipo formulário).
@@ -354,6 +359,12 @@ export function PrintableRequisitionGuide({
             <th style={{ ...thStyle, width: "14%" }}>Leito</th>
             <td style={{ ...tdStyle, width: "18%" }}>
               {request.patient_bed || "—"}
+            </td>
+          </tr>
+          <tr>
+            <th style={thStyle}>Nº Prontuário</th>
+            <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontWeight: 600 }} colSpan={3}>
+              {resolvedRecord || "—"}
             </td>
           </tr>
           <tr>
@@ -550,13 +561,14 @@ export async function printRequisitionGuide(
 ) {
   const items = Array.isArray(request.items) ? request.items : [];
 
-  // Resolve data de nascimento (fallback automático para registry/patients)
-  const birthDate: string | null =
-    request.patient_birth_date ||
-    (await fetchPatientBirthDate({
-      patient_registry_id: request.patient_registry_id,
-      patient_id: request.patient_id,
-    }));
+  // Resolve data de nascimento e nº de prontuário (fallback registry/patients)
+  const resolvedIds = await fetchPatientIdentifiers({
+    patient_registry_id: request.patient_registry_id,
+    patient_id: request.patient_id,
+  });
+  const birthDate: string | null = request.patient_birth_date || resolvedIds.birth_date;
+  const medicalRecord: string | null =
+    (request as any).patient_medical_record || resolvedIds.medical_record;
   const ageY = ageInYears(birthDate);
 
   // Roteamento para layout dedicado de cultura microbiológica (padrão hospitalar)
@@ -604,6 +616,10 @@ export async function printRequisitionGuide(
         <tr>
           <th>Setor</th><td>${escapeHtml(sectorName || "—")}</td>
           <th style="width:14%">Leito</th><td style="width:18%">${escapeHtml(request.patient_bed || "—")}</td>
+        </tr>
+        <tr>
+          <th>Nº Prontuário</th>
+          <td colspan="3" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(medicalRecord || "—")}</td>
         </tr>
         <tr>
           <th>Data Nasc.</th><td>${escapeHtml(fmtBirthDate(birthDate))}</td>
