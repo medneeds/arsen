@@ -55,6 +55,8 @@ export function useLatestEvolution(
       .from("clinical_evolutions")
       .select("id, status, soap_data, created_at, created_by_name, validated_at, patient_id, patient_name")
       .eq("hospital_unit_id", hospitalUnitId)
+      // ⚠️ ignora evoluções arquivadas (ocupante anterior do leito, reverts).
+      .is("archived_at", null)
       .order("created_at", { ascending: false })
       .limit(1);
     if (patientId) q = q.eq("patient_id", patientId);
