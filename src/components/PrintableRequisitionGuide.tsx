@@ -362,6 +362,12 @@ export function PrintableRequisitionGuide({
             </td>
           </tr>
           <tr>
+            <th style={thStyle}>Nº Prontuário</th>
+            <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontWeight: 600 }} colSpan={3}>
+              {resolvedRecord || "—"}
+            </td>
+          </tr>
+          <tr>
             <th style={thStyle}>Data Nasc.</th>
             <td style={tdStyle}>{fmtBirthDate(resolvedBirth)}</td>
             <th style={thStyle}>Idade</th>
