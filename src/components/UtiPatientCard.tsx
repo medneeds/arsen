@@ -728,6 +728,7 @@ export function UtiPatientCard({
   const [movementType, setMovementType] = useState<"ALTA" | "ÓBITO" | "TRANSFERÊNCIA" | null>(null);
   const [isMovementDialogOpen, setIsMovementDialogOpen] = useState(false);
   const [isReallocationDialogOpen, setIsReallocationDialogOpen] = useState(false);
+  const [isSignalTransferOpen, setIsSignalTransferOpen] = useState(false);
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
   const [isRoundPrintDialogOpen, setIsRoundPrintDialogOpen] = useState(false);
   const [isReleasePreAdmissionOpen, setIsReleasePreAdmissionOpen] = useState(false);
