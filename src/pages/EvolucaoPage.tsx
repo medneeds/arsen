@@ -133,6 +133,7 @@ const EvolucaoPage = () => {
   const [creating, setCreating] = useState(false);
   const [diagnosticsReplicated, setDiagnosticsReplicated] = useState(false);
   const [diagnosticHypotheses, setDiagnosticHypotheses] = useState("");
+  const [pendingDuplicate, setPendingDuplicate] = useState<EvolutionRecord | null>(null);
 
   // CID state — persisted to admission_histories via usePatientCid
   const {
