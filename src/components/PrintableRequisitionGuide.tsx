@@ -40,40 +40,37 @@ function fmtBirthDate(iso?: string | null): string {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
-/** Busca data de nascimento do paciente nos cadastros (registry → patients). */
-async function fetchPatientBirthDate(req: {
+/** Busca data de nascimento e nº de prontuário do paciente (registry → patients). */
+async function fetchPatientIdentifiers(req: {
   patient_registry_id?: string | null;
   patient_id?: string | null;
-}): Promise<string | null> {
+}): Promise<{ birth_date: string | null; medical_record: string | null }> {
+  let birth_date: string | null = null;
+  let medical_record: string | null = null;
   try {
-    if (req.patient_registry_id) {
-      const { data } = await supabase
-        .from("patient_registry")
-        .select("birth_date")
-        .eq("id", req.patient_registry_id)
-        .maybeSingle();
-      if (data?.birth_date) return data.birth_date as string;
-    }
+    let regId = req.patient_registry_id || null;
     if (req.patient_id) {
-      const { data } = await supabase
+      const { data: pat } = await supabase
         .from("patients")
-        .select("patient_registry_id")
+        .select("patient_registry_id, medical_record")
         .eq("id", req.patient_id)
         .maybeSingle();
-      const regId = (data as any)?.patient_registry_id;
-      if (regId) {
-        const { data: reg } = await supabase
-          .from("patient_registry")
-          .select("birth_date")
-          .eq("id", regId)
-          .maybeSingle();
-        if (reg?.birth_date) return reg.birth_date as string;
-      }
+      if (!regId && (pat as any)?.patient_registry_id) regId = (pat as any).patient_registry_id;
+      if (!medical_record && (pat as any)?.medical_record) medical_record = (pat as any).medical_record;
+    }
+    if (regId) {
+      const { data: reg } = await supabase
+        .from("patient_registry")
+        .select("birth_date, medical_record")
+        .eq("id", regId)
+        .maybeSingle();
+      if ((reg as any)?.birth_date) birth_date = (reg as any).birth_date;
+      if (!medical_record && (reg as any)?.medical_record) medical_record = (reg as any).medical_record;
     }
   } catch {
     /* silencioso */
   }
-  return null;
+  return { birth_date, medical_record };
 }
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
