@@ -150,7 +150,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   if (readOnly) {
     return (
       <div className="space-y-3">
-        <ReadOnlyView soap={soap} vitals={vitals} physicalExam={physicalExam} />
+        <ReadOnlyView soap={soap} vitals={vitals} physicalExam={physicalExam} devices={devices} culturesHtml={culturesHtml} />
         {isValidated && (
           <div className="flex items-center gap-2 justify-end">
             <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={async () => {
