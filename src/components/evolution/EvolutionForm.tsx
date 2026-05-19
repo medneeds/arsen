@@ -393,7 +393,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               </ul>
             </div>
           )}
-          <ReadOnlyView soap={soap} vitals={vitals} physicalExam={physicalExam} />
+          <ReadOnlyView soap={soap} vitals={vitals} physicalExam={physicalExam} devices={devices} culturesHtml={culturesHtml} />
         </SectionItem>
       </Accordion>
 
