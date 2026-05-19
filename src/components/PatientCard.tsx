@@ -657,6 +657,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   const [admissionHistoryDialogOpen, setAdmissionHistoryDialogOpen] = useState(false);
   const [roundPrintDialogOpen, setRoundPrintDialogOpen] = useState(false);
   const [reallocationDialogOpen, setReallocationDialogOpen] = useState(false);
+  const [signalTransferOpen, setSignalTransferOpen] = useState(false);
   const { history: conductHistory, isLoading: conductHistoryLoading, recordChange } = useConductHistory(patient.id);
   const { role, user } = useAuth();
   const { requests } = useBedAllocationRequests();
