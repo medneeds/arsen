@@ -40,13 +40,14 @@ function fmtBirthDate(iso?: string | null): string {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
-/** Busca data de nascimento e nº de prontuário do paciente (registry → patients). */
+/** Busca data de nascimento, nº de prontuário e nº de atendimento (registry → patients → encounters). */
 async function fetchPatientIdentifiers(req: {
   patient_registry_id?: string | null;
   patient_id?: string | null;
-}): Promise<{ birth_date: string | null; medical_record: string | null }> {
+}): Promise<{ birth_date: string | null; medical_record: string | null; encounter_code: string | null }> {
   let birth_date: string | null = null;
   let medical_record: string | null = null;
+  let encounter_code: string | null = null;
   try {
     let regId = req.patient_registry_id || null;
     if (req.patient_id) {
@@ -67,10 +68,22 @@ async function fetchPatientIdentifiers(req: {
       if ((reg as any)?.birth_date) birth_date = (reg as any).birth_date;
       if (!medical_record && (reg as any)?.medical_record) medical_record = (reg as any).medical_record;
     }
+    // Atendimento — apenas via patient_id ou registry_id (nunca por nome)
+    if (req.patient_id || regId) {
+      let q = supabase
+        .from("patient_encounters")
+        .select("encounter_code, created_at")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (req.patient_id) q = q.eq("patient_id", req.patient_id);
+      else if (regId) q = q.eq("registry_id", regId);
+      const { data: enc } = await q.maybeSingle();
+      encounter_code = (enc as any)?.encounter_code || null;
+    }
   } catch {
     /* silencioso */
   }
-  return { birth_date, medical_record };
+  return { birth_date, medical_record, encounter_code };
 }
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
