@@ -555,13 +555,14 @@ export async function printRequisitionGuide(
 ) {
   const items = Array.isArray(request.items) ? request.items : [];
 
-  // Resolve data de nascimento (fallback automático para registry/patients)
-  const birthDate: string | null =
-    request.patient_birth_date ||
-    (await fetchPatientBirthDate({
-      patient_registry_id: request.patient_registry_id,
-      patient_id: request.patient_id,
-    }));
+  // Resolve data de nascimento e nº de prontuário (fallback registry/patients)
+  const resolvedIds = await fetchPatientIdentifiers({
+    patient_registry_id: request.patient_registry_id,
+    patient_id: request.patient_id,
+  });
+  const birthDate: string | null = request.patient_birth_date || resolvedIds.birth_date;
+  const medicalRecord: string | null =
+    (request as any).patient_medical_record || resolvedIds.medical_record;
   const ageY = ageInYears(birthDate);
 
   // Roteamento para layout dedicado de cultura microbiológica (padrão hospitalar)
