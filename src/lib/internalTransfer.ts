@@ -98,7 +98,7 @@ export async function executeInternalTransfer(params: {
         highlighted_medical_history: source.highlightedMedicalHistory || null,
         highlighted_pendencies: source.highlightedPendencies || null,
         highlighted_conducts: source.highlightedConducts || null,
-        uti_admission_date: source.utiAdmissionDate?.join("\n") || null,
+        uti_admission_date: coerceToIsoTimestamp(source.utiAdmissionDate),
         uti_discharge_prediction: source.utiDischargePrediction?.join("\n") || null,
         uti_allergies: source.utiAllergies?.join("\n") || null,
         uti_admission_reason: source.utiAdmissionReason?.join("\n") || null,
