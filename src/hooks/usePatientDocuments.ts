@@ -142,6 +142,8 @@ export function usePatientDocuments({
         .select("id, patient_name, patient_sector, patient_bed, status, created_at, created_by_name")
         .eq("hospital_unit_id", hospitalUnitId)
         .eq("state_id", stateId)
+        // ⚠️ ignora evoluções arquivadas (ocupante anterior do leito, reverts).
+        .is("archived_at", null)
         .order("created_at", { ascending: false })
         .limit(50);
       if (validId) evolQuery = evolQuery.eq("patient_id", validId);
