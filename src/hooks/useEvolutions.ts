@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
+import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 
 export interface EvolutionRecord {
   id: string;
@@ -75,6 +76,10 @@ export function useEvolutions(
   const fbBed = fallback?.patientBed?.trim() || null;
   const fbSector = fallback?.patientSector?.trim() || null;
 
+  // Fase B.1 — filtro por atendimento ativo (encounter_id) para evitar
+  // arrastar evoluções do ocupante anterior do leito.
+  const { encounterId: activeEncounterId } = useActiveEncounterId(safePatientId);
+
   const loadEvolutions = useCallback(async (silent: boolean = false) => {
     if (!currentHospital || !currentState) return;
     if (!silent) setLoading(true);
@@ -91,6 +96,12 @@ export function useEvolutions(
 
       if (safePatientId) {
         query = query.eq("patient_id", safePatientId);
+        // Fase B.1: se já temos encounter ativo, isola por ele;
+        // registros legados sem carimbo continuam visíveis enquanto o
+        // patient_id atual for o mesmo (some quando o leito é reusado).
+        if (activeEncounterId) {
+          query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
+        }
       } else if (fbName) {
         query = query.is("patient_id", null).eq("patient_name", fbName);
         if (fbBed) query = query.eq("patient_bed", fbBed);
@@ -161,7 +172,7 @@ export function useEvolutions(
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [safePatientId, fbName, fbBed, fbSector, currentHospital, currentState]);
+  }, [safePatientId, fbName, fbBed, fbSector, currentHospital, currentState, activeEncounterId]);
 
   const fetchEvolutions = useCallback(() => loadEvolutions(false), [loadEvolutions]);
   const refreshSilently = useCallback(() => loadEvolutions(true), [loadEvolutions]);

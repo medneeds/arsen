@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 
 export interface LatestEvolutionDevice {
   id: string;
@@ -36,6 +37,9 @@ export function useLatestEvolution(
   const [loading, setLoading] = useState(false);
   const lastSeenIdRef = useRef<string | null>(null);
 
+  // Fase B.1 — isola pelo atendimento ativo
+  const { encounterId: activeEncounterId } = useActiveEncounterId(patientId);
+
   const buildPreview = (soap: any): string => {
     if (!soap) return "";
     const a = soap.assessment || soap.A || soap.avaliacao;
@@ -59,8 +63,12 @@ export function useLatestEvolution(
       .is("archived_at", null)
       .order("created_at", { ascending: false })
       .limit(1);
-    if (patientId) q = q.eq("patient_id", patientId);
-    else if (patientName) q = q.eq("patient_name", patientName.trim());
+    if (patientId) {
+      q = q.eq("patient_id", patientId);
+      if (activeEncounterId) {
+        q = q.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
+      }
+    } else if (patientName) q = q.eq("patient_name", patientName.trim());
 
     const { data, error } = await q;
     if (!error && data && data.length > 0) {
@@ -81,7 +89,7 @@ export function useLatestEvolution(
       setEvolution(null);
     }
     setLoading(false);
-  }, [patientId, patientName, hospitalUnitId]);
+  }, [patientId, patientName, hospitalUnitId, activeEncounterId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 

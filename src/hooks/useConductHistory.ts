@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
+import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 
 export interface ConductHistoryEntry {
   id: string;
@@ -36,15 +37,24 @@ export function useConductHistory(patientId: string) {
   const { user } = useAuth();
   const { currentState, currentHospital } = useHospital();
 
+  // Fase B.1 — isola pelo atendimento ativo
+  const { encounterId: activeEncounterId } = useActiveEncounterId(patientId || null);
+
   const { data: history = [], isLoading } = useQuery({
-    queryKey: ["conduct-history", patientId],
+    queryKey: ["conduct-history", patientId, activeEncounterId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("conduct_history")
         .select("*")
         .eq("patient_id", patientId)
         .order("created_at", { ascending: false })
         .limit(200);
+
+      if (activeEncounterId) {
+        query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching conduct history:", error);
