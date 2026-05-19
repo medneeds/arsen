@@ -94,6 +94,7 @@ export default function DevConsolePage() {
                 { v: "logs", icon: Database, label: "Logs" },
                 { v: "merges", icon: GitMerge, label: "Mesclagens" },
                 { v: "signaling", icon: Eraser, label: "Limpar Sinalizações" },
+                { v: "residual", icon: Archive, label: "Histórico Residual" },
                 { v: "ai", icon: Bot, label: "Console IA" },
                 { v: "actions", icon: Users, label: "Ações" },
                 { v: "customization", icon: Sliders, label: "Personalização" },
