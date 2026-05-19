@@ -93,7 +93,7 @@ export async function executeInternalTransfer(params: {
         pendencies: source.pendencies?.join("\n") || null,
         schedule: source.schedule?.join("\n") || null,
         admission_history: source.admissionHistory || null,
-        admission_date: source.admissionDate || null,
+        admission_date: coerceToIsoTimestamp(source.admissionDate),
         highlighted_diagnoses: source.highlightedDiagnoses || null,
         highlighted_medical_history: source.highlightedMedicalHistory || null,
         highlighted_pendencies: source.highlightedPendencies || null,
