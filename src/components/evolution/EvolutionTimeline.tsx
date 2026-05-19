@@ -124,7 +124,7 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
     };
   };
 
-  const updateLocal = (id: string, field: "soap" | "vitals" | "exam", key: string, value: string) => {
+  const updateLocal = (id: string, field: "soap" | "vitals" | "exam", key: string, value: any) => {
     setLocalEdits(prev => {
       const evo = evolutions.find(e => e.id === id);
       if (!evo) return prev;
@@ -578,6 +578,11 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         isValidated={evo.status === "validated"}
                         autoSave={isEditable}
                         hasUnsaved={hasUnsaved}
+                        devices={Array.isArray((data.soap as any).devices) ? (data.soap as any).devices : []}
+                        onDevicesChange={(next) => updateLocal(evo.id, "soap", "devices", next)}
+                        culturesHtml={typeof (data.soap as any).culturesHtml === "string" ? (data.soap as any).culturesHtml : ""}
+                        onCulturesChange={(html) => updateLocal(evo.id, "soap", "culturesHtml", html)}
+                        admissionDate={admissionDate || null}
                       />
                     )}
                   </div>
