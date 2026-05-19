@@ -26,6 +26,9 @@ export function usePatientMovements(
   const [movements, setMovements] = useState<PatientMovement[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Fase B.1 — isola pelo atendimento ativo
+  const { encounterId: activeEncounterId } = useActiveEncounterId(patientId);
+
   const fetchMovements = useCallback(async () => {
     if (!patientId && !patientName) { setMovements([]); return; }
     setLoading(true);
@@ -37,6 +40,9 @@ export function usePatientMovements(
 
     if (patientId) {
       query = query.eq("patient_id", patientId);
+      if (activeEncounterId) {
+        query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
+      }
     } else if (patientName && hospitalUnitId) {
       query = query.eq("patient_name", patientName).eq("hospital_unit_id", hospitalUnitId);
     }
@@ -56,7 +62,7 @@ export function usePatientMovements(
       })));
     }
     setLoading(false);
-  }, [patientId, patientName, hospitalUnitId]);
+  }, [patientId, patientName, hospitalUnitId, activeEncounterId]);
 
   useEffect(() => { fetchMovements(); }, [fetchMovements]);
 
