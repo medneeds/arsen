@@ -123,6 +123,22 @@ export function UtiReallocationDialog({
       const isSameUnit = targetUnit === currentUtiUnit;
       const originalBedNumber = patient.bedNumber;
 
+      // Classificação de complexidade do movimento.
+      // O destino aqui é sempre UTI 1 (red) ou UTI 2 (yellow) — críticos.
+      const destinationSectorCode = targetBedPatient.sector;
+      const transferClass = classifyTransfer(patient.sector, destinationSectorCode);
+      const needsSaps = requiresSaps(transferClass);
+
+      // Status do destino:
+      // - Escalada crítica (vindo de setor não-crítico) → 'saps_pendente'
+      //   para disparar o fluxo SAPS 3 já existente (timer pós-alocação).
+      // - Demais casos → preserva o status atual do paciente (admitido,
+      //   transferência pendente, etc.), mantendo o princípio de 1
+      //   atendimento até o desfecho final.
+      const destinationAdmissionStatus = needsSaps
+        ? 'saps_pendente'
+        : (patient.admissionStatus ?? 'admitido');
+
       // Step 1: Move patient data to the target bed (update target bed with patient data)
       const { error: targetError } = await supabase
         .from('patients')
@@ -152,9 +168,9 @@ export function UtiReallocationDialog({
           uti_daily_conducts: patient.utiDailyConducts?.join('\n') || null,
           clinical_status: patient.clinicalStatus || null,
           psm_status: patient.psmStatus || null,
-          // Preserva flag de desfecho (óbito/alta/transferência pendente) ao mover paciente entre leitos.
-          // Sem isto, a tarja some do mapa de leitos e o botão "Liberar leito" desaparece.
-          admission_status: patient.admissionStatus ?? 'admitido',
+          // Preserva flag de desfecho (óbito/alta/transferência pendente) ao mover paciente entre leitos,
+          // OU marca 'saps_pendente' quando for escalada de não-crítico para crítico.
+          admission_status: destinationAdmissionStatus,
           updated_at: new Date().toISOString(),
         })
         .eq('id', targetBedPatient.id);
