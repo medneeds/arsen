@@ -19,7 +19,7 @@ import { buildNormaZeroDocument, openPrintWindow, prepareLogo } from "@/lib/prin
 import { FieldTemplates } from "@/components/FieldTemplates";
 import { useHospital } from "@/contexts/HospitalContext";
 import { DevicesCulturesSection } from "@/components/evolution/DevicesCulturesSection";
-import type { EvolutionDevice } from "@/lib/devicesCatalog";
+import { deviceAlertTone, type EvolutionDevice } from "@/lib/devicesCatalog";
 import { Activity } from "lucide-react";
 
 interface SOAPData {
@@ -150,7 +150,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   if (readOnly) {
     return (
       <div className="space-y-3">
-        <ReadOnlyView soap={soap} vitals={vitals} physicalExam={physicalExam} />
+        <ReadOnlyView soap={soap} vitals={vitals} physicalExam={physicalExam} devices={devices} culturesHtml={culturesHtml} />
         {isValidated && (
           <div className="flex items-center gap-2 justify-end">
             <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={async () => {
@@ -393,7 +393,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
               </ul>
             </div>
           )}
-          <ReadOnlyView soap={soap} vitals={vitals} physicalExam={physicalExam} />
+          <ReadOnlyView soap={soap} vitals={vitals} physicalExam={physicalExam} devices={devices} culturesHtml={culturesHtml} />
         </SectionItem>
       </Accordion>
 
@@ -481,9 +481,36 @@ const SectionItem: React.FC<{
   );
 };
 
-const ReadOnlyView: React.FC<{ soap: SOAPData; vitals: VitalSigns; physicalExam: PhysicalExam }> = ({ soap, vitals, physicalExam }) => {
+const ReadOnlyView: React.FC<{
+  soap: SOAPData;
+  vitals: VitalSigns;
+  physicalExam: PhysicalExam;
+  devices?: EvolutionDevice[];
+  culturesHtml?: string;
+}> = ({ soap, vitals, physicalExam, devices, culturesHtml }) => {
   const hasVitals = Object.values(vitals).some(v => v.trim());
   const hasExam = Object.values(physicalExam).some(v => v.trim());
+  const hasDevices = Array.isArray(devices) && devices.length > 0;
+  const hasCultures = !!culturesHtml && richHtmlToPlainText(culturesHtml).trim().length > 0;
+
+  const parseInserted = (s: string): Date | null => {
+    if (!s) return null;
+    const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(s);
+    if (m) return new Date(`${m[3]}-${m[2]}-${m[1]}T00:00:00`);
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  };
+  const daysSince = (s: string): number | null => {
+    const d = parseInserted(s);
+    if (!d) return null;
+    return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000));
+  };
+  const fmtBR = (s: string): string => {
+    const d = parseInserted(s);
+    if (!d) return s || "";
+    return d.toLocaleDateString("pt-BR");
+  };
+
   return (
     <div className="space-y-2 text-xs leading-relaxed">
       {hasVitals && (
@@ -528,6 +555,38 @@ const ReadOnlyView: React.FC<{ soap: SOAPData; vitals: VitalSigns; physicalExam:
               dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(toRichHtml(soap.objective)) }}
             />
           )}
+        </div>
+      )}
+      {hasDevices && (
+        <div>
+          <strong className="text-amber-600 dark:text-amber-400">Dispositivos invasivos:</strong>
+          <ul className="ml-4 mt-0.5 text-foreground/90 list-disc">
+            {devices!.map((d, i) => {
+              const days = daysSince(d.insertedAt);
+              const tone = deviceAlertTone(days);
+              const toneCls = tone === "red"
+                ? "text-red-600 dark:text-red-400 font-semibold"
+                : tone === "amber"
+                  ? "text-amber-600 dark:text-amber-400 font-semibold"
+                  : "text-emerald-600 dark:text-emerald-400";
+              return (
+                <li key={`${d.id}-${i}`}>
+                  <span className="font-medium">{d.label}</span>
+                  {d.insertedAt && <span className="text-muted-foreground"> — inserido em {fmtBR(d.insertedAt)}</span>}
+                  {days !== null && <span className={cn("ml-1", toneCls)}>(D{days})</span>}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+      {hasCultures && (
+        <div>
+          <strong className="text-rose-600 dark:text-rose-400">Culturas:</strong>
+          <div
+            className="prose prose-sm max-w-none mt-0.5 text-foreground [&_p]:my-1 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0"
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(toRichHtml(culturesHtml!)) }}
+          />
         </div>
       )}
       {richHtmlToPlainText(soap.plan) && (
