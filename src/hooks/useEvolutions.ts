@@ -242,6 +242,12 @@ export function useEvolutions(
       physical_exam?: any;
     }
   ) => {
+    const target = evolutions.find((e) => e.id === id);
+    if (target?.archived_at) {
+      toast.error("Evolução arquivada não pode ser editada");
+      await refreshSilently();
+      return false;
+    }
     try {
       const { error } = await supabase
         .from("clinical_evolutions")
@@ -259,6 +265,12 @@ export function useEvolutions(
 
   const validateEvolution = async (id: string) => {
     if (!user) return false;
+    const target = evolutions.find((e) => e.id === id);
+    if (target?.archived_at) {
+      toast.error("Evolução arquivada não pode ser validada");
+      await refreshSilently();
+      return false;
+    }
     try {
       const doctorName = user.user_metadata?.full_name || "Dr. Carlos Eduardo Mendes";
       const { error } = await supabase
@@ -324,6 +336,11 @@ export function useEvolutions(
     patientBed: string,
     patientSector: string
   ) => {
+    if (source.archived_at) {
+      toast.error("Evolução arquivada não pode ser duplicada");
+      await refreshSilently();
+      return null;
+    }
     return createEvolution(
       patientName,
       patientBed,
