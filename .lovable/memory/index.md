@@ -1,6 +1,3 @@
-# Memory: index.md
-Updated: just now
-
 # Project Memory
 
 ## Core
@@ -14,7 +11,137 @@ Updated: just now
 - Clean aesthetic: "dark glass morphism", slate-50/blue-50, with HMDM institutional colors.
 
 ## Memories
-- [Patient Context Persistence](mem://features/patient-context-persistence) — URL-based state management for patient identification across modules.
-- [Bed Management System](mem://features/bed-management) — Real-time status tracking for hospital beds with sector-based filtering.
-- [Prescription Versioning](mem://features/prescription-versioning) — Immutable history tracking using JSONB snapshots and parent-child linking.
+- [Locked Sectors](mem://features/locked-sectors) — Cadeado cinza em UE/Anexo Vascular/CC/Neuro/Clín. Cirúrgica + cleanup 24h via RPC preservando prontuário
+- [Transfer History Repoint](mem://features/transfer-history-repoint) — RPC repoint_patient_history + helper TS para preservar evoluções/prescrições/exames em transferência interna sem alta (UTI/UCC e leito fixo); aplicado em UtiReallocationDialog
+- [Transfer Pending Ribbon](mem://features/transfer-pending-ribbon) — Tarja TRANSF. INT/EXT no card antes da desalocação; status `transferencia_interna/externa_pendente` + trigger limpa interna ao relocar; externa libera via BedReleasePreAdmissionDialog
+- [Movement Confirm Dialog](mem://ui/movement-confirm-dialog-pattern) — Padrão único de pop-up p/ toda movimentação (resumo + bloqueios + avisos + consequências didáticas)
+- [Brand Identity](mem://branding/brand-name-and-identity) — Arsen white-label, hospital name only on login screen
+- [Severity Classification](mem://ui/severity-classification-display) — 3x3px clickable colored dot next to bed number
+- [Clinical Status Options](mem://clinical/status-options) — 7 clinical statuses with specific colors
+- [Medication Database](mem://technical/medication-database) — Hidratação / Reposição category, NFD search
+- [Prescription Persistence](mem://technical/prescription/persistence) — Supabase JSONB, parent_id versioning
+- [AI Drug Interactions](mem://features/ai-drug-interactions) — Gemini-2.5-flash for drug interactions analysis
+- [KPIs and Alerts](mem://features/kpis-and-alerts) — Assistential panel KPIs and 3 alert levels
+- [Patient Sidebar](mem://features/patient-sidebar) — Phase 9 Sidebar accessible via eye icon
+- [Clinical Catalog](mem://technical/clinical-catalog) — medication_catalog, presentations, aliases tables
+- [Access Profiles](mem://auth/perfis-de-acesso) — Support for 11 access profiles, Gestor selection
+- [Gestor Panel](mem://features/gestor-panel) — Unrestricted executive view of all sectors
+- [RENAME Import](mem://technical/clinical-catalog/import-rename) — Automated import of ~170 RENAME medications
+- [Pharmaceutical Validation](mem://features/pharmaceutical-validation) — Phase 11 review before dispensing, Alto Alerta flag
+- [ICU Requisition Combos](mem://features/uti-requisition-combos) — Quick lab/image packages for ICU workflows
+- [Care Templates](mem://features/prescription/care-templates) — Predefined clinical templates (Neurocrítico, Choque Séptico, etc)
+- [Gestor KPI Logic](mem://features/gestor-panel/kpi-logic) — KPI logic via regex and gravíssimo monitoring
+- [Pharmacy Profile](mem://auth/perfil-farmacia-clinica) — Emerald visual, pill icon, dedicated environment
+- [Pharmacy Card View](mem://ui/pharmacy-patient-card-view) — Compact board for pharmacy validation
+- [URL Context Pattern](mem://technical/navigation/url-context-pattern) — SearchParams standard for patient context
+- [Print Design Specs](mem://ui/print-design-system-specs) — A4 sizing, 6-9pt typography, 12mm margins
+- [SOAP Workflow](mem://features/evolution/soap-workflow) — Clinical evolution workflow via SOAP
+- [Imaging Sector](mem://features/imaging-sector) — /setor-imagem panel logic and status flow
+- [Triage System](mem://features/triage-system) — Clinical evaluation + Manchester Protocol
+- [Document Upload](mem://technical/document-upload) — JPEG/PNG/PDF and OCR processing
+- [SAPS 3 Flow](mem://features/saps-3-admission-flow) — SAPS 3 pending status and timer
+- [Admission Logic](mem://features/admission-workflow-logic) — Pedido -> Avaliação -> Admissão, critical cases require SAPS 3
+- [Clinical Panel Unified View](mem://features/painel-clinico-unified-view) — Unified chart interface with Sheet+Tabs sidebar
+- [Clinical Protocols Library](mem://features/clinical-protocols-library) — 25 clinical guides on /protocolos-uti
+- [Multiprofessional Daily Round](mem://features/round-diario-multiprofissional) — 9 specialties form, preenchimento avulso support
+- [Hospital Coding System](mem://features/hospital-coding-system) — Traceability codes (ATD, DISP, MED)
+- [Discharge Prediction](mem://features/admission/discharge-prediction) — Previsão de alta is mandatory on admission
+- [Search Engine](mem://technical/search-engine) — NFD normalization for generic search queries
+- [Pre-admission Workflow V2](mem://features/pre-admission-workflow-v2) — Multiple sectors request and shimmer animation for waiting list
+- [Exams Workflow V2](mem://features/exams/workflow-status-v2) — Urgent signal, 'Ciência' required
+- [Capacity Rules / Extra Bed](mem://features/bed-management/capacity-rules-extra-bed) — Maca Extra for max capacity
+- [Inline Editing V2](mem://features/painel-clinico/inline-editing-v2) — Inline editing in Resumo tab
+- [Unified Clinical Header V2](mem://ui/unified-clinical-header-and-status-v2) — Breadcrumb and context preservation
+- [CCIH Dashboard](mem://features/ccih-dashboard) — Infection profiles monitoring
+- [Laboratory Sector](mem://features/laboratory-sector) — Flow logic and categories for lab exams
+- [Diagnostic Results Modalities](mem://features/diagnostic-results-modalities) — Image, Lab, Text and PDF results handling
+- [Administrative Registry](mem://features/administrative-registry) — Prontuário vs ATD distinction
+- [Triage Workflow Monitor](mem://features/triage-workflow-and-monitor) — Queue management and TV monitor
+- [Exams Sector Management](mem://features/exams/sector-management) — Filters and mandatory Ciência status
+- [Multi-team Sidebar](mem://navigation/multi-team-sidebar) — Hidden medical modules for multi-team
+- [Clinical Panel Docs Tab](mem://features/painel-clinico/docs-tab) — Centralizes multiprofessional integration
+- [Discharge and Outcome](mem://features/alta-e-desfecho) — Discharge summaries, DO, ME protocol
+- [Emergency Sectors](mem://features/emergency-sectors) — Urgent emergency workflows (Vertical, Horizontal, Sala Vermelha, Obs Laranja)
+- [Sector Map Print Opt](mem://ui/print/sector-map-optimization) — Print map synced with active unit
+- [Vital Signs Monitoring](mem://features/clinical-monitoring/vital-signs) — NEWS2 score and charts
+- [APAC Requests](mem://features/apac-requests) — TCs, MRIs with SUS directives
+- [APAC Form Automation](mem://features/exams/apac-form-automation) — Import admission/evolution to APAC
+- [APAC Print Layout](mem://ui/print/apac-standard-layout) — Specific 5 cols 186x273mm layout
+- [Medneeds Standard](mem://project/medneeds-standard) — Platform standard "By Medneeds"
+- [AIH Requests](mem://features/aih-requests) — InternmentStatusDialog AIH form
+- [Regulatory Forms](mem://features/prescription/regulatory-forms) — Psychotropics, Guia ATM integrated
+- [Consolidated Attendance File](mem://features/ficha-atendimento-consolidada) — All patient interactions in single PDF
+- [CID10 Admission](mem://features/admission/diagnostics-cid10) — Mandatory primary CID10 on admission
+- [Registration Flow](mem://auth/registration-flow) — Adaptive /signup flow, Gestor approval
+- [NIR Core](mem://features/nir/core) — Regulation module with 9 sub-modules and 8 bed statuses
+- [Emergency Structure](mem://features/emergency/ue-vertical-horizontal) — Prefixes C1-, C2-, C3-, M- and 4 routes
+- [Emergency Presets](mem://features/emergency/quick-attendance-presets) — 7 presets for quick emergency actions
+- [Triage Queue Management](mem://features/triage/routing-and-queue-management) — Routing and wait alerts
+- [Print Portal Pattern](mem://technical/print-portal-pattern) — React Portal printing logic
+- [Analytics & Metrics](mem://features/clinical-reports/analytics-and-metrics) — 47 types of clinical reports
+- [Patient Pull Autonomy](mem://features/emergency/patient-pull-autonomy) — Doctors pull from triage queue
+- [Prescription System Core](mem://features/prescription/system-core-and-workflow) — Compact/expanded modes logic and order
+- [Prescription Security Compliance](mem://features/prescription/security-compliance-and-printing) — Gemini, TEV, Guia ATM, printed layout rules
+- [Typography Case](mem://ui/typography-case) — Global uppercase rules
+- [Bed Assignment Logic](mem://technical/bed-assignment-logic) — Max suffix calculation for bed arrays
+- [Batch Action Bar Positioning](mem://ui/batch-action-bar-positioning) — Fixed bottom-5 right-5 Portal element
+- [Login Flow](mem://auth/login-and-access-flow) — Splash, HospitalSelector, redirection
+- [Prescription PDF Layout](mem://ui/prescription-pdf-layout) — Clean print with full width address
+- [Prescription Calculation Rules](mem://technical/prescription/calculation-rules) — Bidirectional flow/time calculation
+- [Prescription Page Layout](mem://ui/prescription-page-layout) — Top header, toolbar grouping
+- [Sectors and Beds Structure](mem://structure/hospital-sectors-and-beds) — Detailed count of 245 beds by sectors
+- [Sidebar Configuration](mem://ui/sidebar-configuration) — 320px sidebar grouping sectors
+- [User Department Permissions](mem://auth/user-department-permissions) — Granular sector access and global admin
+- [Sector Context Management](mem://navigation/sector-context-management) — DepartmentContext localStorage persistence
+- [Clinical Navigation Hierarchy](mem://ui/clinical-navigation-hierarchy) — URL searchParams and PatientSwitcher context flow
+- [Movement Flow Unified](mem://features/movement-flow-unified) — 3 categorias (Entrada/Transferência/Saída) com 9 subtipos, fluxo 2 etapas e link híbrido p/ sumário
+- [Medical Record Numbering](mem://features/medical-record-numbering) — Auto-gen formato AA-UUU-SSSSSS-DV, sequência por ano+unidade, DV módulo 11 via RPC
+- [Encounter Code Numbering](mem://features/encounter-code-numbering) — Sequencial GLOBAL 12 dígitos via sequence Postgres, vinculado ao prontuário
+- [Patient Longitudinal Record](mem://features/patient-longitudinal-record) — patient_timeline view + auditoria 15 tabelas + página /historico-paciente
+- [Reception Patient Registration](mem://features/reception-patient-registration) — Cadastro auditável: CAIXA ALTA, CPF único, NI-AAAA-NNNNNN, merge/promoção
+- [Reception Encounter Routing](mem://features/reception-encounter-routing) — Recepção direciona para qualquer setor; gera pre_admissions com aguardando_leito
+- [Reception Medical Records List](mem://features/reception/medical-records-list) — Aba "Prontuários" em /recepcao com lista paginada (50/pág), filtros multi-critério e ações inline
+- [Reception Daily Dashboard](mem://features/reception/daily-dashboard) — Painel diário recepção: 4 KPIs, Atendimentos do Dia, Aguardando Admissão, Minhas Ações 24h, Triagem Express, detecção duplicatas, ações rápidas (pulseira/copiar/reabrir)
+- [Triage Express Pre-identification](mem://features/reception/triage-express-pre-identification) — Pop-up TriageExpressDialog com perguntas opcionais (nome parcial, queixa, modo chegada), checkbox docs pendentes, seleção de destino. KPI + badges (NI/docs pendentes/parcial) no painel.
+- [Pharmacy HMDM 2026 Catalog](mem://features/pharmacy-hmdm-2026-catalog) — Padronização farmácia HMDM 2026 importada (222 princípios + 322 apresentações, 49 classes), notes='HMDM 2026', flags controlled/high_alert/requires_dilution automáticas, sincroniza com busca da prescrição
+- [Posology Suggestions DB](mem://features/prescription/posology-suggestions-db) — PosologySuggestionsBar combina protocolos clínicos manuais + evidência HMDM 2026 (diluição, dose máx, tempo de infusão) carregada via useMedicationProtocols
+- [User Management Create User](mem://features/user-management-create-user) — Aba "Cadastrar Usuário" em /gestao-usuarios (admin+gestor), modos senha/convite, perfis globais ignoram setores, edge function admin-create-user, profiles.cpf único
+- [User Admin Audit Trail](mem://features/user-admin-audit-trail) — Tabela imutável user_admin_audit + helper logUserAdminAction + aba Histórico em /gestao-usuarios; cobre criação, role, permissões, status (approve/reject/suspend/reactivate)
+- [User Admin Sector Validation](mem://features/user-admin-sector-validation) — Triggers + edge function: perfis globais (admin/gestor) ignoram setores; gestor só atribui dentro das próprias unidades hospitalares
+- [Signup Endpoint Restricted](mem://auth/signup-endpoint-restricted) — Signup público desativado (Supabase + SPA); /signup redireciona para /gestao-usuarios?tab=create apenas para admin/gestor
+- [Profile-driven Login Routing](mem://auth/profile-driven-routing) — Login generalista, redirect automático via PROFILE_DEFAULTS (access_profile→landingRoute) e cadastro auto-aplica role+setores
+- [Login & Recovery Flow](mem://auth/login-and-recovery-flow) — Login aceita usuário/CPF/email (edge `resolve-login`); esqueci senha envia email com `resetPasswordForEmail` e página /reset-password
+- [Multi-profile Chooser](mem://auth/multi-profile-chooser) — `profiles.access_profiles[]` + ProfileChooser pós-login quando usuário tem 2+ perfis; escolha vale só na sessão
+- [Prescription Assistant Suggestion Pattern](mem://features/prescription/assistant-suggestion-pattern) — Padrão "Prescrição sugerida" 2-3 opções com rationale e source (UpToDate/AMIB/KDIGO/ACLS), sem alucinação
+- [Medical Record Numbering Transition Mode](mem://features/medical-record-numbering-transition-mode) — Flag legacy/auto por unidade, formato relaxado, numero_prontuario_legado, trigger condicional + auditoria automática
+- [Admin Reports - Gestão Executiva](mem://features/admin-reports-gestao) — Sprint 3: 6 relatórios executivos plugáveis em /relatorios (ocupação, LOS, alta/óbito, produção médico, fila NIR, SLA triagem)
+- [Pre-registration Public Flow](mem://features/pre-registration-public-flow) — /pre-cadastro público grava em pre_registration_requests; aba "Pré-cadastros" em /gestao-usuarios aprova via admin-create-user com senha provisória
+- [Psychotropic MAV Flow](mem://features/prescription/psychotropic-mav-flow) — Combobox catálogo + autofill + lock + agrupamento por tipo + print_direct via afterprint; bloqueio sem notification_type
+- [MAV/Port.344 Differentiation](mem://features/prescription/mav-port344-differentiation) — Catálogo regulatório seed (~117 itens) com 3 categorias (MAV / PORT_344 / MAV_PORT_344), enriquece item ao adicionar e roteia toast colorido + ring pulsante + abertura condicional do HighAlertGuideDialog
+- [Admission Date Edit Flow](mem://features/admin-edit-admission-date) — Edição Avançada: data de admissão somente leitura em BR, edição com confirmação e histórico imutável em `patient_admission_date_history`
+- [Medical Responsibility Modalities](mem://features/medical-responsibility-modalities) — 3 modalidades (Rotineiro/Plantonista/Intercorrencista) + Nenhum no diálogo de Responsabilidade Médica; tipos legacy preservados só para compat
+- [NI + PIN Flow](mem://features/ni-with-pin-flow) — UnidentifiedSuggestionDialog com 3 caminhos (NI puro / NI+PIN / rejeitar); modo NI permite preencher nº PIN + observações
+- [Medical Record Edit Audit](mem://features/medical-record-edit-history) — Edição auditada de nº prontuário via mapa de leitos (EditPatientDialog) e cockpit (PatientSidebar); tabela imutável medical_record_edit_history, motivo obrigatório, MovementConfirmDialog
+- [Inhalation Prescription Fields](mem://features/prescription/inhalation-fields) — Campo expandido específico p/ inalatórios (nebulização, contínua, pMDI, DPI) com catálogo de autofill (Berotec, Atrovent, Salbutamol, Budesonida, etc), builder de instrução dedicado (sem velocidade de infusão IV) e UI segmentada por modo
+- [APAC Patient Hydration](mem://features/apac/patient-hydration) — RequisicaoImagensPage auto-busca patient_registry via patient_registry_id e preenche CNS, DOB, sexo, mãe, endereço, telefone e prontuário a partir do ?patientId= na URL; warning quando CNS ausente
+- [Insulin Therapy Assistant](mem://features/prescription/insulin-therapy-assistant) — Pop-up wizard 3 etapas disparado ao selecionar qualquer insulina; 4 esquemas (Basal-Bolus, Sliding, NPH Fixa, EV Contínua) com sugestões SBD/ADA/AMIB; saída agrupada como item MAV com sub-linhas para enfermagem
+- [Rich Text Editor (Evolução)](mem://ui/rich-text-editor) — RichTextEditor (contentEditable + DOMPurify) com B/I/U + Enter→`<p>`, aplicado em Evolução, Plano, Exames Complementares e Intercorrência; helpers `sanitizeRichHtml`, `toRichHtml`, `richHtmlToPlainText`
+- [ATB Attach Notice](mem://features/prescription/atb-attach-notice) — Pop-up didático após anexar ATB via Guia ATM lembrando 2 vias no D1
+- [Enteral Tablet Dilution](mem://features/prescription/enteral-tablet-dilution) — CompoundedTabletFields auto-aparece p/ comprimido+via enteral, lista NÃO TRITURAR (ISMP-Brasil) bloqueia builder com alerta vermelho
+- [Admission Date BR Mask](mem://features/admin-edit-admission-date) — AdmissionDateEditor com auto-máscara DD/MM/AAAA + HH:MM, banner BR, validação estrita e histórico imutável
+- [Prescription Validation Fluid Rules](mem://features/prescription/validation-fluid-rules) — getItemMissingFields aceita campos equivalentes (volumeTotal↔diluentVolume), enteral só com word-boundary, controlado lista C não bloqueia
+- [Oral Solid Posology Required](mem://features/prescription/oral-solid-posology-required) — Sólido oral (cp/cápsula/drágea/SL/orodispersível) por VO/SL/enteral exige posologia obrigatória — instrução livre não substitui
+- [Patient Identity Header Unificado](mem://ui/patient-identity-header-unificado) — Componente único PatientIdentityHeader (cockpit/dialog) com realtime em patients/medical_records/patient_encounters/patient_registry; setor via sectorLabelFromCode; usado em PatientCockpit e AdmissionDialog
+- [PDF Patient Header Resolution](mem://features/pdf-patient-header-resolution) — Helper resolvePatientHeader + hook usePatientIdentifiers com guarda anti-NI; remoção de mocks L09/L10/L11 em Prescrição/Evolução; sync registry → state em PrescricaoPage; printEvolution enriquecido com Atendimento/CPF/CNS/nome social
+- [Patient Identity Sync Hardening](mem://features/patient-identity-sync-hardening) — Helper resolveCurrentBedSector p/ leito ATUAL antes de imprimir (printAdmission/printEvolution); reset do PrescricaoPage limpa também birthDate/sex/motherName/address/city para evitar vazamento entre pacientes
+- [Immutable Principles](mem://preferences/immutable-principles) — Princípios imutáveis: 4 camadas (Layout/Dados/Movimentação/Auditoria), contrato de comunicação obrigatório antes de cada mudança, quando questionar de volta, blindagem permanente
+- [Weight + Allergies Required](mem://features/prescription/weight-allergies-required) — patients.uti_weight_kg + patients.uti_allergies com sync bidirecional/realtime/debounce 500ms na PrescricaoPage; banner âmbar didático no topo quando faltar peso ou alergias; canPrescribe bloqueia assinar/validar/imprimir
+- [PIS Registry Sync](mem://features/pis-registry-sync) — Diff PIS×patient_registry via PisRegistrySyncDialog; auto-disparado ao puxar paciente (AdmitPatientDialog) + banner âmbar persistente em Edição Avançada (EditPatientDialog); checkbox por campo, motivo obrigatório, auditoria patient_registry_edit_history source='pis_sync'
+- [IV Bolus Toggle](mem://features/prescription/iv-bolus-toggle) — Switch Tempo↔Bolus no bloco Infusão EV (IV intermitente, não-ATB, posologia ≠ Contínuo); remove obrigatoriedade tempo/vazão, imprime "EV em bolus", alerta âmbar fora de atropina/adrenalina
+- [Gasometria Split Print](mem://features/exams/gasometria-split-print) — Pop-up sempre pergunta ao imprimir guia de lab com gasometria + outros; "Sim" gera 2 PDFs (gaso isolada / demais), regex só "gasometria" (lactato fica nos outros), cultura segue fluxo dedicado
+- [Prescription Live Bed Sync](mem://features/prescription/live-bed-sync) — PrescricaoPage sincroniza patient.bed/unit em tempo real via usePatientLive; loadPrescription preserva leito vivo e não herda snapshot histórico (fix L07 saindo com bed L05)
+- [Orphan Draft Archival](mem://features/prescription/orphan-draft-archival) — Rascunhos órfãos (>24h, sem validação, sem assinatura, fora do dia clínico) movidos para prescriptions_archive via pg_cron a cada 30min; UI filtra defensivamente
+- [Dev Console Clear Signaling](mem://features/dev-console-clear-signaling) — Aba "Limpar Sinalizações" no Dev Console: actions `list_patients_with_signaling`+`clear_patient_signaling`, prévia dryRun, escopo cirúrgico (só movs pendentes ALTA/ÓBITO/TRANSF + docs alta_hospitalar/obito + status reset condicional), audit_logs action DEV_CLEAR_SIGNALING
+- [Patient Registry Autolink Trigger](mem://features/patient-registry-autolink-trigger) — Trigger BEFORE INSERT/UPDATE em patients auto-vincula patient_registry_id+medical_record via pre_admissions (leito+unidade) ou CPF; resolve órfãos legados via UPDATE no-op
+- [Discharge Suspend Cockpit](mem://features/discharge-suspend-cockpit) — Botão "Suspender alta" ao lado de "Ver alta" no cockpit; pop-up didático + motivo ≥10 + senha; RPC suspend_discharge_document preserva doc, cancela movement vinculada, audita SUSPEND_DISCHARGE; hook filtra suspended_at IS NULL; óbito não pode ser suspenso por aqui
 - [Internal Transfer Unified Flow](mem://features/internal-transfer-unified-flow) — Fluxo 2 etapas (signal+complete) coexistindo com transferência direta; fila virtual via internal_transfer_requests; escalada crítica → SAPS pendente após alocação; encounter preservado
