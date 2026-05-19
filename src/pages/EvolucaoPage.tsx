@@ -170,37 +170,19 @@ const EvolucaoPage = () => {
     setDiagnosticHypotheses("");
   };
 
-  /** Prefill hipóteses ao abrir Nova Evolução: prioriza última evolução com hipóteses,
-   *  senão usa o array atual de patients.diagnoses (vindo da admissão). */
-  const computePrefillHypotheses = (): string => {
-    const lastWithHypo = evolutions.find(e => (e as any).diagnostic_hypotheses);
-    if (lastWithHypo) return (lastWithHypo as any).diagnostic_hypotheses || "";
-    if (livePatient?.diagnoses?.length) return diagnosesArrayToText(livePatient.diagnoses);
-    return "";
-  };
-
-  // Replicação automática: ao abrir Nova Evolução, se houver evolução anterior,
-  // assume-se que CIDs/previsões/paliativo/isolamento já estão preservados na admissão
-  // (foi assim que foram persistidos por evolução anterior). Marcamos o banner de replicado.
+  /**
+   * Nova Evolução: abre SEMPRE em branco. Sem prefill de hipóteses, dispositivos,
+   * culturas ou SOAP. O médico escreve do zero. Apenas marca o banner de "replicado"
+   * quando o paciente já possui contexto diagnóstico vindo da admissão (CIDs,
+   * previsão de alta, paliativo, isolamento) — esses campos pertencem ao paciente,
+   * não à evolução, e continuam aparecendo como hoje.
+   */
   const handleOpenNewEvolution = () => {
     resetNewForm();
     setShowNewForm(true);
-    // Considera replicado se há ao menos um diagnóstico/contexto preenchido vindo da última evolução
     const hasContext = !!(cidPrimary || cidSecondary?.length || utiDischargePrediction || hospitalDischargePrediction || isPalliative || isolationPrecautions);
-    if (hasContext && evolutions.length > 0) {
+    if (hasContext) {
       setDiagnosticsReplicated(true);
-    }
-    // Prefill hipóteses (vindas da última evolução com hipóteses ou da admissão)
-    setDiagnosticHypotheses(computePrefillHypotheses());
-    // Prefill dispositivos & culturas a partir da última evolução com esses dados
-    const lastWithDevicesOrCultures = evolutions.find((e) => {
-      const s: any = e.soap_data || {};
-      return (Array.isArray(s.devices) && s.devices.length > 0) || !!s.culturesHtml;
-    });
-    if (lastWithDevicesOrCultures) {
-      const s: any = lastWithDevicesOrCultures.soap_data || {};
-      if (Array.isArray(s.devices)) setNewDevices(s.devices);
-      if (typeof s.culturesHtml === "string") setNewCulturesHtml(s.culturesHtml);
     }
   };
 
