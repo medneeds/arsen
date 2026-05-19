@@ -5,6 +5,30 @@ import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 import type { Patient } from "@/types/patient";
 
 /**
+ * Converte uma string solta (BR `DD/MM/AAAA[ HH:MM]`, ISO, ou já timestamp)
+ * em ISO `YYYY-MM-DDTHH:mm:ss±HH:MM` aceito pelo Postgres em colunas
+ * timestamptz. Retorna `null` se vazio ou não-parseável — evita o erro
+ * `date/time field value out of range` ao alocar pacientes cujo snapshot
+ * de origem trazia datas em formato brasileiro.
+ */
+function coerceToIsoTimestamp(value: unknown): string | null {
+  if (value == null) return null;
+  const raw = Array.isArray(value) ? value.join(" ").trim() : String(value).trim();
+  if (!raw) return null;
+  // ISO direto (com ou sem hora) — devolve como está
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw;
+  // BR: DD/MM/AAAA [HH:MM]
+  const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:[ T](\d{2}):(\d{2}))?/);
+  if (br) {
+    const [, dd, mm, yyyy, hh = "00", mi = "00"] = br;
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}:00+00:00`;
+  }
+  // Fallback: tenta Date.parse
+  const t = Date.parse(raw);
+  return Number.isNaN(t) ? null : new Date(t).toISOString();
+}
+
+/**
  * Executa uma TRANSFERÊNCIA INTERNA entre dois leitos do mesmo hospital,
  * preservando histórico clínico, prontuário e número de atendimento.
  *
@@ -69,12 +93,12 @@ export async function executeInternalTransfer(params: {
         pendencies: source.pendencies?.join("\n") || null,
         schedule: source.schedule?.join("\n") || null,
         admission_history: source.admissionHistory || null,
-        admission_date: source.admissionDate || null,
+        admission_date: coerceToIsoTimestamp(source.admissionDate),
         highlighted_diagnoses: source.highlightedDiagnoses || null,
         highlighted_medical_history: source.highlightedMedicalHistory || null,
         highlighted_pendencies: source.highlightedPendencies || null,
         highlighted_conducts: source.highlightedConducts || null,
-        uti_admission_date: source.utiAdmissionDate?.join("\n") || null,
+        uti_admission_date: coerceToIsoTimestamp(source.utiAdmissionDate),
         uti_discharge_prediction: source.utiDischargePrediction?.join("\n") || null,
         uti_allergies: source.utiAllergies?.join("\n") || null,
         uti_admission_reason: source.utiAdmissionReason?.join("\n") || null,
@@ -349,12 +373,12 @@ export async function completeInternalTransfer(
         pendencies: snapshot.pendencies?.join("\n") || null,
         schedule: snapshot.schedule?.join("\n") || null,
         admission_history: snapshot.admissionHistory || null,
-        admission_date: snapshot.admissionDate || null,
+        admission_date: coerceToIsoTimestamp(snapshot.admissionDate),
         highlighted_diagnoses: snapshot.highlightedDiagnoses || null,
         highlighted_medical_history: snapshot.highlightedMedicalHistory || null,
         highlighted_pendencies: snapshot.highlightedPendencies || null,
         highlighted_conducts: snapshot.highlightedConducts || null,
-        uti_admission_date: snapshot.utiAdmissionDate?.join("\n") || null,
+        uti_admission_date: coerceToIsoTimestamp(snapshot.utiAdmissionDate),
         uti_discharge_prediction: snapshot.utiDischargePrediction?.join("\n") || null,
         uti_allergies: snapshot.utiAllergies?.join("\n") || null,
         uti_admission_reason: snapshot.utiAdmissionReason?.join("\n") || null,
