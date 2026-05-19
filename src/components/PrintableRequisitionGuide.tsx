@@ -381,8 +381,12 @@ export function PrintableRequisitionGuide({
           </tr>
           <tr>
             <th style={thStyle}>Nº Prontuário</th>
-            <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontWeight: 600 }} colSpan={3}>
+            <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontWeight: 600 }}>
               {resolvedRecord || "—"}
+            </td>
+            <th style={thStyle}>Nº Atendimento</th>
+            <td style={{ ...tdStyle, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontWeight: 600 }}>
+              {resolvedEncounter || "—"}
             </td>
           </tr>
           <tr>
