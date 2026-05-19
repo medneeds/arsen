@@ -17,6 +17,10 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { RichTextEditor, richHtmlToPlainText } from "@/components/ui/rich-text-editor";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
@@ -133,6 +137,7 @@ const EvolucaoPage = () => {
   const [creating, setCreating] = useState(false);
   const [diagnosticsReplicated, setDiagnosticsReplicated] = useState(false);
   const [diagnosticHypotheses, setDiagnosticHypotheses] = useState("");
+  const [pendingDuplicate, setPendingDuplicate] = useState<EvolutionRecord | null>(null);
 
   // CID state — persisted to admission_histories via usePatientCid
   const {
@@ -170,37 +175,19 @@ const EvolucaoPage = () => {
     setDiagnosticHypotheses("");
   };
 
-  /** Prefill hipóteses ao abrir Nova Evolução: prioriza última evolução com hipóteses,
-   *  senão usa o array atual de patients.diagnoses (vindo da admissão). */
-  const computePrefillHypotheses = (): string => {
-    const lastWithHypo = evolutions.find(e => (e as any).diagnostic_hypotheses);
-    if (lastWithHypo) return (lastWithHypo as any).diagnostic_hypotheses || "";
-    if (livePatient?.diagnoses?.length) return diagnosesArrayToText(livePatient.diagnoses);
-    return "";
-  };
-
-  // Replicação automática: ao abrir Nova Evolução, se houver evolução anterior,
-  // assume-se que CIDs/previsões/paliativo/isolamento já estão preservados na admissão
-  // (foi assim que foram persistidos por evolução anterior). Marcamos o banner de replicado.
+  /**
+   * Nova Evolução: abre SEMPRE em branco. Sem prefill de hipóteses, dispositivos,
+   * culturas ou SOAP. O médico escreve do zero. Apenas marca o banner de "replicado"
+   * quando o paciente já possui contexto diagnóstico vindo da admissão (CIDs,
+   * previsão de alta, paliativo, isolamento) — esses campos pertencem ao paciente,
+   * não à evolução, e continuam aparecendo como hoje.
+   */
   const handleOpenNewEvolution = () => {
     resetNewForm();
     setShowNewForm(true);
-    // Considera replicado se há ao menos um diagnóstico/contexto preenchido vindo da última evolução
     const hasContext = !!(cidPrimary || cidSecondary?.length || utiDischargePrediction || hospitalDischargePrediction || isPalliative || isolationPrecautions);
-    if (hasContext && evolutions.length > 0) {
+    if (hasContext) {
       setDiagnosticsReplicated(true);
-    }
-    // Prefill hipóteses (vindas da última evolução com hipóteses ou da admissão)
-    setDiagnosticHypotheses(computePrefillHypotheses());
-    // Prefill dispositivos & culturas a partir da última evolução com esses dados
-    const lastWithDevicesOrCultures = evolutions.find((e) => {
-      const s: any = e.soap_data || {};
-      return (Array.isArray(s.devices) && s.devices.length > 0) || !!s.culturesHtml;
-    });
-    if (lastWithDevicesOrCultures) {
-      const s: any = lastWithDevicesOrCultures.soap_data || {};
-      if (Array.isArray(s.devices)) setNewDevices(s.devices);
-      if (typeof s.culturesHtml === "string") setNewCulturesHtml(s.culturesHtml);
     }
   };
 
@@ -252,23 +239,26 @@ const EvolucaoPage = () => {
     }
   };
 
-  const handleDuplicate = async (source: EvolutionRecord) => {
+  /** Aplica a duplicação real (sem confirmação). Mantém o comportamento original:
+   *  copia SOAP, sinais vitais, exame físico, dispositivos, culturas e hipóteses da fonte. */
+  const performDuplicate = (source: EvolutionRecord) => {
     const srcSoap: any = source.soap_data || {};
-    // Separa devices/culturesHtml do SOAP base p/ que não vazem como chaves SOAP
     const { devices: srcDevices, culturesHtml: srcCulturesHtml, ...soapBase } = srcSoap;
     setNewSoap({ ...soapBase });
     setNewVitals({ ...source.vital_signs });
     setNewExam({ ...source.physical_exam });
-    // Importa dispositivos (preservando datas reais — D{n} é recalculado em leitura)
-    // e resultado de culturas do modelo copiado. Campos opcionais permanecem editáveis.
     setNewDevices(Array.isArray(srcDevices) ? srcDevices : []);
     setNewCulturesHtml(typeof srcCulturesHtml === "string" ? srcCulturesHtml : "");
-    // Também replica hipóteses diagnósticas se vierem na evolução fonte
     const srcHypo = (source as any).diagnostic_hypotheses;
     if (typeof srcHypo === "string") setDiagnosticHypotheses(srcHypo);
     setShowNewForm(true);
     setDiagnosticsReplicated(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  /** Confirmação leve antes de duplicar — evita cópia acidental sobre rascunho em andamento. */
+  const handleDuplicate = async (source: EvolutionRecord) => {
+    setPendingDuplicate(source);
   };
 
   // Adapt PatientHeader → minimal Patient for cockpit (must run before any early return)
@@ -560,6 +550,30 @@ const EvolucaoPage = () => {
           <p>Médico responsável — CRM</p>
         </div>
       </div>
+
+      {/* Confirmação leve antes de duplicar uma evolução */}
+      <AlertDialog open={!!pendingDuplicate} onOpenChange={(open) => { if (!open) setPendingDuplicate(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>DUPLICAR ESTA EVOLUÇÃO?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Será aberta uma nova evolução com os dados desta (S/O/A/P, sinais vitais, exame físico,
+              dispositivos, culturas e hipóteses). Você poderá editar tudo antes de salvar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingDuplicate) performDuplicate(pendingDuplicate);
+                setPendingDuplicate(null);
+              }}
+            >
+              Duplicar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
