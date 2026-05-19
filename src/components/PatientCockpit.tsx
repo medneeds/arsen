@@ -239,8 +239,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         onMouseLeave={() => variant === "fixed" && setHovering(false)}
         className={cn(
           variant === "fixed" && [
-            "hidden lg:flex shrink-0 border-l border-border bg-card sticky top-0 h-screen",
-            "transition-[width] duration-200 ease-out overflow-hidden",
+            "hidden lg:flex shrink-0 border-l border-border bg-card self-start",
+            "transition-[width] duration-200 ease-out",
             isExpanded ? "w-96" : "w-12",
           ],
           variant === "inline" && "w-full h-full bg-card border border-border rounded-lg overflow-hidden",
