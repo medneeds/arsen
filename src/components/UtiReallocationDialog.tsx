@@ -24,6 +24,7 @@ import { useDepartment } from "@/contexts/DepartmentContext";
 import { ArrowRightLeft, BedDouble, Check, User, MapPin, ClipboardList, Eye, History, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
+import { classifyTransfer, requiresSaps, classificationLabel } from "@/lib/sectorComplexity";
 
 interface UtiReallocationDialogProps {
   patient: Patient | null;
@@ -122,6 +123,22 @@ export function UtiReallocationDialog({
       const isSameUnit = targetUnit === currentUtiUnit;
       const originalBedNumber = patient.bedNumber;
 
+      // Classificação de complexidade do movimento.
+      // O destino aqui é sempre UTI 1 (red) ou UTI 2 (yellow) — críticos.
+      const destinationSectorCode = targetBedPatient.sector;
+      const transferClass = classifyTransfer(patient.sector, destinationSectorCode);
+      const needsSaps = requiresSaps(transferClass);
+
+      // Status do destino:
+      // - Escalada crítica (vindo de setor não-crítico) → 'saps_pendente'
+      //   para disparar o fluxo SAPS 3 já existente (timer pós-alocação).
+      // - Demais casos → preserva o status atual do paciente (admitido,
+      //   transferência pendente, etc.), mantendo o princípio de 1
+      //   atendimento até o desfecho final.
+      const destinationAdmissionStatus = needsSaps
+        ? 'saps_pendente'
+        : (patient.admissionStatus ?? 'admitido');
+
       // Step 1: Move patient data to the target bed (update target bed with patient data)
       const { error: targetError } = await supabase
         .from('patients')
@@ -151,9 +168,9 @@ export function UtiReallocationDialog({
           uti_daily_conducts: patient.utiDailyConducts?.join('\n') || null,
           clinical_status: patient.clinicalStatus || null,
           psm_status: patient.psmStatus || null,
-          // Preserva flag de desfecho (óbito/alta/transferência pendente) ao mover paciente entre leitos.
-          // Sem isto, a tarja some do mapa de leitos e o botão "Liberar leito" desaparece.
-          admission_status: patient.admissionStatus ?? 'admitido',
+          // Preserva flag de desfecho (óbito/alta/transferência pendente) ao mover paciente entre leitos,
+          // OU marca 'saps_pendente' quando for escalada de não-crítico para crítico.
+          admission_status: destinationAdmissionStatus,
           updated_at: new Date().toISOString(),
         })
         .eq('id', targetBedPatient.id);
@@ -409,7 +426,10 @@ export function UtiReallocationDialog({
               ? [{ icon: AlertTriangle, text: <>Como há mudança de unidade de UTI, a <strong>responsabilidade médica e a equipe assistencial</strong> serão atualizadas conforme escala da unidade destino.</> }]
               : []),
             { icon: Eye, text: <>O paciente continua visível em todos os módulos (mapa, prescrição, evolução, exames).</> },
-            { icon: History, text: <>O histórico clínico longitudinal é preservado integralmente.</> },
+            { icon: History, text: <>O histórico clínico longitudinal e o <strong>mesmo número de atendimento</strong> são preservados até o desfecho final.</> },
+            ...(requiresSaps(classifyTransfer(patient.sector, targetBedPatient.sector))
+              ? [{ icon: AlertTriangle, text: <>Como é uma <strong>escalada para setor crítico</strong> ({classificationLabel(classifyTransfer(patient.sector, targetBedPatient.sector))}), o paciente entrará no destino com status <strong>SAPS 3 pendente</strong> — o preenchimento da ficha será cobrado por timer após a alocação.</> }]
+              : []),
           ]}
           warnings={targetUnit !== currentUtiUnit
             ? [{ label: "Mudança de unidade", detail: "verifique a escala médica e o handover com a equipe receptora antes de confirmar." }]
