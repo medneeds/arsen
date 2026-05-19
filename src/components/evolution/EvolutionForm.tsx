@@ -115,6 +115,11 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   devices, onDevicesChange,
   culturesHtml, onCulturesChange,
   admissionDate,
+  evo,
+  patientId,
+  patientRecord,
+  cidPrimary,
+  cidSecondary,
 }) => {
   const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'devices', 'evolucao', 'complementares', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
