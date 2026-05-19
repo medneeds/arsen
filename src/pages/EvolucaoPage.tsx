@@ -234,23 +234,26 @@ const EvolucaoPage = () => {
     }
   };
 
-  const handleDuplicate = async (source: EvolutionRecord) => {
+  /** Aplica a duplicação real (sem confirmação). Mantém o comportamento original:
+   *  copia SOAP, sinais vitais, exame físico, dispositivos, culturas e hipóteses da fonte. */
+  const performDuplicate = (source: EvolutionRecord) => {
     const srcSoap: any = source.soap_data || {};
-    // Separa devices/culturesHtml do SOAP base p/ que não vazem como chaves SOAP
     const { devices: srcDevices, culturesHtml: srcCulturesHtml, ...soapBase } = srcSoap;
     setNewSoap({ ...soapBase });
     setNewVitals({ ...source.vital_signs });
     setNewExam({ ...source.physical_exam });
-    // Importa dispositivos (preservando datas reais — D{n} é recalculado em leitura)
-    // e resultado de culturas do modelo copiado. Campos opcionais permanecem editáveis.
     setNewDevices(Array.isArray(srcDevices) ? srcDevices : []);
     setNewCulturesHtml(typeof srcCulturesHtml === "string" ? srcCulturesHtml : "");
-    // Também replica hipóteses diagnósticas se vierem na evolução fonte
     const srcHypo = (source as any).diagnostic_hypotheses;
     if (typeof srcHypo === "string") setDiagnosticHypotheses(srcHypo);
     setShowNewForm(true);
     setDiagnosticsReplicated(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  /** Confirmação leve antes de duplicar — evita cópia acidental sobre rascunho em andamento. */
+  const handleDuplicate = async (source: EvolutionRecord) => {
+    setPendingDuplicate(source);
   };
 
   // Adapt PatientHeader → minimal Patient for cockpit (must run before any early return)
