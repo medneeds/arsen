@@ -24,6 +24,7 @@ import { useDepartment } from "@/contexts/DepartmentContext";
 import { ArrowRightLeft, BedDouble, Check, User, MapPin, ClipboardList, Eye, History, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MovementConfirmDialog } from "@/components/MovementConfirmDialog";
+import { classifyTransfer, requiresSaps, classificationLabel } from "@/lib/sectorComplexity";
 
 interface UtiReallocationDialogProps {
   patient: Patient | null;
