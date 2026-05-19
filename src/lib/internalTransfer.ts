@@ -160,6 +160,7 @@ export async function executeInternalTransfer(params: {
   } catch (err: any) {
     console.error("[executeInternalTransfer] erro", err);
     return { ok: false, classification, needsSaps, error: err?.message ?? "Erro desconhecido" };
+  }
 }
 
 // =====================================================================
