@@ -583,6 +583,11 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         culturesHtml={typeof (data.soap as any).culturesHtml === "string" ? (data.soap as any).culturesHtml : ""}
                         onCulturesChange={(html) => updateLocal(evo.id, "soap", "culturesHtml", html)}
                         admissionDate={admissionDate || null}
+                        evo={evo}
+                        patientId={patientId || null}
+                        patientRecord={patientRecord || null}
+                        cidPrimary={cidPrimary || null}
+                        cidSecondary={cidSecondary || null}
                       />
                     )}
                   </div>
