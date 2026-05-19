@@ -552,6 +552,31 @@ const EvolucaoPage = () => {
       </div>
     </div>
   );
+      {/* Confirmação leve antes de duplicar uma evolução */}
+      <AlertDialog open={!!pendingDuplicate} onOpenChange={(open) => { if (!open) setPendingDuplicate(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>DUPLICAR ESTA EVOLUÇÃO?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Será aberta uma nova evolução com os dados desta (S/O/A/P, sinais vitais, exame físico,
+              dispositivos, culturas e hipóteses). Você poderá editar tudo antes de salvar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingDuplicate) performDuplicate(pendingDuplicate);
+                setPendingDuplicate(null);
+              }}
+            >
+              Duplicar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
 };
 
 export default EvolucaoPage;
