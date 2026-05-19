@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 
 export interface PatientMovement {
   id: string;
