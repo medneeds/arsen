@@ -3386,11 +3386,29 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-teal-50 to-transparent dark:from-teal-950/30 hover:from-teal-100 dark:hover:from-teal-950/50 transition-colors cursor-pointer"
                     >
                       <Shuffle className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                      <span className="text-teal-700 dark:text-teal-300">Realocar / Permutar leito</span>
+                      <div className="flex flex-col">
+                        <span className="text-teal-700 dark:text-teal-300">Transferir agora (direto)</span>
+                        <span className="text-[10px] font-normal text-muted-foreground">Escolhe leito vago no mesmo momento</span>
+                      </div>
+                    </DropdownMenuItem>
+                    {/* SINALIZAR PRÉ-ADMISSÃO PARA OUTRO SETOR (etapa 1 de 2) */}
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSignalTransferOpen(true);
+                      }}
+                      className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-sky-50 to-transparent dark:from-sky-950/30 hover:from-sky-100 dark:hover:from-sky-950/50 transition-colors cursor-pointer"
+                    >
+                      <ArrowRightLeft className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                      <div className="flex flex-col">
+                        <span className="text-sky-700 dark:text-sky-300">Sinalizar pré-admissão p/ outro setor</span>
+                        <span className="text-[10px] font-normal text-muted-foreground">Libera leito; destino aloca em 2ª etapa (mesmo atendimento)</span>
+                      </div>
                     </DropdownMenuItem>
                     <p className="px-3 pb-1 text-[10px] leading-snug text-muted-foreground">
-                      Movimentações de alta, óbito e transferência são realizadas pelo Painel Clínico (Cockpit).
+                      Movimentações de alta, óbito e transferência externa são realizadas pelo Painel Clínico (Cockpit).
                     </p>
+
 
                     {/* LIBERAR LEITO — pré-admissão, pós-alta/óbito, ou excepcional (admin/médico) */}
                     {onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (
