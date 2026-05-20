@@ -8943,8 +8943,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
       {/* Cabeçalho institucional Norma Zero (MAN.05-001) */}
       <NormaZeroPrintHeader
         documentLabel="Prescrição Médica Diária"
-        documentCode={docCode}
-        documentSubtitle={prescriptionDate}
+        documentCode={prescriptionDate}
+        documentSubtitle={docCode}
         width="186mm"
       />
 
