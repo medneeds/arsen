@@ -8979,20 +8979,6 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
             <td style={{ ...headerCellStyle, color: '#dc2626', fontSize: '6pt' }}>⚠ ALERGIAS</td>
             <td style={{ ...cellStyle, fontWeight: 700, color: '#991b1b', fontSize: '7.5pt', backgroundColor: '#fef2f2' }}>{patient.allergies || 'NDAM'}</td>
           </tr>
-          {patient.motherName && (
-            <tr>
-              <td style={headerCellStyle}>Mãe</td>
-              <td style={cellStyle} colSpan={7}>{patient.motherName || '—'}</td>
-            </tr>
-          )}
-          {patient.address && (
-            <tr>
-              <td style={headerCellStyle}>Endereço</td>
-              <td style={{ ...cellStyle, fontSize: '7pt', lineHeight: 1.4 }} colSpan={7}>
-                {patient.address}{patient.city ? ` — ${patient.city}` : ''}
-              </td>
-            </tr>
-          )}
         </tbody>
       </table>
 
