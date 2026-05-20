@@ -4981,7 +4981,9 @@ export type Database = {
         Args: { p_email: string; p_new_password: string }
         Returns: Json
       }
-      archive_bed_history: { Args: { p_patient_id: string }; Returns: string }
+      archive_bed_history:
+        | { Args: { p_patient_id: string }; Returns: string }
+        | { Args: { p_patient_id: string; p_reason?: string }; Returns: Json }
       archive_orphan_drafts: {
         Args: never
         Returns: {
