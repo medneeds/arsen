@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 
 export interface ActivePrescriptionSummary {
   id: string;
@@ -14,13 +15,20 @@ export interface ActivePrescriptionSummary {
  * Subscribes to the latest prescription of a given patient (matched by name + hospital).
  * Used by the clinical Cockpit to surface a real-time chip with the active
  * prescription status (rascunho, validada, assinada, etc.).
+ *
+ * Fase B.2 — quando recebe `patientId` e há encounter ativo resolvido,
+ * filtra adicionalmente por `encounter_id` (igual ao ativo OU NULL legado),
+ * evitando que prescrições do ocupante anterior do leito apareçam para
+ * o novo paciente após transferência interna.
  */
 export function useActivePrescription(
   patientName: string | null,
   hospitalUnitId: string | null,
+  patientId?: string | null,
 ) {
   const [data, setData] = useState<ActivePrescriptionSummary | null>(null);
   const [loading, setLoading] = useState(false);
+  const { encounterId: activeEncounterId } = useActiveEncounterId(patientId ?? null);
 
   const fetch = useCallback(async () => {
     if (!patientName || !hospitalUnitId) {
@@ -28,12 +36,16 @@ export function useActivePrescription(
       return;
     }
     setLoading(true);
-    const { data: rows, error } = await supabase
+    let query = supabase
       .from("prescriptions")
       .select("id, status, version, items, digital_signature, updated_at, created_at")
       .eq("hospital_unit_id", hospitalUnitId)
       .eq("patient_name", patientName.trim())
-      .neq("status", "draft")
+      .neq("status", "draft");
+    if (patientId && activeEncounterId) {
+      query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
+    }
+    const { data: rows, error } = await query
       .order("created_at", { ascending: false })
       .limit(1);
     if (!error && rows && rows.length > 0) {
@@ -51,7 +63,7 @@ export function useActivePrescription(
       setData(null);
     }
     setLoading(false);
-  }, [patientName, hospitalUnitId]);
+  }, [patientName, hospitalUnitId, patientId, activeEncounterId]);
 
   useEffect(() => {
     fetch();
