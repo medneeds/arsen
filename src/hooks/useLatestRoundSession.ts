@@ -64,7 +64,7 @@ export function useLatestRoundSession(patientId: string | null) {
       setRound(null);
     }
     setLoading(false);
-  }, [patientId]);
+  }, [patientId, activeEncounterId]);
 
   useEffect(() => {
     fetchLatest();
