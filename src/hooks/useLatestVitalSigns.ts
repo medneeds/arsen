@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 
 export interface LatestVitalSigns {
   id: string;
@@ -26,6 +27,8 @@ export function useLatestVitalSigns(patientId: string | null) {
   const [vitals, setVitals] = useState<LatestVitalSigns | null>(null);
   const [loading, setLoading] = useState(false);
   const lastSeenIdRef = useRef<string | null>(null);
+  // Fase B.3 — filtra pelo encounter ativo (NULL = legado, segue visível)
+  const { encounterId: activeEncounterId } = useActiveEncounterId(patientId);
 
   const fetchLatest = useCallback(async () => {
     if (!patientId) {
@@ -33,12 +36,16 @@ export function useLatestVitalSigns(patientId: string | null) {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from("vital_signs")
       .select(
         "id, recorded_at, recorded_by_name, systolic_bp, diastolic_bp, heart_rate, respiratory_rate, spo2, temperature, news2_score, news2_risk, lactate, potassium",
       )
-      .eq("patient_id", patientId)
+      .eq("patient_id", patientId);
+    if (activeEncounterId) {
+      query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
+    }
+    const { data, error } = await query
       .order("recorded_at", { ascending: false })
       .limit(1);
     if (!error && data && data.length > 0) {
@@ -63,7 +70,7 @@ export function useLatestVitalSigns(patientId: string | null) {
       setVitals(null);
     }
     setLoading(false);
-  }, [patientId]);
+  }, [patientId, activeEncounterId]);
 
   useEffect(() => {
     fetchLatest();

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 
 export interface LatestRoundSession {
   id: string;
@@ -18,6 +19,8 @@ export interface LatestRoundSession {
 export function useLatestRoundSession(patientId: string | null) {
   const [round, setRound] = useState<LatestRoundSession | null>(null);
   const [loading, setLoading] = useState(false);
+  // Fase B.3 — filtra pelo encounter ativo (NULL = legado, segue visível)
+  const { encounterId: activeEncounterId } = useActiveEncounterId(patientId);
 
   const fetchLatest = useCallback(async () => {
     if (!patientId) {
@@ -25,10 +28,14 @@ export function useLatestRoundSession(patientId: string | null) {
       return;
     }
     setLoading(true);
-    const { data } = await supabase
+    let query = supabase
       .from("round_sessions")
       .select("id, round_date, observations, created_at, updated_at")
-      .eq("patient_id", patientId)
+      .eq("patient_id", patientId);
+    if (activeEncounterId) {
+      query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
+    }
+    const { data } = await query
       .order("round_date", { ascending: false })
       .order("updated_at", { ascending: false })
       .limit(1);
