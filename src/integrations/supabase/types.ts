@@ -1037,6 +1037,7 @@ export type Database = {
           document_number: string | null
           document_type: string
           encounter_code: string | null
+          encounter_id: string | null
           hospital_unit_id: string
           id: string
           movement_id: string | null
@@ -1064,6 +1065,7 @@ export type Database = {
           document_number?: string | null
           document_type: string
           encounter_code?: string | null
+          encounter_id?: string | null
           hospital_unit_id: string
           id?: string
           movement_id?: string | null
@@ -1091,6 +1093,7 @@ export type Database = {
           document_number?: string | null
           document_type?: string
           encounter_code?: string | null
+          encounter_id?: string | null
           hospital_unit_id?: string
           id?: string
           movement_id?: string | null
@@ -1110,7 +1113,15 @@ export type Database = {
           suspension_reason?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "discharge_documents_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "patient_encounters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dispensations: {
         Row: {
@@ -4044,6 +4055,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           department: string
+          encounter_id: string | null
           hospital_unit_id: string
           id: string
           observations: string | null
@@ -4063,6 +4075,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           department?: string
+          encounter_id?: string | null
           hospital_unit_id: string
           id?: string
           observations?: string | null
@@ -4082,6 +4095,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           department?: string
+          encounter_id?: string | null
           hospital_unit_id?: string
           id?: string
           observations?: string | null
@@ -4097,6 +4111,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "round_sessions_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "patient_encounters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "round_sessions_hospital_unit_id_fkey"
             columns: ["hospital_unit_id"]
@@ -4804,6 +4825,7 @@ export type Database = {
           creatinine: number | null
           department: string
           diastolic_bp: number | null
+          encounter_id: string | null
           fio2: number | null
           hco3: number | null
           heart_rate: number | null
@@ -4846,6 +4868,7 @@ export type Database = {
           creatinine?: number | null
           department?: string
           diastolic_bp?: number | null
+          encounter_id?: string | null
           fio2?: number | null
           hco3?: number | null
           heart_rate?: number | null
@@ -4888,6 +4911,7 @@ export type Database = {
           creatinine?: number | null
           department?: string
           diastolic_bp?: number | null
+          encounter_id?: string | null
           fio2?: number | null
           hco3?: number | null
           heart_rate?: number | null
@@ -4924,6 +4948,13 @@ export type Database = {
           urea?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "vital_signs_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "patient_encounters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vital_signs_hospital_unit_id_fkey"
             columns: ["hospital_unit_id"]
