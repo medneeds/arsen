@@ -18,6 +18,13 @@ export interface NormaZeroPrintHeaderProps {
   documentSubtitle?: string;
   /** Largura útil — alinha com o layout impresso (default 182mm) */
   width?: string;
+  /**
+   * Variante visual. 'default' mantém o cabeçalho institucional completo
+   * (logo grande, 3 linhas hierárquicas + endereço). 'compact' encolhe o
+   * bloco em ~12-14mm: logo menor, prefeitura+secretaria em linha única e
+   * endereço removido do header (deve aparecer no rodapé via prop opcional).
+   */
+  variant?: "default" | "compact";
 }
 
 const ink = "#0a1628";
