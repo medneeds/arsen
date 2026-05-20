@@ -37,10 +37,18 @@ export function NormaZeroPrintHeader({
   documentCode,
   documentSubtitle,
   width = "182mm",
+  variant = "default",
 }: NormaZeroPrintHeaderProps) {
   const inst = whitelabel.institution;
   const colors = whitelabel.theme.institutionalColors;
   const headerLines = getInstitutionalHeaderLines();
+  const isCompact = variant === "compact";
+
+  // Tamanhos parametrizados por variante
+  const logoSize = isCompact ? "40px" : "62px";
+  const padBottom = isCompact ? "4px" : "8px";
+  const crossHeight = isCompact ? "3px" : "4px";
+  const crossMb = isCompact ? "6px" : "8px";
 
   return (
     <div style={{ width, margin: "0 auto", position: "relative", zIndex: 1 }}>
@@ -49,68 +57,101 @@ export function NormaZeroPrintHeader({
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "12px",
-          paddingBottom: "8px",
+          gap: isCompact ? "10px" : "12px",
+          paddingBottom: padBottom,
         }}
       >
         <img
           src={socorraoCross}
           alt={inst.hospitalLogoAlt}
           style={{
-            width: "62px",
-            height: "62px",
+            width: logoSize,
+            height: logoSize,
             objectFit: "contain",
             flexShrink: 0,
           }}
         />
 
         <div style={{ flex: 1, textAlign: "center" }}>
-          <div
-            style={{
-              fontSize: "7.5pt",
-              fontWeight: 600,
-              color: inkSoft,
-              letterSpacing: "0.6px",
-              textTransform: "uppercase",
-            }}
-          >
-            {headerLines[0]}
-          </div>
-          <div
-            style={{
-              fontSize: "8pt",
-              fontWeight: 600,
-              color: inkSoft,
-              letterSpacing: "0.5px",
-              textTransform: "uppercase",
-              marginTop: "1px",
-            }}
-          >
-            {headerLines[1]}
-          </div>
-          <div
-            style={{
-              fontSize: "11pt",
-              fontWeight: 800,
-              color: ink,
-              letterSpacing: "0.8px",
-              textTransform: "uppercase",
-              marginTop: "3px",
-              lineHeight: 1.15,
-            }}
-          >
-            {headerLines[2]}
-          </div>
-          <div
-            style={{
-              fontSize: "6.5pt",
-              color: inkMuted,
-              marginTop: "3px",
-              fontStyle: "italic",
-            }}
-          >
-            {inst.address}
-          </div>
+          {isCompact ? (
+            <>
+              {/* Linha única: PREFEITURA · SECRETARIA */}
+              <div
+                style={{
+                  fontSize: "6.5pt",
+                  fontWeight: 600,
+                  color: inkSoft,
+                  letterSpacing: "0.5px",
+                  textTransform: "uppercase",
+                }}
+              >
+                {headerLines[0]} · {headerLines[1]}
+              </div>
+              <div
+                style={{
+                  fontSize: "10pt",
+                  fontWeight: 800,
+                  color: ink,
+                  letterSpacing: "0.7px",
+                  textTransform: "uppercase",
+                  marginTop: "2px",
+                  lineHeight: 1.15,
+                }}
+              >
+                {headerLines[2]}
+              </div>
+              {/* endereço removido do header → vai pro rodapé */}
+            </>
+          ) : (
+            <>
+              <div
+                style={{
+                  fontSize: "7.5pt",
+                  fontWeight: 600,
+                  color: inkSoft,
+                  letterSpacing: "0.6px",
+                  textTransform: "uppercase",
+                }}
+              >
+                {headerLines[0]}
+              </div>
+              <div
+                style={{
+                  fontSize: "8pt",
+                  fontWeight: 600,
+                  color: inkSoft,
+                  letterSpacing: "0.5px",
+                  textTransform: "uppercase",
+                  marginTop: "1px",
+                }}
+              >
+                {headerLines[1]}
+              </div>
+              <div
+                style={{
+                  fontSize: "11pt",
+                  fontWeight: 800,
+                  color: ink,
+                  letterSpacing: "0.8px",
+                  textTransform: "uppercase",
+                  marginTop: "3px",
+                  lineHeight: 1.15,
+                }}
+              >
+                {headerLines[2]}
+              </div>
+              <div
+                style={{
+                  fontSize: "6.5pt",
+                  color: inkMuted,
+                  marginTop: "3px",
+                  fontStyle: "italic",
+                }}
+              >
+                {inst.address}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Bloco direito — rótulo e código do documento */}
@@ -136,7 +177,7 @@ export function NormaZeroPrintHeader({
           {documentCode && (
             <div
               style={{
-                fontSize: "10pt",
+                fontSize: isCompact ? "9pt" : "10pt",
                 fontWeight: 800,
                 color: ink,
                 marginTop: "2px",
@@ -161,7 +202,7 @@ export function NormaZeroPrintHeader({
       </div>
 
       {/* Cruz colorida institucional — 5 cores Socorrão */}
-      <div style={{ display: "flex", height: "4px", marginBottom: "8px" }}>
+      <div style={{ display: "flex", height: crossHeight, marginBottom: crossMb }}>
         <div style={{ flex: 1, backgroundColor: colors.red }} />
         <div style={{ flex: 1, backgroundColor: colors.orange }} />
         <div style={{ flex: 1, backgroundColor: colors.yellow }} />
