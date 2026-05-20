@@ -8946,6 +8946,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         documentCode={prescriptionDate}
         documentSubtitle={docCode}
         width="186mm"
+        variant="compact"
       />
 
       {/* Patient Data — compact with allergy inline */}
