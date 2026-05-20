@@ -8946,6 +8946,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         documentCode={prescriptionDate}
         documentSubtitle={docCode}
         width="186mm"
+        variant="compact"
       />
 
       {/* Patient Data — compact with allergy inline */}
@@ -9222,7 +9223,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
       </div>
 
       {/* Rodapé Norma Zero (MAN.05-001) */}
-      <NormaZeroPrintFooter width="186mm" />
+      <NormaZeroPrintFooter width="186mm" showAddress />
     </div>
   );
 }
