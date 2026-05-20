@@ -9223,7 +9223,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
       </div>
 
       {/* Rodapé Norma Zero (MAN.05-001) */}
-      <NormaZeroPrintFooter width="186mm" />
+      <NormaZeroPrintFooter width="186mm" showAddress />
     </div>
   );
 }
