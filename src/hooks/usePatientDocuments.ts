@@ -232,7 +232,7 @@ export function usePatientDocuments({
     } finally {
       setLoading(false);
     }
-  }, [validId, patientName, hospitalUnitId, stateId]);
+  }, [validId, patientName, hospitalUnitId, stateId, activeEncounterId]);
 
   useEffect(() => {
     fetchAll();
