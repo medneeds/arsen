@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 
 export interface PatientPendingItem {
   id: string;
@@ -27,6 +28,8 @@ export function usePatientPendingItems(
 ) {
   const [items, setItems] = useState<PatientPendingItem[]>([]);
   const [loading, setLoading] = useState(false);
+  // Fase B.2 — filtra exames/culturas pelo encounter ativo (igual ao ativo OU NULL legado)
+  const { encounterId: activeEncounterId } = useActiveEncounterId(patientId);
 
   const fetch = useCallback(async () => {
     if (!hospitalUnitId || (!patientId && !patientName)) {
@@ -34,6 +37,10 @@ export function usePatientPendingItems(
       return;
     }
     setLoading(true);
+
+    const encounterOr = patientId && activeEncounterId
+      ? `encounter_id.eq.${activeEncounterId},encounter_id.is.null`
+      : null;
 
     // Exams
     let examQuery = supabase
@@ -44,6 +51,7 @@ export function usePatientPendingItems(
       .limit(20);
     if (patientId) examQuery = examQuery.eq("patient_id", patientId);
     else if (patientName) examQuery = examQuery.eq("patient_name", patientName.trim());
+    if (encounterOr) examQuery = examQuery.or(encounterOr);
 
     // Cultures
     let culQuery = supabase
@@ -54,6 +62,7 @@ export function usePatientPendingItems(
       .limit(20);
     if (patientId) culQuery = culQuery.eq("patient_id", patientId);
     else if (patientName) culQuery = culQuery.eq("patient_name", patientName.trim());
+    if (encounterOr) culQuery = culQuery.or(encounterOr);
 
     const [examRes, culRes] = await Promise.all([examQuery, culQuery]);
 
@@ -88,7 +97,7 @@ export function usePatientPendingItems(
     merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     setItems(merged);
     setLoading(false);
-  }, [patientId, patientName, hospitalUnitId]);
+  }, [patientId, patientName, hospitalUnitId, activeEncounterId]);
 
   useEffect(() => {
     fetch();

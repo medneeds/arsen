@@ -144,6 +144,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
   const { prescription } = useActivePrescription(
     patient?.name || null,
     currentHospital?.id || null,
+    patient?.id || null,
   );
   const { summary: pendingSummary, items: pendingItems } = usePatientPendingItems(
     patient?.id || null,

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { asUuidOrNull } from "@/lib/utils";
+import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 
 /**
  * Tipo unificado para qualquer documento clínico vinculado a um paciente.
@@ -103,6 +104,8 @@ export function usePatientDocuments({
   const [error, setError] = useState<string | null>(null);
 
   const validId = asUuidOrNull(patientId);
+  // Fase B.2 — filtro por encounter ativo (evita vazamento do ocupante anterior do leito)
+  const { encounterId: activeEncounterId } = useActiveEncounterId(validId);
 
   const fetchAll = useCallback(async () => {
     if (!hospitalUnitId || !stateId) return;
@@ -112,6 +115,10 @@ export function usePatientDocuments({
     }
     setLoading(true);
     setError(null);
+
+    const encounterOr = validId && activeEncounterId
+      ? `encounter_id.eq.${activeEncounterId},encounter_id.is.null`
+      : null;
 
     try {
       // ── exam_requests (lab / imagem / parecer / apac) ──
@@ -124,6 +131,7 @@ export function usePatientDocuments({
         .limit(200);
       if (validId) examQuery = examQuery.eq("patient_id", validId);
       else if (patientName) examQuery = examQuery.eq("patient_name", patientName);
+      if (encounterOr) examQuery = examQuery.or(encounterOr);
 
       // ── culture_results ──
       let cultureQuery = supabase
@@ -135,6 +143,7 @@ export function usePatientDocuments({
         .limit(100);
       if (validId) cultureQuery = cultureQuery.eq("patient_id", validId);
       else if (patientName) cultureQuery = cultureQuery.eq("patient_name", patientName);
+      if (encounterOr) cultureQuery = cultureQuery.or(encounterOr);
 
       // ── clinical_evolutions ──
       let evolQuery = supabase
@@ -148,6 +157,7 @@ export function usePatientDocuments({
         .limit(50);
       if (validId) evolQuery = evolQuery.eq("patient_id", validId);
       else if (patientName) evolQuery = evolQuery.eq("patient_name", patientName);
+      if (encounterOr) evolQuery = evolQuery.or(encounterOr);
 
       const [examRes, cultureRes, evolRes] = await Promise.all([examQuery, cultureQuery, evolQuery]);
 
@@ -222,7 +232,7 @@ export function usePatientDocuments({
     } finally {
       setLoading(false);
     }
-  }, [validId, patientName, hospitalUnitId, stateId]);
+  }, [validId, patientName, hospitalUnitId, stateId, activeEncounterId]);
 
   useEffect(() => {
     fetchAll();
