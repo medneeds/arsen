@@ -214,7 +214,15 @@ export function NormaZeroPrintHeader({
 }
 
 /** Rodapé Norma Zero — código MAN.05-001 + referências legais */
-export function NormaZeroPrintFooter({ width = "182mm" }: { width?: string }) {
+export function NormaZeroPrintFooter({
+  width = "182mm",
+  showAddress = false,
+}: {
+  width?: string;
+  /** Quando true, adiciona uma 2ª linha discreta com o endereço institucional
+   *  (usado quando o header está em variant="compact" e o endereço foi removido dele). */
+  showAddress?: boolean;
+}) {
   const now = new Date();
   const dateStr = now.toLocaleDateString("pt-BR");
   const timeStr = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
@@ -228,22 +236,40 @@ export function NormaZeroPrintFooter({ width = "182mm" }: { width?: string }) {
         borderTop: `1px solid ${lineSoft}`,
         fontSize: "6.5pt",
         color: inkSoft,
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
       }}
     >
-      <span>
-        <strong>{whitelabel.institution.hospitalAbbreviation}</strong> —{" "}
-        {whitelabel.platform.fullName}
-      </span>
-      <span>
-        {whitelabel.compliance.normaZeroCode} v{whitelabel.compliance.normaZeroVersion} •{" "}
-        {whitelabel.compliance.legalReferences}
-      </span>
-      <span>
-        {dateStr} {timeStr}
-      </span>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <span>
+          <strong>{whitelabel.institution.hospitalAbbreviation}</strong> —{" "}
+          {whitelabel.platform.fullName}
+        </span>
+        <span>
+          {whitelabel.compliance.normaZeroCode} v{whitelabel.compliance.normaZeroVersion} •{" "}
+          {whitelabel.compliance.legalReferences}
+        </span>
+        <span>
+          {dateStr} {timeStr}
+        </span>
+      </div>
+      {showAddress && (
+        <div
+          style={{
+            marginTop: "2pt",
+            fontSize: "6pt",
+            color: inkMuted,
+            fontStyle: "italic",
+            textAlign: "center",
+          }}
+        >
+          {whitelabel.institution.address}
+        </div>
+      )}
     </div>
   );
 }
