@@ -4966,7 +4966,8 @@ const PrescricaoPage = () => {
       schedule: med.defaultSchedule,
       instructions: "", // Recomendação sempre em branco — preenchimento exclusivo do médico
       category: med.category,
-      flags: [],
+      flags: med.instructions?.toLowerCase().includes('bomba de infusão') ? ['bi' as PrescriptionFlag] : [],
+
 
       highAlert: med.highAlert || false,
       status: 'active',
