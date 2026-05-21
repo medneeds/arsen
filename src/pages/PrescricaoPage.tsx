@@ -5325,19 +5325,51 @@ const PrescricaoPage = () => {
     toast.success(`${newItems.length} antimicrobiano(s) adicionado(s) à prescrição via Guia ATM`);
   }, []);
 
+  // Estado do pop-up de pré-visualização do perfil de cuidado
+  const [careProfilePreview, setCareProfilePreview] = useState<{
+    profile: CareProfile;
+    selectedKeys: Set<string>;
+  } | null>(null);
+
+  // Ao clicar num perfil → abre pop-up; usuário desmarca o que não se aplica antes de incluir
   const applyCareProfile = (profile: CareProfile) => {
     const existingNames = new Set(items.filter(i => i.category === 'care').map(i => i.name));
-    const newItems: PrescriptionItem[] = [];
-    // Add structured care items from IDs
+    // Marca por padrão tudo que ainda NÃO está na prescrição
+    const selectedKeys = new Set<string>();
     for (const careId of profile.items) {
+      const careMed = CARE_OPTIONS.find(c => c.id === careId);
+      if (careMed && !existingNames.has(careMed.name)) selectedKeys.add(`id:${careId}`);
+    }
+    for (const extraText of profile.extraItems) {
+      if (!existingNames.has(extraText)) selectedKeys.add(`tx:${extraText}`);
+    }
+    setCareProfilePreview({ profile, selectedKeys });
+  };
+
+  const toggleCarePreviewKey = (key: string) => {
+    setCareProfilePreview(prev => {
+      if (!prev) return prev;
+      const next = new Set(prev.selectedKeys);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return { ...prev, selectedKeys: next };
+    });
+  };
+
+  const confirmApplyCareProfile = () => {
+    if (!careProfilePreview) return;
+    const { profile, selectedKeys } = careProfilePreview;
+    const existingNames = new Set(items.filter(i => i.category === 'care').map(i => i.name));
+    const newItems: PrescriptionItem[] = [];
+    for (const careId of profile.items) {
+      if (!selectedKeys.has(`id:${careId}`)) continue;
       const careMed = CARE_OPTIONS.find(c => c.id === careId);
       if (careMed && !existingNames.has(careMed.name)) {
         newItems.push(createItem(careMed));
         existingNames.add(careMed.name);
       }
     }
-    // Add extra text-based items
     for (const extraText of profile.extraItems) {
+      if (!selectedKeys.has(`tx:${extraText}`)) continue;
       if (!existingNames.has(extraText)) {
         newItems.push({
           id: crypto.randomUUID(),
@@ -5353,10 +5385,12 @@ const PrescricaoPage = () => {
       setItems(prev => [...prev, ...newItems]);
       toast.success(`Perfil "${profile.label}" aplicado — ${newItems.length} itens adicionados`);
     } else {
-      toast.info(`Todos os itens do perfil "${profile.label}" já estão na prescrição`);
+      toast.info(`Nenhum item selecionado para incluir`);
     }
     setAppliedCareProfiles(prev => new Set(prev).add(profile.id));
+    setCareProfilePreview(null);
   };
+
 
   const addFreeRecommendation = () => {
     if (!freeRecommendation.trim()) return;
