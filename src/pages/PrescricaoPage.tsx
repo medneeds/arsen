@@ -8334,7 +8334,7 @@ const PrescricaoPage = () => {
       )}
 
       {/* ===== FOOTER SUMMARY ===== */}
-      <div className="rounded-xl border border-border bg-muted/30 p-4 flex items-center justify-between print:hidden">
+      <div className="rounded-xl border border-[hsl(217,30%,84%)]/70 dark:border-[hsl(217,30%,24%)]/70 bg-gradient-to-b from-[hsl(217,45%,98%)] to-[hsl(217,40%,96%)] dark:from-[hsl(217,35%,13%)] dark:to-[hsl(217,32%,11%)] p-4 flex items-center justify-between print:hidden shadow-[0_4px_16px_-6px_hsl(217,50%,30%,0.18)] dark:shadow-[0_4px_16px_-6px_hsl(217,80%,5%,0.45)] ring-1 ring-[hsl(217,55%,90%)]/40 dark:ring-[hsl(217,40%,22%)]/40">
         <div className="flex items-center gap-4 flex-wrap">
           <Badge variant="outline" className="gap-1 text-xs">
             <Pill className="h-3 w-3" /> {totalItems} itens
@@ -8357,7 +8357,7 @@ const PrescricaoPage = () => {
             }).filter(Boolean).join(' · ')}
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
           <Button
             size="sm"
             variant="outline"
@@ -8382,6 +8382,39 @@ const PrescricaoPage = () => {
           >
             <ShieldCheck className="h-3.5 w-3.5" />
             {digitalSignature ? "Reassinar Prescrição" : "Assinar Prescrição"}
+          </Button>
+          {/* Validar — espelha o botão do topo para conveniência do médico */}
+          <Button
+            size="sm"
+            variant={prescriptionLocked ? "outline" : "default"}
+            onClick={requestValidateAll}
+            disabled={allItemsValidated}
+            className={cn(
+              "gap-1.5 text-xs",
+              !prescriptionLocked && "bg-emerald-600 hover:bg-emerald-700 text-white"
+            )}
+            title={allItemsValidated ? "Todos os itens já validados" : prescriptionLocked ? "Validar itens pendentes" : "Validar prescrição"}
+          >
+            <ShieldCheck className="h-3.5 w-3.5" />
+            {allItemsValidated ? "Validada" : prescriptionLocked ? "Validar pendentes" : "Validar"}
+          </Button>
+          {/* Imprimir — espelha o botão do topo para conveniência do médico */}
+          <Button
+            size="sm"
+            onClick={() => {
+              if (!allItemsValidated) {
+                const pending = items.filter(i => i.status === 'active' && !isItemValidatedToday(i)).length;
+                toast.error("Impressão bloqueada — há itens pendentes", {
+                  description: `${pending} ${pending === 1 ? 'item aguarda' : 'itens aguardam'} validação. Valide ou exclua os itens pendentes antes de imprimir.`,
+                });
+                return;
+              }
+              handlePrint();
+            }}
+            className="gap-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm font-semibold"
+            title="Imprimir a prescrição validada e, quando aplicável, as guias regulatórias"
+          >
+            <Printer className="h-3.5 w-3.5" /> Imprimir
           </Button>
         </div>
       </div>
