@@ -3921,6 +3921,8 @@ const PrescricaoPage = () => {
   const [nutritionManualOpen, setNutritionManualOpen] = useState(false);
   const [nutritionGuidedOpen, setNutritionGuidedOpen] = useState(false);
   const [nutritionManualText, setNutritionManualText] = useState("");
+  const [nutritionManualType, setNutritionManualType] = useState<NonNullable<PrescriptionItem['nutritionType']>>('diet_oral');
+  const [nutritionManualRecs, setNutritionManualRecs] = useState("");
   const [manualOpenCategories, setManualOpenCategories] = useState<Set<PrescriptionCategory>>(new Set());
   const [hydrationWizardOpen, setHydrationWizardOpen] = useState(false);
   const [replacementWizardOpen, setReplacementWizardOpen] = useState(false);
