@@ -6304,19 +6304,48 @@ const PrescricaoPage = () => {
   };
 
   const confirmSign = useCallback(async (sig: DigitalSignature) => {
+    // Se já existe assinatura prévia, esta é uma REASSINATURA → preserva versão anterior
+    // imutável e cria nova versão com a assinatura do médico atual (parent_id encadeado).
+    const isResign = !!digitalSignature;
     setDigitalSignature(sig);
     setSignDialogOpen(false);
     // Persistência IMEDIATA da assinatura — não pode ficar só em memória
     try {
-      await persistItems(items, { sigOverride: sig });
-      toast.success("Prescrição assinada digitalmente", {
+      await persistItems(items, { sigOverride: sig, mode: isResign ? 'newVersion' : 'update' });
+      toast.success(isResign ? "Prescrição reassinada digitalmente" : "Prescrição assinada digitalmente", {
         description: `Dr(a). ${sig.doctorName} — CRM ${sig.crm} — Hash: ${sig.hash}`,
         duration: 5000,
       });
     } catch {
       // persistItems já reportou o erro
     }
-  }, [items, persistItems]);
+  }, [items, persistItems, digitalSignature]);
+
+  // Salvar rascunho — preserva itens pendentes de validação (visível só p/ médico que salvou)
+  const [savingDraft, setSavingDraft] = useState(false);
+  const handleSaveDraft = useCallback(async () => {
+    if (renewalPendingCount === 0) {
+      toast.info("Nenhum item pendente de validação para salvar como rascunho");
+      return;
+    }
+    if (!currentHospital || !currentState || !patient.name.trim()) {
+      toast.error("Preencha o paciente antes de salvar rascunho");
+      return;
+    }
+    setSavingDraft(true);
+    try {
+      // sigOverride=null força status='draft'; autoNewVersionIfSigned cria nova versão
+      // draft sem rebaixar a assinada anterior, preservando auditoria.
+      await persistItems(items, { sigOverride: null, autoNewVersionIfSigned: true });
+      toast.success("Rascunho salvo", {
+        description: `${renewalPendingCount} item(ns) pendente(s) preservado(s). Visível apenas para você no calendário.`,
+      });
+    } catch {
+      // persistItems já reportou erro
+    } finally {
+      setSavingDraft(false);
+    }
+  }, [items, persistItems, renewalPendingCount, currentHospital, currentState, patient.name]);
 
   // Renewal with dialog
   const handleRenew = () => {
@@ -8314,12 +8343,28 @@ const PrescricaoPage = () => {
         <div className="flex gap-2">
           <Button
             size="sm"
-            onClick={handleRequestSign}
-            disabled={!canPrescribe || !!digitalSignature || activeItemsCount === 0}
+            variant="outline"
+            onClick={handleSaveDraft}
+            disabled={savingDraft || renewalPendingCount === 0 || !patient.name.trim()}
             className="gap-1.5 text-xs"
+            title={
+              renewalPendingCount === 0
+                ? "Nenhum item pendente — só salva rascunho com itens ainda não validados"
+                : `Salvar ${renewalPendingCount} item(ns) pendente(s) como rascunho (visível só p/ você)`
+            }
+          >
+            <Save className="h-3.5 w-3.5" />
+            {savingDraft ? "Salvando..." : "Salvar Rascunho"}
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleRequestSign}
+            disabled={!canPrescribe || activeItemsCount === 0}
+            className="gap-1.5 text-xs"
+            title={digitalSignature ? "Reassinar como médico do plantão — gera nova versão e atualiza o PDF" : "Assinar prescrição"}
           >
             <ShieldCheck className="h-3.5 w-3.5" />
-            {digitalSignature ? "Assinada" : "Assinar Prescrição"}
+            {digitalSignature ? "Reassinar Prescrição" : "Assinar Prescrição"}
           </Button>
         </div>
       </div>
