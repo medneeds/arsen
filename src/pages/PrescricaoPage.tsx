@@ -9539,7 +9539,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
   return (
     <div style={{ fontFamily: '"Helvetica Neue", "Segoe UI", "Inter", Arial, sans-serif', color: '#1e293b', width: '186mm', margin: '0 auto', lineHeight: 1.3, letterSpacing: '-0.005em' }}>
       {/* Bloco cabeçalho + paciente — não pode ser separado do corpo da prescrição */}
-      <div style={{ pageBreakInside: 'avoid', breakInside: 'avoid', pageBreakAfter: 'avoid', breakAfter: 'avoid' }}>
+      <div style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
       {/* Cabeçalho institucional Norma Zero (MAN.05-001) */}
       <NormaZeroPrintHeader
         documentLabel="Prescrição Médica Diária"
