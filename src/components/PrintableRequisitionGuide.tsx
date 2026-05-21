@@ -630,7 +630,57 @@ export async function printRequisitionGuide(
   const createdAt = new Date(request.created_at);
   const createdStr = format(createdAt, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
 
-  const identificationRows = `
+  const isParecer = request.category === "parecer";
+
+  // Para parecer, a especialidade vai em destaque dentro da identificação
+  const parecerSpecialtyLabel = isParecer
+    ? (items.length > 0
+        ? items
+            .map((it: any) => (typeof it === "string" ? it : it?.name || String(it ?? "")))
+            .filter(Boolean)
+            .join(" • ")
+        : "—")
+    : "";
+
+  const identificationRows = isParecer
+    ? `
+    <table class="nz" style="margin-bottom:6pt">
+      <tbody>
+        <tr>
+          <th style="width:14%">Paciente</th>
+          <td style="font-weight:700;font-size:9.5pt">${escapeHtml(request.patient_name)}</td>
+          <th style="width:13%">Nº Prontuário</th>
+          <td style="width:18%;font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(medicalRecord || "—")}</td>
+          <th style="width:13%">Nº Atendimento</th>
+          <td style="width:18%;font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(encounterCode || "—")}</td>
+        </tr>
+        <tr>
+          <th>Setor</th><td>${escapeHtml(sectorName || "—")}</td>
+          <th>Leito</th><td>${escapeHtml(request.patient_bed || "—")}</td>
+          <th>Data Nasc. / Idade</th>
+          <td>${escapeHtml(fmtBirthDate(birthDate))}${ageY !== null ? ` <span style="color:#475569">(${ageY} anos)</span>` : ""}</td>
+        </tr>
+        <tr>
+          <th>Solicitante</th>
+          <td colspan="3">${escapeHtml(request.requested_by_name || "—")}</td>
+          <th>Solicitação</th>
+          <td>${escapeHtml(createdStr)}</td>
+        </tr>
+        <tr>
+          <th style="background:#0a1628;color:#fff">Especialidade Solicitada</th>
+          <td colspan="3" style="background:#eff6ff;font-weight:700;font-size:10pt;color:#0a1628">${escapeHtml(parecerSpecialtyLabel)}</td>
+          <th>Prioridade</th>
+          <td><span class="prio-badge" style="${priorityCss}">${escapeHtml(priorityLabel)}</span></td>
+        </tr>
+        ${
+          scheduledInfo
+            ? `<tr><th>Agendamento</th><td colspan="5">${escapeHtml(scheduledInfo)}</td></tr>`
+            : ""
+        }
+      </tbody>
+    </table>
+  `
+    : `
     <table class="nz" style="margin-bottom:6pt">
       <tbody>
         <tr>
@@ -668,8 +718,6 @@ export async function printRequisitionGuide(
       </tbody>
     </table>
   `;
-
-  const isParecer = request.category === "parecer";
 
   // Para parecer aceitamos HTML rico (negrito, itálico, sublinhado, listas, parágrafos).
   // O limite passa a ser por caracteres-de-texto (plain) para preservar 1 página A4.
@@ -726,11 +774,16 @@ export async function printRequisitionGuide(
           .join("")
       : `<div class="nz-empty">Nenhum item registrado.</div>`;
 
+  // Em parecer, a especialidade já aparece em destaque na identificação.
+  // Só renderizamos um bloco autônomo de especialidades se houver 2+ (lista múltipla).
   const itemsBlock = isParecer
-    ? `<h2 class="nz-section">Especialidade(s) Solicitada(s) (${items.length})</h2>
-       <div class="req-grid">${itemsCells}</div>`
+    ? (items.length > 1
+        ? `<h2 class="nz-section">Especialidades Solicitadas (${items.length})</h2>
+           <div class="req-grid">${itemsCells}</div>`
+        : "")
     : `<h2 class="nz-section">Itens Solicitados (${items.length})</h2>
        <div class="req-grid">${itemsCells}</div>`;
+
 
   const notesBlock = cleanNotes
     ? `<h2 class="nz-section">Observações</h2>
