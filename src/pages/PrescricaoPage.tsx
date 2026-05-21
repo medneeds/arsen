@@ -3823,6 +3823,8 @@ const PrescricaoPage = () => {
   const [careCatalogOpen, setCareCatalogOpen] = useState(false);
   const [nutritionWizardOpen, setNutritionWizardOpen] = useState(false);
   const [nutritionConfirmOpen, setNutritionConfirmOpen] = useState(false);
+  const [nutritionManualOpen, setNutritionManualOpen] = useState(false);
+  const [nutritionManualText, setNutritionManualText] = useState("");
   const [manualOpenCategories, setManualOpenCategories] = useState<Set<PrescriptionCategory>>(new Set());
   const [hydrationWizardOpen, setHydrationWizardOpen] = useState(false);
   const [replacementWizardOpen, setReplacementWizardOpen] = useState(false);
@@ -7746,20 +7748,42 @@ const PrescricaoPage = () => {
 
 
 
-      <AlertDialog open={nutritionConfirmOpen} onOpenChange={setNutritionConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
+      <Dialog open={nutritionConfirmOpen} onOpenChange={setNutritionConfirmOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
               <UtensilsCrossed className="h-4 w-4 text-emerald-600" />
               Como deseja prescrever a dieta?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Escolha entre o <strong>assistente de terapia nutricional</strong> (sugere estratégia, volume e cuidados com base no paciente)
-              ou a <strong>nova solicitação de dieta</strong> (oral, enteral, parenteral, zero ou suplementação — preenchimento manual estruturado).
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 sm:gap-2">
-            <AlertDialogCancel
+            </DialogTitle>
+            <DialogDescription>
+              Escolha o caminho que melhor se adapta ao seu fluxo: adição manual livre, modalidade guiada ou assistente clínico.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-2">
+            {/* Manual */}
+            <button
+              type="button"
+              onClick={() => {
+                setNutritionConfirmOpen(false);
+                setNutritionManualText("");
+                setNutritionManualOpen(true);
+              }}
+              className="group text-left rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition p-3 flex flex-col gap-2"
+            >
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-md bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center">
+                  <Pencil className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
+                </div>
+                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Adição manual</span>
+              </div>
+              <p className="text-[11.5px] text-slate-600 dark:text-slate-400 leading-snug">
+                Escreva livremente a conduta nutricional. Salvo como item de nutrição genérico com seu texto nas recomendações.
+              </p>
+            </button>
+
+            {/* Guiado */}
+            <button
+              type="button"
               onClick={() => {
                 setNutritionConfirmOpen(false);
                 setManualOpenCategories(prev => {
@@ -7772,23 +7796,103 @@ const PrescricaoPage = () => {
                   document.getElementById('prescription-cat-nutrition')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }, 50);
               }}
+              className="group text-left rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition p-3 flex flex-col gap-2"
             >
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Nova solicitação de dieta
-            </AlertDialogCancel>
-            <AlertDialogAction
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-md bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center">
+                  <ClipboardList className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
+                </div>
+                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Solicitação guiada</span>
+              </div>
+              <p className="text-[11.5px] text-slate-600 dark:text-slate-400 leading-snug">
+                Escolha a modalidade (Oral, Enteral, Parenteral, Suplementação ou Zero) e preencha os campos estruturados.
+              </p>
+            </button>
+
+            {/* Assistente */}
+            <button
+              type="button"
               onClick={() => {
                 setNutritionConfirmOpen(false);
                 setNutritionWizardOpen(true);
               }}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="group text-left rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50/60 dark:bg-emerald-950/30 hover:border-emerald-500 hover:bg-emerald-100/60 dark:hover:bg-emerald-950/50 transition p-3 flex flex-col gap-2"
             >
-              <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-              Seguir assistente
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-md bg-emerald-600 flex items-center justify-center">
+                  <Sparkles className="h-4 w-4 text-white" />
+                </div>
+                <span className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Assistente clínico</span>
+              </div>
+              <p className="text-[11.5px] text-emerald-700/90 dark:text-emerald-300/90 leading-snug">
+                Sugere estratégia, volume e cuidados com base no paciente (peso, condição clínica e via disponível).
+              </p>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Adição manual livre de nutrição */}
+      <Dialog open={nutritionManualOpen} onOpenChange={setNutritionManualOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-4 w-4 text-emerald-600" />
+              Adição manual de nutrição
+            </DialogTitle>
+            <DialogDescription>
+              Descreva livremente a conduta nutricional. O texto será salvo como item de nutrição com seu conteúdo nas recomendações.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={nutritionManualText}
+            onChange={(e) => setNutritionManualText(e.target.value)}
+            placeholder="Ex.: Dieta branda fracionada em 6 refeições, evitar alimentos gordurosos, manter hidratação oral livre..."
+            rows={6}
+            className="resize-none"
+            autoFocus
+          />
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setNutritionManualOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={!nutritionManualText.trim()}
+              onClick={() => {
+                const text = nutritionManualText.trim();
+                if (!text) return;
+                const newItem: PrescriptionItem = {
+                  id: crypto.randomUUID(),
+                  name: 'Conduta nutricional',
+                  presentation: '-',
+                  dose: '-',
+                  route: '-',
+                  posology: '-',
+                  schedule: '-',
+                  instructions: text,
+                  category: 'nutrition',
+                  flags: [],
+                  highAlert: false,
+                  status: 'active',
+                };
+                setItems(prev => [...prev, newItem]);
+                setNutritionManualOpen(false);
+                setNutritionManualText("");
+                setActiveTab('nutrition');
+                setTimeout(() => {
+                  document.getElementById(`prescription-item-${newItem.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 80);
+                toast.success('Conduta nutricional adicionada');
+              }}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <HydrationWizard
         open={hydrationWizardOpen}
