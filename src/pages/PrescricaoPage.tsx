@@ -1115,7 +1115,7 @@ function NutritionFields({
   const ENTERAL_ROUTES = ['Nasogástrica (NGT)', 'Nasoenteral (NET)', 'Orogástrica (OGT)', 'Gastrostomia', 'Jejunostomia'];
   const SUPPLEMENT_ROUTES = ['Oral', 'Nasogástrica (NGT)', 'Nasoenteral (NET)', 'Gastrostomia'];
   const DIET_INTERVALS = ['2/2h', '3/3h', '4/4h', '6/6h', '8/8h', '12/12h', '24h', 'Contínua'];
-  const DIET_STEPS = ['2', '3', '4', '5', '6', '7', '8'];
+  const DIET_STEPS = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
   // Componentes auxiliares compactos
   const SelectField = ({ label, value, options, onChange, placeholder = '—', width = 'w-40' }: {
