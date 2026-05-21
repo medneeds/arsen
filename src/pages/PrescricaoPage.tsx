@@ -7924,22 +7924,28 @@ const PrescricaoPage = () => {
                 if (!text) return;
                 const newItem: PrescriptionItem = {
                   id: crypto.randomUUID(),
-                  name: 'Conduta nutricional',
+                  name: text,
                   presentation: '-',
                   dose: '-',
                   route: '-',
                   posology: '-',
                   schedule: '-',
-                  instructions: text,
+                  instructions: '',
                   category: 'nutrition',
                   flags: [],
                   highAlert: false,
                   status: 'active',
+                  nutManual: true,
                 };
                 setItems(prev => [...prev, newItem]);
                 setNutritionManualOpen(false);
                 setNutritionManualText("");
                 setActiveTab('nutrition');
+                setExpandedCategories(prev => {
+                  const n = new Set(prev);
+                  n.add('nutrition');
+                  return n;
+                });
                 setTimeout(() => {
                   document.getElementById(`prescription-item-${newItem.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }, 80);
