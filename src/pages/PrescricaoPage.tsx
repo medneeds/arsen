@@ -199,7 +199,10 @@ interface PrescriptionItem {
   concentration?: string;     // Concentração calculada ou manual
   ivBolus?: boolean;          // Marca administração EV em bolus (sem tempo de infusão / gotejamento). Só p/ IV intermitente não-antimicrobiano e posologia ≠ Contínuo.
   // Nutrition-specific optional fields
-  nutritionType?: 'diet_enteral' | 'diet_oral' | 'water' | 'npt' | 'zero';
+  nutritionType?: 'diet_enteral' | 'diet_oral' | 'diet_parenteral' | 'water' | 'npt' | 'zero' | 'supplement';
+  dietType?: string;          // Tipo de dieta (líquida, pastosa, branda, polimérica, etc.)
+  dietProfile?: string;       // Perfil do paciente (geral, diabético, cardiopata, etc.)
+  dietInterval?: string;      // Intervalo da dieta (6/6h, 8/8h, contínua, etc.)
   nutVolDay?: string;         // Volume total / dia (mL)
   nutMode?: string;           // Contínua BIC / Gravitacional intermitente / Bolus / Bomba ciclada / VO fracionada
   nutFraction?: string;       // Fracionamento / horários
@@ -1098,198 +1101,195 @@ function NutritionFields({
     return null;
   })();
 
+  // === Listas de opções da nova solicitação de dieta ===
+  const ORAL_DIET_TYPES = ['Líquida', 'Líquida restrita', 'Pastosa', 'Branda', 'Leve', 'Geral'];
+  const ENTERAL_DIET_TYPES = ['Polimérica padrão', 'Polimérica hipercalórica', 'Oligomérica', 'Específica diabético', 'Específica renal', 'Específica hepatopata', 'Imunomoduladora', 'Pediátrica'];
+  const SUPPLEMENT_TYPES = ['Hiperproteico', 'Hipercalórico', 'Específico diabético', 'Específico renal', 'Espessante', 'Módulo de proteína', 'Módulo de fibra'];
+  const DIET_PROFILES = ['Geral', 'Diabético', 'Cardiopata/Hipertenso', 'Renal', 'Hepatopata', 'Anêmico', 'Gastrointestinal', 'Pós-operatório', 'Oncológico', 'Pediátrico', 'Idoso'];
+  const ENTERAL_ROUTES = ['Nasogástrica (NGT)', 'Nasoenteral (NET)', 'Orogástrica (OGT)', 'Gastrostomia', 'Jejunostomia'];
+  const SUPPLEMENT_ROUTES = ['Oral', 'Nasogástrica (NGT)', 'Nasoenteral (NET)', 'Gastrostomia'];
+  const DIET_INTERVALS = ['6/6h', '8/8h', '12/12h', '24h', 'Contínua'];
+
+  // Componentes auxiliares compactos
+  const SelectField = ({ label, value, options, onChange, placeholder = '—', width = 'w-40' }: {
+    label: string; value: string | undefined; options: string[]; onChange: (v: string) => void; placeholder?: string; width?: string;
+  }) => (
+    <div className="flex items-center gap-1">
+      <NutFieldLabel>{label}:</NutFieldLabel>
+      <Select value={value || ''} onValueChange={onChange}>
+        <SelectTrigger className={cn("h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-400/60", width)}>
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map(o => <SelectItem key={o} value={o} className="text-xs">{o}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  const RecommendationsField = (
+    <div className="space-y-1">
+      <NutFieldLabel>Recomendações:</NutFieldLabel>
+      <Textarea
+        value={item.instructions}
+        onChange={(e) => onUpdate(item.id, 'instructions', e.target.value)}
+        onKeyDown={(e) => e.stopPropagation()}
+        className="min-h-[44px] text-[11px] bg-muted/10 border-border/20 italic focus:not-italic"
+        placeholder="Orientações à equipe (restrições, alergias, conduta em caso de intolerância, metas calóricas, observações específicas...)"
+      />
+    </div>
+  );
+
   return (
-    <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-1.5")}>
+    <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-2")}>
+      {/* Header com tipo de modalidade (somente leitura visual) */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        <NutFieldLabel>Tipo:</NutFieldLabel>
+        <NutFieldLabel>Modalidade:</NutFieldLabel>
         <Select value={subtype} onValueChange={setSubtype}>
           <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-44">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="diet_enteral" className="text-xs">Dieta enteral</SelectItem>
             <SelectItem value="diet_oral" className="text-xs">Dieta oral</SelectItem>
-            <SelectItem value="water" className="text-xs">Água / Hidratação</SelectItem>
-            <SelectItem value="npt" className="text-xs">NPT (Parenteral)</SelectItem>
-            <SelectItem value="zero" className="text-xs">Dieta zero (NPO)</SelectItem>
+            <SelectItem value="diet_enteral" className="text-xs">Dieta enteral</SelectItem>
+            <SelectItem value="diet_parenteral" className="text-xs">Dieta parenteral</SelectItem>
+            <SelectItem value="zero" className="text-xs">Dieta zero</SelectItem>
+            <SelectItem value="supplement" className="text-xs">Suplementação</SelectItem>
+            <SelectItem value="water" className="text-xs">Água / Hidratação (legado)</SelectItem>
+            <SelectItem value="npt" className="text-xs">NPT (legado)</SelectItem>
           </SelectContent>
         </Select>
-        <span className="text-[10px] text-muted-foreground/70 italic ml-1">campos opcionais — preencha o que desejar detalhar</span>
       </div>
 
-      {(subtype === 'diet_enteral' || subtype === 'diet_oral') && (
+      {/* ============== ORAL ============== */}
+      {subtype === 'diet_oral' && (
         <>
-          {/* Linha ESSENCIAL — destacada em emerald */}
           <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
             <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
-            <NutFieldLabel>Vol/dia:</NutFieldLabel>
-            <NutSuffixInput value={item.nutVolDay || ''} onChange={setVolDay} suffix="mL" placeholder="1500" />
-            {subtype === 'diet_enteral' && !isBolusMode && (
-              <>
-                <span className="text-emerald-700/40">·</span>
-                <NutFieldLabel>Vazão:</NutFieldLabel>
-                <NutSuffixInput value={item.infusionRate || ''} onChange={setRate} suffix="mL/h" placeholder="62" />
-                {isContinuousMode && (
-                  <span className="text-[10px] text-emerald-700/80 dark:text-emerald-300/80 italic">
-                    ÷ 24h auto
-                  </span>
-                )}
-              </>
-            )}
-            {subtype === 'diet_enteral' && isBolusMode && bolusVolPerAdm !== null && (
-              <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium px-2 py-0.5 rounded-full bg-emerald-100/80 dark:bg-emerald-900/30">
-                ≈ {bolusVolPerAdm} mL/adm ({bolusFractionN}x)
-              </span>
-            )}
-            <span className="text-emerald-700/40">·</span>
-            <NutFieldLabel>Modo:</NutFieldLabel>
-            <Select value={item.nutMode || ''} onValueChange={(v) => onUpdate(item.id, 'nutMode', v)}>
-              <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-400/60 w-44"><SelectValue placeholder="—" /></SelectTrigger>
-              <SelectContent>
-                {subtype === 'diet_enteral' ? (
-                  <>
-                    <SelectItem value="Contínua BIC" className="text-xs">Contínua (BIC)</SelectItem>
-                    <SelectItem value="Gravitacional intermitente" className="text-xs">Gravitacional intermitente</SelectItem>
-                    <SelectItem value="Bolus" className="text-xs">Bolus</SelectItem>
-                    <SelectItem value="Bomba ciclada" className="text-xs">Bomba ciclada</SelectItem>
-                  </>
-                ) : (
-                  <>
-                    <SelectItem value="VO livre demanda" className="text-xs">VO — livre demanda</SelectItem>
-                    <SelectItem value="VO fracionada" className="text-xs">VO — fracionada</SelectItem>
-                    <SelectItem value="VO assistida" className="text-xs">VO — assistida (fono)</SelectItem>
-                  </>
-                )}
-              </SelectContent>
-            </Select>
+            <SelectField label="Tipo" value={item.dietType} options={ORAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-40" />
+            <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-44" />
+            <NutFieldLabel>Quantidade:</NutFieldLabel>
+            <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="300" />
+            <SelectField label="Intervalo" value={item.dietInterval} options={DIET_INTERVALS} onChange={(v) => onUpdate(item.id, 'dietInterval', v)} width="w-28" />
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-            <div className="flex items-center gap-1">
-              <NutFieldLabel>Fracionamento:</NutFieldLabel>
-              <NutTinyInput value={item.nutFraction || ''} onChange={(e) => onUpdate(item.id, 'nutFraction', e.target.value)} className="flex-1" placeholder="6x/dia, 4/4h..." />
-            </div>
-            <div className="flex items-center gap-1">
-              <NutFieldLabel>Pausa noturna:</NutFieldLabel>
-              <NutTinyInput value={item.nutNightPause || ''} onChange={(e) => onUpdate(item.id, 'nutNightPause', e.target.value)} className="flex-1" placeholder="23h-6h" />
-            </div>
-            <div className="flex items-center gap-1">
-              <NutFieldLabel>Progressão:</NutFieldLabel>
-              <NutTinyInput value={item.nutProgression || ''} onChange={(e) => onUpdate(item.id, 'nutProgression', e.target.value)} className="flex-1" placeholder="↑20mL/h a cada 6h" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            <div className="flex items-center gap-1">
-              <NutFieldLabel>Cabeceira:</NutFieldLabel>
-              <Select value={item.nutBedHead || ''} onValueChange={(v) => onUpdate(item.id, 'nutBedHead', v)}>
-                <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 flex-1"><SelectValue placeholder="—" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="≥30°" className="text-xs">≥30°</SelectItem>
-                  <SelectItem value="≥45°" className="text-xs">≥45°</SelectItem>
-                  <SelectItem value="Decúbito livre" className="text-xs">Decúbito livre</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-1">
-              <NutFieldLabel>Resíduo gástrico:</NutFieldLabel>
-              <NutTinyInput value={item.nutResidualCheck || ''} onChange={(e) => onUpdate(item.id, 'nutResidualCheck', e.target.value)} className="flex-1" placeholder="aspirar 6/6h, suspender se >250mL" />
-            </div>
-          </div>
-
-          {subtype === 'diet_oral' && (
-            <div className="flex items-center gap-1">
-              <NutFieldLabel>Consistência (IDDSI):</NutFieldLabel>
-              <Select value={item.nutConsistency || ''} onValueChange={(v) => onUpdate(item.id, 'nutConsistency', v)}>
-                <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 w-56"><SelectValue placeholder="—" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Líquida fina (IDDSI 0)" className="text-xs">Líquida fina (IDDSI 0)</SelectItem>
-                  <SelectItem value="Levemente espessa (IDDSI 1)" className="text-xs">Levemente espessa (1)</SelectItem>
-                  <SelectItem value="Néctar (IDDSI 2)" className="text-xs">Néctar (2)</SelectItem>
-                  <SelectItem value="Mel (IDDSI 3)" className="text-xs">Mel (3)</SelectItem>
-                  <SelectItem value="Pudim/pastosa (IDDSI 4)" className="text-xs">Pudim/pastosa (4)</SelectItem>
-                  <SelectItem value="Branda (IDDSI 5/6)" className="text-xs">Branda (5/6)</SelectItem>
-                  <SelectItem value="Livre (IDDSI 7)" className="text-xs">Livre (7)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          {RecommendationsField}
         </>
       )}
 
-      {subtype === 'water' && (
-        <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
-          <Droplets className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
-          <NutFieldLabel>Vol/adm:</NutFieldLabel>
-          <NutSuffixInput value={item.nutWaterVolPerAdmin || ''} onChange={(v) => onUpdate(item.id, 'nutWaterVolPerAdmin', v)} suffix="mL" placeholder="50" />
-          <span className="text-emerald-700/40">·</span>
-          <NutFieldLabel>Frequência:</NutFieldLabel>
-          <Input value={item.nutWaterFreq || ''} onChange={(e) => onUpdate(item.id, 'nutWaterFreq', e.target.value)} placeholder="antes/após dieta e meds" className="h-7 text-[12px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 focus-visible:ring-emerald-400/60 w-48" />
-          <span className="text-emerald-700/40">·</span>
-          <NutFieldLabel>Meta/24h:</NutFieldLabel>
-          <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="800" />
-        </div>
+      {/* ============== ENTERAL ============== */}
+      {subtype === 'diet_enteral' && (
+        <>
+          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
+            <div className="flex items-center gap-2 flex-wrap">
+              <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+              <SelectField label="Tipo" value={item.dietType} options={ENTERAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
+              <SelectField label="Via" value={item.route && item.route !== '-' ? item.route : ''} options={ENTERAL_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
+              <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <NutFieldLabel>Quantidade:</NutFieldLabel>
+              <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="1500" />
+              <SelectField label="Intervalo" value={item.dietInterval} options={DIET_INTERVALS} onChange={(v) => onUpdate(item.id, 'dietInterval', v)} width="w-28" />
+              <NutFieldLabel>Correr em:</NutFieldLabel>
+              <NutSuffixInput value={item.infusionRate || ''} onChange={(v) => onUpdate(item.id, 'infusionRate', v)} suffix="mL/h" placeholder="62" />
+            </div>
+          </div>
+          {RecommendationsField}
+        </>
       )}
 
+      {/* ============== PARENTERAL ============== */}
+      {subtype === 'diet_parenteral' && (
+        <>
+          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Droplets className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+              <SelectField label="Tipo" value={item.dietType} options={ENTERAL_DIET_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
+              <div className="flex items-center gap-1">
+                <NutFieldLabel>Via:</NutFieldLabel>
+                <Input value="Endovenosa" disabled className="h-7 text-[12px] font-semibold bg-emerald-100/60 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 w-36" />
+              </div>
+              <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <NutFieldLabel>Quantidade:</NutFieldLabel>
+              <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="2000" />
+              <SelectField label="Intervalo" value={item.dietInterval} options={DIET_INTERVALS} onChange={(v) => onUpdate(item.id, 'dietInterval', v)} width="w-28" />
+              <NutFieldLabel>Correr em:</NutFieldLabel>
+              <NutSuffixInput value={item.infusionRate || ''} onChange={(v) => onUpdate(item.id, 'infusionRate', v)} suffix="mL/h" placeholder="83" />
+            </div>
+          </div>
+          {RecommendationsField}
+        </>
+      )}
+
+      {/* ============== ZERO ============== */}
+      {subtype === 'zero' && (
+        <>
+          <div className="px-2.5 py-2 rounded-md bg-amber-50/70 dark:bg-amber-950/20 border border-amber-300/60 dark:border-amber-800/50 border-l-[3px] border-l-amber-500/70 space-y-1">
+            <NutFieldLabel>Motivo do jejum:</NutFieldLabel>
+            <Input
+              value={item.nutZeroReason || ''}
+              onChange={(e) => onUpdate(item.id, 'nutZeroReason', e.target.value)}
+              placeholder="pré-operatório, broncoaspiração, íleo, avaliação..."
+              className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-amber-300 dark:border-amber-700"
+            />
+          </div>
+          {RecommendationsField}
+        </>
+      )}
+
+      {/* ============== SUPLEMENTAÇÃO ============== */}
+      {subtype === 'supplement' && (
+        <>
+          <div className="space-y-1.5 px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
+            <div className="flex items-center gap-2 flex-wrap">
+              <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+              <SelectField label="Tipo" value={item.dietType} options={SUPPLEMENT_TYPES} onChange={(v) => onUpdate(item.id, 'dietType', v)} width="w-52" />
+              <SelectField label="Via" value={item.route && item.route !== '-' ? item.route : ''} options={SUPPLEMENT_ROUTES} onChange={(v) => onUpdate(item.id, 'route', v)} width="w-44" />
+              <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <NutFieldLabel>Quantidade:</NutFieldLabel>
+              <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="200" />
+              <SelectField label="Intervalo" value={item.dietInterval} options={DIET_INTERVALS} onChange={(v) => onUpdate(item.id, 'dietInterval', v)} width="w-28" />
+              <NutFieldLabel>Correr em:</NutFieldLabel>
+              <NutSuffixInput value={item.infusionRate || ''} onChange={(v) => onUpdate(item.id, 'infusionRate', v)} suffix="mL/h" placeholder="—" />
+            </div>
+          </div>
+          {RecommendationsField}
+        </>
+      )}
+
+      {/* ============== LEGADO: água ============== */}
+      {subtype === 'water' && (
+        <>
+          <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
+            <Droplets className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
+            <NutFieldLabel>Vol/adm:</NutFieldLabel>
+            <NutSuffixInput value={item.nutWaterVolPerAdmin || ''} onChange={(v) => onUpdate(item.id, 'nutWaterVolPerAdmin', v)} suffix="mL" placeholder="50" />
+            <NutFieldLabel>Frequência:</NutFieldLabel>
+            <Input value={item.nutWaterFreq || ''} onChange={(e) => onUpdate(item.id, 'nutWaterFreq', e.target.value)} placeholder="antes/após dieta e meds" className="h-7 text-[12px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-48" />
+            <NutFieldLabel>Meta/24h:</NutFieldLabel>
+            <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="800" />
+          </div>
+          {RecommendationsField}
+        </>
+      )}
+
+      {/* ============== LEGADO: NPT ============== */}
       {subtype === 'npt' && (
         <>
           <div className="flex items-center gap-2 flex-wrap px-2.5 py-2 rounded-md bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300/60 dark:border-emerald-800/50 border-l-[3px] border-l-emerald-500/70">
             <Droplets className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300 shrink-0" />
             <NutFieldLabel>Vol total:</NutFieldLabel>
             <NutSuffixInput value={item.volumeTotal || ''} onChange={(v) => onUpdate(item.id, 'volumeTotal', v)} suffix="mL" placeholder="2000" />
-            <span className="text-emerald-700/40">·</span>
             <NutFieldLabel>Vazão:</NutFieldLabel>
             <NutSuffixInput value={item.infusionRate || ''} onChange={(v) => onUpdate(item.id, 'infusionRate', v)} suffix="mL/h" placeholder="83" />
-            <span className="text-emerald-700/40">·</span>
-            <NutFieldLabel>Correr em:</NutFieldLabel>
-            <NutTinyInput value={item.infusionTime || ''} onChange={(e) => onUpdate(item.id, 'infusionTime', e.target.value)} className="w-20 text-center h-7 text-[12px] font-semibold border-emerald-300 dark:border-emerald-700" placeholder="18" />
-            <Select value={item.infusionTimeUnit || 'h'} onValueChange={(v) => onUpdate(item.id, 'infusionTimeUnit', v)}>
-              <SelectTrigger className="h-7 text-[11px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-20"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="h" className="text-xs">horas</SelectItem>
-                <SelectItem value="min" className="text-xs">min</SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-emerald-700/40">·</span>
-            <NutFieldLabel>Acesso:</NutFieldLabel>
-            <Select value={item.nutAccess || ''} onValueChange={(v) => onUpdate(item.id, 'nutAccess', v)}>
-              <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-36"><SelectValue placeholder="—" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="CVC" className="text-xs">CVC</SelectItem>
-                <SelectItem value="PICC" className="text-xs">PICC</SelectItem>
-                <SelectItem value="Periférico" className="text-xs">Periférico</SelectItem>
-                <SelectItem value="Port-a-cath" className="text-xs">Port-a-cath</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            <div className="flex items-start gap-1">
-              <NutFieldLabel>Composição:</NutFieldLabel>
-              <Textarea value={item.nutComposition || ''} onChange={(e) => onUpdate(item.id, 'nutComposition', e.target.value)} className="min-h-[36px] text-[11px] bg-muted/10 border-border/30 flex-1 py-1" placeholder="Glic 4 g/kg/dia · AA 1,5 g/kg/dia · Lip 1 g/kg/dia · eletrólitos" />
-            </div>
-            <div className="flex items-start gap-1">
-              <NutFieldLabel>Monitorização:</NutFieldLabel>
-              <Textarea value={item.nutMonitoring || ''} onChange={(e) => onUpdate(item.id, 'nutMonitoring', e.target.value)} className="min-h-[36px] text-[11px] bg-muted/10 border-border/30 flex-1 py-1" placeholder="Glicemia 6/6h · ionograma · TG 2x/sem · função hepática" />
-            </div>
-          </div>
+          {RecommendationsField}
         </>
       )}
-
-      {subtype === 'zero' && (
-        <div className="flex items-center gap-1 px-2 py-1.5 rounded-md bg-accent/30 border border-border/30">
-          <NutFieldLabel>Motivo do jejum:</NutFieldLabel>
-          <NutTinyInput value={item.nutZeroReason || ''} onChange={(e) => onUpdate(item.id, 'nutZeroReason', e.target.value)} className="flex-1" placeholder="pré-operatório, broncoaspiração, íleo..." />
-        </div>
-      )}
-
-      {/* Observações livres — sempre disponível */}
-      <Textarea
-        value={item.instructions}
-        onChange={(e) => onUpdate(item.id, 'instructions', e.target.value)}
-        onKeyDown={(e) => e.stopPropagation()}
-        className="min-h-[44px] text-[11px] bg-muted/10 border-border/20 italic focus:not-italic"
-        placeholder="Observações nutricionais livres (orientações à equipe, restrições, alergias, metas calóricas, conduta em caso de intolerância...)"
-      />
     </div>
   );
 }
@@ -1858,9 +1858,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       const subLabel: Record<NonNullable<PrescriptionItem['nutritionType']>, string> = {
         diet_enteral: 'Enteral',
         diet_oral: 'Oral',
+        diet_parenteral: 'Parenteral',
         water: 'Água',
         npt: 'NPT',
         zero: 'Jejum',
+        supplement: 'Suplementação',
       };
       compactParts.push(subLabel[sub]);
 
@@ -7112,7 +7114,7 @@ const PrescricaoPage = () => {
                     title={hasWizard ? `Abrir assistente de ${config.label.toLowerCase()}` : undefined}
                     onClick={() => {
                       document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      if (cat === 'nutrition') setNutritionWizardOpen(true);
+                      if (cat === 'nutrition') setNutritionConfirmOpen(true);
                       else if (cat === 'hydration') setHydrationWizardOpen(true);
                       else if (cat === 'replacement') setReplacementWizardOpen(true);
                     }}
@@ -7379,6 +7381,51 @@ const PrescricaoPage = () => {
                             <Plus className="h-3 w-3" />
                           </Button>
                         </div>
+                      ) : cat === 'nutrition' ? (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {([
+                            { sub: 'diet_oral',       label: 'Oral',          name: 'Dieta oral' },
+                            { sub: 'diet_enteral',    label: 'Enteral',       name: 'Dieta enteral' },
+                            { sub: 'diet_parenteral', label: 'Parenteral',    name: 'Dieta parenteral', route: 'Endovenosa' },
+                            { sub: 'zero',            label: 'Zero',          name: 'Dieta zero' },
+                            { sub: 'supplement',      label: 'Suplementação', name: 'Suplementação' },
+                          ] as const).map(m => (
+                            <Button
+                              key={m.sub}
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-[11px] border-emerald-300 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
+                              onClick={() => {
+                                const baseMed: MedicationEntry = {
+                                  id: '', name: m.name, presentation: '-', defaultDose: '-',
+                                  defaultRoute: (m as any).route || '-', defaultPosology: '-',
+                                  defaultSchedule: '-', instructions: '', category: 'nutrition',
+                                };
+                                const it = createItem(baseMed);
+                                it.nutritionType = m.sub as PrescriptionItem['nutritionType'];
+                                if ((m as any).route) it.route = (m as any).route;
+                                setItems(prev => [...prev, it]);
+                                setTimeout(() => {
+                                  document.getElementById(`prescription-item-${it.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }, 50);
+                              }}
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              {m.label}
+                            </Button>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-[11px] text-emerald-700 dark:text-emerald-300 ml-1"
+                            onClick={() => setNutritionWizardOpen(true)}
+                          >
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            Assistente
+                          </Button>
+                        </div>
                       ) : (
                         <MedicationAutocomplete
                           source={UNIFIED_CATALOG[cat]}
@@ -7387,7 +7434,6 @@ const PrescricaoPage = () => {
                           getFavoriteCount={getFavoriteCount}
                           category={cat}
                           onAssistantClick={
-                            cat === 'nutrition' ? () => setNutritionWizardOpen(true) :
                             cat === 'hydration' ? () => setHydrationWizardOpen(true) :
                             cat === 'replacement' ? () => setReplacementWizardOpen(true) :
                             cat === 'care' ? () => setCareCatalogOpen(true) :
@@ -7396,7 +7442,6 @@ const PrescricaoPage = () => {
                               : undefined
                           }
                           assistantTooltip={
-                            cat === 'nutrition' ? 'Assistente de Terapia Nutricional' :
                             cat === 'hydration' ? 'Assistente de Hidratação' :
                             cat === 'replacement' ? 'Assistente de Reposição / Correção Eletrolítica' :
                             cat === 'care' ? 'Assistente de Cuidados (perfis clínicos)' :
@@ -7705,11 +7750,11 @@ const PrescricaoPage = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <UtensilsCrossed className="h-4 w-4 text-emerald-600" />
-              Seguir assistente de terapia nutricional?
+              Como deseja prescrever a dieta?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              O assistente sugere a estratégia (Zero · Oral · Enteral · NPT), volume, fracionamento e cuidados com base no paciente.
-              Se preferir, você pode adicionar manualmente e usar a busca de nutrição para itens específicos.
+              Escolha entre o <strong>assistente de terapia nutricional</strong> (sugere estratégia, volume e cuidados com base no paciente)
+              ou a <strong>nova solicitação de dieta</strong> (oral, enteral, parenteral, zero ou suplementação — preenchimento manual estruturado).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-2">
@@ -7727,7 +7772,8 @@ const PrescricaoPage = () => {
                 }, 50);
               }}
             >
-              Adicionar manualmente
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              Nova solicitação de dieta
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
