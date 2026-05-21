@@ -9127,7 +9127,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     {item.spacer && <span style={{ marginLeft: '4px', fontStyle: 'italic', color: '#475569' }}>· c/ espaçador</span>}
                     {item.gargle && <span style={{ marginLeft: '4px', fontStyle: 'italic', color: '#475569' }}>· gargarejo após</span>}
                     {item.instructions && (
-                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> // {item.instructions}</span>
+                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> — {item.instructions}</span>
+
                     )}
                   </div>
                 )}
