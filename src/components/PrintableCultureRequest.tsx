@@ -23,6 +23,8 @@ import {
   NormaZeroPrintHeader,
   NormaZeroPrintFooter,
 } from "@/components/NormaZeroPrintHeader";
+import { whitelabel } from "@/config/whitelabel";
+
 
 /* ───────────────────────── Tipos & catálogos ───────────────────────── */
 
@@ -541,16 +543,56 @@ export async function printCultureRequest(
     </table>
   `;
 
-  const oneVia = (label: string) => `
+  const logoDataUrl = await prepareLogo();
+  const inst = whitelabel.print.institutionalHeader;
+  const colors = whitelabel.theme.institutionalColors;
+  const hospitalFull = whitelabel.institution.hospitalFullName;
+  const docNoDuo = generateDocCode("REQ-CULT");
+  const nowDuo = new Date();
+  const dateStrDuo = nowDuo.toLocaleDateString("pt-BR");
+  const timeStrDuo = nowDuo.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const logoBlockDuo = logoDataUrl
+    ? `<img src="${logoDataUrl}" class="mini-logo" alt="${whitelabel.institution.hospitalAbbreviation}"/>`
+    : `<div class="mini-logo" style="background:#0054A6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;border-radius:6pt">${whitelabel.institution.hospitalAbbreviation}</div>`;
+
+  const miniHeader = `
+    <div class="mini-header">
+      <div class="mini-header-inner">
+        <div class="mini-logo-wrap">${logoBlockDuo}</div>
+        <div class="mini-h-text">
+          <div class="mini-h-line1">${inst.line1}</div>
+          <div class="mini-h-line2">${inst.line2}</div>
+          <div class="mini-h-line3">${inst.line3}</div>
+          <div class="mini-h-tag">${whitelabel.institution.address}</div>
+        </div>
+      </div>
+      <div class="mini-cruz-bar">
+        <div style="background:${colors.red}"></div>
+        <div style="background:${colors.orange}"></div>
+        <div style="background:${colors.yellow}"></div>
+        <div style="background:${colors.green}"></div>
+        <div style="background:${colors.blue}"></div>
+      </div>
+      <div class="mini-doc-bar">
+        <span><b>Doc:</b> ${docNoDuo}</span>
+        <span><b>Setor:</b> ${escapeHtml(sectorName || "Assistência Hospitalar")}</span>
+        <span><b>Emissão:</b> ${dateStrDuo} ${timeStrDuo}</span>
+      </div>
+    </div>
+  `;
+
+  const oneViaFull = (label: string) => `
     <div class="via">
       <div class="via-tag">${label}</div>
-      <div class="via-title">Solicitação de Exame Microbiológico</div>
+      ${miniHeader}
+      <h1 class="mini-title">Solicitação de Exame Microbiológico</h1>
+      <div class="mini-subtitle">${escapeHtml(hospitalFull)} • Emitida em ${createdStr}</div>
       ${formTable}
     </div>
   `;
 
   const bodyHtml = duplicate
-    ? `<div class="duo">${oneVia("1ª via — Laboratório")}<div class="cut-line" aria-hidden="true"></div>${oneVia("2ª via — Prontuário")}</div>`
+    ? `<div class="duo">${oneViaFull("1ª via — Laboratório")}<div class="cut-line" aria-hidden="true"></div>${oneViaFull("2ª via — Prontuário")}</div>`
     : formTable;
 
   const extraStyles = `
@@ -571,32 +613,70 @@ export async function printCultureRequest(
     .fill { display:inline-block; border-bottom:1pt solid #0a1628; padding:0 3pt; min-width:60pt; }
     .muted { color:#475569; }
 
-    /* Modo duas vias (paisagem) — 2 colunas separadas por linha de corte */
-    .duo { display:grid; grid-template-columns: 1fr 6pt 1fr; gap:0; align-items:start; margin-top:4pt; }
+    /* === Modo duas vias (paisagem): cada metade traz seu próprio cabeçalho === */
+    .duo { display:grid; grid-template-columns: 1fr 6pt 1fr; gap:0; align-items:start; }
     .duo .cut-line { border-left: 1pt dashed #64748b; margin: 0 3pt; align-self:stretch; }
     .duo .via { padding: 0 4pt; }
-    .duo .via-tag { font-size:7.5pt; font-weight:700; color:#0054A6; text-transform:uppercase; letter-spacing:0.5pt; margin-bottom:2pt; }
-    .duo .via-title { text-align:center; font-size:10.5pt; font-weight:800; text-transform:uppercase; letter-spacing:0.4pt; color:#0a1628; margin-bottom:2pt; }
-    .duo table.nz.cult { font-size:8pt; margin-top:3pt; }
-    .duo table.nz.cult th, .duo table.nz.cult td { padding:3pt 5pt; }
-    .duo table.nz.cult td.note { font-size:7pt; }
-    @media print { .duo { page-break-inside: avoid; } }
+    .duo .via-tag { font-size:7pt; font-weight:700; color:#0054A6; text-transform:uppercase; letter-spacing:0.5pt; margin-bottom:2pt; text-align:right; }
+
+    /* Mini cabeçalho institucional replicado por via */
+    .mini-header { border-bottom: 2pt solid #0054A6; padding-bottom: 3pt; margin-bottom: 4pt; }
+    .mini-header-inner { display:grid; grid-template-columns: 36px 1fr; align-items:center; gap:6pt; }
+    .mini-logo { height: 34px; width: 34px; object-fit: contain; }
+    .mini-h-text { text-align:center; }
+    .mini-h-line1, .mini-h-line2 { font-size:6pt; font-weight:600; color:#475569; letter-spacing:0.3pt; text-transform:uppercase; line-height:1.15; }
+    .mini-h-line3 { font-size:8pt; font-weight:700; color:#0a1628; margin-top:1pt; letter-spacing:0.2pt; line-height:1.15; }
+    .mini-h-tag { font-size:5.5pt; color:#64748b; font-style:italic; margin-top:1pt; line-height:1.1; }
+    .mini-cruz-bar { display:flex; height:2.5pt; margin-top:3pt; border-radius:1.5pt; overflow:hidden; }
+    .mini-cruz-bar > div { flex:1; }
+    .mini-doc-bar { display:flex; justify-content:space-between; align-items:center; background:#f1f5f9; border:0.5pt solid #cbd5e1; padding:2pt 5pt; font-size:6.5pt; margin-top:3pt; border-radius:2pt; }
+    .mini-doc-bar b { color:#0a1628; }
+    .mini-title { font-size:10pt; margin:3pt 0 1pt; color:#0a1628; text-align:center; letter-spacing:0.3pt; text-transform:uppercase; font-weight:800; }
+    .mini-subtitle { text-align:center; color:#64748b; font-size:6.5pt; margin-bottom:2pt; }
+
+    /* Compactar tabela na paisagem dividida */
+    .duo table.nz.cult { font-size:7pt; margin-top:2pt; }
+    .duo table.nz.cult th, .duo table.nz.cult td { padding:2pt 4pt; }
+    .duo table.nz.cult td.note { font-size:6pt; padding:2pt 4pt; }
+    .duo table.nz.cult td.sig-cell { padding-top:12pt; }
+    .duo table.nz.cult .sig-line { margin-top:8pt; font-size:6.5pt; }
+    .duo table.nz.cult .culturas-list .item-row { font-size:7pt; padding:0.5pt 0; }
+    .duo .cb { width:6.5pt; height:6.5pt; margin-right:3pt; }
+
+    /* Esconder cabeçalho/rodapé externos do wrapper Norma Zero quando duo */
+    body.duo-mode > .nz-header,
+    body.duo-mode > .nz-doc-bar,
+    body.duo-mode > h1.nz-title,
+    body.duo-mode > .nz-subtitle,
+    body.duo-mode > .nz-footer { display:none !important; }
+    body.duo-mode { margin:0 !important; }
+
+    @media print {
+      .duo { page-break-inside: avoid; break-inside: avoid; }
+      .duo .via { page-break-inside: avoid; break-inside: avoid; }
+      @page { size: A4 landscape; margin: 6mm 8mm; }
+    }
   `;
 
-  const logoDataUrl = await prepareLogo();
   const html = buildNormaZeroDocument({
     title: duplicate ? "Solicitação de Exame Microbiológico — 2 vias" : "Solicitação de Exame Microbiológico",
     subtitle: `Emitida em ${createdStr}${duplicate ? " · impressão em duas vias" : ""}`,
     sectorLabel: sectorName || "Assistência Hospitalar",
     docCodePrefix: "REQ-CULT",
     bodyHtml,
-    signatures: [], // assinatura está dentro da própria tabela
+    signatures: [],
     logoDataUrl,
     extraStyles,
     orientation: duplicate ? "landscape" : "portrait",
   });
 
-  const w = openPrintWindow(html, "Preparando solicitação de cultura…");
+  // Quando duplicado, injeta a classe duo-mode no <body> para esconder o cabeçalho externo
+  const finalHtml = duplicate
+    ? html.replace("<body>", '<body class="duo-mode">')
+    : html;
+
+
+  const w = openPrintWindow(finalHtml, "Preparando solicitação de cultura…");
   if (!w) {
     alert("Permita pop-ups para imprimir a solicitação.");
   }
