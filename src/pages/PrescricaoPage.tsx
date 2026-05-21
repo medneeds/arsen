@@ -2785,7 +2785,8 @@ function ExtraPrescriptionDialog({
       route: med.defaultRoute,
       posology: med.defaultPosology,
       schedule: med.defaultSchedule,
-      instructions: med.instructions || "",
+      instructions: "", // Recomendação sempre em branco — preenchimento exclusivo do médico
+
       category: med.category,
       flags: ['ag' as PrescriptionFlag], // Default to "Agora"
       highAlert: med.highAlert || false,
@@ -4963,9 +4964,11 @@ const PrescricaoPage = () => {
       route: med.defaultRoute,
       posology: med.defaultPosology,
       schedule: med.defaultSchedule,
-      instructions: med.instructions || "",
+      instructions: "", // Recomendação sempre em branco — preenchimento exclusivo do médico
       category: med.category,
       flags: med.instructions?.toLowerCase().includes('bomba de infusão') ? ['bi' as PrescriptionFlag] : [],
+
+
       highAlert: med.highAlert || false,
       status: 'active',
       infusionMode: 'BIC',
