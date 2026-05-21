@@ -4158,6 +4158,8 @@ const PrescricaoPage = () => {
     // ============= NUTRIÇÃO =============
     // Escape universal removido.
     if (item.category === 'nutrition') {
+      // Adição manual: tudo opcional (texto livre + modalidade + recomendações)
+      if (item.nutManual) return missing;
       const subType = (item as any).nutritionType as string | undefined;
       if (subType === 'zero') return missing;
       if (subType === 'diet_enteral') {
