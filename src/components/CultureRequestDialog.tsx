@@ -278,10 +278,22 @@ export function CultureRequestDialog({
     if (id) toast.success("Solicitação de cultura registrada — visível no Cockpit");
   };
 
-  const handlePrint = async () => {
-    await persistRequest();
-    printCultureRequest({ ...data, items: buildItems(), created_at: new Date().toISOString() });
+  const [printChoiceOpen, setPrintChoiceOpen] = useState(false);
+
+  const handlePrint = () => {
+    setPrintChoiceOpen(true);
   };
+
+  const executePrint = async (duplicate: boolean) => {
+    setPrintChoiceOpen(false);
+    await persistRequest();
+    printCultureRequest(
+      { ...data, items: buildItems(), created_at: new Date().toISOString() },
+      undefined,
+      { duplicate },
+    );
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
