@@ -12,6 +12,7 @@
 import React from "react";
 import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
+import { whitelabel } from "@/config/whitelabel";
 
 const PARECER_ALLOWED_TAGS = ["p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "span", "div"];
 function sanitizeRichHtmlPrint(html: string): string {
@@ -644,37 +645,40 @@ export async function printRequisitionGuide(
 
   const identificationRows = isParecer
     ? `
-    <table class="nz" style="margin-bottom:6pt">
+    <table class="nz parecer-id" style="margin-bottom:5pt;table-layout:fixed">
+      <colgroup>
+        <col style="width:9%"/><col/><col style="width:11%"/><col style="width:13%"/><col style="width:11%"/><col style="width:13%"/>
+      </colgroup>
       <tbody>
         <tr>
-          <th style="width:14%">Paciente</th>
-          <td style="font-weight:700;font-size:9.5pt">${escapeHtml(request.patient_name)}</td>
-          <th style="width:13%">Nº Prontuário</th>
-          <td style="width:18%;font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(medicalRecord || "—")}</td>
-          <th style="width:13%">Nº Atendimento</th>
-          <td style="width:18%;font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(encounterCode || "—")}</td>
+          <th style="white-space:nowrap">Paciente</th>
+          <td style="font-weight:700;font-size:9.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(request.patient_name)}</td>
+          <th style="white-space:nowrap">Nº Prontuário</th>
+          <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;font-size:8pt;white-space:nowrap">${escapeHtml(medicalRecord || "—")}</td>
+          <th style="white-space:nowrap">Nº Atendimento</th>
+          <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;font-size:8pt;white-space:nowrap">${escapeHtml(encounterCode || "—")}</td>
         </tr>
         <tr>
-          <th>Setor</th><td>${escapeHtml(sectorName || "—")}</td>
-          <th>Leito</th><td>${escapeHtml(request.patient_bed || "—")}</td>
-          <th>Data Nasc. / Idade</th>
-          <td>${escapeHtml(fmtBirthDate(birthDate))}${ageY !== null ? ` <span style="color:#475569">(${ageY} anos)</span>` : ""}</td>
+          <th style="white-space:nowrap">Setor</th><td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(sectorName || "—")}</td>
+          <th style="white-space:nowrap">Leito</th><td style="white-space:nowrap">${escapeHtml(request.patient_bed || "—")}</td>
+          <th style="white-space:nowrap">Nasc. / Idade</th>
+          <td style="white-space:nowrap">${escapeHtml(fmtBirthDate(birthDate))}${ageY !== null ? ` <span style="color:#475569">(${ageY}a)</span>` : ""}</td>
         </tr>
         <tr>
-          <th>Solicitante</th>
-          <td colspan="3">${escapeHtml(request.requested_by_name || "—")}</td>
-          <th>Solicitação</th>
-          <td>${escapeHtml(createdStr)}</td>
+          <th style="white-space:nowrap">Solicitante</th>
+          <td colspan="3" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(request.requested_by_name || "—")}</td>
+          <th style="white-space:nowrap">Solicitação</th>
+          <td style="white-space:nowrap">${escapeHtml(createdStr)}</td>
         </tr>
         <tr>
-          <th style="background:#0a1628;color:#fff">Especialidade Solicitada</th>
-          <td colspan="3" style="background:#eff6ff;font-weight:700;font-size:10pt;color:#0a1628">${escapeHtml(parecerSpecialtyLabel)}</td>
-          <th>Prioridade</th>
-          <td><span class="prio-badge" style="${priorityCss}">${escapeHtml(priorityLabel)}</span></td>
+          <th style="background:#0a1628;color:#fff;white-space:nowrap">Especialidade</th>
+          <td colspan="3" style="background:#eff6ff;font-weight:700;font-size:10pt;color:#0a1628;word-break:break-word;line-height:1.2">${escapeHtml(parecerSpecialtyLabel)}</td>
+          <th style="white-space:nowrap">Prioridade</th>
+          <td style="white-space:nowrap"><span class="prio-badge" style="${priorityCss}">${escapeHtml(priorityLabel)}</span></td>
         </tr>
         ${
           scheduledInfo
-            ? `<tr><th>Agendamento</th><td colspan="5">${escapeHtml(scheduledInfo)}</td></tr>`
+            ? `<tr><th style="white-space:nowrap">Agendamento</th><td colspan="5">${escapeHtml(scheduledInfo)}</td></tr>`
             : ""
         }
       </tbody>
@@ -719,45 +723,24 @@ export async function printRequisitionGuide(
     </table>
   `;
 
-  // Para parecer aceitamos HTML rico (negrito, itálico, sublinhado, listas, parágrafos).
-  // O limite passa a ser por caracteres-de-texto (plain) para preservar 1 página A4.
-  const PARECER_SOFT = 900;
-  const PARECER_MID  = 1600;
-  const PARECER_HARD = 2400;
+  // Para parecer aceitamos HTML rico. Limite fixo de 2200 caracteres p/ caber em 1 página A4.
+  const PARECER_HARD = 2200;
   const rawIndication = request.clinical_indication || "";
   const isHtmlIndication = /<\/?(p|br|strong|em|u|ul|ol|li|b|i|span|div)[\s>/]/i.test(rawIndication);
 
-  // Sanitização e cálculo do plain length p/ ajustar a área de resposta
   const tmpDiv = typeof document !== "undefined" ? document.createElement("div") : null;
   let indicationHtml = "";
-  let indicationPlainLen = 0;
   if (rawIndication) {
     if (isParecer && isHtmlIndication) {
       indicationHtml = sanitizeRichHtmlPrint(rawIndication);
-      if (tmpDiv) {
-        tmpDiv.innerHTML = indicationHtml;
-        indicationPlainLen = (tmpDiv.textContent || "").length;
-      } else {
-        indicationPlainLen = indicationHtml.replace(/<[^>]+>/g, "").length;
-      }
     } else {
-      indicationPlainLen = rawIndication.length;
       indicationHtml = escapeHtml(rawIndication).replace(/\n/g, "<br/>");
     }
   }
 
-  // Resposta encolhe à medida que a justificativa cresce
-  const respHeightMm = isParecer
-    ? indicationPlainLen > PARECER_MID ? 45
-      : indicationPlainLen > PARECER_SOFT ? 60
-      : 78
-    : 78;
-  // Cap visual da justificativa para nunca extrapolar 1 página
-  const justMaxMm = isParecer
-    ? indicationPlainLen > PARECER_MID ? 95
-      : indicationPlainLen > PARECER_SOFT ? 75
-      : 52
-    : 999;
+  // Altura fixa da resposta manual (reduzida ~1 linha para garantir 1 página A4 com 2200 chars)
+  const respHeightMm = 60;
+  const justMaxMm = 78;
 
   const justificationBlock = rawIndication
     ? `<h2 class="nz-section">${isParecer ? "Motivo da Solicitação de Parecer" : "Justificativa Clínica"}</h2>
@@ -790,9 +773,9 @@ export async function printRequisitionGuide(
        <table class="nz"><tbody><tr><td>${escapeHtml(cleanNotes).replace(/\n/g, "<br/>")}</td></tr></tbody></table>`
     : "";
 
-  // Bloco específico do parecer: área pautada para resposta manual (altura dinâmica)
+  // Bloco específico do parecer: área pautada para resposta do parecerista (altura fixa)
   const parecerResponseBlock = isParecer
-    ? `<h2 class="nz-section" style="background:#0a1628">Resposta do Parecer (preenchimento manual)</h2>
+    ? `<h2 class="nz-section" style="background:#0a1628">Resposta do Parecer</h2>
        <div class="parecer-response">
          <div class="parecer-response-lines" style="height:${respHeightMm}mm"></div>
          <table class="parecer-sign">
@@ -827,7 +810,7 @@ export async function printRequisitionGuide(
     .req-item:nth-child(2n) { border-right:none; }
     .req-num { min-width:14pt; font-size:8.5pt; font-weight:600; color:#0a1628; text-align:right; flex-shrink:0; }
 
-    /* Parecer — caixa de justificativa (altura dinâmica) + área de resposta manual */
+    /* Parecer — caixa de justificativa (altura fixa) + área de resposta */
     .parecer-just { max-height: ${justMaxMm}mm; overflow: hidden; font-size: 9pt; line-height: 1.38; }
     .parecer-just p { margin: 0 0 4pt 0; }
     .parecer-just p:last-child { margin-bottom: 0; }
@@ -852,8 +835,34 @@ export async function printRequisitionGuide(
     .parecer-sign .psl { border: 0.5pt solid #94a3b8; padding: 3pt 5pt; vertical-align: top; }
     .parecer-sign .psl span { font-size: 7pt; color: #475569; text-transform: uppercase; letter-spacing: 0.3pt; font-weight: 600; }
     .parecer-sign .psf { height: 14pt; }
-    /* Para parecer, o rodapé de assinatura padrão fica oculto (já temos o bloco-resposta) */
-    ${isParecer ? ".nz-signature-area { display:none !important; }" : ""}
+    /* Identificação compacta do parecer */
+    .parecer-id th { font-size: 7pt; padding: 2.5pt 5pt; }
+    .parecer-id td { padding: 2.5pt 5pt; font-size: 8.5pt; }
+
+    ${isParecer ? `
+      /* Cabeçalho compacto exclusivo do parecer */
+      .nz-h-line1, .nz-h-line2, .nz-h-tag { display: none !important; }
+      .nz-h-line3 { font-size: 10.5pt !important; margin-top: 0 !important; }
+      .nz-header { padding: 4pt 0 3pt !important; margin-bottom: 5pt !important; border-bottom-width: 2pt !important; }
+      .nz-header-inner { grid-template-columns: 44px 1fr 44px !important; gap: 8pt !important; }
+      .nz-logo { height: 38px !important; width: 38px !important; }
+      .nz-cruz-bar { height: 3pt !important; margin-top: 3pt !important; }
+      h1.nz-title { font-size: 12pt !important; margin: 3pt 0 1pt !important; }
+      .nz-subtitle { display: none !important; }
+      .nz-doc-bar { padding: 3pt 7pt !important; font-size: 7.5pt !important; margin-bottom: 5pt !important; }
+      .nz-signature-area { display: none !important; }
+      /* Endereço institucional movido para o rodapé */
+      .nz-footer { flex-wrap: wrap; row-gap: 2pt; padding-top: 3pt !important; margin-top: 6pt !important; }
+      .nz-footer::after {
+        content: "${(whitelabel.institution.address || "").replace(/"/g, "\\\"")}";
+        flex-basis: 100%;
+        text-align: center;
+        color: #64748b;
+        font-size: 6.5pt;
+        font-style: italic;
+        margin-top: 1pt;
+      }
+    ` : ""}
   `;
 
   const logoDataUrl = await prepareLogo();
