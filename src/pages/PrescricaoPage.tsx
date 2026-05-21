@@ -7331,6 +7331,8 @@ const PrescricaoPage = () => {
                 setHighAlertGuideOpen(true);
               } else if (cat === 'care') {
                 setCareCatalogOpen(true);
+              } else if (cat === 'nutrition') {
+                setNutritionConfirmOpen(true);
               }
             }}
           />
