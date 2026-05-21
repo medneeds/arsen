@@ -9181,7 +9181,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                       item.nutZeroReason ? `Motivo jejum: ${item.nutZeroReason}` : null,
                     ].filter(Boolean).join(' · ')}
                     {item.instructions && (
-                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> // {item.instructions}</span>
+                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> — {item.instructions}</span>
                     )}
                   </div>
                 )}
