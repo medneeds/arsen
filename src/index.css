@@ -648,25 +648,25 @@ body.gestor-readonly main::before {
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* ============================================================
-   ATB THEMED — identidade lilás DISCRETA do item antimicrobiano.
-   Mantém labels e sub-blocos em tons neutros (igual demais seções);
-   o lilás vive só no header, nas bordas finas dos inputs e nos chips.
+   ATB THEMED — identidade AZUL INSTITUCIONAL discreta do item
+   antimicrobiano. Migrado de lilás para azul (HSL 217) para
+   unificar com o restante das categorias da prescrição.
    ============================================================ */
 
-/* Bordas dos inputs/selects — tom lilás bem suave (subentendido) */
+/* Bordas dos inputs/selects — tom azul bem suave */
 .atb-themed input.border-slate-300,
 .atb-themed button.border-slate-300,
-.atb-themed [role="combobox"].border-slate-300 { border-color: hsl(263 45% 86%); }
+.atb-themed [role="combobox"].border-slate-300 { border-color: hsl(217 45% 84%); }
 .dark .atb-themed input.dark\:border-slate-600,
 .dark .atb-themed button.dark\:border-slate-600,
-.dark .atb-themed [role="combobox"].dark\:border-slate-600 { border-color: hsl(263 25% 38%); }
+.dark .atb-themed [role="combobox"].dark\:border-slate-600 { border-color: hsl(217 25% 38%); }
 
-/* Foco em lilás — substitui o ring primary padrão */
+/* Foco em azul institucional — substitui o ring primary padrão */
 .atb-themed input:focus-visible,
 .atb-themed button:focus-visible,
 .atb-themed [role="combobox"]:focus-visible {
-  --tw-ring-color: hsl(263 80% 65% / 0.45);
-  border-color: hsl(263 75% 62%);
+  --tw-ring-color: hsl(217 70% 52% / 0.40);
+  border-color: hsl(217 65% 48%);
 }
 
 /* Chip identitário dos sub-blocos (ANTIBIÓTICO, RECONSTITUIR, INFUSÃO EV, CONCENTRAÇÃO) */
@@ -681,8 +681,9 @@ body.gestor-readonly main::before {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  background: hsl(263 70% 56%);
+  background: hsl(217 65% 38%);
   color: white;
-  box-shadow: 0 1px 2px hsl(263 70% 56% / 0.22);
+  box-shadow: 0 1px 2px hsl(217 65% 38% / 0.25);
 }
+
 
