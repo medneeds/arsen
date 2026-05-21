@@ -23,6 +23,8 @@ import {
   NormaZeroPrintHeader,
   NormaZeroPrintFooter,
 } from "@/components/NormaZeroPrintHeader";
+import { whitelabel } from "@/config/whitelabel";
+
 
 /* ───────────────────────── Tipos & catálogos ───────────────────────── */
 
