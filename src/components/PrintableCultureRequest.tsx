@@ -458,7 +458,9 @@ export function PrintableCultureRequest({
 export async function printCultureRequest(
   request: CultureRequestData,
   sectorLabel?: (s: string | null) => string,
+  opts?: { duplicate?: boolean },
 ) {
+  const duplicate = !!opts?.duplicate;
   const items = mapCatalog(request.items || []);
   const sectorName = sectorLabel
     ? sectorLabel(request.patient_sector || null)
@@ -483,7 +485,7 @@ export async function printCultureRequest(
     })
     .join("");
 
-  const bodyHtml = `
+  const formTable = `
     <table class="nz cult">
       <tbody>
         <tr><th>Nome completo:</th><td colspan="3" class="bold">${escapeHtml((request.patient_name || "").toUpperCase())}</td></tr>
@@ -539,6 +541,18 @@ export async function printCultureRequest(
     </table>
   `;
 
+  const oneVia = (label: string) => `
+    <div class="via">
+      <div class="via-tag">${label}</div>
+      <div class="via-title">Solicitação de Exame Microbiológico</div>
+      ${formTable}
+    </div>
+  `;
+
+  const bodyHtml = duplicate
+    ? `<div class="duo">${oneVia("1ª via — Laboratório")}<div class="cut-line" aria-hidden="true"></div>${oneVia("2ª via — Prontuário")}</div>`
+    : formTable;
+
   const extraStyles = `
     table.nz.cult { width:100%; border-collapse:collapse; font-size:9pt; border:1pt solid #1e293b; margin-top:6pt; }
     table.nz.cult th, table.nz.cult td { border:1pt solid #1e293b; padding:4pt 7pt; color:#0a1628; vertical-align:middle; text-align:left; font-weight:500; background:#fff; }
@@ -556,18 +570,30 @@ export async function printCultureRequest(
     .cb.on { background:#0a1628; }
     .fill { display:inline-block; border-bottom:1pt solid #0a1628; padding:0 3pt; min-width:60pt; }
     .muted { color:#475569; }
+
+    /* Modo duas vias (paisagem) — 2 colunas separadas por linha de corte */
+    .duo { display:grid; grid-template-columns: 1fr 6pt 1fr; gap:0; align-items:start; margin-top:4pt; }
+    .duo .cut-line { border-left: 1pt dashed #64748b; margin: 0 3pt; align-self:stretch; }
+    .duo .via { padding: 0 4pt; }
+    .duo .via-tag { font-size:7.5pt; font-weight:700; color:#0054A6; text-transform:uppercase; letter-spacing:0.5pt; margin-bottom:2pt; }
+    .duo .via-title { text-align:center; font-size:10.5pt; font-weight:800; text-transform:uppercase; letter-spacing:0.4pt; color:#0a1628; margin-bottom:2pt; }
+    .duo table.nz.cult { font-size:8pt; margin-top:3pt; }
+    .duo table.nz.cult th, .duo table.nz.cult td { padding:3pt 5pt; }
+    .duo table.nz.cult td.note { font-size:7pt; }
+    @media print { .duo { page-break-inside: avoid; } }
   `;
 
   const logoDataUrl = await prepareLogo();
   const html = buildNormaZeroDocument({
-    title: "Solicitação de Exame Microbiológico",
-    subtitle: `Emitida em ${createdStr}`,
+    title: duplicate ? "Solicitação de Exame Microbiológico — 2 vias" : "Solicitação de Exame Microbiológico",
+    subtitle: `Emitida em ${createdStr}${duplicate ? " · impressão em duas vias" : ""}`,
     sectorLabel: sectorName || "Assistência Hospitalar",
     docCodePrefix: "REQ-CULT",
     bodyHtml,
     signatures: [], // assinatura está dentro da própria tabela
     logoDataUrl,
     extraStyles,
+    orientation: duplicate ? "landscape" : "portrait",
   });
 
   const w = openPrintWindow(html, "Preparando solicitação de cultura…");
@@ -575,3 +601,4 @@ export async function printCultureRequest(
     alert("Permita pop-ups para imprimir a solicitação.");
   }
 }
+
