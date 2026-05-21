@@ -535,6 +535,51 @@ export function CultureRequestDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Pop-up: escolha de via única (retrato) ou 2 vias (paisagem) */}
+      <Dialog open={printChoiceOpen} onOpenChange={setPrintChoiceOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Printer className="h-5 w-5 text-emerald-600" />
+              Como deseja imprimir?
+            </DialogTitle>
+            <DialogDescription>
+              A solicitação de cultura costuma seguir em <strong>2 vias</strong> (laboratório + prontuário).
+              Escolha o formato de impressão:
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2 py-2">
+            <button
+              onClick={() => executePrint(false)}
+              className="w-full text-left rounded-md border border-border bg-card hover:bg-muted/50 px-4 py-3 transition"
+            >
+              <div className="text-sm font-semibold">Via única (A4 retrato)</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Formato tradicional — uma solicitação por folha.
+              </div>
+            </button>
+            <button
+              onClick={() => executePrint(true)}
+              className="w-full text-left rounded-md border-2 border-emerald-500/60 bg-emerald-50 hover:bg-emerald-100 px-4 py-3 transition"
+            >
+              <div className="text-sm font-semibold text-emerald-900">
+                2 vias na mesma folha (A4 paisagem) — recomendado
+              </div>
+              <div className="text-xs text-emerald-800/80 mt-0.5">
+                Duas solicitações idênticas lado a lado, separadas por linha de corte. Economiza papel e padroniza o envio.
+              </div>
+            </button>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" size="sm" onClick={() => setPrintChoiceOpen(false)}>
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
@@ -547,3 +592,4 @@ function Field({ label, children, full }: { label: string; children: React.React
     </div>
   );
 }
+
