@@ -3052,6 +3052,16 @@ function ExtraPrescriptionDialog({
           nutWaterVolPerAdmin: i.nutWaterVolPerAdmin,
           nutWaterFreq: i.nutWaterFreq,
           nutZeroReason: i.nutZeroReason,
+          // Nutrição — novos campos (sync PDF ↔ tela compacta)
+          dietType: i.dietType,
+          dietProfile: i.dietProfile,
+          dietInterval: i.dietInterval,
+          nutScheduleMode: i.nutScheduleMode,
+          nutSteps: i.nutSteps,
+          nutRateMode: i.nutRateMode,
+          nutProgression: i.nutProgression,
+          nutConsistency: i.nutConsistency,
+          nutManual: i.nutManual,
           // Insulinoterapia
           insulinPlan: i.insulinPlan,
         })),
