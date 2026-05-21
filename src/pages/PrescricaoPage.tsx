@@ -3823,6 +3823,8 @@ const PrescricaoPage = () => {
   const [careCatalogOpen, setCareCatalogOpen] = useState(false);
   const [nutritionWizardOpen, setNutritionWizardOpen] = useState(false);
   const [nutritionConfirmOpen, setNutritionConfirmOpen] = useState(false);
+  const [nutritionManualOpen, setNutritionManualOpen] = useState(false);
+  const [nutritionManualText, setNutritionManualText] = useState("");
   const [manualOpenCategories, setManualOpenCategories] = useState<Set<PrescriptionCategory>>(new Set());
   const [hydrationWizardOpen, setHydrationWizardOpen] = useState(false);
   const [replacementWizardOpen, setReplacementWizardOpen] = useState(false);
