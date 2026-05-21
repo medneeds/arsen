@@ -9245,7 +9245,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                             {item.route && item.route !== '-' && <span style={{ color: '#334155', fontWeight: 600, fontSize: '7pt' }}> · {abbrevRoute(item.route)}</span>}
                             {item.posology && item.posology !== '-' && <span style={{ color: '#1e293b', fontWeight: 600, fontSize: '7pt' }}> — {item.posology}</span>}
                             {item.instructions && (
-                              <span style={{ fontSize: '7pt', color: '#475569', fontStyle: 'italic', fontWeight: 500 }}> // {item.instructions}</span>
+                              <span style={{ fontSize: '7pt', color: '#475569', fontStyle: 'italic', fontWeight: 500 }}> — {item.instructions}</span>
                             )}
                           </td>
                         </tr>
