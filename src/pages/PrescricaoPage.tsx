@@ -7114,7 +7114,7 @@ const PrescricaoPage = () => {
                     title={hasWizard ? `Abrir assistente de ${config.label.toLowerCase()}` : undefined}
                     onClick={() => {
                       document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      if (cat === 'nutrition') setNutritionWizardOpen(true);
+                      if (cat === 'nutrition') setNutritionConfirmOpen(true);
                       else if (cat === 'hydration') setHydrationWizardOpen(true);
                       else if (cat === 'replacement') setReplacementWizardOpen(true);
                     }}
