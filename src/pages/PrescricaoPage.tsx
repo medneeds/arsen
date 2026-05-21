@@ -3825,6 +3825,7 @@ const PrescricaoPage = () => {
   const [nutritionWizardOpen, setNutritionWizardOpen] = useState(false);
   const [nutritionConfirmOpen, setNutritionConfirmOpen] = useState(false);
   const [nutritionManualOpen, setNutritionManualOpen] = useState(false);
+  const [nutritionGuidedOpen, setNutritionGuidedOpen] = useState(false);
   const [nutritionManualText, setNutritionManualText] = useState("");
   const [manualOpenCategories, setManualOpenCategories] = useState<Set<PrescriptionCategory>>(new Set());
   const [hydrationWizardOpen, setHydrationWizardOpen] = useState(false);
@@ -7388,15 +7389,18 @@ const PrescricaoPage = () => {
                           </Button>
                         </div>
                       ) : cat === 'nutrition' ? (
-                        <MedicationAutocomplete
-                          source={UNIFIED_CATALOG[cat]}
-                          onSelect={addItem}
-                          placeholder="Buscar nutrição ou abrir assistente..."
-                          getFavoriteCount={getFavoriteCount}
-                          category={cat}
-                          onAssistantClick={() => setNutritionConfirmOpen(true)}
-                          assistantTooltip="Abrir fluxo de Nutrição (manual · guiada · assistente)"
-                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setNutritionConfirmOpen(true)}
+                          className="h-7 text-[11px] border-emerald-300 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-950/30 w-full justify-start"
+                        >
+                          <Sparkles className="h-3 w-3 mr-1.5" />
+                          Adicionar nutrição — manual · guiada · assistente
+                        </Button>
+
+
 
                       ) : (
                         <MedicationAutocomplete
@@ -7755,16 +7759,9 @@ const PrescricaoPage = () => {
               type="button"
               onClick={() => {
                 setNutritionConfirmOpen(false);
-                setManualOpenCategories(prev => {
-                  const n = new Set(prev);
-                  n.add('nutrition');
-                  return n;
-                });
-                setActiveTab('nutrition');
-                setTimeout(() => {
-                  document.getElementById('prescription-cat-nutrition')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 50);
+                setNutritionGuidedOpen(true);
               }}
+
               className="group text-left rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition p-3 flex flex-col gap-2"
             >
               <div className="flex items-center gap-2">
@@ -7861,6 +7858,71 @@ const PrescricaoPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Solicitação guiada — passo 2: escolha da modalidade */}
+      <Dialog open={nutritionGuidedOpen} onOpenChange={setNutritionGuidedOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="h-4 w-4 text-emerald-600" />
+              Escolha a modalidade
+            </DialogTitle>
+            <DialogDescription>
+              Selecione a via nutricional. O corpo da prescrição abrirá em seguida para configuração.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 py-2">
+            {([
+              { sub: 'diet_oral',       label: 'Oral',          name: 'Dieta oral',                                desc: 'Via oral, dietas regulares/livres/brandas' },
+              { sub: 'diet_enteral',    label: 'Enteral',       name: 'Dieta enteral',                             desc: 'Via SNE/SNG/gastrostomia/jejunostomia' },
+              { sub: 'diet_parenteral', label: 'Parenteral',    name: 'Dieta parenteral', route: 'Endovenosa',     desc: 'NPT — via endovenosa central' },
+              { sub: 'supplement',      label: 'Suplementação', name: 'Suplementação',                             desc: 'Módulos/suplementos orais ou enterais' },
+              { sub: 'zero',            label: 'Zero',          name: 'Dieta zero',                                desc: 'NPO — paciente em jejum' },
+            ] as const).map(m => (
+              <button
+                key={m.sub}
+                type="button"
+                onClick={() => {
+                  const baseMed: MedicationEntry = {
+                    id: '', name: m.name, presentation: '-', defaultDose: '-',
+                    defaultRoute: (m as any).route || '-', defaultPosology: '-',
+                    defaultSchedule: '-', instructions: '', category: 'nutrition',
+                  };
+                  const it = createItem(baseMed);
+                  it.nutritionType = m.sub as PrescriptionItem['nutritionType'];
+                  if ((m as any).route) it.route = (m as any).route;
+                  setItems(prev => [...prev, it]);
+                  setNutritionGuidedOpen(false);
+                  setExpandedCategories(prev => {
+                    const n = new Set(prev);
+                    n.add('nutrition');
+                    return n;
+                  });
+                  setTimeout(() => {
+                    document.getElementById(`prescription-item-${it.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 80);
+                }}
+                className="text-left rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition p-3 flex flex-col gap-1"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-md bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center">
+                    <UtensilsCrossed className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{m.label}</span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug pl-9">{m.desc}</p>
+              </button>
+            ))}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => { setNutritionGuidedOpen(false); setNutritionConfirmOpen(true); }}>
+              Voltar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
 
 
       <HydrationWizard
