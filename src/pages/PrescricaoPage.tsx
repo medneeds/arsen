@@ -9502,7 +9502,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 {/* Nutrição: campos específicos */}
                 {item.category === 'nutrition' && !item.nutManual && (() => {
                   const scheduleText = item.nutScheduleMode === 'steps'
-                    ? (item.nutSteps ? `${item.nutSteps} etapas/dia` : null)
+                    ? (item.nutSteps ? `${item.nutSteps} ${item.nutSteps === '1' ? 'etapa/dia' : 'etapas/dia'}` : null)
                     : (item.dietInterval ? `Intervalo: ${item.dietInterval}` : null);
                   const rateUnit = item.nutRateMode === 'gtt' ? 'gts/min' : 'mL/h';
                   const rateText = item.infusionRate ? `Correr em: ${item.infusionRate} ${rateUnit}` : null;
