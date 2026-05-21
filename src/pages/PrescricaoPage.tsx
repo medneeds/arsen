@@ -199,7 +199,10 @@ interface PrescriptionItem {
   concentration?: string;     // Concentração calculada ou manual
   ivBolus?: boolean;          // Marca administração EV em bolus (sem tempo de infusão / gotejamento). Só p/ IV intermitente não-antimicrobiano e posologia ≠ Contínuo.
   // Nutrition-specific optional fields
-  nutritionType?: 'diet_enteral' | 'diet_oral' | 'water' | 'npt' | 'zero';
+  nutritionType?: 'diet_enteral' | 'diet_oral' | 'diet_parenteral' | 'water' | 'npt' | 'zero' | 'supplement';
+  dietType?: string;          // Tipo de dieta (líquida, pastosa, branda, polimérica, etc.)
+  dietProfile?: string;       // Perfil do paciente (geral, diabético, cardiopata, etc.)
+  dietInterval?: string;      // Intervalo da dieta (6/6h, 8/8h, contínua, etc.)
   nutVolDay?: string;         // Volume total / dia (mL)
   nutMode?: string;           // Contínua BIC / Gravitacional intermitente / Bolus / Bomba ciclada / VO fracionada
   nutFraction?: string;       // Fracionamento / horários
