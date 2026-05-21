@@ -643,8 +643,8 @@ const RequisicaoUnificadaPage = () => {
               onClick={() => setCultureDialogOpen(true)}
               className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
             >
-              <div className="p-1.5 rounded-lg bg-emerald-500/10">
-                <Microscope className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <div className="p-1.5 rounded-lg bg-blue-500/10">
+                <Microscope className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="text-left">
                 <p className="text-xs font-semibold text-foreground">Cultura</p>
@@ -656,8 +656,8 @@ const RequisicaoUnificadaPage = () => {
               onClick={() => setHemoDialogOpen(true)}
               className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
             >
-              <div className="p-1.5 rounded-lg bg-rose-500/10">
-                <Droplet className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+              <div className="p-1.5 rounded-lg bg-sky-500/10">
+                <Droplet className="h-4 w-4 text-sky-600 dark:text-sky-400" />
               </div>
               <div className="text-left">
                 <p className="text-xs font-semibold text-foreground">Hemocomponentes</p>
@@ -669,8 +669,8 @@ const RequisicaoUnificadaPage = () => {
               onClick={() => setSatDialogOpen(true)}
               className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
             >
-              <div className="p-1.5 rounded-lg bg-amber-500/10">
-                <Syringe className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <div className="p-1.5 rounded-lg bg-blue-700/10">
+                <Syringe className="h-4 w-4 text-blue-700 dark:text-blue-300" />
               </div>
               <div className="text-left">
                 <p className="text-xs font-semibold text-foreground">SAT</p>
@@ -681,14 +681,15 @@ const RequisicaoUnificadaPage = () => {
               className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-dashed border-border min-w-fit opacity-80"
               title="O Laudo de AIH é gerado no fluxo de internação (Reavaliar admissão / Status de internação)"
             >
-              <div className="p-1.5 rounded-lg bg-indigo-500/10">
-                <FileText className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              <div className="p-1.5 rounded-lg bg-blue-900/10">
+                <FileText className="h-4 w-4 text-blue-900 dark:text-blue-200" />
               </div>
               <div className="text-left">
                 <p className="text-xs font-semibold text-muted-foreground">AIH</p>
                 <p className="text-[9px] text-muted-foreground">no fluxo de internação</p>
               </div>
             </div>
+
           </>
         )}
       </div>
