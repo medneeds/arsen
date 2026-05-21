@@ -647,64 +647,45 @@ const TAB_ORDER: PrescriptionCategory[] = [
 ];
 
 // Container temático harmônico por categoria de prescrição.
-// Mantém a mesma estrutura visual (rounded-md + borda esquerda 3px + fundo suave)
-// que adotamos em Hidratação/Medicação, sincronizando a cor com o tipo de item.
+// Identidade visual unificada no AZUL INSTITUCIONAL (slate/blue) para todas as
+// categorias clínicas, mantendo apenas `high_alert` em vermelho por convenção
+// ISMP-Brasil (alta vigilância). Variações sutis apenas em saturação/opacidade
+// do border-l para preservar leitura visual das seções.
 export function getCategoryContainerClass(category?: string): string {
   const base = "relative rounded-md p-2 border";
+  // Azul institucional unificado (mesmo tom da plataforma — slate-50 + border-l blue-700)
+  const blue = `${base} bg-slate-50/70 dark:bg-slate-900/30 border-slate-200/70 dark:border-slate-800/60 border-l-[3px] border-l-[hsl(217,60%,38%)] dark:border-l-[hsl(217,55%,55%)]`;
   switch (category) {
-    case 'nutrition':
-      return `${base} bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/50 border-l-[3px] border-l-emerald-500/70 dark:border-l-emerald-400/70`;
-    case 'hydration':
-      return `${base} bg-blue-50/50 dark:bg-blue-950/20 border-blue-200/60 dark:border-blue-900/50 border-l-[3px] border-l-blue-500/70 dark:border-l-blue-400/70`;
-    case 'replacement':
-      return `${base} bg-sky-50/50 dark:bg-sky-950/20 border-sky-200/60 dark:border-sky-900/50 border-l-[3px] border-l-sky-500/70 dark:border-l-sky-400/70`;
-    case 'antimicrobial':
-      return `${base} bg-violet-50/30 dark:bg-violet-950/10 border-violet-200/40 dark:border-violet-900/30 border-l-[3px] border-l-violet-400/60 dark:border-l-violet-500/60`;
     case 'high_alert':
+      // CONVENÇÃO ISMP — mantém vermelho para sinal cromático de segurança no container
       return `${base} bg-red-50/50 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/50 border-l-[3px] border-l-red-500/70 dark:border-l-red-400/70`;
+    case 'nutrition':
+    case 'hydration':
+    case 'replacement':
+    case 'antimicrobial':
     case 'inhalation':
-      return `${base} bg-cyan-50/50 dark:bg-cyan-950/20 border-cyan-200/60 dark:border-cyan-900/50 border-l-[3px] border-l-cyan-500/70 dark:border-l-cyan-400/70`;
     case 'hemotherapy':
-      return `${base} bg-rose-50/50 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-900/50 border-l-[3px] border-l-rose-500/70 dark:border-l-rose-400/70`;
     case 'care':
-      return `${base} bg-violet-50/50 dark:bg-violet-950/20 border-violet-200/60 dark:border-violet-900/50 border-l-[3px] border-l-violet-500/70 dark:border-l-violet-400/70`;
     case 'nonstandard':
-      return `${base} bg-zinc-50/60 dark:bg-zinc-900/30 border-zinc-200/60 dark:border-zinc-800/60 border-l-[3px] border-l-zinc-400/70 dark:border-l-zinc-500/70`;
     case 'medication':
     default:
-      return `${base} bg-slate-50/60 dark:bg-slate-900/30 border-slate-200/60 dark:border-slate-800/60 border-l-[3px] border-l-slate-400/70 dark:border-l-slate-500/70`;
+      return blue;
   }
 }
 
-// Acento de campo (border + focus ring) por categoria — usado no
-// MedicationAutocomplete e como override descendente nos inputs/selects
-// internos do container (apenas os que têm fundo branco, preservando
-// campos especiais já tematizados como o pill ATB e a tarja âmbar).
+// Acento de campo (border + focus ring) — unificado no azul institucional.
+// `high_alert` mantém o vermelho coerente com o container.
 export function getCategoryFieldAccent(category?: string): { border: string; ring: string; descendantOverrides: string } {
-  switch (category) {
-    case 'nutrition':
-      return { border: 'border-emerald-300/70 focus-visible:border-emerald-400', ring: 'focus-visible:ring-emerald-400/60', descendantOverrides: '[&_input.bg-white]:border-emerald-200/70 [&_input.bg-white]:focus-visible:ring-emerald-400/60 [&_button.bg-white]:border-emerald-200/70 [&_button.bg-white]:focus-visible:ring-emerald-400/60' };
-    case 'hydration':
-      return { border: 'border-blue-300/70 focus-visible:border-blue-400', ring: 'focus-visible:ring-blue-400/60', descendantOverrides: '[&_input.bg-white]:border-blue-200/70 [&_input.bg-white]:focus-visible:ring-blue-400/60 [&_button.bg-white]:border-blue-200/70 [&_button.bg-white]:focus-visible:ring-blue-400/60' };
-    case 'replacement':
-      return { border: 'border-sky-300/70 focus-visible:border-sky-400', ring: 'focus-visible:ring-sky-400/60', descendantOverrides: '[&_input.bg-white]:border-sky-200/70 [&_input.bg-white]:focus-visible:ring-sky-400/60 [&_button.bg-white]:border-sky-200/70 [&_button.bg-white]:focus-visible:ring-sky-400/60' };
-    case 'antimicrobial':
-      return { border: 'border-violet-300/60 focus-visible:border-violet-400', ring: 'focus-visible:ring-violet-400/50', descendantOverrides: '[&_input.bg-white]:border-violet-200/60 [&_input.bg-white]:focus-visible:ring-violet-400/50 [&_button.bg-white]:border-violet-200/60 [&_button.bg-white]:focus-visible:ring-violet-400/50' };
-    case 'high_alert':
-      return { border: 'border-red-300/70 focus-visible:border-red-400', ring: 'focus-visible:ring-red-400/60', descendantOverrides: '[&_input.bg-white]:border-red-200/70 [&_input.bg-white]:focus-visible:ring-red-400/60 [&_button.bg-white]:border-red-200/70 [&_button.bg-white]:focus-visible:ring-red-400/60' };
-    case 'inhalation':
-      return { border: 'border-cyan-300/70 focus-visible:border-cyan-400', ring: 'focus-visible:ring-cyan-400/60', descendantOverrides: '[&_input.bg-white]:border-cyan-200/70 [&_input.bg-white]:focus-visible:ring-cyan-400/60 [&_button.bg-white]:border-cyan-200/70 [&_button.bg-white]:focus-visible:ring-cyan-400/60' };
-    case 'hemotherapy':
-      return { border: 'border-rose-300/70 focus-visible:border-rose-400', ring: 'focus-visible:ring-rose-400/60', descendantOverrides: '[&_input.bg-white]:border-rose-200/70 [&_input.bg-white]:focus-visible:ring-rose-400/60 [&_button.bg-white]:border-rose-200/70 [&_button.bg-white]:focus-visible:ring-rose-400/60' };
-    case 'care':
-      return { border: 'border-violet-300/70 focus-visible:border-violet-400', ring: 'focus-visible:ring-violet-400/60', descendantOverrides: '[&_input.bg-white]:border-violet-200/70 [&_input.bg-white]:focus-visible:ring-violet-400/60 [&_button.bg-white]:border-violet-200/70 [&_button.bg-white]:focus-visible:ring-violet-400/60' };
-    case 'nonstandard':
-      return { border: 'border-zinc-300/70 focus-visible:border-zinc-400', ring: 'focus-visible:ring-zinc-400/60', descendantOverrides: '[&_input.bg-white]:border-zinc-200/70 [&_input.bg-white]:focus-visible:ring-zinc-400/60 [&_button.bg-white]:border-zinc-200/70 [&_button.bg-white]:focus-visible:ring-zinc-400/60' };
-    case 'medication':
-    default:
-      return { border: 'border-slate-300/70 focus-visible:border-slate-400', ring: 'focus-visible:ring-slate-400/60', descendantOverrides: '[&_input.bg-white]:border-slate-200/70 [&_input.bg-white]:focus-visible:ring-slate-400/60 [&_button.bg-white]:border-slate-200/70 [&_button.bg-white]:focus-visible:ring-slate-400/60' };
+  if (category === 'high_alert') {
+    return { border: 'border-red-300/70 focus-visible:border-red-400', ring: 'focus-visible:ring-red-400/60', descendantOverrides: '[&_input.bg-white]:border-red-200/70 [&_input.bg-white]:focus-visible:ring-red-400/60 [&_button.bg-white]:border-red-200/70 [&_button.bg-white]:focus-visible:ring-red-400/60' };
   }
+  return {
+    border: 'border-[hsl(217,40%,80%)] focus-visible:border-[hsl(217,60%,50%)]',
+    ring: 'focus-visible:ring-[hsl(217,60%,50%)]/40',
+    descendantOverrides: '[&_input.bg-white]:border-[hsl(217,30%,86%)] [&_input.bg-white]:focus-visible:ring-[hsl(217,60%,50%)]/40 [&_button.bg-white]:border-[hsl(217,30%,86%)] [&_button.bg-white]:focus-visible:ring-[hsl(217,60%,50%)]/40',
+  };
 }
+
 
 // --- Autocomplete Component ---
 function MedicationAutocomplete({
@@ -7056,7 +7037,8 @@ const PrescricaoPage = () => {
         </div>
 
         {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, TEV, Validar | Compacto | Imprimir) */}
-        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-border/40 bg-muted/20 rounded-b-xl">
+        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-[hsl(217,30%,88%)]/70 dark:border-[hsl(217,30%,22%)]/70 bg-gradient-to-r from-[hsl(217,45%,97%)] via-[hsl(217,40%,98.5%)] to-[hsl(217,45%,97%)] dark:from-[hsl(217,35%,12%)] dark:via-[hsl(217,30%,14%)] dark:to-[hsl(217,35%,12%)] rounded-b-xl [&_button.h-7]:hover:bg-[hsl(217,55%,40%)]/8 [&_button.h-7]:hover:text-[hsl(217,60%,32%)] dark:[&_button.h-7]:hover:text-[hsl(217,55%,75%)] [&_button.h-7]:transition-colors">
+
           <Tooltip>
             <TooltipTrigger asChild>
               <span>
