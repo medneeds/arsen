@@ -5325,19 +5325,51 @@ const PrescricaoPage = () => {
     toast.success(`${newItems.length} antimicrobiano(s) adicionado(s) à prescrição via Guia ATM`);
   }, []);
 
+  // Estado do pop-up de pré-visualização do perfil de cuidado
+  const [careProfilePreview, setCareProfilePreview] = useState<{
+    profile: CareProfile;
+    selectedKeys: Set<string>;
+  } | null>(null);
+
+  // Ao clicar num perfil → abre pop-up; usuário desmarca o que não se aplica antes de incluir
   const applyCareProfile = (profile: CareProfile) => {
     const existingNames = new Set(items.filter(i => i.category === 'care').map(i => i.name));
-    const newItems: PrescriptionItem[] = [];
-    // Add structured care items from IDs
+    // Marca por padrão tudo que ainda NÃO está na prescrição
+    const selectedKeys = new Set<string>();
     for (const careId of profile.items) {
+      const careMed = CARE_OPTIONS.find(c => c.id === careId);
+      if (careMed && !existingNames.has(careMed.name)) selectedKeys.add(`id:${careId}`);
+    }
+    for (const extraText of profile.extraItems) {
+      if (!existingNames.has(extraText)) selectedKeys.add(`tx:${extraText}`);
+    }
+    setCareProfilePreview({ profile, selectedKeys });
+  };
+
+  const toggleCarePreviewKey = (key: string) => {
+    setCareProfilePreview(prev => {
+      if (!prev) return prev;
+      const next = new Set(prev.selectedKeys);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return { ...prev, selectedKeys: next };
+    });
+  };
+
+  const confirmApplyCareProfile = () => {
+    if (!careProfilePreview) return;
+    const { profile, selectedKeys } = careProfilePreview;
+    const existingNames = new Set(items.filter(i => i.category === 'care').map(i => i.name));
+    const newItems: PrescriptionItem[] = [];
+    for (const careId of profile.items) {
+      if (!selectedKeys.has(`id:${careId}`)) continue;
       const careMed = CARE_OPTIONS.find(c => c.id === careId);
       if (careMed && !existingNames.has(careMed.name)) {
         newItems.push(createItem(careMed));
         existingNames.add(careMed.name);
       }
     }
-    // Add extra text-based items
     for (const extraText of profile.extraItems) {
+      if (!selectedKeys.has(`tx:${extraText}`)) continue;
       if (!existingNames.has(extraText)) {
         newItems.push({
           id: crypto.randomUUID(),
@@ -5353,10 +5385,12 @@ const PrescricaoPage = () => {
       setItems(prev => [...prev, ...newItems]);
       toast.success(`Perfil "${profile.label}" aplicado — ${newItems.length} itens adicionados`);
     } else {
-      toast.info(`Todos os itens do perfil "${profile.label}" já estão na prescrição`);
+      toast.info(`Nenhum item selecionado para incluir`);
     }
     setAppliedCareProfiles(prev => new Set(prev).add(profile.id));
+    setCareProfilePreview(null);
   };
+
 
   const addFreeRecommendation = () => {
     if (!freeRecommendation.trim()) return;
@@ -8395,6 +8429,118 @@ const PrescricaoPage = () => {
         totalItems={totalItems}
         activeItems={activeItemsCount}
       />
+
+      {/* ===== PRÉ-VISUALIZAÇÃO DO PERFIL DE CUIDADO ===== */}
+      <Dialog open={!!careProfilePreview} onOpenChange={(o) => { if (!o) setCareProfilePreview(null); }}>
+        <DialogContent className="max-w-lg">
+          {careProfilePreview && (() => {
+            const { profile, selectedKeys } = careProfilePreview;
+            const existingNames = new Set(items.filter(i => i.category === 'care').map(i => i.name));
+            const structured = profile.items
+              .map(id => ({ id, opt: CARE_OPTIONS.find(c => c.id === id) }))
+              .filter(x => !!x.opt) as Array<{ id: string; opt: typeof CARE_OPTIONS[number] }>;
+            const extras = profile.extraItems;
+            const selectableCount =
+              structured.filter(s => !existingNames.has(s.opt.name)).length +
+              extras.filter(t => !existingNames.has(t)).length;
+            const selectedCount = selectedKeys.size;
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-base">
+                    <span>{profile.icon}</span> Aplicar perfil: {profile.label}
+                  </DialogTitle>
+                  <DialogDescription className="text-xs">
+                    Desmarque o que não se aplica antes de incluir. Itens já presentes na prescrição aparecem como "já incluído".
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="max-h-[55vh] overflow-y-auto space-y-1.5 pr-1">
+                  {structured.length > 0 && (
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mt-1 mb-1">
+                      Cuidados estruturados
+                    </div>
+                  )}
+                  {structured.map(({ id, opt }) => {
+                    const key = `id:${id}`;
+                    const already = existingNames.has(opt.name);
+                    const checked = !already && selectedKeys.has(key);
+                    return (
+                      <label
+                        key={key}
+                        className={`flex items-start gap-2 rounded-md border p-2 text-xs ${
+                          already ? 'bg-muted/40 text-muted-foreground cursor-not-allowed' : 'hover:bg-accent/50 cursor-pointer'
+                        }`}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          disabled={already}
+                          onCheckedChange={() => toggleCarePreviewKey(key)}
+                          className="mt-0.5"
+                        />
+                        <span className="flex-1 leading-snug">
+                          {opt.name}
+                          {already && <span className="ml-1.5 text-[10px] italic">(já incluído)</span>}
+                        </span>
+                      </label>
+                    );
+                  })}
+
+                  {extras.length > 0 && (
+                    <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mt-3 mb-1">
+                      Recomendações adicionais
+                    </div>
+                  )}
+                  {extras.map((text) => {
+                    const key = `tx:${text}`;
+                    const already = existingNames.has(text);
+                    const checked = !already && selectedKeys.has(key);
+                    return (
+                      <label
+                        key={key}
+                        className={`flex items-start gap-2 rounded-md border p-2 text-xs ${
+                          already ? 'bg-muted/40 text-muted-foreground cursor-not-allowed' : 'hover:bg-accent/50 cursor-pointer'
+                        }`}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          disabled={already}
+                          onCheckedChange={() => toggleCarePreviewKey(key)}
+                          className="mt-0.5"
+                        />
+                        <span className="flex-1 leading-snug">
+                          {text}
+                          {already && <span className="ml-1.5 text-[10px] italic">(já incluído)</span>}
+                        </span>
+                      </label>
+                    );
+                  })}
+
+                  {selectableCount === 0 && (
+                    <div className="text-xs text-muted-foreground text-center py-4">
+                      Todos os itens deste perfil já estão na prescrição.
+                    </div>
+                  )}
+                </div>
+
+                <DialogFooter className="gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setCareProfilePreview(null)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={confirmApplyCareProfile}
+                    disabled={selectedCount === 0}
+                  >
+                    Incluir {selectedCount} {selectedCount === 1 ? 'item selecionado' : 'itens selecionados'}
+                  </Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
       <DrugInteractionDialog
         open={interactionDialogOpen}
         onClose={() => setInteractionDialogOpen(false)}
