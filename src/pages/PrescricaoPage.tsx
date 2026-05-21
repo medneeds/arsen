@@ -7750,11 +7750,11 @@ const PrescricaoPage = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <UtensilsCrossed className="h-4 w-4 text-emerald-600" />
-              Seguir assistente de terapia nutricional?
+              Como deseja prescrever a dieta?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              O assistente sugere a estratégia (Zero · Oral · Enteral · NPT), volume, fracionamento e cuidados com base no paciente.
-              Se preferir, você pode adicionar manualmente e usar a busca de nutrição para itens específicos.
+              Escolha entre o <strong>assistente de terapia nutricional</strong> (sugere estratégia, volume e cuidados com base no paciente)
+              ou a <strong>nova solicitação de dieta</strong> (oral, enteral, parenteral, zero ou suplementação — preenchimento manual estruturado).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-2">
@@ -7772,7 +7772,8 @@ const PrescricaoPage = () => {
                 }, 50);
               }}
             >
-              Adicionar manualmente
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              Nova solicitação de dieta
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
