@@ -9146,7 +9146,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                       item.concentration ? `Conc: ${item.concentration}` : null,
                     ].filter(Boolean).join(' · ')}
                     {item.instructions && (
-                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> // {item.instructions}</span>
+                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> — {item.instructions}</span>
+
                     )}
                   </div>
                 )}
