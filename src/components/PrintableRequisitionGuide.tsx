@@ -644,37 +644,40 @@ export async function printRequisitionGuide(
 
   const identificationRows = isParecer
     ? `
-    <table class="nz" style="margin-bottom:6pt">
+    <table class="nz parecer-id" style="margin-bottom:5pt;table-layout:fixed">
+      <colgroup>
+        <col style="width:9%"/><col/><col style="width:11%"/><col style="width:13%"/><col style="width:11%"/><col style="width:13%"/>
+      </colgroup>
       <tbody>
         <tr>
-          <th style="width:14%">Paciente</th>
-          <td style="font-weight:700;font-size:9.5pt">${escapeHtml(request.patient_name)}</td>
-          <th style="width:13%">Nº Prontuário</th>
-          <td style="width:18%;font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(medicalRecord || "—")}</td>
-          <th style="width:13%">Nº Atendimento</th>
-          <td style="width:18%;font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600">${escapeHtml(encounterCode || "—")}</td>
+          <th style="white-space:nowrap">Paciente</th>
+          <td style="font-weight:700;font-size:9.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(request.patient_name)}</td>
+          <th style="white-space:nowrap">Nº Prontuário</th>
+          <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;font-size:8pt;white-space:nowrap">${escapeHtml(medicalRecord || "—")}</td>
+          <th style="white-space:nowrap">Nº Atendimento</th>
+          <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;font-size:8pt;white-space:nowrap">${escapeHtml(encounterCode || "—")}</td>
         </tr>
         <tr>
-          <th>Setor</th><td>${escapeHtml(sectorName || "—")}</td>
-          <th>Leito</th><td>${escapeHtml(request.patient_bed || "—")}</td>
-          <th>Data Nasc. / Idade</th>
-          <td>${escapeHtml(fmtBirthDate(birthDate))}${ageY !== null ? ` <span style="color:#475569">(${ageY} anos)</span>` : ""}</td>
+          <th style="white-space:nowrap">Setor</th><td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(sectorName || "—")}</td>
+          <th style="white-space:nowrap">Leito</th><td style="white-space:nowrap">${escapeHtml(request.patient_bed || "—")}</td>
+          <th style="white-space:nowrap">Nasc. / Idade</th>
+          <td style="white-space:nowrap">${escapeHtml(fmtBirthDate(birthDate))}${ageY !== null ? ` <span style="color:#475569">(${ageY}a)</span>` : ""}</td>
         </tr>
         <tr>
-          <th>Solicitante</th>
-          <td colspan="3">${escapeHtml(request.requested_by_name || "—")}</td>
-          <th>Solicitação</th>
-          <td>${escapeHtml(createdStr)}</td>
+          <th style="white-space:nowrap">Solicitante</th>
+          <td colspan="3" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(request.requested_by_name || "—")}</td>
+          <th style="white-space:nowrap">Solicitação</th>
+          <td style="white-space:nowrap">${escapeHtml(createdStr)}</td>
         </tr>
         <tr>
-          <th style="background:#0a1628;color:#fff">Especialidade Solicitada</th>
-          <td colspan="3" style="background:#eff6ff;font-weight:700;font-size:10pt;color:#0a1628">${escapeHtml(parecerSpecialtyLabel)}</td>
-          <th>Prioridade</th>
-          <td><span class="prio-badge" style="${priorityCss}">${escapeHtml(priorityLabel)}</span></td>
+          <th style="background:#0a1628;color:#fff;white-space:nowrap">Especialidade</th>
+          <td colspan="3" style="background:#eff6ff;font-weight:700;font-size:10pt;color:#0a1628;word-break:break-word;line-height:1.2">${escapeHtml(parecerSpecialtyLabel)}</td>
+          <th style="white-space:nowrap">Prioridade</th>
+          <td style="white-space:nowrap"><span class="prio-badge" style="${priorityCss}">${escapeHtml(priorityLabel)}</span></td>
         </tr>
         ${
           scheduledInfo
-            ? `<tr><th>Agendamento</th><td colspan="5">${escapeHtml(scheduledInfo)}</td></tr>`
+            ? `<tr><th style="white-space:nowrap">Agendamento</th><td colspan="5">${escapeHtml(scheduledInfo)}</td></tr>`
             : ""
         }
       </tbody>
