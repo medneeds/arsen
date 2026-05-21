@@ -570,10 +570,10 @@ const RequisicaoUnificadaPage = () => {
               <p className={cn("text-sm font-semibold", activeScope === "comum" ? "text-blue-700 dark:text-blue-300" : "text-foreground")}>
                 Requisição Comum
               </p>
-              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-blue-300 text-blue-600 dark:text-blue-400">Norma Zero</Badge>
             </div>
             <p className="text-[10px] text-muted-foreground">Laboratório · Imagem · Pareceres — fluxo do dia-a-dia</p>
           </div>
+
         </button>
         <button
           type="button"
