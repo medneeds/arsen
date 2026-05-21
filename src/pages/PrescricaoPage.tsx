@@ -1220,26 +1220,9 @@ function NutritionFields({
 
   // ============== MODO MANUAL (texto livre + recomendações apenas) ==============
   if (item.nutManual) {
-    const MODALITY_LABELS: Record<string, string> = {
-      diet_oral: 'Oral', diet_enteral: 'Enteral', diet_parenteral: 'Parenteral',
-      supplement: 'Suplementação', zero: 'Zero (jejum)', water: 'Água', npt: 'NPT',
-    };
     return (
       <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-2")}>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <NutFieldLabel>Modalidade:</NutFieldLabel>
-          <Select value={subtype} onValueChange={setSubtype}>
-            <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-44">
-              <SelectValue>{MODALITY_LABELS[subtype] || subtype}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="diet_oral" className="text-xs">Oral</SelectItem>
-              <SelectItem value="diet_enteral" className="text-xs">Enteral</SelectItem>
-              <SelectItem value="diet_parenteral" className="text-xs">Parenteral</SelectItem>
-              <SelectItem value="supplement" className="text-xs">Suplementação</SelectItem>
-              <SelectItem value="zero" className="text-xs">Zero (jejum)</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-1.5">
           <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold uppercase tracking-wide">manual</span>
         </div>
         <div className="space-y-1">
@@ -1256,6 +1239,7 @@ function NutritionFields({
       </div>
     );
   }
+
 
 
   return (
@@ -7953,38 +7937,12 @@ const PrescricaoPage = () => {
               Adição manual de nutrição
             </DialogTitle>
             <DialogDescription>
-              Escolha a modalidade, descreva livremente a conduta e adicione recomendações. Nada é obrigatório além da modalidade e do texto.
+              Descreva livremente a conduta nutricional e adicione recomendações à equipe.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3">
-            {/* 1) Modalidade — chips compactos */}
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">Modalidade</label>
-              <div className="flex flex-wrap gap-1.5">
-                {([
-                  { v: 'diet_oral',       label: 'Oral' },
-                  { v: 'diet_enteral',    label: 'Enteral' },
-                  { v: 'diet_parenteral', label: 'Parenteral' },
-                  { v: 'supplement',      label: 'Suplementação' },
-                  { v: 'zero',            label: 'Zero (jejum)' },
-                ] as const).map(opt => (
-                  <button
-                    key={opt.v}
-                    type="button"
-                    onClick={() => setNutritionManualType(opt.v)}
-                    className={cn(
-                      "h-8 px-3 rounded-md border text-[12px] font-semibold transition",
-                      nutritionManualType === opt.v
-                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                        : "bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                    )}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+
 
             {/* 2) Texto livre */}
             <div className="space-y-1.5">
@@ -8027,7 +7985,7 @@ const PrescricaoPage = () => {
                   name: text,
                   presentation: '-',
                   dose: '-',
-                  route: nutritionManualType === 'diet_parenteral' ? 'Endovenosa' : '-',
+                  route: '-',
                   posology: '-',
                   schedule: '-',
                   instructions: nutritionManualRecs.trim(),
@@ -8036,7 +7994,7 @@ const PrescricaoPage = () => {
                   highAlert: false,
                   status: 'active',
                   nutManual: true,
-                  nutritionType: nutritionManualType,
+
                 };
                 setItems(prev => [...prev, newItem]);
                 setNutritionManualOpen(false);
