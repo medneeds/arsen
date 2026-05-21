@@ -211,6 +211,11 @@ interface PrescriptionItem {
   nutProgression?: string;    // Esquema de progressão
   nutBedHead?: string;        // Cabeceira (graus)
   nutResidualCheck?: string;  // Checagem de resíduo gástrico
+  // Switches da conduta nutricional (enteral/parenteral)
+  nutScheduleMode?: 'interval' | 'steps';  // intervalo (Xh em Xh) ou nº de etapas/dia
+  nutSteps?: string;                       // número de etapas (ex: "3" → "3 etapas/dia")
+  nutRateMode?: 'mlh' | 'gtt';             // unidade do "Correr em": mL/h ou gts/min
+  nutManual?: boolean;                     // item criado via "adição manual" — só texto livre + recomendações
   // Antimicrobial-specific (Guia ATM)
   atbStartDate?: string;      // YYYY-MM-DD
   atbPlannedDays?: string;    // ex: "7"
