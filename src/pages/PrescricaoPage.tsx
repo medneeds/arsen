@@ -7756,16 +7756,9 @@ const PrescricaoPage = () => {
               type="button"
               onClick={() => {
                 setNutritionConfirmOpen(false);
-                setManualOpenCategories(prev => {
-                  const n = new Set(prev);
-                  n.add('nutrition');
-                  return n;
-                });
-                setActiveTab('nutrition');
-                setTimeout(() => {
-                  document.getElementById('prescription-cat-nutrition')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 50);
+                setNutritionGuidedOpen(true);
               }}
+
               className="group text-left rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition p-3 flex flex-col gap-2"
             >
               <div className="flex items-center gap-2">
