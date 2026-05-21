@@ -240,11 +240,13 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         onMouseLeave={() => variant === "fixed" && setHovering(false)}
         className={cn(
           variant === "fixed" && [
-            "hidden lg:flex shrink-0 border-l border-border bg-card self-start",
+            "hidden lg:flex shrink-0 border-l border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 bg-card self-start",
+            "shadow-[inset_1px_0_0_hsl(217,40%,98%)] dark:shadow-[inset_1px_0_0_hsl(217,30%,16%)]",
+            "rounded-b-xl ring-1 ring-[hsl(217,40%,92%)]/60 dark:ring-[hsl(217,40%,20%)]/40",
             "transition-[width] duration-200 ease-out",
             isExpanded ? "w-96" : "w-12",
           ],
-          variant === "inline" && "w-full h-full bg-card border border-border rounded-lg overflow-hidden",
+          variant === "inline" && "w-full h-full bg-card border border-[hsl(217,30%,82%)]/70 dark:border-[hsl(217,30%,24%)]/70 rounded-lg overflow-hidden",
           "flex-col print:hidden",
           className
         )}
@@ -274,7 +276,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
         {/* Expanded content */}
         <div className={cn("flex flex-col flex-1 min-h-0", variant === "fixed" && !isExpanded && "hidden")}>
         {variant === "fixed" && isExpanded && (
-          <div className="flex justify-end px-2 pt-2">
+          <div className="flex justify-end px-2 pt-2 bg-gradient-to-b from-[hsl(217,55%,40%)]/[0.06] via-[hsl(217,55%,40%)]/[0.03] to-transparent border-b border-[hsl(217,30%,86%)]/40 dark:border-[hsl(217,30%,26%)]/40">
             <button
               type="button"
               title={pinned ? "Desafixar (recolher ao tirar o mouse)" : "Fixar painel aberto"}
@@ -282,8 +284,8 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
               className={cn(
                 "inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full transition-all duration-200",
                 pinned
-                  ? "bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-sm hover:shadow-md"
-                  : "bg-muted/60 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                  ? "bg-gradient-to-r from-[hsl(217,70%,40%)] to-[hsl(217,72%,36%)] text-white shadow-sm hover:shadow-md"
+                  : "bg-muted/60 text-muted-foreground hover:bg-[hsl(217,55%,40%)]/10 hover:text-[hsl(217,72%,32%)]"
               )}
             >
               <ChevronRight className={cn("h-3 w-3 transition-transform", pinned ? "rotate-90" : "rotate-180")} />
