@@ -1179,7 +1179,7 @@ function NutritionFields({
             <SelectValue placeholder="—" />
           </SelectTrigger>
           <SelectContent>
-            {DIET_STEPS.map(o => <SelectItem key={o} value={o} className="text-xs">{o} etapas/dia</SelectItem>)}
+            {DIET_STEPS.map(o => <SelectItem key={o} value={o} className="text-xs">{o} {o === '1' ? 'etapa/dia' : 'etapas/dia'}</SelectItem>)}
           </SelectContent>
         </Select>
       )}
