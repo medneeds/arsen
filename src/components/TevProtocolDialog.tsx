@@ -322,13 +322,13 @@ export function TevProtocolDialog({ open, onOpenChange, patient, onAddToPrescrip
 
         {/* Progress indicator */}
         <div className="px-6 pb-3 flex items-center gap-2 text-xs text-muted-foreground">
-          <button onClick={() => setStep("score")} className={cn("flex items-center gap-1 px-2 py-1 rounded", step === "score" ? "bg-blue-100 text-blue-700 font-medium" : "hover:text-foreground")}>
-            <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px]">1</span>
+          <button onClick={() => setStep("score")} className={cn("flex items-center gap-1 px-2 py-1 rounded", step === "score" ? "bg-[hsl(217,55%,92%)] text-[hsl(217,72%,32%)] font-medium" : "hover:text-foreground")}>
+            <span className="w-4 h-4 rounded-full bg-[hsl(217,70%,40%)] text-white flex items-center justify-center text-[10px]">1</span>
             Risco Trombótico
           </button>
           <ChevronRight className="h-3 w-3" />
-          <button onClick={() => setStep("bleeding")} className={cn("flex items-center gap-1 px-2 py-1 rounded", step === "bleeding" ? "bg-orange-100 text-orange-700 font-medium" : "hover:text-foreground")}>
-            <span className={cn("w-4 h-4 rounded-full flex items-center justify-center text-[10px]", step !== "score" ? "bg-orange-500 text-white" : "bg-muted text-muted-foreground")}>2</span>
+          <button onClick={() => setStep("bleeding")} className={cn("flex items-center gap-1 px-2 py-1 rounded", step === "bleeding" ? "bg-[hsl(217,55%,90%)] text-[hsl(217,72%,30%)] font-medium" : "hover:text-foreground")}>
+            <span className={cn("w-4 h-4 rounded-full flex items-center justify-center text-[10px]", step !== "score" ? "bg-[hsl(217,65%,45%)] text-white" : "bg-muted text-muted-foreground")}>2</span>
             Risco Sangramento
           </button>
           <ChevronRight className="h-3 w-3" />

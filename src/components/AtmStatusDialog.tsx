@@ -106,9 +106,9 @@ export function AtmStatusDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-5 py-3 border-b bg-violet-50/50 dark:bg-violet-950/15">
+        <DialogHeader className="px-5 py-3 border-b bg-[hsl(217,55%,96%)]/50 dark:bg-[hsl(217,75%,12%)]/15">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <Shield className="h-5 w-5 text-violet-600" />
+            <Shield className="h-5 w-5 text-[hsl(217,70%,40%)]" />
             Guia ATM — Antimicrobianos
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -118,10 +118,10 @@ export function AtmStatusDialog({
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
           <TabsList className="mx-5 mt-3 grid grid-cols-2 w-auto self-start">
-            <TabsTrigger value="status" className="text-xs gap-1.5 data-[state=active]:text-violet-700 data-[state=active]:border-b-2 data-[state=active]:border-violet-500">
+            <TabsTrigger value="status" className="text-xs gap-1.5 data-[state=active]:text-[hsl(217,72%,36%)] data-[state=active]:border-b-2 data-[state=active]:border-[hsl(217,65%,45%)]">
               <Activity className="h-3.5 w-3.5" /> Status ({activeItems.length})
             </TabsTrigger>
-            <TabsTrigger value="nova" className="text-xs gap-1.5 data-[state=active]:text-violet-700 data-[state=active]:border-b-2 data-[state=active]:border-violet-500">
+            <TabsTrigger value="nova" className="text-xs gap-1.5 data-[state=active]:text-[hsl(217,72%,36%)] data-[state=active]:border-b-2 data-[state=active]:border-[hsl(217,65%,45%)]">
               <Plus className="h-3.5 w-3.5" /> Nova ATB
             </TabsTrigger>
           </TabsList>
@@ -163,7 +163,7 @@ export function AtmStatusDialog({
                           "rounded-lg border p-3 bg-card transition-colors",
                           overdue
                             ? "border-red-300 bg-red-50/40 dark:bg-red-950/10"
-                            : "border-violet-200/70 dark:border-violet-800/40 hover:border-violet-300",
+                            : "border-[hsl(217,55%,82%)]/70 dark:border-[hsl(217,70%,28%)]/40 hover:border-[hsl(217,55%,72%)]",
                         )}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -179,7 +179,7 @@ export function AtmStatusDialog({
                                 </Badge>
                               )}
                               {sinceLabel && !overdue && (
-                                <Badge variant="outline" className="text-[9px] gap-1 border-violet-300 text-violet-700 dark:text-violet-400">
+                                <Badge variant="outline" className="text-[9px] gap-1 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)] dark:text-[hsl(217,60%,60%)]">
                                   <Timer className="h-2.5 w-2.5" /> {sinceLabel}
                                 </Badge>
                               )}
@@ -197,7 +197,7 @@ export function AtmStatusDialog({
                             {dot !== null && (
                               <div className="mt-2">
                                 <div className="flex items-center justify-between gap-2 text-[11px] mb-1">
-                                  <span className="inline-flex items-center gap-1 font-semibold text-violet-700 dark:text-violet-400">
+                                  <span className="inline-flex items-center gap-1 font-semibold text-[hsl(217,72%,36%)] dark:text-[hsl(217,60%,60%)]">
                                     <Clock className="h-3 w-3" /> Dia {dot}{totalValid ? ` de ${total}` : ''}
                                   </span>
                                   {totalValid && remaining !== null && (
@@ -210,11 +210,11 @@ export function AtmStatusDialog({
                                   )}
                                 </div>
                                 {pct !== null && (
-                                  <div className="h-1.5 w-full rounded-full bg-violet-100 dark:bg-violet-950/30 overflow-hidden">
+                                  <div className="h-1.5 w-full rounded-full bg-[hsl(217,55%,90%)] dark:bg-[hsl(217,75%,12%)]/30 overflow-hidden">
                                     <div
                                       className={cn(
                                         "h-full rounded-full transition-all",
-                                        overdue ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-violet-500"
+                                        overdue ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-[hsl(217,65%,45%)]"
                                       )}
                                       style={{ width: `${overdue ? 100 : pct}%` }}
                                     />
@@ -245,7 +245,7 @@ export function AtmStatusDialog({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onReprintItem(it)}
-                                className="h-7 text-[11px] gap-1 text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-950/30"
+                                className="h-7 text-[11px] gap-1 text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,96%)] dark:text-[hsl(217,60%,60%)] dark:hover:bg-[hsl(217,75%,12%)]/30"
                                 title="Reimprimir 2ª via da Guia ATM já validada"
                               >
                                 <Printer className="h-3 w-3" /> Reimprimir
@@ -280,7 +280,7 @@ export function AtmStatusDialog({
               {!hasActive ? (
                 <div className="rounded-lg border border-dashed p-4 bg-muted/20 text-xs">
                   <div className="font-semibold flex items-center gap-1.5 mb-1">
-                    <Plus className="h-3.5 w-3.5 text-violet-600" />
+                    <Plus className="h-3.5 w-3.5 text-[hsl(217,70%,40%)]" />
                     Início de antibioticoterapia
                   </div>
                   <div className="text-muted-foreground">
@@ -294,7 +294,7 @@ export function AtmStatusDialog({
                   <RadioGroup value={novaMode} onValueChange={(v) => setNovaMode(v as any)} className="space-y-2">
                     <label className={cn(
                       "flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer hover:bg-muted/30",
-                      novaMode === 'acrescimo' && "border-violet-400 bg-violet-50/50 dark:bg-violet-950/20"
+                      novaMode === 'acrescimo' && "border-[hsl(217,60%,60%)] bg-[hsl(217,55%,96%)]/50 dark:bg-[hsl(217,75%,12%)]/20"
                     )}>
                       <RadioGroupItem value="acrescimo" className="mt-0.5" />
                       <div className="text-xs">
@@ -359,7 +359,7 @@ export function AtmStatusDialog({
             <Button
               size="sm"
               onClick={handleProceed}
-              className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white"
+              className="gap-1.5 bg-[hsl(217,70%,40%)] hover:bg-[hsl(217,72%,36%)] text-white"
             >
               {novaModeEffective === 'inicial' ? 'Abrir Guia ATM' : novaModeEffective === 'troca' ? 'Continuar com Troca' : 'Continuar com Acréscimo'}
               <ChevronRight className="h-3.5 w-3.5" />
