@@ -9778,9 +9778,9 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
         return (
           <>
             {continuousItems.length > 0 && (
-              <div style={{ marginBottom: '3px', pageBreakInside: 'avoid' }}>
+              <div style={{ marginBottom: '3px' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
+                  <thead style={{ display: 'table-header-group' }}>
                     <tr>
                       <td style={{ ...thStyle, width: '22px', textAlign: 'center', fontSize: '6pt' }}>Nº</td>
                       <td style={thStyle}>Descrição</td>
