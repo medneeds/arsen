@@ -809,7 +809,7 @@ export async function printRequisitionGuide(
     .req-item:nth-child(2n) { border-right:none; }
     .req-num { min-width:14pt; font-size:8.5pt; font-weight:600; color:#0a1628; text-align:right; flex-shrink:0; }
 
-    /* Parecer — caixa de justificativa (altura dinâmica) + área de resposta manual */
+    /* Parecer — caixa de justificativa (altura fixa) + área de resposta */
     .parecer-just { max-height: ${justMaxMm}mm; overflow: hidden; font-size: 9pt; line-height: 1.38; }
     .parecer-just p { margin: 0 0 4pt 0; }
     .parecer-just p:last-child { margin-bottom: 0; }
@@ -834,8 +834,34 @@ export async function printRequisitionGuide(
     .parecer-sign .psl { border: 0.5pt solid #94a3b8; padding: 3pt 5pt; vertical-align: top; }
     .parecer-sign .psl span { font-size: 7pt; color: #475569; text-transform: uppercase; letter-spacing: 0.3pt; font-weight: 600; }
     .parecer-sign .psf { height: 14pt; }
-    /* Para parecer, o rodapé de assinatura padrão fica oculto (já temos o bloco-resposta) */
-    ${isParecer ? ".nz-signature-area { display:none !important; }" : ""}
+    /* Identificação compacta do parecer */
+    .parecer-id th { font-size: 7pt; padding: 2.5pt 5pt; }
+    .parecer-id td { padding: 2.5pt 5pt; font-size: 8.5pt; }
+
+    ${isParecer ? `
+      /* Cabeçalho compacto exclusivo do parecer */
+      .nz-h-line1, .nz-h-line2, .nz-h-tag { display: none !important; }
+      .nz-h-line3 { font-size: 10.5pt !important; margin-top: 0 !important; }
+      .nz-header { padding: 4pt 0 3pt !important; margin-bottom: 5pt !important; border-bottom-width: 2pt !important; }
+      .nz-header-inner { grid-template-columns: 44px 1fr 44px !important; gap: 8pt !important; }
+      .nz-logo { height: 38px !important; width: 38px !important; }
+      .nz-cruz-bar { height: 3pt !important; margin-top: 3pt !important; }
+      h1.nz-title { font-size: 12pt !important; margin: 3pt 0 1pt !important; }
+      .nz-subtitle { display: none !important; }
+      .nz-doc-bar { padding: 3pt 7pt !important; font-size: 7.5pt !important; margin-bottom: 5pt !important; }
+      .nz-signature-area { display: none !important; }
+      /* Endereço institucional movido para o rodapé */
+      .nz-footer { flex-wrap: wrap; row-gap: 2pt; padding-top: 3pt !important; margin-top: 6pt !important; }
+      .nz-footer::after {
+        content: "${(whitelabel.institution.address || "").replace(/"/g, "\\\"")}";
+        flex-basis: 100%;
+        text-align: center;
+        color: #64748b;
+        font-size: 6.5pt;
+        font-style: italic;
+        margin-top: 1pt;
+      }
+    ` : ""}
   `;
 
   const logoDataUrl = await prepareLogo();
