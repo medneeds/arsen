@@ -9399,25 +9399,45 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 )}
 
                 {/* Nutrição: campos específicos */}
-                {item.category === 'nutrition' && (item.nutVolDay || item.nutMode || item.nutFraction || item.nutBedHead || item.nutAccess || item.nutComposition) && (
-                  <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #16a34a', fontWeight: 500 }}>
-                    {[
-                      item.nutVolDay ? `Vol/dia: ${item.nutVolDay} mL` : null,
-                      item.nutMode || null,
-                      item.nutFraction ? `Frac: ${item.nutFraction}` : null,
-                      item.nutNightPause ? `Pausa noturna: ${item.nutNightPause}` : null,
-                      item.nutBedHead ? `Cabeceira: ${item.nutBedHead}°` : null,
-                      item.nutAccess ? `Acesso: ${abbrevRoute(item.nutAccess)}` : null,
-                      item.nutComposition || null,
-                      item.nutMonitoring ? `Monit: ${item.nutMonitoring}` : null,
-                      item.nutResidualCheck ? `Resíduo: ${item.nutResidualCheck}` : null,
-                      item.nutWaterVolPerAdmin ? `Água: ${item.nutWaterVolPerAdmin} mL` : null,
-                      item.nutWaterFreq || null,
-                      item.nutZeroReason ? `Motivo jejum: ${item.nutZeroReason}` : null,
-                    ].filter(Boolean).join(' · ')}
-                    {item.instructions && (
-                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> — {item.instructions}</span>
-                    )}
+                {item.category === 'nutrition' && !item.nutManual && (() => {
+                  const scheduleText = item.nutScheduleMode === 'steps'
+                    ? (item.nutSteps ? `${item.nutSteps} etapas/dia` : null)
+                    : (item.dietInterval ? `Intervalo: ${item.dietInterval}` : null);
+                  const rateUnit = item.nutRateMode === 'gtt' ? 'gts/min' : 'mL/h';
+                  const rateText = item.infusionRate ? `Correr em: ${item.infusionRate} ${rateUnit}` : null;
+                  const parts = [
+                    item.dietType || null,
+                    item.dietProfile ? `Perfil: ${item.dietProfile}` : null,
+                    item.nutVolDay ? `Vol: ${item.nutVolDay} mL` : null,
+                    scheduleText,
+                    rateText,
+                    item.nutMode || null,
+                    item.nutFraction ? `Frac: ${item.nutFraction}` : null,
+                    item.nutNightPause ? `Pausa noturna: ${item.nutNightPause}` : null,
+                    item.nutBedHead ? `Cabeceira: ${item.nutBedHead}°` : null,
+                    item.nutAccess ? `Acesso: ${abbrevRoute(item.nutAccess)}` : null,
+                    item.nutComposition || null,
+                    item.nutMonitoring ? `Monit: ${item.nutMonitoring}` : null,
+                    item.nutResidualCheck ? `Resíduo: ${item.nutResidualCheck}` : null,
+                    item.nutWaterVolPerAdmin ? `Água: ${item.nutWaterVolPerAdmin} mL` : null,
+                    item.nutWaterFreq || null,
+                    item.nutZeroReason ? `Motivo jejum: ${item.nutZeroReason}` : null,
+                  ].filter(Boolean);
+                  if (parts.length === 0 && !item.instructions) return null;
+                  return (
+                    <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #16a34a', fontWeight: 500 }}>
+                      {parts.join(' · ')}
+                      {item.instructions && (
+                        <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> — {item.instructions}</span>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Nutrição manual: só recomendações abaixo do nome (texto livre já é o name) */}
+                {item.category === 'nutrition' && item.nutManual && item.instructions && (
+                  <div style={{ fontSize: '7pt', color: '#475569', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #16a34a', fontStyle: 'italic', fontWeight: 500 }}>
+                    {item.instructions}
                   </div>
                 )}
 
