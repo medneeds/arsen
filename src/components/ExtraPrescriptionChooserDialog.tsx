@@ -25,15 +25,21 @@ export interface ExtraCategoryOption {
   border: string;
 }
 
+// Paleta unificada azul institucional. Apenas `high_alert` permanece vermelho
+// (convenção ISMP-Brasil para Medicamentos de Alta Vigilância).
+const BLUE_BASE = {
+  color: 'text-[hsl(217,70%,40%)]',
+  bg: 'bg-[hsl(217,55%,96%)] dark:bg-[hsl(217,55%,12%)]/30',
+  border: 'border-[hsl(217,55%,82%)] dark:border-[hsl(217,55%,30%)] hover:border-[hsl(217,60%,60%)]',
+};
+
 const OPTIONS: ExtraCategoryOption[] = [
   {
     value: 'antimicrobial',
     label: 'Antimicrobiano',
     description: 'Antibióticos, antifúngicos e antivirais. Abre Guia ATM ao confirmar.',
     icon: Shield,
-    color: 'text-orange-600',
-    bg: 'bg-orange-50 dark:bg-orange-950/30',
-    border: 'border-orange-200 dark:border-orange-800 hover:border-orange-400',
+    ...BLUE_BASE,
   },
   {
     value: 'high_alert',
@@ -49,63 +55,49 @@ const OPTIONS: ExtraCategoryOption[] = [
     label: 'Reposição / Hidratação',
     description: 'Eletrólitos, soros e correções volêmicas.',
     icon: Droplets,
-    color: 'text-sky-600',
-    bg: 'bg-sky-50 dark:bg-sky-950/30',
-    border: 'border-sky-200 dark:border-sky-800 hover:border-sky-400',
+    ...BLUE_BASE,
   },
   {
     value: 'medication',
     label: 'Medicação Geral',
     description: 'Analgésicos, sintomáticos, SOS e medicações avulsas.',
     icon: Pill,
-    color: 'text-primary',
-    bg: 'bg-primary/5',
-    border: 'border-primary/20 hover:border-primary/60',
+    ...BLUE_BASE,
   },
   {
     value: 'inhalation',
     label: 'Inalação',
     description: 'Nebulização e medicação inalatória.',
     icon: Wind,
-    color: 'text-cyan-600',
-    bg: 'bg-cyan-50 dark:bg-cyan-950/30',
-    border: 'border-cyan-200 dark:border-cyan-800 hover:border-cyan-400',
+    ...BLUE_BASE,
   },
   {
     value: 'hemotherapy',
     label: 'Hemoterapia',
     description: 'Hemocomponentes e derivados sanguíneos.',
     icon: TestTube,
-    color: 'text-rose-600',
-    bg: 'bg-rose-50 dark:bg-rose-950/30',
-    border: 'border-rose-200 dark:border-rose-800 hover:border-rose-400',
+    ...BLUE_BASE,
   },
   {
     value: 'nutrition',
     label: 'Nutrição',
     description: 'Dietas, suplementos e ajustes nutricionais.',
     icon: UtensilsCrossed,
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-    border: 'border-emerald-200 dark:border-emerald-800 hover:border-emerald-400',
+    ...BLUE_BASE,
   },
   {
     value: 'care',
     label: 'Cuidados',
     description: 'Cuidados de enfermagem e orientações.',
     icon: ClipboardList,
-    color: 'text-amber-600',
-    bg: 'bg-amber-50 dark:bg-amber-950/30',
-    border: 'border-amber-200 dark:border-amber-800 hover:border-amber-400',
+    ...BLUE_BASE,
   },
   {
     value: 'all',
     label: 'Outros / Buscar livre',
     description: 'Não tem certeza da categoria? Abra a busca completa.',
     icon: FileText,
-    color: 'text-slate-600',
-    bg: 'bg-slate-50 dark:bg-slate-950/30',
-    border: 'border-slate-200 dark:border-slate-800 hover:border-slate-400',
+    ...BLUE_BASE,
   },
 ];
 
@@ -129,7 +121,7 @@ export function ExtraPrescriptionChooserDialog({
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-orange-500" />
+            <Zap className="h-5 w-5 text-[hsl(217,70%,40%)]" />
             Prescrição Extra — escolha o tipo
           </DialogTitle>
           <DialogDescription>
