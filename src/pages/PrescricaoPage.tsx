@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { formatPresentation } from "@/lib/formatPresentation";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
