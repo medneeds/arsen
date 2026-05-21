@@ -772,9 +772,9 @@ export async function printRequisitionGuide(
        <table class="nz"><tbody><tr><td>${escapeHtml(cleanNotes).replace(/\n/g, "<br/>")}</td></tr></tbody></table>`
     : "";
 
-  // Bloco específico do parecer: área pautada para resposta manual (altura dinâmica)
+  // Bloco específico do parecer: área pautada para resposta do parecerista (altura fixa)
   const parecerResponseBlock = isParecer
-    ? `<h2 class="nz-section" style="background:#0a1628">Resposta do Parecer (preenchimento manual)</h2>
+    ? `<h2 class="nz-section" style="background:#0a1628">Resposta do Parecer</h2>
        <div class="parecer-response">
          <div class="parecer-response-lines" style="height:${respHeightMm}mm"></div>
          <table class="parecer-sign">
