@@ -9787,8 +9787,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     item.nutComposition || null,
                     item.nutMonitoring ? `Monit: ${item.nutMonitoring}` : null,
                     item.nutResidualCheck ? `Resíduo: ${item.nutResidualCheck}` : null,
-                    item.nutWaterVolPerAdmin ? `Água: ${item.nutWaterVolPerAdmin} mL` : null,
-                    item.nutWaterFreq || null,
+                    item.nutWaterVolPerAdmin ? `Vol/adm: ${item.nutWaterVolPerAdmin} mL` : (item.category === 'nutrition' && /gua/i.test(item.name) && item.dose && item.dose !== '-' ? `Vol/adm: ${item.dose}` : null),
+                    item.nutWaterFreq || (item.category === 'nutrition' && /gua/i.test(item.name) && item.posology && item.posology !== '-' ? `Freq: ${item.posology}` : null),
                     item.nutZeroReason ? `Motivo jejum: ${item.nutZeroReason}` : null,
                   ].filter(Boolean);
                   if (parts.length === 0 && !item.instructions) return null;
