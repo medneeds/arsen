@@ -7388,50 +7388,16 @@ const PrescricaoPage = () => {
                           </Button>
                         </div>
                       ) : cat === 'nutrition' ? (
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {([
-                            { sub: 'diet_oral',       label: 'Oral',          name: 'Dieta oral' },
-                            { sub: 'diet_enteral',    label: 'Enteral',       name: 'Dieta enteral' },
-                            { sub: 'diet_parenteral', label: 'Parenteral',    name: 'Dieta parenteral', route: 'Endovenosa' },
-                            { sub: 'zero',            label: 'Zero',          name: 'Dieta zero' },
-                            { sub: 'supplement',      label: 'Suplementação', name: 'Suplementação' },
-                          ] as const).map(m => (
-                            <Button
-                              key={m.sub}
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-[11px] border-emerald-300 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
-                              onClick={() => {
-                                const baseMed: MedicationEntry = {
-                                  id: '', name: m.name, presentation: '-', defaultDose: '-',
-                                  defaultRoute: (m as any).route || '-', defaultPosology: '-',
-                                  defaultSchedule: '-', instructions: '', category: 'nutrition',
-                                };
-                                const it = createItem(baseMed);
-                                it.nutritionType = m.sub as PrescriptionItem['nutritionType'];
-                                if ((m as any).route) it.route = (m as any).route;
-                                setItems(prev => [...prev, it]);
-                                setTimeout(() => {
-                                  document.getElementById(`prescription-item-${it.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                }, 50);
-                              }}
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              {m.label}
-                            </Button>
-                          ))}
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-[11px] text-emerald-700 dark:text-emerald-300 ml-1"
-                            onClick={() => setNutritionWizardOpen(true)}
-                          >
-                            <Sparkles className="h-3 w-3 mr-1" />
-                            Assistente
-                          </Button>
-                        </div>
+                        <MedicationAutocomplete
+                          source={UNIFIED_CATALOG[cat]}
+                          onSelect={addItem}
+                          placeholder="Buscar nutrição ou abrir assistente..."
+                          getFavoriteCount={getFavoriteCount}
+                          category={cat}
+                          onAssistantClick={() => setNutritionConfirmOpen(true)}
+                          assistantTooltip="Abrir fluxo de Nutrição (manual · guiada · assistente)"
+                        />
+
                       ) : (
                         <MedicationAutocomplete
                           source={UNIFIED_CATALOG[cat]}
