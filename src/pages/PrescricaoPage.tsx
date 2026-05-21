@@ -3286,11 +3286,42 @@ function parseScheduleSlots(schedule: string): string[] {
 
 // --- Print-only Item Row (dynamic schedule slots) ---
 function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }) {
-  const hasPreparo = item.diluent || item.diluentVolume || item.accessType || item.infusionTime;
+  const isNutrition = item.category === 'nutrition';
+  const hasPreparo = !isNutrition && (item.diluent || item.diluentVolume || item.accessType || item.infusionTime);
   const slots = parseScheduleSlots(item.schedule);
   const isEven = index % 2 === 0;
   const rowBg = isEven ? '#ffffff' : '#f8fafc';
-  
+
+  // Nutrição — espelha tela compacta (alinhado com printExtraPrescription)
+  let nutritionLine: string | null = null;
+  if (isNutrition && !item.nutManual) {
+    const scheduleText = item.nutScheduleMode === 'steps'
+      ? (item.nutSteps ? `${item.nutSteps} ${item.nutSteps === '1' ? 'etapa/dia' : 'etapas/dia'}` : null)
+      : (item.dietInterval ? `Intervalo: ${item.dietInterval}` : null);
+    const rateUnit = item.nutRateMode === 'gtt' ? 'gts/min' : 'mL/h';
+    const parts = [
+      item.dietType || null,
+      item.dietProfile ? `Perfil: ${item.dietProfile}` : null,
+      item.nutConsistency ? item.nutConsistency.replace(/\s*\(IDDSI[^)]*\)/i, '') : null,
+      scheduleText,
+      item.nutVolDay ? `Vol/dia: ${item.nutVolDay} mL` : null,
+      item.nutMode || null,
+      item.infusionRate ? `Correr em: ${item.infusionRate} ${rateUnit}` : null,
+      item.nutFraction ? `Frac: ${item.nutFraction}` : null,
+      item.nutProgression ? `Progressão: ${item.nutProgression}` : null,
+      item.nutNightPause ? `Pausa noturna: ${item.nutNightPause}` : null,
+      item.nutBedHead ? `Cabeceira: ${item.nutBedHead}°` : null,
+      item.nutAccess ? `Acesso: ${item.nutAccess}` : null,
+      item.nutComposition || null,
+      item.nutMonitoring ? `Monit: ${item.nutMonitoring}` : null,
+      item.nutResidualCheck ? `Resíduo: ${item.nutResidualCheck}` : null,
+      item.nutWaterVolPerAdmin ? `Vol/adm: ${item.nutWaterVolPerAdmin} mL` : null,
+      item.nutWaterFreq ? `Freq: ${item.nutWaterFreq}` : null,
+      item.nutZeroReason ? `Motivo jejum: ${item.nutZeroReason}` : null,
+    ].filter(Boolean);
+    nutritionLine = parts.length ? parts.join(' · ') : null;
+  }
+
   return (
     <tr style={{ pageBreakInside: 'avoid' }} className={isEven ? '' : 'print-row-alt'}>
       {/* Nº — pill style */}
@@ -3310,22 +3341,24 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
             <span style={{ fontWeight: 600, color: '#334155', fontSize: '7.5pt' }}> — {item.quantity} {item.quantityUnit}</span>
           )}
         </div>
-        <div style={{ fontSize: '7.5pt', color: '#334155', lineHeight: '1.3', marginTop: '1px' }}>
-          {[
-            item.dose && item.dose !== '-' ? item.dose : null,
-            item.route && item.route !== '-' ? item.route : null,
-            item.posology && item.posology !== '-' ? item.posology : null,
-          ].filter(Boolean).join(' · ')}
-          {item.flags.length > 0 && (
-            <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }} className="print-flag-chip">{item.flags.join(', ').toUpperCase()}</span>
-          )}
-          {item.isExtra && (
-            <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '3px', color: '#ea580c', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fed7aa', letterSpacing: '0.3px' }}>EXTRA</span>
-          )}
-          {item.status === 'suspended' && (
-            <span style={{ fontSize: '6.5pt', fontWeight: 700, color: '#fff', backgroundColor: '#dc2626', padding: '0.5px 4px', borderRadius: '2px', marginLeft: '3px' }} className="print-suspended-chip">SUSPENSO</span>
-          )}
-        </div>
+        {!isNutrition && (
+          <div style={{ fontSize: '7.5pt', color: '#334155', lineHeight: '1.3', marginTop: '1px' }}>
+            {[
+              item.dose && item.dose !== '-' ? item.dose : null,
+              item.route && item.route !== '-' ? item.route : null,
+              item.posology && item.posology !== '-' ? item.posology : null,
+            ].filter(Boolean).join(' · ')}
+            {item.flags.length > 0 && (
+              <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#0f172a', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }} className="print-flag-chip">{item.flags.join(', ').toUpperCase()}</span>
+            )}
+            {item.isExtra && (
+              <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '3px', color: '#ea580c', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fed7aa', letterSpacing: '0.3px' }}>EXTRA</span>
+            )}
+            {item.status === 'suspended' && (
+              <span style={{ fontSize: '6.5pt', fontWeight: 700, color: '#fff', backgroundColor: '#dc2626', padding: '0.5px 4px', borderRadius: '2px', marginLeft: '3px' }} className="print-suspended-chip">SUSPENSO</span>
+            )}
+          </div>
+        )}
         {hasPreparo && (
           <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: '1.2', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #cbd5e1' }}>
             {[
@@ -3338,7 +3371,22 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
             ].filter(Boolean).join(' · ')}
           </div>
         )}
-        {item.instructions && !hasPreparo && (
+        {isNutrition && nutritionLine && (
+          <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: '1.3', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #16a34a', fontWeight: 500 }}>
+            {nutritionLine}
+          </div>
+        )}
+        {isNutrition && item.nutManual && item.instructions && (
+          <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: '1.3', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #16a34a', fontWeight: 500 }}>
+            {item.instructions}
+          </div>
+        )}
+        {isNutrition && !item.nutManual && item.instructions && (
+          <div style={{ fontSize: '6.5pt', color: '#475569', lineHeight: '1.2', marginTop: '1px', paddingLeft: '10px', fontStyle: 'italic' }}>
+            Obs.: {item.instructions}
+          </div>
+        )}
+        {item.instructions && !hasPreparo && !isNutrition && (
           <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: '1.2', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #cbd5e1' }}>
             {item.instructions}
           </div>
