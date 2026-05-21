@@ -8829,19 +8829,19 @@ const PrescricaoPage = () => {
               </div>
             </label>
             {hasActiveAtb && (
-              <label className="flex items-start gap-2.5 p-2.5 rounded-md border border-orange-200 dark:border-orange-800/40 bg-orange-50/40 dark:bg-orange-950/10 hover:bg-orange-50/80 cursor-pointer">
+              <label className="flex items-start gap-2.5 p-2.5 rounded-md border border-[hsl(217,55%,82%)] dark:border-[hsl(217,55%,30%)]/40 bg-[hsl(217,55%,96%)]/60 dark:bg-[hsl(217,55%,16%)]/15 hover:bg-[hsl(217,55%,94%)]/80 cursor-pointer">
                 <Checkbox checked={printGuideAtm} onCheckedChange={(v) => setPrintGuideAtm(!!v)} className="mt-0.5" />
                 <div className="text-xs">
-                  <div className="font-semibold text-orange-700 dark:text-orange-400">Guia de Antimicrobianos (CCIH / Norma Zero)</div>
+                  <div className="font-semibold text-[hsl(217,72%,32%)] dark:text-[hsl(217,55%,78%)]">Guia de Antimicrobianos (CCIH / Norma Zero)</div>
                   <div className="text-muted-foreground">Abre a Guia ATM com seus antibióticos.</div>
                 </div>
               </label>
             )}
             {hasActivePsy && (
-              <label className="flex items-start gap-2.5 p-2.5 rounded-md border border-purple-200 dark:border-purple-800/40 bg-purple-50/40 dark:bg-purple-950/10 hover:bg-purple-50/80 cursor-pointer">
+              <label className="flex items-start gap-2.5 p-2.5 rounded-md border border-[hsl(217,55%,82%)] dark:border-[hsl(217,55%,30%)]/40 bg-[hsl(217,55%,96%)]/60 dark:bg-[hsl(217,55%,16%)]/15 hover:bg-[hsl(217,55%,94%)]/80 cursor-pointer">
                 <Checkbox checked={printGuidePsy} onCheckedChange={(v) => setPrintGuidePsy(!!v)} className="mt-0.5" />
                 <div className="text-xs">
-                  <div className="font-semibold text-purple-700 dark:text-purple-400">Guia de Psicotrópicos (Portaria 344)</div>
+                  <div className="font-semibold text-[hsl(217,72%,32%)] dark:text-[hsl(217,55%,78%)]">Guia de Psicotrópicos (Portaria 344)</div>
                   <div className="text-muted-foreground">Abre a Guia de psicotrópicos para impressão.</div>
                 </div>
               </label>
