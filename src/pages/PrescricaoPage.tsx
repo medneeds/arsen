@@ -211,6 +211,11 @@ interface PrescriptionItem {
   nutProgression?: string;    // Esquema de progressão
   nutBedHead?: string;        // Cabeceira (graus)
   nutResidualCheck?: string;  // Checagem de resíduo gástrico
+  // Switches da conduta nutricional (enteral/parenteral)
+  nutScheduleMode?: 'interval' | 'steps';  // intervalo (Xh em Xh) ou nº de etapas/dia
+  nutSteps?: string;                       // número de etapas (ex: "3" → "3 etapas/dia")
+  nutRateMode?: 'mlh' | 'gtt';             // unidade do "Correr em": mL/h ou gts/min
+  nutManual?: boolean;                     // item criado via "adição manual" — só texto livre + recomendações
   // Antimicrobial-specific (Guia ATM)
   atbStartDate?: string;      // YYYY-MM-DD
   atbPlannedDays?: string;    // ex: "7"
@@ -1109,7 +1114,8 @@ function NutritionFields({
   const DIET_PROFILES = ['Geral', 'Diabético', 'Cardiopata/Hipertenso', 'Renal', 'Hepatopata', 'Anêmico', 'Gastrointestinal', 'Pós-operatório', 'Oncológico', 'Pediátrico', 'Idoso'];
   const ENTERAL_ROUTES = ['Nasogástrica (NGT)', 'Nasoenteral (NET)', 'Orogástrica (OGT)', 'Gastrostomia', 'Jejunostomia'];
   const SUPPLEMENT_ROUTES = ['Oral', 'Nasogástrica (NGT)', 'Nasoenteral (NET)', 'Gastrostomia'];
-  const DIET_INTERVALS = ['6/6h', '8/8h', '12/12h', '24h', 'Contínua'];
+  const DIET_INTERVALS = ['2/2h', '3/3h', '4/4h', '6/6h', '8/8h', '12/12h', '24h', 'Contínua'];
+  const DIET_STEPS = ['2', '3', '4', '5', '6', '7', '8'];
 
   // Componentes auxiliares compactos
   const SelectField = ({ label, value, options, onChange, placeholder = '—', width = 'w-40' }: {
@@ -1128,6 +1134,77 @@ function NutritionFields({
     </div>
   );
 
+  // Mini-toggle (2 opções) reutilizável
+  const MiniToggle = ({ value, options, onChange }: { value: string; options: { v: string; label: string }[]; onChange: (v: string) => void }) => (
+    <div className="inline-flex rounded-md border border-emerald-300 dark:border-emerald-700 overflow-hidden h-7 bg-white dark:bg-slate-800">
+      {options.map(o => (
+        <button
+          key={o.v}
+          type="button"
+          onClick={() => onChange(o.v)}
+          className={cn(
+            "px-2 text-[10px] font-semibold transition",
+            value === o.v
+              ? "bg-emerald-600 text-white"
+              : "text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  // Bloco "Intervalo ↔ Etapas" (switch)
+  const scheduleMode: 'interval' | 'steps' = item.nutScheduleMode ?? 'interval';
+  const ScheduleSwitch = (
+    <div className="flex items-center gap-1.5">
+      <MiniToggle
+        value={scheduleMode}
+        options={[{ v: 'interval', label: 'Intervalo' }, { v: 'steps', label: 'Etapas' }]}
+        onChange={(v) => onUpdate(item.id, 'nutScheduleMode', v)}
+      />
+      {scheduleMode === 'interval' ? (
+        <Select value={item.dietInterval || ''} onValueChange={(v) => onUpdate(item.id, 'dietInterval', v)}>
+          <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-28">
+            <SelectValue placeholder="—" />
+          </SelectTrigger>
+          <SelectContent>
+            {DIET_INTERVALS.map(o => <SelectItem key={o} value={o} className="text-xs">{o}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      ) : (
+        <Select value={item.nutSteps || ''} onValueChange={(v) => onUpdate(item.id, 'nutSteps', v)}>
+          <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-28">
+            <SelectValue placeholder="—" />
+          </SelectTrigger>
+          <SelectContent>
+            {DIET_STEPS.map(o => <SelectItem key={o} value={o} className="text-xs">{o} etapas/dia</SelectItem>)}
+          </SelectContent>
+        </Select>
+      )}
+    </div>
+  );
+
+  // Bloco "Correr em" (switch mL/h ↔ gts/min)
+  const rateMode: 'mlh' | 'gtt' = item.nutRateMode ?? 'mlh';
+  const RateSwitch = (
+    <div className="flex items-center gap-1.5">
+      <NutFieldLabel>Correr em:</NutFieldLabel>
+      <MiniToggle
+        value={rateMode}
+        options={[{ v: 'mlh', label: 'mL/h' }, { v: 'gtt', label: 'gts/min' }]}
+        onChange={(v) => onUpdate(item.id, 'nutRateMode', v)}
+      />
+      <NutSuffixInput
+        value={item.infusionRate || ''}
+        onChange={(v) => onUpdate(item.id, 'infusionRate', v)}
+        suffix={rateMode === 'gtt' ? 'gts/min' : 'mL/h'}
+        placeholder={rateMode === 'gtt' ? '30' : '62'}
+      />
+    </div>
+  );
+
   const RecommendationsField = (
     <div className="space-y-1">
       <NutFieldLabel>Recomendações:</NutFieldLabel>
@@ -1140,6 +1217,25 @@ function NutritionFields({
       />
     </div>
   );
+
+  // ============== MODO MANUAL (texto livre + recomendações apenas) ==============
+  if (item.nutManual) {
+    return (
+      <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-2")}>
+        <div className="space-y-1">
+          <NutFieldLabel>Texto livre:</NutFieldLabel>
+          <Textarea
+            value={item.name}
+            onChange={(e) => onUpdate(item.id, 'name', e.target.value)}
+            onKeyDown={(e) => e.stopPropagation()}
+            className="min-h-[60px] text-[12px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 font-medium"
+            placeholder="Descreva livremente a conduta nutricional..."
+          />
+        </div>
+        {RecommendationsField}
+      </div>
+    );
+  }
 
   return (
     <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-2")}>
@@ -1190,9 +1286,8 @@ function NutritionFields({
             <div className="flex items-center gap-2 flex-wrap">
               <NutFieldLabel>Quantidade:</NutFieldLabel>
               <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="1500" />
-              <SelectField label="Intervalo" value={item.dietInterval} options={DIET_INTERVALS} onChange={(v) => onUpdate(item.id, 'dietInterval', v)} width="w-28" />
-              <NutFieldLabel>Correr em:</NutFieldLabel>
-              <NutSuffixInput value={item.infusionRate || ''} onChange={(v) => onUpdate(item.id, 'infusionRate', v)} suffix="mL/h" placeholder="62" />
+              {ScheduleSwitch}
+              {RateSwitch}
             </div>
           </div>
           {RecommendationsField}
@@ -1213,11 +1308,10 @@ function NutritionFields({
               <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <NutFieldLabel>Quantidade:</NutFieldLabel>
+              <NutFieldLabel>Volume:</NutFieldLabel>
               <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="2000" />
-              <SelectField label="Intervalo" value={item.dietInterval} options={DIET_INTERVALS} onChange={(v) => onUpdate(item.id, 'dietInterval', v)} width="w-28" />
-              <NutFieldLabel>Correr em:</NutFieldLabel>
-              <NutSuffixInput value={item.infusionRate || ''} onChange={(v) => onUpdate(item.id, 'infusionRate', v)} suffix="mL/h" placeholder="83" />
+              {ScheduleSwitch}
+              {RateSwitch}
             </div>
           </div>
           {RecommendationsField}
@@ -7830,22 +7924,28 @@ const PrescricaoPage = () => {
                 if (!text) return;
                 const newItem: PrescriptionItem = {
                   id: crypto.randomUUID(),
-                  name: 'Conduta nutricional',
+                  name: text,
                   presentation: '-',
                   dose: '-',
                   route: '-',
                   posology: '-',
                   schedule: '-',
-                  instructions: text,
+                  instructions: '',
                   category: 'nutrition',
                   flags: [],
                   highAlert: false,
                   status: 'active',
+                  nutManual: true,
                 };
                 setItems(prev => [...prev, newItem]);
                 setNutritionManualOpen(false);
                 setNutritionManualText("");
                 setActiveTab('nutrition');
+                setExpandedCategories(prev => {
+                  const n = new Set(prev);
+                  n.add('nutrition');
+                  return n;
+                });
                 setTimeout(() => {
                   document.getElementById(`prescription-item-${newItem.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }, 80);
@@ -9299,25 +9399,45 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 )}
 
                 {/* Nutrição: campos específicos */}
-                {item.category === 'nutrition' && (item.nutVolDay || item.nutMode || item.nutFraction || item.nutBedHead || item.nutAccess || item.nutComposition) && (
-                  <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #16a34a', fontWeight: 500 }}>
-                    {[
-                      item.nutVolDay ? `Vol/dia: ${item.nutVolDay} mL` : null,
-                      item.nutMode || null,
-                      item.nutFraction ? `Frac: ${item.nutFraction}` : null,
-                      item.nutNightPause ? `Pausa noturna: ${item.nutNightPause}` : null,
-                      item.nutBedHead ? `Cabeceira: ${item.nutBedHead}°` : null,
-                      item.nutAccess ? `Acesso: ${abbrevRoute(item.nutAccess)}` : null,
-                      item.nutComposition || null,
-                      item.nutMonitoring ? `Monit: ${item.nutMonitoring}` : null,
-                      item.nutResidualCheck ? `Resíduo: ${item.nutResidualCheck}` : null,
-                      item.nutWaterVolPerAdmin ? `Água: ${item.nutWaterVolPerAdmin} mL` : null,
-                      item.nutWaterFreq || null,
-                      item.nutZeroReason ? `Motivo jejum: ${item.nutZeroReason}` : null,
-                    ].filter(Boolean).join(' · ')}
-                    {item.instructions && (
-                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> — {item.instructions}</span>
-                    )}
+                {item.category === 'nutrition' && !item.nutManual && (() => {
+                  const scheduleText = item.nutScheduleMode === 'steps'
+                    ? (item.nutSteps ? `${item.nutSteps} etapas/dia` : null)
+                    : (item.dietInterval ? `Intervalo: ${item.dietInterval}` : null);
+                  const rateUnit = item.nutRateMode === 'gtt' ? 'gts/min' : 'mL/h';
+                  const rateText = item.infusionRate ? `Correr em: ${item.infusionRate} ${rateUnit}` : null;
+                  const parts = [
+                    item.dietType || null,
+                    item.dietProfile ? `Perfil: ${item.dietProfile}` : null,
+                    item.nutVolDay ? `Vol: ${item.nutVolDay} mL` : null,
+                    scheduleText,
+                    rateText,
+                    item.nutMode || null,
+                    item.nutFraction ? `Frac: ${item.nutFraction}` : null,
+                    item.nutNightPause ? `Pausa noturna: ${item.nutNightPause}` : null,
+                    item.nutBedHead ? `Cabeceira: ${item.nutBedHead}°` : null,
+                    item.nutAccess ? `Acesso: ${abbrevRoute(item.nutAccess)}` : null,
+                    item.nutComposition || null,
+                    item.nutMonitoring ? `Monit: ${item.nutMonitoring}` : null,
+                    item.nutResidualCheck ? `Resíduo: ${item.nutResidualCheck}` : null,
+                    item.nutWaterVolPerAdmin ? `Água: ${item.nutWaterVolPerAdmin} mL` : null,
+                    item.nutWaterFreq || null,
+                    item.nutZeroReason ? `Motivo jejum: ${item.nutZeroReason}` : null,
+                  ].filter(Boolean);
+                  if (parts.length === 0 && !item.instructions) return null;
+                  return (
+                    <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #16a34a', fontWeight: 500 }}>
+                      {parts.join(' · ')}
+                      {item.instructions && (
+                        <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> — {item.instructions}</span>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Nutrição manual: só recomendações abaixo do nome (texto livre já é o name) */}
+                {item.category === 'nutrition' && item.nutManual && item.instructions && (
+                  <div style={{ fontSize: '7pt', color: '#475569', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #16a34a', fontStyle: 'italic', fontWeight: 500 }}>
+                    {item.instructions}
                   </div>
                 )}
 
