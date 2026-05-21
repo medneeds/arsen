@@ -9189,8 +9189,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 {/* Instruções livres / recomendações à enfermagem
                     (quando NÃO há preparo/inalação/insulina/nutrição que já as embutiu) */}
                 {item.instructions && !hasIvPreparo && !insulinDesc && !isInhalation && item.category !== 'nutrition' && (
-                  <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
-                    // {item.instructions}
+                  <div style={{ fontSize: '7pt', color: '#475569', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #cbd5e1', fontStyle: 'italic', fontWeight: 500 }}>
+                    {item.instructions}
                   </div>
                 )}
               </td>
