@@ -43,16 +43,12 @@ export const SECTOR_BED_CONFIG: Record<string, SectorBedConfig> = {
 export function getNextBedNumber(
   sector: string,
   existingBedNumbers: string[],
-  department?: string
+  _department?: string
 ): string {
-  // UTI has its own fixed logic
-  if (department === 'UTI') {
-    const nums = existingBedNumbers
-      .map(b => parseInt(b.replace(/\D/g, ''), 10))
-      .filter(n => !isNaN(n));
-    const max = nums.length > 0 ? Math.max(...nums) : 0;
-    return `U${String(max + 1).padStart(2, '0')}`;
-  }
+  // Todos os setores respeitam SECTOR_BED_CONFIG: capacidade fixa + EXTRA{n} (Maca Extra).
+  // Ramo legado "department === 'UTI'" removido (gerava U{max+1} fantasma).
+
+
 
   const config = SECTOR_BED_CONFIG[sector];
   if (!config) {
