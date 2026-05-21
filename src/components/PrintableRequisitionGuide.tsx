@@ -722,45 +722,24 @@ export async function printRequisitionGuide(
     </table>
   `;
 
-  // Para parecer aceitamos HTML rico (negrito, itálico, sublinhado, listas, parágrafos).
-  // O limite passa a ser por caracteres-de-texto (plain) para preservar 1 página A4.
-  const PARECER_SOFT = 900;
-  const PARECER_MID  = 1600;
-  const PARECER_HARD = 2400;
+  // Para parecer aceitamos HTML rico. Limite fixo de 2200 caracteres p/ caber em 1 página A4.
+  const PARECER_HARD = 2200;
   const rawIndication = request.clinical_indication || "";
   const isHtmlIndication = /<\/?(p|br|strong|em|u|ul|ol|li|b|i|span|div)[\s>/]/i.test(rawIndication);
 
-  // Sanitização e cálculo do plain length p/ ajustar a área de resposta
   const tmpDiv = typeof document !== "undefined" ? document.createElement("div") : null;
   let indicationHtml = "";
-  let indicationPlainLen = 0;
   if (rawIndication) {
     if (isParecer && isHtmlIndication) {
       indicationHtml = sanitizeRichHtmlPrint(rawIndication);
-      if (tmpDiv) {
-        tmpDiv.innerHTML = indicationHtml;
-        indicationPlainLen = (tmpDiv.textContent || "").length;
-      } else {
-        indicationPlainLen = indicationHtml.replace(/<[^>]+>/g, "").length;
-      }
     } else {
-      indicationPlainLen = rawIndication.length;
       indicationHtml = escapeHtml(rawIndication).replace(/\n/g, "<br/>");
     }
   }
 
-  // Resposta encolhe à medida que a justificativa cresce
-  const respHeightMm = isParecer
-    ? indicationPlainLen > PARECER_MID ? 45
-      : indicationPlainLen > PARECER_SOFT ? 60
-      : 78
-    : 78;
-  // Cap visual da justificativa para nunca extrapolar 1 página
-  const justMaxMm = isParecer
-    ? indicationPlainLen > PARECER_MID ? 95
-      : indicationPlainLen > PARECER_SOFT ? 75
-      : 52
-    : 999;
+  // Altura fixa da resposta manual (reduzida ~1 linha para garantir 1 página A4 com 2200 chars)
+  const respHeightMm = 60;
+  const justMaxMm = 78;
 
   const justificationBlock = rawIndication
     ? `<h2 class="nz-section">${isParecer ? "Motivo da Solicitação de Parecer" : "Justificativa Clínica"}</h2>
