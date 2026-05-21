@@ -10,5 +10,6 @@ Refinamentos em `getItemMissingFields` para fluidez clínica:
 - **IV contínua (BIC)**: volume total aceita `volumeTotal` OU `diluentVolume`. Posologia continua sendo removida do missing (vazão define).
 - **Comprimido por sonda enteral**: `isEnteralRoute` agora usa word-boundaries (`\bsng\b|\bsne\b|enteral|gastrostomia|jejunostomia`) — não dispara mais para "Oral" ou "gotas". Volume de diluição aceita `enteralDilutionVolume` OU `diluentVolume` OU `volumeTotal` OU instrução textual.
 - **Controlado Port. 344**: notification_type só é exigido para listas de **alta restrição** (A1/A2/A3/B1/B2). Listas C (anticonvulsivantes de uso comum, etc.) não bloqueiam validação — o badge regulatório continua sendo exibido mas o item não fica vermelho.
+- **Sólido oral por VO/SL/enteral (cp/cáps/drágea/SL/orodispersível)**: `dose` é satisfeita por `quantity` (ex.: "1 comprimido"), pois a concentração já está na apresentação ("100 MG — Comprimido"). Ex.: Fenitoína 100 mg VO 3x/dia, 1 comprimido — valida sem exigir campo dose separado. Posologia continua obrigatória.
 
 Filosofia: o validador deve refletir o que o médico já preencheu no formulário, sem exigir que o mesmo dado seja repetido em campos diferentes.
