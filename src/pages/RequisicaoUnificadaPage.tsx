@@ -570,10 +570,10 @@ const RequisicaoUnificadaPage = () => {
               <p className={cn("text-sm font-semibold", activeScope === "comum" ? "text-blue-700 dark:text-blue-300" : "text-foreground")}>
                 Requisição Comum
               </p>
-              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-blue-300 text-blue-600 dark:text-blue-400">Norma Zero</Badge>
             </div>
             <p className="text-[10px] text-muted-foreground">Laboratório · Imagem · Pareceres — fluxo do dia-a-dia</p>
           </div>
+
         </button>
         <button
           type="button"
@@ -585,23 +585,24 @@ const RequisicaoUnificadaPage = () => {
           className={cn(
             "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
             activeScope === "especial"
-              ? "border-amber-500 bg-amber-50 dark:bg-amber-500/10 shadow-sm ring-1 ring-amber-500/30"
+              ? "border-blue-700 bg-blue-100/60 dark:bg-blue-700/15 shadow-sm ring-1 ring-blue-700/30"
               : "border-border bg-background hover:bg-muted/40"
           )}
         >
-          <div className={cn("p-2 rounded-lg shrink-0", activeScope === "especial" ? "bg-amber-500/20" : "bg-muted")}>
-            <AlertTriangle className={cn("h-4 w-4", activeScope === "especial" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground")} />
+          <div className={cn("p-2 rounded-lg shrink-0", activeScope === "especial" ? "bg-blue-700/20" : "bg-muted")}>
+            <AlertTriangle className={cn("h-4 w-4", activeScope === "especial" ? "text-blue-800 dark:text-blue-200" : "text-muted-foreground")} />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <p className={cn("text-sm font-semibold", activeScope === "especial" ? "text-amber-700 dark:text-amber-300" : "text-foreground")}>
+              <p className={cn("text-sm font-semibold", activeScope === "especial" ? "text-blue-900 dark:text-blue-100" : "text-foreground")}>
                 Requisições Especiais
               </p>
-              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-600 dark:text-amber-400">Formulários próprios</Badge>
+              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-blue-400 text-blue-700 dark:text-blue-300">Formulários próprios</Badge>
             </div>
             <p className="text-[10px] text-muted-foreground">APAC · Cultura · Hemocomponentes · SAT · AIH</p>
           </div>
         </button>
+
       </div>
 
       {/* ── Category Selector ── */}
@@ -642,8 +643,8 @@ const RequisicaoUnificadaPage = () => {
               onClick={() => setCultureDialogOpen(true)}
               className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
             >
-              <div className="p-1.5 rounded-lg bg-emerald-500/10">
-                <Microscope className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <div className="p-1.5 rounded-lg bg-blue-500/10">
+                <Microscope className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="text-left">
                 <p className="text-xs font-semibold text-foreground">Cultura</p>
@@ -655,8 +656,8 @@ const RequisicaoUnificadaPage = () => {
               onClick={() => setHemoDialogOpen(true)}
               className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
             >
-              <div className="p-1.5 rounded-lg bg-rose-500/10">
-                <Droplet className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+              <div className="p-1.5 rounded-lg bg-sky-500/10">
+                <Droplet className="h-4 w-4 text-sky-600 dark:text-sky-400" />
               </div>
               <div className="text-left">
                 <p className="text-xs font-semibold text-foreground">Hemocomponentes</p>
@@ -668,8 +669,8 @@ const RequisicaoUnificadaPage = () => {
               onClick={() => setSatDialogOpen(true)}
               className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:bg-muted/50 hover:border-border min-w-fit transition-all"
             >
-              <div className="p-1.5 rounded-lg bg-amber-500/10">
-                <Syringe className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <div className="p-1.5 rounded-lg bg-blue-700/10">
+                <Syringe className="h-4 w-4 text-blue-700 dark:text-blue-300" />
               </div>
               <div className="text-left">
                 <p className="text-xs font-semibold text-foreground">SAT</p>
@@ -680,14 +681,15 @@ const RequisicaoUnificadaPage = () => {
               className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-dashed border-border min-w-fit opacity-80"
               title="O Laudo de AIH é gerado no fluxo de internação (Reavaliar admissão / Status de internação)"
             >
-              <div className="p-1.5 rounded-lg bg-indigo-500/10">
-                <FileText className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+              <div className="p-1.5 rounded-lg bg-blue-900/10">
+                <FileText className="h-4 w-4 text-blue-900 dark:text-blue-200" />
               </div>
               <div className="text-left">
                 <p className="text-xs font-semibold text-muted-foreground">AIH</p>
                 <p className="text-[9px] text-muted-foreground">no fluxo de internação</p>
               </div>
             </div>
+
           </>
         )}
       </div>
@@ -1149,13 +1151,9 @@ const RequisicaoUnificadaPage = () => {
             </Card>
           )}
 
-          {/* Notes — oculto para parecer (vai sujar o laudo do especialista) */}
-          {activeCategory !== "parecer" && (
-            <div className="space-y-1.5">
-              <Label className="text-xs">Observações</Label>
-              <Textarea placeholder="Informações adicionais..." value={formNotes} onChange={e => setFormNotes(e.target.value)} rows={2} />
-            </div>
-          )}
+          {/* Campo "Observações" removido — a Justificativa Clínica acima já cobre.
+              `formNotes` permanece no state para concatenar [PROGRAMADO] e [JUSTIFICATIVA EXTRA]. */}
+
 
           {/* Submit */}
           {(() => {
