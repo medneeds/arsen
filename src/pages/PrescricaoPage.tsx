@@ -1220,8 +1220,28 @@ function NutritionFields({
 
   // ============== MODO MANUAL (texto livre + recomendações apenas) ==============
   if (item.nutManual) {
+    const MODALITY_LABELS: Record<string, string> = {
+      diet_oral: 'Oral', diet_enteral: 'Enteral', diet_parenteral: 'Parenteral',
+      supplement: 'Suplementação', zero: 'Zero (jejum)', water: 'Água', npt: 'NPT',
+    };
     return (
       <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-2")}>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <NutFieldLabel>Modalidade:</NutFieldLabel>
+          <Select value={subtype} onValueChange={setSubtype}>
+            <SelectTrigger className="h-6 text-[11px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-44">
+              <SelectValue>{MODALITY_LABELS[subtype] || subtype}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="diet_oral" className="text-xs">Oral</SelectItem>
+              <SelectItem value="diet_enteral" className="text-xs">Enteral</SelectItem>
+              <SelectItem value="diet_parenteral" className="text-xs">Parenteral</SelectItem>
+              <SelectItem value="supplement" className="text-xs">Suplementação</SelectItem>
+              <SelectItem value="zero" className="text-xs">Zero (jejum)</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 font-semibold uppercase tracking-wide">manual</span>
+        </div>
         <div className="space-y-1">
           <NutFieldLabel>Texto livre:</NutFieldLabel>
           <Textarea
@@ -1236,6 +1256,7 @@ function NutritionFields({
       </div>
     );
   }
+
 
   return (
     <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-2")}>
