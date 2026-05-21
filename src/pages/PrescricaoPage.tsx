@@ -2297,46 +2297,46 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {item.category === 'antimicrobial' && (() => {
                 const dayLine = buildAtbDayLine(item);
                 return (
-                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-1.5 px-2 py-1.5 rounded-md bg-gradient-to-r from-violet-100/70 via-violet-50/60 to-transparent dark:from-violet-950/30 dark:via-violet-950/15 dark:to-transparent border border-violet-200/60 dark:border-violet-800/40 border-l-[3px] border-l-violet-500/80">
-                    <div className="flex items-center gap-1.5 text-violet-800 dark:text-violet-200 shrink-0">
-                      <div className="flex items-center justify-center h-5 w-5 rounded-md bg-violet-600 text-white shadow-sm shadow-violet-600/30">
+                  <div className="flex items-center gap-2 flex-wrap pb-2 mb-1.5 px-2 py-1.5 rounded-md bg-gradient-to-r from-[hsl(217,55%,94%)]/80 via-[hsl(217,55%,97%)]/60 to-transparent dark:from-[hsl(217,55%,18%)]/30 dark:via-[hsl(217,55%,16%)]/15 dark:to-transparent border border-[hsl(217,55%,82%)]/60 dark:border-[hsl(217,55%,30%)]/40 border-l-[3px] border-l-[hsl(217,70%,40%)]/80">
+                    <div className="flex items-center gap-1.5 text-[hsl(217,72%,28%)] dark:text-[hsl(217,55%,80%)] shrink-0">
+                      <div className="flex items-center justify-center h-5 w-5 rounded-md bg-[hsl(217,70%,40%)] text-white shadow-sm shadow-[hsl(217,70%,40%)]/30">
                         <Pill className="h-3 w-3" />
                       </div>
                       <span className="text-[10px] font-bold uppercase tracking-[0.08em]">Antibiótico</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-violet-700/80 dark:text-violet-300/80 font-medium">Início:</span>
+                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80 dark:text-[hsl(217,55%,75%)]/80 font-medium">Início:</span>
                       <Input
                         type="date"
                         value={item.atbStartDate || ''}
                         onChange={(e) => onUpdate(item.id, 'atbStartDate' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-violet-200/70 dark:border-violet-800/60 w-[124px] px-1.5"
+                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-[hsl(217,55%,82%)]/70 dark:border-[hsl(217,55%,30%)]/60 w-[124px] px-1.5"
                       />
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-violet-700/80 dark:text-violet-300/80 font-medium">Duração:</span>
+                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80 dark:text-[hsl(217,55%,75%)]/80 font-medium">Duração:</span>
                       <Input
                         type="number"
                         min="1"
                         value={item.atbPlannedDays || ''}
                         onChange={(e) => onUpdate(item.id, 'atbPlannedDays' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-violet-200/70 dark:border-violet-800/60 w-12 text-center px-1"
+                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-[hsl(217,55%,82%)]/70 dark:border-[hsl(217,55%,30%)]/60 w-12 text-center px-1"
                         placeholder="—"
                       />
-                      <span className="text-[10px] text-violet-700/70 dark:text-violet-300/70">dias</span>
+                      <span className="text-[10px] text-[hsl(217,72%,36%)]/70 dark:text-[hsl(217,55%,75%)]/70">dias</span>
                     </div>
                     <div className="flex items-center gap-1 flex-1 min-w-[160px]">
-                      <span className="text-[10px] text-violet-700/80 dark:text-violet-300/80 font-medium shrink-0">Sítio:</span>
+                      <span className="text-[10px] text-[hsl(217,72%,36%)]/80 dark:text-[hsl(217,55%,75%)]/80 font-medium shrink-0">Sítio:</span>
                       <Input
                         value={item.atbInfectionSite || ''}
                         onChange={(e) => onUpdate(item.id, 'atbInfectionSite' as any, e.target.value)}
-                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-violet-200/70 dark:border-violet-800/60 flex-1 px-1.5"
+                        className="h-6 text-[11px] bg-white dark:bg-slate-800 border-[hsl(217,55%,82%)]/70 dark:border-[hsl(217,55%,30%)]/60 flex-1 px-1.5"
                         placeholder="ex.: pneumonia comunitária"
                       />
                     </div>
                     <div className="ml-auto flex items-center gap-1.5 shrink-0">
                       {dayLine && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-600 text-white border border-violet-700/40 shadow-sm shadow-violet-600/20">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[hsl(217,70%,40%)] text-white border border-[hsl(217,72%,36%)]/40 shadow-sm shadow-[hsl(217,70%,40%)]/20">
                           {dayLine.split(' — ')[0]} · {dayLine.match(/— (\d{2}\/\d{2})/)?.[1] || ''}
                         </span>
                       )}
@@ -2344,7 +2344,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
                         <button
                           type="button"
                           onClick={onOpenAntimicrobialGuide}
-                          className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-semibold bg-violet-600 hover:bg-violet-700 text-white border border-violet-700/50 transition-colors"
+                          className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-semibold bg-[hsl(217,70%,40%)] hover:bg-[hsl(217,72%,36%)] text-white border border-[hsl(217,72%,36%)]/50 transition-colors"
                           title="Abrir Guia ATM (CCIH / Norma Zero)"
                         >
                           <Shield className="h-3 w-3" />
@@ -3664,7 +3664,7 @@ function DrugInteractionDialog({
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-amber-500" />
+            <Zap className="h-5 w-5 text-[hsl(217,70%,40%)]" />
             Verificação de Interações Medicamentosas
           </DialogTitle>
           <DialogDescription>
@@ -7326,7 +7326,7 @@ const PrescricaoPage = () => {
                     onClick={() => document.getElementById(`prescription-cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                     className={cn(
                       "group inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-all hover:shadow-sm hover:-translate-y-px",
-                      emphasis && cat === 'antimicrobial' && "ring-1 ring-violet-300/60",
+                      emphasis && cat === 'antimicrobial' && "ring-1 ring-[hsl(217,55%,72%)]/60",
                       emphasis && cat === 'high_alert' && "ring-1 ring-red-300/70",
                       ok
                         ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300"
