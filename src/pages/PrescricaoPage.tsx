@@ -8411,7 +8411,7 @@ const PrescricaoPage = () => {
               }
               handlePrint();
             }}
-            className="gap-1.5 text-xs bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm font-semibold"
+            className="gap-1.5 text-xs text-white font-semibold border-0 bg-gradient-to-br from-sky-400 via-blue-500 to-blue-600 hover:from-sky-300 hover:via-blue-400 hover:to-blue-500 shadow-[0_2px_8px_-2px_hsl(217_90%_55%/0.55)] hover:shadow-[0_4px_14px_-2px_hsl(217_90%_55%/0.7)] transition-all ring-1 ring-inset ring-white/20"
             title="Imprimir a prescrição validada e, quando aplicável, as guias regulatórias"
           >
             <Printer className="h-3.5 w-3.5" /> Imprimir
