@@ -7389,15 +7389,18 @@ const PrescricaoPage = () => {
                           </Button>
                         </div>
                       ) : cat === 'nutrition' ? (
-                        <MedicationAutocomplete
-                          source={UNIFIED_CATALOG[cat]}
-                          onSelect={addItem}
-                          placeholder="Buscar nutrição ou abrir assistente..."
-                          getFavoriteCount={getFavoriteCount}
-                          category={cat}
-                          onAssistantClick={() => setNutritionConfirmOpen(true)}
-                          assistantTooltip="Abrir fluxo de Nutrição (manual · guiada · assistente)"
-                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setNutritionConfirmOpen(true)}
+                          className="h-7 text-[11px] border-emerald-300 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-950/30 w-full justify-start"
+                        >
+                          <Sparkles className="h-3 w-3 mr-1.5" />
+                          Adicionar nutrição — manual · guiada · assistente
+                        </Button>
+
+
 
                       ) : (
                         <MedicationAutocomplete
