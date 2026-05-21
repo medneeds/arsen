@@ -63,6 +63,16 @@ export interface ExtraPrintItem {
   nutWaterVolPerAdmin?: string;
   nutWaterFreq?: string;
   nutZeroReason?: string;
+  // Nutrição — campos novos (sync com tela compacta)
+  dietType?: string;
+  dietProfile?: string;
+  dietInterval?: string;
+  nutScheduleMode?: 'interval' | 'steps';
+  nutSteps?: string;
+  nutRateMode?: 'mlh' | 'gtt';
+  nutProgression?: string;
+  nutConsistency?: string;
+  nutManual?: boolean;
   // Insulinoterapia
   insulinPlan?: InsulinPlan;
 }
@@ -112,7 +122,8 @@ function detailBlock(it: ExtraPrintItem): string {
   const blocks: string[] = [];
   const isInhalation = it.category === 'inhalation';
   const insulinDesc = it.insulinPlan ? describeInsulinPlan(it.insulinPlan) : null;
-  const hasIvPreparo = !isInhalation && (it.diluent || it.diluentVolume || it.accessType || it.infusionTime || it.infusionRate || it.volumeTotal || it.concentration);
+  const isNutrition = it.category === 'nutrition';
+  const hasIvPreparo = !isInhalation && !isNutrition && (it.diluent || it.diluentVolume || it.accessType || it.infusionTime || it.infusionRate || it.volumeTotal || it.concentration);
 
   // Insulinoterapia (cor MAV)
   if (insulinDesc) {
@@ -154,27 +165,51 @@ function detailBlock(it: ExtraPrintItem): string {
 
   // Nutrição
   if (it.category === 'nutrition') {
-    const parts = [
-      it.nutVolDay ? `Vol/dia: ${it.nutVolDay} mL` : null,
-      it.nutMode || null,
-      it.nutFraction ? `Frac: ${it.nutFraction}` : null,
-      it.nutNightPause ? `Pausa noturna: ${it.nutNightPause}` : null,
-      it.nutBedHead ? `Cabeceira: ${it.nutBedHead}°` : null,
-      it.nutAccess ? `Acesso: ${it.nutAccess}` : null,
-      it.nutComposition || null,
-      it.nutMonitoring ? `Monit: ${it.nutMonitoring}` : null,
-      it.nutResidualCheck ? `Resíduo: ${it.nutResidualCheck}` : null,
-      it.nutWaterVolPerAdmin ? `Água: ${it.nutWaterVolPerAdmin} mL` : null,
-      it.nutWaterFreq || null,
-      it.nutZeroReason ? `Motivo jejum: ${it.nutZeroReason}` : null,
-    ].filter(Boolean).join(' · ');
-    if (parts) {
-      blocks.push(`<div style="font-size:7pt;color:#1e293b;line-height:1.3;margin-top:2pt;padding-left:8pt;border-left:2pt solid #16a34a;font-weight:500">${escape(parts)}</div>`);
+    // Branch — adição manual: só recomendações (instruções livres)
+    if (it.nutManual) {
+      if (it.instructions) {
+        blocks.push(`
+          <div style="font-size:7pt;color:#1e293b;line-height:1.3;margin-top:2pt;padding:3pt 6pt 3pt 8pt;border-left:2pt solid #16a34a;background:#f0fdf4;border-radius:0 2pt 2pt 0">
+            <span style="background:#16a34a;color:#fff;font-size:5.5pt;font-weight:800;padding:0.5pt 4pt;border-radius:2pt;letter-spacing:0.3pt;margin-right:4pt">NUTRIÇÃO · MANUAL</span>
+            ${escape(it.instructions)}
+          </div>`);
+      }
+    } else {
+      const scheduleText = it.nutScheduleMode === 'steps'
+        ? (it.nutSteps ? `${it.nutSteps} ${it.nutSteps === '1' ? 'etapa/dia' : 'etapas/dia'}` : null)
+        : (it.dietInterval ? `Intervalo: ${it.dietInterval}` : null);
+      const rateUnit = it.nutRateMode === 'gtt' ? 'gts/min' : 'mL/h';
+      const parts = [
+        it.dietType || null,
+        it.dietProfile ? `Perfil: ${it.dietProfile}` : null,
+        it.nutConsistency ? it.nutConsistency.replace(/\s*\(IDDSI[^)]*\)/i, '') : null,
+        scheduleText,
+        it.nutVolDay ? `Vol/dia: ${it.nutVolDay} mL` : null,
+        it.nutMode || null,
+        it.infusionRate ? `Correr em: ${it.infusionRate} ${rateUnit}` : null,
+        it.nutFraction ? `Frac: ${it.nutFraction}` : null,
+        it.nutProgression ? `Progressão: ${it.nutProgression}` : null,
+        it.nutNightPause ? `Pausa noturna: ${it.nutNightPause}` : null,
+        it.nutBedHead ? `Cabeceira: ${it.nutBedHead}°` : null,
+        it.nutAccess ? `Acesso: ${it.nutAccess}` : null,
+        it.nutComposition || null,
+        it.nutMonitoring ? `Monit: ${it.nutMonitoring}` : null,
+        it.nutResidualCheck ? `Resíduo: ${it.nutResidualCheck}` : null,
+        it.nutWaterVolPerAdmin ? `Água: ${it.nutWaterVolPerAdmin} mL` : null,
+        it.nutWaterFreq || null,
+        it.nutZeroReason ? `Motivo jejum: ${it.nutZeroReason}` : null,
+      ].filter(Boolean).join(' · ');
+      if (parts) {
+        blocks.push(`<div style="font-size:7pt;color:#1e293b;line-height:1.3;margin-top:2pt;padding-left:8pt;border-left:2pt solid #16a34a;font-weight:500">${escape(parts)}</div>`);
+      }
+      if (it.instructions) {
+        blocks.push(`<div style="font-size:6.5pt;color:#475569;line-height:1.3;margin-top:1pt;padding-left:8pt;font-style:italic">Obs.: ${escape(it.instructions)}</div>`);
+      }
     }
   }
 
   // Instruções livres (apenas se não houver detalhamento específico)
-  if (it.instructions && !hasIvPreparo && !insulinDesc && !isInhalation) {
+  if (it.instructions && !hasIvPreparo && !insulinDesc && !isInhalation && !isNutrition) {
     blocks.push(`<div style="font-size:7pt;color:#1e293b;line-height:1.3;margin-top:2pt;padding-left:8pt;border-left:2pt solid #0c4a6e;font-weight:500">${escape(it.instructions)}</div>`);
   }
 
