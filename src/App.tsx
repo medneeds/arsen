@@ -45,6 +45,7 @@ const DhdRegistrationPage = lazy(() => import("./pages/DhdRegistrationPage"));
 const DhdHistoryPage = lazy(() => import("./pages/DhdHistoryPage"));
 const AuditLogsPage = lazy(() => import("./pages/AuditLogsPage"));
 const UserManagementPage = lazy(() => import("./pages/UserManagementPage"));
+const MeuPerfilPage = lazy(() => import("./pages/MeuPerfilPage"));
 const MergeRegistriesPage = lazy(() => import("./pages/MergeRegistriesPage"));
 const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const AdminStatesPage = lazy(() => import("./pages/AdminStatesPage"));
@@ -168,6 +169,7 @@ const App = () => {
               <Route path="/dhd/historico" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><DhdHistoryPage /></MainLayout></ProtectedRoute>} />
               <Route path="/audit-logs" element={<ProtectedRoute><AuditLogsPage /></ProtectedRoute>} />
               <Route path="/user-management" element={<ProtectedRoute><UserManagementPage /></ProtectedRoute>} />
+              <Route path="/meu-perfil" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MeuPerfilPage /></MainLayout></ProtectedRoute>} />
               <Route path="/mesclar-prontuarios" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><MergeRegistriesPage /></MainLayout></ProtectedRoute>} />
               <Route path="/privacy" element={<ProtectedRoute><PrivacyPage /></ProtectedRoute>} />
               <Route path="/admin/states" element={<ProtectedRoute><AdminStatesPage /></ProtectedRoute>} />
