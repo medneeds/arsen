@@ -645,40 +645,40 @@ export async function printRequisitionGuide(
 
   const identificationRows = isParecer
     ? `
-    <table class="nz parecer-id" style="margin-bottom:5pt;table-layout:fixed">
+    <table class="nz parecer-id" style="margin-bottom:5pt;table-layout:fixed;width:100%">
       <colgroup>
-        <col style="width:9%"/><col/><col style="width:11%"/><col style="width:13%"/><col style="width:11%"/><col style="width:13%"/>
+        <col style="width:11%"/><col/><col style="width:13%"/><col style="width:17%"/><col style="width:13%"/><col style="width:18%"/>
       </colgroup>
       <tbody>
         <tr>
           <th style="white-space:nowrap">Paciente</th>
           <td style="font-weight:700;font-size:9.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(request.patient_name)}</td>
-          <th style="white-space:nowrap">Nº Prontuário</th>
-          <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;font-size:8pt;white-space:nowrap">${escapeHtml(medicalRecord || "—")}</td>
-          <th style="white-space:nowrap">Nº Atendimento</th>
-          <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;font-size:8pt;white-space:nowrap">${escapeHtml(encounterCode || "—")}</td>
+          <th style="white-space:nowrap">Nº Pront.</th>
+          <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;font-size:7.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(medicalRecord || "—")}</td>
+          <th style="white-space:nowrap">Nº Atend.</th>
+          <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;font-size:7.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(encounterCode || "—")}</td>
         </tr>
         <tr>
           <th style="white-space:nowrap">Setor</th><td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(sectorName || "—")}</td>
-          <th style="white-space:nowrap">Leito</th><td style="white-space:nowrap">${escapeHtml(request.patient_bed || "—")}</td>
+          <th style="white-space:nowrap">Leito</th><td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(request.patient_bed || "—")}</td>
           <th style="white-space:nowrap">Nasc. / Idade</th>
-          <td style="white-space:nowrap">${escapeHtml(fmtBirthDate(birthDate))}${ageY !== null ? ` <span style="color:#475569">(${ageY}a)</span>` : ""}</td>
+          <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(fmtBirthDate(birthDate))}${ageY !== null ? ` <span style="color:#475569">(${ageY}a)</span>` : ""}</td>
         </tr>
         <tr>
           <th style="white-space:nowrap">Solicitante</th>
           <td colspan="3" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(request.requested_by_name || "—")}</td>
           <th style="white-space:nowrap">Solicitação</th>
-          <td style="white-space:nowrap">${escapeHtml(createdStr)}</td>
+          <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(createdStr)}</td>
         </tr>
         <tr>
-          <th style="background:#0a1628;color:#fff;white-space:nowrap">Especialidade</th>
-          <td colspan="3" style="background:#eff6ff;font-weight:700;font-size:10pt;color:#0a1628;word-break:break-word;line-height:1.2">${escapeHtml(parecerSpecialtyLabel)}</td>
+          <th style="white-space:nowrap">Especialidade</th>
+          <td colspan="3" style="background:#eff6ff;font-weight:700;font-size:9.5pt;color:#0a1628;word-break:break-word;line-height:1.2;white-space:normal">${escapeHtml(parecerSpecialtyLabel)}</td>
           <th style="white-space:nowrap">Prioridade</th>
-          <td style="white-space:nowrap"><span class="prio-badge" style="${priorityCss}">${escapeHtml(priorityLabel)}</span></td>
+          <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span class="prio-badge" style="${priorityCss}">${escapeHtml(priorityLabel)}</span></td>
         </tr>
         ${
           scheduledInfo
-            ? `<tr><th style="white-space:nowrap">Agendamento</th><td colspan="5">${escapeHtml(scheduledInfo)}</td></tr>`
+            ? `<tr><th style="white-space:nowrap">Agendamento</th><td colspan="5" style="white-space:normal;word-break:break-word">${escapeHtml(scheduledInfo)}</td></tr>`
             : ""
         }
       </tbody>
@@ -775,7 +775,7 @@ export async function printRequisitionGuide(
 
   // Bloco específico do parecer: área pautada para resposta do parecerista (altura fixa)
   const parecerResponseBlock = isParecer
-    ? `<h2 class="nz-section" style="background:#0a1628">Resposta do Parecer</h2>
+    ? `<h2 class="nz-section">Resposta do Parecer</h2>
        <div class="parecer-response">
          <div class="parecer-response-lines" style="height:${respHeightMm}mm"></div>
          <table class="parecer-sign">
