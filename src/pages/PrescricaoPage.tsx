@@ -56,6 +56,7 @@ import { PrescriptionDiffDialog } from "@/components/PrescriptionDiffDialog";
 import { NewPrescriptionChoiceDialog } from "@/components/NewPrescriptionChoiceDialog";
 import { ExtraPrescriptionChooserDialog } from "@/components/ExtraPrescriptionChooserDialog";
 import { printExtraPrescription } from "@/lib/printExtraPrescription";
+import { abbrevPresentation, abbrevRoute } from "@/lib/printAbbreviations";
 import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { usePatientLive } from "@/hooks/usePatientLive";
@@ -9075,7 +9076,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   )}
                   <span style={{ fontWeight: 800 }}>{item.name}</span>
                   {item.presentation && item.presentation !== '-' && (
-                    <span style={{ fontWeight: 500, color: '#334155', fontSize: '7.5pt' }}> ({item.presentation})</span>
+                    <span style={{ fontWeight: 500, color: '#334155', fontSize: '7.5pt' }}> ({abbrevPresentation(item.presentation)})</span>
                   )}
                   {item.quantity && item.quantityUnit && (
                     <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '7.5pt' }}> — {item.quantity} {item.quantityUnit}</span>
@@ -9084,9 +9085,15 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 <div style={{ fontSize: '7.5pt', color: '#1e293b', lineHeight: 1.35, marginTop: '2px', fontWeight: 600 }}>
                   {[
                     item.dose && item.dose !== '-' ? item.dose : null,
-                    item.route && item.route !== '-' ? item.route : null,
+                    item.route && item.route !== '-' ? abbrevRoute(item.route) : null,
                     item.posology && item.posology !== '-' ? item.posology : null,
                   ].filter(Boolean).join(' · ')}
+                  {(() => {
+                    const slots = parseScheduleSlots(item.schedule || '');
+                    return slots.length > 0 ? (
+                      <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '6px', color: '#0c4a6e', backgroundColor: '#e0f2fe', padding: '0.5px 5px', borderRadius: '8px', letterSpacing: '0.2px' }}>⏱ {slots.join(' · ')}</span>
+                    ) : null;
+                  })()}
                   {item.flags.length > 0 && (
                     <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#334155', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
                   )}
@@ -9102,6 +9109,9 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     {insulinDesc.lines.map((ln, i) => (
                       <div key={i} style={{ fontWeight: ln.startsWith('  •') ? 500 : 600, paddingLeft: ln.startsWith('  •') ? '6px' : 0 }}>{ln.replace(/^  •\s*/, '• ')}</div>
                     ))}
+                    {item.instructions && (
+                      <div style={{ marginTop: '2px', fontStyle: 'italic', color: '#475569' }}>// {item.instructions}</div>
+                    )}
                   </div>
                 )}
 
@@ -9116,6 +9126,9 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     {inhalationLine}
                     {item.spacer && <span style={{ marginLeft: '4px', fontStyle: 'italic', color: '#475569' }}>· c/ espaçador</span>}
                     {item.gargle && <span style={{ marginLeft: '4px', fontStyle: 'italic', color: '#475569' }}>· gargarejo após</span>}
+                    {item.instructions && (
+                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> // {item.instructions}</span>
+                    )}
                   </div>
                 )}
 
@@ -9125,12 +9138,15 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     {[
                       item.reconstitutionVolume && item.reconstitutionSolvent ? `Reconstituir em ${item.reconstitutionVolume}mL de ${item.reconstitutionSolvent}` : null,
                       item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'Sem diluição' : null,
-                      item.accessType && item.accessType !== '-' ? item.accessType : null,
+                      item.accessType && item.accessType !== '-' ? abbrevRoute(item.accessType) : null,
                       item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
                       item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
                       item.infusionRate ? `${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
                       item.concentration ? `Conc: ${item.concentration}` : null,
                     ].filter(Boolean).join(' · ')}
+                    {item.instructions && (
+                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> // {item.instructions}</span>
+                    )}
                   </div>
                 )}
 
@@ -9154,7 +9170,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                       item.nutFraction ? `Frac: ${item.nutFraction}` : null,
                       item.nutNightPause ? `Pausa noturna: ${item.nutNightPause}` : null,
                       item.nutBedHead ? `Cabeceira: ${item.nutBedHead}°` : null,
-                      item.nutAccess ? `Acesso: ${item.nutAccess}` : null,
+                      item.nutAccess ? `Acesso: ${abbrevRoute(item.nutAccess)}` : null,
                       item.nutComposition || null,
                       item.nutMonitoring ? `Monit: ${item.nutMonitoring}` : null,
                       item.nutResidualCheck ? `Resíduo: ${item.nutResidualCheck}` : null,
@@ -9162,13 +9178,17 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                       item.nutWaterFreq || null,
                       item.nutZeroReason ? `Motivo jejum: ${item.nutZeroReason}` : null,
                     ].filter(Boolean).join(' · ')}
+                    {item.instructions && (
+                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> // {item.instructions}</span>
+                    )}
                   </div>
                 )}
 
-                {/* Instruções livres (quando não há preparo/inalação/insulina) */}
-                {item.instructions && !hasIvPreparo && !insulinDesc && !isInhalation && (
+                {/* Instruções livres / recomendações à enfermagem
+                    (quando NÃO há preparo/inalação/insulina/nutrição que já as embutiu) */}
+                {item.instructions && !hasIvPreparo && !insulinDesc && !isInhalation && item.category !== 'nutrition' && (
                   <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
-                    {item.instructions}
+                    // {item.instructions}
                   </div>
                 )}
               </td>
@@ -9213,18 +9233,17 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     {careItems.map((item, i) => {
                       const rowBg = i % 2 === 0 ? '#ffffff' : '#fafbfc';
                       return (
-                        <tr key={item.id} style={{ pageBreakInside: 'avoid' }}>
-                          <td style={{ ...cellStyle, width: '22px', textAlign: 'center', backgroundColor: rowBg, color: '#0f172a', fontSize: '7.5pt', fontWeight: 800 }}>
+                        <tr key={item.id} style={{ pageBreakInside: 'avoid', lineHeight: 1.2 }}>
+                          <td style={{ ...cellStyle, width: '20px', textAlign: 'center', backgroundColor: rowBg, color: '#0f172a', fontSize: '7pt', fontWeight: 800, padding: '2px 2px', verticalAlign: 'top' }}>
                             {i + 1}
                           </td>
-                          <td style={{ ...cellStyle, backgroundColor: rowBg }}>
-                            <span style={{ fontWeight: 800, fontSize: '8pt', color: '#0f172a' }}>{item.name}</span>
-                            {item.dose && item.dose !== '-' && <span style={{ color: '#0f172a', fontWeight: 700, fontSize: '7.5pt' }}> — {item.dose}</span>}
-                            {item.posology && item.posology !== '-' && <span style={{ color: '#1e293b', fontWeight: 600, fontSize: '7.5pt' }}> — {item.posology}</span>}
+                          <td style={{ ...cellStyle, backgroundColor: rowBg, padding: '2px 6px', lineHeight: 1.25 }}>
+                            <span style={{ fontWeight: 800, fontSize: '7.5pt', color: '#0f172a' }}>{item.name}</span>
+                            {item.dose && item.dose !== '-' && <span style={{ color: '#0f172a', fontWeight: 700, fontSize: '7pt' }}> — {item.dose}</span>}
+                            {item.route && item.route !== '-' && <span style={{ color: '#334155', fontWeight: 600, fontSize: '7pt' }}> · {abbrevRoute(item.route)}</span>}
+                            {item.posology && item.posology !== '-' && <span style={{ color: '#1e293b', fontWeight: 600, fontSize: '7pt' }}> — {item.posology}</span>}
                             {item.instructions && (
-                              <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
-                                {item.instructions}
-                              </div>
+                              <span style={{ fontSize: '7pt', color: '#475569', fontStyle: 'italic', fontWeight: 500 }}> // {item.instructions}</span>
                             )}
                           </td>
                         </tr>
