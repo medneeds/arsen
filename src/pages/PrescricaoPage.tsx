@@ -9233,18 +9233,17 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     {careItems.map((item, i) => {
                       const rowBg = i % 2 === 0 ? '#ffffff' : '#fafbfc';
                       return (
-                        <tr key={item.id} style={{ pageBreakInside: 'avoid' }}>
-                          <td style={{ ...cellStyle, width: '22px', textAlign: 'center', backgroundColor: rowBg, color: '#0f172a', fontSize: '7.5pt', fontWeight: 800 }}>
+                        <tr key={item.id} style={{ pageBreakInside: 'avoid', lineHeight: 1.2 }}>
+                          <td style={{ ...cellStyle, width: '20px', textAlign: 'center', backgroundColor: rowBg, color: '#0f172a', fontSize: '7pt', fontWeight: 800, padding: '2px 2px', verticalAlign: 'top' }}>
                             {i + 1}
                           </td>
-                          <td style={{ ...cellStyle, backgroundColor: rowBg }}>
-                            <span style={{ fontWeight: 800, fontSize: '8pt', color: '#0f172a' }}>{item.name}</span>
-                            {item.dose && item.dose !== '-' && <span style={{ color: '#0f172a', fontWeight: 700, fontSize: '7.5pt' }}> — {item.dose}</span>}
-                            {item.posology && item.posology !== '-' && <span style={{ color: '#1e293b', fontWeight: 600, fontSize: '7.5pt' }}> — {item.posology}</span>}
+                          <td style={{ ...cellStyle, backgroundColor: rowBg, padding: '2px 6px', lineHeight: 1.25 }}>
+                            <span style={{ fontWeight: 800, fontSize: '7.5pt', color: '#0f172a' }}>{item.name}</span>
+                            {item.dose && item.dose !== '-' && <span style={{ color: '#0f172a', fontWeight: 700, fontSize: '7pt' }}> — {item.dose}</span>}
+                            {item.route && item.route !== '-' && <span style={{ color: '#334155', fontWeight: 600, fontSize: '7pt' }}> · {abbrevRoute(item.route)}</span>}
+                            {item.posology && item.posology !== '-' && <span style={{ color: '#1e293b', fontWeight: 600, fontSize: '7pt' }}> — {item.posology}</span>}
                             {item.instructions && (
-                              <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
-                                {item.instructions}
-                              </div>
+                              <span style={{ fontSize: '7pt', color: '#475569', fontStyle: 'italic', fontWeight: 500 }}> // {item.instructions}</span>
                             )}
                           </td>
                         </tr>
