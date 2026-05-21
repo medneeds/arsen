@@ -7483,16 +7483,38 @@ const PrescricaoPage = () => {
                           </Button>
                         </div>
                       ) : cat === 'nutrition' ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setNutritionConfirmOpen(true)}
-                          className="h-7 text-[11px] border-emerald-300 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-950/30 w-full justify-start"
-                        >
-                          <Sparkles className="h-3 w-3 mr-1.5" />
-                          Adicionar nutrição — manual · guiada · assistente
-                        </Button>
+                        (() => {
+                          const nutAccent = getCategoryFieldAccent('nutrition');
+                          return (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={() => setNutritionConfirmOpen(true)}
+                                  className={cn(
+                                    "relative w-full h-7 rounded-md bg-background/60 text-xs pl-9 pr-9 text-left text-muted-foreground transition-colors flex items-center",
+                                    "border", nutAccent.border, nutAccent.ring,
+                                    "hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20"
+                                  )}
+                                  aria-label="Abrir opções de nutrição"
+                                >
+                                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                  <span className="truncate">Adicionar nutrição — manual · guiada · assistente</span>
+                                  <span
+                                    className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 rounded-md flex items-center justify-center bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300"
+                                    aria-hidden
+                                  >
+                                    <Sparkles className="h-3 w-3" />
+                                  </span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs">
+                                Abrir opções: manual · guiada · assistente
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })()
+
 
 
 
