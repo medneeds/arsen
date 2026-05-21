@@ -209,7 +209,7 @@ function detailBlock(it: ExtraPrintItem): string {
   }
 
   // Instruções livres (apenas se não houver detalhamento específico)
-  if (it.instructions && !hasIvPreparo && !insulinDesc && !isInhalation) {
+  if (it.instructions && !hasIvPreparo && !insulinDesc && !isInhalation && !isNutrition) {
     blocks.push(`<div style="font-size:7pt;color:#1e293b;line-height:1.3;margin-top:2pt;padding-left:8pt;border-left:2pt solid #0c4a6e;font-weight:500">${escape(it.instructions)}</div>`);
   }
 
