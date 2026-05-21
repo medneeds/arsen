@@ -1151,13 +1151,9 @@ const RequisicaoUnificadaPage = () => {
             </Card>
           )}
 
-          {/* Notes — oculto para parecer (vai sujar o laudo do especialista) */}
-          {activeCategory !== "parecer" && (
-            <div className="space-y-1.5">
-              <Label className="text-xs">Observações</Label>
-              <Textarea placeholder="Informações adicionais..." value={formNotes} onChange={e => setFormNotes(e.target.value)} rows={2} />
-            </div>
-          )}
+          {/* Campo "Observações" removido — a Justificativa Clínica acima já cobre.
+              `formNotes` permanece no state para concatenar [PROGRAMADO] e [JUSTIFICATIVA EXTRA]. */}
+
 
           {/* Submit */}
           {(() => {
