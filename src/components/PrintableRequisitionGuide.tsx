@@ -775,7 +775,7 @@ export async function printRequisitionGuide(
 
   // Bloco específico do parecer: área pautada para resposta do parecerista (altura fixa)
   const parecerResponseBlock = isParecer
-    ? `<h2 class="nz-section" style="background:#0a1628">Resposta do Parecer</h2>
+    ? `<h2 class="nz-section">Resposta do Parecer</h2>
        <div class="parecer-response">
          <div class="parecer-response-lines" style="height:${respHeightMm}mm"></div>
          <table class="parecer-sign">
