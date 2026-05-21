@@ -9683,25 +9683,27 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '7.5pt' }}> — {item.quantity} {item.quantityUnit}</span>
                   )}
                 </div>
-                <div style={{ fontSize: '7.5pt', color: '#1e293b', lineHeight: 1.35, marginTop: '2px', fontWeight: 600 }}>
-                  {[
-                    item.dose && item.dose !== '-' ? item.dose : null,
-                    item.route && item.route !== '-' ? abbrevRoute(item.route) : null,
-                    item.posology && item.posology !== '-' ? item.posology : null,
-                  ].filter(Boolean).join(' · ')}
-                  {(() => {
-                    const slots = parseScheduleSlots(item.schedule || '');
-                    return slots.length > 0 ? (
-                      <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '6px', color: '#0c4a6e', backgroundColor: '#e0f2fe', padding: '0.5px 5px', borderRadius: '8px', letterSpacing: '0.2px' }}>⏱ {slots.join(' · ')}</span>
-                    ) : null;
-                  })()}
-                  {item.flags.length > 0 && (
-                    <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#334155', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
-                  )}
-                  {item.isExtra && (
-                    <span style={{ fontSize: '5.5pt', fontWeight: 700, marginLeft: '3px', color: '#9a3412', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fdba74' }}>EXTRA</span>
-                  )}
-                </div>
+                {item.category !== 'nutrition' && (
+                  <div style={{ fontSize: '7.5pt', color: '#1e293b', lineHeight: 1.35, marginTop: '2px', fontWeight: 600 }}>
+                    {[
+                      item.dose && item.dose !== '-' ? item.dose : null,
+                      item.route && item.route !== '-' ? abbrevRoute(item.route) : null,
+                      item.posology && item.posology !== '-' ? item.posology : null,
+                    ].filter(Boolean).join(' · ')}
+                    {(() => {
+                      const slots = parseScheduleSlots(item.schedule || '');
+                      return slots.length > 0 ? (
+                        <span style={{ fontSize: '6.5pt', fontWeight: 700, marginLeft: '6px', color: '#0c4a6e', backgroundColor: '#e0f2fe', padding: '0.5px 5px', borderRadius: '8px', letterSpacing: '0.2px' }}>⏱ {slots.join(' · ')}</span>
+                      ) : null;
+                    })()}
+                    {item.flags.length > 0 && (
+                      <span style={{ fontSize: '6pt', fontWeight: 700, marginLeft: '4px', color: '#fff', backgroundColor: '#334155', padding: '0.5px 4px', borderRadius: '2px', letterSpacing: '0.3px' }}>{item.flags.join(', ').toUpperCase()}</span>
+                    )}
+                    {item.isExtra && (
+                      <span style={{ fontSize: '5.5pt', fontWeight: 700, marginLeft: '3px', color: '#9a3412', backgroundColor: '#fff7ed', padding: '0.5px 4px', borderRadius: '2px', border: '0.5px solid #fdba74' }}>EXTRA</span>
+                    )}
+                  </div>
+                )}
 
                 {/* Insulinoterapia: bloco estruturado para enfermagem */}
                 {insulinDesc && (
