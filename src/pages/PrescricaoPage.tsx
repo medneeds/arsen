@@ -1114,7 +1114,8 @@ function NutritionFields({
   const DIET_PROFILES = ['Geral', 'Diabético', 'Cardiopata/Hipertenso', 'Renal', 'Hepatopata', 'Anêmico', 'Gastrointestinal', 'Pós-operatório', 'Oncológico', 'Pediátrico', 'Idoso'];
   const ENTERAL_ROUTES = ['Nasogástrica (NGT)', 'Nasoenteral (NET)', 'Orogástrica (OGT)', 'Gastrostomia', 'Jejunostomia'];
   const SUPPLEMENT_ROUTES = ['Oral', 'Nasogástrica (NGT)', 'Nasoenteral (NET)', 'Gastrostomia'];
-  const DIET_INTERVALS = ['6/6h', '8/8h', '12/12h', '24h', 'Contínua'];
+  const DIET_INTERVALS = ['2/2h', '3/3h', '4/4h', '6/6h', '8/8h', '12/12h', '24h', 'Contínua'];
+  const DIET_STEPS = ['2', '3', '4', '5', '6', '7', '8'];
 
   // Componentes auxiliares compactos
   const SelectField = ({ label, value, options, onChange, placeholder = '—', width = 'w-40' }: {
@@ -1133,6 +1134,77 @@ function NutritionFields({
     </div>
   );
 
+  // Mini-toggle (2 opções) reutilizável
+  const MiniToggle = ({ value, options, onChange }: { value: string; options: { v: string; label: string }[]; onChange: (v: string) => void }) => (
+    <div className="inline-flex rounded-md border border-emerald-300 dark:border-emerald-700 overflow-hidden h-7 bg-white dark:bg-slate-800">
+      {options.map(o => (
+        <button
+          key={o.v}
+          type="button"
+          onClick={() => onChange(o.v)}
+          className={cn(
+            "px-2 text-[10px] font-semibold transition",
+            value === o.v
+              ? "bg-emerald-600 text-white"
+              : "text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  // Bloco "Intervalo ↔ Etapas" (switch)
+  const scheduleMode: 'interval' | 'steps' = item.nutScheduleMode ?? 'interval';
+  const ScheduleSwitch = (
+    <div className="flex items-center gap-1.5">
+      <MiniToggle
+        value={scheduleMode}
+        options={[{ v: 'interval', label: 'Intervalo' }, { v: 'steps', label: 'Etapas' }]}
+        onChange={(v) => onUpdate(item.id, 'nutScheduleMode', v)}
+      />
+      {scheduleMode === 'interval' ? (
+        <Select value={item.dietInterval || ''} onValueChange={(v) => onUpdate(item.id, 'dietInterval', v)}>
+          <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-28">
+            <SelectValue placeholder="—" />
+          </SelectTrigger>
+          <SelectContent>
+            {DIET_INTERVALS.map(o => <SelectItem key={o} value={o} className="text-xs">{o}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      ) : (
+        <Select value={item.nutSteps || ''} onValueChange={(v) => onUpdate(item.id, 'nutSteps', v)}>
+          <SelectTrigger className="h-7 text-[12px] font-semibold bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 w-28">
+            <SelectValue placeholder="—" />
+          </SelectTrigger>
+          <SelectContent>
+            {DIET_STEPS.map(o => <SelectItem key={o} value={o} className="text-xs">{o} etapas/dia</SelectItem>)}
+          </SelectContent>
+        </Select>
+      )}
+    </div>
+  );
+
+  // Bloco "Correr em" (switch mL/h ↔ gts/min)
+  const rateMode: 'mlh' | 'gtt' = item.nutRateMode ?? 'mlh';
+  const RateSwitch = (
+    <div className="flex items-center gap-1.5">
+      <NutFieldLabel>Correr em:</NutFieldLabel>
+      <MiniToggle
+        value={rateMode}
+        options={[{ v: 'mlh', label: 'mL/h' }, { v: 'gtt', label: 'gts/min' }]}
+        onChange={(v) => onUpdate(item.id, 'nutRateMode', v)}
+      />
+      <NutSuffixInput
+        value={item.infusionRate || ''}
+        onChange={(v) => onUpdate(item.id, 'infusionRate', v)}
+        suffix={rateMode === 'gtt' ? 'gts/min' : 'mL/h'}
+        placeholder={rateMode === 'gtt' ? '30' : '62'}
+      />
+    </div>
+  );
+
   const RecommendationsField = (
     <div className="space-y-1">
       <NutFieldLabel>Recomendações:</NutFieldLabel>
@@ -1145,6 +1217,25 @@ function NutritionFields({
       />
     </div>
   );
+
+  // ============== MODO MANUAL (texto livre + recomendações apenas) ==============
+  if (item.nutManual) {
+    return (
+      <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-2")}>
+        <div className="space-y-1">
+          <NutFieldLabel>Texto livre:</NutFieldLabel>
+          <Textarea
+            value={item.name}
+            onChange={(e) => onUpdate(item.id, 'name', e.target.value)}
+            onKeyDown={(e) => e.stopPropagation()}
+            className="min-h-[60px] text-[12px] bg-white dark:bg-slate-800 border-emerald-300 dark:border-emerald-700 font-medium"
+            placeholder="Descreva livremente a conduta nutricional..."
+          />
+        </div>
+        {RecommendationsField}
+      </div>
+    );
+  }
 
   return (
     <div className={cn(getCategoryContainerClass('nutrition'), getCategoryFieldAccent('nutrition').descendantOverrides, "space-y-2")}>
@@ -1195,9 +1286,8 @@ function NutritionFields({
             <div className="flex items-center gap-2 flex-wrap">
               <NutFieldLabel>Quantidade:</NutFieldLabel>
               <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="1500" />
-              <SelectField label="Intervalo" value={item.dietInterval} options={DIET_INTERVALS} onChange={(v) => onUpdate(item.id, 'dietInterval', v)} width="w-28" />
-              <NutFieldLabel>Correr em:</NutFieldLabel>
-              <NutSuffixInput value={item.infusionRate || ''} onChange={(v) => onUpdate(item.id, 'infusionRate', v)} suffix="mL/h" placeholder="62" />
+              {ScheduleSwitch}
+              {RateSwitch}
             </div>
           </div>
           {RecommendationsField}
@@ -1218,11 +1308,10 @@ function NutritionFields({
               <SelectField label="Perfil" value={item.dietProfile} options={DIET_PROFILES} onChange={(v) => onUpdate(item.id, 'dietProfile', v)} width="w-40" />
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <NutFieldLabel>Quantidade:</NutFieldLabel>
+              <NutFieldLabel>Volume:</NutFieldLabel>
               <NutSuffixInput value={item.nutVolDay || ''} onChange={(v) => onUpdate(item.id, 'nutVolDay', v)} suffix="mL" placeholder="2000" />
-              <SelectField label="Intervalo" value={item.dietInterval} options={DIET_INTERVALS} onChange={(v) => onUpdate(item.id, 'dietInterval', v)} width="w-28" />
-              <NutFieldLabel>Correr em:</NutFieldLabel>
-              <NutSuffixInput value={item.infusionRate || ''} onChange={(v) => onUpdate(item.id, 'infusionRate', v)} suffix="mL/h" placeholder="83" />
+              {ScheduleSwitch}
+              {RateSwitch}
             </div>
           </div>
           {RecommendationsField}
