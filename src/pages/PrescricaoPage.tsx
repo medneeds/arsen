@@ -4264,20 +4264,24 @@ const PrescricaoPage = () => {
     }
 
     // Núcleo comum: dose + posologia + via
-    if (empty(item.dose) && !anyInstruction(item)) missing.push('dose');
+    // Sólido oral (cp/cápsula/drágea/SL/orodispersível) por VO/SL/enteral:
+    // aceita `quantity` (ex.: "1 comprimido") como equivalente clínico de dose,
+    // pois a concentração já vem na apresentação ("100 MG — Comprimido").
+    const presLower = (item.presentation || '').toLowerCase();
+    const routeLower = (item.route || '').toLowerCase();
+    const isSolidOral = /(comprimido|c[aá]psula|cap\.|dr[áa]gea|sublingual|orodispers)/i.test(presLower);
+    const isOralLike = /(\boral\b|\bvo\b|sublingual|sng|sne|enteral|gastrostomia|jejunostomia)/i.test(routeLower);
+    const hasQuantity = has(String((item as any).quantity ?? ''));
+    const doseSatisfiedBySolidQty = isSolidOral && isOralLike && hasQuantity;
+
+    if (empty(item.dose) && !anyInstruction(item) && !doseSatisfiedBySolidQty) missing.push('dose');
     if (empty(item.posology) && !anyInstruction(item)) missing.push('posologia');
     if (empty(item.route) && !anyInstruction(item)) missing.push('via');
 
     // ----- Sólido oral (cp/cápsula/drágea/SL/orodispersível) por via oral/SL/enteral -----
     // Posologia é OBRIGATÓRIA — instrução livre NÃO substitui (risco de erro de farmácia/enfermagem).
-    {
-      const presLower = (item.presentation || '').toLowerCase();
-      const routeLower = (item.route || '').toLowerCase();
-      const isSolidOral = /(comprimido|c[aá]psula|cap\.|dr[áa]gea|sublingual|orodispers)/i.test(presLower);
-      const isOralLike = /(\boral\b|\bvo\b|sublingual|sng|sne|enteral|gastrostomia|jejunostomia)/i.test(routeLower);
-      if (isSolidOral && isOralLike && empty(item.posology) && !missing.includes('posologia')) {
-        missing.push('posologia');
-      }
+    if (isSolidOral && isOralLike && empty(item.posology) && !missing.includes('posologia')) {
+      missing.push('posologia');
     }
 
     // ----- IV intermitente (ampola/frasco) -----
