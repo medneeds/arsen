@@ -676,7 +676,7 @@ export async function printCultureRequest(
     : html;
 
 
-  const w = openPrintWindow(html, "Preparando solicitação de cultura…");
+  const w = openPrintWindow(finalHtml, "Preparando solicitação de cultura…");
   if (!w) {
     alert("Permita pop-ups para imprimir a solicitação.");
   }
