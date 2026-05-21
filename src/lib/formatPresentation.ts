@@ -20,23 +20,32 @@
  * Função pura, segura para usar em render e em criação de itens.
  */
 
+// Usamos (?<![A-Za-zÀ-ÿ]) / (?![A-Za-zÀ-ÿ]) no lugar de \b para
+// reconhecer unidades coladas a números (ex.: 200MG, 5ml, 500mcg)
+// sem casar pedaços de palavras (ex.: "ML" dentro de "AMOXIMOL").
 const UNIT_MAP: Array<[RegExp, string]> = [
-  [/\bmiligramas?\b/gi, "mg"],
-  [/\bmilig\b/gi, "mg"],
-  [/\bMG\b/g, "mg"],
-  [/\bmcgs?\b/gi, "mcg"],
+  // microgramas (vem antes de "mg" para não confundir)
   [/\bmicrogramas?\b/gi, "mcg"],
-  [/\bMCG\b/g, "mcg"],
+  [/(?<![A-Za-zÀ-ÿ])mcgs?(?![A-Za-zÀ-ÿ])/gi, "mcg"],
+  [/(?<![A-Za-zÀ-ÿ])MCG(?![A-Za-zÀ-ÿ])/g, "mcg"],
   [/µg/g, "mcg"],
-  [/\bgramas?\b/gi, "g"],
-  [/\bGR?\b/g, "g"],
+  // miligramas
+  [/\bmiligramas?\b/gi, "mg"],
+  [/(?<![A-Za-zÀ-ÿ])milig(?![A-Za-zÀ-ÿ])/gi, "mg"],
+  [/(?<![A-Za-zÀ-ÿ])mg(?![A-Za-zÀ-ÿ])/gi, "mg"],
+  // mililitros (antes de "L" sozinho)
   [/\bmililitros?\b/gi, "mL"],
-  [/\bml\b/g, "mL"],
-  [/\bML\b/g, "mL"],
+  [/(?<![A-Za-zÀ-ÿ])ml(?![A-Za-zÀ-ÿ])/gi, "mL"],
+  // gramas (cuidado: só casa "g" colado a número, evita virar artigo)
+  [/\bgramas?\b/gi, "g"],
+  [/(?<=\d\s?)GR?(?![A-Za-zÀ-ÿ])/g, "g"],
+  [/(?<=\d)\s?g(?![A-Za-zÀ-ÿ])/g, " g"],
+  // litros
   [/\blitros?\b/gi, "L"],
+  // unidades internacionais
   [/\bunidades?\s+internacionais?\b/gi, "UI"],
-  [/\bui\b/g, "UI"],
-  [/\bUI\b/g, "UI"],
+  [/(?<![A-Za-zÀ-ÿ])ui(?![A-Za-zÀ-ÿ])/gi, "UI"],
+  // porcentagem permanece "%"
 ];
 
 const FORM_MAP: Array<[RegExp, string]> = [
