@@ -7037,7 +7037,8 @@ const PrescricaoPage = () => {
         </div>
 
         {/* Row 2 — Prescription actions (Nova, Extra, Interações, ATM, TEV, Validar | Compacto | Imprimir) */}
-        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-border/40 bg-muted/20 rounded-b-xl">
+        <div className="flex items-center gap-1 flex-wrap px-3 py-2 border-t border-[hsl(217,30%,88%)]/70 dark:border-[hsl(217,30%,22%)]/70 bg-gradient-to-r from-[hsl(217,45%,97%)] via-[hsl(217,40%,98.5%)] to-[hsl(217,45%,97%)] dark:from-[hsl(217,35%,12%)] dark:via-[hsl(217,30%,14%)] dark:to-[hsl(217,35%,12%)] rounded-b-xl [&_button.h-7]:hover:bg-[hsl(217,55%,40%)]/8 [&_button.h-7]:hover:text-[hsl(217,60%,32%)] dark:[&_button.h-7]:hover:text-[hsl(217,55%,75%)] [&_button.h-7]:transition-colors">
+
           <Tooltip>
             <TooltipTrigger asChild>
               <span>
