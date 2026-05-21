@@ -819,7 +819,7 @@ function MedicationAutocomplete({
 // --- Global Prescription Search with Category Filters ---
 // Categorias com pop-up dedicado disparam o pop-up ao clicar no chip;
 // demais categorias filtram a busca digitada (comportamento clássico).
-const POPUP_CATEGORIES: ReadonlyArray<PrescriptionCategory> = ['antimicrobial', 'high_alert', 'care'];
+const POPUP_CATEGORIES: ReadonlyArray<PrescriptionCategory> = ['antimicrobial', 'high_alert', 'care', 'nutrition'];
 
 export interface GlobalPrescriptionSearchHandle {
   focus: () => void;
