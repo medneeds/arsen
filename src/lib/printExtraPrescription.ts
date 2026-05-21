@@ -122,7 +122,8 @@ function detailBlock(it: ExtraPrintItem): string {
   const blocks: string[] = [];
   const isInhalation = it.category === 'inhalation';
   const insulinDesc = it.insulinPlan ? describeInsulinPlan(it.insulinPlan) : null;
-  const hasIvPreparo = !isInhalation && (it.diluent || it.diluentVolume || it.accessType || it.infusionTime || it.infusionRate || it.volumeTotal || it.concentration);
+  const isNutrition = it.category === 'nutrition';
+  const hasIvPreparo = !isInhalation && !isNutrition && (it.diluent || it.diluentVolume || it.accessType || it.infusionTime || it.infusionRate || it.volumeTotal || it.concentration);
 
   // Insulinoterapia (cor MAV)
   if (insulinDesc) {
