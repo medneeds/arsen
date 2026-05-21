@@ -30,6 +30,8 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { asUuidOrNull } from "@/lib/utils";
 import { SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
+import { usePatientLive } from "@/hooks/usePatientLive";
+import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { toast } from "sonner";
 import {
   PrintableCultureRequest,
@@ -99,53 +101,62 @@ export function CultureRequestDialog({
     created_at: new Date().toISOString(),
   });
 
-  // Pré-preenche com props (mock ou contexto da URL) imediatamente — converte código de setor → label real
+  // Identidade unificada (mesmo padrão do Cockpit/PDFs):
+  // - usePatientLive: leito/setor/nome ao vivo (reflete transferências em tempo real)
+  // - usePatientIdentifiers: prontuário + registry (CPF/CNS/mãe/nasc) com guarda anti-NI e realtime
+  const { patient: livePatient } = usePatientLive(patientId || null);
+  const identifiers = usePatientIdentifiers(
+    patientId || null,
+    livePatient?.name || patientName || null,
+    currentHospital?.id || null,
+  );
+
+  // Reset DEFENSIVO ao trocar de paciente (evita vazamento entre pacientes)
+  useEffect(() => {
+    setData({
+      patient_name: "",
+      items: [],
+      created_at: new Date().toISOString(),
+    });
+    setSelection({});
+    setSavedId(null);
+  }, [patientId]);
+
+  // Hidrata cabeçalho a partir das fontes ao vivo (live + identifiers + props como fallback)
   useEffect(() => {
     if (!open) return;
-    const normalizedSector = patientSector ? (SECTOR_DISPLAY[patientSector] || patientSector) : null;
+    const reg = identifiers.registry;
+    const liveSector = livePatient?.sector || patientSector || null;
+    const normalizedSector = liveSector ? (SECTOR_DISPLAY[liveSector] || liveSector) : null;
     setData((d) => ({
       ...d,
-      patient_name: d.patient_name || patientName || "",
-      patient_sector: d.patient_sector || normalizedSector,
-      patient_bed: d.patient_bed || patientBed || null,
+      patient_name: reg?.fullName || livePatient?.name || patientName || d.patient_name || "",
+      patient_social_name: reg?.socialName || d.patient_social_name || null,
+      patient_birth_date: reg?.birthDate || d.patient_birth_date || null,
+      patient_cpf: reg?.cpf || d.patient_cpf || null,
+      patient_cns: reg?.cns || d.patient_cns || null,
+      patient_record: identifiers.prontuario || reg?.medicalRecord || d.patient_record || null,
+      patient_sector: normalizedSector || d.patient_sector || null,
+      patient_bed: livePatient?.bedNumber || patientBed || d.patient_bed || null,
+      mother_name: reg?.motherName || d.mother_name || null,
     }));
-  }, [open, patientName, patientBed, patientSector]);
-
-  // Pré-carrega dados do paciente (UUID real)
-  useEffect(() => {
-    if (!open || !patientId) return;
-    (async () => {
-      const { data: p } = await supabase
-        .from("patients")
-        .select("name, bed_number, sector, medical_record, patient_registry_id")
-        .eq("id", patientId)
-        .maybeSingle();
-      if (!p) return;
-
-      let registry: any = null;
-      if (p.patient_registry_id) {
-        const r = await supabase
-          .from("patient_registry")
-          .select("full_name, social_name, birth_date, cpf, cns, mother_name, medical_record")
-          .eq("id", p.patient_registry_id)
-          .maybeSingle();
-        registry = r.data;
-      }
-
-      setData((d) => ({
-        ...d,
-        patient_name: registry?.full_name || p.name || d.patient_name,
-        patient_social_name: registry?.social_name || null,
-        patient_birth_date: registry?.birth_date || null,
-        patient_cpf: registry?.cpf || null,
-        patient_cns: registry?.cns || null,
-        patient_record: registry?.medical_record || p.medical_record || null,
-        patient_sector: (p.sector ? (SECTOR_DISPLAY[p.sector] || p.sector) : d.patient_sector),
-        patient_bed: p.bed_number || d.patient_bed,
-        mother_name: registry?.mother_name || null,
-      }));
-    })();
-  }, [open, patientId]);
+  }, [
+    open,
+    livePatient?.name,
+    livePatient?.bedNumber,
+    livePatient?.sector,
+    identifiers.registry?.id,
+    identifiers.registry?.fullName,
+    identifiers.registry?.cpf,
+    identifiers.registry?.cns,
+    identifiers.registry?.birthDate,
+    identifiers.registry?.motherName,
+    identifiers.registry?.socialName,
+    identifiers.prontuario,
+    patientName,
+    patientBed,
+    patientSector,
+  ]);
 
   // Pré-preenche médico solicitante
   useEffect(() => {
