@@ -56,6 +56,7 @@ import { PrescriptionDiffDialog } from "@/components/PrescriptionDiffDialog";
 import { NewPrescriptionChoiceDialog } from "@/components/NewPrescriptionChoiceDialog";
 import { ExtraPrescriptionChooserDialog } from "@/components/ExtraPrescriptionChooserDialog";
 import { printExtraPrescription } from "@/lib/printExtraPrescription";
+import { abbrevPresentation, abbrevRoute } from "@/lib/printAbbreviations";
 import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { usePatientLive } from "@/hooks/usePatientLive";
