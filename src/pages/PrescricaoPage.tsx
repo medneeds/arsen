@@ -7921,7 +7921,10 @@ const PrescricaoPage = () => {
       </Dialog>
 
       {/* Adição manual livre de nutrição */}
-      <Dialog open={nutritionManualOpen} onOpenChange={setNutritionManualOpen}>
+      <Dialog open={nutritionManualOpen} onOpenChange={(open) => {
+        setNutritionManualOpen(open);
+        if (!open) { setNutritionManualText(""); setNutritionManualRecs(""); setNutritionManualType('diet_oral'); }
+      }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -7929,17 +7932,65 @@ const PrescricaoPage = () => {
               Adição manual de nutrição
             </DialogTitle>
             <DialogDescription>
-              Descreva livremente a conduta nutricional. O texto será salvo como item de nutrição com seu conteúdo nas recomendações.
+              Escolha a modalidade, descreva livremente a conduta e adicione recomendações. Nada é obrigatório além da modalidade e do texto.
             </DialogDescription>
           </DialogHeader>
-          <Textarea
-            value={nutritionManualText}
-            onChange={(e) => setNutritionManualText(e.target.value)}
-            placeholder="Ex.: Dieta branda fracionada em 6 refeições, evitar alimentos gordurosos, manter hidratação oral livre..."
-            rows={6}
-            className="resize-none"
-            autoFocus
-          />
+
+          <div className="space-y-3">
+            {/* 1) Modalidade — chips compactos */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">Modalidade</label>
+              <div className="flex flex-wrap gap-1.5">
+                {([
+                  { v: 'diet_oral',       label: 'Oral' },
+                  { v: 'diet_enteral',    label: 'Enteral' },
+                  { v: 'diet_parenteral', label: 'Parenteral' },
+                  { v: 'supplement',      label: 'Suplementação' },
+                  { v: 'zero',            label: 'Zero (jejum)' },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    onClick={() => setNutritionManualType(opt.v)}
+                    className={cn(
+                      "h-8 px-3 rounded-md border text-[12px] font-semibold transition",
+                      nutritionManualType === opt.v
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                        : "bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2) Texto livre */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">Texto livre</label>
+              <Textarea
+                value={nutritionManualText}
+                onChange={(e) => setNutritionManualText(e.target.value)}
+                placeholder="Ex.: Dieta branda fracionada em 6 refeições, evitar alimentos gordurosos, manter hidratação oral livre..."
+                rows={4}
+                className="resize-none text-[12px]"
+                autoFocus
+              />
+            </div>
+
+            {/* 3) Recomendações */}
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">Recomendações (opcional)</label>
+              <Textarea
+                value={nutritionManualRecs}
+                onChange={(e) => setNutritionManualRecs(e.target.value)}
+                placeholder="Orientações à equipe (restrições, alergias, conduta em caso de intolerância, metas calóricas...)"
+                rows={3}
+                className="resize-none text-[12px] italic focus:not-italic"
+              />
+            </div>
+          </div>
+
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" onClick={() => setNutritionManualOpen(false)}>
               Cancelar
@@ -7955,19 +8006,22 @@ const PrescricaoPage = () => {
                   name: text,
                   presentation: '-',
                   dose: '-',
-                  route: '-',
+                  route: nutritionManualType === 'diet_parenteral' ? 'Endovenosa' : '-',
                   posology: '-',
                   schedule: '-',
-                  instructions: '',
+                  instructions: nutritionManualRecs.trim(),
                   category: 'nutrition',
                   flags: [],
                   highAlert: false,
                   status: 'active',
                   nutManual: true,
+                  nutritionType: nutritionManualType,
                 };
                 setItems(prev => [...prev, newItem]);
                 setNutritionManualOpen(false);
                 setNutritionManualText("");
+                setNutritionManualRecs("");
+                setNutritionManualType('diet_oral');
                 setActiveTab('nutrition');
                 setExpandedCategories(prev => {
                   const n = new Set(prev);
@@ -7986,6 +8040,7 @@ const PrescricaoPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
 
       {/* Solicitação guiada — passo 2: escolha da modalidade */}
       <Dialog open={nutritionGuidedOpen} onOpenChange={setNutritionGuidedOpen}>
