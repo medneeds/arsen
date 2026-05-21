@@ -4,14 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Fase B.1 — Resolve o encounter_id ATIVO do paciente atual.
  *
- * Usado pelos hooks de leitura do cockpit (evoluções, condutas, movimentos, etc.)
- * para filtrar registros pelo atendimento corrente em vez de pelo patient_id
- * da linha-leito (que é reutilizada entre ocupantes — causa raiz dos dados
- * residuais). Ver: .lovable/memory/features/encounter-id-foundation-phase-a.md
+ * Hardening (bug JOSE WILLAME — leito reaproveitado): a linha-leito (patients.id)
+ * pode ter sido reassociada entre ocupantes, deixando `patient_encounters.patient_id`
+ * desalinhado (NULL ou apontando para outro paciente). O vínculo confiável é o
+ * `patient_registry_id` (prontuário do paciente). Por isso resolvemos o encontro
+ * pela tupla (registry_id ⊕ patient_id), priorizando o registry quando existir.
  *
- * Estratégia: prefere encontro com status diferente de 'closed' (ativo/aberto);
- * cai para o mais recente. Realtime ouve mudanças em patient_encounters do
- * próprio paciente para refletir alta/transferência imediatamente.
+ * Estratégia:
+ *   1) Buscar patient_registry_id do paciente.
+ *   2) Encontro ativo (status != closed) com registry_id correspondente.
+ *   3) Fallback: encontro ativo com patient_id correspondente.
+ *   4) Fallback final: encontro mais recente por registry_id ou patient_id.
+ *
+ * Realtime ouve mudanças em patient_encounters do paciente/registry para
+ * refletir alta/transferência imediatamente.
  */
 export function useActiveEncounterId(patientId: string | null): {
   encounterId: string | null;
@@ -29,35 +35,47 @@ export function useActiveEncounterId(patientId: string | null): {
     setLoading(true);
 
     const resolve = async () => {
-      // 1) Tenta encontro ativo/aberto
-      const { data: open } = await supabase
-        .from("patient_encounters")
-        .select("id, status, created_at")
-        .eq("patient_id", patientId)
-        .neq("status", "closed")
-        .order("created_at", { ascending: false })
-        .limit(1)
+      // 0) Descobrir o registry do paciente (vínculo estável)
+      const { data: patientRow } = await supabase
+        .from("patients")
+        .select("patient_registry_id")
+        .eq("id", patientId)
         .maybeSingle();
+      const registryId = patientRow?.patient_registry_id ?? null;
+
+      const pickActive = async (column: "registry_id" | "patient_id", value: string) => {
+        const { data } = await supabase
+          .from("patient_encounters")
+          .select("id, status, created_at")
+          .eq(column, value)
+          .neq("status", "closed")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        return data?.id ?? null;
+      };
+
+      const pickLatest = async (column: "registry_id" | "patient_id", value: string) => {
+        const { data } = await supabase
+          .from("patient_encounters")
+          .select("id")
+          .eq(column, value)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        return data?.id ?? null;
+      };
+
+      // 1) Ativo por registry (prioritário — sobrevive a reuso de leito)
+      let id = registryId ? await pickActive("registry_id", registryId) : null;
+      // 2) Ativo por patient_id (compat com encontros legados sem registry)
+      if (!id) id = await pickActive("patient_id", patientId);
+      // 3) Fallback: mais recente (ainda preferindo registry)
+      if (!id && registryId) id = await pickLatest("registry_id", registryId);
+      if (!id) id = await pickLatest("patient_id", patientId);
 
       if (cancelled) return;
-
-      if (open?.id) {
-        setEncounterId(open.id);
-        setLoading(false);
-        return;
-      }
-
-      // 2) Fallback: encontro mais recente (pode estar fechado)
-      const { data: latest } = await supabase
-        .from("patient_encounters")
-        .select("id")
-        .eq("patient_id", patientId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (cancelled) return;
-      setEncounterId(latest?.id || null);
+      setEncounterId(id);
       setLoading(false);
     };
 
@@ -70,6 +88,11 @@ export function useActiveEncounterId(patientId: string | null): {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "patient_encounters", filter: `patient_id=eq.${patientId}` },
+        () => { resolve().catch(() => {}); },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "patients", filter: `id=eq.${patientId}` },
         () => { resolve().catch(() => {}); },
       )
       .subscribe();
