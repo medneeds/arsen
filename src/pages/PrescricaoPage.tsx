@@ -802,7 +802,7 @@ function MedicationAutocomplete({
                         PADRÃO HMDM
                       </Badge>
                     )}
-                    {med.presentation}
+                    {formatPresentation(med.presentation)}
                   </span>
                 </div>
                 {med.defaultRoute !== '-' && (
@@ -963,7 +963,7 @@ const GlobalPrescriptionSearch = React.forwardRef<GlobalPrescriptionSearchHandle
                           PADRÃO HMDM
                         </Badge>
                       )}
-                      {med.presentation}
+                      {formatPresentation(med.presentation)}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -2088,7 +2088,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
             {item.highAlert && <AlertTriangle className="inline h-2.5 w-2.5 mr-0.5 text-red-500" />}
             {item.name}
             {item.presentation && item.presentation !== '-' && (
-              <span className="font-normal text-muted-foreground"> ({item.presentation})</span>
+              <span className="font-normal text-muted-foreground"> ({formatPresentation(item.presentation)})</span>
             )}
           </span>
           {compactParts.length > 0 && (
@@ -2174,7 +2174,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
               {item.highAlert && <AlertTriangle className="inline h-3 w-3 mr-1 text-red-500" />}
               {item.name}
               {item.presentation && item.presentation !== '-' && (
-                <span className="font-normal text-muted-foreground ml-1">({item.presentation})</span>
+                <span className="font-normal text-muted-foreground ml-1">({formatPresentation(item.presentation)})</span>
               )}
             </p>
             <MedicationFlagChips name={item.name} size="sm" />
@@ -3313,7 +3313,7 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
         <div style={{ fontSize: '8pt', lineHeight: '1.4', color: '#0f172a' }}>
           <span style={{ fontWeight: 800, letterSpacing: '-0.1px' }}>{item.name}</span>
           {item.presentation && item.presentation !== '-' && (
-            <span style={{ fontWeight: 400, color: '#64748b', fontSize: '7.5pt' }}> ({item.presentation})</span>
+            <span style={{ fontWeight: 400, color: '#64748b', fontSize: '7.5pt' }}> ({formatPresentation(item.presentation)})</span>
           )}
           {item.quantity && item.quantityUnit && (
             <span style={{ fontWeight: 600, color: '#334155', fontSize: '7.5pt' }}> — {item.quantity} {item.quantityUnit}</span>
