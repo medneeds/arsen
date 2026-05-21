@@ -8984,7 +8984,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
   const docCode = generatePrintDocCode("PRESC");
 
   return (
-    <div style={{ fontFamily: 'Arial, Helvetica, sans-serif', color: '#1e293b', width: '186mm', margin: '0 auto', lineHeight: 1.3 }}>
+    <div style={{ fontFamily: '"Helvetica Neue", "Segoe UI", "Inter", Arial, sans-serif', color: '#1e293b', width: '186mm', margin: '0 auto', lineHeight: 1.3, letterSpacing: '-0.005em' }}>
       {/* Bloco cabeçalho + paciente — não pode ser separado do corpo da prescrição */}
       <div style={{ pageBreakInside: 'avoid', breakInside: 'avoid', pageBreakAfter: 'avoid', breakAfter: 'avoid' }}>
       {/* Cabeçalho institucional Norma Zero (MAN.05-001) */}
@@ -9110,7 +9110,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                       <div key={i} style={{ fontWeight: ln.startsWith('  •') ? 500 : 600, paddingLeft: ln.startsWith('  •') ? '6px' : 0 }}>{ln.replace(/^  •\s*/, '• ')}</div>
                     ))}
                     {item.instructions && (
-                      <div style={{ marginTop: '2px', fontStyle: 'italic', color: '#475569' }}>// {item.instructions}</div>
+                      <div style={{ marginTop: '2px', fontStyle: 'italic', color: '#475569' }}>— {item.instructions}</div>
                     )}
                   </div>
                 )}
@@ -9127,7 +9127,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     {item.spacer && <span style={{ marginLeft: '4px', fontStyle: 'italic', color: '#475569' }}>· c/ espaçador</span>}
                     {item.gargle && <span style={{ marginLeft: '4px', fontStyle: 'italic', color: '#475569' }}>· gargarejo após</span>}
                     {item.instructions && (
-                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> // {item.instructions}</span>
+                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> — {item.instructions}</span>
+
                     )}
                   </div>
                 )}
@@ -9145,7 +9146,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                       item.concentration ? `Conc: ${item.concentration}` : null,
                     ].filter(Boolean).join(' · ')}
                     {item.instructions && (
-                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> // {item.instructions}</span>
+                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> — {item.instructions}</span>
+
                     )}
                   </div>
                 )}
@@ -9179,7 +9181,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                       item.nutZeroReason ? `Motivo jejum: ${item.nutZeroReason}` : null,
                     ].filter(Boolean).join(' · ')}
                     {item.instructions && (
-                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> // {item.instructions}</span>
+                      <span style={{ marginLeft: '6px', fontStyle: 'italic', color: '#475569' }}> — {item.instructions}</span>
                     )}
                   </div>
                 )}
@@ -9187,8 +9189,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 {/* Instruções livres / recomendações à enfermagem
                     (quando NÃO há preparo/inalação/insulina/nutrição que já as embutiu) */}
                 {item.instructions && !hasIvPreparo && !insulinDesc && !isInhalation && item.category !== 'nutrition' && (
-                  <div style={{ fontSize: '7pt', color: '#1e293b', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #0c4a6e', fontWeight: 500 }}>
-                    // {item.instructions}
+                  <div style={{ fontSize: '7pt', color: '#475569', lineHeight: 1.3, marginTop: '2px', paddingLeft: '8px', borderLeft: '2px solid #cbd5e1', fontStyle: 'italic', fontWeight: 500 }}>
+                    {item.instructions}
                   </div>
                 )}
               </td>
@@ -9243,7 +9245,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                             {item.route && item.route !== '-' && <span style={{ color: '#334155', fontWeight: 600, fontSize: '7pt' }}> · {abbrevRoute(item.route)}</span>}
                             {item.posology && item.posology !== '-' && <span style={{ color: '#1e293b', fontWeight: 600, fontSize: '7pt' }}> — {item.posology}</span>}
                             {item.instructions && (
-                              <span style={{ fontSize: '7pt', color: '#475569', fontStyle: 'italic', fontWeight: 500 }}> // {item.instructions}</span>
+                              <span style={{ fontSize: '7pt', color: '#475569', fontStyle: 'italic', fontWeight: 500 }}> — {item.instructions}</span>
                             )}
                           </td>
                         </tr>
