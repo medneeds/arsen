@@ -508,6 +508,8 @@ export function PatientMovementDialog({
         )}
 
 
+        {!isInternalTransferBlocked && (
+          <>
         {/* Patient */}
         <div className="space-y-1.5">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -584,6 +586,9 @@ export function PatientMovementDialog({
             className="resize-none"
           />
         </div>
+          </>
+        )}
+
 
         {/* Required document for Alta / Óbito */}
         {requiredDocType && (
