@@ -417,14 +417,41 @@ export function AdmissionDialog({ open, onOpenChange, patient, onSuccess }: Admi
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
         patient_id: patient.id,
+        patient_registry_id: (patient as any).patient_registry_id ?? null,
         created_by: user.id,
+        updated_by: user.id,
       };
 
-      const { error: ahError } = await supabase
-        .from("admission_histories")
-        .insert(admissionPayload as any);
+      // Idempotente: se já existe admissão p/ este leito+prontuário, atualiza; senão insere.
+      // Evita colisão com a antiga UNIQUE(patient_id) e suporta reuso do leito por novos pacientes.
+      let ahError: any = null;
+      if (admissionPayload.patient_registry_id) {
+        const { data: existing } = await supabase
+          .from("admission_histories")
+          .select("id")
+          .eq("patient_id", admissionPayload.patient_id)
+          .eq("patient_registry_id", admissionPayload.patient_registry_id)
+          .maybeSingle();
+        if (existing?.id) {
+          const { error } = await supabase
+            .from("admission_histories")
+            .update(admissionPayload as any)
+            .eq("id", existing.id);
+          ahError = error;
+        } else {
+          const { error } = await supabase
+            .from("admission_histories")
+            .insert(admissionPayload as any);
+          ahError = error;
+        }
+      } else {
+        const { error } = await supabase
+          .from("admission_histories")
+          .insert(admissionPayload as any);
+        ahError = error;
+      }
       if (ahError) {
-        console.error("admission_histories insert failed:", ahError);
+        console.error("admission_histories upsert failed:", ahError);
         throw new Error(`Falha ao gravar história admissional: ${ahError.message}`);
       }
 
