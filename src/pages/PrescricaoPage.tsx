@@ -4964,9 +4964,10 @@ const PrescricaoPage = () => {
       route: med.defaultRoute,
       posology: med.defaultPosology,
       schedule: med.defaultSchedule,
-      instructions: med.instructions || "",
+      instructions: "", // Recomendação sempre em branco — preenchimento exclusivo do médico
       category: med.category,
-      flags: med.instructions?.toLowerCase().includes('bomba de infusão') ? ['bi' as PrescriptionFlag] : [],
+      flags: [],
+
       highAlert: med.highAlert || false,
       status: 'active',
       infusionMode: 'BIC',
