@@ -585,23 +585,24 @@ const RequisicaoUnificadaPage = () => {
           className={cn(
             "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
             activeScope === "especial"
-              ? "border-amber-500 bg-amber-50 dark:bg-amber-500/10 shadow-sm ring-1 ring-amber-500/30"
+              ? "border-blue-700 bg-blue-100/60 dark:bg-blue-700/15 shadow-sm ring-1 ring-blue-700/30"
               : "border-border bg-background hover:bg-muted/40"
           )}
         >
-          <div className={cn("p-2 rounded-lg shrink-0", activeScope === "especial" ? "bg-amber-500/20" : "bg-muted")}>
-            <AlertTriangle className={cn("h-4 w-4", activeScope === "especial" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground")} />
+          <div className={cn("p-2 rounded-lg shrink-0", activeScope === "especial" ? "bg-blue-700/20" : "bg-muted")}>
+            <AlertTriangle className={cn("h-4 w-4", activeScope === "especial" ? "text-blue-800 dark:text-blue-200" : "text-muted-foreground")} />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <p className={cn("text-sm font-semibold", activeScope === "especial" ? "text-amber-700 dark:text-amber-300" : "text-foreground")}>
+              <p className={cn("text-sm font-semibold", activeScope === "especial" ? "text-blue-900 dark:text-blue-100" : "text-foreground")}>
                 Requisições Especiais
               </p>
-              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-amber-400 text-amber-600 dark:text-amber-400">Formulários próprios</Badge>
+              <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-blue-400 text-blue-700 dark:text-blue-300">Formulários próprios</Badge>
             </div>
             <p className="text-[10px] text-muted-foreground">APAC · Cultura · Hemocomponentes · SAT · AIH</p>
           </div>
         </button>
+
       </div>
 
       {/* ── Category Selector ── */}
