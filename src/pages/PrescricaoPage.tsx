@@ -9110,7 +9110,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                       <div key={i} style={{ fontWeight: ln.startsWith('  •') ? 500 : 600, paddingLeft: ln.startsWith('  •') ? '6px' : 0 }}>{ln.replace(/^  •\s*/, '• ')}</div>
                     ))}
                     {item.instructions && (
-                      <div style={{ marginTop: '2px', fontStyle: 'italic', color: '#475569' }}>// {item.instructions}</div>
+                      <div style={{ marginTop: '2px', fontStyle: 'italic', color: '#475569' }}>— {item.instructions}</div>
                     )}
                   </div>
                 )}
