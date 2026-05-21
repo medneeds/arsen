@@ -844,24 +844,32 @@ export function AppSidebar({
 
         {/* User info + logout */}
         <div className={cn(
-          "flex items-center gap-3 rounded-xl p-2 transition-all duration-200",
+          "flex items-center gap-2 rounded-xl p-2 transition-all duration-200",
           isCollapsed ? "justify-center" : "bg-card/50"
         )}>
-          {!isCollapsed && (
-            <>
-              <div className="bg-primary/10 rounded-full flex items-center justify-center h-9 w-9 flex-shrink-0">
-                <User className="text-primary h-4 w-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold truncate">
+          <button
+            type="button"
+            onClick={() => navigate("/meu-perfil")}
+            title="Meu perfil"
+            className={cn(
+              "group flex items-center gap-3 rounded-lg transition-all duration-200 hover:bg-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+              isCollapsed ? "p-1" : "flex-1 min-w-0 p-1 pr-2"
+            )}
+          >
+            <div className="bg-primary/10 group-hover:bg-primary/20 rounded-full flex items-center justify-center h-9 w-9 flex-shrink-0 transition-colors">
+              <User className="text-primary h-4 w-4" />
+            </div>
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-xs font-semibold truncate group-hover:text-primary transition-colors">
                   {user?.user_metadata?.username || user?.email?.split('@')[0]}
                 </p>
                 <p className="text-[10px] text-muted-foreground truncate">
                   {user?.email}
                 </p>
               </div>
-            </>
-          )}
+            )}
+          </button>
           <Button
             variant="ghost"
             size="icon"
