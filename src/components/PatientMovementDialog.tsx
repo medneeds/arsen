@@ -686,14 +686,17 @@ export function PatientMovementDialog({
               </Button>
               <Button
                 onClick={handleOpenConfirm}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isInternalTransferBlocked}
                 className="gap-2"
+                title={isInternalTransferBlocked ? "Use o menu do card do paciente no Mapa de Leitos." : undefined}
               >
                 {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {isSubmitting
                   ? "Registrando..."
+                  : isInternalTransferBlocked ? "Indisponível neste fluxo"
                   : requiredDocType ? "Revisar e confirmar" : "Confirmar"}
               </Button>
+
             </div>
           </DialogFooter>
         )}
