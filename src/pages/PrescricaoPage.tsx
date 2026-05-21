@@ -8343,12 +8343,28 @@ const PrescricaoPage = () => {
         <div className="flex gap-2">
           <Button
             size="sm"
-            onClick={handleRequestSign}
-            disabled={!canPrescribe || !!digitalSignature || activeItemsCount === 0}
+            variant="outline"
+            onClick={handleSaveDraft}
+            disabled={savingDraft || renewalPendingCount === 0 || !patient.name.trim()}
             className="gap-1.5 text-xs"
+            title={
+              renewalPendingCount === 0
+                ? "Nenhum item pendente — só salva rascunho com itens ainda não validados"
+                : `Salvar ${renewalPendingCount} item(ns) pendente(s) como rascunho (visível só p/ você)`
+            }
+          >
+            <Save className="h-3.5 w-3.5" />
+            {savingDraft ? "Salvando..." : "Salvar Rascunho"}
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleRequestSign}
+            disabled={!canPrescribe || activeItemsCount === 0}
+            className="gap-1.5 text-xs"
+            title={digitalSignature ? "Reassinar como médico do plantão — gera nova versão e atualiza o PDF" : "Assinar prescrição"}
           >
             <ShieldCheck className="h-3.5 w-3.5" />
-            {digitalSignature ? "Assinada" : "Assinar Prescrição"}
+            {digitalSignature ? "Reassinar Prescrição" : "Assinar Prescrição"}
           </Button>
         </div>
       </div>
