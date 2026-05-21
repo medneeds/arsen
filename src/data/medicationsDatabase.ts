@@ -35,16 +35,19 @@ export const CATEGORY_CONFIG: Record<PrescriptionCategory, {
   color: string;
   bgColor: string;
 }> = {
-  nutrition:     { label: 'Nutrição',          icon: 'UtensilsCrossed', color: 'text-emerald-500',  bgColor: 'bg-emerald-500/10' },
-  hydration:     { label: 'Hidratação',         icon: 'Droplets',       color: 'text-blue-500',     bgColor: 'bg-blue-500/10' },
-  replacement:   { label: 'Reposição',          icon: 'FlaskConical',   color: 'text-sky-500',      bgColor: 'bg-sky-500/10' },
-  medication:    { label: 'Medicamentos',      icon: 'Pill',           color: 'text-primary',      bgColor: 'bg-primary/10' },
-  antimicrobial: { label: 'Antimicrobianos',   shortLabel: 'ATB', icon: 'Shield',         color: 'text-violet-600',   bgColor: 'bg-violet-500/10' },
+  // Identidade visual UNIFICADA no AZUL INSTITUCIONAL (hsl 217 ~ slate-50 + blue-700).
+  // Apenas `high_alert` permanece vermelho por convenção ISMP-Brasil (sinal de segurança).
+  // Sutis variações de saturação/lightness preservam leitura entre categorias sem ruído cromático.
+  nutrition:     { label: 'Nutrição',          icon: 'UtensilsCrossed', color: 'text-[hsl(217,55%,38%)]', bgColor: 'bg-[hsl(217,55%,45%)]/10' },
+  hydration:     { label: 'Hidratação',         icon: 'Droplets',       color: 'text-[hsl(217,60%,42%)]', bgColor: 'bg-[hsl(217,60%,45%)]/10' },
+  replacement:   { label: 'Reposição',          icon: 'FlaskConical',   color: 'text-[hsl(217,65%,38%)]', bgColor: 'bg-[hsl(217,65%,45%)]/10' },
+  medication:    { label: 'Medicamentos',      icon: 'Pill',           color: 'text-[hsl(217,55%,35%)]', bgColor: 'bg-[hsl(217,55%,45%)]/10' },
+  antimicrobial: { label: 'Antimicrobianos',   shortLabel: 'ATB', icon: 'Shield',         color: 'text-[hsl(217,70%,36%)]', bgColor: 'bg-[hsl(217,70%,42%)]/10' },
   high_alert:    { label: 'Alta Vigilância',   shortLabel: 'MAV', icon: 'AlertTriangle',  color: 'text-red-500',      bgColor: 'bg-red-500/10' },
-  inhalation:    { label: 'Inalação',          icon: 'Wind',           color: 'text-cyan-500',     bgColor: 'bg-cyan-500/10' },
-  hemotherapy:   { label: 'Hemoterapia',       icon: 'TestTube',       color: 'text-rose-500',     bgColor: 'bg-rose-500/10' },
-  care:          { label: 'Cuidados',          icon: 'ClipboardList',  color: 'text-amber-500',    bgColor: 'bg-amber-500/10' },
-  nonstandard:   { label: 'Não Padrão',        icon: 'FileText',       color: 'text-gray-500',     bgColor: 'bg-gray-500/10' },
+  inhalation:    { label: 'Inalação',          icon: 'Wind',           color: 'text-[hsl(217,50%,42%)]', bgColor: 'bg-[hsl(217,50%,48%)]/10' },
+  hemotherapy:   { label: 'Hemoterapia',       icon: 'TestTube',       color: 'text-[hsl(217,55%,40%)]', bgColor: 'bg-[hsl(217,55%,46%)]/10' },
+  care:          { label: 'Cuidados',          icon: 'ClipboardList',  color: 'text-[hsl(217,45%,40%)]', bgColor: 'bg-[hsl(217,45%,48%)]/10' },
+  nonstandard:   { label: 'Não Padrão',        icon: 'FileText',       color: 'text-[hsl(217,25%,42%)]', bgColor: 'bg-[hsl(217,25%,50%)]/10' },
 };
 
 export const PRESCRIPTION_FLAGS = [
