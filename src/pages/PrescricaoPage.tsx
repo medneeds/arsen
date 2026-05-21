@@ -9795,7 +9795,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
             )}
 
             {careItems.length > 0 && (
-              <div style={{ marginTop: '8px', marginBottom: '3px', pageBreakInside: 'avoid' }}>
+              <div style={{ marginTop: '8px', marginBottom: '3px' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>
