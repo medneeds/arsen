@@ -651,29 +651,29 @@ export async function printRequisitionGuide(
       </colgroup>
       <tbody>
         <tr>
-          <th style="white-space:nowrap">Paciente</th>
-          <td style="font-weight:700;font-size:9.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(request.patient_name)}</td>
-          <th style="white-space:nowrap">Nº Pront.</th>
-          <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;font-size:7.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(medicalRecord || "—")}</td>
-          <th style="white-space:nowrap">Nº Atend.</th>
-          <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;font-size:7.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(encounterCode || "—")}</td>
+          <th>Paciente</th>
+          <td class="pid-strong" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(request.patient_name)}</td>
+          <th>Nº Pront.</th>
+          <td class="pid-mono" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(medicalRecord || "—")}</td>
+          <th>Nº Atend.</th>
+          <td class="pid-mono" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(encounterCode || "—")}</td>
         </tr>
         <tr>
-          <th style="white-space:nowrap">Setor</th><td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(sectorName || "—")}</td>
-          <th style="white-space:nowrap">Leito</th><td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(request.patient_bed || "—")}</td>
-          <th style="white-space:nowrap">Nasc. / Idade</th>
+          <th>Setor</th><td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(sectorName || "—")}</td>
+          <th>Leito</th><td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(request.patient_bed || "—")}</td>
+          <th>Nasc. / Idade</th>
           <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(fmtBirthDate(birthDate))}${ageY !== null ? ` <span style="color:#475569">(${ageY}a)</span>` : ""}</td>
         </tr>
         <tr>
-          <th style="white-space:nowrap">Solicitante</th>
+          <th>Solicitante</th>
           <td colspan="3" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(request.requested_by_name || "—")}</td>
-          <th style="white-space:nowrap">Solicitação</th>
+          <th>Solicitação</th>
           <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(createdStr)}</td>
         </tr>
         <tr>
-          <th style="white-space:nowrap">Especialidade</th>
-          <td colspan="3" style="background:#eff6ff;font-weight:700;font-size:9.5pt;color:#0a1628;word-break:break-word;line-height:1.2;white-space:normal">${escapeHtml(parecerSpecialtyLabel)}</td>
-          <th style="white-space:nowrap">Prioridade</th>
+          <th>Especialidade</th>
+          <td colspan="3" class="pid-especialidade">${escapeHtml(parecerSpecialtyLabel)}</td>
+          <th>Prioridade</th>
           <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span class="prio-badge" style="${priorityCss}">${escapeHtml(priorityLabel)}</span></td>
         </tr>
         ${
@@ -836,8 +836,12 @@ export async function printRequisitionGuide(
     .parecer-sign .psl span { font-size: 7pt; color: #475569; text-transform: uppercase; letter-spacing: 0.3pt; font-weight: 600; }
     .parecer-sign .psf { height: 14pt; }
     /* Identificação compacta do parecer */
-    .parecer-id th { font-size: 7pt; padding: 2.5pt 5pt; }
-    .parecer-id td { padding: 2.5pt 5pt; font-size: 8.5pt; }
+    .parecer-id { font-size: 7pt; }
+    .parecer-id th { font-size: 6.2pt !important; padding: 2pt 4pt !important; letter-spacing: 0.02em; text-transform: uppercase; color: #475569; white-space: nowrap; }
+    .parecer-id td { padding: 2pt 4pt !important; font-size: 7.4pt !important; line-height: 1.2 !important; }
+    .parecer-id td.pid-strong { font-size: 8pt !important; font-weight: 700; }
+    .parecer-id td.pid-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600; font-size: 6.6pt !important; }
+    .parecer-id td.pid-especialidade { background: #eff6ff; font-weight: 700; font-size: 8pt !important; color: #0a1628; word-break: break-word; white-space: normal; line-height: 1.15 !important; }
 
     ${isParecer ? `
       /* Cabeçalho compacto exclusivo do parecer */
