@@ -1861,9 +1861,11 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       const subLabel: Record<NonNullable<PrescriptionItem['nutritionType']>, string> = {
         diet_enteral: 'Enteral',
         diet_oral: 'Oral',
+        diet_parenteral: 'Parenteral',
         water: 'Água',
         npt: 'NPT',
         zero: 'Jejum',
+        supplement: 'Suplementação',
       };
       compactParts.push(subLabel[sub]);
 
