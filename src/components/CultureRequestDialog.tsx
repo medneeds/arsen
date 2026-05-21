@@ -30,6 +30,8 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { asUuidOrNull } from "@/lib/utils";
 import { SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
+import { usePatientLive } from "@/hooks/usePatientLive";
+import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { toast } from "sonner";
 import {
   PrintableCultureRequest,
