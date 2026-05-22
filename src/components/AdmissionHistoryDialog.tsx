@@ -48,7 +48,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
     if (open && patient.id) {
       fetchAdmissionHistory();
     }
-  }, [open, patient.id]);
+  }, [open, patient.id, resolvedRegistryId]);
 
   const fetchAdmissionHistory = async () => {
     setLoading(true);
