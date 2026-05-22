@@ -244,7 +244,7 @@ export default function Relatorio1Page() {
     list.push({
       render: (n, total) => (
         <Slide n={n} total={total} kicker="01 · Visão geral" title="Sumário executivo da semana">
-          <div className="grid grid-2">
+          <div className="grid grid-exec">
             <div className="card">
               <h3>O que foi entregue de fato</h3>
               <ul>
@@ -255,9 +255,9 @@ export default function Relatorio1Page() {
                 <li className="muted-line"><em>Predisposição em produto (ainda fora da implantação assistencial):</em> NIR, Farmácia, Urgência, Emergência, Laboratório, Imagem, Gestão.</li>
               </ul>
             </div>
-            <div className="card accent">
+            <div className="card accent kpi-card">
               <h3>Indicadores-chave</h3>
-              <div className="kpis">
+              <div className="kpis kpis-exec">
                 <div className="kpi"><span>{taxaOcup}%</span><small>Taxa de ocupação dos setores ativos</small></div>
                 <div className="kpi"><span>{atividade[0].valor}</span><small>Prescrições emitidas</small></div>
                 <div className="kpi"><span>{atividade[1].valor}</span><small>Evoluções clínicas</small></div>
