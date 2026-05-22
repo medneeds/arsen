@@ -41,6 +41,9 @@ export function useLatestEvolution(
   // Fase B.1 — isola pelo atendimento ativo
   const { encounterId: activeEncounterId } = useActiveEncounterId(patientId);
 
+  // 🔒 Documentação segue o paciente: priorizamos patient_registry_id quando resolvido.
+  const { registryId: resolvedRegistryId } = useResolvedRegistryId(patientId);
+
   const buildPreview = (soap: any): string => {
     if (!soap) return "";
     const a = soap.assessment || soap.A || soap.avaliacao;
