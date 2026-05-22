@@ -185,7 +185,7 @@ export function useEvolutions(
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [safePatientId, fbName, fbBed, fbSector, currentHospital, currentState, activeEncounterId]);
+  }, [safePatientId, fbName, fbBed, fbSector, currentHospital, currentState, activeEncounterId, resolvedRegistryId]);
 
   const fetchEvolutions = useCallback(() => loadEvolutions(false), [loadEvolutions]);
   const refreshSilently = useCallback(() => loadEvolutions(true), [loadEvolutions]);
