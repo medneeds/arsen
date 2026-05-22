@@ -68,7 +68,13 @@ export function useLatestEvolution(
       .order("created_at", { ascending: false })
       .limit(1);
     if (patientId) {
-      q = q.eq("patient_id", patientId);
+      if (resolvedRegistryId) {
+        q = q.or(
+          `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${patientId})`,
+        );
+      } else {
+        q = q.eq("patient_id", patientId);
+      }
       if (activeEncounterId) {
         q = q.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
       }
