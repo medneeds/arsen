@@ -682,7 +682,14 @@ const styles = `
 }
 .cover-meta span { display:block; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #93c5fd; font-weight: 600; }
 .cover-meta strong { display:block; margin-top:6px; font-size: 13px; color: #f8fafc; font-weight: 600; line-height: 1.3; }
-.cover-footer { position:absolute; bottom: 0; left:0; right:0; padding: 14px 44px; color: var(--muted); border-top:1px solid var(--line); background: #ffffff; }
+.cover-footer { position:absolute; bottom: 0; left:0; right:0; padding: 14px 44px; color: var(--muted); border-top:1px solid var(--line); background: #ffffff; z-index: 3; }
+
+/* Slide de encerramento — espaço extra inferior + hero levemente menor para impedir sobreposição com rodapé */
+.slide-cover.end .cover-content { padding: 124px 56px 96px; }
+.slide-cover.end .cover-wordmark-hero { font-size: 132px; margin: 0 0 14px; }
+.slide-cover.end .cover-title { font-size: 38px; margin: 8px 0 12px; }
+.slide-cover.end .cover-sub { margin-bottom: 18px; }
+.slide-cover.end .cover-meta { margin-bottom: 8px; }
 
 /* Grids */
 .grid { display: grid; gap: 14px; }
