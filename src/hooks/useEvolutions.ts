@@ -5,6 +5,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { toast } from "sonner";
 import { parseDiagnosesText } from "@/lib/diagnosesText";
 import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
+import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 
 export interface EvolutionRecord {
   id: string;
@@ -80,6 +81,12 @@ export function useEvolutions(
   // arrastar evoluções do ocupante anterior do leito.
   const { encounterId: activeEncounterId } = useActiveEncounterId(safePatientId);
 
+  // 🔒 Documentação SEGUE O PACIENTE: resolvemos o patient_registry_id (identidade
+  // clínica permanente) a partir do bed-row atual e priorizamos ele no filtro.
+  // Assim, ao transferir ou realocar o paciente entre leitos, a timeline de
+  // evoluções continua junto — independente do `patients.id` da linha do leito.
+  const { registryId: resolvedRegistryId } = useResolvedRegistryId(safePatientId);
+
   const loadEvolutions = useCallback(async (silent: boolean = false) => {
     if (!currentHospital || !currentState) return;
     if (!silent) setLoading(true);
@@ -94,11 +101,17 @@ export function useEvolutions(
         .is("archived_at", null)
         .order("created_at", { ascending: false });
 
-      if (safePatientId) {
+      if (resolvedRegistryId) {
+        // Identidade resolvida: traz tudo do prontuário + legados sem carimbo
+        // que pertençam ao leito atual (não vaza histórico de outros pacientes).
+        query = query.or(
+          `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${safePatientId})`,
+        );
+        if (activeEncounterId) {
+          query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
+        }
+      } else if (safePatientId) {
         query = query.eq("patient_id", safePatientId);
-        // Fase B.1: se já temos encounter ativo, isola por ele;
-        // registros legados sem carimbo continuam visíveis enquanto o
-        // patient_id atual for o mesmo (some quando o leito é reusado).
         if (activeEncounterId) {
           query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
         }
@@ -172,7 +185,7 @@ export function useEvolutions(
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [safePatientId, fbName, fbBed, fbSector, currentHospital, currentState, activeEncounterId]);
+  }, [safePatientId, fbName, fbBed, fbSector, currentHospital, currentState, activeEncounterId, resolvedRegistryId]);
 
   const fetchEvolutions = useCallback(() => loadEvolutions(false), [loadEvolutions]);
   const refreshSilently = useCallback(() => loadEvolutions(true), [loadEvolutions]);
@@ -200,6 +213,9 @@ export function useEvolutions(
         .from("clinical_evolutions")
         .insert({
           patient_id: safePatientId,
+          // 🔒 Carimba a identidade clínica permanente (segue o paciente entre leitos).
+          patient_registry_id: resolvedRegistryId ?? null,
+          encounter_id: activeEncounterId ?? null,
           patient_name: patientName,
           patient_bed: patientBed,
           patient_sector: patientSector,

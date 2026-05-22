@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
+import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 
 export interface LatestEvolutionDevice {
   id: string;
@@ -40,6 +41,9 @@ export function useLatestEvolution(
   // Fase B.1 — isola pelo atendimento ativo
   const { encounterId: activeEncounterId } = useActiveEncounterId(patientId);
 
+  // 🔒 Documentação segue o paciente: priorizamos patient_registry_id quando resolvido.
+  const { registryId: resolvedRegistryId } = useResolvedRegistryId(patientId);
+
   const buildPreview = (soap: any): string => {
     if (!soap) return "";
     const a = soap.assessment || soap.A || soap.avaliacao;
@@ -64,7 +68,13 @@ export function useLatestEvolution(
       .order("created_at", { ascending: false })
       .limit(1);
     if (patientId) {
-      q = q.eq("patient_id", patientId);
+      if (resolvedRegistryId) {
+        q = q.or(
+          `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${patientId})`,
+        );
+      } else {
+        q = q.eq("patient_id", patientId);
+      }
       if (activeEncounterId) {
         q = q.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
       }
@@ -89,7 +99,7 @@ export function useLatestEvolution(
       setEvolution(null);
     }
     setLoading(false);
-  }, [patientId, patientName, hospitalUnitId, activeEncounterId]);
+  }, [patientId, patientName, hospitalUnitId, activeEncounterId, resolvedRegistryId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
