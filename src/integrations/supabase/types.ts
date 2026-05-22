@@ -24,6 +24,7 @@ export type Database = {
           created_by: string | null
           department: string
           diagnostic_hypothesis: string | null
+          encounter_id: string | null
           hospital_unit_id: string
           id: string
           initial_conduct: string | null
@@ -43,6 +44,7 @@ export type Database = {
           created_by?: string | null
           department?: string
           diagnostic_hypothesis?: string | null
+          encounter_id?: string | null
           hospital_unit_id: string
           id?: string
           initial_conduct?: string | null
@@ -62,6 +64,7 @@ export type Database = {
           created_by?: string | null
           department?: string
           diagnostic_hypothesis?: string | null
+          encounter_id?: string | null
           hospital_unit_id?: string
           id?: string
           initial_conduct?: string | null
@@ -73,6 +76,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "admission_histories_encounter_id_fkey"
+            columns: ["encounter_id"]
+            isOneToOne: false
+            referencedRelation: "patient_encounters"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "admission_histories_hospital_unit_id_fkey"
             columns: ["hospital_unit_id"]

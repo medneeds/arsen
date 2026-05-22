@@ -15,6 +15,7 @@ import { ClipboardList, Save, Loader2, CheckCircle2, Clock, Stethoscope } from "
 import { supabase } from "@/integrations/supabase/client";
 import { useHospital } from "@/contexts/HospitalContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -29,6 +30,7 @@ interface AdmissionHistoryDialogProps {
 export function AdmissionHistoryDialog({ patient, open, onOpenChange }: AdmissionHistoryDialogProps) {
   const { currentHospital, currentState } = useHospital();
   const { user } = useAuth();
+  const { registryId: resolvedRegistryId } = useResolvedRegistryId(patient.id);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [existingId, setExistingId] = useState<string | null>(null);
@@ -46,16 +48,23 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
     if (open && patient.id) {
       fetchAdmissionHistory();
     }
-  }, [open, patient.id]);
+  }, [open, patient.id, resolvedRegistryId]);
 
   const fetchAdmissionHistory = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("admission_histories")
         .select("*")
-        .eq("patient_id", patient.id)
-        .maybeSingle();
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      query = resolvedRegistryId
+        ? query.eq("patient_registry_id", resolvedRegistryId)
+        : query.eq("patient_id", patient.id);
+
+      const { data: rows, error } = await query;
+      const data = rows?.[0] || null;
 
       if (error) throw error;
 
@@ -101,6 +110,7 @@ export function AdmissionHistoryDialog({ patient, open, onOpenChange }: Admissio
     try {
       const payload = {
         patient_id: patient.id,
+        patient_registry_id: resolvedRegistryId ?? (patient as any).patient_registry_id ?? null,
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
         chief_complaint: chiefComplaint || null,
