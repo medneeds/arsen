@@ -42,6 +42,7 @@ export function useActivePrescription(
       .from("prescriptions")
       .select("id, status, version, items, digital_signature, updated_at, created_at")
       .eq("hospital_unit_id", hospitalUnitId)
+      .is("archived_at", null)
       .neq("status", "draft");
 
     if (resolvedRegistryId) {
