@@ -551,7 +551,14 @@ const styles = `
 }
 .slide-header { display:flex; align-items:center; justify-content:space-between; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
 .slide-header .brand { display:flex; align-items:center; gap:10px; font-size: 12px; }
-.brand-arsen { height: 22px; width: auto; object-fit: contain; }
+.brand-arsen-wordmark {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  line-height: 1;
+}
 .brand-socorrao { height: 22px; width: auto; object-fit: contain; }
 .brand-divider { width: 1px; height: 18px; background: var(--line); }
 .brand-sub { color: var(--muted); font-weight: 500; letter-spacing: .04em; margin-left: 4px; }
