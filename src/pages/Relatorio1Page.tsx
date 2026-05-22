@@ -585,13 +585,37 @@ const styles = `
     linear-gradient(135deg, #07142b 0%, #0f2746 55%, #0a1a36 100%);
 }
 .cover-content { position: relative; z-index: 1; color: #f8fafc; padding: 56px 56px; height: 100%; display:flex; flex-direction:column; justify-content:center; }
-.cover-logos { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
+.cover-logos { display: flex; align-items: center; gap: 20px; margin-bottom: 26px; }
 .cover-logo-cross { height: 56px; width: auto; filter: drop-shadow(0 4px 12px rgba(0,0,0,.3)); }
-.cover-logo-arsen { height: 44px; width: auto; filter: brightness(0) invert(1) drop-shadow(0 4px 12px rgba(0,0,0,.3)); }
-.cover-x { font-size: 28px; color: rgba(255,255,255,.4); font-weight: 200; }
+.cover-wordmark {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  font-size: 46px;
+  letter-spacing: 0.04em;
+  color: #f8fafc;
+  line-height: 1;
+  text-shadow: 0 4px 18px rgba(0,0,0,.35);
+}
+.cover-x { font-size: 30px; color: rgba(255,255,255,.35); font-weight: 200; }
 .kicker.light { color: #93c5fd; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; font-weight: 600; }
-.cover-title { font-family: 'Georgia', serif; font-weight: 700; font-size: 52px; line-height: 1.05; letter-spacing: -0.03em; margin: 12px 0 16px; }
-.cover-title span { color: #bfdbfe; font-weight: 400; font-size: 32px; display: inline-block; margin-top: 8px; }
+.cover-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 600;
+  font-size: 54px;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  margin: 14px 0 18px;
+}
+.cover-title span {
+  font-family: 'Playfair Display', Georgia, serif;
+  color: #bfdbfe;
+  font-weight: 300;
+  font-style: italic;
+  font-size: 30px;
+  display: inline-block;
+  margin-top: 10px;
+  letter-spacing: 0;
+}
 .cover-sub { font-size: 15px; color: #cbd5e1; margin: 0 0 28px; }
 .cover-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 920px; }
 .cover-meta > div { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); padding: 12px 14px; border-radius: 8px; }
