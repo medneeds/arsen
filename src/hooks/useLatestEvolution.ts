@@ -99,7 +99,7 @@ export function useLatestEvolution(
       setEvolution(null);
     }
     setLoading(false);
-  }, [patientId, patientName, hospitalUnitId, activeEncounterId]);
+  }, [patientId, patientName, hospitalUnitId, activeEncounterId, resolvedRegistryId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
