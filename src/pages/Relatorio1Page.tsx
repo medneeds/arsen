@@ -120,7 +120,7 @@ function Slide({ children, kicker, title, n, total }: { children: React.ReactNod
     <section className="slide">
       <header className="slide-header">
         <div className="brand">
-          <img src={arsenLogo} alt="Arsen" className="brand-arsen" />
+          <span className="brand-arsen-wordmark">Arsen</span>
           <span className="brand-divider" />
           <img src={socorraoCross} alt="Socorrão I" className="brand-socorrao" />
           <span className="brand-sub">Relatório de Implantação · Semana 1</span>
