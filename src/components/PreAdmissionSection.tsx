@@ -494,8 +494,71 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
               </div>
             );
           })()}
+
+          {/* Pré-admissões canceladas — bloco recolhível para resgate */}
+          {showCancelled && (
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                <History className="h-3 w-3" />
+                Pré-admissões canceladas
+                <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                  {cancelledList.length}
+                </Badge>
+                <span className="text-[10px] normal-case font-normal text-muted-foreground/80">
+                  (últimos 30 registros — reabra para devolver à fila)
+                </span>
+              </div>
+              {cancelledList.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="p-3 text-center text-xs text-muted-foreground">
+                    Nenhuma pré-admissão cancelada no escopo atual.
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                  {cancelledList.map(pa => {
+                    const age = calcAge(pa.birth_date);
+                    return (
+                      <Card key={pa.id} className="border-l-4 border-l-muted-foreground/30 opacity-90">
+                        <CardContent className="p-3 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-bold text-xs truncate">{pa.patient_name}</p>
+                              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
+                                {age !== null && <span>{age}a</span>}
+                                {pa.sex && <span>• {pa.sex}</span>}
+                                {pa.medical_record && <span>• Pront: {pa.medical_record}</span>}
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="text-[9px] shrink-0 px-1.5 py-0.5">
+                              CANCELADA
+                            </Badge>
+                          </div>
+                          {pa.destination_sector && (
+                            <p className="text-[10px] text-muted-foreground">
+                              Destino original: {pa.destination_sector}
+                            </p>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full h-6 text-[10px] gap-1 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+                            onClick={() => setReopenTarget(pa)}
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                            Reabrir pré-admissão
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </CollapsibleContent>
       </Collapsible>
+
 
       {currentHospital?.id && currentState?.id && (
         <PatientSearchActionsDialog
