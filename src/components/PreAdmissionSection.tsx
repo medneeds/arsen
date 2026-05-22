@@ -11,8 +11,9 @@ import { RiskClassificationDialog } from "./RiskClassificationDialog";
 import { AdmitPatientDialog } from "./AdmitPatientDialog";
 import { 
   UserPlus, Shield, Trash2, Edit, ChevronDown, ChevronUp, 
-  Clock, AlertTriangle, User, Calendar, BedDouble, Search, X
+  Clock, AlertTriangle, User, Calendar, BedDouble, Search, X, RotateCcw, History
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
@@ -73,6 +74,10 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
   ref
 ) {
   const [preAdmissions, setPreAdmissions] = useState<PreAdmission[]>([]);
+  const [cancelledList, setCancelledList] = useState<PreAdmission[]>([]);
+  const [showCancelled, setShowCancelled] = useState(false);
+  const [reopenTarget, setReopenTarget] = useState<PreAdmission | null>(null);
+  const [isReopening, setIsReopening] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
   const [showRegistration, setShowRegistration] = useState(false);
   const [classifyTarget, setClassifyTarget] = useState<PreAdmission | null>(null);
@@ -85,6 +90,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
   const [actionPatient, setActionPatient] = useState<RegistryPatientLite | null>(null);
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
+
 
   const fetchPreAdmissions = async () => {
     if (!currentHospital?.id || !currentState?.id) return;
@@ -114,9 +120,63 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
     }
   };
 
+  const fetchCancelled = async () => {
+    if (!currentHospital?.id || !currentState?.id) return;
+    try {
+      let query = supabase
+        .from("pre_admissions")
+        .select("*")
+        .eq("hospital_unit_id", currentHospital.id)
+        .eq("state_id", currentState.id)
+        .eq("status", "cancelado")
+        .order("updated_at", { ascending: false })
+        .limit(30);
+      if (sectorFilterLabel) {
+        // Mostra os cancelados deste setor OU aqueles sem destino (para resgate)
+        query = query.or(`destination_sector.eq.${sectorFilterLabel},destination_sector.is.null`);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      setCancelledList((data as PreAdmission[]) || []);
+    } catch (err) {
+      console.error("Fetch cancelled error:", err);
+    }
+  };
+
+  const handleReopen = async () => {
+    if (!reopenTarget) return;
+    setIsReopening(true);
+    try {
+      const { error } = await supabase
+        .from("pre_admissions")
+        .update({
+          status: "aguardando_leito",
+          destination_bed: null,
+          // mantém destination_sector original; usuário pode trocar no AdmitPatientDialog
+        })
+        .eq("id", reopenTarget.id);
+      if (error) throw error;
+      toast({
+        title: "Pré-admissão reaberta",
+        description: `${reopenTarget.patient_name} voltou para a fila de alocação.`,
+      });
+      setReopenTarget(null);
+      fetchPreAdmissions();
+      fetchCancelled();
+    } catch (err: any) {
+      toast({ title: "Erro ao reabrir", description: err.message, variant: "destructive" });
+    } finally {
+      setIsReopening(false);
+    }
+  };
+
   useEffect(() => {
     fetchPreAdmissions();
   }, [currentHospital?.id, currentState?.id, sectorFilterLabel]);
+
+  useEffect(() => {
+    if (showCancelled) fetchCancelled();
+  }, [showCancelled, currentHospital?.id, currentState?.id, sectorFilterLabel]);
 
   // Expor refresh imperativo (ex.: para o botão "Atualizar mapa")
   useImperativeHandle(ref, () => ({ refresh: fetchPreAdmissions }), [currentHospital?.id, currentState?.id, sectorFilterLabel]);
@@ -129,11 +189,15 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "pre_admissions", filter: `hospital_unit_id=eq.${currentHospital.id}` },
-        () => fetchPreAdmissions()
+        () => {
+          fetchPreAdmissions();
+          if (showCancelled) fetchCancelled();
+        }
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [currentHospital?.id, currentState?.id, sectorFilterLabel]);
+  }, [currentHospital?.id, currentState?.id, sectorFilterLabel, showCancelled]);
+
 
   // Busca no patient_registry com debounce — alimenta a seção "Pacientes do hospital"
   useEffect(() => {
@@ -259,10 +323,24 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                 </button>
               )}
             </div>
+            <Button
+              size="sm"
+              variant={showCancelled ? "secondary" : "outline"}
+              onClick={() => setShowCancelled(v => !v)}
+              className="gap-1 text-xs h-7"
+              title="Ver pré-admissões canceladas para reabrir"
+            >
+              <History className="h-3.5 w-3.5" />
+              Canceladas
+              {cancelledList.length > 0 && (
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">{cancelledList.length}</Badge>
+              )}
+            </Button>
             <Button size="sm" onClick={() => setShowRegistration(true)} className="gap-1 text-xs h-7">
               <UserPlus className="h-3.5 w-3.5" />
               Cadastrar Paciente
             </Button>
+
           </div>
         </div>
 
@@ -416,8 +494,71 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
               </div>
             );
           })()}
+
+          {/* Pré-admissões canceladas — bloco recolhível para resgate */}
+          {showCancelled && (
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                <History className="h-3 w-3" />
+                Pré-admissões canceladas
+                <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                  {cancelledList.length}
+                </Badge>
+                <span className="text-[10px] normal-case font-normal text-muted-foreground/80">
+                  (últimos 30 registros — reabra para devolver à fila)
+                </span>
+              </div>
+              {cancelledList.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="p-3 text-center text-xs text-muted-foreground">
+                    Nenhuma pré-admissão cancelada no escopo atual.
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                  {cancelledList.map(pa => {
+                    const age = calcAge(pa.birth_date);
+                    return (
+                      <Card key={pa.id} className="border-l-4 border-l-muted-foreground/30 opacity-90">
+                        <CardContent className="p-3 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-bold text-xs truncate">{pa.patient_name}</p>
+                              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
+                                {age !== null && <span>{age}a</span>}
+                                {pa.sex && <span>• {pa.sex}</span>}
+                                {pa.medical_record && <span>• Pront: {pa.medical_record}</span>}
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="text-[9px] shrink-0 px-1.5 py-0.5">
+                              CANCELADA
+                            </Badge>
+                          </div>
+                          {pa.destination_sector && (
+                            <p className="text-[10px] text-muted-foreground">
+                              Destino original: {pa.destination_sector}
+                            </p>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full h-6 text-[10px] gap-1 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+                            onClick={() => setReopenTarget(pa)}
+                          >
+                            <RotateCcw className="h-3 w-3" />
+                            Reabrir pré-admissão
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </CollapsibleContent>
       </Collapsible>
+
 
       {currentHospital?.id && currentState?.id && (
         <PatientSearchActionsDialog
@@ -456,19 +597,77 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar Pré-Admissão?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Deseja cancelar a pré-admissão de <strong>{deleteTarget?.patient_name}</strong>?
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Cancelar a pré-admissão de <span className="text-destructive">{deleteTarget?.patient_name}</span>?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p className="text-foreground">
+                  Esta ação <strong>retira o paciente de todas as filas de alocação</strong> (NIR, UTI, UCI, enfermaria).
+                </p>
+                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-[12px] space-y-1">
+                  <p className="font-semibold text-amber-700 dark:text-amber-400">O que acontece:</p>
+                  <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                    <li>O card some do painel "Aguardando Pré-admissão".</li>
+                    <li>Nenhum leito será marcado como ocupado por este paciente.</li>
+                    <li>O prontuário e o cadastro do paciente <strong>permanecem intactos</strong>.</li>
+                    <li>Para readmitir, você poderá <strong>reabrir</strong> esta pré-admissão na aba <em>Canceladas</em> (sem precisar recadastrar).</li>
+                  </ul>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Use o cancelamento apenas se a chegada não se confirmou, houve duplicidade, ou o paciente foi para outro fluxo.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Não</AlertDialogCancel>
+            <AlertDialogCancel>Manter na fila</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Sim, Cancelar
+              Sim, cancelar pré-admissão
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reabrir pré-admissão cancelada */}
+      <AlertDialog open={!!reopenTarget} onOpenChange={(open) => !open && !isReopening && setReopenTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-emerald-600" />
+              Reabrir pré-admissão de <span className="text-emerald-700 dark:text-emerald-400">{reopenTarget?.patient_name}</span>?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p className="text-foreground">
+                  O paciente voltará para a fila <strong>"Aguardando Pré-admissão (Alocação) em Leito"</strong> com status <code className="text-[11px] px-1 py-0.5 rounded bg-muted">aguardando_leito</code>.
+                </p>
+                <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2 text-[12px] space-y-1">
+                  <p className="font-semibold text-emerald-700 dark:text-emerald-400">O que acontece:</p>
+                  <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                    <li>O cadastro e o prontuário <strong>são preservados</strong> (mesmo registry e mesmo número de prontuário).</li>
+                    <li>Destino original: <strong>{reopenTarget?.destination_sector || "—"}</strong>. Você poderá trocar o setor ao admitir.</li>
+                    <li>O leito de destino é limpo — escolha no diálogo de admissão (incluindo Maca Extra, se aplicável).</li>
+                    <li>Esta ação fica registrada na auditoria.</li>
+                  </ul>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isReopening}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleReopen(); }}
+              disabled={isReopening}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {isReopening ? "Reabrindo..." : "Sim, reabrir e enviar para a fila"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </>
   );
 });
