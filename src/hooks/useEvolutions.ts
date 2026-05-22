@@ -81,12 +81,41 @@ export function useEvolutions(
   // arrastar evoluções do ocupante anterior do leito.
   const { encounterId: activeEncounterId } = useActiveEncounterId(safePatientId);
 
+  // 🔒 Documentação SEGUE O PACIENTE: resolvemos o patient_registry_id (identidade
+  // clínica permanente) a partir do bed-row atual e priorizamos ele no filtro.
+  // Assim, ao transferir ou realocar o paciente entre leitos, a timeline de
+  // evoluções continua junto — independente do `patients.id` da linha do leito.
+  const { registryId: resolvedRegistryId } = useResolvedRegistryId(safePatientId);
+
   const loadEvolutions = useCallback(async (silent: boolean = false) => {
     if (!currentHospital || !currentState) return;
     if (!silent) setLoading(true);
     try {
       let query = supabase
         .from("clinical_evolutions")
+        .select("*")
+        .eq("hospital_unit_id", currentHospital.id)
+        .eq("state_id", currentState.id)
+        // ⚠️ Nunca trazer evoluções arquivadas (paciente anterior do leito,
+        // reverts de re-bind incorreto, etc). Auditoria preservada no banco.
+        .is("archived_at", null)
+        .order("created_at", { ascending: false });
+
+      if (resolvedRegistryId) {
+        // Identidade resolvida: traz tudo do prontuário + legados sem carimbo
+        // que pertençam ao leito atual (não vaza histórico de outros pacientes).
+        query = query.or(
+          `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${safePatientId})`,
+        );
+        if (activeEncounterId) {
+          query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
+        }
+      } else if (safePatientId) {
+        query = query.eq("patient_id", safePatientId);
+        if (activeEncounterId) {
+          query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
+        }
+      } else if (fbName) {
         .select("*")
         .eq("hospital_unit_id", currentHospital.id)
         .eq("state_id", currentState.id)
