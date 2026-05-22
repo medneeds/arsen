@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
+import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
 
 export interface ActivePrescriptionSummary {
   id: string;
@@ -29,6 +30,7 @@ export function useActivePrescription(
   const [data, setData] = useState<ActivePrescriptionSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const { encounterId: activeEncounterId } = useActiveEncounterId(patientId ?? null);
+  const { registryId: resolvedRegistryId } = useResolvedRegistryId(patientId ?? null);
 
   const fetch = useCallback(async () => {
     if (!patientName || !hospitalUnitId) {
@@ -40,8 +42,14 @@ export function useActivePrescription(
       .from("prescriptions")
       .select("id, status, version, items, digital_signature, updated_at, created_at")
       .eq("hospital_unit_id", hospitalUnitId)
-      .eq("patient_name", patientName.trim())
       .neq("status", "draft");
+
+    if (resolvedRegistryId) {
+      query = query.eq("patient_registry_id", resolvedRegistryId);
+    } else {
+      query = query.eq("patient_name", patientName.trim());
+    }
+
     if (patientId && activeEncounterId) {
       query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
     }
@@ -63,7 +71,7 @@ export function useActivePrescription(
       setData(null);
     }
     setLoading(false);
-  }, [patientName, hospitalUnitId, patientId, activeEncounterId]);
+  }, [patientName, hospitalUnitId, patientId, activeEncounterId, resolvedRegistryId]);
 
   useEffect(() => {
     fetch();
@@ -83,7 +91,10 @@ export function useActivePrescription(
         },
         (payload) => {
           const row: any = payload.new || payload.old;
-          if (row?.patient_name?.trim() === patientName.trim()) {
+          if (
+            (resolvedRegistryId && row?.patient_registry_id === resolvedRegistryId) ||
+            (!resolvedRegistryId && row?.patient_name?.trim() === patientName.trim())
+          ) {
             fetch();
           }
         },
@@ -92,7 +103,7 @@ export function useActivePrescription(
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [patientName, hospitalUnitId, fetch]);
+  }, [patientName, hospitalUnitId, fetch, resolvedRegistryId]);
 
   return { prescription: data, loading, refresh: fetch };
 }
