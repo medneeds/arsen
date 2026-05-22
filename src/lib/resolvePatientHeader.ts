@@ -148,14 +148,28 @@ export async function resolvePatientHeader(
   }
 
   // 1c) Fallback por medical_record (legado/PIS) → registry
+  // GUARDA: só aceita o vínculo se o nome do registry bater (NFD/upper)
+  // com o nome da linha `patients`. Sem isso, um medical_record
+  // incorretamente apontando para outro paciente vaza dados (CPF, DN, mãe,
+  // endereço) no cabeçalho do PDF. Bug observado: Luis Carlos x Marilene em L09.
   if (!registryRow && patientMedicalRecord) {
     const { data: reg } = await supabase
       .from("patient_registry")
       .select("*")
       .eq("medical_record", patientMedicalRecord)
       .maybeSingle();
-    if (reg) registryRow = reg;
+    if (reg) {
+      const norm = (s: string) =>
+        s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+      const patientNameNorm = norm(patientRowName || fallbackName || "");
+      const regNameNorm = norm((reg as any).full_name || "");
+      if (!patientNameNorm || !regNameNorm || patientNameNorm === regNameNorm) {
+        registryRow = reg;
+      }
+      // se nomes divergem → descarta o vínculo (não polui o cabeçalho)
+    }
   }
+
 
   // 1d) Por nome SOMENTE quando não temos patientId — e nunca para NI
   const candidateName = (patientRowName || fallbackName || "").trim();
