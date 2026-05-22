@@ -11,8 +11,9 @@ import { RiskClassificationDialog } from "./RiskClassificationDialog";
 import { AdmitPatientDialog } from "./AdmitPatientDialog";
 import { 
   UserPlus, Shield, Trash2, Edit, ChevronDown, ChevronUp, 
-  Clock, AlertTriangle, User, Calendar, BedDouble, Search, X
+  Clock, AlertTriangle, User, Calendar, BedDouble, Search, X, RotateCcw, History
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import {
