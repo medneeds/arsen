@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import { Printer, Download, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import arsenLogo from "@/assets/arsen-logo.png";
+
 import socorraoCross from "@/assets/socorrao-cross-logo.png";
 
 /**
