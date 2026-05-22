@@ -323,10 +323,24 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
                 </button>
               )}
             </div>
+            <Button
+              size="sm"
+              variant={showCancelled ? "secondary" : "outline"}
+              onClick={() => setShowCancelled(v => !v)}
+              className="gap-1 text-xs h-7"
+              title="Ver pré-admissões canceladas para reabrir"
+            >
+              <History className="h-3.5 w-3.5" />
+              Canceladas
+              {cancelledList.length > 0 && (
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">{cancelledList.length}</Badge>
+              )}
+            </Button>
             <Button size="sm" onClick={() => setShowRegistration(true)} className="gap-1 text-xs h-7">
               <UserPlus className="h-3.5 w-3.5" />
               Cadastrar Paciente
             </Button>
+
           </div>
         </div>
 
