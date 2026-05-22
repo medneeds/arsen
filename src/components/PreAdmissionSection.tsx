@@ -120,9 +120,63 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
     }
   };
 
+  const fetchCancelled = async () => {
+    if (!currentHospital?.id || !currentState?.id) return;
+    try {
+      let query = supabase
+        .from("pre_admissions")
+        .select("*")
+        .eq("hospital_unit_id", currentHospital.id)
+        .eq("state_id", currentState.id)
+        .eq("status", "cancelado")
+        .order("updated_at", { ascending: false })
+        .limit(30);
+      if (sectorFilterLabel) {
+        // Mostra os cancelados deste setor OU aqueles sem destino (para resgate)
+        query = query.or(`destination_sector.eq.${sectorFilterLabel},destination_sector.is.null`);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      setCancelledList((data as PreAdmission[]) || []);
+    } catch (err) {
+      console.error("Fetch cancelled error:", err);
+    }
+  };
+
+  const handleReopen = async () => {
+    if (!reopenTarget) return;
+    setIsReopening(true);
+    try {
+      const { error } = await supabase
+        .from("pre_admissions")
+        .update({
+          status: "aguardando_leito",
+          destination_bed: null,
+          // mantém destination_sector original; usuário pode trocar no AdmitPatientDialog
+        })
+        .eq("id", reopenTarget.id);
+      if (error) throw error;
+      toast({
+        title: "Pré-admissão reaberta",
+        description: `${reopenTarget.patient_name} voltou para a fila de alocação.`,
+      });
+      setReopenTarget(null);
+      fetchPreAdmissions();
+      fetchCancelled();
+    } catch (err: any) {
+      toast({ title: "Erro ao reabrir", description: err.message, variant: "destructive" });
+    } finally {
+      setIsReopening(false);
+    }
+  };
+
   useEffect(() => {
     fetchPreAdmissions();
   }, [currentHospital?.id, currentState?.id, sectorFilterLabel]);
+
+  useEffect(() => {
+    if (showCancelled) fetchCancelled();
+  }, [showCancelled, currentHospital?.id, currentState?.id, sectorFilterLabel]);
 
   // Expor refresh imperativo (ex.: para o botão "Atualizar mapa")
   useImperativeHandle(ref, () => ({ refresh: fetchPreAdmissions }), [currentHospital?.id, currentState?.id, sectorFilterLabel]);
@@ -135,11 +189,15 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "pre_admissions", filter: `hospital_unit_id=eq.${currentHospital.id}` },
-        () => fetchPreAdmissions()
+        () => {
+          fetchPreAdmissions();
+          if (showCancelled) fetchCancelled();
+        }
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [currentHospital?.id, currentState?.id, sectorFilterLabel]);
+  }, [currentHospital?.id, currentState?.id, sectorFilterLabel, showCancelled]);
+
 
   // Busca no patient_registry com debounce — alimenta a seção "Pacientes do hospital"
   useEffect(() => {
