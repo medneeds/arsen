@@ -213,6 +213,9 @@ export function useEvolutions(
         .from("clinical_evolutions")
         .insert({
           patient_id: safePatientId,
+          // 🔒 Carimba a identidade clínica permanente (segue o paciente entre leitos).
+          patient_registry_id: resolvedRegistryId ?? null,
+          encounter_id: activeEncounterId ?? null,
           patient_name: patientName,
           patient_bed: patientBed,
           patient_sector: patientSector,
