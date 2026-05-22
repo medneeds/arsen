@@ -597,19 +597,77 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar Pré-Admissão?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Deseja cancelar a pré-admissão de <strong>{deleteTarget?.patient_name}</strong>?
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Cancelar a pré-admissão de <span className="text-destructive">{deleteTarget?.patient_name}</span>?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p className="text-foreground">
+                  Esta ação <strong>retira o paciente de todas as filas de alocação</strong> (NIR, UTI, UCI, enfermaria).
+                </p>
+                <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-[12px] space-y-1">
+                  <p className="font-semibold text-amber-700 dark:text-amber-400">O que acontece:</p>
+                  <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                    <li>O card some do painel "Aguardando Pré-admissão".</li>
+                    <li>Nenhum leito será marcado como ocupado por este paciente.</li>
+                    <li>O prontuário e o cadastro do paciente <strong>permanecem intactos</strong>.</li>
+                    <li>Para readmitir, você poderá <strong>reabrir</strong> esta pré-admissão na aba <em>Canceladas</em> (sem precisar recadastrar).</li>
+                  </ul>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Use o cancelamento apenas se a chegada não se confirmou, houve duplicidade, ou o paciente foi para outro fluxo.
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Não</AlertDialogCancel>
+            <AlertDialogCancel>Manter na fila</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Sim, Cancelar
+              Sim, cancelar pré-admissão
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reabrir pré-admissão cancelada */}
+      <AlertDialog open={!!reopenTarget} onOpenChange={(open) => !open && !isReopening && setReopenTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-emerald-600" />
+              Reabrir pré-admissão de <span className="text-emerald-700 dark:text-emerald-400">{reopenTarget?.patient_name}</span>?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p className="text-foreground">
+                  O paciente voltará para a fila <strong>"Aguardando Pré-admissão (Alocação) em Leito"</strong> com status <code className="text-[11px] px-1 py-0.5 rounded bg-muted">aguardando_leito</code>.
+                </p>
+                <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2 text-[12px] space-y-1">
+                  <p className="font-semibold text-emerald-700 dark:text-emerald-400">O que acontece:</p>
+                  <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                    <li>O cadastro e o prontuário <strong>são preservados</strong> (mesmo registry e mesmo número de prontuário).</li>
+                    <li>Destino original: <strong>{reopenTarget?.destination_sector || "—"}</strong>. Você poderá trocar o setor ao admitir.</li>
+                    <li>O leito de destino é limpo — escolha no diálogo de admissão (incluindo Maca Extra, se aplicável).</li>
+                    <li>Esta ação fica registrada na auditoria.</li>
+                  </ul>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isReopening}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleReopen(); }}
+              disabled={isReopening}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {isReopening ? "Reabrindo..." : "Sim, reabrir e enviar para a fila"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </>
   );
 });
