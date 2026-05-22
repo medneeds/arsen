@@ -209,7 +209,7 @@ export default function Relatorio1Page() {
             <div className="cover-logos">
               <img src={socorraoCross} alt="HMDM Socorrão I" className="cover-logo-cross" />
               <span className="cover-x">×</span>
-              <img src={arsenLogo} alt="Plataforma Arsen" className="cover-logo-arsen" />
+              <span className="cover-wordmark">Arsen</span>
             </div>
             <div className="kicker light">Hospital Municipal Djalma Marques · Plataforma Arsen</div>
             <h1 className="cover-title">Relatório de Implantação<br /><span>Semana 1 · Trabalhando em conjunto</span></h1>
