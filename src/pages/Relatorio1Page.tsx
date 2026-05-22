@@ -244,7 +244,7 @@ export default function Relatorio1Page() {
     list.push({
       render: (n, total) => (
         <Slide n={n} total={total} kicker="01 · Visão geral" title="Sumário executivo da semana">
-          <div className="grid grid-2">
+          <div className="grid grid-exec">
             <div className="card">
               <h3>O que foi entregue de fato</h3>
               <ul>
@@ -255,9 +255,9 @@ export default function Relatorio1Page() {
                 <li className="muted-line"><em>Predisposição em produto (ainda fora da implantação assistencial):</em> NIR, Farmácia, Urgência, Emergência, Laboratório, Imagem, Gestão.</li>
               </ul>
             </div>
-            <div className="card accent">
+            <div className="card accent kpi-card">
               <h3>Indicadores-chave</h3>
-              <div className="kpis">
+              <div className="kpis kpis-exec">
                 <div className="kpi"><span>{taxaOcup}%</span><small>Taxa de ocupação dos setores ativos</small></div>
                 <div className="kpi"><span>{atividade[0].valor}</span><small>Prescrições emitidas</small></div>
                 <div className="kpi"><span>{atividade[1].valor}</span><small>Evoluções clínicas</small></div>
@@ -683,6 +683,15 @@ const styles = `
 .grid { display: grid; gap: 14px; }
 .grid-2 { grid-template-columns: 1fr 1fr; }
 .grid-4 { grid-template-columns: repeat(4, 1fr); }
+/* Sumário executivo (slide 2) — proporção assimétrica + KPIs preenchendo altura */
+.grid-exec { grid-template-columns: 1.35fr 1fr; align-items: stretch; }
+.grid-exec > .card { display: flex; flex-direction: column; }
+.grid-exec > .card ul { flex: 1; }
+.kpi-card { display: flex; flex-direction: column; }
+.kpis-exec { flex: 1; grid-auto-rows: 1fr; margin-top: 12px; gap: 12px; }
+.kpis-exec .kpi { display: flex; flex-direction: column; justify-content: center; padding: 16px 14px; }
+.kpis-exec .kpi span { font-size: 34px; }
+.kpis-exec .kpi small { font-size: 11px; margin-top: 6px; line-height: 1.35; }
 
 .card { background: #f8fafc; border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
 .card h3 { font-family: 'Georgia', serif; font-size: 17px; margin: 0 0 10px; color: var(--ink); }
