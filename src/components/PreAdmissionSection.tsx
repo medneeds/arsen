@@ -74,6 +74,10 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
   ref
 ) {
   const [preAdmissions, setPreAdmissions] = useState<PreAdmission[]>([]);
+  const [cancelledList, setCancelledList] = useState<PreAdmission[]>([]);
+  const [showCancelled, setShowCancelled] = useState(false);
+  const [reopenTarget, setReopenTarget] = useState<PreAdmission | null>(null);
+  const [isReopening, setIsReopening] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
   const [showRegistration, setShowRegistration] = useState(false);
   const [classifyTarget, setClassifyTarget] = useState<PreAdmission | null>(null);
@@ -86,6 +90,7 @@ export const PreAdmissionSection = forwardRef<PreAdmissionSectionHandle, PreAdmi
   const [actionPatient, setActionPatient] = useState<RegistryPatientLite | null>(null);
   const { currentHospital, currentState } = useHospital();
   const { currentDepartment } = useDepartment();
+
 
   const fetchPreAdmissions = async () => {
     if (!currentHospital?.id || !currentState?.id) return;
