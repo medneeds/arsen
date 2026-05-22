@@ -450,7 +450,7 @@ export default function Relatorio1Page() {
             <div className="cover-logos">
               <img src={socorraoCross} alt="HMDM Socorrão I" className="cover-logo-cross" />
               <span className="cover-x">×</span>
-              <img src={arsenLogo} alt="Plataforma Arsen" className="cover-logo-arsen" />
+              <span className="cover-wordmark">Arsen</span>
             </div>
             <div className="kicker light">Encerramento · Semana 1</div>
             <h1 className="cover-title">Obrigado.<br /><span>Seguimos para a Semana 2 com base sólida.</span></h1>
