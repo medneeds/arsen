@@ -594,40 +594,66 @@ const styles = `
 .slide-footer { display:flex; justify-content:space-between; border-top:1px solid var(--line); padding-top:8px; font-size:10px; color: var(--muted); letter-spacing: .04em; }
 
 /* Cover (fundo branco, mesma identidade dos slides internos) */
-.slide-cover { padding: 0; background: var(--paper); }
-.cover-bg {
-  position:absolute; inset:0;
-  background:
-    radial-gradient(900px 480px at 88% -8%, rgba(37,99,235,.10), transparent 65%),
-    radial-gradient(700px 420px at 5% 108%, rgba(14,165,233,.10), transparent 65%),
-    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+/* Cover & End — branco seco + identidade Norma Zero */
+.slide-cover { padding: 0; background: #ffffff; }
+.cover-bg { position:absolute; inset:0; background: #ffffff; }
+.end-bg { background: #ffffff; }
+
+/* Barra cruz institucional (5 cores Socorrão) — topo absoluto */
+.nz-cross-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 6px;
+  display: grid; grid-template-columns: repeat(5, 1fr); z-index: 2;
 }
-.end-bg {
-  background:
-    radial-gradient(900px 480px at 12% -8%, rgba(16,185,129,.10), transparent 65%),
-    radial-gradient(700px 420px at 92% 108%, rgba(37,99,235,.10), transparent 65%),
-    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+.nz-cross-bar > span { display: block; height: 100%; }
+
+/* Cabeçalho Norma Zero (cruz símbolo + texto institucional centralizado) */
+.nz-cover-header {
+  position: absolute; top: 6px; left: 0; right: 0; z-index: 2;
+  display: grid; grid-template-columns: 88px 1fr 88px;
+  align-items: center; gap: 16px;
+  padding: 18px 44px 14px;
+  border-bottom: 1px solid var(--line);
+  background: #ffffff;
 }
-.cover-content { position: relative; z-index: 1; color: var(--ink); padding: 56px 56px; height: 100%; display:flex; flex-direction:column; justify-content:center; }
-.cover-logos { display: flex; align-items: center; gap: 20px; margin-bottom: 26px; }
-.cover-logo-cross { height: 56px; width: auto; filter: drop-shadow(0 2px 6px rgba(15,23,42,.18)); }
-.cover-wordmark {
+.nz-cover-logo { height: 62px; width: 62px; object-fit: contain; }
+.nz-cover-institution { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.nz-cover-institution span:nth-child(1) { font-size: 10px; letter-spacing: .22em; color: var(--muted); font-weight: 600; }
+.nz-cover-institution span:nth-child(2) { font-size: 11px; letter-spacing: .18em; color: var(--ink-soft); font-weight: 600; }
+.nz-cover-institution span:nth-child(3) { font-size: 13px; letter-spacing: .04em; color: var(--ink); font-weight: 700; margin-top: 2px; }
+.nz-cover-spacer { width: 88px; }
+
+.cover-content {
+  position: relative; z-index: 1; color: var(--ink);
+  padding: 130px 56px 70px;
+  height: 100%;
+  display: flex; flex-direction: column; justify-content: flex-start;
+}
+
+/* Wordmark hero — Arsen grande, no topo, com degradê azul brilhante */
+.cover-wordmark-hero {
+  display: block;
   font-family: 'Playfair Display', Georgia, serif;
-  font-weight: 500;
-  font-size: 46px;
-  letter-spacing: 0.04em;
-  color: var(--ink);
-  line-height: 1;
+  font-weight: 600;
+  font-size: 168px;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  margin: 4px 0 18px;
+  background: linear-gradient(135deg, #0054A6 0%, #1e3a8a 30%, #2563eb 55%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 4px 18px rgba(37, 99, 235, 0.18));
 }
-.cover-x { font-size: 30px; color: rgba(15,23,42,.25); font-weight: 200; }
+
 .kicker.light { color: var(--accent); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; font-weight: 600; }
 .cover-title {
   font-family: 'Playfair Display', Georgia, serif;
   font-weight: 600;
-  font-size: 54px;
+  font-size: 44px;
   line-height: 1.05;
   letter-spacing: -0.015em;
-  margin: 14px 0 18px;
+  margin: 10px 0 14px;
   color: var(--ink);
 }
 .cover-title span {
@@ -635,12 +661,12 @@ const styles = `
   color: var(--accent);
   font-weight: 300;
   font-style: italic;
-  font-size: 30px;
+  font-size: 26px;
   display: inline-block;
-  margin-top: 10px;
+  margin-top: 8px;
   letter-spacing: 0;
 }
-.cover-sub { font-size: 14px; color: var(--ink-soft); margin: 0 0 28px; }
+.cover-sub { font-size: 13px; color: var(--ink-soft); margin: 0 0 22px; }
 .cover-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; max-width: 920px; }
 .cover-meta > div {
   background: linear-gradient(135deg, #0f1f44, #1e3a8a);
@@ -651,7 +677,7 @@ const styles = `
 }
 .cover-meta span { display:block; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #93c5fd; font-weight: 600; }
 .cover-meta strong { display:block; margin-top:6px; font-size: 13px; color: #f8fafc; font-weight: 600; line-height: 1.3; }
-.cover-footer { position:absolute; bottom: 0; left:0; right:0; padding: 14px 56px; color: var(--muted); border-top:1px solid var(--line); }
+.cover-footer { position:absolute; bottom: 0; left:0; right:0; padding: 14px 44px; color: var(--muted); border-top:1px solid var(--line); background: #ffffff; }
 
 /* Grids */
 .grid { display: grid; gap: 14px; }
