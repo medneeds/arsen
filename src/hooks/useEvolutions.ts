@@ -116,23 +116,6 @@ export function useEvolutions(
           query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
         }
       } else if (fbName) {
-        .select("*")
-        .eq("hospital_unit_id", currentHospital.id)
-        .eq("state_id", currentState.id)
-        // ⚠️ Nunca trazer evoluções arquivadas (paciente anterior do leito,
-        // reverts de re-bind incorreto, etc). Auditoria preservada no banco.
-        .is("archived_at", null)
-        .order("created_at", { ascending: false });
-
-      if (safePatientId) {
-        query = query.eq("patient_id", safePatientId);
-        // Fase B.1: se já temos encounter ativo, isola por ele;
-        // registros legados sem carimbo continuam visíveis enquanto o
-        // patient_id atual for o mesmo (some quando o leito é reusado).
-        if (activeEncounterId) {
-          query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
-        }
-      } else if (fbName) {
         query = query.is("patient_id", null).eq("patient_name", fbName);
         if (fbBed) query = query.eq("patient_bed", fbBed);
         if (fbSector) query = query.eq("patient_sector", fbSector);
