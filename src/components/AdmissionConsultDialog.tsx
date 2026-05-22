@@ -136,15 +136,19 @@ export function AdmissionConsultDialog({ open, onOpenChange, patient, onChanged 
         .select("id, status, validated_at, validated_by_name, created_at, created_by_name, soap_data, vital_signs, physical_exam, suspension_reason, suspended_at")
         .eq("patient_id", patient.id)
         .eq("evolution_type", "admission")
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false });
 
       const list = (evs || []) as AdmissionRow[];
+      // Pega a admissão raiz MAIS RECENTE (validada, sem parent_id) — blindagem contra
+      // reuso de patient_id que deixa admissões antigas de outro paciente coladas ao leito.
       const root =
         list.find(e => e.status === "validated" && !(e.soap_data as any)?.parent_id) ||
         list.find(e => !(e.soap_data as any)?.parent_id) ||
         null;
       const adds = root
-        ? list.filter(e => (e.soap_data as any)?.parent_id === root.id)
+        ? list
+            .filter(e => (e.soap_data as any)?.parent_id === root.id)
+            .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
         : [];
       setD0(root);
       setAddenda(adds);
