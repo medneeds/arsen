@@ -207,6 +207,7 @@ const App = () => {
               <Route path="/historico-paciente" element={<ProtectedRoute><HistoricoPacientePage /></ProtectedRoute>} />
               <Route path="/dev-console" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpRestricted moduleKey="dev_console" moduleLabel="Console Dev"><DevConsolePage /></IpRestricted></MainLayout></ProtectedRoute>} />
               <Route path="/admin/ip-allowlist" element={<ProtectedRoute><MainLayout onOpenHandover={() => setIsHandoverOpen(true)}><IpAllowlistPage /></MainLayout></ProtectedRoute>} />
+              <Route path="/relatorio-1" element={<Relatorio1Page />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
