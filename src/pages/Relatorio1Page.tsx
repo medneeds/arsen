@@ -458,12 +458,24 @@ export default function Relatorio1Page() {
       render: (n, total) => (
         <section className="slide slide-cover end" key="end">
           <div className="cover-bg end-bg" />
-          <div className="cover-content">
-            <div className="cover-logos">
-              <img src={socorraoCross} alt="HMDM Socorrão I" className="cover-logo-cross" />
-              <span className="cover-x">×</span>
-              <span className="cover-wordmark">Arsen</span>
+          <div className="nz-cross-bar" aria-hidden="true">
+            <span style={{ background: "#E31E24" }} />
+            <span style={{ background: "#F47920" }} />
+            <span style={{ background: "#FFC20E" }} />
+            <span style={{ background: "#00A651" }} />
+            <span style={{ background: "#0054A6" }} />
+          </div>
+          <header className="nz-cover-header">
+            <img src={socorraoCross} alt="HMDM Socorrão I" className="nz-cover-logo" />
+            <div className="nz-cover-institution">
+              <span>PREFEITURA DE SÃO LUÍS</span>
+              <span>SECRETARIA MUNICIPAL DE SAÚDE</span>
+              <span>HOSPITAL MUNICIPAL DJALMA MARQUES — SOCORRÃO I</span>
             </div>
+            <div className="nz-cover-spacer" />
+          </header>
+          <div className="cover-content">
+            <span className="cover-wordmark cover-wordmark-hero">Arsen</span>
             <div className="kicker light">Encerramento · Semana 1</div>
             <h1 className="cover-title">Obrigado.<br /><span>Seguimos para a Semana 2 com base sólida.</span></h1>
             <p className="cover-sub">
@@ -476,7 +488,7 @@ export default function Relatorio1Page() {
             </div>
           </div>
           <footer className="slide-footer cover-footer">
-            <span>Confidencial · uso institucional</span>
+            <span>Confidencial · uso institucional · MAN.05-001</span>
             <span>Slide {n} / {total}</span>
           </footer>
         </section>
