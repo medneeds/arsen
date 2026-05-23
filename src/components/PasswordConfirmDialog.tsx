@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,35 @@ export function PasswordConfirmDialog({
   const { user } = useAuth();
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [displayIdentity, setDisplayIdentity] = useState<string>("");
+
+  useEffect(() => {
+    let active = true;
+
+    const loadDisplayIdentity = async () => {
+      if (!open || !user?.id) {
+        if (active) setDisplayIdentity("");
+        return;
+      }
+
+      setDisplayIdentity("CARREGANDO IDENTIFICAÇÃO…");
+
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!active) return;
+      const label = [data?.full_name, data?.email ?? user.email].filter(Boolean).join(" • ");
+      setDisplayIdentity(label || user.email || "USUÁRIO AUTENTICADO");
+    };
+
+    loadDisplayIdentity();
+    return () => {
+      active = false;
+    };
+  }, [open, user?.id, user?.email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,14 +77,14 @@ export function PasswordConfirmDialog({
     }
     setLoading(true);
     try {
-      // Verifica a senha direto no backend, contra o hash da própria conta autenticada.
-      // Não depende de e-mail, não faz novo login e não troca a sessão atual.
-      const { data, error } = await supabase.rpc("verify_own_password" as any, {
-        p_password: password,
+      // Verifica a senha no backend usando o ID autenticado pelo token atual.
+      // Não depende do e-mail salvo no cliente, não faz novo login e não troca a sessão.
+      const { data, error } = await supabase.functions.invoke("verify-user-password", {
+        body: { password },
       });
 
-      if (error || data !== true) {
-        const reason = error?.message === "unauthenticated" ? "invalid_session" : "invalid_password";
+      if (error || data?.ok !== true) {
+        const reason = error?.context?.status === 401 ? "invalid_session" : data?.error;
         if (reason === "invalid_password") {
           toast.error("Senha incorreta", { description: "Verifique e tente novamente." });
         } else if (reason === "invalid_session") {
@@ -110,7 +139,7 @@ export function PasswordConfirmDialog({
               placeholder="Sua senha de acesso"
             />
             <p className="text-[11px] text-muted-foreground">
-              Usuário: <span className="font-medium">{user?.email}</span>
+              Usuário: <span className="font-medium">{displayIdentity || "USUÁRIO AUTENTICADO"}</span>
             </p>
           </div>
           <DialogFooter className="gap-2">
