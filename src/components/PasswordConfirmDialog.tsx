@@ -38,7 +38,7 @@ export function PasswordConfirmDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.email) {
+    if (!user?.id) {
       toast.error("Sessão inválida. Faça login novamente.");
       return;
     }
@@ -48,12 +48,22 @@ export function PasswordConfirmDialog({
     }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password,
+      // Verifica a senha via edge function isolada — não substitui a sessão atual
+      // e sempre usa o e-mail ATUAL do usuário (resolve casos em que o admin trocou o e-mail).
+      const { data, error } = await supabase.functions.invoke("verify-user-password", {
+        body: { password },
       });
-      if (error) {
-        toast.error("Senha incorreta", { description: "Verifique e tente novamente." });
+      if (error || !data?.ok) {
+        const reason = data?.error;
+        if (reason === "invalid_password") {
+          toast.error("Senha incorreta", { description: "Verifique e tente novamente." });
+        } else if (reason === "invalid_session") {
+          toast.error("Sessão expirada", { description: "Faça login novamente." });
+        } else {
+          toast.error("Não foi possível validar a senha", {
+            description: "Tente novamente em instantes.",
+          });
+        }
         setLoading(false);
         return;
       }
