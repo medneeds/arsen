@@ -5232,6 +5232,10 @@ export type Database = {
       }
       user_is_global: { Args: { _user_id: string }; Returns: boolean }
       verify_own_password: { Args: { p_password: string }; Returns: boolean }
+      verify_user_password_by_id: {
+        Args: { p_password: string; p_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role:
