@@ -268,12 +268,17 @@ export function PatientMovementDialog({
       if (error) throw error;
 
       // Persist discharge/death document linked to movement
-      if (requiredDocType && docPayload) {
+      if (requiredDocType) {
+        if (!docPayload) {
+          throw new Error("Documento de alta/óbito não foi preenchido. Recarregue a página e tente novamente.");
+        }
         const finalDoc: DischargeDocPayload = {
           ...docPayload,
           patient_name: patient.name,
           patient_bed: patient.bedNumber,
           patient_sector: patient.sector,
+          signed_by_name: docPayload.signed_by_name || responsibleDoctor || signerProfile.name || null,
+          signed_by_crm: docPayload.signed_by_crm || signerProfile.crm || null,
           signed_at: new Date().toISOString(),
         };
         const { error: docErr } = await supabase.from("discharge_documents").insert({
@@ -308,6 +313,7 @@ export function PatientMovementDialog({
         // Auto preview the printable Norma Zero document
         printDischargeDocument(requiredDocType, finalDoc);
       }
+
 
       // Sinalização de transferência (interna/externa): marca o paciente ANTES
       // de qualquer desalocação para que a tarja apareça no mapa de leitos.
