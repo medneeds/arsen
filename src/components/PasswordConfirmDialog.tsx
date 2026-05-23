@@ -48,12 +48,14 @@ export function PasswordConfirmDialog({
     }
     setLoading(true);
     try {
-      // Verifica a senha via função isolada — sem depender de e-mail e sem trocar a sessão atual.
-      const { data, error } = await supabase.functions.invoke("verify-user-password", {
-        body: { password },
+      // Verifica a senha direto no backend, contra o hash da própria conta autenticada.
+      // Não depende de e-mail, não faz novo login e não troca a sessão atual.
+      const { data, error } = await supabase.rpc("verify_own_password" as any, {
+        p_password: password,
       });
-      if (error || !data?.ok) {
-        const reason = data?.error;
+
+      if (error || data !== true) {
+        const reason = error?.message === "unauthenticated" ? "invalid_session" : "invalid_password";
         if (reason === "invalid_password") {
           toast.error("Senha incorreta", { description: "Verifique e tente novamente." });
         } else if (reason === "invalid_session") {
