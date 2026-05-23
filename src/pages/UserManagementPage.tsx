@@ -55,6 +55,16 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ResetUserPasswordDialog } from "@/components/ResetUserPasswordDialog";
 import { UserPermissionsDialog } from "@/components/UserPermissionsDialog";
+import { ChangeUserEmailDialog } from "@/components/ChangeUserEmailDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
 import { useIsGestor } from "@/hooks/useIsGestor";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CreateUserForm } from "@/components/users/CreateUserForm";
@@ -125,6 +135,8 @@ export default function UserManagementPage() {
   const [userToResetPassword, setUserToResetPassword] = useState<UserWithRole | null>(null);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [userToManagePermissions, setUserToManagePermissions] = useState<UserWithRole | null>(null);
+  const [changeEmailOpen, setChangeEmailOpen] = useState(false);
+  const [userToChangeEmail, setUserToChangeEmail] = useState<UserWithRole | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
@@ -572,17 +584,61 @@ export default function UserManagementPage() {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Gerenciar setores e permissões"
-                                onClick={() => {
-                                  setUserToManagePermissions(u);
-                                  setPermissionsOpen(true);
-                                }}
-                              >
-                                <Settings2 className="h-4 w-4" />
-                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Mais ações"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                  <DropdownMenuLabel className="preserve-case">
+                                    {u.full_name || u.email}
+                                  </DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedUser(u);
+                                      setDetailsOpen(true);
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    Ver detalhes
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setUserToManagePermissions(u);
+                                      setPermissionsOpen(true);
+                                    }}
+                                  >
+                                    <Settings2 className="h-4 w-4 mr-2" />
+                                    Setores e permissões
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setUserToChangeEmail(u);
+                                      setChangeEmailOpen(true);
+                                    }}
+                                  >
+                                    <Mail className="h-4 w-4 mr-2 text-blue-600" />
+                                    Alterar e-mail
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setUserToResetPassword(u);
+                                      setResetPasswordOpen(true);
+                                    }}
+                                    className="text-amber-700 focus:text-amber-700"
+                                  >
+                                    <KeyRound className="h-4 w-4 mr-2" />
+                                    Redefinir senha
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -814,6 +870,21 @@ export default function UserManagementPage() {
           currentRole={userToManagePermissions.role}
           currentAccessProfile={userToManagePermissions.access_profile}
           onSaved={fetchUsers}
+        />
+      )}
+
+      {/* Change Email Dialog */}
+      {userToChangeEmail && (
+        <ChangeUserEmailDialog
+          open={changeEmailOpen}
+          onOpenChange={(open) => {
+            setChangeEmailOpen(open);
+            if (!open) setUserToChangeEmail(null);
+          }}
+          userId={userToChangeEmail.id}
+          userName={userToChangeEmail.full_name || userToChangeEmail.email || "Usuário"}
+          currentEmail={userToChangeEmail.email || ""}
+          onSuccess={fetchUsers}
         />
       )}
     </MainLayout>
