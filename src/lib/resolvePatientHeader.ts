@@ -96,6 +96,12 @@ export async function resolvePatientHeader(
   let patientRowName: string | null = null;
 
   // 1a) patients.patient_registry_id (vínculo direto da admissão)
+  // GUARDA: só aceita o vínculo se o nome do registry bater (NFD/upper) com
+  // o nome da linha `patients`. Sem isso, um patient_registry_id incorreto
+  // (ex: trigger autolink_patient_registry resolvendo paciente errado em
+  // leito reusado) vaza dados do paciente anterior no cabeçalho do PDF.
+  // Bug observado: MARIA RODRIGUES DE SOUSA (L15) com registry de JOSE DE
+  // RIBAMAR RODRIGUES.
   if (patientId) {
     const { data: pat } = await supabase
       .from("patients")
@@ -110,7 +116,16 @@ export async function resolvePatientHeader(
         .select("*")
         .eq("id", pat.patient_registry_id)
         .maybeSingle();
-      if (reg) registryRow = reg;
+      if (reg) {
+        const norm = (s: string) =>
+          s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+        const patientNameNorm = norm(patientRowName || fallbackName || "");
+        const regNameNorm = norm((reg as any).full_name || "");
+        if (!patientNameNorm || !regNameNorm || patientNameNorm === regNameNorm) {
+          registryRow = reg;
+        }
+        // se nomes divergem → descarta o vínculo (não polui o cabeçalho)
+      }
     }
   }
 
