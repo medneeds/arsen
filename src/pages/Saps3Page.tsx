@@ -616,6 +616,12 @@ export default function Saps3Page() {
 
         const r: any = sapsRow;
         const namePref = patientNameFromContext || r.patient_name || "";
+        // Fallback crítico: se a URL não trouxe patientId, usa o patient_id gravado na ficha SAPS.
+        // Sem isso, o UPDATE em patients.saps_pending no handleSave nunca dispara
+        // e o status do paciente permanece "SAPS pendente" mesmo após validar.
+        if (!patientIdParam && r.patient_id) {
+          setCompletingPatientId(r.patient_id);
+        }
         setSelectedRequest({
           id: completeSapsIdParam,
           patient_name: namePref,
