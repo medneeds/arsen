@@ -584,17 +584,61 @@ export default function UserManagementPage() {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title="Gerenciar setores e permissões"
-                                onClick={() => {
-                                  setUserToManagePermissions(u);
-                                  setPermissionsOpen(true);
-                                }}
-                              >
-                                <Settings2 className="h-4 w-4" />
-                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Mais ações"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                  <DropdownMenuLabel className="preserve-case">
+                                    {u.full_name || u.email}
+                                  </DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedUser(u);
+                                      setDetailsOpen(true);
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    Ver detalhes
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setUserToManagePermissions(u);
+                                      setPermissionsOpen(true);
+                                    }}
+                                  >
+                                    <Settings2 className="h-4 w-4 mr-2" />
+                                    Setores e permissões
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setUserToChangeEmail(u);
+                                      setChangeEmailOpen(true);
+                                    }}
+                                  >
+                                    <Mail className="h-4 w-4 mr-2 text-blue-600" />
+                                    Alterar e-mail
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setUserToResetPassword(u);
+                                      setResetPasswordOpen(true);
+                                    }}
+                                    className="text-amber-700 focus:text-amber-700"
+                                  >
+                                    <KeyRound className="h-4 w-4 mr-2" />
+                                    Redefinir senha
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </TableCell>
                         </TableRow>
