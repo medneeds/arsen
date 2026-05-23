@@ -25,13 +25,14 @@ Deno.serve(async (req) => {
     }
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Identify the caller from the JWT
-    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
+    const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
     });
-    const { data: userData, error: userErr } = await userClient.auth.getUser();
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userErr } = await adminClient.auth.getUser(token);
     if (userErr || !userData?.user) {
       return new Response(JSON.stringify({ ok: false, error: "invalid_session" }), {
         status: 401,
@@ -39,13 +40,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verifica a senha diretamente contra o hash da própria conta autenticada.
-    // Isso não depende do e-mail, não cria login paralelo e não altera a sessão atual.
-    const { data: passwordOk, error: verifyErr } = await userClient.rpc("verify_own_password", {
+    // Verifica a senha diretamente contra o hash do usuário autenticado pelo JWT.
+    // Não depende do e-mail exibido no cliente, não cria login paralelo e não altera a sessão atual.
+    const { data: passwordOk, error: verifyErr } = await adminClient.rpc("verify_user_password_by_id", {
+      p_user_id: userData.user.id,
       p_password: password,
     });
 
     if (verifyErr) {
+      console.error("verify_user_password_by_id failed", verifyErr);
       return new Response(JSON.stringify({ ok: false, error: "server_error" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -59,7 +62,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ ok: true, userId: userData.user.id }), {
+    return new Response(JSON.stringify({ ok: true, userId: userData.user.id, email: userData.user.email ?? null }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
