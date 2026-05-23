@@ -268,12 +268,17 @@ export function PatientMovementDialog({
       if (error) throw error;
 
       // Persist discharge/death document linked to movement
-      if (requiredDocType && docPayload) {
+      if (requiredDocType) {
+        if (!docPayload) {
+          throw new Error("Documento de alta/óbito não foi preenchido. Recarregue a página e tente novamente.");
+        }
         const finalDoc: DischargeDocPayload = {
           ...docPayload,
           patient_name: patient.name,
           patient_bed: patient.bedNumber,
           patient_sector: patient.sector,
+          signed_by_name: docPayload.signed_by_name || responsibleDoctor || signerProfile.name || null,
+          signed_by_crm: docPayload.signed_by_crm || signerProfile.crm || null,
           signed_at: new Date().toISOString(),
         };
         const { error: docErr } = await supabase.from("discharge_documents").insert({
@@ -309,6 +314,7 @@ export function PatientMovementDialog({
         printDischargeDocument(requiredDocType, finalDoc);
       }
 
+
       // Sinalização de transferência (interna/externa): marca o paciente ANTES
       // de qualquer desalocação para que a tarja apareça no mapa de leitos.
       // - Interna: trigger zera o status quando o leito/setor muda (relocação efetivada).
@@ -338,13 +344,15 @@ export function PatientMovementDialog({
       setConfirmOpen(false);
       onSuccess?.();
       handleClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating movement:", error);
+      const msg = error?.message || error?.details || error?.hint || "Não foi possível registrar a movimentação. Tente novamente.";
       toast({
         title: "Erro ao registrar movimentação",
-        description: "Não foi possível registrar a movimentação. Tente novamente.",
+        description: String(msg).slice(0, 300),
         variant: "destructive",
       });
+
     } finally {
       setIsSubmitting(false);
     }
