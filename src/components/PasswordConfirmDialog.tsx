@@ -48,8 +48,7 @@ export function PasswordConfirmDialog({
     }
     setLoading(true);
     try {
-      // Verifica a senha via edge function isolada — não substitui a sessão atual
-      // e sempre usa o e-mail ATUAL do usuário (resolve casos em que o admin trocou o e-mail).
+      // Verifica a senha via função isolada — sem depender de e-mail e sem trocar a sessão atual.
       const { data, error } = await supabase.functions.invoke("verify-user-password", {
         body: { password },
       });
