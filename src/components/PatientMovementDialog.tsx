@@ -344,13 +344,15 @@ export function PatientMovementDialog({
       setConfirmOpen(false);
       onSuccess?.();
       handleClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating movement:", error);
+      const msg = error?.message || error?.details || error?.hint || "Não foi possível registrar a movimentação. Tente novamente.";
       toast({
         title: "Erro ao registrar movimentação",
-        description: "Não foi possível registrar a movimentação. Tente novamente.",
+        description: String(msg).slice(0, 300),
         variant: "destructive",
       });
+
     } finally {
       setIsSubmitting(false);
     }
