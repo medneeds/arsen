@@ -135,6 +135,8 @@ export default function UserManagementPage() {
   const [userToResetPassword, setUserToResetPassword] = useState<UserWithRole | null>(null);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [userToManagePermissions, setUserToManagePermissions] = useState<UserWithRole | null>(null);
+  const [changeEmailOpen, setChangeEmailOpen] = useState(false);
+  const [userToChangeEmail, setUserToChangeEmail] = useState<UserWithRole | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
