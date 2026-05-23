@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
     }
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     // Identify the caller from the JWT
@@ -40,33 +39,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get the CURRENT email via admin API (in case it was changed)
-    const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
-    const { data: adminUser, error: adminErr } = await admin.auth.admin.getUserById(userData.user.id);
-    if (adminErr || !adminUser?.user?.email) {
-      return new Response(JSON.stringify({ ok: false, error: "user_not_found" }), {
-        status: 404,
+    // Verifica a senha diretamente contra o hash da própria conta autenticada.
+    // Isso não depende do e-mail, não cria login paralelo e não altera a sessão atual.
+    const { data: passwordOk, error: verifyErr } = await userClient.rpc("verify_own_password", {
+      p_password: password,
+    });
+
+    if (verifyErr) {
+      return new Response(JSON.stringify({ ok: false, error: "server_error" }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Verify password in an isolated client — does NOT touch the caller's session
-    const verifier = createClient(SUPABASE_URL, ANON_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { error: signErr } = await verifier.auth.signInWithPassword({
-      email: adminUser.user.email,
-      password,
-    });
-
-    if (signErr) {
+    if (passwordOk !== true) {
       return new Response(JSON.stringify({ ok: false, error: "invalid_password" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ ok: true, email: adminUser.user.email }), {
+    return new Response(JSON.stringify({ ok: true, userId: userData.user.id }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
