@@ -872,6 +872,21 @@ export default function UserManagementPage() {
           onSaved={fetchUsers}
         />
       )}
+
+      {/* Change Email Dialog */}
+      {userToChangeEmail && (
+        <ChangeUserEmailDialog
+          open={changeEmailOpen}
+          onOpenChange={(open) => {
+            setChangeEmailOpen(open);
+            if (!open) setUserToChangeEmail(null);
+          }}
+          userId={userToChangeEmail.id}
+          userName={userToChangeEmail.full_name || userToChangeEmail.email || "Usuário"}
+          currentEmail={userToChangeEmail.email || ""}
+          onSuccess={fetchUsers}
+        />
+      )}
     </MainLayout>
   );
 }
