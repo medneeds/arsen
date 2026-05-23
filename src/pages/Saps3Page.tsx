@@ -1063,14 +1063,44 @@ export default function Saps3Page() {
           .eq("id", completingSapsId);
         if (updErr) throw updErr;
 
-        if (!asPending && completingPatientId) {
-          await supabase
-            .from("patients")
-            .update({
-              saps_pending: false,
-              saps_completed_at: new Date().toISOString(),
-            } as any)
-            .eq("id", completingPatientId);
+        if (!asPending) {
+          // Resolve o patient_id alvo com fallbacks para evitar status "SAPS pendente" preso:
+          // 1) completingPatientId (URL ou hidratado do registro SAPS)
+          // 2) patient_id gravado na própria ficha SAPS
+          // 3) busca por nome + saps_pending=true no hospital/estado atual
+          let targetPatientId: string | null = completingPatientId;
+          if (!targetPatientId) {
+            const { data: sapsRow2 } = await supabase
+              .from("saps3_assessments" as any)
+              .select("patient_id, patient_name")
+              .eq("id", completingSapsId)
+              .maybeSingle();
+            targetPatientId = (sapsRow2 as any)?.patient_id ?? null;
+            if (!targetPatientId && (sapsRow2 as any)?.patient_name && hospitalId && stateId) {
+              const { data: patRow } = await supabase
+                .from("patients")
+                .select("id")
+                .eq("hospital_unit_id", hospitalId)
+                .eq("state_id", stateId)
+                .ilike("name", (sapsRow2 as any).patient_name)
+                .eq("saps_pending", true as any)
+                .order("admission_date", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              targetPatientId = (patRow as any)?.id ?? null;
+            }
+          }
+          if (targetPatientId) {
+            await supabase
+              .from("patients")
+              .update({
+                saps_pending: false,
+                saps_completed_at: new Date().toISOString(),
+              } as any)
+              .eq("id", targetPatientId);
+          } else {
+            console.warn("[SAPS] handleSave: não foi possível resolver patient_id para liberar gate clínico", { completingSapsId });
+          }
         }
 
         const sectorLabel = UTI_SECTORS.find(s => s.value === selectedSector)?.label || selectedSector || "—";
