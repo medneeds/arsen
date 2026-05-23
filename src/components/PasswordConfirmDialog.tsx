@@ -46,6 +46,8 @@ export function PasswordConfirmDialog({
         return;
       }
 
+      setDisplayIdentity("CARREGANDO IDENTIFICAÇÃO…");
+
       const { data } = await supabase
         .from("profiles")
         .select("full_name, email")
@@ -137,7 +139,7 @@ export function PasswordConfirmDialog({
               placeholder="Sua senha de acesso"
             />
             <p className="text-[11px] text-muted-foreground">
-              Usuário: <span className="font-medium">{displayIdentity || user?.email}</span>
+              Usuário: <span className="font-medium">{displayIdentity || "USUÁRIO AUTENTICADO"}</span>
             </p>
           </div>
           <DialogFooter className="gap-2">
