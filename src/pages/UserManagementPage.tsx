@@ -55,6 +55,16 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ResetUserPasswordDialog } from "@/components/ResetUserPasswordDialog";
 import { UserPermissionsDialog } from "@/components/UserPermissionsDialog";
+import { ChangeUserEmailDialog } from "@/components/ChangeUserEmailDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
 import { useIsGestor } from "@/hooks/useIsGestor";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CreateUserForm } from "@/components/users/CreateUserForm";
