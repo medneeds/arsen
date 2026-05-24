@@ -640,17 +640,21 @@ export function PatientMovementDialog({
             <div className="flex-1 min-w-0">
               <DialogTitle className="text-lg">
                 {step === "form" && subtypeDef
-                  ? subtypeDef.label
+                  ? (subtypeDef.id === "TRANSFERENCIA_INTERNA" ? "Sinalizar transferência interna"
+                    : subtypeDef.id === "TRANSFERENCIA_EXTERNA" ? "Sinalizar transferência externa"
+                    : subtypeDef.id === "OBITO" ? "Sinalizar óbito"
+                    : subtypeDef.id?.startsWith?.("ALTA") ? `Sinalizar ${subtypeDef.label.toLowerCase()}`
+                    : subtypeDef.label)
                   : step === "subtype" && headerCat
                   ? headerCat.label
-                  : "Registrar Movimentação"}
+                  : "Sinalizar Movimentação (Painel Clínico)"}
               </DialogTitle>
               <DialogDescription className="text-xs mt-0.5">
                 {step === "form" && subtypeDef
-                  ? subtypeDef.description
+                  ? `${subtypeDef.description} — Esta ação SINALIZA o desfecho no prontuário. A desalocação física do leito é feita no Mapa de Leitos.`
                   : step === "subtype" && headerCat
                   ? `Escolha o subtipo de ${headerCat.label.toLowerCase()}`
-                  : "Fluxo de movimentação do paciente"}
+                  : "Painel Clínico sinaliza. Mapa de Leitos desaloca."}
               </DialogDescription>
             </div>
           </div>
