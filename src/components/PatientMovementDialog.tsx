@@ -580,7 +580,6 @@ export function PatientMovementDialog({
           />
         </div>
           </>
-        )}
 
 
         {/* Required document for Alta / Óbito */}
