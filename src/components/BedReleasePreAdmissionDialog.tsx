@@ -316,10 +316,11 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
           icon: ClipboardList,
           label: "Status atual",
           value:
-            patient.admissionStatus === "admitido" ? "Admitido"
-            : patient.admissionStatus === "alta_dada" ? "Alta registrada — aguardando liberação"
-            : patient.admissionStatus === "obito" ? "Óbito registrado — aguardando liberação"
-            : patient.admissionStatus === "transferencia_externa_pendente" ? "Transferência externa sinalizada — aguardando liberação"
+            patient.admissionStatus === "admitido" ? "Admitido (sem sinalização)"
+            : patient.admissionStatus === "alta_dada" ? "Alta sinalizada — aguardando desalocação"
+            : patient.admissionStatus === "obito" ? "Óbito sinalizado — aguardando desalocação"
+            : patient.admissionStatus === "transferencia_externa_pendente" ? "Transf. externa sinalizada — aguardando desalocação"
+            : patient.admissionStatus === "transferencia_interna_pendente" ? "Transf. interna sinalizada — aguardando desalocação"
             : "Pré-admitido",
         },
         { icon: FileText, label: "Motivo selecionado", value: reasonLabel, fullWidth: true },
