@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Bed, ClipboardList, FileText, Info, Stethoscope, UserMinus, UserCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { AlertTriangle, Bed, ClipboardList, FileText, Info, Stethoscope, UserMinus, UserCheck, ArrowRight } from "lucide-react";
 import { MovementConfirmDialog, type MovementBlocker, type MovementWarning } from "./MovementConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -50,6 +51,7 @@ export interface BedReleasePreAdmissionDialogProps {
 }
 
 export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onConfirm }: BedReleasePreAdmissionDialogProps) {
+  const navigate = useNavigate();
   const isPostDischarge =
     patient?.admissionStatus === "alta_dada"
     || patient?.admissionStatus === "obito"
@@ -180,18 +182,57 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                 </p>
                 {isExceptional ? (
                   <>
-                    <div className="rounded-md border border-amber-500/50 bg-amber-50 dark:bg-amber-950/30 p-2 text-amber-900 dark:text-amber-100">
-                      <p className="font-semibold">Caminho excepcional (autonomia médica/administrativa)</p>
-                      <p className="mt-1">
-                        O paciente está marcado como <strong>admitido</strong> — sem alta/óbito persistido no sistema. Use este fluxo apenas quando a sinalização de alta no Painel não chegou a ser concluída (documento não assinado) ou em situação operacional crítica.
+                    <div className="rounded-md border-2 border-amber-500/70 bg-amber-50 dark:bg-amber-950/40 p-3 text-amber-900 dark:text-amber-100">
+                      <p className="font-bold text-sm flex items-center gap-1.5">
+                        <AlertTriangle className="h-4 w-4" />
+                        Pare — este paciente ainda NÃO foi sinalizado
+                      </p>
+                      <p className="mt-1.5">
+                        O paciente está marcado como <strong>admitido</strong> e não há alta, óbito ou transferência sinalizada no Painel Clínico. <strong>O caminho correto é sinalizar a saída antes de liberar o leito</strong> — isso garante prontuário completo, documento clínico assinado, número de atendimento preservado e tarja correta no mapa.
                       </p>
                     </div>
-                    <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
-                      <li>O <strong>prontuário do paciente é preservado</strong> — nenhuma evolução/prescrição/exame é apagado.</li>
-                      <li>O movimento será registrado como <strong>LIBERAÇÃO ADMINISTRATIVA EXCEPCIONAL</strong> com sua justificativa, autor e horário.</li>
-                      <li>Será obrigatório <strong>descrever a justificativa</strong> (mínimo 10 caracteres) e <strong>confirmar com sua senha</strong>.</li>
-                      <li>Recomenda-se completar/registrar a alta médica formal pelo Painel Clínico assim que possível.</li>
-                    </ul>
+
+                    <div className="rounded-md border border-primary/40 bg-primary/5 p-3">
+                      <p className="font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                        <Stethoscope className="h-4 w-4 text-primary" />
+                        Como sinalizar pelo Painel Clínico (passo a passo)
+                      </p>
+                      <ol className="list-decimal pl-5 space-y-1 text-foreground/90">
+                        <li>Abra o <strong>Painel Clínico</strong> (no menu lateral) e localize o paciente no setor.</li>
+                        <li>Clique no <strong>card do paciente</strong> para abrir o cockpit.</li>
+                        <li>Na barra de ações superior, clique em <strong>"Movimentações e Desfechos"</strong>.</li>
+                        <li>Escolha o subtipo: <strong>Alta Médica</strong>, <strong>Óbito</strong>, <strong>Transferência Interna</strong> ou <strong>Externa</strong>.</li>
+                        <li>Preencha destino/médico/observações e <strong>confirme</strong>. O card no Mapa passa a exibir a <strong>tarja correspondente</strong>.</li>
+                        <li>Volte ao Mapa e clique novamente em <strong>"Liberar leito"</strong> — agora aparecerá o fluxo normal de liberação.</li>
+                      </ol>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="mt-3 w-full gap-1.5"
+                        onClick={() => {
+                          const id = (patient as any).id;
+                          const url = id ? `/painel-clinico?patientId=${id}` : "/painel-clinico";
+                          onOpenChange(false);
+                          navigate(url);
+                        }}
+                      >
+                        <Stethoscope className="h-4 w-4" />
+                        Ir para o Painel Clínico agora
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <details className="rounded-md border border-muted-foreground/20 p-2.5">
+                      <summary className="text-[11px] font-semibold text-muted-foreground cursor-pointer select-none">
+                        Liberar mesmo assim (caminho excepcional — só em emergência operacional)
+                      </summary>
+                      <ul className="list-disc pl-4 mt-2 space-y-1 text-muted-foreground text-[11px]">
+                        <li>O <strong>prontuário é preservado</strong> — nada é apagado.</li>
+                        <li>Movimento registrado como <strong>LIBERAÇÃO ADMINISTRATIVA EXCEPCIONAL</strong>, com autor, horário e justificativa imutável.</li>
+                        <li>Obrigatório <strong>descrever a justificativa</strong> (mín. 10 caracteres) e <strong>confirmar com sua senha</strong>.</li>
+                        <li>Use somente quando a sinalização não pôde ser concluída (documento de alta não assinado, situação crítica) — depois complete o registro pelo Painel.</li>
+                      </ul>
+                    </details>
                   </>
                 ) : isPostDischarge ? (
                   <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
@@ -209,17 +250,23 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                     <li>Você precisará <strong>confirmar com sua senha</strong> antes da liberação efetiva.</li>
                   </ul>
                 )}
-                <p className="pt-1 text-muted-foreground">
-                  Na próxima etapa você deverá <strong>selecionar o motivo</strong> e revisar os detalhes antes de confirmar.
-                </p>
+                {!isExceptional && (
+                  <p className="pt-1 text-muted-foreground">
+                    Na próxima etapa você deverá <strong>selecionar o motivo</strong> e revisar os detalhes antes de confirmar.
+                  </p>
+                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{isExceptional ? "Fechar" : "Cancelar"}</AlertDialogCancel>
             {!blockReleaseHard && (
-              <Button type="button" onClick={goToFormStep}>
-                Entendi, continuar
+              <Button
+                type="button"
+                variant={isExceptional ? "outline" : "default"}
+                onClick={goToFormStep}
+              >
+                {isExceptional ? "Prosseguir como excepcional" : "Entendi, continuar"}
               </Button>
             )}
           </AlertDialogFooter>
