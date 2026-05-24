@@ -289,15 +289,21 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       isSubmitting={submitting}
       title={
         isExceptional
-          ? "Liberação excepcional do leito"
-          : isPostDischarge ? "Liberar leito após alta/óbito" : "Liberar leito (pré-admissão)"
+          ? "Desalocação excepcional do leito"
+          : patient?.admissionStatus === "transferencia_interna_pendente"
+            ? "Desalocar leito — transferência interna sinalizada"
+            : patient?.admissionStatus === "transferencia_externa_pendente"
+              ? "Desalocar leito — transferência externa sinalizada"
+              : isPostDischarge ? "Desalocar leito após alta/óbito" : "Desalocar leito (pré-admissão)"
       }
       description={
         isExceptional
-          ? "Paciente admitido sem alta/óbito registrado. Justifique o motivo da liberação administrativa — ficará no histórico imutável."
-          : isPostDischarge
-            ? "O documento clínico já foi registrado — esta etapa apenas libera o leito no mapa."
-            : "O paciente ainda não concluiu a admissão hospitalar — você pode desocupar o leito sem apagar o prontuário."
+          ? "Paciente admitido sem sinalização de alta/óbito/transferência. Justifique o motivo da desalocação administrativa — ficará no histórico imutável."
+          : patient?.admissionStatus === "transferencia_interna_pendente"
+            ? "A transferência interna já foi sinalizada no Painel Clínico. Esta etapa libera fisicamente o leito para concluir o movimento do paciente."
+            : isPostDischarge
+              ? "O documento clínico já foi registrado — esta etapa apenas libera o leito no mapa."
+              : "O paciente ainda não concluiu a admissão hospitalar — você pode desocupar o leito sem apagar o prontuário."
       }
       tone="warning"
       confirmLabel="Avançar para senha"
