@@ -418,9 +418,13 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
             setStep("form");
           }
         }}
-        title="Confirmar liberação do leito"
-        description={`Digite sua senha para liberar o leito ${patient.bedNumber || ""} ocupado por ${patient.name || "este paciente"}. A ação será registrada com seu usuário.`}
-        actionLabel="Liberar leito"
+        title={transferArrowLabel ? `Confirmar: ${transferArrowLabel}` : "Confirmar liberação do leito"}
+        description={
+          transferArrowLabel
+            ? `Digite sua senha para desalocar o leito ${patient.bedNumber || ""} (${originLabel}) e liberar o paciente ${patient.name || ""} para ${signaledDestination}. A ação será registrada com seu usuário.`
+            : `Digite sua senha para liberar o leito ${patient.bedNumber || ""} ocupado por ${patient.name || "este paciente"}. A ação será registrada com seu usuário.`
+        }
+        actionLabel={transferArrowLabel || "Liberar leito"}
         onConfirmed={handleConfirm}
       />
     </>
