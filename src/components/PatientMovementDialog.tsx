@@ -459,7 +459,6 @@ export function PatientMovementDialog({
   };
 
   /* ───────── Step 3: Form ───────── */
-  const isInternalTransferBlocked = subtypeDef?.id === "TRANSFERENCIA_INTERNA";
   const renderFormStep = () => {
     if (!subtypeDef) return null;
     const cat = MOVEMENT_CATEGORIES.find((c) => c.id === subtypeDef.category)!;
@@ -488,36 +487,22 @@ export function PatientMovementDialog({
           )}
         </div>
 
-        {isInternalTransferBlocked && (
-          <div className="space-y-3">
-            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
-              <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
-              <div className="text-[12px] leading-relaxed">
-                <p className="font-semibold text-destructive uppercase tracking-wide text-[11px] mb-1">
-                  Transferência interna não deve ser registrada por aqui
-                </p>
-                <p className="text-foreground">
-                  Este atalho só gravava um evento na auditoria — <strong>não move o paciente, não escolhe o leito destino e não migra o histórico clínico</strong> (evoluções, prescrições, exames, atendimento, prontuário). Isso deixa a Admissão Norma Zero e demais documentos órfãos no leito de origem.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-primary/5 border border-primary/20">
-              <ArrowRightLeft className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-              <div className="text-[12px] leading-relaxed text-foreground">
-                <p className="font-medium mb-1">Use o menu do <strong>card do paciente</strong> no Mapa de Leitos:</p>
-                <ul className="list-disc list-inside space-y-0.5 text-foreground/90">
-                  <li><strong>"Transferir agora (direto)"</strong> — escolhe o leito destino e move imediatamente, preservando o histórico.</li>
-                  <li><strong>"Sinalizar pré-admissão p/ outro setor"</strong> — entra na fila de alocação do setor destino (fluxo em 2 etapas).</li>
-                </ul>
-                <p className="mt-1.5 text-muted-foreground text-[11px]">Ambos garantem repoint do histórico clínico, preservação do número de atendimento e disparo de SAPS 3 quando for escalada crítica.</p>
-              </div>
+        {subtypeDef.id === "TRANSFERENCIA_INTERNA" && (
+          <div className="flex items-start gap-2.5 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <ArrowRightLeft className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+            <div className="text-[12px] leading-relaxed text-foreground">
+              <p className="font-medium mb-1">Esta ação <strong>sinaliza</strong> a transferência interna.</p>
+              <ul className="list-disc list-inside space-y-0.5 text-foreground/90">
+                <li>O card no Mapa de Leitos ganha a tarja <strong>"TRANSF. INT"</strong> indicando ao setor administrativo/enfermagem que o paciente está autorizado a sair.</li>
+                <li>O setor destino fica registrado como <strong>pré-sinalização</strong> para o receptor.</li>
+                <li>A <strong>movimentação física</strong> (escolher leito destino + repoint do histórico) continua sendo feita no Mapa de Leitos via menu do card.</li>
+              </ul>
             </div>
           </div>
         )}
 
+        <>
 
-        {!isInternalTransferBlocked && (
-          <>
         {/* Patient */}
         <div className="space-y-1.5">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -595,7 +580,6 @@ export function PatientMovementDialog({
           />
         </div>
           </>
-        )}
 
 
         {/* Required document for Alta / Óbito */}
@@ -694,14 +678,12 @@ export function PatientMovementDialog({
               </Button>
               <Button
                 onClick={handleOpenConfirm}
-                disabled={isSubmitting || isInternalTransferBlocked}
+                disabled={isSubmitting}
                 className="gap-2"
-                title={isInternalTransferBlocked ? "Use o menu do card do paciente no Mapa de Leitos." : undefined}
               >
                 {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {isSubmitting
                   ? "Registrando..."
-                  : isInternalTransferBlocked ? "Indisponível neste fluxo"
                   : requiredDocType ? "Revisar e confirmar" : "Confirmar"}
               </Button>
 
