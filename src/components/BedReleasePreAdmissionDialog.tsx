@@ -156,6 +156,15 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
 
   const reasonLabel = REASON_OPTIONS.find((r) => r.value === reason)?.label ?? reason;
 
+  // Rótulo "Origem → Destino" para transferência sinalizada
+  const originLabel = (patient as any)?.department || sectorLabelFromCode(patient?.sector) || "—";
+  const isTransferPending =
+    patient?.admissionStatus === "transferencia_interna_pendente"
+    || patient?.admissionStatus === "transferencia_externa_pendente";
+  const transferArrowLabel = isTransferPending && signaledDestination
+    ? `Desalocar ${originLabel} → ${signaledDestination}`
+    : null;
+
   // Etapa 2 → vai para etapa de SENHA (não confirma direto)
   const goToFormStep = () => {
     stepTransitionRef.current = true;
