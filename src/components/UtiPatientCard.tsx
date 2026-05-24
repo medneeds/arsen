@@ -1184,17 +1184,10 @@ export function UtiPatientCard({
                       ocorrem pelo Painel Clínico (Cockpit). Leitos são fixos — não há exclusão. */}
                   {patient.name ? (
                     <>
-                      <DropdownMenuItem onClick={() => setIsReallocationDialogOpen(true)}>
-                        <Shuffle className="h-4 w-4 mr-2 text-teal-600" />
-                        <div className="flex flex-col">
-                          <span className="text-teal-700 dark:text-teal-300">Transferir agora (direto)</span>
-                          <span className="text-[10px] font-normal text-muted-foreground">Escolhe leito UTI 1 / UTI 2 e move na hora</span>
-                        </div>
-                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setIsSignalTransferOpen(true)}>
                         <ArrowRightLeft className="h-4 w-4 mr-2 text-sky-600" />
                         <div className="flex flex-col">
-                          <span className="text-sky-700 dark:text-sky-300">Sinalizar pré-admissão para outro setor</span>
+                          <span className="text-sky-700 dark:text-sky-300">Desalocar e pré-sinalizar p/ outro setor</span>
                           <span className="text-[10px] font-normal text-muted-foreground">Libera o leito; destino aloca em 2ª etapa</span>
                         </div>
                       </DropdownMenuItem>
@@ -1204,21 +1197,30 @@ export function UtiPatientCard({
                           <div className="flex flex-col">
                             <span className="text-amber-700 dark:text-amber-300">
                               {patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito'
-                                ? 'Liberar leito (pós-alta/óbito)'
-                                : patient.admissionStatus === 'admitido'
-                                  ? 'Liberar leito (excepcional)'
-                                  : 'Liberar leito (pré-admissão)'}
+                                ? 'Desalocar leito (pós-alta/óbito)'
+                                : patient.admissionStatus === 'transferencia_interna_pendente'
+                                  ? 'Desalocar leito (transf. interna sinalizada)'
+                                  : patient.admissionStatus === 'transferencia_externa_pendente'
+                                    ? 'Desalocar leito (transf. externa sinalizada)'
+                                    : patient.admissionStatus === 'admitido'
+                                      ? 'Desalocar leito (excepcional)'
+                                      : 'Desalocar leito (pré-admissão)'}
                             </span>
                             <span className="text-[10px] font-normal text-muted-foreground">
                               {patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito'
                                 ? 'Confirmação por senha — preserva o prontuário'
-                                : patient.admissionStatus === 'admitido'
-                                  ? 'Autonomia médica — exige justificativa + senha'
-                                  : 'Desocupa o leito sem apagar o prontuário'}
+                                : patient.admissionStatus === 'transferencia_interna_pendente' || patient.admissionStatus === 'transferencia_externa_pendente'
+                                  ? 'Completa a sinalização feita no Painel Clínico'
+                                  : patient.admissionStatus === 'admitido'
+                                    ? 'Sem sinalização — abre orientação didática'
+                                    : 'Desocupa o leito sem apagar o prontuário'}
                             </span>
                           </div>
                         </DropdownMenuItem>
                       )}
+                      <DropdownMenuLabel className="text-[10px] font-normal text-muted-foreground whitespace-normal leading-snug pt-1">
+                        Sinalizações de alta/óbito/transferência são feitas pelo <strong>Painel Clínico</strong>.
+                      </DropdownMenuLabel>
                     </>
                   ) : (
                     <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">

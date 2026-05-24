@@ -3379,21 +3379,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     {/* Non-porta users see regular menu */}
                     {role !== 'porta' && (
                       <>
-                    {/* REALOCAÇÃO INTERNA — autonomia médica (mesma lógica do NIR) */}
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setReallocationDialogOpen(true);
-                      }}
-                      className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-teal-50 to-transparent dark:from-teal-950/30 hover:from-teal-100 dark:hover:from-teal-950/50 transition-colors cursor-pointer"
-                    >
-                      <Shuffle className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                      <div className="flex flex-col">
-                        <span className="text-teal-700 dark:text-teal-300">Transferir agora (direto)</span>
-                        <span className="text-[10px] font-normal text-muted-foreground">Escolhe leito vago no mesmo momento</span>
-                      </div>
-                    </DropdownMenuItem>
-                    {/* SINALIZAR PRÉ-ADMISSÃO PARA OUTRO SETOR (etapa 1 de 2) */}
+                    {/* DESALOCAR E PRÉ-SINALIZAR P/ OUTRO SETOR (libera leito + cria pré-admissão no destino) */}
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
@@ -3403,13 +3389,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     >
                       <ArrowRightLeft className="h-4 w-4 text-sky-600 dark:text-sky-400" />
                       <div className="flex flex-col">
-                        <span className="text-sky-700 dark:text-sky-300">Sinalizar pré-admissão p/ outro setor</span>
+                        <span className="text-sky-700 dark:text-sky-300">Desalocar e pré-sinalizar p/ outro setor</span>
                         <span className="text-[10px] font-normal text-muted-foreground">Libera leito; destino aloca em 2ª etapa (mesmo atendimento)</span>
                       </div>
                     </DropdownMenuItem>
                     <p className="px-3 pb-1 text-[10px] leading-snug text-muted-foreground">
-                      Movimentações de alta, óbito e transferência externa são realizadas pelo Painel Clínico (Cockpit).
+                      Sinalizações de alta, óbito e transferências são feitas pelo <strong>Painel Clínico (Cockpit)</strong>. Aqui no Mapa de Leitos só executamos a <strong>desalocação física</strong>.
                     </p>
+
 
 
                     {/* LIBERAR LEITO — pré-admissão, pós-alta/óbito, ou excepcional (admin/médico) */}
@@ -3425,17 +3412,23 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         <div className="flex flex-col">
                           <span className="text-amber-700 dark:text-amber-300">
                             {patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito'
-                              ? 'Liberar leito (pós-alta/óbito)'
-                              : patient.admissionStatus === 'admitido'
-                                ? 'Liberar leito (excepcional)'
-                                : 'Liberar leito (pré-admissão)'}
+                              ? 'Desalocar leito (pós-alta/óbito)'
+                              : patient.admissionStatus === 'transferencia_interna_pendente'
+                                ? 'Desalocar leito (transf. interna sinalizada)'
+                                : patient.admissionStatus === 'transferencia_externa_pendente'
+                                  ? 'Desalocar leito (transf. externa sinalizada)'
+                                  : patient.admissionStatus === 'admitido'
+                                    ? 'Desalocar leito (excepcional)'
+                                    : 'Desalocar leito (pré-admissão)'}
                           </span>
                           <span className="text-[10px] font-normal text-muted-foreground">
                             {patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito'
                               ? 'Confirmação por senha — preserva o prontuário'
-                              : patient.admissionStatus === 'admitido'
-                                ? 'Autonomia médica — exige justificativa + senha'
-                                : 'Desocupa o leito sem apagar o prontuário'}
+                              : patient.admissionStatus === 'transferencia_interna_pendente' || patient.admissionStatus === 'transferencia_externa_pendente'
+                                ? 'Completa a sinalização feita no Painel Clínico'
+                                : patient.admissionStatus === 'admitido'
+                                  ? 'Sem sinalização — abre orientação didática'
+                                  : 'Desocupa o leito sem apagar o prontuário'}
                           </span>
                         </div>
                       </DropdownMenuItem>

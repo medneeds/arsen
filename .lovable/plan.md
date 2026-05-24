@@ -1,74 +1,103 @@
-# Padronizar "Limpar Sinalizações" no Dev Console
 
-## Objetivo
-Hoje a limpeza é feita ad-hoc por SQL direto (como fizemos para o DARLEILSON). Vamos transformar isso em uma ação oficial, auditada, com confirmação, dentro do Dev Console — sem nunca tocar em prontuário, evolução, prescrição, requisição, admissão ou leito.
+# Plano — Nomenclatura unificada, bloqueios didáticos e correção do leito 4
 
-## Escopo cirúrgico (camada Movimentação apenas)
-Para o(s) paciente(s) selecionado(s), a ação faz **somente** isto:
+## Princípio central
+**Painel Clínico = SINALIZA. Mapa de Leitos = DESALOCA.**  
+Toda movimentação clínica (alta, óbito, transferência interna/externa) é **sinalizada** no Painel Clínico. O Mapa de Leitos apenas **executa a desalocação física** do leito a partir da sinalização. Se não houver sinalização, o Mapa abre pop-up didático ensinando o caminho.
 
-1. `DELETE` em `patient_movements` onde `release_status='pending_release'` E `movement_type IN (ALTA_HOSPITALAR, OBITO, TRANSFERENCIA_INTERNA, TRANSFERENCIA_EXTERNA, 'LIBERAÇÃO PÓS-ALTA/ÓBITO', 'LIBERAÇÃO PRÉ-ADMISSÃO')`.
-2. `DELETE` em `discharge_documents` onde `document_type IN ('alta_hospitalar','obito')`.
-3. `UPDATE patients SET admission_status='admitido'` **somente** se o status atual for um dos de saída (`alta_dada`, `obito`, `transferido`, `transferencia_interna_pendente`, `transferencia_externa_pendente`). Se for `pre_admitido` (caso DARLEILSON) ou qualquer outro, **não toca**.
+---
 
-## O que NÃO toca (blindagem explícita)
-- `bed_census` / leito / setor
-- `clinical_evolutions`, `prescriptions`, `exam_requests`, `culture_results`
-- `patient_encounters`, `medical_records`, `patient_registry`
-- Movimentações que não sejam de saída (ex.: ADMISSÃO, TRANSFERÊNCIA já efetivada com `release_status='released'`)
-- RLS, código de outros fluxos, outros pacientes
+## CAMADA 1 — Mapa de Leitos: menu enxuto e didático
 
-## Onde mexer
+**Arquivos:** `src/components/PatientCard.tsx`, `src/components/UtiPatientCard.tsx`
 
-### 1. `supabase/functions/dev-console-ops/index.ts`
-Nova ação `clear_patient_signaling` (requer `confirm:true`, role dev/admin já validado).
+Hoje o menu tem **3 opções confusas** ("Transferir agora", "Sinalizar pré-admissão p/ outro setor", "Liberar leito"). Vou consolidar em **2 opções claras**:
 
-Parâmetros:
-- `patientId` (preferencial), **ou** `patientIds: string[]` (lote)
-- `dryRun: boolean` (default `false`) — quando true, retorna prévia sem executar
+| Nova opção | O que faz |
+|---|---|
+| **Desalocar leito** | Libera o leito mantendo prontuário. Só prossegue se houver sinalização. Sem sinalização → pop-up didático. |
+| **Desalocar e pré-sinalizar p/ outro setor** | Libera + cria pré-admissão no destino, mesmo atendimento (fluxo atual de `signalTransferOpen`). |
 
-Retorno:
-```json
-{
-  "ok": true,
-  "results": [{
-    "patientId": "...",
-    "name": "...",
-    "bed": "L09",
-    "sector": "outside",
-    "movementsDeleted": 4,
-    "documentsDeleted": 1,
-    "statusReset": true,
-    "previousStatus": "obito"
-  }],
-  "totals": { "movementsDeleted": 4, "documentsDeleted": 1, "patientsAffected": 1 }
-}
-```
+A opção "Transferir agora (direto)" some do menu — ela é, na prática, uma sinalização de transferência interna, e o caminho correto é Painel Clínico → tarja → desalocar. Mantemos `UtiReallocationDialog` apenas para o **NIR** (autonomia operacional).
 
-Registra entrada em `audit_logs` (action='DEV_CLEAR_SIGNALING') com o JSON do resultado.
+Texto rodapé do menu mantém: *"Sinalizações de alta, óbito e transferências são feitas pelo Painel Clínico (Cockpit)."*
 
-Outra ação companheira `list_patients_with_signaling` (read-only) retorna todos os pacientes com pelo menos uma sinalização ativa (pending movement OU discharge_document OU admission_status de saída), com `name`, `bed_number`, `sector`, `admission_status`, contadores e a última sinalização.
+---
 
-### 2. `src/pages/DevConsolePage.tsx`
-Nova aba `signaling` (ícone `Eraser` ou `Trash2`) — componente `ClearSignalingTab` em `src/components/dev/ClearSignalingTab.tsx`:
+## CAMADA 2 — Bloqueio didático ao desalocar sem sinalização
 
-- Botão "Atualizar" → chama `list_patients_with_signaling`
-- Tabela: Nome · Leito · Setor · Status · Mov. pendentes · Documentos · Última sinalização · Ação
-- Busca client-side por nome/leito (NFD)
-- Seleção múltipla (checkbox) + botão "Limpar selecionados"
-- Linha individual com botão "Limpar"
-- Cada clique abre `AlertDialog` com **prévia em dryRun** (lista exata do que será apagado) + texto didático:
-  > "Esta ação remove **somente** as sinalizações de saída (movimentações pendentes e documentos de alta/óbito) e restaura o status para `admitido` se aplicável. Leito, prontuário, evoluções, prescrições, requisições e admissão **não são afetados**. Registrada em audit_logs."
-- Confirmar → executa com `dryRun:false`, mostra toast com `totais` e atualiza a lista.
+**Arquivo:** `src/components/BedReleasePreAdmissionDialog.tsx` (já existe o pop-up didático para `isExceptional`)
 
-## Layout
-Mantém o padrão visual do Dev Console (header dark, tabs azuis). Sem mudanças estruturais na sidebar nem no app.
+- Reaproveitar o pop-up atual (Stage 1 "Pare — paciente não sinalizado") como **único caminho** quando o usuário clica em "Desalocar leito" sem tarja.
+- A "Desalocar e pré-sinalizar" também precisa **bloquear** se o paciente tem desfecho pendente (alta/óbito sinalizados) — não faz sentido pré-sinalizar transferência sobre alta.
+- Estados que **liberam desalocação direta** (sem pop-up):
+  - `transferencia_interna_pendente`, `transferencia_externa_pendente`, `alta_dada`, `obito`, `pre_admitido`, `suspenso`.
+- Estado `admitido` puro → sempre pop-up didático com botão "Ir ao Painel Clínico".
 
-## Como ficaria o caso DARLEILSON
-Apareceria na lista (status `pre_admitido` + 4 movs pendentes + 1 doc óbito). Clicar "Limpar" → prévia → confirmar → 4 movs e 1 doc removidos, status `pre_admitido` preservado, leito L09/UCI 2 intacto.
+---
 
-## Confirmação que peço antes de implementar
-1. **OK** com o nome da aba "Limpar Sinalizações" e ícone `Eraser`?
-2. **OK** com a regra de não restaurar `pre_admitido` para `admitido` (preservar o status original quando não for status de saída)?
-3. **OK** com a auditoria em `audit_logs` action='DEV_CLEAR_SIGNALING'?
+## CAMADA 3 — Painel Clínico: nomenclatura "Sinalizar"
 
-Se sim para os três, sigo direto na implementação dos 2 arquivos.
+**Arquivo:** `src/components/PatientMovementDialog.tsx`
+
+Renomear o título do diálogo e o botão de confirmação conforme o subtipo escolhido:
+
+| Subtipo | Título do diálogo | Botão final |
+|---|---|---|
+| ALTA_MEDICA / ALTA_* | "Sinalizar alta hospitalar" | "Confirmar sinalização de alta" |
+| OBITO | "Sinalizar óbito" | "Confirmar sinalização de óbito" |
+| TRANSFERENCIA_INTERNA | "Sinalizar transferência interna" | "Confirmar sinalização de transferência" |
+| TRANSFERENCIA_EXTERNA | "Sinalizar transferência externa" | "Confirmar sinalização de transferência" |
+| (demais) | mantém atual | "Confirmar sinalização" |
+
+Subtítulo explicativo no header: *"Esta ação sinaliza o desfecho no prontuário. A desalocação física do leito é feita no Mapa de Leitos."*
+
+---
+
+## CAMADA 4 — Cockpit: estado "sinalizado" visível e editável
+
+**Arquivo:** `src/components/PatientCockpit.tsx` (banner de status já existe parcialmente)
+
+Adicionar **banner persistente no topo do cockpit** quando há sinalização ativa:
+
+- **Alta sinalizada:** chip verde "ALTA SINALIZADA em DD/MM HH:MM por Dr(a). X" + 2 botões → *Imprimir sumário de alta* | *Editar/cancelar sinalização*.
+- **Óbito sinalizado:** chip cinza-escuro "ÓBITO SINALIZADO …" + *Imprimir declaração* | *Editar*.
+- **Transferência interna/externa pendente:** chip azul "TRANSF. INT/EXT SINALIZADA → Destino: <setor>" + *Editar destino* | *Cancelar sinalização*.
+
+Botão "Editar" reabre `PatientMovementDialog` no subtipo correspondente para revisão; "Cancelar sinalização" usa pop-up de confirmação com motivo (já existe `suspend_discharge_document` para alta — reaproveitar para os demais via update `admission_status='admitido'` + audit).
+
+---
+
+## CAMADA 5 — Bug do leito 4 (TRANSF. INT sinalizada não desaloca)
+
+Reproduzir e revisar o caminho:
+1. Card mostra tarja TRANSF. INT (correto — `transferencia_interna_pendente`).
+2. Usuário clica "Desalocar leito" no menu.
+3. Hoje `BedReleasePreAdmissionDialog` entra no branch `isExceptional` (porque `admissionStatus !== 'admitido'` mas também não está em whitelist de desfecho).
+
+**Causa provável:** o branch `isPostDischarge` cobre apenas `alta_dada | obito`, não cobre `transferencia_interna_pendente | transferencia_externa_pendente`. Resultado: cai no branch `isExceptional` e bloqueia.
+
+**Correção:** estender o branch "pós-sinalização" para incluir os dois status de transferência pendente. Nesses casos o diálogo segue direto para Stage 2 (form + senha) com motivo pré-preenchido "Desalocação pós-sinalização de transferência interna/externa".
+
+---
+
+## Resumo de arquivos tocados
+
+| Arquivo | O quê |
+|---|---|
+| `PatientCard.tsx` | Menu enxuto: 2 opções |
+| `UtiPatientCard.tsx` | Menu enxuto: 2 opções |
+| `BedReleasePreAdmissionDialog.tsx` | Reconhecer `transferencia_*_pendente` como pós-sinalização (fix bug leito 4) |
+| `PatientMovementDialog.tsx` | Título + botão "Sinalizar/Confirmar sinalização" por subtipo |
+| `PatientCockpit.tsx` | Banner persistente de sinalização ativa com ações (imprimir/editar/cancelar) |
+
+## NÃO será tocado
+- Schema do banco, RPCs (`archive_patient_bed_data`, `repoint_patient_history`, `suspend_discharge_document`), triggers
+- `usePatients.releaseBedPreAdmission`, `bedLifecycle.ts`, `internalTransfer.ts`
+- Fluxo do NIR e `UtiReallocationDialog`
+- Lógica de impressão de sumário de alta/óbito (apenas o botão de atalho)
+- Edge functions, RLS, auth
+
+---
+
+**Aguardo "ok" para aplicar.**

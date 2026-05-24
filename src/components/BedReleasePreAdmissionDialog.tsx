@@ -32,6 +32,7 @@ const POST_DISCHARGE_REASONS = [
   { value: "alta_concluida", label: "Alta médica já registrada — liberar leito para limpeza/nova alocação" },
   { value: "obito_concluido", label: "Óbito já registrado — liberar leito para preparo/remoção" },
   { value: "transferencia_externa_concluida", label: "Transferência externa já efetivada — leito disponível" },
+  { value: "transferencia_interna_concluida", label: "Transferência interna sinalizada — desalocar para mover o paciente" },
   { value: "outro", label: "Outro motivo" },
 ];
 
@@ -55,7 +56,8 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
   const isPostDischarge =
     patient?.admissionStatus === "alta_dada"
     || patient?.admissionStatus === "obito"
-    || patient?.admissionStatus === "transferencia_externa_pendente";
+    || patient?.admissionStatus === "transferencia_externa_pendente"
+    || patient?.admissionStatus === "transferencia_interna_pendente";
   const isExceptional = patient?.admissionStatus === "admitido";
   const REASON_OPTIONS = isExceptional
     ? EXCEPTIONAL_REASONS
@@ -67,7 +69,9 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
           ? "obito_concluido"
           : patient?.admissionStatus === "transferencia_externa_pendente"
             ? "transferencia_externa_concluida"
-            : "alta_concluida")
+            : patient?.admissionStatus === "transferencia_interna_pendente"
+              ? "transferencia_interna_concluida"
+              : "alta_concluida")
       : "paciente_saiu";
 
   const [step, setStep] = useState<"notice" | "form" | "password">("notice");
@@ -168,10 +172,14 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
               </div>
               <AlertDialogTitle className="text-base">
                 {isExceptional
-                  ? "Liberação excepcional — paciente admitido sem alta"
-                  : isPostDischarge
-                    ? "Liberar leito após alta/óbito"
-                    : "Atenção: liberar leito sem alta"}
+                  ? "Desalocação excepcional — paciente sem sinalização"
+                  : patient?.admissionStatus === "transferencia_interna_pendente"
+                    ? "Desalocar leito para transferência interna"
+                    : patient?.admissionStatus === "transferencia_externa_pendente"
+                      ? "Desalocar leito para transferência externa"
+                      : isPostDischarge
+                        ? "Desalocar leito após alta/óbito"
+                        : "Atenção: desalocar leito sem sinalização"}
               </AlertDialogTitle>
             </div>
             <AlertDialogDescription asChild>
@@ -281,15 +289,21 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       isSubmitting={submitting}
       title={
         isExceptional
-          ? "Liberação excepcional do leito"
-          : isPostDischarge ? "Liberar leito após alta/óbito" : "Liberar leito (pré-admissão)"
+          ? "Desalocação excepcional do leito"
+          : patient?.admissionStatus === "transferencia_interna_pendente"
+            ? "Desalocar leito — transferência interna sinalizada"
+            : patient?.admissionStatus === "transferencia_externa_pendente"
+              ? "Desalocar leito — transferência externa sinalizada"
+              : isPostDischarge ? "Desalocar leito após alta/óbito" : "Desalocar leito (pré-admissão)"
       }
       description={
         isExceptional
-          ? "Paciente admitido sem alta/óbito registrado. Justifique o motivo da liberação administrativa — ficará no histórico imutável."
-          : isPostDischarge
-            ? "O documento clínico já foi registrado — esta etapa apenas libera o leito no mapa."
-            : "O paciente ainda não concluiu a admissão hospitalar — você pode desocupar o leito sem apagar o prontuário."
+          ? "Paciente admitido sem sinalização de alta/óbito/transferência. Justifique o motivo da desalocação administrativa — ficará no histórico imutável."
+          : patient?.admissionStatus === "transferencia_interna_pendente"
+            ? "A transferência interna já foi sinalizada no Painel Clínico. Esta etapa libera fisicamente o leito para concluir o movimento do paciente."
+            : isPostDischarge
+              ? "O documento clínico já foi registrado — esta etapa apenas libera o leito no mapa."
+              : "O paciente ainda não concluiu a admissão hospitalar — você pode desocupar o leito sem apagar o prontuário."
       }
       tone="warning"
       confirmLabel="Avançar para senha"
@@ -302,10 +316,11 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
           icon: ClipboardList,
           label: "Status atual",
           value:
-            patient.admissionStatus === "admitido" ? "Admitido"
-            : patient.admissionStatus === "alta_dada" ? "Alta registrada — aguardando liberação"
-            : patient.admissionStatus === "obito" ? "Óbito registrado — aguardando liberação"
-            : patient.admissionStatus === "transferencia_externa_pendente" ? "Transferência externa sinalizada — aguardando liberação"
+            patient.admissionStatus === "admitido" ? "Admitido (sem sinalização)"
+            : patient.admissionStatus === "alta_dada" ? "Alta sinalizada — aguardando desalocação"
+            : patient.admissionStatus === "obito" ? "Óbito sinalizado — aguardando desalocação"
+            : patient.admissionStatus === "transferencia_externa_pendente" ? "Transf. externa sinalizada — aguardando desalocação"
+            : patient.admissionStatus === "transferencia_interna_pendente" ? "Transf. interna sinalizada — aguardando desalocação"
             : "Pré-admitido",
         },
         { icon: FileText, label: "Motivo selecionado", value: reasonLabel, fullWidth: true },

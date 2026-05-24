@@ -359,6 +359,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
           <DischargeQuickActions
             patientId={patient.id}
             patientName={patient.name}
+            admissionStatus={patient.admissionStatus}
             fallback={() => setMovementDialogOpen(true)}
           />
         </div>
@@ -972,7 +973,7 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
                 )}
               </CockpitSection>
 
-              <DischargeQuickActions patientId={patient.id} patientName={patient.name} fallback={() => setMovementDialogOpen(true)} />
+              <DischargeQuickActions patientId={patient.id} patientName={patient.name} admissionStatus={patient.admissionStatus} fallback={() => setMovementDialogOpen(true)} />
             </TabsContent>
           </div>
         </Tabs>
@@ -1004,11 +1005,31 @@ export function PatientCockpit({ patient: patientProp, className, variant = "fix
 
 /* ===== Subcomponentes ===== */
 
-function DischargeQuickActions({ patientId, patientName, fallback }: { patientId: string; patientName: string; fallback: () => void }) {
+function DischargeQuickActions({ patientId, patientName, admissionStatus, fallback }: { patientId: string; patientName: string; admissionStatus?: string; fallback: () => void }) {
   const { data: docs } = usePatientDischargeDocs(patientId, patientName);
   const latestAlta = docs?.find((d) => d.document_type === "alta_hospitalar" || d.document_type === "alta_pedido");
   const latestObito = docs?.find((d) => d.document_type === "obito");
   const [suspendOpen, setSuspendOpen] = useState(false);
+
+  // Sinalização de transferência (sem documento clínico — só status no patients)
+  if (admissionStatus === "transferencia_interna_pendente" || admissionStatus === "transferencia_externa_pendente") {
+    const isInt = admissionStatus === "transferencia_interna_pendente";
+    return (
+      <div className="w-full rounded-md border border-sky-500/40 bg-sky-50 dark:bg-sky-950/30 p-2 space-y-1.5">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-sky-800 dark:text-sky-200">
+          <ArrowLeftRight className="h-3.5 w-3.5" />
+          {isInt ? "TRANSFERÊNCIA INTERNA SINALIZADA" : "TRANSFERÊNCIA EXTERNA SINALIZADA"}
+        </div>
+        <p className="text-[11px] leading-snug text-sky-900/80 dark:text-sky-100/80">
+          A sinalização está ativa. A <strong>desalocação física</strong> do leito é feita no <strong>Mapa de Leitos</strong> (botão "Desalocar leito").
+        </p>
+        <Button size="sm" variant="outline" className="w-full h-7 text-[11px] gap-1.5 border-sky-500/50 text-sky-700 dark:text-sky-300 hover:bg-sky-500/10"
+          onClick={fallback}>
+          <ArrowLeftRight className="h-3 w-3" /> Editar / cancelar sinalização
+        </Button>
+      </div>
+    );
+  }
 
   if (latestObito) {
     return (
@@ -1052,7 +1073,7 @@ function DischargeQuickActions({ patientId, patientName, fallback }: { patientId
   }
   return (
     <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1.5" onClick={fallback}>
-      <ArrowLeftRight className="h-3.5 w-3.5" /> Abrir Alta, Movimentações e Desfechos
+      <ArrowLeftRight className="h-3.5 w-3.5" /> Sinalizar Alta, Movimentações e Desfechos
     </Button>
   );
 }

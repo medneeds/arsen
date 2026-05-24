@@ -640,17 +640,21 @@ export function PatientMovementDialog({
             <div className="flex-1 min-w-0">
               <DialogTitle className="text-lg">
                 {step === "form" && subtypeDef
-                  ? subtypeDef.label
+                  ? (subtypeDef.id === "TRANSFERENCIA_INTERNA" ? "Sinalizar transferência interna"
+                    : subtypeDef.id === "TRANSFERENCIA_EXTERNA" ? "Sinalizar transferência externa"
+                    : subtypeDef.id === "OBITO" ? "Sinalizar óbito"
+                    : subtypeDef.id?.startsWith?.("ALTA") ? `Sinalizar ${subtypeDef.label.toLowerCase()}`
+                    : subtypeDef.label)
                   : step === "subtype" && headerCat
                   ? headerCat.label
-                  : "Registrar Movimentação"}
+                  : "Sinalizar Movimentação (Painel Clínico)"}
               </DialogTitle>
               <DialogDescription className="text-xs mt-0.5">
                 {step === "form" && subtypeDef
-                  ? subtypeDef.description
+                  ? `${subtypeDef.description} — Esta ação SINALIZA o desfecho no prontuário. A desalocação física do leito é feita no Mapa de Leitos.`
                   : step === "subtype" && headerCat
                   ? `Escolha o subtipo de ${headerCat.label.toLowerCase()}`
-                  : "Fluxo de movimentação do paciente"}
+                  : "Painel Clínico sinaliza. Mapa de Leitos desaloca."}
               </DialogDescription>
             </div>
           </div>
@@ -683,8 +687,14 @@ export function PatientMovementDialog({
               >
                 {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {isSubmitting
-                  ? "Registrando..."
-                  : requiredDocType ? "Revisar e confirmar" : "Confirmar"}
+                  ? "Sinalizando..."
+                  : requiredDocType ? "Revisar e confirmar sinalização" : (
+                      subtypeDef?.id === "TRANSFERENCIA_INTERNA" || subtypeDef?.id === "TRANSFERENCIA_EXTERNA"
+                        ? "Confirmar sinalização de transferência"
+                        : subtypeDef?.id === "OBITO" ? "Confirmar sinalização de óbito"
+                        : subtypeDef?.id?.startsWith?.("ALTA") ? "Confirmar sinalização de alta"
+                        : "Confirmar sinalização"
+                    )}
               </Button>
 
             </div>
@@ -719,8 +729,16 @@ export function PatientMovementDialog({
           onConfirm={handleSubmit}
           isSubmitting={isSubmitting}
           tone={subtypeDef.id === "EVASAO" ? "destructive" : "primary"}
-          title={`Confirmar ${subtypeDef.label}`}
-          confirmLabel={`Confirmar ${subtypeDef.label}`}
+          title={
+            subtypeDef.id === "TRANSFERENCIA_INTERNA" ? "Confirmar sinalização de transferência interna"
+            : subtypeDef.id === "TRANSFERENCIA_EXTERNA" ? "Confirmar sinalização de transferência externa"
+            : `Confirmar sinalização — ${subtypeDef.label}`
+          }
+          confirmLabel={
+            subtypeDef.id === "TRANSFERENCIA_INTERNA" || subtypeDef.id === "TRANSFERENCIA_EXTERNA"
+              ? "Confirmar sinalização de transferência"
+              : `Confirmar sinalização`
+          }
           summary={[
             { icon: User, label: "Paciente", value: patient.name },
             { icon: Bed, label: "Leito atual / Setor", value: `${patient.bedNumber} • ${patient.sector}` },
