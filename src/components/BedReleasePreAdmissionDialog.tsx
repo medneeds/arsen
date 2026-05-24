@@ -344,12 +344,18 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
               : "O paciente ainda não concluiu a admissão hospitalar — você pode desocupar o leito sem apagar o prontuário."
       }
       tone="warning"
-      confirmLabel="Avançar para senha"
+      confirmLabel={transferArrowLabel ? `${transferArrowLabel} — avançar para senha` : "Avançar para senha"}
       cancelLabel="Voltar"
       summary={[
         { icon: UserMinus, label: "Paciente", value: patient.name || "—" },
         { icon: Bed, label: "Leito atual", value: patient.bedNumber || "—" },
-        { icon: Stethoscope, label: "Setor", value: (patient as any).department || sectorLabelFromCode(patient.sector) || "—" },
+        { icon: Stethoscope, label: "Setor (origem)", value: originLabel },
+        ...(isTransferPending ? [{
+          icon: ArrowRight,
+          label: patient?.admissionStatus === "transferencia_interna_pendente" ? "Destino sinalizado" : "Destino externo sinalizado",
+          value: signaledDestination || "— (sinalização sem destino registrado)",
+          fullWidth: true as const,
+        }] : []),
         {
           icon: ClipboardList,
           label: "Status atual",
