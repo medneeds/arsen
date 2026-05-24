@@ -51,6 +51,7 @@ export interface BedReleasePreAdmissionDialogProps {
 }
 
 export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onConfirm }: BedReleasePreAdmissionDialogProps) {
+  const navigate = useNavigate();
   const isPostDischarge =
     patient?.admissionStatus === "alta_dada"
     || patient?.admissionStatus === "obito"
