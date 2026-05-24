@@ -56,7 +56,8 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
   const isPostDischarge =
     patient?.admissionStatus === "alta_dada"
     || patient?.admissionStatus === "obito"
-    || patient?.admissionStatus === "transferencia_externa_pendente";
+    || patient?.admissionStatus === "transferencia_externa_pendente"
+    || patient?.admissionStatus === "transferencia_interna_pendente";
   const isExceptional = patient?.admissionStatus === "admitido";
   const REASON_OPTIONS = isExceptional
     ? EXCEPTIONAL_REASONS
@@ -68,7 +69,9 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
           ? "obito_concluido"
           : patient?.admissionStatus === "transferencia_externa_pendente"
             ? "transferencia_externa_concluida"
-            : "alta_concluida")
+            : patient?.admissionStatus === "transferencia_interna_pendente"
+              ? "transferencia_interna_concluida"
+              : "alta_concluida")
       : "paciente_saiu";
 
   const [step, setStep] = useState<"notice" | "form" | "password">("notice");
