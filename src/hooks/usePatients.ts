@@ -385,6 +385,27 @@ export function usePatients(department?: Department, sector?: string) {
 
       console.log('Vacating bed (clearing patient data) for:', patientId);
 
+      // 🔒 ARQUIVAR todos os dados clínicos ANTES de liberar o leito
+      // Garante que o próximo paciente nesse leito não veja dados do anterior.
+      console.log('Archiving clinical data before vacate for patient:', patientId);
+      const { data: archiveResult, error: archiveError } = await supabase
+        .rpc('archive_patient_bed_data', {
+          p_patient_id: patientId,
+          p_reason: 'frontend_vacate_bed',
+        });
+      if (archiveError) {
+        console.error('Erro ao arquivar dados clínicos antes de liberar leito:', archiveError);
+        if (options.showToast) {
+          toast({
+            title: "Erro ao arquivar dados",
+            description: "Não foi possível arquivar os dados clínicos. Operação abortada por segurança.",
+            variant: "destructive",
+          });
+        }
+        throw new Error(`Falha ao arquivar dados clínicos: ${archiveError.message}`);
+      }
+      console.log('Archive result:', archiveResult);
+
       const vacantPayload = {
         name: '',
         age: null as any,
@@ -529,6 +550,18 @@ export function usePatients(department?: Department, sector?: string) {
       if (movementError) throw movementError;
 
       // 2) Zera os campos clínicos do leito (preserva o leito no mapa)
+      // 🔒 ARQUIVAR todos os dados clínicos ANTES de liberar o leito
+      console.log('Archiving clinical data before pre-admission release for patient:', patientId);
+      const { error: archiveError } = await supabase
+        .rpc('archive_patient_bed_data', {
+          p_patient_id: patientId,
+          p_reason: 'frontend_release_bed_pre_admission',
+        });
+      if (archiveError) {
+        console.error('Erro ao arquivar dados clínicos antes de liberar leito (pré-admissão):', archiveError);
+        throw new Error(`Falha ao arquivar dados clínicos: ${archiveError.message}`);
+      }
+
       const vacantPayload = {
         name: '',
         age: null as any,

@@ -45,14 +45,22 @@ export function useActivePrescription(
       .is("archived_at", null)
       .neq("status", "draft");
 
-    if (resolvedRegistryId) {
+    if (resolvedRegistryId && activeEncounterId) {
+      // Caminho ideal: registry_id resolvido + encounter ativo
+      query = query
+        .eq("patient_registry_id", resolvedRegistryId)
+        .eq("encounter_id", activeEncounterId);
+    } else if (resolvedRegistryId) {
       query = query.eq("patient_registry_id", resolvedRegistryId);
+    } else if (patientId && activeEncounterId) {
+      // Sem registry: exigir encounter_id (não aceitar fallback null)
+      query = query.eq("encounter_id", activeEncounterId);
     } else {
-      query = query.eq("patient_name", patientName.trim());
-    }
-
-    if (patientId && activeEncounterId) {
-      query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
+      // Sem identidade segura: não buscar nada para evitar vazamento
+      console.warn('[useActivePrescription] sem identidade segura — sem busca');
+      setData(null);
+      setLoading(false);
+      return;
     }
     const { data: rows, error } = await query
       .order("created_at", { ascending: false })
