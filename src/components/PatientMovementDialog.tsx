@@ -729,8 +729,16 @@ export function PatientMovementDialog({
           onConfirm={handleSubmit}
           isSubmitting={isSubmitting}
           tone={subtypeDef.id === "EVASAO" ? "destructive" : "primary"}
-          title={`Confirmar ${subtypeDef.label}`}
-          confirmLabel={`Confirmar ${subtypeDef.label}`}
+          title={
+            subtypeDef.id === "TRANSFERENCIA_INTERNA" ? "Confirmar sinalização de transferência interna"
+            : subtypeDef.id === "TRANSFERENCIA_EXTERNA" ? "Confirmar sinalização de transferência externa"
+            : `Confirmar sinalização — ${subtypeDef.label}`
+          }
+          confirmLabel={
+            subtypeDef.id === "TRANSFERENCIA_INTERNA" || subtypeDef.id === "TRANSFERENCIA_EXTERNA"
+              ? "Confirmar sinalização de transferência"
+              : `Confirmar sinalização`
+          }
           summary={[
             { icon: User, label: "Paciente", value: patient.name },
             { icon: Bed, label: "Leito atual / Setor", value: `${patient.bedNumber} • ${patient.sector}` },
