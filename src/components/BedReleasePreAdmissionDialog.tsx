@@ -172,10 +172,14 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
               </div>
               <AlertDialogTitle className="text-base">
                 {isExceptional
-                  ? "Liberação excepcional — paciente admitido sem alta"
-                  : isPostDischarge
-                    ? "Liberar leito após alta/óbito"
-                    : "Atenção: liberar leito sem alta"}
+                  ? "Desalocação excepcional — paciente sem sinalização"
+                  : patient?.admissionStatus === "transferencia_interna_pendente"
+                    ? "Desalocar leito para transferência interna"
+                    : patient?.admissionStatus === "transferencia_externa_pendente"
+                      ? "Desalocar leito para transferência externa"
+                      : isPostDischarge
+                        ? "Desalocar leito após alta/óbito"
+                        : "Atenção: desalocar leito sem sinalização"}
               </AlertDialogTitle>
             </div>
             <AlertDialogDescription asChild>
