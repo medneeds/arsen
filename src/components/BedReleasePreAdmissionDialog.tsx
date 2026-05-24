@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Patient } from "@/types/patient";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { supabase } from "@/integrations/supabase/client";
 
 const PRE_ADMISSION_REASONS = [
   { value: "paciente_saiu", label: "Paciente saiu antes da admissão (evasão / saída a pedido)" },
