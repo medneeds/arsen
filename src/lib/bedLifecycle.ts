@@ -266,6 +266,19 @@ export async function executeOperationalRelocation(
     }
 
     // 4) Zerar slot origem
+    // 🔒 ARQUIVAR todos os dados clínicos do leito de ORIGEM antes de liberá-lo
+    // (a transferência interna SEM ALTA usa repointPatientHistory, que ocorre em
+    // outra função e migra patient_id; aqui é liberação operacional)
+    console.log('Archiving clinical data for operational relocation source:', payload.sourcePatientId);
+    const { error: archiveError } = await supabase.rpc('archive_patient_bed_data', {
+      p_patient_id: payload.sourcePatientId,
+      p_reason: 'operational_relocation_source_release',
+    });
+    if (archiveError) {
+      console.error('[executeOperationalRelocation] erro ao arquivar:', archiveError);
+      return { ok: false, error: `Falha ao arquivar dados clínicos: ${archiveError.message}` };
+    }
+
     const { error: clearErr } = await supabase
       .from("patients")
       .update({

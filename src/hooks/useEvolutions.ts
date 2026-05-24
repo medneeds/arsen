@@ -101,24 +101,25 @@ export function useEvolutions(
         .is("archived_at", null)
         .order("created_at", { ascending: false });
 
-      if (resolvedRegistryId) {
-        // Identidade resolvida: traz tudo do prontuário + legados sem carimbo
-        // que pertençam ao leito atual (não vaza histórico de outros pacientes).
-        query = query.or(
-          `patient_registry_id.eq.${resolvedRegistryId},and(patient_registry_id.is.null,patient_id.eq.${safePatientId})`,
-        );
-        if (activeEncounterId) {
-          query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
-        }
+      if (resolvedRegistryId && activeEncounterId) {
+        // Caminho ideal: registry resolvido + encounter ativo
+        query = query
+          .eq("patient_registry_id", resolvedRegistryId)
+          .eq("encounter_id", activeEncounterId);
+      } else if (resolvedRegistryId) {
+        // Sem encounter mas com registry: filtrar só por registry
+        query = query.eq("patient_registry_id", resolvedRegistryId);
+      } else if (safePatientId && activeEncounterId) {
+        // Sem registry: exigir patient_id + encounter_id (não aceitar encounter NULL)
+        query = query
+          .eq("patient_id", safePatientId)
+          .eq("encounter_id", activeEncounterId);
       } else if (safePatientId) {
-        query = query.eq("patient_id", safePatientId);
-        if (activeEncounterId) {
-          query = query.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
-        }
-      } else if (fbName) {
-        query = query.is("patient_id", null).eq("patient_name", fbName);
-        if (fbBed) query = query.eq("patient_bed", fbBed);
-        if (fbSector) query = query.eq("patient_sector", fbSector);
+        // Sem registry nem encounter: não buscar para evitar vazamento
+        console.warn('[useEvolutions] sem encounter ativo — não buscando para evitar vazamento');
+        setEvolutions([]);
+        if (!silent) setLoading(false);
+        return;
       } else {
         setEvolutions([]);
         if (!silent) setLoading(false);

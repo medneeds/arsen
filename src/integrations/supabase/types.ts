@@ -16,6 +16,9 @@ export type Database = {
     Tables: {
       admission_histories: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_from_patient_id: string | null
           chief_complaint: string | null
           cid_primary: string | null
           cid_secondary: string | null
@@ -36,6 +39,9 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           chief_complaint?: string | null
           cid_primary?: string | null
           cid_secondary?: string | null
@@ -56,6 +62,9 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           chief_complaint?: string | null
           cid_primary?: string | null
           cid_secondary?: string | null
@@ -619,6 +628,9 @@ export type Database = {
       }
       conduct_history: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_from_patient_id: string | null
           changed_by: string | null
           changed_by_email: string | null
           created_at: string
@@ -634,6 +646,9 @@ export type Database = {
           state_id: string
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           changed_by?: string | null
           changed_by_email?: string | null
           created_at?: string
@@ -649,6 +664,9 @@ export type Database = {
           state_id: string
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           changed_by?: string | null
           changed_by_email?: string | null
           created_at?: string
@@ -1040,6 +1058,9 @@ export type Database = {
       }
       discharge_documents: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_from_patient_id: string | null
           content: Json
           created_at: string
           created_by: string | null
@@ -1068,6 +1089,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           content?: Json
           created_at?: string
           created_by?: string | null
@@ -1096,6 +1120,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           content?: Json
           created_at?: string
           created_by?: string | null
@@ -1803,6 +1830,9 @@ export type Database = {
       medical_records: {
         Row: {
           ano_referencia: string | null
+          archive_reason: string | null
+          archived_at: string | null
+          archived_from_patient_id: string | null
           codigo_unidade: string | null
           created_at: string
           created_by: string | null
@@ -1822,6 +1852,9 @@ export type Database = {
         }
         Insert: {
           ano_referencia?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           codigo_unidade?: string | null
           created_at?: string
           created_by?: string | null
@@ -1841,6 +1874,9 @@ export type Database = {
         }
         Update: {
           ano_referencia?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           codigo_unidade?: string | null
           created_at?: string
           created_by?: string | null
@@ -4062,6 +4098,9 @@ export type Database = {
       round_sessions: {
         Row: {
           admission_reason: string | null
+          archive_reason: string | null
+          archived_at: string | null
+          archived_from_patient_id: string | null
           created_at: string
           created_by: string | null
           department: string
@@ -4082,6 +4121,9 @@ export type Database = {
         }
         Insert: {
           admission_reason?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           created_at?: string
           created_by?: string | null
           department?: string
@@ -4102,6 +4144,9 @@ export type Database = {
         }
         Update: {
           admission_reason?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           created_at?: string
           created_by?: string | null
           department?: string
@@ -4156,6 +4201,9 @@ export type Database = {
           admission_reason: string | null
           admission_reason_detail: string | null
           age: number | null
+          archive_reason: string | null
+          archived_at: string | null
+          archived_from_patient_id: string | null
           bilirubin_highest: number | null
           box1_score: number | null
           box2_score: number | null
@@ -4199,6 +4247,9 @@ export type Database = {
           admission_reason?: string | null
           admission_reason_detail?: string | null
           age?: number | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           bilirubin_highest?: number | null
           box1_score?: number | null
           box2_score?: number | null
@@ -4242,6 +4293,9 @@ export type Database = {
           admission_reason?: string | null
           admission_reason_detail?: string | null
           age?: number | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           bilirubin_highest?: number | null
           box1_score?: number | null
           box2_score?: number | null
@@ -4309,6 +4363,9 @@ export type Database = {
         Row: {
           antibiotic_prescription_date: string | null
           antibiotic_prescription_time: string | null
+          archive_reason: string | null
+          archived_at: string | null
+          archived_from_patient_id: string | null
           attendance_number: string | null
           birth_date: string | null
           blood_culture_date: string | null
@@ -4364,6 +4421,9 @@ export type Database = {
         Insert: {
           antibiotic_prescription_date?: string | null
           antibiotic_prescription_time?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           attendance_number?: string | null
           birth_date?: string | null
           blood_culture_date?: string | null
@@ -4419,6 +4479,9 @@ export type Database = {
         Update: {
           antibiotic_prescription_date?: string | null
           antibiotic_prescription_time?: string | null
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           attendance_number?: string | null
           birth_date?: string | null
           blood_culture_date?: string | null
@@ -4829,6 +4892,9 @@ export type Database = {
       }
       vital_signs: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_from_patient_id: string | null
           base_excess: number | null
           consciousness_level: string | null
           created_at: string
@@ -4872,6 +4938,9 @@ export type Database = {
           urea: number | null
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           base_excess?: number | null
           consciousness_level?: string | null
           created_at?: string
@@ -4915,6 +4984,9 @@ export type Database = {
           urea?: number | null
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_from_patient_id?: string | null
           base_excess?: number | null
           consciousness_level?: string | null
           created_at?: string
@@ -5030,6 +5102,10 @@ export type Database = {
         Returns: {
           archived_count: number
         }[]
+      }
+      archive_patient_bed_data: {
+        Args: { p_patient_id: string; p_reason?: string }
+        Returns: Json
       }
       bump_quick_template_use: {
         Args: { _template_id: string }
