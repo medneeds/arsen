@@ -79,6 +79,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
   const [reason, setReason] = useState<string>(defaultReason);
   const [reasonNote, setReasonNote] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  const [signaledDestination, setSignaledDestination] = useState<string | null>(null);
   const stepTransitionRef = useRef(false);
 
   useEffect(() => {
@@ -87,8 +88,35 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       setReason(defaultReason);
       setReasonNote("");
       setSubmitting(false);
+      setSignaledDestination(null);
     }
   }, [open, defaultReason]);
+
+  // Busca o destino da sinalização existente (transferência interna/externa)
+  // para exibir no resumo e nos botões "Desalocar UTI 1 → UCI 2".
+  useEffect(() => {
+    const pid = (patient as any)?.id;
+    const isTransferPending =
+      patient?.admissionStatus === "transferencia_interna_pendente"
+      || patient?.admissionStatus === "transferencia_externa_pendente";
+    if (!open || !pid || !isTransferPending) return;
+    let cancelled = false;
+    (async () => {
+      const movementType = patient?.admissionStatus === "transferencia_interna_pendente"
+        ? "TRANSFERENCIA_INTERNA"
+        : "TRANSFERENCIA_EXTERNA";
+      const { data } = await supabase
+        .from("patient_movements")
+        .select("destination")
+        .eq("patient_id", pid)
+        .eq("movement_type", movementType)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled && data?.destination) setSignaledDestination(data.destination);
+    })();
+    return () => { cancelled = true; };
+  }, [open, (patient as any)?.id, patient?.admissionStatus]);
 
   if (!patient) return null;
 
