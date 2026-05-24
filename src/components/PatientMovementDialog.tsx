@@ -687,8 +687,14 @@ export function PatientMovementDialog({
               >
                 {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {isSubmitting
-                  ? "Registrando..."
-                  : requiredDocType ? "Revisar e confirmar" : "Confirmar"}
+                  ? "Sinalizando..."
+                  : requiredDocType ? "Revisar e confirmar sinalização" : (
+                      subtypeDef?.id === "TRANSFERENCIA_INTERNA" || subtypeDef?.id === "TRANSFERENCIA_EXTERNA"
+                        ? "Confirmar sinalização de transferência"
+                        : subtypeDef?.id === "OBITO" ? "Confirmar sinalização de óbito"
+                        : subtypeDef?.id?.startsWith?.("ALTA") ? "Confirmar sinalização de alta"
+                        : "Confirmar sinalização"
+                    )}
               </Button>
 
             </div>
