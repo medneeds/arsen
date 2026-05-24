@@ -77,6 +77,34 @@ export function SignalInternalTransferDialog({ patient, open, onOpenChange, onSu
 
   if (!patient) return null;
 
+  const alreadySignaled =
+    patient.admissionStatus === "transferencia_interna_pendente"
+    || patient.admissionStatus === "transferencia_externa_pendente";
+
+  if (alreadySignaled) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <DialogTitle>Transferência já sinalizada</DialogTitle>
+            </div>
+            <DialogDescription>
+              Este paciente já tem uma <strong>transferência sinalizada pelo Painel Clínico</strong>.
+              Para concluir a desalocação física do leito, feche este aviso e use a opção{" "}
+              <strong>"Desalocar leito (transf. sinalizada)"</strong> no menu do leito —
+              ela reaproveita o destino já registrado e evita sinalização duplicada.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => onOpenChange(false)}>Entendi</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={(v) => !submitting && onOpenChange(v)}>
       <DialogContent className="sm:max-w-[520px]">

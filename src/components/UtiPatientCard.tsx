@@ -1184,13 +1184,16 @@ export function UtiPatientCard({
                       ocorrem pelo Painel Clínico (Cockpit). Leitos são fixos — não há exclusão. */}
                   {patient.name ? (
                     <>
-                      <DropdownMenuItem onClick={() => setIsSignalTransferOpen(true)}>
-                        <ArrowRightLeft className="h-4 w-4 mr-2 text-sky-600" />
-                        <div className="flex flex-col">
-                          <span className="text-sky-700 dark:text-sky-300">Desalocar e pré-sinalizar p/ outro setor</span>
-                          <span className="text-[10px] font-normal text-muted-foreground">Libera o leito; destino aloca em 2ª etapa</span>
-                        </div>
-                      </DropdownMenuItem>
+                      {patient.admissionStatus !== 'transferencia_interna_pendente'
+                        && patient.admissionStatus !== 'transferencia_externa_pendente' && (
+                        <DropdownMenuItem onClick={() => setIsSignalTransferOpen(true)}>
+                          <ArrowRightLeft className="h-4 w-4 mr-2 text-sky-600" />
+                          <div className="flex flex-col">
+                            <span className="text-sky-700 dark:text-sky-300">Desalocar e pré-sinalizar p/ outro setor</span>
+                            <span className="text-[10px] font-normal text-muted-foreground">Libera o leito; destino aloca em 2ª etapa</span>
+                          </div>
+                        </DropdownMenuItem>
+                      )}
                       {onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (
                         <DropdownMenuItem onClick={() => setIsReleasePreAdmissionOpen(true)}>
                           <UserMinus className="h-4 w-4 mr-2 text-amber-600" />
