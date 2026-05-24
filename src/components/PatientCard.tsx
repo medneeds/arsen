@@ -3412,17 +3412,23 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                         <div className="flex flex-col">
                           <span className="text-amber-700 dark:text-amber-300">
                             {patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito'
-                              ? 'Liberar leito (pós-alta/óbito)'
-                              : patient.admissionStatus === 'admitido'
-                                ? 'Liberar leito (excepcional)'
-                                : 'Liberar leito (pré-admissão)'}
+                              ? 'Desalocar leito (pós-alta/óbito)'
+                              : patient.admissionStatus === 'transferencia_interna_pendente'
+                                ? 'Desalocar leito (transf. interna sinalizada)'
+                                : patient.admissionStatus === 'transferencia_externa_pendente'
+                                  ? 'Desalocar leito (transf. externa sinalizada)'
+                                  : patient.admissionStatus === 'admitido'
+                                    ? 'Desalocar leito (excepcional)'
+                                    : 'Desalocar leito (pré-admissão)'}
                           </span>
                           <span className="text-[10px] font-normal text-muted-foreground">
                             {patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito'
                               ? 'Confirmação por senha — preserva o prontuário'
-                              : patient.admissionStatus === 'admitido'
-                                ? 'Autonomia médica — exige justificativa + senha'
-                                : 'Desocupa o leito sem apagar o prontuário'}
+                              : patient.admissionStatus === 'transferencia_interna_pendente' || patient.admissionStatus === 'transferencia_externa_pendente'
+                                ? 'Completa a sinalização feita no Painel Clínico'
+                                : patient.admissionStatus === 'admitido'
+                                  ? 'Sem sinalização — abre orientação didática'
+                                  : 'Desocupa o leito sem apagar o prontuário'}
                           </span>
                         </div>
                       </DropdownMenuItem>
