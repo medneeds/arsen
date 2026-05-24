@@ -32,6 +32,7 @@ const POST_DISCHARGE_REASONS = [
   { value: "alta_concluida", label: "Alta médica já registrada — liberar leito para limpeza/nova alocação" },
   { value: "obito_concluido", label: "Óbito já registrado — liberar leito para preparo/remoção" },
   { value: "transferencia_externa_concluida", label: "Transferência externa já efetivada — leito disponível" },
+  { value: "transferencia_interna_concluida", label: "Transferência interna sinalizada — desalocar para mover o paciente" },
   { value: "outro", label: "Outro motivo" },
 ];
 
