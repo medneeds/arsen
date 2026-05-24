@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Bed, ClipboardList, FileText, Info, Stethoscope, UserMinus, UserCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { AlertTriangle, Bed, ClipboardList, FileText, Info, Stethoscope, UserMinus, UserCheck, ArrowRight, Stethoscope as PanelIcon } from "lucide-react";
 import { MovementConfirmDialog, type MovementBlocker, type MovementWarning } from "./MovementConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
