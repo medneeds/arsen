@@ -3379,23 +3379,30 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     {/* Non-porta users see regular menu */}
                     {role !== 'porta' && (
                       <>
-                    {/* DESALOCAR E PRÉ-SINALIZAR P/ OUTRO SETOR (libera leito + cria pré-admissão no destino) */}
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSignalTransferOpen(true);
-                      }}
-                      className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-sky-50 to-transparent dark:from-sky-950/30 hover:from-sky-100 dark:hover:from-sky-950/50 transition-colors cursor-pointer"
-                    >
-                      <ArrowRightLeft className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                      <div className="flex flex-col">
-                        <span className="text-sky-700 dark:text-sky-300">Desalocar e pré-sinalizar p/ outro setor</span>
-                        <span className="text-[10px] font-normal text-muted-foreground">Libera leito; destino aloca em 2ª etapa (mesmo atendimento)</span>
-                      </div>
-                    </DropdownMenuItem>
-                    <p className="px-3 pb-1 text-[10px] leading-snug text-muted-foreground">
-                      Sinalizações de alta, óbito e transferências são feitas pelo <strong>Painel Clínico (Cockpit)</strong>. Aqui no Mapa de Leitos só executamos a <strong>desalocação física</strong>.
-                    </p>
+                    {/* DESALOCAR E PRÉ-SINALIZAR P/ OUTRO SETOR (libera leito + cria pré-admissão no destino)
+                        Oculto quando o paciente já tem transferência sinalizada pelo cockpit — nesse caso
+                        o caminho correto é "Desalocar leito (transf. sinalizada)" logo abaixo. */}
+                    {patient.admissionStatus !== 'transferencia_interna_pendente'
+                      && patient.admissionStatus !== 'transferencia_externa_pendente' && (
+                      <>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSignalTransferOpen(true);
+                          }}
+                          className="flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-semibold bg-gradient-to-r from-sky-50 to-transparent dark:from-sky-950/30 hover:from-sky-100 dark:hover:from-sky-950/50 transition-colors cursor-pointer"
+                        >
+                          <ArrowRightLeft className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                          <div className="flex flex-col">
+                            <span className="text-sky-700 dark:text-sky-300">Desalocar e pré-sinalizar p/ outro setor</span>
+                            <span className="text-[10px] font-normal text-muted-foreground">Libera leito; destino aloca em 2ª etapa (mesmo atendimento)</span>
+                          </div>
+                        </DropdownMenuItem>
+                        <p className="px-3 pb-1 text-[10px] leading-snug text-muted-foreground">
+                          Sinalizações de alta, óbito e transferências são feitas pelo <strong>Painel Clínico (Cockpit)</strong>. Aqui no Mapa de Leitos só executamos a <strong>desalocação física</strong>.
+                        </p>
+                      </>
+                    )}
 
 
 
