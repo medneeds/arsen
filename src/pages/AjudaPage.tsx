@@ -16,8 +16,14 @@ const TONE_BG: Record<SlideTone, string> = {
 };
 
 export default function AjudaPage() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [active, setActive] = useState<FaqEntry | null>(null);
+
+  const handleBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/");
+  };
 
   const filtered = useMemo(() => {
     if (!query.trim()) return FAQ_ENTRIES;
