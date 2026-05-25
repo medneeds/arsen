@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { ArrowRightLeft, CheckCircle2, Cross, Plane, ArrowLeftRight } from "lucide-react";
+import { ArrowRightLeft, CheckCircle2, Cross, Plane, MousePointerClick, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type DischargeStatus =
@@ -15,19 +15,15 @@ type DischargeStatus =
 interface DischargeStatusRibbonProps {
   status: DischargeStatus;
   className?: string;
-  /**
-   * Quando fornecido, a pílula vira botão clicável que dispara a abertura
-   * do menu "Movimentações" do card (sincronizado com o ícone do header).
-   */
+  /** @deprecated A desalocação é feita SOMENTE pelo menu Movimentações. */
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 /**
- * Pílula INLINE de sinalização de desfecho.
- * - Sincronizada com o ícone "Movimentações" do card (mesma ação).
- * - Tooltip orienta: "Clique no ícone Movimentações para desalocar".
+ * Pílula INLINE de sinalização de desfecho (somente informativa).
+ * A ação de desalocação é executada exclusivamente pelo menu "Movimentações" do card.
  */
-export function DischargeStatusRibbon({ status, className, onClick }: DischargeStatusRibbonProps) {
+export function DischargeStatusRibbon({ status, className }: DischargeStatusRibbonProps) {
   const config = {
     alta_dada: {
       label: "ALTA SINALIZADA",
@@ -35,7 +31,8 @@ export function DischargeStatusRibbon({ status, className, onClick }: DischargeS
       gradient: "from-emerald-600 via-emerald-400 to-emerald-600",
       glow: "shadow-[0_3px_12px_-2px_rgba(16,185,129,0.55)] hover:shadow-[0_6px_20px_-2px_rgba(16,185,129,0.8)]",
       tooltipTitle: "Alta hospitalar sinalizada",
-      tooltipBody: "Documento de alta emitido. Leito liberado para desalocação no mapa.",
+      what: "Documento de alta emitido e validado.",
+      next: "Confirme a saída e desaloque o leito pelo menu Movimentações.",
     },
     obito: {
       label: "ÓBITO SINALIZADO",
@@ -43,7 +40,8 @@ export function DischargeStatusRibbon({ status, className, onClick }: DischargeS
       gradient: "from-slate-800 via-slate-500 to-slate-800",
       glow: "shadow-[0_3px_12px_-2px_rgba(15,23,42,0.65)] hover:shadow-[0_6px_20px_-2px_rgba(15,23,42,0.9)]",
       tooltipTitle: "Óbito sinalizado",
-      tooltipBody: "Declaração registrada. Leito liberado para desalocação no mapa.",
+      what: "Declaração de óbito registrada no prontuário.",
+      next: "Conclua o protocolo institucional e desaloque o leito pelo menu Movimentações.",
     },
     transferido: {
       label: "TRANSFERÊNCIA SINALIZADA",
@@ -51,7 +49,8 @@ export function DischargeStatusRibbon({ status, className, onClick }: DischargeS
       gradient: "from-sky-600 via-sky-400 to-sky-600",
       glow: "shadow-[0_3px_12px_-2px_rgba(14,165,233,0.55)] hover:shadow-[0_6px_20px_-2px_rgba(14,165,233,0.8)]",
       tooltipTitle: "Transferência concluída",
-      tooltipBody: "Paciente transferido. Leito liberado para desalocação no mapa.",
+      what: "Paciente transferido com saída registrada.",
+      next: "Desaloque o leito pelo menu Movimentações para liberar o mapa.",
     },
     transferencia_interna_pendente: {
       label: "TRANSF. INTERNA SINALIZADA",
@@ -59,7 +58,8 @@ export function DischargeStatusRibbon({ status, className, onClick }: DischargeS
       gradient: "from-blue-700 via-sky-400 to-blue-700",
       glow: "shadow-[0_3px_14px_-2px_rgba(14,165,233,0.6)] hover:shadow-[0_6px_22px_-2px_rgba(14,165,233,0.9)]",
       tooltipTitle: "Transferência interna sinalizada",
-      tooltipBody: "Paciente aguardando relocação. Desaloque pelo menu Movimentações quando o novo leito estiver definido.",
+      what: "Paciente aguardando relocação para outro setor da instituição.",
+      next: "Defina o novo leito e desaloque o atual pelo menu Movimentações.",
     },
     transferencia_externa_pendente: {
       label: "TRANSF. EXTERNA SINALIZADA",
@@ -67,31 +67,29 @@ export function DischargeStatusRibbon({ status, className, onClick }: DischargeS
       gradient: "from-violet-700 via-indigo-400 to-violet-700",
       glow: "shadow-[0_3px_14px_-2px_rgba(99,102,241,0.6)] hover:shadow-[0_6px_22px_-2px_rgba(99,102,241,0.9)]",
       tooltipTitle: "Transferência externa sinalizada",
-      tooltipBody: "Paciente aguardando saída para outra instituição. Confirme a desalocação no menu Movimentações após a saída efetiva.",
+      what: "Paciente aguardando saída para outra instituição de saúde.",
+      next: "Após a saída efetiva, desaloque o leito pelo menu Movimentações.",
     },
   } as const;
 
   const entry = config[status as keyof typeof config];
   if (!entry) return null;
   const { Icon } = entry;
-  const isInteractive = typeof onClick === "function";
 
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
-            type="button"
-            onClick={onClick}
-            aria-label={isInteractive ? `${entry.tooltipTitle} — abrir menu Movimentações` : entry.tooltipTitle}
+          <span
+            role="status"
+            aria-label={entry.tooltipTitle}
             className={cn(
-              "group relative inline-flex items-center gap-1.5 rounded-full",
+              "group relative inline-flex items-center gap-1.5 rounded-full select-none",
               "bg-gradient-to-r text-white",
               "px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] leading-none",
               "ring-1 ring-white/80 dark:ring-slate-900/70",
-              "transition-all duration-300 ease-out",
-              "hover:-translate-y-0.5 hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
-              isInteractive ? "cursor-pointer" : "cursor-help",
+              "transition-all duration-300 ease-out cursor-help",
+              "hover:-translate-y-0.5 hover:scale-[1.04]",
               "discharge-pill-sheen",
               entry.gradient,
               entry.glow,
@@ -104,26 +102,59 @@ export function DischargeStatusRibbon({ status, className, onClick }: DischargeS
               strokeWidth={2.6}
             />
             <span className="whitespace-nowrap">{entry.label}</span>
-            <ArrowLeftRight
-              className="h-3 w-3 -ml-0.5 opacity-80 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:scale-110 group-hover:opacity-100 print:hidden"
-              strokeWidth={3}
+            <Info
+              className="h-3 w-3 -ml-0.5 opacity-70 transition-opacity duration-300 group-hover:opacity-100 print:hidden"
+              strokeWidth={2.6}
             />
-          </button>
+          </span>
         </TooltipTrigger>
-        <TooltipContent side="top" align="center" className="max-w-[260px]">
-          <div className="space-y-1.5">
-            <p className="text-xs font-semibold">{entry.tooltipTitle}</p>
-            <p className="text-[11px] leading-snug text-muted-foreground">
-              {entry.tooltipBody}
+        <TooltipContent
+          side="top"
+          align="center"
+          sideOffset={8}
+          className="w-[280px] p-0 overflow-hidden rounded-lg border border-border/60 bg-popover shadow-xl"
+        >
+          {/* Header colorido com o mesmo gradiente da pílula */}
+          <div
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 bg-gradient-to-r text-white",
+              entry.gradient,
+            )}
+          >
+            <Icon className="h-4 w-4 shrink-0" strokeWidth={2.6} />
+            <p className="text-[12px] font-semibold leading-tight tracking-wide">
+              {entry.tooltipTitle}
             </p>
-            <p className="flex items-center gap-1.5 text-[10px] font-medium text-primary pt-0.5">
-              {isInteractive ? "Clique aqui ou no" : "Clique no"} ícone
-              <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5">
-                <ArrowLeftRight className="h-3 w-3" strokeWidth={2.6} />
-                <span className="font-semibold">Movimentações</span>
-              </span>
-              para desalocar
-            </p>
+          </div>
+
+          {/* Corpo didático */}
+          <div className="px-3 py-2.5 space-y-2.5">
+            <div className="space-y-0.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                O que significa
+              </p>
+              <p className="text-[11px] leading-snug text-foreground">{entry.what}</p>
+            </div>
+
+            <div className="space-y-0.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Próximo passo
+              </p>
+              <p className="text-[11px] leading-snug text-foreground">{entry.next}</p>
+            </div>
+
+            {/* Call-to-action: como desalocar */}
+            <div className="flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-2">
+              <MousePointerClick className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary" strokeWidth={2.4} />
+              <p className="text-[10.5px] leading-snug text-foreground">
+                Para desalocar, abra o menu{" "}
+                <span className="inline-flex items-center gap-1 rounded-md bg-primary/15 px-1.5 py-0.5 align-middle">
+                  <ArrowRightLeft className="h-2.5 w-2.5 text-primary" strokeWidth={2.8} />
+                  <span className="text-[10px] font-semibold text-primary">Movimentações</span>
+                </span>{" "}
+                no cabeçalho do card.
+              </p>
+            </div>
           </div>
         </TooltipContent>
       </Tooltip>
