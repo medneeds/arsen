@@ -3337,6 +3337,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
+                  ref={movementTriggerRef}
                   size="icon"
                   variant="ghost"
                   className={cn(
