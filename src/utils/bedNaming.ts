@@ -86,7 +86,7 @@ export function getNextBedNumber(
  * Checks if a bed number is an "extra" bed (beyond sector capacity).
  */
 export function isExtraBed(bedNumber: string): boolean {
-  return bedNumber.startsWith('EXTRA');
+  return (bedNumber || '').trim().toUpperCase().startsWith('EXTRA');
 }
 
 /**

@@ -360,14 +360,37 @@ export function usePatients(department?: Department, sector?: string) {
 
       if (isExtra) {
         console.log('Hard-deleting extra bed row:', patientId, target?.bedNumber);
-        const { error } = await supabase
+        if (!target?.isVacant) {
+          throw new Error('Leito extra ocupado deve ser desalocado antes da exclusão.');
+        }
+
+        const archivedBedNumber = `ARCHIVED-EXTRA-${target.sector}-${Date.now()}`;
+        const { data: deletedRows, error } = await supabase
           .from('patients')
           .delete()
-          .eq('id', patientId);
+          .eq('id', patientId)
+          .eq('is_vacant', true)
+          .ilike('bed_number', 'EXTRA%')
+          .select('id');
 
-        if (error) {
+        if (error || !deletedRows?.length) {
           console.error('Supabase delete extra bed error:', error);
-          throw error;
+          const { error: archiveError } = await supabase
+            .from('patients')
+            .update({
+              bed_number: archivedBedNumber,
+              is_vacant: true,
+              name: '',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', patientId)
+            .eq('is_vacant', true)
+            .ilike('bed_number', 'EXTRA%');
+
+          if (archiveError) {
+            console.error('Supabase archive extra bed fallback error:', archiveError);
+            throw archiveError;
+          }
         }
 
         if (options.updateLocalState) {
