@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
-import { ArrowRightLeft, CheckCircle2, Cross, Plane } from "lucide-react";
+import { ArrowRightLeft, CheckCircle2, Cross, Plane, ChevronRight } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type DischargeStatus =
   | "alta_dada"
@@ -17,126 +18,104 @@ interface DischargeStatusRibbonProps {
 }
 
 /**
- * NOTCH flutuante sobre a borda superior do card.
- * Posicionado em -translate-y-1/2, acima da PatientSection,
- * com glow pulsante p/ estados pendentes (transferência) e
- * pill sólida + ícone p/ desfechos finalizados (alta/óbito).
- *
- * Pré-requisito: o card pai precisa ter `relative` (NÃO precisa de overflow-hidden).
+ * Pílula INLINE de sinalização de desfecho.
+ * Renderizada dentro do card, à esquerda da pílula DIH.
+ * - Animação sutil de pulse + ícone com micro-translate (induz ação)
+ * - Tooltip explica significado e permissão de desalocação
+ * - Hover: elevação leve, sombra e seta indicativa
  */
 export function DischargeStatusRibbon({ status, className }: DischargeStatusRibbonProps) {
-  const known = [
-    "alta_dada",
-    "obito",
-    "transferido",
-    "transferencia_interna_pendente",
-    "transferencia_externa_pendente",
-  ];
-  if (!status || !known.includes(status)) return null;
-
   const config = {
     alta_dada: {
-      label: "ALTA HOSPITALAR",
-      shortLabel: "ALTA",
+      label: "ALTA SINALIZADA",
       Icon: CheckCircle2,
-      gradient: "from-emerald-500 via-emerald-600 to-emerald-700",
-      glow: "shadow-[0_4px_14px_-2px_rgba(16,185,129,0.55)]",
-      ring: "ring-emerald-300/60",
-      pulse: false,
+      gradient: "from-emerald-500 to-emerald-600",
+      glow: "shadow-[0_2px_10px_-2px_rgba(16,185,129,0.55)] hover:shadow-[0_4px_16px_-2px_rgba(16,185,129,0.75)]",
+      tooltipTitle: "Alta hospitalar sinalizada",
+      tooltipBody: "Documento de alta emitido. Leito liberado para desalocação no mapa.",
     },
     obito: {
-      label: "ÓBITO REGISTRADO",
-      shortLabel: "ÓBITO",
+      label: "ÓBITO SINALIZADO",
       Icon: Cross,
-      gradient: "from-slate-700 via-slate-800 to-slate-900",
-      glow: "shadow-[0_4px_14px_-2px_rgba(15,23,42,0.7)]",
-      ring: "ring-slate-400/60",
-      pulse: false,
+      gradient: "from-slate-700 to-slate-900",
+      glow: "shadow-[0_2px_10px_-2px_rgba(15,23,42,0.65)] hover:shadow-[0_4px_16px_-2px_rgba(15,23,42,0.85)]",
+      tooltipTitle: "Óbito sinalizado",
+      tooltipBody: "Declaração registrada. Leito liberado para desalocação no mapa.",
     },
     transferido: {
-      label: "TRANSFERIDO",
-      shortLabel: "TRANSF.",
+      label: "TRANSFERÊNCIA SINALIZADA",
       Icon: ArrowRightLeft,
-      gradient: "from-sky-500 via-sky-600 to-sky-700",
-      glow: "shadow-[0_4px_14px_-2px_rgba(14,165,233,0.55)]",
-      ring: "ring-sky-300/60",
-      pulse: false,
+      gradient: "from-sky-500 to-sky-700",
+      glow: "shadow-[0_2px_10px_-2px_rgba(14,165,233,0.55)] hover:shadow-[0_4px_16px_-2px_rgba(14,165,233,0.75)]",
+      tooltipTitle: "Transferência concluída",
+      tooltipBody: "Paciente transferido. Leito liberado para desalocação no mapa.",
     },
     transferencia_interna_pendente: {
-      label: "TRANSFERÊNCIA INTERNA SINALIZADA",
-      shortLabel: "TRANSF. INTERNA",
+      label: "TRANSF. INTERNA SINALIZADA",
       Icon: ArrowRightLeft,
-      gradient: "from-sky-500 via-sky-600 to-blue-700",
-      glow: "shadow-[0_4px_18px_-2px_rgba(14,165,233,0.7)]",
-      ring: "ring-sky-300/70",
-      pulse: true,
+      gradient: "from-sky-500 to-blue-700",
+      glow: "shadow-[0_2px_10px_-2px_rgba(14,165,233,0.6)] hover:shadow-[0_4px_18px_-2px_rgba(14,165,233,0.85)]",
+      tooltipTitle: "Transferência interna sinalizada",
+      tooltipBody: "Paciente aguardando relocação para outro setor. Desaloque pelo mapa quando o novo leito estiver definido.",
     },
     transferencia_externa_pendente: {
-      label: "TRANSFERÊNCIA EXTERNA SINALIZADA",
-      shortLabel: "TRANSF. EXTERNA",
+      label: "TRANSF. EXTERNA SINALIZADA",
       Icon: Plane,
-      gradient: "from-indigo-500 via-indigo-600 to-violet-700",
-      glow: "shadow-[0_4px_18px_-2px_rgba(99,102,241,0.7)]",
-      ring: "ring-indigo-300/70",
-      pulse: true,
+      gradient: "from-indigo-500 to-violet-700",
+      glow: "shadow-[0_2px_10px_-2px_rgba(99,102,241,0.6)] hover:shadow-[0_4px_18px_-2px_rgba(99,102,241,0.85)]",
+      tooltipTitle: "Transferência externa sinalizada",
+      tooltipBody: "Paciente aguardando saída para outra instituição. Confirme a desalocação no mapa após a saída efetiva.",
     },
-  }[status as
-    | "alta_dada"
-    | "obito"
-    | "transferido"
-    | "transferencia_interna_pendente"
-    | "transferencia_externa_pendente"];
+  } as const;
 
-  const { Icon } = config;
+  const entry = config[status as keyof typeof config];
+  if (!entry) return null;
+  const { Icon } = entry;
 
   return (
-    <div
-      aria-label={`Paciente com desfecho: ${config.label}`}
-      className={cn(
-        // Posiciona ACIMA da borda superior do card, centralizado horizontalmente
-        "pointer-events-none absolute top-0 left-1/2 z-20 -translate-x-1/2 -translate-y-1/2",
-        "print:static print:translate-x-0 print:translate-y-0 print:mb-1",
-        className,
-      )}
-    >
-      <div className="relative">
-        {/* Glow pulsante atrás (só para pendentes) */}
-        {config.pulse && (
-          <div
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label={entry.tooltipTitle}
             className={cn(
-              "absolute inset-0 rounded-full bg-gradient-to-r animate-pulse blur-md opacity-70 print:hidden",
-              config.gradient,
+              "group relative inline-flex items-center gap-1 rounded-full",
+              "bg-gradient-to-r text-white",
+              "px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] leading-none",
+              "ring-1 ring-white/70 dark:ring-slate-900/70",
+              "transition-all duration-200 ease-out",
+              "hover:-translate-y-0.5 hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
+              "animate-[pulse_2.6s_ease-in-out_infinite]",
+              entry.gradient,
+              entry.glow,
+              "print:bg-none print:bg-white print:text-black print:ring-1 print:ring-slate-400 print:shadow-none print:animate-none",
+              className,
             )}
-            aria-hidden
-          />
-        )}
-
-        {/* Pill principal */}
-        <div
-          className={cn(
-            "relative flex items-center gap-1.5 rounded-full",
-            "bg-gradient-to-r text-white",
-            "px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em]",
-            "ring-2 ring-white dark:ring-slate-900",
-            "shadow-lg print:shadow-none print:ring-0",
-            config.gradient,
-            config.glow,
-            config.pulse && "animate-[pulse_2.4s_ease-in-out_infinite]",
-          )}
-        >
-          {/* Halo interno do ícone */}
-          <div className={cn("flex items-center justify-center rounded-full p-0.5 ring-1", config.ring)}>
-            <Icon className="h-3 w-3" strokeWidth={2.5} />
+          >
+            <Icon
+              className="h-2.5 w-2.5 transition-transform duration-500 ease-in-out group-hover:rotate-12 motion-safe:animate-[pulse_2.6s_ease-in-out_infinite]"
+              strokeWidth={2.6}
+            />
+            <span className="whitespace-nowrap">{entry.label}</span>
+            <ChevronRight
+              className="h-2.5 w-2.5 -ml-0.5 opacity-70 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:opacity-100 motion-safe:animate-[pulse_1.8s_ease-in-out_infinite] print:hidden"
+              strokeWidth={3}
+            />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" align="center" className="max-w-[240px]">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold">{entry.tooltipTitle}</p>
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              {entry.tooltipBody}
+            </p>
+            <p className="text-[10px] font-medium text-primary pt-0.5">
+              Clique no menu do card para desalocar →
+            </p>
           </div>
-          <span className="leading-none whitespace-nowrap">{config.shortLabel}</span>
-          {config.pulse && (
-            <span className="relative flex h-1.5 w-1.5 print:hidden" aria-hidden>
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-white" />
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

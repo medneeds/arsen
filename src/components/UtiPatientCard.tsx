@@ -918,7 +918,7 @@ export function UtiPatientCard({
         )}
         data-patient-id={patient.id}
       >
-        <DischargeStatusRibbon status={patient.admissionStatus} />
+        
         {/* VACANT BED VIEW */}
         {patient.isVacant ? (
           <div className="flex items-center justify-between p-2 md:p-3">
@@ -1006,6 +1006,9 @@ export function UtiPatientCard({
                 {/* Mobile: Chips wrap to second line */}
                 <div className="flex items-center gap-1 flex-wrap md:flex-nowrap w-full md:w-auto mt-1 md:mt-0">
                   {/* Classificação clínica (bola de gravidade) removida do mapa de leitos */}
+
+                  {/* Pílula de desfecho sinalizado — à esquerda da DIH */}
+                  <DischargeStatusRibbon status={patient.admissionStatus} />
 
                   {/* Days in UTI - Fixed width for consistent alignment */}
                   {(() => {
