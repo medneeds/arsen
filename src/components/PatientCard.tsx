@@ -1381,7 +1381,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
         <Card 
           data-patient-id={patient.id}
           className={cn(
-            "relative overflow-hidden transition-all duration-200 hover:shadow-lg print:shadow-none print:break-inside-avoid print:mb-0 print:w-full", 
+            "relative transition-all duration-200 hover:shadow-lg print:shadow-none print:break-inside-avoid print:mb-0 print:w-full", 
             config.color,
             isSelected && "ring-2 ring-primary",
             isDeleting && "animate-[slide-out-left_0.3s_ease-out_forwards]",
