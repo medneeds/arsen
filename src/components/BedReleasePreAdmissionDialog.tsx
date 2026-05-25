@@ -196,9 +196,10 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
     }
   };
 
-  // Não há mais bloqueio "hard" — admin/médico podem prosseguir no caminho excepcional
-  // com justificativa obrigatória, senha e auditoria diferenciada.
-  const blockReleaseHard = false;
+  // BLOQUEIO DURO: paciente sem sinalização não pode ser desalocado pelo Mapa.
+  // Único caminho permitido é sinalizar a saída pelo Painel Clínico (alta/óbito/transferência).
+  // Casos de "cadastro errado/leito sujo" ficam no Dev Console / Edição Avançada, fora deste fluxo.
+  const blockReleaseHard = isExceptional;
 
   return (
     <>
