@@ -30,6 +30,7 @@ import {
   BedDouble,
   ArrowRight,
   Terminal,
+  HelpCircle,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home as HomeIcon } from "lucide-react";
