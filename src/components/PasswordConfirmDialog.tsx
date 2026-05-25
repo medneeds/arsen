@@ -117,13 +117,13 @@ export function PasswordConfirmDialog({
         }
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] sm:max-w-md max-h-[92vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-primary" />
+          <DialogTitle className="flex items-start gap-2 text-base leading-snug break-words">
+            <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             {title}
           </DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogDescription className="text-xs leading-relaxed break-words">{description}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -138,20 +138,21 @@ export function PasswordConfirmDialog({
               disabled={loading}
               placeholder="Sua senha de acesso"
             />
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground break-words">
               Usuário: <span className="font-medium">{displayIdentity || "USUÁRIO AUTENTICADO"}</span>
             </p>
           </div>
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2 sm:flex-wrap">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
+              className="w-full sm:w-auto"
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading || !password}>
+            <Button type="submit" disabled={loading || !password} className="w-full sm:w-auto whitespace-normal text-center leading-snug">
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Verificando…
