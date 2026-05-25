@@ -48,3 +48,15 @@ Antes de tocar código, eu DEVO:
 ## Resposta final
 
 Concisa, sem narração de tool calls. Se houver risco residual ou ponto que merece atenção do usuário, **destacar antes de fechar**.
+
+## Princípio do diagnóstico preventivo cross-setor
+
+**Toda vez que um bug aparece em UM setor específico, antes de fechar a correção eu DEVO:**
+
+1. **Identificar a camada raiz** (trigger, RPC, hook, helper, edge function) — não a manifestação.
+2. **Perguntar: "esse mesmo código roda em outros setores?"** Se sim, a correção tem que ser global por construção, não pontual.
+3. **Auditar fluxos análogos** — se quebrou em UCI 2 na admissão, checar UTI, UCI 1, Clínica Médica, Cirúrgica, UE, Pediatria, NIR. Se quebrou em alta, checar óbito, transferência interna, externa.
+4. **Documentar o alcance** na resposta — "isso afetava X, Y, Z setores; correção global aplicada via [trigger/RPC/helper]".
+5. **Nunca aplicar patch local** (if setor === 'UCI 2') quando a falha é estrutural — isso cria dívida e mascara recorrência em outros pontos.
+
+**Exemplo canônico:** bug `max(uuid)` no trigger `autolink_encounter_patient_id` apareceu na admissão UCI 2, mas afetava qualquer INSERT em `patient_encounters` (recepção, NIR, transferência, todos os setores). Correção foi reescrita global do trigger, não filtro por unidade.
