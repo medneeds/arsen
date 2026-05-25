@@ -86,6 +86,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { BedReleasePreAdmissionDialog } from "./BedReleasePreAdmissionDialog";
 import { SignalInternalTransferDialog } from "./SignalInternalTransferDialog";
+import { OperationalRelocationDialog } from "./OperationalRelocationDialog";
 import { DischargeStatusRibbon } from "./DischargeStatusRibbon";
 
 // Helper function to format date input as DD/MM/YYYY
