@@ -642,6 +642,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   const [loadingCid, setLoadingCid] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const movementTriggerRef = useRef<HTMLButtonElement>(null);
   const config = sectorConfig[patient.sector as keyof typeof sectorConfig] ?? sectorConfig.outside;
   const { toast: toastHook } = useToast();
   const { currentDepartment } = useDepartment();
