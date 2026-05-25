@@ -1722,7 +1722,13 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       const dih = calcDIH(adm);
                       return (
                         <div className="flex items-center gap-1.5 text-[10px] text-foreground leading-snug py-0.5">
-                          <DischargeStatusRibbon status={patient.admissionStatus} />
+                          <DischargeStatusRibbon
+                            status={patient.admissionStatus}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              movementTriggerRef.current?.click();
+                            }}
+                          />
                           <span className="font-medium">{formatAdmissionDateBR(adm)}</span>
                           {dih !== null && (() => {
                             const dihColor =
