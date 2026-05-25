@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
-import { Search, HelpCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, HelpCircle, ArrowLeft, Home as HomeIcon } from "lucide-react";
 import { FAQ_ENTRIES, type FaqEntry, type SlideTone } from "@/data/faqContent";
 import { HelpSlideshowDialog } from "@/components/help/HelpSlideshowDialog";
 import { cn } from "@/lib/utils";
@@ -14,8 +16,14 @@ const TONE_BG: Record<SlideTone, string> = {
 };
 
 export default function AjudaPage() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [active, setActive] = useState<FaqEntry | null>(null);
+
+  const handleBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/");
+  };
 
   const filtered = useMemo(() => {
     if (!query.trim()) return FAQ_ENTRIES;
@@ -28,6 +36,28 @@ export default function AjudaPage() {
 
   return (
     <div className="container max-w-6xl mx-auto px-4 py-6 md:py-10">
+      {/* Back / Home bar */}
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleBack}
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate("/")}
+          className="gap-1.5"
+        >
+          <HomeIcon className="h-4 w-4" />
+          Início
+        </Button>
+      </div>
+
       {/* Header */}
       <div className="flex items-start gap-4 mb-6">
         <div className="h-12 w-12 rounded-xl bg-primary/10 grid place-items-center flex-shrink-0">
