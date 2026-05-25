@@ -29,40 +29,40 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
     alta_dada: {
       label: "ALTA SINALIZADA",
       Icon: CheckCircle2,
-      gradient: "from-emerald-500 to-emerald-600",
-      glow: "shadow-[0_2px_10px_-2px_rgba(16,185,129,0.55)] hover:shadow-[0_4px_16px_-2px_rgba(16,185,129,0.75)]",
+      gradient: "from-emerald-600 via-emerald-400 to-emerald-600",
+      glow: "shadow-[0_3px_12px_-2px_rgba(16,185,129,0.55)] hover:shadow-[0_6px_20px_-2px_rgba(16,185,129,0.8)]",
       tooltipTitle: "Alta hospitalar sinalizada",
       tooltipBody: "Documento de alta emitido. Leito liberado para desalocação no mapa.",
     },
     obito: {
       label: "ÓBITO SINALIZADO",
       Icon: Cross,
-      gradient: "from-slate-700 to-slate-900",
-      glow: "shadow-[0_2px_10px_-2px_rgba(15,23,42,0.65)] hover:shadow-[0_4px_16px_-2px_rgba(15,23,42,0.85)]",
+      gradient: "from-slate-800 via-slate-500 to-slate-800",
+      glow: "shadow-[0_3px_12px_-2px_rgba(15,23,42,0.65)] hover:shadow-[0_6px_20px_-2px_rgba(15,23,42,0.9)]",
       tooltipTitle: "Óbito sinalizado",
       tooltipBody: "Declaração registrada. Leito liberado para desalocação no mapa.",
     },
     transferido: {
       label: "TRANSFERÊNCIA SINALIZADA",
       Icon: ArrowRightLeft,
-      gradient: "from-sky-500 to-sky-700",
-      glow: "shadow-[0_2px_10px_-2px_rgba(14,165,233,0.55)] hover:shadow-[0_4px_16px_-2px_rgba(14,165,233,0.75)]",
+      gradient: "from-sky-600 via-sky-400 to-sky-600",
+      glow: "shadow-[0_3px_12px_-2px_rgba(14,165,233,0.55)] hover:shadow-[0_6px_20px_-2px_rgba(14,165,233,0.8)]",
       tooltipTitle: "Transferência concluída",
       tooltipBody: "Paciente transferido. Leito liberado para desalocação no mapa.",
     },
     transferencia_interna_pendente: {
       label: "TRANSF. INTERNA SINALIZADA",
       Icon: ArrowRightLeft,
-      gradient: "from-sky-500 to-blue-700",
-      glow: "shadow-[0_2px_10px_-2px_rgba(14,165,233,0.6)] hover:shadow-[0_4px_18px_-2px_rgba(14,165,233,0.85)]",
+      gradient: "from-blue-700 via-sky-400 to-blue-700",
+      glow: "shadow-[0_3px_14px_-2px_rgba(14,165,233,0.6)] hover:shadow-[0_6px_22px_-2px_rgba(14,165,233,0.9)]",
       tooltipTitle: "Transferência interna sinalizada",
       tooltipBody: "Paciente aguardando relocação para outro setor. Desaloque pelo mapa quando o novo leito estiver definido.",
     },
     transferencia_externa_pendente: {
       label: "TRANSF. EXTERNA SINALIZADA",
       Icon: Plane,
-      gradient: "from-indigo-500 to-violet-700",
-      glow: "shadow-[0_2px_10px_-2px_rgba(99,102,241,0.6)] hover:shadow-[0_4px_18px_-2px_rgba(99,102,241,0.85)]",
+      gradient: "from-violet-700 via-indigo-400 to-violet-700",
+      glow: "shadow-[0_3px_14px_-2px_rgba(99,102,241,0.6)] hover:shadow-[0_6px_22px_-2px_rgba(99,102,241,0.9)]",
       tooltipTitle: "Transferência externa sinalizada",
       tooltipBody: "Paciente aguardando saída para outra instituição. Confirme a desalocação no mapa após a saída efetiva.",
     },
@@ -80,13 +80,13 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
             type="button"
             aria-label={entry.tooltipTitle}
             className={cn(
-              "group relative inline-flex items-center gap-1 rounded-full",
+              "group relative inline-flex items-center gap-1.5 rounded-full",
               "bg-gradient-to-r text-white",
-              "px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] leading-none",
-              "ring-1 ring-white/70 dark:ring-slate-900/70",
-              "transition-all duration-200 ease-out",
-              "hover:-translate-y-0.5 hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
-              "animate-[pulse_2.6s_ease-in-out_infinite]",
+              "px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.08em] leading-none",
+              "ring-1 ring-white/80 dark:ring-slate-900/70",
+              "transition-all duration-300 ease-out",
+              "hover:-translate-y-0.5 hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
+              "discharge-pill-sheen",
               entry.gradient,
               entry.glow,
               "print:bg-none print:bg-white print:text-black print:ring-1 print:ring-slate-400 print:shadow-none print:animate-none",
@@ -94,12 +94,12 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
             )}
           >
             <Icon
-              className="h-2.5 w-2.5 transition-transform duration-500 ease-in-out group-hover:rotate-12 motion-safe:animate-[pulse_2.6s_ease-in-out_infinite]"
+              className="h-3.5 w-3.5 transition-transform duration-500 ease-in-out group-hover:rotate-6"
               strokeWidth={2.6}
             />
             <span className="whitespace-nowrap">{entry.label}</span>
             <ChevronRight
-              className="h-2.5 w-2.5 -ml-0.5 opacity-70 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:opacity-100 motion-safe:animate-[pulse_1.8s_ease-in-out_infinite] print:hidden"
+              className="h-3 w-3 -ml-0.5 opacity-80 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:opacity-100 print:hidden"
               strokeWidth={3}
             />
           </button>
