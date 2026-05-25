@@ -734,6 +734,7 @@ export function UtiPatientCard({
   const [isRoundPrintDialogOpen, setIsRoundPrintDialogOpen] = useState(false);
   const [isReleasePreAdmissionOpen, setIsReleasePreAdmissionOpen] = useState(false);
   const [isDeleteExtraOpen, setIsDeleteExtraOpen] = useState(false);
+  const movementTriggerRef = useRef<HTMLButtonElement>(null);
   const { toast } = useToast();
   const isExtra = isExtraBed(patient.bedNumber);
   // Leito extra vago pode ser excluído por qualquer perfil autenticado (operação de layout do setor).
