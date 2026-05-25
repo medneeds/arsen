@@ -366,4 +366,77 @@ export const FAQ_ENTRIES: FaqEntry[] = [
       },
     ],
   },
+  // 10 — Cadastro via importação PIS
+  {
+    id: "cadastro-pis-import",
+    title: "Cadastrar paciente importando do PIS",
+    short: "Aprenda a popular o cadastro automaticamente a partir do PDF do PIS ou texto copiado.",
+    icon: FileUp,
+    tone: "success",
+    slides: [
+      {
+        title: "Por que importar do PIS?",
+        body: "O PIS já contém nome, CPF, CNS, data de nascimento, nome da mãe, endereço e telefone do paciente. Importar evita redigitação, reduz erro e acelera a recepção.\n\nDois caminhos são aceitos: anexar o PDF do PIS ou colar o texto copiado do sistema.",
+        tone: "info",
+      },
+      {
+        title: "Passo 1 — Abrir o cadastro",
+        body: "Na Recepção, clique em \"Novo cadastro\" (ou no botão de cadastrar paciente do painel diário). No topo do diálogo de cadastro aparece o bloco \"Importar do PIS\" com dois botões: ANEXAR PDF e COLAR TEXTO.",
+        visual: {
+          kind: "dialog",
+          title: "Novo cadastro de paciente",
+          bodyLines: [
+            "Importar do PIS:",
+            "[ Anexar PDF do PIS ]   [ Colar texto do PIS ]",
+            "",
+            "Ou preencher manualmente abaixo ↓",
+          ],
+          primary: "Importar",
+          secondary: "Cancelar",
+          tone: "info",
+        },
+      },
+      {
+        title: "Passo 2A — Anexar o PDF",
+        body: "Clique em ANEXAR PDF e selecione o arquivo baixado do PIS. A plataforma extrai automaticamente os campos (nome, CPF, CNS, DN, mãe, endereço, telefone) e mostra uma prévia.\n\nRevise antes de salvar — campos identificados aparecem destacados em verde.",
+        visual: {
+          kind: "stepFlow",
+          steps: [
+            { label: "Anexar PDF", sub: "PIS exportado" },
+            { label: "Extração automática", sub: "OCR + parser" },
+            { label: "Prévia editável", sub: "Verde = identificado" },
+            { label: "Confirmar", sub: "Cadastro salvo" },
+          ],
+        },
+      },
+      {
+        title: "Passo 2B — Colar texto",
+        body: "Se você não tem o PDF, copie o bloco de identificação do PIS (Ctrl+A, Ctrl+C na tela do PIS) e clique em COLAR TEXTO. Cole no campo aberto e clique em \"Processar\".\n\nO parser reconhece os rótulos padrão (Nome:, CPF:, CNS:, DN:, Mãe:, etc.) e popula o formulário.",
+        tone: "info",
+      },
+      {
+        title: "Passo 3 — Revisar e confirmar",
+        body: "Sempre confira CPF, CNS e data de nascimento — são os campos críticos para evitar duplicata de prontuário.\n\nSe a plataforma detectar CPF já cadastrado, ela oferece MERGE com o prontuário existente em vez de criar duplicado.",
+        tone: "warning",
+        visual: {
+          kind: "dialog",
+          title: "Possível duplicata detectada",
+          bodyLines: [
+            "CPF 123.456.789-00 já existe:",
+            "→ MARIA DA SILVA — Prontuário 24-AAA-000123",
+            "",
+            "Deseja usar o prontuário existente ou criar novo?",
+          ],
+          primary: "Usar existente (merge)",
+          secondary: "Criar novo",
+          tone: "warning",
+        },
+      },
+      {
+        title: "Boas práticas",
+        body: "1. Use o PDF sempre que possível — é mais confiável que copiar/colar.\n2. Se algum campo veio vazio (PIS antigo, OCR ruim), preencha manualmente antes de salvar.\n3. CPF e CNS são únicos no sistema — o cadastro bloqueia duplicatas.\n4. Nome social, alergias e peso podem ser preenchidos no cockpit depois da admissão.",
+        tone: "success",
+      },
+    ],
+  },
 ];
