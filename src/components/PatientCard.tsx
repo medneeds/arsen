@@ -3346,13 +3346,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                     backgroundColor: `${sectorColor}10`,
                     color: sectorColor,
                   }}
-                  title="Ações do Paciente"
+                  title="Movimentação do leito"
+                  aria-label="Movimentação do leito"
                 >
                   <div 
                     className="absolute inset-0 opacity-0 group-hover:opacity-15 transition-opacity duration-300"
                     style={{ backgroundColor: sectorColor }}
                   />
-                  <MoreVertical className="h-5 w-5 md:h-4 md:w-4 relative z-10" />
+                  <ArrowLeftRight className="h-5 w-5 md:h-4 md:w-4 relative z-10 transition-transform duration-300 group-hover:scale-110" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent 
