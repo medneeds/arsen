@@ -512,7 +512,10 @@ export function usePatients(department?: Department, sector?: string) {
 
       const currentStatus = (full as any)?.admission_status;
       const isPostDischargeRelease =
-        currentStatus === 'alta_dada' || currentStatus === 'obito';
+        currentStatus === 'alta_dada'
+        || currentStatus === 'obito'
+        || currentStatus === 'transferencia_interna_pendente'
+        || currentStatus === 'transferencia_externa_pendente';
       const isExceptionalRelease = currentStatus === 'admitido';
 
       // 1) Audita a ação
@@ -525,6 +528,10 @@ export function usePatients(department?: Department, sector?: string) {
           : 'LIBERAÇÃO PRÉ-ADMISSÃO';
       const destinationLabel = isExceptionalRelease
         ? 'PRONTUÁRIO PRESERVADO — LEITO LIBERADO SEM ALTA FORMAL'
+        : currentStatus === 'transferencia_interna_pendente'
+          ? 'TRANSFERÊNCIA INTERNA SINALIZADA — LEITO DE ORIGEM LIBERADO'
+        : currentStatus === 'transferencia_externa_pendente'
+          ? 'TRANSFERÊNCIA EXTERNA SINALIZADA — LEITO LIBERADO'
         : 'PRONTUÁRIO PRESERVADO — LEITO LIBERADO';
       const { error: movementError } = await supabase.from('patient_movements').insert({
         patient_id: patientId,
@@ -645,7 +652,7 @@ export function usePatients(department?: Department, sector?: string) {
       toast({
         title: 'Leito liberado',
         description: isPostDischargeRelease
-          ? 'Leito desocupado no mapa. O prontuário do paciente foi preservado e continua disponível no histórico.'
+          ? 'Leito desocupado no mapa. A sinalização foi concluída e o prontuário permanece preservado no histórico.'
           : 'Pré-admissão removida do mapa. O prontuário do paciente foi preservado e continua disponível no histórico.',
       });
     } catch (error) {

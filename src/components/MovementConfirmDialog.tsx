@@ -86,15 +86,15 @@ export function MovementConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !isSubmitting && onOpenChange(o)}>
-      <DialogContent className="sm:max-w-[640px] max-h-[92vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] sm:max-w-[640px] max-h-[92vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
         <DialogHeader>
-          <div className="flex items-center gap-3 mb-1">
+          <div className="flex items-start gap-3 mb-1 min-w-0">
             <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", t.ring)}>
               <ShieldCheck className={cn("h-5 w-5", t.icon)} />
             </div>
             <div className="flex-1 min-w-0">
-              <DialogTitle className="text-base uppercase">{title}</DialogTitle>
-              <DialogDescription className="text-xs mt-0.5">{description}</DialogDescription>
+              <DialogTitle className="text-base uppercase break-words leading-snug">{title}</DialogTitle>
+              <DialogDescription className="text-xs mt-0.5 break-words leading-relaxed">{description}</DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -106,11 +106,11 @@ export function MovementConfirmDialog({
               <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-semibold text-muted-foreground">
                 <FileText className="h-3 w-3" /> Resumo da ação
               </div>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-xs min-w-0">
                 {summary.map((s, i) => {
                   const Icon = s.icon;
                   return (
-                    <div key={i} className={cn("flex items-start gap-1.5", s.fullWidth && "col-span-2")}>
+                    <div key={i} className={cn("flex items-start gap-1.5 min-w-0", s.fullWidth && "sm:col-span-2")}>
                       {Icon && <Icon className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />}
                       <div className="min-w-0 flex-1">
                         <dt className="text-[9px] uppercase tracking-wider text-muted-foreground">{s.label}</dt>
@@ -191,15 +191,15 @@ export function MovementConfirmDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+        <DialogFooter className="gap-2 sm:gap-2 sm:flex-wrap">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting} className="w-full sm:w-auto">
             {cancelLabel}
           </Button>
           <Button
             onClick={onConfirm}
             disabled={isSubmitting || isBlocked}
             variant={t.btn}
-            className="gap-2"
+            className="w-full sm:w-auto gap-2 whitespace-normal text-center leading-snug"
           >
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {isSubmitting ? "Processando..." : confirmLabel}
