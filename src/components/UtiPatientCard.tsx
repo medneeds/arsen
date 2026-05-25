@@ -1189,7 +1189,7 @@ export function UtiPatientCard({
                         </span>
                       </div>
 
-                      {/* REMANEJAR LEITO (mesma UTI) */}
+                      {/* REMANEJAR LEITO (mesmo setor) */}
                       <DropdownMenuItem
                         onClick={() => setIsReallocationDialogOpen(true)}
                         className="group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-indigo-300/60 dark:hover:border-indigo-700/60 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-transparent dark:hover:from-indigo-950/40 transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm"
@@ -1199,7 +1199,7 @@ export function UtiPatientCard({
                         </div>
                         <div className="flex flex-col items-start min-w-0">
                           <span className="text-indigo-800 dark:text-indigo-200 leading-tight">
-                            Remanejar leito <span className="text-[10px] font-normal text-indigo-600/70 dark:text-indigo-400/70">(mesma UTI)</span>
+                            Remanejar leito <span className="text-[10px] font-normal text-indigo-600/70 dark:text-indigo-400/70">(mesmo setor)</span>
                           </span>
                           <span className="text-[10px] font-normal text-muted-foreground leading-tight">
                             Realocar ou permutar entre leitos da unidade
