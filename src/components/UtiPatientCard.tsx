@@ -918,7 +918,7 @@ export function UtiPatientCard({
         )}
         data-patient-id={patient.id}
       >
-        <DischargeStatusRibbon status={patient.admissionStatus} />
+        
         {/* VACANT BED VIEW */}
         {patient.isVacant ? (
           <div className="flex items-center justify-between p-2 md:p-3">
