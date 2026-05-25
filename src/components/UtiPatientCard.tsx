@@ -1207,74 +1207,46 @@ export function UtiPatientCard({
                         </div>
                       </DropdownMenuItem>
 
-                      {/* DESALOCAR E PRÉ-SINALIZAR */}
-                      {patient.admissionStatus !== 'transferencia_interna_pendente'
-                        && patient.admissionStatus !== 'transferencia_externa_pendente' && (
-                        <DropdownMenuItem
-                          onClick={() => setIsSignalTransferOpen(true)}
-                          className="group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-sky-300/60 dark:hover:border-sky-700/60 hover:bg-gradient-to-r hover:from-sky-50 hover:to-transparent dark:hover:from-sky-950/40 transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm"
-                        >
-                          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-sky-100 dark:bg-sky-950/60 group-hover/item:bg-sky-200 dark:group-hover/item:bg-sky-900/80 transition-colors">
-                            <ArrowRightLeft className="h-3.5 w-3.5 text-sky-700 dark:text-sky-300" />
-                          </div>
-                          <div className="flex flex-col items-start min-w-0">
-                            <span className="text-sky-800 dark:text-sky-200 leading-tight">
-                              Desalocar e pré-sinalizar <span className="text-[10px] font-normal text-sky-600/70 dark:text-sky-400/70">(outro setor)</span>
-                            </span>
-                            <span className="text-[10px] font-normal text-muted-foreground leading-tight">
-                              Libera leito; destino aloca em 2ª etapa
-                            </span>
-                          </div>
-                        </DropdownMenuItem>
-                      )}
-
-                      {/* DESALOCAR LEITO */}
+                      {/* DESALOCAR LEITO — botão único. Comportamento varia conforme estado:
+                          sinalização ativa → conclui; alta/óbito → libera; sem sinalização → bloqueio
+                          duro com orientação para sinalizar no Painel Clínico (sem atalho excepcional). */}
                       {onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (() => {
                         const isPostOutcome = patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito';
                         const isSignaled = patient.admissionStatus === 'transferencia_interna_pendente' || patient.admissionStatus === 'transferencia_externa_pendente';
-                        const isExceptional = patient.admissionStatus === 'admitido';
-                        const label = isPostOutcome
-                          ? 'Desalocar leito (pós-alta/óbito)'
-                          : patient.admissionStatus === 'transferencia_interna_pendente'
-                            ? 'Concluir transf. interna sinalizada'
-                            : patient.admissionStatus === 'transferencia_externa_pendente'
-                              ? 'Concluir transf. externa sinalizada'
-                              : isExceptional
-                                ? 'Desalocar leito (excepcional)'
-                                : 'Desalocar leito (pré-admissão)';
                         const sub = isPostOutcome
-                          ? 'Confirmação por senha — preserva o prontuário'
+                          ? 'Pós-alta/óbito — confirmação por senha, preserva prontuário'
                           : isSignaled
-                            ? 'Completa a sinalização feita no Painel Clínico'
-                            : isExceptional
-                              ? 'Sem sinalização — abre orientação didática'
-                              : 'Desocupa o leito sem apagar o prontuário';
+                            ? 'Conclui a sinalização feita no Painel Clínico'
+                            : patient.admissionStatus === 'admitido'
+                              ? 'Sem sinalização — abre orientação para sinalizar no Painel'
+                              : 'Pré-admissão — desocupa o leito sem apagar o prontuário';
+                        const tone = isSignaled ? 'emerald' : 'amber';
                         return (
                           <DropdownMenuItem
                             onClick={() => setIsReleasePreAdmissionOpen(true)}
                             className={cn(
                               "group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm",
-                              isSignaled
+                              tone === 'emerald'
                                 ? "hover:border-emerald-300/60 dark:hover:border-emerald-700/60 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-transparent dark:hover:from-emerald-950/40"
                                 : "hover:border-amber-300/60 dark:hover:border-amber-700/60 hover:bg-gradient-to-r hover:from-amber-50 hover:to-transparent dark:hover:from-amber-950/40"
                             )}
                           >
                             <div className={cn(
                               "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
-                              isSignaled
+                              tone === 'emerald'
                                 ? "bg-emerald-100 dark:bg-emerald-950/60 group-hover/item:bg-emerald-200"
                                 : "bg-amber-100 dark:bg-amber-950/60 group-hover/item:bg-amber-200"
                             )}>
-                              {isSignaled
+                              {tone === 'emerald'
                                 ? <Check className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" />
                                 : <UserMinus className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300" />}
                             </div>
                             <div className="flex flex-col items-start min-w-0">
                               <span className={cn(
                                 "leading-tight",
-                                isSignaled ? "text-emerald-800 dark:text-emerald-200" : "text-amber-800 dark:text-amber-200"
+                                tone === 'emerald' ? "text-emerald-800 dark:text-emerald-200" : "text-amber-800 dark:text-amber-200"
                               )}>
-                                {label}
+                                Desalocar leito
                               </span>
                               <span className="text-[10px] font-normal text-muted-foreground leading-tight">
                                 {sub}
@@ -1283,6 +1255,7 @@ export function UtiPatientCard({
                           </DropdownMenuItem>
                         );
                       })()}
+
 
                       <p className="px-2.5 pt-1 text-[10px] leading-snug text-muted-foreground/80 border-t border-border/40 mt-1">
                         Altas, óbitos e transferências são <strong>sinalizadas no Painel Clínico</strong>.
