@@ -16,9 +16,31 @@ import {
   Pencil,
   Palette,
   FileUp,
+  Pill,
+  AlertTriangle,
+  CheckCircle2,
+  Trash2,
+  History,
+  Syringe,
+  ShieldAlert,
+  Beaker,
+  Droplet,
+  Printer,
+  FileText,
+  ClipboardCheck,
+  Activity,
+  Stethoscope,
+  RefreshCw,
 } from "lucide-react";
 
 export type SlideTone = "neutral" | "info" | "warning" | "success" | "danger";
+
+export type FaqCategory =
+  | "Movimentação & Leitos"
+  | "Cadastro & Identificação"
+  | "Cards & Visualização"
+  | "Prescrição"
+  | "Evolução & Documentação";
 
 export interface FaqSlide {
   /** Título curto do slide (ex.: "Passo 1 — Sinalize a alta") */
@@ -46,8 +68,18 @@ export interface FaqEntry {
   short: string;
   icon: LucideIcon;
   tone: SlideTone;
+  category: FaqCategory;
   slides: FaqSlide[];
 }
+
+export const FAQ_CATEGORY_ORDER: FaqCategory[] = [
+  "Movimentação & Leitos",
+  "Cadastro & Identificação",
+  "Cards & Visualização",
+  "Prescrição",
+  "Evolução & Documentação",
+];
+
 
 export const FAQ_ENTRIES: FaqEntry[] = [
   // 1
