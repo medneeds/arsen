@@ -453,6 +453,19 @@
     }
   }
 
+  /* Pílula de desfecho — deslizamento suave de brilho sobre o gradiente */
+  @keyframes discharge-pill-sheen {
+    0% { background-position: 200% 50%; }
+    100% { background-position: -200% 50%; }
+  }
+  .discharge-pill-sheen {
+    background-size: 200% 100%;
+    animation: discharge-pill-sheen 3.6s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .discharge-pill-sheen { animation: none; }
+  }
+
   .bg-gradient-radial {
     background: radial-gradient(circle, var(--tw-gradient-stops));
   }
