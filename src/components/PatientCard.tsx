@@ -642,6 +642,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
   const [loadingCid, setLoadingCid] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const movementTriggerRef = useRef<HTMLButtonElement>(null);
   const config = sectorConfig[patient.sector as keyof typeof sectorConfig] ?? sectorConfig.outside;
   const { toast: toastHook } = useToast();
   const { currentDepartment } = useDepartment();
@@ -1721,7 +1722,13 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
                       const dih = calcDIH(adm);
                       return (
                         <div className="flex items-center gap-1.5 text-[10px] text-foreground leading-snug py-0.5">
-                          <DischargeStatusRibbon status={patient.admissionStatus} />
+                          <DischargeStatusRibbon
+                            status={patient.admissionStatus}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              movementTriggerRef.current?.click();
+                            }}
+                          />
                           <span className="font-medium">{formatAdmissionDateBR(adm)}</span>
                           {dih !== null && (() => {
                             const dihColor =
@@ -3336,6 +3343,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
+                  ref={movementTriggerRef}
                   size="icon"
                   variant="ghost"
                   className={cn(

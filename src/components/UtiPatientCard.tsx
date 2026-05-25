@@ -734,6 +734,7 @@ export function UtiPatientCard({
   const [isRoundPrintDialogOpen, setIsRoundPrintDialogOpen] = useState(false);
   const [isReleasePreAdmissionOpen, setIsReleasePreAdmissionOpen] = useState(false);
   const [isDeleteExtraOpen, setIsDeleteExtraOpen] = useState(false);
+  const movementTriggerRef = useRef<HTMLButtonElement>(null);
   const { toast } = useToast();
   const isExtra = isExtraBed(patient.bedNumber);
   // Leito extra vago pode ser excluído por qualquer perfil autenticado (operação de layout do setor).
@@ -1007,8 +1008,14 @@ export function UtiPatientCard({
                 <div className="flex items-center gap-1 flex-wrap md:flex-nowrap w-full md:w-auto mt-1 md:mt-0">
                   {/* Classificação clínica (bola de gravidade) removida do mapa de leitos */}
 
-                  {/* Pílula de desfecho sinalizado — à esquerda da DIH */}
-                  <DischargeStatusRibbon status={patient.admissionStatus} />
+                  {/* Pílula de desfecho sinalizado — sincronizada com o ícone Movimentações */}
+                  <DischargeStatusRibbon
+                    status={patient.admissionStatus}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      movementTriggerRef.current?.click();
+                    }}
+                  />
 
                   {/* Days in UTI - Fixed width for consistent alignment */}
                   {(() => {
@@ -1179,7 +1186,7 @@ export function UtiPatientCard({
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-110 group" title="Movimentação do leito" aria-label="Movimentação do leito">
+                  <Button ref={movementTriggerRef} variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-110 group" title="Movimentação do leito" aria-label="Movimentação do leito">
                     <ArrowLeftRight className="h-3 w-3 transition-transform duration-300 group-hover:scale-110" />
                   </Button>
                 </DropdownMenuTrigger>
