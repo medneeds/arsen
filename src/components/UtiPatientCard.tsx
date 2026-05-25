@@ -1178,59 +1178,123 @@ export function UtiPatientCard({
                     <MoreVertical className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-popover border shadow-lg z-50 w-56">
-                  {/* Único item ativo no card: realocar/permutar (autonomia médica).
-                      Impressão fica no botão geral do setor. Movimentações de alta/transferência/óbito
-                      ocorrem pelo Painel Clínico (Cockpit). Leitos são fixos — não há exclusão. */}
+                <DropdownMenuContent align="end" className="bg-popover/95 backdrop-blur-sm border shadow-2xl z-50 w-64 p-1.5">
+                  {/* ============ BLOCO MOVIMENTAÇÃO ============ */}
                   {patient.name ? (
-                    <>
+                    <div className="rounded-lg border border-border/60 bg-gradient-to-br from-muted/30 to-transparent p-1.5 space-y-0.5">
+                      <div className="flex items-center gap-1.5 px-2 pt-0.5 pb-1">
+                        <Shuffle className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Movimentação
+                        </span>
+                      </div>
+
+                      {/* REMANEJAR LEITO (mesma UTI) */}
+                      <DropdownMenuItem
+                        onClick={() => setIsReallocationDialogOpen(true)}
+                        className="group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-indigo-300/60 dark:hover:border-indigo-700/60 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-transparent dark:hover:from-indigo-950/40 transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm"
+                      >
+                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-100 dark:bg-indigo-950/60 group-hover/item:bg-indigo-200 dark:group-hover/item:bg-indigo-900/80 transition-colors">
+                          <ArrowLeftRight className="h-3.5 w-3.5 text-indigo-700 dark:text-indigo-300" />
+                        </div>
+                        <div className="flex flex-col items-start min-w-0">
+                          <span className="text-indigo-800 dark:text-indigo-200 leading-tight">
+                            Remanejar leito <span className="text-[10px] font-normal text-indigo-600/70 dark:text-indigo-400/70">(mesma UTI)</span>
+                          </span>
+                          <span className="text-[10px] font-normal text-muted-foreground leading-tight">
+                            Realocar ou permutar entre leitos da unidade
+                          </span>
+                        </div>
+                      </DropdownMenuItem>
+
+                      {/* DESALOCAR E PRÉ-SINALIZAR */}
                       {patient.admissionStatus !== 'transferencia_interna_pendente'
                         && patient.admissionStatus !== 'transferencia_externa_pendente' && (
-                        <DropdownMenuItem onClick={() => setIsSignalTransferOpen(true)}>
-                          <ArrowRightLeft className="h-4 w-4 mr-2 text-sky-600" />
-                          <div className="flex flex-col">
-                            <span className="text-sky-700 dark:text-sky-300">Desalocar e pré-sinalizar p/ outro setor</span>
-                            <span className="text-[10px] font-normal text-muted-foreground">Libera o leito; destino aloca em 2ª etapa</span>
+                        <DropdownMenuItem
+                          onClick={() => setIsSignalTransferOpen(true)}
+                          className="group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent hover:border-sky-300/60 dark:hover:border-sky-700/60 hover:bg-gradient-to-r hover:from-sky-50 hover:to-transparent dark:hover:from-sky-950/40 transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm"
+                        >
+                          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-sky-100 dark:bg-sky-950/60 group-hover/item:bg-sky-200 dark:group-hover/item:bg-sky-900/80 transition-colors">
+                            <ArrowRightLeft className="h-3.5 w-3.5 text-sky-700 dark:text-sky-300" />
                           </div>
-                        </DropdownMenuItem>
-                      )}
-                      {onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (
-                        <DropdownMenuItem onClick={() => setIsReleasePreAdmissionOpen(true)}>
-                          <UserMinus className="h-4 w-4 mr-2 text-amber-600" />
-                          <div className="flex flex-col">
-                            <span className="text-amber-700 dark:text-amber-300">
-                              {patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito'
-                                ? 'Desalocar leito (pós-alta/óbito)'
-                                : patient.admissionStatus === 'transferencia_interna_pendente'
-                                  ? 'Desalocar leito (transf. interna sinalizada)'
-                                  : patient.admissionStatus === 'transferencia_externa_pendente'
-                                    ? 'Desalocar leito (transf. externa sinalizada)'
-                                    : patient.admissionStatus === 'admitido'
-                                      ? 'Desalocar leito (excepcional)'
-                                      : 'Desalocar leito (pré-admissão)'}
+                          <div className="flex flex-col items-start min-w-0">
+                            <span className="text-sky-800 dark:text-sky-200 leading-tight">
+                              Desalocar e pré-sinalizar <span className="text-[10px] font-normal text-sky-600/70 dark:text-sky-400/70">(outro setor)</span>
                             </span>
-                            <span className="text-[10px] font-normal text-muted-foreground">
-                              {patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito'
-                                ? 'Confirmação por senha — preserva o prontuário'
-                                : patient.admissionStatus === 'transferencia_interna_pendente' || patient.admissionStatus === 'transferencia_externa_pendente'
-                                  ? 'Completa a sinalização feita no Painel Clínico'
-                                  : patient.admissionStatus === 'admitido'
-                                    ? 'Sem sinalização — abre orientação didática'
-                                    : 'Desocupa o leito sem apagar o prontuário'}
+                            <span className="text-[10px] font-normal text-muted-foreground leading-tight">
+                              Libera leito; destino aloca em 2ª etapa
                             </span>
                           </div>
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuLabel className="text-[10px] font-normal text-muted-foreground whitespace-normal leading-snug pt-1">
-                        Sinalizações de alta/óbito/transferência são feitas pelo <strong>Painel Clínico</strong>.
-                      </DropdownMenuLabel>
-                    </>
+
+                      {/* DESALOCAR LEITO */}
+                      {onReleasePreAdmissionBed && (role === 'admin' || role === 'medico') && (() => {
+                        const isPostOutcome = patient.admissionStatus === 'alta_dada' || patient.admissionStatus === 'obito';
+                        const isSignaled = patient.admissionStatus === 'transferencia_interna_pendente' || patient.admissionStatus === 'transferencia_externa_pendente';
+                        const isExceptional = patient.admissionStatus === 'admitido';
+                        const label = isPostOutcome
+                          ? 'Desalocar leito (pós-alta/óbito)'
+                          : patient.admissionStatus === 'transferencia_interna_pendente'
+                            ? 'Concluir transf. interna sinalizada'
+                            : patient.admissionStatus === 'transferencia_externa_pendente'
+                              ? 'Concluir transf. externa sinalizada'
+                              : isExceptional
+                                ? 'Desalocar leito (excepcional)'
+                                : 'Desalocar leito (pré-admissão)';
+                        const sub = isPostOutcome
+                          ? 'Confirmação por senha — preserva o prontuário'
+                          : isSignaled
+                            ? 'Completa a sinalização feita no Painel Clínico'
+                            : isExceptional
+                              ? 'Sem sinalização — abre orientação didática'
+                              : 'Desocupa o leito sem apagar o prontuário';
+                        return (
+                          <DropdownMenuItem
+                            onClick={() => setIsReleasePreAdmissionOpen(true)}
+                            className={cn(
+                              "group/item flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-pointer border border-transparent transition-all duration-200 hover:translate-x-0.5 hover:shadow-sm",
+                              isSignaled
+                                ? "hover:border-emerald-300/60 dark:hover:border-emerald-700/60 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-transparent dark:hover:from-emerald-950/40"
+                                : "hover:border-amber-300/60 dark:hover:border-amber-700/60 hover:bg-gradient-to-r hover:from-amber-50 hover:to-transparent dark:hover:from-amber-950/40"
+                            )}
+                          >
+                            <div className={cn(
+                              "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+                              isSignaled
+                                ? "bg-emerald-100 dark:bg-emerald-950/60 group-hover/item:bg-emerald-200"
+                                : "bg-amber-100 dark:bg-amber-950/60 group-hover/item:bg-amber-200"
+                            )}>
+                              {isSignaled
+                                ? <Check className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-300" />
+                                : <UserMinus className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300" />}
+                            </div>
+                            <div className="flex flex-col items-start min-w-0">
+                              <span className={cn(
+                                "leading-tight",
+                                isSignaled ? "text-emerald-800 dark:text-emerald-200" : "text-amber-800 dark:text-amber-200"
+                              )}>
+                                {label}
+                              </span>
+                              <span className="text-[10px] font-normal text-muted-foreground leading-tight">
+                                {sub}
+                              </span>
+                            </div>
+                          </DropdownMenuItem>
+                        );
+                      })()}
+
+                      <p className="px-2.5 pt-1 text-[10px] leading-snug text-muted-foreground/80 border-t border-border/40 mt-1">
+                        Altas, óbitos e transferências são <strong>sinalizadas no Painel Clínico</strong>.
+                      </p>
+                    </div>
                   ) : (
-                    <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
+                    <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal px-3 py-2">
                       Leito vago — sem ações disponíveis.
                     </DropdownMenuLabel>
                   )}
                 </DropdownMenuContent>
+
               </DropdownMenu>
 
               <CollapsibleTrigger asChild>
