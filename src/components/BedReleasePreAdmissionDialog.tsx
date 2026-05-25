@@ -176,7 +176,11 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
 
   const goToPasswordStep = () => {
     if (blockers.length > 0) return;
+    stepTransitionRef.current = true;
     setStep("password");
+    requestAnimationFrame(() => {
+      stepTransitionRef.current = false;
+    });
   };
 
   const handleConfirm = async () => {
@@ -323,7 +327,10 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       {/* ETAPA 2: Formulário detalhado com motivo + consequências */}
       <MovementConfirmDialog
         open={open && step === "form"}
-      onOpenChange={(v) => (!submitting ? onOpenChange(v) : undefined)}
+      onOpenChange={(v) => {
+        if (!v && stepTransitionRef.current) return;
+        if (!submitting) onOpenChange(v);
+      }}
       onConfirm={goToPasswordStep}
       isSubmitting={submitting}
       title={
