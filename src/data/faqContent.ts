@@ -481,4 +481,541 @@ export const FAQ_ENTRIES: FaqEntry[] = [
       },
     ],
   },
+
+  // ============================================================
+  // PRESCRIÇÃO
+  // ============================================================
+
+  // 11 — Peso e alergias obrigatórios
+  {
+    id: "presc-peso-alergias",
+    title: "Por que peso e alergias são obrigatórios na prescrição",
+    short: "Sem esses dois campos, o sistema bloqueia assinar, validar e imprimir.",
+    icon: AlertTriangle,
+    tone: "warning",
+    category: "Prescrição",
+    slides: [
+      {
+        title: "O banner âmbar no topo",
+        body: "Sempre que faltar PESO (kg) ou ALERGIAS no cabeçalho da prescrição, um banner âmbar aparece no topo da página avisando que esses campos são pré-requisitos do ato de prescrever.",
+        tone: "warning",
+      },
+      {
+        title: "Por que é obrigatório",
+        body: "PESO calcula doses por kg (antibióticos, vasoativos, sedativos, anticoagulantes). ALERGIAS bloqueiam medicações incompatíveis e ativam alertas de segurança.\n\nPrescrever sem isso é risco clínico — por isso o sistema impede assinar/validar/imprimir.",
+        tone: "danger",
+      },
+      {
+        title: "Onde preencher",
+        body: "Os campos ficam no cabeçalho da prescrição. Peso aceita 0–500 kg. Alergias usam o chip verde NDAM (nega) ou o vermelho com a lista de alérgenos.\n\nO sistema sincroniza com o cockpit em tempo real: o que você preenche aqui aparece lá e vice-versa.",
+      },
+      {
+        title: "Desbloqueio automático",
+        body: "Assim que ambos forem preenchidos, o banner some e os botões ASSINAR / VALIDAR / IMPRIMIR voltam ao estado ativo. Nenhum atalho de bypass — é regra fixa.",
+        tone: "success",
+      },
+    ],
+  },
+
+  // 12 — Semáforo vermelho / amarelo / verde
+  {
+    id: "presc-semaforo-status",
+    title: "Semáforo da prescrição: vermelho, amarelo, verde",
+    short: "O que cada cor do ícone de status significa e o que destrava o próximo passo.",
+    icon: CheckCircle2,
+    tone: "info",
+    category: "Prescrição",
+    slides: [
+      {
+        title: "Vermelho piscando — pendência crítica",
+        body: "O ícone fica vermelho piscando quando há item com campo obrigatório faltando (dose, via, posologia, diluição em IV, tempo de infusão, etc.).\n\nA prescrição NÃO pode ser assinada nesse estado. Clique no item para ver o que falta.",
+        tone: "danger",
+      },
+      {
+        title: "Amarelo — pronto para validar",
+        body: "Amarelo significa que todos os campos obrigatórios estão preenchidos e a prescrição foi ASSINADA pelo médico, aguardando a VALIDAÇÃO FARMACÊUTICA.\n\nA farmácia revisa interações, doses e classifica Alto Alerta antes de liberar.",
+        tone: "warning",
+      },
+      {
+        title: "Verde — validada e pronta para impressão",
+        body: "Verde indica prescrição validada pela farmácia. A partir daqui ela pode ser IMPRESSA e DISPENSADA. As doses já são consideradas confiáveis para administração.",
+        tone: "success",
+      },
+      {
+        title: "Como o semáforo se comporta",
+        body: "O ícone fica visível no cabeçalho e nos cards de lista. A mudança é em tempo real — não precisa recarregar a página.\n\nSe um item for editado depois da validação, o status retorna para amarelo (precisa re-validar).",
+      },
+    ],
+  },
+
+  // 13 — Suspensão é definitiva
+  {
+    id: "presc-suspender-irreversivel",
+    title: "Prescrição suspensa NÃO pode ser reativada",
+    short: "Suspender é definitivo. Para retomar, gere uma nova prescrição.",
+    icon: ShieldAlert,
+    tone: "danger",
+    category: "Prescrição",
+    slides: [
+      {
+        title: "O que é suspender",
+        body: "Suspender encerra uma prescrição ATIVA (já validada/em uso) antes do prazo natural. É usada quando a conduta muda no meio do plantão (ex.: novo esquema antibiótico, alta clínica, óbito).",
+        tone: "warning",
+      },
+      {
+        title: "Por que é irreversível",
+        body: "A suspensão entra no histórico clínico e dispara baixa nos itens dispensados. Reativar quebraria a auditoria de medicação e o rastro farmacêutico.\n\nPor isso o sistema NÃO oferece botão de \"reativar\".",
+        tone: "danger",
+      },
+      {
+        title: "Como retomar uma conduta",
+        body: "Se você precisa voltar à mesma conduta, gere uma NOVA prescrição. Você pode usar \"Copiar da anterior\" para herdar itens, ajustar o que mudou e assinar novamente.\n\nO histórico continua íntegro e o novo documento fica vinculado ao mesmo prontuário.",
+        tone: "success",
+      },
+      {
+        title: "Diferença de suspender × excluir",
+        body: "SUSPENDER: prescrição já validada/em uso → encerra com auditoria, irreversível.\nEXCLUIR: prescrição ainda em RASCUNHO (nunca assinada/validada) → some sem histórico clínico.",
+      },
+    ],
+  },
+
+  // 14 — Excluir rascunho
+  {
+    id: "presc-excluir-rascunho",
+    title: "Quando dá para excluir uma prescrição",
+    short: "Só rascunhos (nunca assinados/validados) podem ser excluídos.",
+    icon: Trash2,
+    tone: "info",
+    category: "Prescrição",
+    slides: [
+      {
+        title: "Regra simples",
+        body: "EXCLUIR só é permitido em prescrições em RASCUNHO — ou seja, que nunca foram ASSINADAS pelo médico nem VALIDADAS pela farmácia.\n\nDepois de assinar ou validar, o caminho é SUSPENDER (irreversível).",
+      },
+      {
+        title: "Onde aparece o botão",
+        body: "Na lista de prescrições do paciente, rascunhos exibem o ícone de lixeira ao lado do nome. Em prescrições assinadas/validadas, o ícone desaparece e dá lugar ao botão SUSPENDER.",
+        visual: {
+          kind: "menuActions",
+          items: [
+            { icon: "ArrowLeftRight", label: "Editar rascunho" },
+            { icon: "LogOut", label: "Excluir rascunho", emphasis: true },
+          ],
+        },
+      },
+      {
+        title: "Rascunhos órfãos",
+        body: "Rascunhos antigos (>24h, sem assinatura, fora do dia clínico) são arquivados automaticamente por um job a cada 30 min. A UI também esconde defensivamente.\n\nIsso evita poluir a lista com tentativas inacabadas.",
+        tone: "warning",
+      },
+    ],
+  },
+
+  // 15 — Consultar prescrições do dia × anteriores
+  {
+    id: "presc-historico-consultar",
+    title: "Consultar prescrição do dia × dos dias anteriores",
+    short: "Como navegar entre a prescrição vigente e o histórico validado.",
+    icon: History,
+    tone: "info",
+    category: "Prescrição",
+    slides: [
+      {
+        title: "Prescrição do dia",
+        body: "A página de prescrição sempre abre na prescrição VIGENTE do dia clínico (07:00 → 06:59 do dia seguinte). É a que está em uso na beira do leito.",
+      },
+      {
+        title: "Acessar histórico",
+        body: "No topo da página, use o seletor de data (ou a lista \"Versões\") para ver prescrições de dias anteriores. Elas abrem em modo SOMENTE LEITURA — você pode visualizar e re-imprimir, mas não editar.",
+        visual: {
+          kind: "cockpitTabs",
+          tabs: ["Hoje", "Ontem", "Anteontem", "Histórico"],
+          activeTab: "Histórico",
+          highlight: "Histórico",
+        },
+      },
+      {
+        title: "Copiar do dia anterior",
+        body: "Ao iniciar a prescrição do dia, o botão \"Copiar da anterior\" herda os itens da última prescrição validada. Você ajusta apenas o que mudou e assina.\n\nÉ o atalho mais comum para evolução de internações estáveis.",
+        tone: "success",
+      },
+      {
+        title: "Onde mais ver o histórico",
+        body: "Além do seletor da página, o cockpit (aba Resumo) mostra a última prescrição ativa, e \"Documentos do paciente\" lista todos os PDFs já gerados.",
+      },
+    ],
+  },
+
+  // 16 — MAV / Portaria 344
+  {
+    id: "presc-mav-port344",
+    title: "MAV e Portaria 344: o que muda na prescrição",
+    short: "Medicamentos de Alta Vigilância e psicotrópicos têm fluxo regulatório próprio.",
+    icon: ShieldAlert,
+    tone: "danger",
+    category: "Prescrição",
+    slides: [
+      {
+        title: "MAV — Alta Vigilância",
+        body: "MAV são medicamentos com alto potencial de dano se administrados erroneamente (insulinas, opioides, anticoagulantes, eletrólitos concentrados, etc.). Aparecem com toast colorido + anel pulsante e disparam o guia de Alto Alerta.",
+        tone: "warning",
+      },
+      {
+        title: "Portaria 344 — psicotrópicos",
+        body: "Portaria 344/98 regula psicotrópicos e entorpecentes (listas A, B, C). Exigem notificação especial (receita amarela/azul) ao imprimir.\n\nO sistema agrupa esses itens por tipo de notificação e bloqueia a impressão se o tipo não estiver definido.",
+        tone: "danger",
+      },
+      {
+        title: "Itens MAV + Portaria 344",
+        body: "Alguns itens são MAV E Portaria 344 ao mesmo tempo (ex.: midazolam, fentanil). Você verá ambos os alertas e o fluxo regulatório dos dois — guia de Alto Alerta + notificação especial na impressão.",
+      },
+      {
+        title: "Identificação no catálogo",
+        body: "Ao buscar a medicação, categorias aparecem como tags: MAV, PORT_344 ou MAV_PORT_344. A seleção já enriquece o item com as flags corretas — você não precisa marcar nada manualmente.",
+        tone: "info",
+      },
+    ],
+  },
+
+  // 17 — Insulinoterapia
+  {
+    id: "presc-insulina-wizard",
+    title: "Insulinoterapia: o assistente de 3 passos",
+    short: "Pop-up que monta esquema basal-bolus, sliding scale, NPH fixa ou EV contínua.",
+    icon: Syringe,
+    tone: "info",
+    category: "Prescrição",
+    slides: [
+      {
+        title: "Quando aparece",
+        body: "Ao selecionar QUALQUER insulina no catálogo (regular, NPH, lispro, aspart, glargina, etc.), o sistema abre automaticamente o wizard em 3 etapas.\n\nO objetivo é evitar prescrição livre de insulina, que é fonte clássica de erro.",
+        tone: "warning",
+      },
+      {
+        title: "Os 4 esquemas",
+        body: "1. BASAL-BOLUS — basal (glargina/NPH) + bolus prandial + correção.\n2. SLIDING SCALE — correção por faixa de glicemia.\n3. NPH FIXA — esquema clássico de NPH em 2-3 tomadas.\n4. EV CONTÍNUA — bomba de infusão (UTI/cetoacidose).",
+        visual: {
+          kind: "stepFlow",
+          steps: [
+            { label: "Basal-Bolus", sub: "Internação geral" },
+            { label: "Sliding", sub: "Correção" },
+            { label: "NPH Fixa" },
+            { label: "EV Contínua", sub: "UTI" },
+          ],
+        },
+      },
+      {
+        title: "Como sai na prescrição",
+        body: "O wizard gera um ITEM MAV agrupado com sub-linhas claras para enfermagem (basal X UI, bolus Y UI antes das refeições, correção pela escala, etc.).\n\nFica auditado e fácil de checar no D1 e re-prescrever no dia seguinte.",
+        tone: "success",
+      },
+      {
+        title: "Bases das sugestões",
+        body: "As sugestões seguem SBD (Sociedade Brasileira de Diabetes), ADA e AMIB. O sistema NÃO inventa doses — ele propõe faixas e você ajusta para o paciente.",
+      },
+    ],
+  },
+
+  // 18 — Bolus × EV em tempo
+  {
+    id: "presc-iv-bolus",
+    title: "EV em bolus × EV em tempo: quando usar cada um",
+    short: "O toggle no bloco de Infusão EV e quando o bolus faz sentido.",
+    icon: Droplet,
+    tone: "info",
+    category: "Prescrição",
+    slides: [
+      {
+        title: "O toggle Tempo ↔ Bolus",
+        body: "No bloco \"Infusão EV\" de itens IV intermitentes (não-ATB, posologia ≠ contínuo), aparece um switch para alternar entre TEMPO DE INFUSÃO e BOLUS.",
+      },
+      {
+        title: "Quando usar BOLUS",
+        body: "Bolus = injeção rápida (geralmente <1 min). Indicado para situações de emergência: atropina, adrenalina, naloxona, glicose hipertônica em hipoglicemia.\n\nAtivar o modo bolus REMOVE a obrigatoriedade de tempo e vazão e imprime \"EV em bolus\" na receita.",
+        tone: "warning",
+      },
+      {
+        title: "Quando usar TEMPO",
+        body: "Tempo é o padrão: a maioria das medicações EV precisa de diluição + tempo de infusão definido (15-60 min comuns) para evitar reações de infusão, flebite ou efeitos cardíacos.\n\nMantenha tempo sempre que houver dúvida.",
+        tone: "info",
+      },
+      {
+        title: "Alerta âmbar",
+        body: "Se você ativa BOLUS em medicação fora do uso clássico (atropina/adrenalina), o sistema emite alerta âmbar pedindo confirmação — é uma rede de proteção, não bloqueio.",
+        tone: "warning",
+      },
+    ],
+  },
+
+  // 19 — Diluição de comprimido enteral
+  {
+    id: "presc-enteral-compounded",
+    title: "Comprimido por sonda: diluição obrigatória",
+    short: "Forma sólida + via enteral abre o builder de diluição e lista NÃO TRITURAR.",
+    icon: Beaker,
+    tone: "warning",
+    category: "Prescrição",
+    slides: [
+      {
+        title: "Quando o builder aparece",
+        body: "Sempre que você prescreve uma forma SÓLIDA (cp, cápsula) por VIA ENTERAL (SNG, SNE, gastrostomia, jejunostomia), o sistema abre automaticamente o bloco \"Diluição\".",
+      },
+      {
+        title: "Por que é obrigatório",
+        body: "Comprimidos não passam por sonda sem trituração e dispersão em líquido. Sem orientação clara, a enfermagem improvisa — e isso causa obstrução de sonda e dose imprecisa.",
+        tone: "warning",
+      },
+      {
+        title: "Lista NÃO TRITURAR (ISMP-Brasil)",
+        body: "Se o medicamento estiver na lista ISMP-Brasil de \"não triturar\" (revestimentos entéricos, liberação prolongada, citotóxicos, etc.), o builder BLOQUEIA com alerta vermelho — esses comprimidos não podem ser administrados por sonda.",
+        tone: "danger",
+      },
+      {
+        title: "Saída na prescrição",
+        body: "O builder gera instrução clara: \"Triturar 1 cp, dispersar em 10 mL de água, administrar pela sonda, lavar com 20 mL após\". Tudo padronizado para a enfermagem.",
+        tone: "success",
+      },
+    ],
+  },
+
+  // 20 — Sólido oral exige posologia
+  {
+    id: "presc-oral-posologia",
+    title: "Sólido oral: posologia é sempre obrigatória",
+    short: "Comprimido/cápsula/SL/orodispersível por VO/SL/enteral exige campo de posologia preenchido.",
+    icon: Pill,
+    tone: "warning",
+    category: "Prescrição",
+    slides: [
+      {
+        title: "A regra",
+        body: "Para formas sólidas (comprimido, cápsula, drágea, SL, orodispersível) administradas por VO / SL / enteral, o sistema EXIGE preenchimento do campo POSOLOGIA (intervalo + horários).\n\nInstrução livre não substitui — é regra de segurança.",
+      },
+      {
+        title: "Por quê",
+        body: "Sem posologia formal, a farmácia não calcula quantitativo correto e a enfermagem não tem horário de administração estruturado. O resultado: dose perdida ou duplicada.",
+        tone: "danger",
+      },
+      {
+        title: "Como preencher",
+        body: "Escolha o INTERVALO (6/6h, 8/8h, 12/12h, 1x/dia, etc.). Os horários aparecem automaticamente conforme o padrão do setor — você ajusta se necessário.\n\nO item só fica VERDE (pronto) quando a posologia está completa.",
+        tone: "success",
+      },
+    ],
+  },
+
+  // 21 — Inalatórios
+  {
+    id: "presc-inalatorios",
+    title: "Inalatórios: builder específico (sem velocidade IV)",
+    short: "Nebulização, contínua, pMDI e DPI têm campos próprios.",
+    icon: Activity,
+    tone: "info",
+    category: "Prescrição",
+    slides: [
+      {
+        title: "Por que um bloco separado",
+        body: "Inalatórios (Berotec, Atrovent, Salbutamol, Budesonida, etc.) não seguem a lógica de IV. O sistema substitui o campo de velocidade de infusão por campos próprios de via inalatória.",
+      },
+      {
+        title: "Os 4 modos",
+        body: "1. NEBULIZAÇÃO intermitente — dose + nº de gotas + diluente + intervalo.\n2. NEBULIZAÇÃO CONTÍNUA — dose contínua + tempo.\n3. pMDI — spray dosimetrado, nº de jatos + espaçador.\n4. DPI — pó seco, dose única do dispositivo.",
+        visual: {
+          kind: "stepFlow",
+          steps: [
+            { label: "Nebulização" },
+            { label: "Contínua" },
+            { label: "pMDI", sub: "spray + espaçador" },
+            { label: "DPI", sub: "pó seco" },
+          ],
+        },
+      },
+      {
+        title: "Autofill por catálogo",
+        body: "Ao escolher o medicamento, o sistema sugere dose, nº de gotas, diluente e modo padrão (ex.: Berotec → 10 gtt + 3 mL SF, NBZ). Você só ajusta o que muda no caso.",
+        tone: "success",
+      },
+    ],
+  },
+
+  // 22 — Checklist de impressão
+  {
+    id: "presc-imprimir-checklist",
+    title: "Checklist antes de imprimir a prescrição",
+    short: "Peso, alergias, validação, datas, MAV/Port. 344 e leito vivo.",
+    icon: Printer,
+    tone: "info",
+    category: "Prescrição",
+    slides: [
+      {
+        title: "1. Peso e alergias preenchidos",
+        body: "Sem isso, o botão IMPRIMIR fica bloqueado e o banner âmbar aparece no topo.",
+        tone: "warning",
+      },
+      {
+        title: "2. Status verde (validada)",
+        body: "A impressão definitiva só sai após validação farmacêutica (ícone verde). Antes disso, qualquer impressão é PROVISÓRIA e tem marca d'água.",
+      },
+      {
+        title: "3. MAV / Portaria 344",
+        body: "Itens MAV imprimem com guia de Alto Alerta anexado. Itens Portaria 344 saem em folhas separadas por tipo de notificação (receita amarela/azul). O sistema agrupa automaticamente.",
+        tone: "warning",
+      },
+      {
+        title: "4. Cabeçalho com leito atual",
+        body: "A impressão usa o LEITO ATUAL do paciente em tempo real (não o leito da hora em que a prescrição foi aberta). Isso evita imprimir com leito errado depois de remanejamento.",
+        tone: "success",
+      },
+      {
+        title: "5. Anexos de ATB (Guia ATM)",
+        body: "Antibióticos exigem Guia ATM no D1. Após anexar a Guia, um pop-up didático lembra que devem ser impressas 2 VIAS — uma para a farmácia, outra para o prontuário.",
+      },
+    ],
+  },
+
+  // ============================================================
+  // EVOLUÇÃO & DOCUMENTAÇÃO
+  // ============================================================
+
+  // 23 — SOAP
+  {
+    id: "evo-soap-estrutura",
+    title: "Estrutura SOAP da evolução clínica",
+    short: "Subjetivo, Objetivo, Avaliação e Plano: como o sistema organiza.",
+    icon: FileText,
+    tone: "info",
+    category: "Evolução & Documentação",
+    slides: [
+      {
+        title: "O que é SOAP",
+        body: "SOAP é o padrão internacional de evolução:\n• S — Subjetivo (queixas e relato do paciente).\n• O — Objetivo (exame físico, sinais vitais, exames).\n• A — Avaliação (impressão clínica, hipóteses).\n• P — Plano (condutas, exames, prescrições).",
+      },
+      {
+        title: "Onde aparece",
+        body: "Na aba EVOLUÇÃO do cockpit, cada campo SOAP é editor de texto rico (negrito, itálico, sublinhado, parágrafos). Você pode usar templates clínicos por campo.",
+        visual: {
+          kind: "cockpitTabs",
+          tabs: ["Resumo", "Evolução", "Prescrição", "Exames", "Alta"],
+          activeTab: "Evolução",
+          highlight: "Evolução",
+        },
+      },
+      {
+        title: "Templates de campo",
+        body: "Cada profissional/setor pode salvar TEMPLATES por campo SOAP (ex.: \"Choque séptico — A\"). O template insere o texto base e você ajusta o caso.",
+        tone: "success",
+      },
+      {
+        title: "Sincronia em tempo real",
+        body: "O cabeçalho do paciente (leito, idade, CID, alergias) atualiza em tempo real enquanto você evolui — se o paciente for remanejado, o leito muda sozinho na página de evolução.",
+      },
+    ],
+  },
+
+  // 24 — Evolução × Intercorrência × Plano
+  {
+    id: "evo-tipos-documentos",
+    title: "Evolução × Intercorrência × Plano",
+    short: "Quando usar cada tipo de registro clínico.",
+    icon: ClipboardCheck,
+    tone: "info",
+    category: "Evolução & Documentação",
+    slides: [
+      {
+        title: "Evolução",
+        body: "Registro diário (ou por plantão) com a estrutura SOAP completa. É o documento principal do dia clínico. Cada paciente deve ter ao menos UMA por plantão.",
+      },
+      {
+        title: "Intercorrência",
+        body: "Evento agudo fora da evolução de rotina (queda, dessaturação, hipotensão, parada). Registra hora, descrição, conduta e resposta. Não substitui a evolução do dia.",
+        tone: "warning",
+      },
+      {
+        title: "Plano (próximas 24h)",
+        body: "Campo voltado para deixar claro o que se espera para as próximas 24h: metas de PAM, plano de extubação, antibioticoterapia, previsão de alta, exames a aguardar.\n\nServe como handoff para o plantão seguinte.",
+        tone: "info",
+      },
+      {
+        title: "Onde encontrar",
+        body: "Todos ficam na aba EVOLUÇÃO do cockpit, em sub-abas distintas. O histórico mostra a sequência cronológica e quem assinou cada item.",
+      },
+    ],
+  },
+
+  // 25 — Formatação rica
+  {
+    id: "evo-formatacao-rica",
+    title: "Editor de texto rico: B / I / U e parágrafos",
+    short: "Como formatar a evolução para ficar legível ao reler.",
+    icon: Pencil,
+    tone: "info",
+    category: "Evolução & Documentação",
+    slides: [
+      {
+        title: "Atalhos",
+        body: "• Ctrl+B — negrito (use para diagnósticos e condutas).\n• Ctrl+I — itálico (achados sutis, observações).\n• Ctrl+U — sublinhado (alertas).\n• Enter — quebra de parágrafo (não use \"shift+enter\" para parágrafos).",
+      },
+      {
+        title: "Onde funciona",
+        body: "O editor rico está disponível em EVOLUÇÃO, PLANO, EXAMES COMPLEMENTARES e INTERCORRÊNCIA. Em sumários de alta também.\n\nO texto sai formatado na impressão (PDF preserva negritos e parágrafos).",
+        tone: "success",
+      },
+      {
+        title: "Sanitização automática",
+        body: "Colar conteúdo de Word/Excel funciona — o sistema limpa formatação indevida (cores estranhas, fontes, tabelas malformadas) e mantém só o que é seguro (negrito, itálico, sublinhado, parágrafos).",
+      },
+    ],
+  },
+
+  // 26 — CID-10 inline
+  {
+    id: "evo-cid-inline",
+    title: "CID-10 inline: como inserir e como sincroniza",
+    short: "Digite o CID no texto e o sistema sugere a descrição.",
+    icon: Stethoscope,
+    tone: "info",
+    category: "Evolução & Documentação",
+    slides: [
+      {
+        title: "Digitando no texto",
+        body: "Em qualquer campo SOAP, ao digitar um código CID-10 válido (ex.: J18.9), o sistema oferece autocomplete com a descrição oficial. Aceite com Tab/Enter.",
+      },
+      {
+        title: "Sincronia com o cabeçalho",
+        body: "Se você adicionar/remover CID na evolução, o cabeçalho do paciente (e o card no Mapa) atualizam em tempo real. O CID primário fica em destaque.",
+        tone: "success",
+      },
+      {
+        title: "Múltiplos CID",
+        body: "Você pode listar múltiplos CID (principal + secundários). O sistema marca o PRIMÁRIO — que é o usado em relatórios de produção e dashboards de gestão.",
+      },
+    ],
+  },
+
+  // 27 — Cabeçalho em tempo real
+  {
+    id: "evo-header-realtime",
+    title: "Cabeçalho do paciente em tempo real",
+    short: "Leito, idade, peso, alergias e CID sempre atualizados na evolução.",
+    icon: RefreshCw,
+    tone: "info",
+    category: "Evolução & Documentação",
+    slides: [
+      {
+        title: "Por que isso importa",
+        body: "Se outro membro da equipe editar peso, alergias ou remanejar o paciente enquanto você está evoluindo, o cabeçalho da página atualiza sozinho. Você não risca de imprimir com leito antigo.",
+      },
+      {
+        title: "Como funciona",
+        body: "O hook \"usePatientLive\" escuta mudanças em tempo real nas tabelas patients, patient_registry, patient_encounters e medical_records.\n\nA cada update remoto, o cabeçalho re-renderiza com os dados frescos.",
+        tone: "info",
+      },
+      {
+        title: "Reflexo na impressão",
+        body: "Ao gerar o PDF (evolução, prescrição, sumário), o sistema busca o LEITO ATUAL na hora — não o snapshot do momento em que a página foi aberta. Documentos saem sempre coerentes com a posição real do paciente.",
+        tone: "success",
+      },
+    ],
+  },
 ];
+
