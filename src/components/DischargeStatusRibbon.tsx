@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { ArrowRightLeft, CheckCircle2, Cross, Plane, ChevronRight } from "lucide-react";
+import { ArrowRightLeft, CheckCircle2, Cross, Plane, ArrowLeftRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type DischargeStatus =
@@ -15,16 +15,19 @@ type DischargeStatus =
 interface DischargeStatusRibbonProps {
   status: DischargeStatus;
   className?: string;
+  /**
+   * Quando fornecido, a pílula vira botão clicável que dispara a abertura
+   * do menu "Movimentações" do card (sincronizado com o ícone do header).
+   */
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 /**
  * Pílula INLINE de sinalização de desfecho.
- * Renderizada dentro do card, à esquerda da pílula DIH.
- * - Animação sutil de pulse + ícone com micro-translate (induz ação)
- * - Tooltip explica significado e permissão de desalocação
- * - Hover: elevação leve, sombra e seta indicativa
+ * - Sincronizada com o ícone "Movimentações" do card (mesma ação).
+ * - Tooltip orienta: "Clique no ícone Movimentações para desalocar".
  */
-export function DischargeStatusRibbon({ status, className }: DischargeStatusRibbonProps) {
+export function DischargeStatusRibbon({ status, className, onClick }: DischargeStatusRibbonProps) {
   const config = {
     alta_dada: {
       label: "ALTA SINALIZADA",
@@ -56,7 +59,7 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
       gradient: "from-blue-700 via-sky-400 to-blue-700",
       glow: "shadow-[0_3px_14px_-2px_rgba(14,165,233,0.6)] hover:shadow-[0_6px_22px_-2px_rgba(14,165,233,0.9)]",
       tooltipTitle: "Transferência interna sinalizada",
-      tooltipBody: "Paciente aguardando relocação para outro setor. Desaloque pelo mapa quando o novo leito estiver definido.",
+      tooltipBody: "Paciente aguardando relocação. Desaloque pelo menu Movimentações quando o novo leito estiver definido.",
     },
     transferencia_externa_pendente: {
       label: "TRANSF. EXTERNA SINALIZADA",
@@ -64,13 +67,14 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
       gradient: "from-violet-700 via-indigo-400 to-violet-700",
       glow: "shadow-[0_3px_14px_-2px_rgba(99,102,241,0.6)] hover:shadow-[0_6px_22px_-2px_rgba(99,102,241,0.9)]",
       tooltipTitle: "Transferência externa sinalizada",
-      tooltipBody: "Paciente aguardando saída para outra instituição. Confirme a desalocação no mapa após a saída efetiva.",
+      tooltipBody: "Paciente aguardando saída para outra instituição. Confirme a desalocação no menu Movimentações após a saída efetiva.",
     },
   } as const;
 
   const entry = config[status as keyof typeof config];
   if (!entry) return null;
   const { Icon } = entry;
+  const isInteractive = typeof onClick === "function";
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -78,7 +82,8 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
         <TooltipTrigger asChild>
           <button
             type="button"
-            aria-label={entry.tooltipTitle}
+            onClick={onClick}
+            aria-label={isInteractive ? `${entry.tooltipTitle} — abrir menu Movimentações` : entry.tooltipTitle}
             className={cn(
               "group relative inline-flex items-center gap-1.5 rounded-full",
               "bg-gradient-to-r text-white",
@@ -86,6 +91,7 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
               "ring-1 ring-white/80 dark:ring-slate-900/70",
               "transition-all duration-300 ease-out",
               "hover:-translate-y-0.5 hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1",
+              isInteractive ? "cursor-pointer" : "cursor-help",
               "discharge-pill-sheen",
               entry.gradient,
               entry.glow,
@@ -98,20 +104,25 @@ export function DischargeStatusRibbon({ status, className }: DischargeStatusRibb
               strokeWidth={2.6}
             />
             <span className="whitespace-nowrap">{entry.label}</span>
-            <ChevronRight
-              className="h-3 w-3 -ml-0.5 opacity-80 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:opacity-100 print:hidden"
+            <ArrowLeftRight
+              className="h-3 w-3 -ml-0.5 opacity-80 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:scale-110 group-hover:opacity-100 print:hidden"
               strokeWidth={3}
             />
           </button>
         </TooltipTrigger>
-        <TooltipContent side="top" align="center" className="max-w-[240px]">
-          <div className="space-y-1">
+        <TooltipContent side="top" align="center" className="max-w-[260px]">
+          <div className="space-y-1.5">
             <p className="text-xs font-semibold">{entry.tooltipTitle}</p>
             <p className="text-[11px] leading-snug text-muted-foreground">
               {entry.tooltipBody}
             </p>
-            <p className="text-[10px] font-medium text-primary pt-0.5">
-              Clique no menu do card para desalocar →
+            <p className="flex items-center gap-1.5 text-[10px] font-medium text-primary pt-0.5">
+              {isInteractive ? "Clique aqui ou no" : "Clique no"} ícone
+              <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5">
+                <ArrowLeftRight className="h-3 w-3" strokeWidth={2.6} />
+                <span className="font-semibold">Movimentações</span>
+              </span>
+              para desalocar
             </p>
           </div>
         </TooltipContent>
