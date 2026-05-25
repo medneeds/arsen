@@ -202,13 +202,13 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
           if (!v && !stepTransitionRef.current) onOpenChange(false);
         }}
       >
-        <AlertDialogContent className="max-w-md">
+        <AlertDialogContent className="w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] sm:max-w-md max-h-[92vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           <AlertDialogHeader>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-start gap-2 mb-1 min-w-0">
               <div className="rounded-full bg-amber-100 dark:bg-amber-950/40 p-2">
                 <AlertTriangle className="h-5 w-5 text-amber-600" />
               </div>
-              <AlertDialogTitle className="text-base">
+              <AlertDialogTitle className="text-base leading-snug break-words">
                 {isExceptional
                   ? "Desalocação excepcional — paciente sem sinalização"
                   : patient?.admissionStatus === "transferencia_interna_pendente"
@@ -221,7 +221,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
               </AlertDialogTitle>
             </div>
             <AlertDialogDescription asChild>
-              <div className="space-y-2 text-xs leading-relaxed text-foreground">
+              <div className="space-y-2 text-xs leading-relaxed text-foreground min-w-0 break-words">
                 <p>
                   Você está prestes a <strong>desocupar o leito {patient.bedNumber || "—"}</strong> ocupado por{" "}
                   <strong>{patient.name || "este paciente"}</strong>.
@@ -304,13 +304,14 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{isExceptional ? "Fechar" : "Cancelar"}</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2 sm:flex-wrap">
+            <AlertDialogCancel className="w-full sm:w-auto">{isExceptional ? "Fechar" : "Cancelar"}</AlertDialogCancel>
             {!blockReleaseHard && (
               <Button
                 type="button"
                 variant={isExceptional ? "outline" : "default"}
                 onClick={goToFormStep}
+                className="w-full sm:w-auto whitespace-normal leading-snug"
               >
                 {isExceptional ? "Prosseguir como excepcional" : "Entendi, continuar"}
               </Button>
@@ -398,12 +399,12 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
             <Label className="text-xs font-semibold mb-1 block">
               Observação {reason === "outro" ? <span className="text-destructive">(obrigatória)</span> : <span className="text-muted-foreground font-normal">(opcional)</span>}
             </Label>
-            <Textarea
+              <Textarea
               value={reasonNote}
               onChange={(e) => setReasonNote(e.target.value)}
               placeholder="Descreva brevemente o que aconteceu — visível na auditoria."
               rows={2}
-              className="text-xs"
+                className="text-xs max-w-full"
             />
           </div>
         </div>
