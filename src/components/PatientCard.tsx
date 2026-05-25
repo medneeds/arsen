@@ -1392,7 +1392,7 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
             patient.admissionStatus === 'transferencia_externa_pendente' && "ring-1 ring-indigo-400/50 bg-indigo-50/30 dark:bg-indigo-950/10"
           )}
         >
-        <DischargeStatusRibbon status={patient.admissionStatus} />
+        
         <div className="p-3 md:p-2 print:p-1.5">
           <div className="flex items-start justify-between gap-3 md:gap-2 print:gap-1">
             {selectionMode && onToggleSelection && (
