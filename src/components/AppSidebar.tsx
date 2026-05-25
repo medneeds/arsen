@@ -609,7 +609,7 @@ export function AppSidebar({
 
       <SidebarContent className="gap-0 py-2">
         {/* ── Bloco "Setor Ativo": trio Início / Mapa / Painel sincronizado com o setor ── */}
-        {(accessProfile === "medico" || accessProfile === "gestor" || accessProfile === "multi") && (
+        {!["porta","visitante","farmacia","ccih","imagem","laboratorio","administrativo","classificacao_risco","nir"].includes(accessProfile) && (
           <SidebarGroup className="py-0 my-0 border-b border-border/50">
             <div className={cn(
               "pt-2 pb-1.5",
