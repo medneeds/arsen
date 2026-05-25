@@ -25,12 +25,15 @@ export function usePatientDischargeDocs(patientId?: string | null, patientName?:
         .from("discharge_documents")
         .select("id, document_type, patient_name, signed_by_name, signed_by_crm, signed_at, content")
         .is("suspended_at", null)
+        .is("archived_at", null) // defesa: nunca mostrar doc arquivado (bed vacate)
         .order("signed_at", { ascending: false })
         .limit(10);
       if (patientId) q = q.eq("patient_id", patientId);
       else if (patientName) q = q.eq("patient_name", patientName);
+      // Com encounter ativo, exige match estrito (sem fallback is.null) —
+      // bloqueia herança de doc órfão em caso de reuso de patient_id.
       if (patientId && activeEncounterId) {
-        q = q.or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
+        q = q.eq("encounter_id", activeEncounterId);
       }
       const { data, error } = await q;
       if (error) throw error;
