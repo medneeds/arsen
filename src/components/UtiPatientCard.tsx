@@ -1008,8 +1008,14 @@ export function UtiPatientCard({
                 <div className="flex items-center gap-1 flex-wrap md:flex-nowrap w-full md:w-auto mt-1 md:mt-0">
                   {/* Classificação clínica (bola de gravidade) removida do mapa de leitos */}
 
-                  {/* Pílula de desfecho sinalizado — à esquerda da DIH */}
-                  <DischargeStatusRibbon status={patient.admissionStatus} />
+                  {/* Pílula de desfecho sinalizado — sincronizada com o ícone Movimentações */}
+                  <DischargeStatusRibbon
+                    status={patient.admissionStatus}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      movementTriggerRef.current?.click();
+                    }}
+                  />
 
                   {/* Days in UTI - Fixed width for consistent alignment */}
                   {(() => {
