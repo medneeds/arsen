@@ -20,6 +20,8 @@ import type { Patient } from "@/types/patient";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
 import { supabase } from "@/integrations/supabase/client";
 
+type PatientWithDepartment = Patient & { department?: string | null };
+
 const PRE_ADMISSION_REASONS = [
   { value: "paciente_saiu", label: "Paciente saiu antes da admissão (evasão / saída a pedido)" },
   { value: "alocacao_indevida", label: "Alocação indevida no leito (paciente errado)" },
@@ -81,6 +83,8 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
   const [submitting, setSubmitting] = useState(false);
   const [signaledDestination, setSignaledDestination] = useState<string | null>(null);
   const stepTransitionRef = useRef(false);
+  const patientId = patient?.id;
+  const patientDepartment = (patient as PatientWithDepartment | null)?.department;
 
   useEffect(() => {
     if (open) {
@@ -95,11 +99,10 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
   // Busca o destino da sinalização existente (transferência interna/externa)
   // para exibir no resumo e nos botões "Desalocar UTI 1 → UCI 2".
   useEffect(() => {
-    const pid = (patient as any)?.id;
     const isTransferPending =
       patient?.admissionStatus === "transferencia_interna_pendente"
       || patient?.admissionStatus === "transferencia_externa_pendente";
-    if (!open || !pid || !isTransferPending) return;
+    if (!open || !patientId || !isTransferPending) return;
     let cancelled = false;
     (async () => {
       const movementType = patient?.admissionStatus === "transferencia_interna_pendente"
@@ -108,7 +111,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       const { data } = await supabase
         .from("patient_movements")
         .select("destination")
-        .eq("patient_id", pid)
+        .eq("patient_id", patientId)
         .eq("movement_type", movementType)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -116,7 +119,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
       if (!cancelled && data?.destination) setSignaledDestination(data.destination);
     })();
     return () => { cancelled = true; };
-  }, [open, (patient as any)?.id, patient?.admissionStatus]);
+  }, [open, patientId, patient?.admissionStatus]);
 
   if (!patient) return null;
 
@@ -157,7 +160,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
   const reasonLabel = REASON_OPTIONS.find((r) => r.value === reason)?.label ?? reason;
 
   // Rótulo "Origem → Destino" para transferência sinalizada
-  const originLabel = (patient as any)?.department || sectorLabelFromCode(patient?.sector) || "—";
+  const originLabel = patientDepartment || sectorLabelFromCode(patient?.sector) || "—";
   const isTransferPending =
     patient?.admissionStatus === "transferencia_interna_pendente"
     || patient?.admissionStatus === "transferencia_externa_pendente";
@@ -260,7 +263,7 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                         size="sm"
                         className="mt-3 w-full gap-1.5"
                         onClick={() => {
-                          const id = (patient as any).id;
+                          const id = patient.id;
                           const url = id ? `/painel-clinico?patientId=${id}` : "/painel-clinico";
                           onOpenChange(false);
                           navigate(url);
