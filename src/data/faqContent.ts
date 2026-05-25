@@ -15,6 +15,7 @@ import {
   UserCog,
   Pencil,
   Palette,
+  FileUp,
 } from "lucide-react";
 
 export type SlideTone = "neutral" | "info" | "warning" | "success" | "danger";
