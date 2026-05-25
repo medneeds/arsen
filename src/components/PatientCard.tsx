@@ -3869,6 +3869,14 @@ export function PatientCard({ patient, onUpdate, onDelete, onReleasePreAdmission
         onSuccess={() => onRefetch?.()}
       />
 
+      <OperationalRelocationDialog
+        patient={patient}
+        open={relocationDialogOpen}
+        onOpenChange={setRelocationDialogOpen}
+        onSuccess={() => onRefetch?.()}
+      />
+
+
 
       <BedReleasePreAdmissionDialog
         open={isReleasePreAdmissionOpen}
