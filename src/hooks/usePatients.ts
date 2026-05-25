@@ -365,14 +365,15 @@ export function usePatients(department?: Department, sector?: string) {
         }
 
         const archivedBedNumber = `ARCHIVED-EXTRA-${target.sector}-${Date.now()}`;
-        const { error } = await supabase
+        const { data: deletedRows, error } = await supabase
           .from('patients')
           .delete()
           .eq('id', patientId)
           .eq('is_vacant', true)
-          .ilike('bed_number', 'EXTRA%');
+          .ilike('bed_number', 'EXTRA%')
+          .select('id');
 
-        if (error) {
+        if (error || !deletedRows?.length) {
           console.error('Supabase delete extra bed error:', error);
           const { error: archiveError } = await supabase
             .from('patients')
