@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, HelpCircle, ArrowLeft, Home as HomeIcon } from "lucide-react";
-import { FAQ_ENTRIES, type FaqEntry, type SlideTone } from "@/data/faqContent";
+import { FAQ_ENTRIES, FAQ_CATEGORY_ORDER, type FaqEntry, type SlideTone } from "@/data/faqContent";
 import { HelpSlideshowDialog } from "@/components/help/HelpSlideshowDialog";
 import { cn } from "@/lib/utils";
 
@@ -82,42 +82,57 @@ export default function AjudaPage() {
         />
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {filtered.map((entry) => {
-          const Icon = entry.icon;
-          return (
-            <button
-              key={entry.id}
-              type="button"
-              onClick={() => setActive(entry)}
-              className={cn(
-                "group text-left rounded-xl border bg-card hover:bg-card/80 p-4 transition-all duration-200",
-                "hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-              )}
-            >
-              <div className="flex items-start gap-3">
-                <div
-                  className={cn(
-                    "h-10 w-10 rounded-lg grid place-items-center flex-shrink-0 border transition-transform group-hover:scale-105",
-                    TONE_BG[entry.tone],
-                  )}
-                >
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-semibold text-sm leading-tight">{entry.title}</div>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{entry.short}</p>
-                  <div className="text-[10px] text-muted-foreground mt-2 uppercase tracking-wider font-medium">
-                    {entry.slides.length} slides
-                  </div>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      {/* Grupos por categoria */}
+      {FAQ_CATEGORY_ORDER.map((cat) => {
+        const items = filtered.filter((e) => e.category === cat);
+        if (items.length === 0) return null;
+        return (
+          <section key={cat} className="mb-8">
+            <div className="flex items-center gap-2 mb-3">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {cat}
+              </h2>
+              <span className="text-[10px] text-muted-foreground/70">({items.length})</span>
+              <div className="flex-1 h-px bg-border/60" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {items.map((entry) => {
+                const Icon = entry.icon;
+                return (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    onClick={() => setActive(entry)}
+                    className={cn(
+                      "group text-left rounded-xl border bg-card hover:bg-card/80 p-4 transition-all duration-200",
+                      "hover:shadow-md hover:-translate-y-0.5 hover:border-primary/40",
+                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={cn(
+                          "h-10 w-10 rounded-lg grid place-items-center flex-shrink-0 border transition-transform group-hover:scale-105",
+                          TONE_BG[entry.tone],
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-sm leading-tight">{entry.title}</div>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{entry.short}</p>
+                        <div className="text-[10px] text-muted-foreground mt-2 uppercase tracking-wider font-medium">
+                          {entry.slides.length} slides
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
 
       {filtered.length === 0 && (
         <div className="text-center text-sm text-muted-foreground py-12">
