@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
-import { Search, HelpCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, HelpCircle, ArrowLeft, Home as HomeIcon } from "lucide-react";
 import { FAQ_ENTRIES, type FaqEntry, type SlideTone } from "@/data/faqContent";
 import { HelpSlideshowDialog } from "@/components/help/HelpSlideshowDialog";
 import { cn } from "@/lib/utils";
