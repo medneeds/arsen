@@ -196,9 +196,10 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
     }
   };
 
-  // Não há mais bloqueio "hard" — admin/médico podem prosseguir no caminho excepcional
-  // com justificativa obrigatória, senha e auditoria diferenciada.
-  const blockReleaseHard = false;
+  // BLOQUEIO DURO: paciente sem sinalização não pode ser desalocado pelo Mapa.
+  // Único caminho permitido é sinalizar a saída pelo Painel Clínico (alta/óbito/transferência).
+  // Casos de "cadastro errado/leito sujo" ficam no Dev Console / Edição Avançada, fora deste fluxo.
+  const blockReleaseHard = isExceptional;
 
   return (
     <>
@@ -275,17 +276,10 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                       </Button>
                     </div>
 
-                    <details className="rounded-md border border-muted-foreground/20 p-2.5">
-                      <summary className="text-[11px] font-semibold text-muted-foreground cursor-pointer select-none">
-                        Liberar mesmo assim (caminho excepcional — só em emergência operacional)
-                      </summary>
-                      <ul className="list-disc pl-4 mt-2 space-y-1 text-muted-foreground text-[11px]">
-                        <li>O <strong>prontuário é preservado</strong> — nada é apagado.</li>
-                        <li>Movimento registrado como <strong>LIBERAÇÃO ADMINISTRATIVA EXCEPCIONAL</strong>, com autor, horário e justificativa imutável.</li>
-                        <li>Obrigatório <strong>descrever a justificativa</strong> (mín. 10 caracteres) e <strong>confirmar com sua senha</strong>.</li>
-                        <li>Use somente quando a sinalização não pôde ser concluída (documento de alta não assinado, situação crítica) — depois complete o registro pelo Painel.</li>
-                      </ul>
-                    </details>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      Não há atalho "excepcional" aqui — a saída do leito sempre passa pela sinalização no Painel Clínico para preservar prontuário, documento clínico assinado e número de atendimento.
+                    </p>
+
                   </>
                 ) : isPostDischarge ? (
                   <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
