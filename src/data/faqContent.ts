@@ -89,6 +89,7 @@ export const FAQ_ENTRIES: FaqEntry[] = [
     short: "Entenda a diferença entre os dois módulos centrais da plataforma.",
     icon: LayoutGrid,
     tone: "info",
+    category: "Movimentação & Leitos",
     slides: [
       {
         title: "Dois módulos, dois propósitos",
@@ -121,6 +122,7 @@ export const FAQ_ENTRIES: FaqEntry[] = [
     short: "Passo a passo: do Painel Clínico (sinalização) até o Mapa (liberação).",
     icon: LogOut,
     tone: "success",
+    category: "Movimentação & Leitos",
     slides: [
       {
         title: "Etapa 1 — Sinalize no Painel Clínico",
@@ -158,6 +160,7 @@ export const FAQ_ENTRIES: FaqEntry[] = [
     short: "Realocar para leito vago ou permutar com outro paciente do setor.",
     icon: ArrowLeftRight,
     tone: "info",
+    category: "Movimentação & Leitos",
     slides: [
       {
         title: "Quando usar",
@@ -195,6 +198,7 @@ export const FAQ_ENTRIES: FaqEntry[] = [
     short: "Mover o paciente para outro setor sem dar alta hospitalar.",
     icon: Building2,
     tone: "warning",
+    category: "Movimentação & Leitos",
     slides: [
       {
         title: "O que é",
@@ -226,6 +230,7 @@ export const FAQ_ENTRIES: FaqEntry[] = [
     short: "Gerar sumário, assinar e liberar leito.",
     icon: FileSignature,
     tone: "success",
+    category: "Movimentação & Leitos",
     slides: [
       {
         title: "Onde começa",
@@ -262,6 +267,7 @@ export const FAQ_ENTRIES: FaqEntry[] = [
     short: "Reverter uma alta antes da desalocação do leito.",
     icon: Undo2,
     tone: "warning",
+    category: "Movimentação & Leitos",
     slides: [
       {
         title: "Quando usar",
@@ -303,6 +309,7 @@ export const FAQ_ENTRIES: FaqEntry[] = [
     short: "Cadastro de Não Identificado, uso de PIN e promoção quando os dados chegam.",
     icon: UserCog,
     tone: "info",
+    category: "Cadastro & Identificação",
     slides: [
       {
         title: "O que é NI",
@@ -328,6 +335,7 @@ export const FAQ_ENTRIES: FaqEntry[] = [
     short: "Nº de prontuário, data de admissão e demais correções auditadas.",
     icon: Pencil,
     tone: "warning",
+    category: "Cadastro & Identificação",
     slides: [
       {
         title: "Onde editar",
@@ -359,6 +367,7 @@ export const FAQ_ENTRIES: FaqEntry[] = [
     short: "Significado de cada cor, tarja e badge no card do Mapa.",
     icon: Palette,
     tone: "info",
+    category: "Cards & Visualização",
     slides: [
       {
         title: "Bolinha de gravidade",
@@ -405,6 +414,7 @@ export const FAQ_ENTRIES: FaqEntry[] = [
     short: "Aprenda a popular o cadastro automaticamente a partir do PDF do PIS ou texto copiado.",
     icon: FileUp,
     tone: "success",
+    category: "Cadastro & Identificação",
     slides: [
       {
         title: "Por que importar do PIS?",
