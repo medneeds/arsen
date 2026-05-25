@@ -36,6 +36,28 @@ export default function AjudaPage() {
 
   return (
     <div className="container max-w-6xl mx-auto px-4 py-6 md:py-10">
+      {/* Back / Home bar */}
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleBack}
+          className="gap-1.5 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate("/")}
+          className="gap-1.5"
+        >
+          <HomeIcon className="h-4 w-4" />
+          Início
+        </Button>
+      </div>
+
       {/* Header */}
       <div className="flex items-start gap-4 mb-6">
         <div className="h-12 w-12 rounded-xl bg-primary/10 grid place-items-center flex-shrink-0">
