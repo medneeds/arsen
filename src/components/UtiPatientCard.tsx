@@ -736,7 +736,9 @@ export function UtiPatientCard({
   const [isDeleteExtraOpen, setIsDeleteExtraOpen] = useState(false);
   const { toast } = useToast();
   const isExtra = isExtraBed(patient.bedNumber);
-  const canDeleteExtra = isExtra && (role === 'admin' || role === 'medico');
+  // Leito extra vago pode ser excluído por qualquer perfil autenticado (operação de layout do setor).
+  // Leito extra ocupado segue protegido — precisa desalocar o paciente antes.
+  const canDeleteExtra = isExtra && (patient.isVacant || role === 'admin' || role === 'medico');
 
   // Derive current UTI unit from colorVariant if not provided
   const derivedUtiUnit = currentUtiUnit || (colorVariant === 'blue' ? 'UTI 1' : 'UTI 2');
