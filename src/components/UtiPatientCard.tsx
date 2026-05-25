@@ -909,7 +909,7 @@ export function UtiPatientCard({
     <>
       <div 
         className={cn(
-          "relative border rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-200",
+          "relative border rounded-lg shadow-md hover:shadow-lg transition-all duration-200",
           colors.card,
           patient.admissionStatus === 'alta_dada' && "ring-1 ring-emerald-400/40 bg-emerald-50/30 dark:bg-emerald-950/10 grayscale-[15%] opacity-95",
           patient.admissionStatus === 'obito' && "ring-1 ring-slate-500/50 bg-slate-100/50 dark:bg-slate-900/30 grayscale-[35%] opacity-90",
