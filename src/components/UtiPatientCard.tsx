@@ -81,7 +81,7 @@ type ColorVariant = 'blue' | 'yellow' | 'red' | 'green';
 interface UtiPatientCardProps {
   patient: Patient;
   onUpdate: (patient: Patient) => void;
-  onDelete?: (patientId: string) => void;
+  onDelete?: (patientId: string) => void | Promise<void>;
   onReleasePreAdmissionBed?: (patientId: string, payload: { reason: string; reasonNote: string }) => void | Promise<void>;
   onPrintPatient?: (patientId: string) => void;
   onRefetch?: () => void;
@@ -1486,13 +1486,9 @@ export function UtiPatientCard({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
+              onClick={async () => {
                 if (onDelete) {
-                  onDelete(patient.id);
-                  toast({
-                    title: "Leito extra excluído",
-                    description: `${patient.bedNumber} foi removido do setor.`,
-                  });
+                  await onDelete(patient.id);
                 }
                 setIsDeleteExtraOpen(false);
               }}
