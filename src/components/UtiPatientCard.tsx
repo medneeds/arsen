@@ -1186,7 +1186,7 @@ export function UtiPatientCard({
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-110 group" title="Movimentação do leito" aria-label="Movimentação do leito">
+                  <Button ref={movementTriggerRef} variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-primary transition-all duration-300 hover:scale-110 group" title="Movimentação do leito" aria-label="Movimentação do leito">
                     <ArrowLeftRight className="h-3 w-3 transition-transform duration-300 group-hover:scale-110" />
                   </Button>
                 </DropdownMenuTrigger>
