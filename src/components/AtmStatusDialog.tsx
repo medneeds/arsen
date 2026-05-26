@@ -41,6 +41,12 @@ interface Props {
    */
   onReprintItem?: (item: AtmStatusItem) => void;
   /**
+   * Reimpressão consolidada — gera UMA Guia ATM contendo TODOS os antibióticos
+   * em curso (cada um como um bloco "ATM N"). Útil quando o paciente tem 2+
+   * antibióticos validados e a farmácia/CCIH precisa do conjunto completo.
+   */
+  onReprintAll?: (items: AtmStatusItem[]) => void;
+  /**
    * Dispara o fluxo de nova ATB. Recebe o modo escolhido e os ids selecionados
    * para suspensão (apenas em modo 'troca').
    */
