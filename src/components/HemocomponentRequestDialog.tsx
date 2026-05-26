@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useHospital } from "@/contexts/HospitalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { asUuidOrNull } from "@/lib/utils";
+import { resolvePatientHeader, resolveCurrentBedSector } from "@/lib/resolvePatientHeader";
 import { SECTOR_DISPLAY } from "@/contexts/DepartmentContext";
 import { toast } from "sonner";
 import {
@@ -99,49 +100,93 @@ export function HemocomponentRequestDialog({
   }, [open, patientName, patientBed, patientSector]);
 
   // Pré-carrega dados do paciente quando fornecido (UUID real)
+  // ► PADRÃO UNIFICADO: usa resolvePatientHeader (mesma blindagem anti-NI,
+  //   fallback por prontuário, guarda de divergência de nome em leito reusado)
+  //   + resolveCurrentBedSector (leito ATUAL pós-relocação).
+  //   Campos extras (peso, ABO/RH, diagnósticos, raça) seguem sendo lidos
+  //   diretamente porque resolvePatientHeader não os cobre.
+  const buildHeaderPatch = async (): Promise<Partial<HemocomponentRequestData> | null> => {
+    if (!patientId) return null;
+    const [header, currentBed, extras] = await Promise.all([
+      resolvePatientHeader(patientId, patientName || null, currentHospital?.id || null),
+      resolveCurrentBedSector(patientId),
+      supabase
+        .from("patients")
+        .select("diagnoses, uti_weight_kg")
+        .eq("id", patientId)
+        .maybeSingle()
+        .then((r) => r.data as any),
+    ]);
+
+    let bloodType: string | null = null;
+    let race: string | null = null;
+    if (header.registryId) {
+      const { data: reg } = await supabase
+        .from("patient_registry")
+        .select("blood_type, race")
+        .eq("id", header.registryId)
+        .maybeSingle();
+      bloodType = (reg as any)?.blood_type || null;
+      race = (reg as any)?.race || null;
+    }
+
+    const sectorRaw = currentBed.sector || patientSector || null;
+    const sectorCode = sectorRaw && isKnownSectorCode(sectorRaw) ? sectorRaw : null;
+    const unitLabel = sectorRaw ? (SECTOR_DISPLAY[sectorRaw] || sectorRaw) : null;
+
+    return {
+      patient_name: header.name && header.name !== "—" ? header.name : (patientName || ""),
+      patient_social_name: header.socialName,
+      patient_birth_date: header.birthDate,
+      patient_sex: header.sex,
+      patient_blood_group: bloodType,
+      patient_record: header.prontuario,
+      patient_race: race,
+      patient_weight: (extras?.uti_weight_kg as any) ?? undefined,
+      patient_unit: unitLabel,
+      patient_bed: currentBed.bed || patientBed || null,
+      patient_diagnosis: (extras?.diagnoses as any) || null,
+      __sectorCode: sectorCode,
+    } as any;
+  };
+
+  const loadFromPatient = async (): Promise<Partial<HemocomponentRequestData> | null> => {
+    const patch = await buildHeaderPatch();
+    if (!patch) return null;
+    setData((d) => {
+      const sectorCode = (patch as any).__sectorCode as string | null;
+      const merged: HemocomponentRequestData = {
+        ...d,
+        patient_name: patch.patient_name || d.patient_name,
+        patient_social_name: patch.patient_social_name ?? d.patient_social_name,
+        patient_birth_date: patch.patient_birth_date ?? d.patient_birth_date,
+        patient_sex: patch.patient_sex ?? d.patient_sex,
+        patient_blood_group: patch.patient_blood_group ?? d.patient_blood_group,
+        patient_record: patch.patient_record ?? d.patient_record,
+        patient_race: patch.patient_race ?? d.patient_race,
+        patient_weight: patch.patient_weight ?? d.patient_weight,
+        patient_unit: patch.patient_unit ?? d.patient_unit,
+        patient_bed: patch.patient_bed ?? d.patient_bed,
+        patient_diagnosis: patch.patient_diagnosis ?? d.patient_diagnosis,
+        transfusion_sectors:
+          d.transfusion_sectors && d.transfusion_sectors.length > 0
+            ? d.transfusion_sectors
+            : sectorCode
+              ? [sectorCode]
+              : d.transfusion_sectors || [],
+      };
+      return merged;
+    });
+    return patch;
+  };
+
   useEffect(() => {
     if (!open || !patientId) return;
-    (async () => {
-      const { data: p } = await supabase
-        .from("patients")
-        .select("name, bed_number, sector, medical_record, diagnoses, patient_registry_id")
-        .eq("id", patientId)
-        .maybeSingle();
-      if (!p) return;
+    loadFromPatient();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, patientId, currentHospital?.id]);
 
-      let registry: any = null;
-      if (p.patient_registry_id) {
-        const r = await supabase
-          .from("patient_registry")
-          .select("full_name, social_name, birth_date, sex, blood_type, medical_record")
-          .eq("id", p.patient_registry_id)
-          .maybeSingle();
-        registry = r.data;
-      }
 
-      setData((d) => {
-        const sectorCode = p.sector && isKnownSectorCode(p.sector) ? p.sector : null;
-        return {
-          ...d,
-          patient_name: registry?.full_name || p.name || d.patient_name,
-          patient_social_name: registry?.social_name || null,
-          patient_birth_date: registry?.birth_date || null,
-          patient_sex: registry?.sex || null,
-          patient_blood_group: registry?.blood_type || null,
-          patient_record: registry?.medical_record || p.medical_record || null,
-          patient_unit: (p.sector ? (SECTOR_DISPLAY[p.sector] || p.sector) : d.patient_unit),
-          patient_bed: p.bed_number || d.patient_bed,
-          patient_diagnosis: p.diagnoses || null,
-          transfusion_sectors:
-            d.transfusion_sectors && d.transfusion_sectors.length > 0
-              ? d.transfusion_sectors
-              : sectorCode
-                ? [sectorCode]
-                : d.transfusion_sectors || [],
-        };
-      });
-    })();
-  }, [open, patientId]);
 
   // Pré-preenche dados do médico solicitante
   useEffect(() => {
@@ -271,9 +316,23 @@ export function HemocomponentRequestDialog({
   };
 
   const handlePrint = async () => {
+    // Re-resolve cabeçalho ANTES de imprimir (anti-race / pós-relocação).
+    // Imprime usando o patch fresco direto, sem depender do closure de `data`.
+    let freshPatch: Partial<HemocomponentRequestData> | null = null;
+    if (patientId) {
+      try { freshPatch = await loadFromPatient(); } catch {}
+    }
     await persistRequest();
-    printHemocomponentRequest({ ...data, created_at: new Date().toISOString() });
+    const merged: HemocomponentRequestData = {
+      ...data,
+      ...(freshPatch || {}),
+      created_at: new Date().toISOString(),
+    };
+    // limpa marker interno antes de imprimir
+    delete (merged as any).__sectorCode;
+    printHemocomponentRequest(merged);
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
