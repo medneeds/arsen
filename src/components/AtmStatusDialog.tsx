@@ -41,6 +41,12 @@ interface Props {
    */
   onReprintItem?: (item: AtmStatusItem) => void;
   /**
+   * Reimpressão consolidada — gera UMA Guia ATM contendo TODOS os antibióticos
+   * em curso (cada um como um bloco "ATM N"). Útil quando o paciente tem 2+
+   * antibióticos validados e a farmácia/CCIH precisa do conjunto completo.
+   */
+  onReprintAll?: (items: AtmStatusItem[]) => void;
+  /**
    * Dispara o fluxo de nova ATB. Recebe o modo escolhido e os ids selecionados
    * para suspensão (apenas em modo 'troca').
    */
@@ -68,7 +74,7 @@ function endDate(startDate?: string, plannedDays?: string): string | null {
 }
 
 export function AtmStatusDialog({
-  open, onOpenChange, activeItems, onSuspendItem, onReprintItem, onStartNew,
+  open, onOpenChange, activeItems, onSuspendItem, onReprintItem, onReprintAll, onStartNew,
 }: Props) {
   const [tab, setTab] = useState<'status' | 'nova'>('status');
   const [novaMode, setNovaMode] = useState<'acrescimo' | 'troca'>('acrescimo');
@@ -136,6 +142,22 @@ export function AtmStatusDialog({
               </div>
             ) : (
               <ScrollArea className="h-[420px] pr-2">
+                {onReprintAll && activeItems.length >= 2 && (
+                  <div className="mb-2.5 flex items-center justify-between gap-2 rounded-md border border-[hsl(217,55%,82%)]/70 bg-[hsl(217,55%,96%)]/50 dark:border-[hsl(217,70%,28%)]/40 dark:bg-[hsl(217,75%,12%)]/15 px-2.5 py-2">
+                    <div className="text-[11px] text-[hsl(217,72%,36%)] dark:text-[hsl(217,60%,60%)]">
+                      <strong>Guia consolidada:</strong> imprime uma única Guia ATM com todos os {activeItems.length} antibióticos em curso (1 bloco por item).
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onReprintAll(activeItems)}
+                      className="h-7 text-[11px] gap-1 border-[hsl(217,55%,72%)] text-[hsl(217,72%,36%)] hover:bg-[hsl(217,55%,90%)] dark:text-[hsl(217,60%,60%)] dark:hover:bg-[hsl(217,75%,12%)]/30 shrink-0"
+                      title="Gera uma única Guia ATM contendo todos os antibióticos validados em curso"
+                    >
+                      <Printer className="h-3 w-3" /> Reimprimir todas ({activeItems.length})
+                    </Button>
+                  </div>
+                )}
                 <div className="space-y-2.5">
                   {activeItems.map((it) => {
                     const dot = dayOfTherapy(it.atbStartDate);

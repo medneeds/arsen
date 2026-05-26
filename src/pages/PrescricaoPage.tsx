@@ -8837,6 +8837,31 @@ const PrescricaoPage = () => {
             toast.error("Falha ao reimprimir Guia ATM");
           }
         }}
+        onReprintAll={async (its) => {
+          try {
+            const { printAtmGuide } = await import("@/lib/printAtmGuide");
+            await printAtmGuide({
+              patient,
+              entries: its.map(it => ({
+                medication: it.name,
+                dose: it.dose,
+                route: it.route,
+                posology: it.posology,
+                startDate: it.atbStartDate,
+                plannedDuration: it.atbPlannedDays,
+                infectionSite: it.atbInfectionSite,
+              })),
+              doctorName: digitalSignature?.doctorName || '',
+              doctorCrm: digitalSignature?.crm || '',
+              hospitalName: currentHospital?.name,
+              reprint: true,
+            });
+            toast.success(`Guia ATM consolidada (${its.length} antibióticos) enviada para impressão`);
+          } catch (err) {
+            console.error(err);
+            toast.error("Falha ao reimprimir Guia ATM consolidada");
+          }
+        }}
         onStartNew={(mode, suspendIds) => {
           if (mode === 'troca' && suspendIds.length > 0) {
             setItems(prev => prev.map(it => suspendIds.includes(it.id) ? { ...it, status: 'suspended' } : it));
