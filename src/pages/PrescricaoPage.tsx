@@ -4928,6 +4928,26 @@ const PrescricaoPage = () => {
     });
   }, [registryFull, urlPatientIdForRecord]);
 
+  // Fallback defensivo: se patient.name ainda está vazio depois de registryFull
+  // ser processado, ler diretamente de patients.name (manual patients sem registry).
+  useEffect(() => {
+    if (patient.name || !urlPatientIdForRecord) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('patients')
+        .select('name')
+        .eq('id', urlPatientIdForRecord)
+        .maybeSingle();
+      if (cancelled || !(data as any)?.name?.trim()) return;
+      setPatient(prev => {
+        if (prev.name) return prev;
+        return { ...prev, name: (data as any).name.trim() };
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [patient.name, urlPatientIdForRecord]);
+
   useEffect(() => {
     if (registryProntuario && registryProntuario !== patient.record) {
       setPatient(prev => ({ ...prev, record: registryProntuario }));
