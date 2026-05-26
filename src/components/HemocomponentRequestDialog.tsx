@@ -293,7 +293,14 @@ export function HemocomponentRequestDialog({
   };
 
   const handlePrint = async () => {
+    // Garante cabeçalho fresco: se ainda não resolveu (ou para refletir
+    // relocação recente), refaz a resolução antes de imprimir.
+    if (patientId) {
+      try { await loadFromPatient(); } catch {}
+    }
     await persistRequest();
+    // Pequeno tick p/ garantir que o setState do loader chegue ao previewData
+    await new Promise((r) => setTimeout(r, 50));
     printHemocomponentRequest({ ...data, created_at: new Date().toISOString() });
   };
 
