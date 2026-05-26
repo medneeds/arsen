@@ -74,7 +74,7 @@ function endDate(startDate?: string, plannedDays?: string): string | null {
 }
 
 export function AtmStatusDialog({
-  open, onOpenChange, activeItems, onSuspendItem, onReprintItem, onStartNew,
+  open, onOpenChange, activeItems, onSuspendItem, onReprintItem, onReprintAll, onStartNew,
 }: Props) {
   const [tab, setTab] = useState<'status' | 'nova'>('status');
   const [novaMode, setNovaMode] = useState<'acrescimo' | 'troca'>('acrescimo');
