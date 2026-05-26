@@ -803,6 +803,20 @@ const RequisicaoImagensPage = () => {
                 </td>
               </tr>
               <tr>
+                <td colSpan={2}>
+                  <span className="apac-field-label">USO DE CONTRASTE</span>
+                  <div className="apac-field-value" style={{ fontWeight: "bold" }}>
+                    {useContrast ? "( X ) SIM     (   ) NÃO" : "(   ) SIM     ( X ) NÃO"}
+                  </div>
+                </td>
+                <td colSpan={2}>
+                  <span className="apac-field-label">NECESSITA SEDAÇÃO</span>
+                  <div className="apac-field-value" style={{ fontWeight: "bold" }}>
+                    {useSedation ? "( X ) SIM     (   ) NÃO" : "(   ) SIM     ( X ) NÃO"}
+                  </div>
+                </td>
+              </tr>
+              <tr>
                 <td colSpan={4}>
                   <span className="apac-field-label">37 — OBSERVAÇÕES</span>
                   <div className="apac-field-value" style={{ minHeight: "30px", whiteSpace: "pre-wrap" }}>{observations}</div>
