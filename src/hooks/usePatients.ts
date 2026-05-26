@@ -360,8 +360,33 @@ export function usePatients(department?: Department, sector?: string) {
 
       if (isExtra) {
         console.log('Hard-deleting extra bed row:', patientId, target?.bedNumber);
-        if (!target?.isVacant) {
+
+        // Blindagem: leito extra órfão (marcado como ocupado mas sem nome,
+        // sem registro de paciente, sem prontuário e sem encounters vinculados)
+        // pode ser excluído diretamente — é resíduo de criação incompleta.
+        const looksOrphan =
+          !target?.name?.trim() &&
+          !target?.patientRegistryId &&
+          !target?.medicalRecord?.trim();
+
+        if (!target?.isVacant && !looksOrphan) {
           throw new Error('Leito extra ocupado deve ser desalocado antes da exclusão.');
+        }
+
+        if (!target?.isVacant && looksOrphan) {
+          // Confirma no banco que não há encounters antes de prosseguir
+          const { count: encCount, error: encErr } = await supabase
+            .from('patient_encounters')
+            .select('id', { count: 'exact', head: true })
+            .eq('patient_id', patientId);
+          if (encErr) {
+            console.error('Erro ao checar encounters de leito extra órfão:', encErr);
+            throw encErr;
+          }
+          if ((encCount ?? 0) > 0) {
+            throw new Error('Leito extra ocupado deve ser desalocado antes da exclusão.');
+          }
+          console.log('Leito extra órfão detectado — prosseguindo com exclusão direta.');
         }
 
         const archivedBedNumber = `ARCHIVED-EXTRA-${target.sector}-${Date.now()}`;
