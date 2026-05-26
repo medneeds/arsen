@@ -251,7 +251,6 @@ export async function printExtraPrescription(opts: ExtraPrintOptions) {
               ${it.doubleCheck ? '<span style="display:inline-block;background:#0f172a;color:#fff;font-size:5.5pt;font-weight:800;padding:0.5pt 3pt;border-radius:2pt;margin-right:4pt;letter-spacing:0.3pt">2x CHECK</span>' : ''}
               <span style="font-weight:800">${escape(it.name)}</span>
               ${it.presentation && it.presentation !== '-' ? `<span style="color:#334155;font-weight:500;font-size:7.5pt"> (${escape(it.presentation)})</span>` : ''}
-              ${it.quantity && it.quantityUnit ? `<span style="color:#0f172a;font-weight:700;font-size:7.5pt"> — ${escape(it.quantity)} ${escape(it.quantityUnit)}</span>` : ''}
               <span style="background:#fff7ed;color:#9a3412;font-size:5.5pt;font-weight:800;padding:0.5pt 4pt;border-radius:2pt;margin-left:4pt;border:0.5pt solid #fdba74;letter-spacing:0.3pt">EXTRA</span>
             </div>
             ${headerLine ? `<div style="font-size:7.5pt;color:#1e293b;line-height:1.35;margin-top:2pt;font-weight:600">${headerLine}${flagsChip}</div>` : ''}
