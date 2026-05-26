@@ -364,17 +364,25 @@ export function usePatients(department?: Department, sector?: string) {
         // Blindagem: leito extra órfão (marcado como ocupado mas sem nome,
         // sem registro de paciente, sem prontuário e sem encounters vinculados)
         // pode ser excluído diretamente — é resíduo de criação incompleta.
-        const looksOrphan =
-          !target?.name?.trim() &&
-          !target?.patientRegistryId &&
-          !target?.medicalRecord?.trim();
+        let looksOrphan = false;
+        if (!target?.isVacant && !target?.name?.trim()) {
+          const { data: dbRow, error: dbErr } = await supabase
+            .from('patients')
+            .select('patient_registry_id, medical_record')
+            .eq('id', patientId)
+            .maybeSingle();
+          if (dbErr) {
+            console.error('Erro ao checar leito extra órfão:', dbErr);
+            throw dbErr;
+          }
+          looksOrphan = !dbRow?.patient_registry_id && !dbRow?.medical_record?.trim();
+        }
 
         if (!target?.isVacant && !looksOrphan) {
           throw new Error('Leito extra ocupado deve ser desalocado antes da exclusão.');
         }
 
         if (!target?.isVacant && looksOrphan) {
-          // Confirma no banco que não há encounters antes de prosseguir
           const { count: encCount, error: encErr } = await supabase
             .from('patient_encounters')
             .select('id', { count: 'exact', head: true })
