@@ -316,16 +316,23 @@ export function HemocomponentRequestDialog({
   };
 
   const handlePrint = async () => {
-    // Garante cabeçalho fresco: se ainda não resolveu (ou para refletir
-    // relocação recente), refaz a resolução antes de imprimir.
+    // Re-resolve cabeçalho ANTES de imprimir (anti-race / pós-relocação).
+    // Imprime usando o patch fresco direto, sem depender do closure de `data`.
+    let freshPatch: Partial<HemocomponentRequestData> | null = null;
     if (patientId) {
-      try { await loadFromPatient(); } catch {}
+      try { freshPatch = await loadFromPatient(); } catch {}
     }
     await persistRequest();
-    // Pequeno tick p/ garantir que o setState do loader chegue ao previewData
-    await new Promise((r) => setTimeout(r, 50));
-    printHemocomponentRequest({ ...data, created_at: new Date().toISOString() });
+    const merged: HemocomponentRequestData = {
+      ...data,
+      ...(freshPatch || {}),
+      created_at: new Date().toISOString(),
+    };
+    // limpa marker interno antes de imprimir
+    delete (merged as any).__sectorCode;
+    printHemocomponentRequest(merged);
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
