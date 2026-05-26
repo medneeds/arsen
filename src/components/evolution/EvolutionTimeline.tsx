@@ -466,7 +466,6 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           let currentBed = evo.patient_bed || undefined;
                           let currentSector = evo.patient_sector || undefined;
                           if (patientId) {
-                            const { supabase } = await import("@/integrations/supabase/client");
                             const { data: pRow } = await supabase
                               .from("patients")
                               .select("bed_number, sector")
