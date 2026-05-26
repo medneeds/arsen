@@ -360,22 +360,57 @@ export function usePatients(department?: Department, sector?: string) {
 
       if (isExtra) {
         console.log('Hard-deleting extra bed row:', patientId, target?.bedNumber);
-        if (!target?.isVacant) {
+
+        // Blindagem: leito extra órfão (marcado como ocupado mas sem nome,
+        // sem registro de paciente, sem prontuário e sem encounters vinculados)
+        // pode ser excluído diretamente — é resíduo de criação incompleta.
+        let looksOrphan = false;
+        if (!target?.isVacant && !target?.name?.trim()) {
+          const { data: dbRow, error: dbErr } = await supabase
+            .from('patients')
+            .select('patient_registry_id, medical_record')
+            .eq('id', patientId)
+            .maybeSingle();
+          if (dbErr) {
+            console.error('Erro ao checar leito extra órfão:', dbErr);
+            throw dbErr;
+          }
+          looksOrphan = !dbRow?.patient_registry_id && !dbRow?.medical_record?.trim();
+        }
+
+        if (!target?.isVacant && !looksOrphan) {
           throw new Error('Leito extra ocupado deve ser desalocado antes da exclusão.');
         }
 
+        if (!target?.isVacant && looksOrphan) {
+          const { count: encCount, error: encErr } = await supabase
+            .from('patient_encounters')
+            .select('id', { count: 'exact', head: true })
+            .eq('patient_id', patientId);
+          if (encErr) {
+            console.error('Erro ao checar encounters de leito extra órfão:', encErr);
+            throw encErr;
+          }
+          if ((encCount ?? 0) > 0) {
+            throw new Error('Leito extra ocupado deve ser desalocado antes da exclusão.');
+          }
+          console.log('Leito extra órfão detectado — prosseguindo com exclusão direta.');
+        }
+
         const archivedBedNumber = `ARCHIVED-EXTRA-${target.sector}-${Date.now()}`;
-        const { data: deletedRows, error } = await supabase
+        const baseDelete = supabase
           .from('patients')
           .delete()
           .eq('id', patientId)
-          .eq('is_vacant', true)
-          .ilike('bed_number', 'EXTRA%')
-          .select('id');
+          .ilike('bed_number', 'EXTRA%');
+        // Se for órfão, não exigimos is_vacant=true no banco
+        const { data: deletedRows, error } = await (looksOrphan
+          ? baseDelete.select('id')
+          : baseDelete.eq('is_vacant', true).select('id'));
 
         if (error || !deletedRows?.length) {
           console.error('Supabase delete extra bed error:', error);
-          const { error: archiveError } = await supabase
+          const archiveBase = supabase
             .from('patients')
             .update({
               bed_number: archivedBedNumber,
@@ -384,8 +419,8 @@ export function usePatients(department?: Department, sector?: string) {
               updated_at: new Date().toISOString(),
             })
             .eq('id', patientId)
-            .eq('is_vacant', true)
             .ilike('bed_number', 'EXTRA%');
+          const { error: archiveError } = await (looksOrphan ? archiveBase : archiveBase.eq('is_vacant', true));
 
           if (archiveError) {
             console.error('Supabase archive extra bed fallback error:', archiveError);
