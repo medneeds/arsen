@@ -359,7 +359,21 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         throw new Error(`Leito ${finalBed} já está ocupado. Atualize o mapa e selecione outro leito.`);
       }
 
+      // 🔒 ARQUIVAMENTO DEFENSIVO: antes de admitir novo paciente, garantir que
+      // dados do ocupante anterior do leito estejam arquivados e encounter fechado.
+      // Seguro mesmo para leitos vagos (archive em leito limpo não faz nada).
+      if (existingBedRow?.id) {
+        const { error: defArchiveErr } = await supabase.rpc('archive_patient_bed_data', {
+          p_patient_id: existingBedRow.id,
+          p_reason: 'defensive_pre_admission_cleanup',
+        });
+        if (defArchiveErr) {
+          console.warn('[admit] arquivamento defensivo falhou (não-bloqueante):', defArchiveErr);
+        }
+      }
+
       const patientPayload = {
+        // ── Identificação do novo paciente ──────────────────────────────────
         name: fullData.patient_name,
         age: age ? `${age}a` : null,
         bed_number: finalBed,
@@ -368,26 +382,59 @@ export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess
         hospital_unit_id: currentHospital.id,
         state_id: currentState.id,
         created_by: user?.id,
+        medical_record: (fullData as any).medical_record ?? null,
+        patient_registry_id: (fullData as any).patient_registry_id ?? null,
+
+        // ── Admissão ────────────────────────────────────────────────────────
         admission_date: (admissionDate ?? new Date()).toISOString(),
-        // Sincroniza automaticamente a data de admissão exibida no card (DD/MM/AAAA)
         uti_admission_date: (admissionDate ?? new Date()).toISOString(),
+        admission_status: 'pre_admitido',
+        admitted_at: null,
         is_vacant: false,
+
+        // ── Dados clínicos iniciais (do formulário de pré-admissão) ─────────
         clinical_status: fullData.risk_classification === "vermelho" ? "grave" : null,
         diagnoses: fullData.chief_complaint || null,
         medical_history: fullData.allergies ? `Alergias: ${fullData.allergies}` : null,
         pendencies: admissionNotes || null,
-        medical_record: (fullData as any).medical_record ?? null,
-        patient_registry_id: (fullData as any).patient_registry_id ?? null,
-        // Previsão de alta: somente a data, sem sufixo "(N dias)"
         uti_discharge_prediction: noDischargePrediction
           ? "Sem previsão"
           : dischargeDate
           ? format(dischargeDate, "dd/MM/yyyy")
           : null,
-        // Fluxo Pré-admissão: paciente fica em pre_admitido até a admissão hospitalar
-        // ser concluída pelo Painel Clínico (formulário de admissão).
-        admission_status: 'pre_admitido',
-        admitted_at: null,
+        uti_allergies: (fullData as any).allergies || null,
+        uti_weight_kg: (fullData as any).weight_kg ?? null,
+        uti_origin_sector: (fullData as any).origin_sector || null,
+        uti_admission_reason: fullData.chief_complaint || null,
+
+        // ── RESET COMPLETO: campos clínicos do ocupante anterior ─────────────
+        // Todos esses campos DEVEM ser null para um paciente recém-admitido.
+        admission_history: null,
+        allocation_status: null,
+        highlighted_conducts: null,
+        highlighted_diagnoses: null,
+        highlighted_medical_history: null,
+        highlighted_pendencies: null,
+        hospital_discharge_prediction: null,
+        internment_notes: null,
+        internment_status: null,
+        is_door_patient: false,
+        is_palliative: false,
+        isolation_precautions: null,
+        medical_responsibility: null,
+        psm_status: null,
+        relevant_exams: null,
+        saps_acknowledged_at: null,
+        saps_acknowledged_by: null,
+        saps_completed_at: null,
+        saps_pending: false,
+        saps_pending_since: null,
+        schedule: null,
+        uti_cultures_antibiotics: null,
+        uti_current_status: null,
+        uti_daily_conducts: null,
+        uti_devices: null,
+        uti_specialties: null,
       };
 
       let insertedPatient: { id: string } | null = null;
