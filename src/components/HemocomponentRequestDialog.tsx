@@ -105,8 +105,8 @@ export function HemocomponentRequestDialog({
   //   + resolveCurrentBedSector (leito ATUAL pós-relocação).
   //   Campos extras (peso, ABO/RH, diagnósticos, raça) seguem sendo lidos
   //   diretamente porque resolvePatientHeader não os cobre.
-  const loadFromPatient = async (): Promise<void> => {
-    if (!patientId) return;
+  const buildHeaderPatch = async (): Promise<Partial<HemocomponentRequestData> | null> => {
+    if (!patientId) return null;
     const [header, currentBed, extras] = await Promise.all([
       resolvePatientHeader(patientId, patientName || null, currentHospital?.id || null),
       resolveCurrentBedSector(patientId),
@@ -118,7 +118,6 @@ export function HemocomponentRequestDialog({
         .then((r) => r.data as any),
     ]);
 
-    // ABO/RH e raça vivem no registry — busca pelo registryId já resolvido
     let bloodType: string | null = null;
     let race: string | null = null;
     if (header.registryId) {
@@ -131,23 +130,44 @@ export function HemocomponentRequestDialog({
       race = (reg as any)?.race || null;
     }
 
+    const sectorRaw = currentBed.sector || patientSector || null;
+    const sectorCode = sectorRaw && isKnownSectorCode(sectorRaw) ? sectorRaw : null;
+    const unitLabel = sectorRaw ? (SECTOR_DISPLAY[sectorRaw] || sectorRaw) : null;
+
+    return {
+      patient_name: header.name && header.name !== "—" ? header.name : (patientName || ""),
+      patient_social_name: header.socialName,
+      patient_birth_date: header.birthDate,
+      patient_sex: header.sex,
+      patient_blood_group: bloodType,
+      patient_record: header.prontuario,
+      patient_race: race,
+      patient_weight: (extras?.uti_weight_kg as any) ?? undefined,
+      patient_unit: unitLabel,
+      patient_bed: currentBed.bed || patientBed || null,
+      patient_diagnosis: (extras?.diagnoses as any) || null,
+      __sectorCode: sectorCode,
+    } as any;
+  };
+
+  const loadFromPatient = async (): Promise<Partial<HemocomponentRequestData> | null> => {
+    const patch = await buildHeaderPatch();
+    if (!patch) return null;
     setData((d) => {
-      const sectorRaw = currentBed.sector || patientSector || null;
-      const sectorCode = sectorRaw && isKnownSectorCode(sectorRaw) ? sectorRaw : null;
-      const unitLabel = sectorRaw ? (SECTOR_DISPLAY[sectorRaw] || sectorRaw) : d.patient_unit;
-      return {
+      const sectorCode = (patch as any).__sectorCode as string | null;
+      const merged: HemocomponentRequestData = {
         ...d,
-        patient_name: header.name && header.name !== "—" ? header.name : (d.patient_name || patientName || ""),
-        patient_social_name: header.socialName,
-        patient_birth_date: header.birthDate,
-        patient_sex: header.sex,
-        patient_blood_group: bloodType || d.patient_blood_group || null,
-        patient_record: header.prontuario || d.patient_record || null,
-        patient_race: race || d.patient_race || null,
-        patient_weight: (extras?.uti_weight_kg as any) ?? d.patient_weight,
-        patient_unit: unitLabel,
-        patient_bed: currentBed.bed || patientBed || d.patient_bed,
-        patient_diagnosis: (extras?.diagnoses as any) || d.patient_diagnosis || null,
+        patient_name: patch.patient_name || d.patient_name,
+        patient_social_name: patch.patient_social_name ?? d.patient_social_name,
+        patient_birth_date: patch.patient_birth_date ?? d.patient_birth_date,
+        patient_sex: patch.patient_sex ?? d.patient_sex,
+        patient_blood_group: patch.patient_blood_group ?? d.patient_blood_group,
+        patient_record: patch.patient_record ?? d.patient_record,
+        patient_race: patch.patient_race ?? d.patient_race,
+        patient_weight: patch.patient_weight ?? d.patient_weight,
+        patient_unit: patch.patient_unit ?? d.patient_unit,
+        patient_bed: patch.patient_bed ?? d.patient_bed,
+        patient_diagnosis: patch.patient_diagnosis ?? d.patient_diagnosis,
         transfusion_sectors:
           d.transfusion_sectors && d.transfusion_sectors.length > 0
             ? d.transfusion_sectors
@@ -155,7 +175,9 @@ export function HemocomponentRequestDialog({
               ? [sectorCode]
               : d.transfusion_sectors || [],
       };
+      return merged;
     });
+    return patch;
   };
 
   useEffect(() => {
@@ -163,6 +185,7 @@ export function HemocomponentRequestDialog({
     loadFromPatient();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, patientId, currentHospital?.id]);
+
 
 
   // Pré-preenche dados do médico solicitante
