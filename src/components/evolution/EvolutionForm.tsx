@@ -186,9 +186,16 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                   return;
                 }
                 try {
+                  // Fallback: garantir nome antes de resolver header
+                  let fallbackName: string | null = evo.patient_name || null;
+                  if ((!fallbackName || !fallbackName.trim()) && patientId) {
+                    const { data: pRow } = await supabase
+                      .from("patients").select("name").eq("id", patientId).maybeSingle();
+                    if ((pRow as any)?.name?.trim()) fallbackName = (pRow as any).name.trim();
+                  }
                   const resolved = await resolvePatientHeader(
                     patientId || null,
-                    evo.patient_name || null,
+                    fallbackName,
                     hospitalId,
                     (evo as any).patient_registry_id || null,
                   );
