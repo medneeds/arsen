@@ -100,49 +100,70 @@ export function HemocomponentRequestDialog({
   }, [open, patientName, patientBed, patientSector]);
 
   // Pré-carrega dados do paciente quando fornecido (UUID real)
+  // ► PADRÃO UNIFICADO: usa resolvePatientHeader (mesma blindagem anti-NI,
+  //   fallback por prontuário, guarda de divergência de nome em leito reusado)
+  //   + resolveCurrentBedSector (leito ATUAL pós-relocação).
+  //   Campos extras (peso, ABO/RH, diagnósticos, raça) seguem sendo lidos
+  //   diretamente porque resolvePatientHeader não os cobre.
+  const loadFromPatient = async (): Promise<void> => {
+    if (!patientId) return;
+    const [header, currentBed, extras] = await Promise.all([
+      resolvePatientHeader(patientId, patientName || null, currentHospital?.id || null),
+      resolveCurrentBedSector(patientId),
+      supabase
+        .from("patients")
+        .select("diagnoses, uti_weight_kg")
+        .eq("id", patientId)
+        .maybeSingle()
+        .then((r) => r.data as any),
+    ]);
+
+    // ABO/RH e raça vivem no registry — busca pelo registryId já resolvido
+    let bloodType: string | null = null;
+    let race: string | null = null;
+    if (header.registryId) {
+      const { data: reg } = await supabase
+        .from("patient_registry")
+        .select("blood_type, race")
+        .eq("id", header.registryId)
+        .maybeSingle();
+      bloodType = (reg as any)?.blood_type || null;
+      race = (reg as any)?.race || null;
+    }
+
+    setData((d) => {
+      const sectorRaw = currentBed.sector || patientSector || null;
+      const sectorCode = sectorRaw && isKnownSectorCode(sectorRaw) ? sectorRaw : null;
+      const unitLabel = sectorRaw ? (SECTOR_DISPLAY[sectorRaw] || sectorRaw) : d.patient_unit;
+      return {
+        ...d,
+        patient_name: header.name && header.name !== "—" ? header.name : (d.patient_name || patientName || ""),
+        patient_social_name: header.socialName,
+        patient_birth_date: header.birthDate,
+        patient_sex: header.sex,
+        patient_blood_group: bloodType || d.patient_blood_group || null,
+        patient_record: header.prontuario || d.patient_record || null,
+        patient_race: race || d.patient_race || null,
+        patient_weight: (extras?.uti_weight_kg as any) ?? d.patient_weight,
+        patient_unit: unitLabel,
+        patient_bed: currentBed.bed || patientBed || d.patient_bed,
+        patient_diagnosis: (extras?.diagnoses as any) || d.patient_diagnosis || null,
+        transfusion_sectors:
+          d.transfusion_sectors && d.transfusion_sectors.length > 0
+            ? d.transfusion_sectors
+            : sectorCode
+              ? [sectorCode]
+              : d.transfusion_sectors || [],
+      };
+    });
+  };
+
   useEffect(() => {
     if (!open || !patientId) return;
-    (async () => {
-      const { data: p } = await supabase
-        .from("patients")
-        .select("name, bed_number, sector, medical_record, diagnoses, patient_registry_id")
-        .eq("id", patientId)
-        .maybeSingle();
-      if (!p) return;
+    loadFromPatient();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, patientId, currentHospital?.id]);
 
-      let registry: any = null;
-      if (p.patient_registry_id) {
-        const r = await supabase
-          .from("patient_registry")
-          .select("full_name, social_name, birth_date, sex, blood_type, medical_record")
-          .eq("id", p.patient_registry_id)
-          .maybeSingle();
-        registry = r.data;
-      }
-
-      setData((d) => {
-        const sectorCode = p.sector && isKnownSectorCode(p.sector) ? p.sector : null;
-        return {
-          ...d,
-          patient_name: registry?.full_name || p.name || d.patient_name,
-          patient_social_name: registry?.social_name || null,
-          patient_birth_date: registry?.birth_date || null,
-          patient_sex: registry?.sex || null,
-          patient_blood_group: registry?.blood_type || null,
-          patient_record: registry?.medical_record || p.medical_record || null,
-          patient_unit: (p.sector ? (SECTOR_DISPLAY[p.sector] || p.sector) : d.patient_unit),
-          patient_bed: p.bed_number || d.patient_bed,
-          patient_diagnosis: p.diagnoses || null,
-          transfusion_sectors:
-            d.transfusion_sectors && d.transfusion_sectors.length > 0
-              ? d.transfusion_sectors
-              : sectorCode
-                ? [sectorCode]
-                : d.transfusion_sectors || [],
-        };
-      });
-    })();
-  }, [open, patientId]);
 
   // Pré-preenche dados do médico solicitante
   useEffect(() => {
