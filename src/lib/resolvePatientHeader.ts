@@ -186,6 +186,34 @@ export async function resolvePatientHeader(
   }
 
 
+  // 1c-bis) Último recurso: temos patientId mas nenhum registry foi encontrado.
+  // Busca pelo nome atual de patients.name na mesma unidade (manual patients
+  // cujo patient_registry_id foi zerado). Aplica guarda anti-NI + match exato.
+  if (!registryRow && patientRowName && patientRowName.trim().length > 3 && hospitalUnitId) {
+    const candidateForceSearch = patientRowName.trim();
+    const niCheck = detectUnidentified(candidateForceSearch);
+    if (!niCheck.isUnidentified) {
+      const { data: regByName } = await supabase
+        .from("patient_registry")
+        .select("*")
+        .ilike("full_name", candidateForceSearch)
+        .eq("hospital_unit_id", hospitalUnitId)
+        .eq("is_unidentified", false)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (regByName) {
+        const norm = (s: string) =>
+          s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+        const nameNorm = norm(candidateForceSearch);
+        const regNorm = norm((regByName as any).full_name || "");
+        if (nameNorm && regNorm && nameNorm === regNorm) {
+          registryRow = regByName;
+        }
+      }
+    }
+  }
+
   // 1d) Por nome SOMENTE quando não temos patientId — e nunca para NI
   const candidateName = (patientRowName || fallbackName || "").trim();
   if (!registryRow && !patientId && candidateName && hospitalUnitId) {

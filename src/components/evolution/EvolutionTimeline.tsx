@@ -447,9 +447,17 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         // em evo.patient_name (que pode ser de outro paciente
                         // após realocações ou reuso de leito de NI).
                         try {
+                          const { supabase } = await import("@/integrations/supabase/client");
+                          // Fallback: garantir nome antes de resolver header
+                          let fallbackName: string | null = evo.patient_name || null;
+                          if ((!fallbackName || !fallbackName.trim()) && patientId) {
+                            const { data: pRow } = await supabase
+                              .from("patients").select("name").eq("id", patientId).maybeSingle();
+                            if ((pRow as any)?.name?.trim()) fallbackName = (pRow as any).name.trim();
+                          }
                           const resolved = await resolvePatientHeader(
                             patientId || null,
-                            evo.patient_name || null,
+                            fallbackName,
                             currentHospital?.id || null,
                             (evo as any).patient_registry_id || null,
                           );
@@ -458,7 +466,6 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                           let currentBed = evo.patient_bed || undefined;
                           let currentSector = evo.patient_sector || undefined;
                           if (patientId) {
-                            const { supabase } = await import("@/integrations/supabase/client");
                             const { data: pRow } = await supabase
                               .from("patients")
                               .select("bed_number, sector")

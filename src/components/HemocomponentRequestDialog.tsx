@@ -107,8 +107,20 @@ export function HemocomponentRequestDialog({
   //   diretamente porque resolvePatientHeader não os cobre.
   const buildHeaderPatch = async (): Promise<Partial<HemocomponentRequestData> | null> => {
     if (!patientId) return null;
+
+    // Garantir que temos o nome mais atualizado antes de resolver o header
+    let resolvedFallbackName: string | null = patientName || null;
+    if (!resolvedFallbackName && patientId) {
+      const { data: patRow } = await supabase
+        .from("patients")
+        .select("name")
+        .eq("id", patientId)
+        .maybeSingle();
+      if ((patRow as any)?.name?.trim()) resolvedFallbackName = (patRow as any).name.trim();
+    }
+
     const [header, currentBed, extras] = await Promise.all([
-      resolvePatientHeader(patientId, patientName || null, currentHospital?.id || null),
+      resolvePatientHeader(patientId, resolvedFallbackName, currentHospital?.id || null),
       resolveCurrentBedSector(patientId),
       supabase
         .from("patients")
