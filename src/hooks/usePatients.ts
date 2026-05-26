@@ -398,17 +398,19 @@ export function usePatients(department?: Department, sector?: string) {
         }
 
         const archivedBedNumber = `ARCHIVED-EXTRA-${target.sector}-${Date.now()}`;
-        const { data: deletedRows, error } = await supabase
+        const baseDelete = supabase
           .from('patients')
           .delete()
           .eq('id', patientId)
-          .eq('is_vacant', true)
-          .ilike('bed_number', 'EXTRA%')
-          .select('id');
+          .ilike('bed_number', 'EXTRA%');
+        // Se for órfão, não exigimos is_vacant=true no banco
+        const { data: deletedRows, error } = await (looksOrphan
+          ? baseDelete.select('id')
+          : baseDelete.eq('is_vacant', true).select('id'));
 
         if (error || !deletedRows?.length) {
           console.error('Supabase delete extra bed error:', error);
-          const { error: archiveError } = await supabase
+          const archiveBase = supabase
             .from('patients')
             .update({
               bed_number: archivedBedNumber,
@@ -417,8 +419,8 @@ export function usePatients(department?: Department, sector?: string) {
               updated_at: new Date().toISOString(),
             })
             .eq('id', patientId)
-            .eq('is_vacant', true)
             .ilike('bed_number', 'EXTRA%');
+          const { error: archiveError } = await (looksOrphan ? archiveBase : archiveBase.eq('is_vacant', true));
 
           if (archiveError) {
             console.error('Supabase archive extra bed fallback error:', archiveError);
