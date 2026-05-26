@@ -122,6 +122,8 @@ const RequisicaoImagensPage = () => {
   const [cidSecondary, setCidSecondary] = useState("");
   const [cidAssociated, setCidAssociated] = useState("");
   const [observations, setObservations] = useState("");
+  const [useContrast, setUseContrast] = useState(false);
+  const [useSedation, setUseSedation] = useState(false);
 
   // Load doctor profile
   useEffect(() => {
