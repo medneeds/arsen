@@ -334,6 +334,22 @@ export function PatientMovementDialog({
         if (trErr) throw trErr;
       }
 
+      // Sinalização de saída sem documento clínico (EVASÃO / ALTA A PEDIDO):
+      // marca o paciente como 'alta_dada' para que (1) a tarja apareça no mapa,
+      // (2) o BedReleasePreAdmissionDialog reconheça como pós-alta e libere o
+      // fluxo normal de desalocação, em vez de cair no caminho "excepcional"
+      // que bloqueia o usuário. Mantém o leito ocupado até a desalocação física.
+      if (
+        (subtypeDef.id === "EVASAO" || subtypeDef.id === "ALTA_PEDIDO")
+        && (patient as any).id
+      ) {
+        const { error: evErr } = await supabase
+          .from("patients")
+          .update({ admission_status: "alta_dada", updated_at: new Date().toISOString() })
+          .eq("id", (patient as any).id);
+        if (evErr) throw evErr;
+      }
+
       toast({
         title: `${subtypeDef.label} registrado(a)`,
         description: requiredDocType
