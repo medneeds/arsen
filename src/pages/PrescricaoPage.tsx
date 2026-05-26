@@ -3337,9 +3337,6 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
           {item.presentation && item.presentation !== '-' && (
             <span style={{ fontWeight: 400, color: '#64748b', fontSize: '7.5pt', textTransform: 'none' }}> ({formatPresentation(item.presentation)})</span>
           )}
-          {item.quantity && item.quantityUnit && (
-            <span style={{ fontWeight: 600, color: '#334155', fontSize: '7.5pt' }}> — {item.quantity} {item.quantityUnit}</span>
-          )}
         </div>
         {!isNutrition && (
           <div style={{ fontSize: '7.5pt', color: '#334155', lineHeight: '1.3', marginTop: '1px' }}>
@@ -8665,12 +8662,15 @@ const PrescricaoPage = () => {
                         {item.presentation && item.presentation !== '-' && (
                           <span className="text-muted-foreground ml-1">({item.presentation})</span>
                         )}
-                        <span className="text-muted-foreground ml-1">
-                          — {item.quantity || '1'} {item.quantityUnit || 'un'}
-                          {item.dose && item.dose !== '-' ? ` · ${item.dose}` : ''}
-                          {item.route && item.route !== '-' ? ` · ${item.route}` : ''}
-                          {item.posology && item.posology !== '-' ? ` · ${item.posology}` : ''}
-                        </span>
+                        {(item.dose && item.dose !== '-') || (item.route && item.route !== '-') || (item.posology && item.posology !== '-') ? (
+                          <span className="text-muted-foreground ml-1">
+                            {[
+                              item.dose && item.dose !== '-' ? item.dose : null,
+                              item.route && item.route !== '-' ? item.route : null,
+                              item.posology && item.posology !== '-' ? item.posology : null,
+                            ].filter(Boolean).join(' · ')}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   ))}
@@ -9682,9 +9682,6 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                   <span style={{ fontWeight: 800 }}>{item.name}</span>
                   {item.presentation && item.presentation !== '-' && (
                     <span style={{ fontWeight: 500, color: '#334155', fontSize: '7.5pt' }}> ({abbrevPresentation(item.presentation)})</span>
-                  )}
-                  {item.quantity && item.quantityUnit && (
-                    <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '7.5pt' }}> — {item.quantity} {item.quantityUnit}</span>
                   )}
                 </div>
                 {item.category !== 'nutrition' && (
