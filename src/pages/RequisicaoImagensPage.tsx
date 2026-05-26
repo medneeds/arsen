@@ -568,6 +568,35 @@ const RequisicaoImagensPage = () => {
               </CardContent>
             </Card>
 
+            {/* Contrast & Sedation */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Requisitos do Exame</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <Label className="text-sm font-medium">Uso de contraste</Label>
+                    <p className="text-xs text-muted-foreground">Marque se o procedimento exige meio de contraste</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{useContrast ? "SIM" : "NÃO"}</span>
+                    <Switch checked={useContrast} onCheckedChange={setUseContrast} />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <Label className="text-sm font-medium">Necessita sedação</Label>
+                    <p className="text-xs text-muted-foreground">Marque se o paciente requer sedação para o exame</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{useSedation ? "SIM" : "NÃO"}</span>
+                    <Switch checked={useSedation} onCheckedChange={setUseSedation} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Doctor info */}
             <Card>
               <CardHeader className="pb-2">
