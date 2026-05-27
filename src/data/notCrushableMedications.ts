@@ -47,13 +47,31 @@ export const NOT_CRUSHABLE: NotCrushableEntry[] = [
   { match: 'enterica', reason: 'Revestimento entérico — proteção contra suco gástrico será destruída.', kind: 'reves_enterico' },
   { match: 'enterico', reason: 'Revestimento entérico — não triturar.', kind: 'reves_enterico' },
   { match: 'aas 100', reason: 'AAS revestido — risco de irritação gástrica se triturado.', kind: 'reves_enterico', alternative: 'AAS macerável ou dispersível.' },
-  { match: 'omeprazol', reason: 'Cápsula com microgrânulos gastrorresistentes. NÃO triturar; pode abrir cápsula e dispersar grânulos em suco de laranja/maçã (pH ácido) sem mastigar.', kind: 'capsula_gel', alternative: 'Esomeprazol/Pantoprazol IV se via enteral inviável.' },
+  { match: 'omeprazol', reason: 'Cápsula com microgrânulos gastrorresistentes. NÃO triturar; pode abrir cápsula e dispersar grânulos em suco de laranja/maçã (pH ácido) sem mastigar.', kind: 'capsula_gel', alternative: 'Esomeprazol/Pantoprazol IV se via enteral inviável.',
+    technique: {
+      label: 'Abrir cápsula e dispersar microgrânulos',
+      vehicle: 'suco_laranja',
+      instructionTemplate: 'Abrir a cápsula, dispersar os microgrânulos em {volume} mL de suco de laranja ou maçã (pH ácido) SEM triturar/mastigar os grânulos. Administrar imediatamente pela sonda. Lavar sonda com {preLav} mL de água ANTES e {posLav} mL APÓS. NÃO misturar com outras medicações.',
+    },
+  },
   { match: 'pantoprazol', reason: 'Comprimido gastrorresistente. NÃO triturar.', kind: 'reves_enterico', alternative: 'Pantoprazol IV.' },
-  { match: 'lansoprazol', reason: 'Cápsula com microgrânulos gastrorresistentes — abrir e dispersar sem triturar grânulos.', kind: 'capsula_gel' },
+  { match: 'lansoprazol', reason: 'Cápsula com microgrânulos gastrorresistentes — abrir e dispersar sem triturar grânulos.', kind: 'capsula_gel',
+    technique: {
+      label: 'Abrir cápsula e dispersar microgrânulos',
+      vehicle: 'suco_laranja',
+      instructionTemplate: 'Abrir a cápsula, dispersar os microgrânulos em {volume} mL de suco de laranja ou maçã SEM triturar os grânulos. Administrar imediatamente pela sonda. Lavar sonda com {preLav} mL de água ANTES e {posLav} mL APÓS. NÃO misturar com outras medicações.',
+    },
+  },
   { match: 'esomeprazol', reason: 'Comprimido gastrorresistente — não triturar.', kind: 'reves_enterico' },
 
   // Cápsula gelatinosa líquida
-  { match: 'nimodipino cap', reason: 'Cápsula líquida — aspirar conteúdo com seringa e administrar.', kind: 'capsula_gel' },
+  { match: 'nimodipino cap', reason: 'Cápsula líquida — aspirar conteúdo com seringa e administrar.', kind: 'capsula_gel',
+    technique: {
+      label: 'Aspirar conteúdo líquido da cápsula',
+      vehicle: 'agua',
+      instructionTemplate: 'Perfurar a cápsula com agulha, aspirar todo o conteúdo líquido com seringa, diluir em {volume} mL de água destilada e administrar pela sonda. Lavar sonda com {preLav} mL ANTES e {posLav} mL APÓS. NÃO misturar com outras medicações.',
+    },
+  },
   { match: 'voriconazol', reason: 'Comprimido revestido — não triturar. Existe suspensão oral.', kind: 'reves_enterico', alternative: 'Voriconazol suspensão oral 40 mg/mL.' },
   { match: 'isotretinoina', reason: 'Cápsula gelatinosa fotossensível — não abrir.', kind: 'capsula_gel' },
 
