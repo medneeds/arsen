@@ -8452,19 +8452,38 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== PRINT PORTAL ===== */}
-      {showPrintPortal && createPortal(
-        <div id="prescription-print-root" style={{ display: 'none' }}>
-          <PrintablePrescription
-            patient={patient}
-            items={items}
-            itemsByCategory={itemsByCategory}
-            digitalSignature={digitalSignature}
-            prescriptionDate={prescriptionDate}
-            hospitalName={currentHospital?.name || 'HOSPITAL MUNICIPAL'}
-          />
-        </div>,
-        document.body
-      )}
+      {showPrintPortal && (() => {
+        // Filtra itens quando há uma seleção parcial (botão "Imprimir selecionados")
+        const printItems = printSelectionIds
+          ? items.filter(i => printSelectionIds.has(i.id))
+          : items;
+        const printItemsByCategory = printSelectionIds
+          ? (() => {
+              const map: Record<PrescriptionCategory, PrescriptionItem[]> = {
+                nutrition: [], hydration: [], replacement: [], medication: [], antimicrobial: [],
+                high_alert: [], inhalation: [], hemotherapy: [], care: [], nonstandard: [],
+              };
+              printItems.forEach(item => {
+                const cat = item.category in map ? item.category : 'nonstandard' as PrescriptionCategory;
+                map[cat].push(item);
+              });
+              return map;
+            })()
+          : itemsByCategory;
+        return createPortal(
+          <div id="prescription-print-root" style={{ display: 'none' }}>
+            <PrintablePrescription
+              patient={patient}
+              items={printItems}
+              itemsByCategory={printItemsByCategory}
+              digitalSignature={digitalSignature}
+              prescriptionDate={prescriptionDate}
+              hospitalName={currentHospital?.name || 'HOSPITAL MUNICIPAL'}
+            />
+          </div>,
+          document.body
+        );
+      })()}
 
       {/* ===== FOOTER SUMMARY ===== */}
       <div className="rounded-xl border border-[hsl(217,30%,84%)]/70 dark:border-[hsl(217,30%,24%)]/70 bg-gradient-to-b from-[hsl(217,45%,98%)] to-[hsl(217,40%,96%)] dark:from-[hsl(217,35%,13%)] dark:to-[hsl(217,32%,11%)] p-4 flex items-center justify-between print:hidden shadow-[0_4px_16px_-6px_hsl(217,50%,30%,0.18)] dark:shadow-[0_4px_16px_-6px_hsl(217,80%,5%,0.45)] ring-1 ring-[hsl(217,55%,90%)]/40 dark:ring-[hsl(217,40%,22%)]/40">
