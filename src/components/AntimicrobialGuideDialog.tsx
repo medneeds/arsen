@@ -508,7 +508,9 @@ export function AntimicrobialGuideDialog({
     if (!draftKey) { toast.error("Sem paciente vinculado para salvar rascunho"); return; }
     try {
       localStorage.setItem(draftKey, JSON.stringify(entries));
-      toast.success("Rascunho da Guia ATM salvo");
+      if (autosaveKey) localStorage.setItem(autosaveKey, JSON.stringify(entries));
+      const now = format(new Date(), "HH:mm:ss");
+      toast.success(`Rascunho da Guia ATM salvo às ${now}`);
       onOpenChange(false);
     } catch { toast.error("Falha ao salvar rascunho"); }
   };
