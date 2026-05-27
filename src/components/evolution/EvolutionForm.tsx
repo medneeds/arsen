@@ -316,12 +316,106 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             iconColor="text-primary"
             label="Diagnósticos"
             hint="CID-10, previsão de alta, paliativo, isolamento"
-            complete={false}
-            required={false}
+            complete={completion.diagnostics}
+            required
           >
             {diagnosticsSlot}
           </SectionItem>
         )}
+
+        {/* Sinais Vitais — OPCIONAL. NEWS2 calculado em tempo real (badge no header). */}
+        <SectionItem
+          id="vitals"
+          icon={Heart}
+          iconColor="text-rose-500"
+          label="Sinais Vitais"
+          hint="PA, FC, FR, Tax, SpO₂, Glasgow, Diurese, Dor — opcional"
+          complete={completion.vitals}
+          required={false}
+          customStatus={
+            news2 && news2.score > 0 ? (
+              <span className={cn(
+                "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+                news2RiskLabels[news2.risk].className,
+              )}>
+                NEWS2 {news2.score} · {news2RiskLabels[news2.risk].label}
+              </span>
+            ) : undefined
+          }
+        >
+          <div className="flex items-center justify-between mb-2">
+            <Label className="text-[10px] text-muted-foreground font-semibold tracking-wider">
+              SINAIS VITAIS (OPCIONAL)
+            </Label>
+            {onCopyVitalsFromAdmission && (
+              <Button
+                variant="ghost" size="sm" className="h-6 text-[10px] gap-1 px-2"
+                onClick={onCopyVitalsFromAdmission}
+              >
+                <ClipboardCopy className="h-3 w-3" /> Copiar da admissão
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {VITAL_FIELDS.map(f => (
+              <div key={f.key} className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">
+                  {f.label} {f.unit && <span className="text-muted-foreground/60">({f.unit})</span>}
+                </Label>
+                <Input
+                  value={vitals[f.key]}
+                  onChange={(e) => onVitalsChange(f.key, e.target.value)}
+                  placeholder={f.placeholder}
+                  className="h-8 text-xs"
+                />
+              </div>
+            ))}
+          </div>
+          {news2 && news2.score > 0 && (
+            <p className="mt-2 text-[10px] text-muted-foreground">
+              NEWS2 calculado a partir de FR, SpO₂, T, PAS e FC. Glasgow/Diurese/Dor não compõem o escore.
+            </p>
+          )}
+        </SectionItem>
+
+        {/* Exame Físico — OPCIONAL. Ectoscopia + aparelhos pré-configurados. */}
+        <SectionItem
+          id="exam"
+          icon={Stethoscope}
+          iconColor="text-blue-500"
+          label="Exame Físico"
+          hint="Ectoscopia, cardiovascular, respiratório, abdome, neurológico, extremidades, pele — opcional"
+          complete={completion.exam}
+          required={false}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <Label className="text-[10px] text-muted-foreground font-semibold tracking-wider">
+              EXAME FÍSICO POR APARELHOS (OPCIONAL)
+            </Label>
+            {onCopyExamFromAdmission && (
+              <Button
+                variant="ghost" size="sm" className="h-6 text-[10px] gap-1 px-2"
+                onClick={onCopyExamFromAdmission}
+              >
+                <ClipboardCopy className="h-3 w-3" /> Copiar da admissão
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {EXAM_FIELDS.map(f => (
+              <div key={f.key} className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">{f.label}</Label>
+                <Textarea
+                  value={physicalExam[f.key]}
+                  onChange={(e) => onPhysicalExamChange(f.key, e.target.value)}
+                  className="text-xs min-h-[56px] resize-y"
+                  placeholder={`Descrever ${f.label.toLowerCase()}...`}
+                />
+              </div>
+            ))}
+          </div>
+        </SectionItem>
+
         <SectionItem
           id="complementares"
           icon={Stethoscope}
