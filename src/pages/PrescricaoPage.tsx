@@ -6336,6 +6336,9 @@ const PrescricaoPage = () => {
   }, [prescriptionLocked, patient.name, resetPrescriptionForNewDay, openRepeatDialog]);
 
   const [showPrintPortal, setShowPrintPortal] = useState(false);
+  // Quando setado, PrintablePrescription imprime APENAS os itens cujo id está no set
+  // (impressão parcial via "Imprimir selecionados" da barra de seleção em lote).
+  const [printSelectionIds, setPrintSelectionIds] = useState<Set<string> | null>(null);
   const [printGuidesOpen, setPrintGuidesOpen] = useState(false);
   const [printPrescription, setPrintPrescription] = useState(true);
   const [printGuideAtm, setPrintGuideAtm] = useState(false);
