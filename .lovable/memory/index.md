@@ -158,3 +158,4 @@
 - [Prescription Universal Auto-Load](mem://features/prescription/universal-auto-load) — Auto-load 2 etapas (rascunho do dia → última validada renovada do mesmo encounter); blindado por registry+encounter; sem autosave
 
 
+- [Contextual Help Tour](mem://features/contextual-help-tour) — Botão "?" bottom-5 left-5 com overlay focused-tour escurecido em /prescricao, /evolucao e /requisicoes; conteúdo didático em src/lib/helpTours.ts, camada puramente de UI sem tocar dados/hooks/RLS
