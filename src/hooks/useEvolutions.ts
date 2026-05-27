@@ -268,6 +268,7 @@ export function useEvolutions(
       soap_data?: any;
       vital_signs?: any;
       physical_exam?: any;
+      diagnostic_hypotheses?: string | null;
     }
   ) => {
     const target = evolutions.find((e) => e.id === id);
@@ -375,7 +376,8 @@ export function useEvolutions(
       patientSector,
       source.soap_data,
       source.vital_signs,
-      source.physical_exam
+      source.physical_exam,
+      source.diagnostic_hypotheses ?? undefined
     );
   };
 
