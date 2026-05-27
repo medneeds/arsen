@@ -28,7 +28,7 @@ export function useTodaysPrescriptions(hospitalUnitId: string | null) {
       .from("prescriptions")
       .select("patient_name, status, created_at")
       .eq("hospital_unit_id", hospitalUnitId)
-      .eq("status", "signed")
+      .in("status", ["signed", "validated"])
       .gte("created_at", start.toISOString());
     if (error || !data) {
       setSignedToday(new Set());
