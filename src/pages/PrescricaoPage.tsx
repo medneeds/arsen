@@ -465,7 +465,7 @@ function calcRateFromTime(volumeTotal: string, infusionTime: string, mode: 'BIC'
 
 // Auto-calculate concentration from dose and volume total
 function calcConcentration(item: PrescriptionItem): string {
-  const doseMatch = item.dose?.match(/([\d.,]+)\s*(mg|g|mcg|UI)/i);
+  const doseMatch = item.dose?.match(/([\d.,]+)\s*(mg|g|mcg|UI|mEq)/i);
   if (!doseMatch) return '';
   let doseVal = parseFloat(doseMatch[1].replace(',', '.'));
   const doseUnit = doseMatch[2].toLowerCase();
@@ -473,6 +473,7 @@ function calcConcentration(item: PrescriptionItem): string {
   const volTotal = parseFloat(item.volumeTotal || '');
   if (!doseVal || !volTotal || volTotal <= 0) return '';
   const conc = doseVal / volTotal;
+  if (doseUnit === 'meq') return `${conc.toFixed(2)} mEq/mL`;
   if (doseUnit === 'ui') return `${conc.toFixed(1)} UI/mL`;
   if (doseUnit === 'mcg') return `${conc.toFixed(1)} mcg/mL`;
   return `${conc.toFixed(2)} mg/mL`;
@@ -486,7 +487,7 @@ function posologyToIntervals(posology: string): number {
   const map: Record<string, number> = {
     '1x/dia': 1, '2x/dia': 2, '3x/dia': 3, '4x/dia': 4,
     '6/6h': 4, '8/8h': 3, '12/12h': 2, '24/24h': 1,
-    '4/4h': 6, '2/2h': 12, 'Contínuo': 1, 'Dose única': 1,
+    '4/4h': 6, '3/3h': 8, '2/2h': 12, 'Contínuo': 1, 'Dose única': 1,
   };
   return map[posology] || 1;
 }
@@ -3349,7 +3350,7 @@ function parseScheduleSlots(schedule: string): string[] {
 // --- Print-only Item Row (dynamic schedule slots) ---
 function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }) {
   const isNutrition = item.category === 'nutrition';
-  const hasPreparo = !isNutrition && (item.diluent || item.diluentVolume || item.accessType || item.infusionTime);
+  const hasPreparo = !isNutrition && (item.diluent || item.diluentVolume || item.accessType || item.infusionTime || item.reconstitutionVolume || item.reconstitutionSolvent);
   const slots = parseScheduleSlots(item.schedule);
   const isEven = index % 2 === 0;
   const rowBg = isEven ? '#ffffff' : '#f8fafc';
@@ -3420,14 +3421,12 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
         )}
         {hasPreparo && (
           <div style={{ fontSize: '6.5pt', color: '#64748b', lineHeight: '1.2', marginTop: '2px', paddingLeft: '10px', borderLeft: '1.5px solid #cbd5e1' }}>
-            {[
-              item.diluent && item.diluent !== '-' && item.diluent !== 'sem_diluente' ? `${item.diluent}${item.diluentVolume ? ` ${item.diluentVolume}mL` : ''}` : item.diluent === 'sem_diluente' ? 'Sem diluição' : null,
-              item.accessType && item.accessType !== '-' ? item.accessType : null,
-              item.volumeTotal ? `Vol total: ${item.volumeTotal}mL` : null,
-              item.infusionTime ? `Correr em ${item.infusionTime}${(item.infusionTimeUnit || 'min') === 'h' ? 'h' : 'min'}` : null,
-              item.infusionRate ? `${item.infusionRate} ${item.infusionMode === 'gts' ? 'gts/min' : 'mL/h'}` : null,
-              item.concentration ? `Conc: ${item.concentration}` : null,
-            ].filter(Boolean).join(' · ')}
+            {buildPrepDescription(item)}
+            {item.instructions && (
+              <span style={{ marginLeft: '4px', fontStyle: 'italic', color: '#64748b' }}>
+                — {item.instructions}
+              </span>
+            )}
           </div>
         )}
         {isNutrition && nutritionLine && (
@@ -10083,8 +10082,8 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                     item.nutComposition || null,
                     item.nutMonitoring ? `Monit: ${item.nutMonitoring}` : null,
                     item.nutResidualCheck ? `Resíduo: ${item.nutResidualCheck}` : null,
-                    item.nutWaterVolPerAdmin ? `Vol/adm: ${item.nutWaterVolPerAdmin} mL` : (item.category === 'nutrition' && /gua/i.test(item.name) && item.dose && item.dose !== '-' ? `Vol/adm: ${item.dose}` : null),
-                    item.nutWaterFreq || (item.category === 'nutrition' && /gua/i.test(item.name) && item.posology && item.posology !== '-' ? `Freq: ${item.posology}` : null),
+                    item.nutWaterVolPerAdmin ? `Vol/adm: ${item.nutWaterVolPerAdmin} mL` : (item.nutritionType === 'water' && item.dose && item.dose !== '-' ? `Vol/adm: ${item.dose}` : null),
+                    item.nutWaterFreq || (item.nutritionType === 'water' && item.posology && item.posology !== '-' ? `Freq: ${item.posology}` : null),
                     item.nutZeroReason ? `Motivo jejum: ${item.nutZeroReason}` : null,
                   ].filter(Boolean);
                   if (parts.length === 0 && !item.instructions) return null;
