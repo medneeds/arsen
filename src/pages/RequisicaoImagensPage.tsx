@@ -117,6 +117,11 @@ const RequisicaoImagensPage = () => {
   const [searchProcedure, setSearchProcedure] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
+  // Manual (avulso) procedure entry — sem SIGTAP
+  const [manualName, setManualName] = useState("");
+  const [manualCode, setManualCode] = useState("");
+  const [manualQty, setManualQty] = useState<number>(1);
+
   // Justification
   const [diagnosis, setDiagnosis] = useState("");
   const [cidPrimary, setCidPrimary] = useState("");
