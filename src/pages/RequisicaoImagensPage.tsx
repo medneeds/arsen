@@ -501,8 +501,53 @@ const RequisicaoImagensPage = () => {
             </Card>
           </div>
 
-          {/* Right column: Search + selected */}
-          <div className="space-y-4">
+            {/* Manual / Avulso (sem SIGTAP) — destacado no topo */}
+            <Card className="border-2 border-primary/40 bg-primary/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+                  <Plus className="h-4 w-4" /> Procedimento avulso (sem SIGTAP)
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Use para exames não catalogados — ex.: COLANGIO-RM, ANGIOTOMOGRAFIA específica, ressonâncias dedicadas. Código é opcional.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="grid grid-cols-12 gap-2">
+                  <div className="col-span-7">
+                    <Label className="text-xs text-muted-foreground">Descrição do procedimento *</Label>
+                    <Input
+                      value={manualName}
+                      onChange={(e) => setManualName(e.target.value)}
+                      placeholder="Ex: COLANGIO-RESSONÂNCIA DE VIAS BILIARES"
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <Label className="text-xs text-muted-foreground">Código (opcional)</Label>
+                    <Input
+                      value={manualCode}
+                      onChange={(e) => setManualCode(e.target.value)}
+                      placeholder="—"
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-xs text-muted-foreground">Qtde</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={99}
+                      value={manualQty}
+                      onChange={(e) => setManualQty(parseInt(e.target.value) || 1)}
+                      className="text-center"
+                    />
+                  </div>
+                </div>
+                <Button size="sm" className="w-full" onClick={addManualProcedure}>
+                  <Plus className="h-4 w-4 mr-1" /> Adicionar procedimento avulso
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* Procedure search */}
             <Card>
               <CardHeader className="pb-2">
@@ -554,52 +599,6 @@ const RequisicaoImagensPage = () => {
               </CardContent>
             </Card>
 
-            {/* Manual / Avulso (sem SIGTAP) */}
-            <Card className="border-dashed">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                  Procedimento avulso (sem SIGTAP)
-                </CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Use para exames não catalogados — ex.: COLANGIO-RM, ANGIOTOMOGRAFIA específica, ressonâncias dedicadas. Código é opcional.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="grid grid-cols-12 gap-2">
-                  <div className="col-span-7">
-                    <Label className="text-xs text-muted-foreground">Descrição do procedimento *</Label>
-                    <Input
-                      value={manualName}
-                      onChange={(e) => setManualName(e.target.value)}
-                      placeholder="Ex: COLANGIO-RESSONÂNCIA DE VIAS BILIARES"
-                    />
-                  </div>
-                  <div className="col-span-3">
-                    <Label className="text-xs text-muted-foreground">Código (opcional)</Label>
-                    <Input
-                      value={manualCode}
-                      onChange={(e) => setManualCode(e.target.value)}
-                      placeholder="—"
-                      className="font-mono text-sm"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Label className="text-xs text-muted-foreground">Qtde</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={99}
-                      value={manualQty}
-                      onChange={(e) => setManualQty(parseInt(e.target.value) || 1)}
-                      className="text-center"
-                    />
-                  </div>
-                </div>
-                <Button size="sm" variant="secondary" className="w-full" onClick={addManualProcedure}>
-                  <Plus className="h-4 w-4 mr-1" /> Adicionar procedimento avulso
-                </Button>
-              </CardContent>
-            </Card>
 
             {/* Selected procedures */}
             <Card className={selectedProcedures.length > 0 ? "border-primary/30" : ""}>
