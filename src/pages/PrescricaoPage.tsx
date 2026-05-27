@@ -575,12 +575,32 @@ function buildSolutoToken(item: PrescriptionItem): string {
   const isMassDose = !!doseRaw && !isPureMlVolume &&
     /(mg|mcg|µg|ug|\bg\b|\bui\b|u\/|unidades?|meq|%)/i.test(doseRaw);
 
-  // Quando temos dose terapêutica + volume aspirado distinto, mostramos os dois
-  // (mais informativo para a enfermagem): "100 mg (10 mL)".
-  if (isMassDose && qtyStr && qtyStr.toLowerCase() !== doseRaw.toLowerCase()) {
-    return `${doseRaw} (${qtyStr})`;
+  // Dose terapêutica com unidade de massa → mostra dose + volume aspirado se diferente
+  if (isMassDose) {
+    if (qtyStr && qtyStr.toLowerCase() !== doseRaw.toLowerCase()) {
+      // Evita redundância: "1 amp (1.000 mg sal) (1 amp)" → "1 amp (1.000 mg sal)"
+      const qtyIsAlreadyInDose = doseRaw.toLowerCase().includes(qtyStr.toLowerCase().replace(/\s+/g, ' ').trim());
+      if (!qtyIsAlreadyInDose) return `${doseRaw} (${qtyStr})`;
+    }
+    return doseRaw;
   }
-  if (isMassDose) return doseRaw;
+
+  // Dose é volume puro em mL (ex.: "30 mL", "150 mL") — preservar o volume prescrito.
+  // Retornar qtyStr aqui descartaria o volume e mostraria apenas "1 amp", causando
+  // erro de administração (enfermagem usa 1 ampola = 10 mL ao invés dos 30 mL prescritos).
+  if (isPureMlVolume) {
+    const unitLower = (item.quantityUnit || '').toLowerCase();
+    if (qtyStr && !unitLower.includes('ml') && unitLower !== '') {
+      return `${qtyStr} (${doseRaw})`;
+    }
+    return doseRaw;
+  }
+
+  // Dose contém volume em mL embutido (ex.: "Bolus 150 mL") — preservar
+  if (doseRaw && /\d+(?:[.,]\d+)?\s*ml/i.test(doseRaw)) {
+    return doseRaw;
+  }
+
   if (qtyStr) return qtyStr;
   return doseRaw; // fallback bruto (raro)
 }
