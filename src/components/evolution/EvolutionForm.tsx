@@ -553,12 +553,22 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                 <AlertCircle className="h-3.5 w-3.5" /> Pendências para validação
               </p>
               <ul className="text-[11px] text-amber-700/80 dark:text-amber-400/80 space-y-0.5 ml-5 list-disc">
+                {!completion.diagnostics && <li>Definir <strong>CID-10 primário</strong> em Diagnósticos</li>}
                 {!completion.evolucao && <li>Preencher <strong>Evolução</strong> (mín. 10 caracteres)</li>}
                 {!completion.plan && <li>Preencher <strong>Plano</strong> (mín. 10 caracteres)</li>}
               </ul>
             </div>
           )}
+          {diagnosticsReviewSlot && (
+            <div className="mb-3 rounded-lg border border-border bg-muted/20 p-2.5">
+              <p className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-2">
+                DIAGNÓSTICOS — REVISÃO
+              </p>
+              {diagnosticsReviewSlot}
+            </div>
+          )}
           <ReadOnlyView soap={soap} vitals={vitals} physicalExam={physicalExam} devices={devices} culturesHtml={culturesHtml} />
+
         </SectionItem>
       </Accordion>
 
