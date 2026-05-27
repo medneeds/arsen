@@ -251,7 +251,7 @@ const RequisicaoImagensPage = () => {
 
     hydrate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, hydratedFromRegistry]);
 
   const addProcedure = (proc: Procedure) => {
     if (selectedProcedures.find((p) => p.code === proc.code)) {
