@@ -3457,6 +3457,7 @@ function BatchActionBar({
   onSuspendSelected,
   onDeleteSelected,
   onDuplicateSelected,
+  onPrintSelected,
 }: {
   selectedCount: number;
   onSelectAll: () => void;
@@ -3465,6 +3466,7 @@ function BatchActionBar({
   onSuspendSelected: () => void;
   onDeleteSelected: () => void;
   onDuplicateSelected: () => void;
+  onPrintSelected: () => void;
 }) {
   if (selectedCount === 0 || typeof document === "undefined") return null;
 
@@ -3485,6 +3487,14 @@ function BatchActionBar({
           </Button>
         </TooltipTrigger>
         <TooltipContent>Duplicar</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-sky-600 hover:text-sky-700" onClick={onPrintSelected}>
+            <Printer className="h-3.5 w-3.5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Imprimir selecionados</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
