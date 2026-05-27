@@ -1377,6 +1377,11 @@ const APAC_PROCEDURES = [
   { code: "02.05.01.003-0", name: "ULTRASSONOGRAFIA DE ABDOMEN TOTAL", category: "USG" },
   { code: "02.05.01.004-8", name: "ULTRASSONOGRAFIA DE TÓRAX", category: "USG" },
   { code: "02.05.01.005-6", name: "ECOCARDIOGRAMA TRANSTORÁCICO", category: "USG" },
+  { code: "02.07.03.004-9", name: "COLANGIORRESSONÂNCIA (CPRM)", category: "RM" },
+  { code: "02.07.01.003-0", name: "ANGIORRESSONÂNCIA DE CRÂNIO", category: "RM" },
+  { code: "02.07.03.005-7", name: "RESSONÂNCIA MAGNÉTICA DE FÍGADO E VIAS BILIARES", category: "RM" },
+  { code: "02.07.03.006-5", name: "RESSONÂNCIA MAGNÉTICA DE PÂNCREAS", category: "RM" },
+  { code: "02.06.01.006-0", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS RENAIS", category: "TC" },
 ];
 
 const APAC_QUICK_ACCESS = [
@@ -1479,6 +1484,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   }, [unitPatients, pickerSearch]);
 
   const [selectedProcedures, setSelectedProcedures] = useState<ApacSelectedProcedure[]>([]);
+  const [customProcCode, setCustomProcCode] = useState("");
+  const [customProcName, setCustomProcName] = useState("");
   const [searchProcedure, setSearchProcedure] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
@@ -1493,8 +1500,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const { data } = await supabase.from("profiles").select("full_name, crm").eq("id", user.id).maybeSingle();
-      if (data) { setDoctorName(data.full_name || ""); setDoctorCRM(data.crm || ""); }
+      const { data } = await supabase.from("profiles").select("full_name, crm, cpf").eq("id", user.id).maybeSingle();
+      if (data) { setDoctorName(data.full_name || ""); setDoctorCRM(data.crm || ""); if ((data as any).cpf) setDoctorCPF((data as any).cpf); }
     };
     load();
   }, [user]);
@@ -1523,14 +1530,21 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           .limit(1)
           .maybeSingle();
         if (adm && !cancelled) {
-          setDiagnosis(prev => prev || (adm as any).diagnostic_hypothesis || "");
-          setCidPrimary(prev => prev || (adm as any).primary_cid10 || "");
-          setCidSecondary(prev => prev || (adm as any).secondary_cid10 || "");
+          setDiagnosis((adm as any).diagnostic_hypothesis || "");
+          setCidPrimary((adm as any).primary_cid10 || "");
+          setCidSecondary((adm as any).secondary_cid10 || "");
         }
 
         if (!registryId) {
-          // Sem registry: ao menos hidrata prontuário se vier no patients
-          if ((pat as any).medical_record) setPatientRecord(prev => prev || (pat as any).medical_record);
+          // Sem registry: hidrata prontuário e tenta CPF direto na tabela patients
+          const { data: patExtra } = await supabase
+            .from("patients")
+            .select("cpf")
+            .eq("id", validPid)
+            .maybeSingle();
+          if (cancelled) return;
+          if ((patExtra as any)?.cpf) setPatientCPF((patExtra as any).cpf);
+          if ((pat as any).medical_record) setPatientRecord((pat as any).medical_record);
           return;
         }
 
@@ -1542,17 +1556,17 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         if (!reg || cancelled) return;
 
         const r = reg as any;
-        setPatientRecord(prev => prev || r.medical_record || (pat as any).medical_record || "");
-        setApacPatientName(prev => prev || r.full_name || "");
-        setPatientCPF(prev => prev || r.cpf || "");
-        setPatientCNS(prev => prev || r.cns || "");
-        setPatientDOB(prev => prev || (r.birth_date ? String(r.birth_date).slice(0, 10) : ""));
-        setPatientSex(prev => prev || (r.sex === "M" || r.sex === "F" ? r.sex : ""));
-        setPatientMotherName(prev => prev || r.mother_name || "");
-        setPatientPhone(prev => prev || r.phone || "");
-        setPatientAddress(prev => prev || r.address || "");
-        if (r.city) setPatientCity(prev => (prev && prev !== "São Luís" ? prev : r.city));
-        if (r.state) setPatientUF(prev => (prev && prev !== "MA" ? prev : r.state));
+        setPatientRecord(r.medical_record || (pat as any).medical_record || "");
+        setApacPatientName(r.full_name || "");
+        setPatientCPF(r.cpf || "");
+        setPatientCNS(r.cns || "");
+        setPatientDOB(r.birth_date ? String(r.birth_date).slice(0, 10) : "");
+        setPatientSex(r.sex === "M" || r.sex === "F" ? r.sex : "");
+        setPatientMotherName(r.mother_name || "");
+        setPatientPhone(r.phone || "");
+        setPatientAddress(r.address || "");
+        if (r.city) setPatientCity(r.city);
+        if (r.state) setPatientUF(r.state);
       } catch {
         /* hidratação silenciosa */
       }
@@ -1701,6 +1715,49 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                     </button>
                   );
                 })}
+              </div>
+              <div className="border-t pt-3 space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Procedimento não listado no SIGTAP
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    value={customProcCode}
+                    onChange={(e) => setCustomProcCode(e.target.value)}
+                    placeholder="Código SIGTAP (opcional)"
+                    className="w-40 font-mono text-xs"
+                  />
+                  <Input
+                    value={customProcName}
+                    onChange={(e) => setCustomProcName(e.target.value)}
+                    placeholder="Nome do procedimento"
+                    className="flex-1 text-xs"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const name = customProcName.trim();
+                      if (!name) { toast.error("Informe o nome do procedimento"); return; }
+                      const code = customProcCode.trim() || "00.00.00.000-0";
+                      if (selectedProcedures.find((p) => p.code === code && p.name === name.toUpperCase())) {
+                        toast.info("Procedimento já adicionado"); return;
+                      }
+                      if (selectedProcedures.length >= 6) {
+                        toast.error("Máximo de 6 procedimentos por laudo"); return;
+                      }
+                      setSelectedProcedures((prev) => [
+                        ...prev,
+                        { code, name: name.toUpperCase(), qty: 1 },
+                      ]);
+                      setCustomProcCode("");
+                      setCustomProcName("");
+                      toast.success("Procedimento avulso adicionado");
+                    }}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+                  </Button>
+                </div>
               </div>
               <div className="border-t pt-3">
                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
