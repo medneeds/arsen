@@ -128,6 +128,8 @@
 - [Rich Text Editor (Evolução)](mem://ui/rich-text-editor) — RichTextEditor (contentEditable + DOMPurify) com B/I/U + Enter→`<p>`, aplicado em Evolução, Plano, Exames Complementares e Intercorrência; helpers `sanitizeRichHtml`, `toRichHtml`, `richHtmlToPlainText`
 - [ATB Attach Notice](mem://features/prescription/atb-attach-notice) — Pop-up didático após anexar ATB via Guia ATM lembrando 2 vias no D1
 - [Enteral Tablet Dilution](mem://features/prescription/enteral-tablet-dilution) — CompoundedTabletFields auto-aparece p/ comprimido+via enteral, lista NÃO TRITURAR (ISMP-Brasil) bloqueia builder com alerta vermelho
+- [Enteral Tablet Technique](mem://features/prescription/enteral-tablet-technique) — NotCrushableEntry.technique p/ omeprazol/lansoprazol/nimodipino cap (painel âmbar, técnica específica via sonda, libera validação); itens sem technique mantêm bloqueio vermelho
+- [Requisicao Patient Context Persist](mem://features/requisicao-patient-context-persist) — resetForm dividido em resetRequestFields (preserva paciente) + resetForm (limpa tudo); submit de exame/parecer/especial não dropa mais identificação do paciente
 - [Admission Date BR Mask](mem://features/admin-edit-admission-date) — AdmissionDateEditor com auto-máscara DD/MM/AAAA + HH:MM, banner BR, validação estrita e histórico imutável
 - [Prescription Validation Fluid Rules](mem://features/prescription/validation-fluid-rules) — getItemMissingFields aceita campos equivalentes (volumeTotal↔diluentVolume), enteral só com word-boundary, controlado lista C não bloqueia
 - [Oral Solid Posology Required](mem://features/prescription/oral-solid-posology-required) — Sólido oral (cp/cápsula/drágea/SL/orodispersível) por VO/SL/enteral exige posologia obrigatória — instrução livre não substitui
