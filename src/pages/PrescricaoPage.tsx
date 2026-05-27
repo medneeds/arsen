@@ -3964,6 +3964,8 @@ const PrescricaoPage = () => {
   const [historyDate, setHistoryDate] = useState<Date | undefined>(undefined);
   // Conjunto de datas (yyyy-MM-dd) com prescrição salva — alimenta as bolinhas no calendário
   const [prescriptionDateKeys, setPrescriptionDateKeys] = useState<Set<string>>(new Set());
+  // Rascunhos visíveis no calendário — só permanecem dentro do dia clínico atual SP (some às 05h).
+  const [draftDateKeys, setDraftDateKeys] = useState<Set<string>>(new Set());
 
   // Phase 3 state
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
