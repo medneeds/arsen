@@ -201,6 +201,9 @@ export async function executeInternalTransfer(params: {
       hospital_unit_id: hospitalUnitId,
     });
 
+    invalidateResolvedRegistry(source.id);
+    invalidateResolvedRegistry(targetBedRow.id);
+
     return { ok: true, classification, needsSaps };
   } catch (err: any) {
     console.error("[executeInternalTransfer] erro", err);
