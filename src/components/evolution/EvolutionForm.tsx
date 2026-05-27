@@ -64,6 +64,11 @@ interface EvolutionFormProps {
   hasUnsaved?: boolean;
   /** Render slot for the Diagnostics panel — placed as 1st collapsible section. */
   diagnosticsSlot?: React.ReactNode;
+  /** Optional compact render of the diagnostics panel inside the Revisão (review) section. */
+  diagnosticsReviewSlot?: React.ReactNode;
+  /** CID primário ativo — usado para gatear validação (obrigatório). */
+  cidPrimary?: string | null;
+  cidSecondary?: string | null;
   /** Dispositivos invasivos (lista catálogo + custom). */
   devices?: EvolutionDevice[];
   onDevicesChange?: (next: EvolutionDevice[]) => void;
@@ -78,9 +83,10 @@ interface EvolutionFormProps {
   patientId?: string | null;
   /** Prontuário fallback (usado se o resolver não encontrar). */
   patientRecord?: string | null;
-  /** CIDs ativos — incluídos no bloco "Diagnósticos" do PDF. */
-  cidPrimary?: string | null;
-  cidSecondary?: string | null;
+  /** Callback opcional — quando definido, exibe botão "Copiar da admissão" no Exame Físico. */
+  onCopyExamFromAdmission?: () => void;
+  /** Callback opcional — quando definido, exibe botão "Copiar da admissão" nos Sinais Vitais. */
+  onCopyVitalsFromAdmission?: () => void;
 }
 
 type SectionKey = 'vitals' | 'evolucao' | 'objective' | 'plan' | 'review';
