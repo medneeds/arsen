@@ -1530,14 +1530,21 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
           .limit(1)
           .maybeSingle();
         if (adm && !cancelled) {
-          setDiagnosis(prev => prev || (adm as any).diagnostic_hypothesis || "");
-          setCidPrimary(prev => prev || (adm as any).primary_cid10 || "");
-          setCidSecondary(prev => prev || (adm as any).secondary_cid10 || "");
+          setDiagnosis((adm as any).diagnostic_hypothesis || "");
+          setCidPrimary((adm as any).primary_cid10 || "");
+          setCidSecondary((adm as any).secondary_cid10 || "");
         }
 
         if (!registryId) {
-          // Sem registry: ao menos hidrata prontuário se vier no patients
-          if ((pat as any).medical_record) setPatientRecord(prev => prev || (pat as any).medical_record);
+          // Sem registry: hidrata prontuário e tenta CPF direto na tabela patients
+          const { data: patExtra } = await supabase
+            .from("patients")
+            .select("cpf")
+            .eq("id", validPid)
+            .maybeSingle();
+          if (cancelled) return;
+          if ((patExtra as any)?.cpf) setPatientCPF((patExtra as any).cpf);
+          if ((pat as any).medical_record) setPatientRecord((pat as any).medical_record);
           return;
         }
 
@@ -1549,17 +1556,17 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
         if (!reg || cancelled) return;
 
         const r = reg as any;
-        setPatientRecord(prev => prev || r.medical_record || (pat as any).medical_record || "");
-        setApacPatientName(prev => prev || r.full_name || "");
-        setPatientCPF(prev => prev || r.cpf || "");
-        setPatientCNS(prev => prev || r.cns || "");
-        setPatientDOB(prev => prev || (r.birth_date ? String(r.birth_date).slice(0, 10) : ""));
-        setPatientSex(prev => prev || (r.sex === "M" || r.sex === "F" ? r.sex : ""));
-        setPatientMotherName(prev => prev || r.mother_name || "");
-        setPatientPhone(prev => prev || r.phone || "");
-        setPatientAddress(prev => prev || r.address || "");
-        if (r.city) setPatientCity(prev => (prev && prev !== "São Luís" ? prev : r.city));
-        if (r.state) setPatientUF(prev => (prev && prev !== "MA" ? prev : r.state));
+        setPatientRecord(r.medical_record || (pat as any).medical_record || "");
+        setApacPatientName(r.full_name || "");
+        setPatientCPF(r.cpf || "");
+        setPatientCNS(r.cns || "");
+        setPatientDOB(r.birth_date ? String(r.birth_date).slice(0, 10) : "");
+        setPatientSex(r.sex === "M" || r.sex === "F" ? r.sex : "");
+        setPatientMotherName(r.mother_name || "");
+        setPatientPhone(r.phone || "");
+        setPatientAddress(r.address || "");
+        if (r.city) setPatientCity(r.city);
+        if (r.state) setPatientUF(r.state);
       } catch {
         /* hidratação silenciosa */
       }
