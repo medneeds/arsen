@@ -3457,6 +3457,7 @@ function BatchActionBar({
   onSuspendSelected,
   onDeleteSelected,
   onDuplicateSelected,
+  onPrintSelected,
 }: {
   selectedCount: number;
   onSelectAll: () => void;
@@ -3465,6 +3466,7 @@ function BatchActionBar({
   onSuspendSelected: () => void;
   onDeleteSelected: () => void;
   onDuplicateSelected: () => void;
+  onPrintSelected: () => void;
 }) {
   if (selectedCount === 0 || typeof document === "undefined") return null;
 
@@ -3485,6 +3487,14 @@ function BatchActionBar({
           </Button>
         </TooltipTrigger>
         <TooltipContent>Duplicar</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-sky-600 hover:text-sky-700" onClick={onPrintSelected}>
+            <Printer className="h-3.5 w-3.5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Imprimir selecionados</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
@@ -3954,6 +3964,8 @@ const PrescricaoPage = () => {
   const [historyDate, setHistoryDate] = useState<Date | undefined>(undefined);
   // Conjunto de datas (yyyy-MM-dd) com prescrição salva — alimenta as bolinhas no calendário
   const [prescriptionDateKeys, setPrescriptionDateKeys] = useState<Set<string>>(new Set());
+  // Rascunhos visíveis no calendário — só permanecem dentro do dia clínico atual SP (some às 05h).
+  const [draftDateKeys, setDraftDateKeys] = useState<Set<string>>(new Set());
 
   // Phase 3 state
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
@@ -6046,10 +6058,10 @@ const PrescricaoPage = () => {
   // Mantém o ref do auto-load apontando para a versão atual de loadPrescription
   useEffect(() => { loadPrescriptionRef.current = loadPrescription; }, [loadPrescription]);
 
-  // Busca as datas (últimos 60 dias) com prescrições do paciente — para marcar bolinhas no calendário
   useEffect(() => {
     if (!currentHospital || !currentState || !patient.name.trim()) {
       setPrescriptionDateKeys(new Set());
+      setDraftDateKeys(new Set());
       return;
     }
     let cancelled = false;
@@ -6058,7 +6070,7 @@ const PrescricaoPage = () => {
         const since = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
         let dkQ = supabase
           .from('prescriptions')
-          .select('created_at')
+          .select('created_at, status')
           .eq('hospital_unit_id', currentHospital.id)
           .eq('state_id', currentState.id)
           .gte('created_at', since)
@@ -6070,9 +6082,25 @@ const PrescricaoPage = () => {
         const { data, error } = await dkQ;
         if (error) throw error;
         if (cancelled) return;
-        const keys = new Set<string>();
-        (data || []).forEach(d => keys.add(format(new Date(d.created_at), 'yyyy-MM-dd')));
-        setPrescriptionDateKeys(keys);
+        // Janela do dia clínico atual SP (05h → 04h59 do dia seguinte).
+        // Rascunhos só aparecem no calendário durante essa janela; depois somem.
+        const clinicalWindow = getClinicalDayWindowSP();
+        const validatedKeys = new Set<string>();
+        const draftKeys = new Set<string>();
+        (data || []).forEach(d => {
+          const dt = new Date(d.created_at);
+          const key = format(dt, 'yyyy-MM-dd');
+          if (d.status === 'draft') {
+            // Só inclui rascunho se estiver dentro do dia clínico atual
+            if (dt.getTime() >= clinicalWindow.start.getTime() && dt.getTime() <= clinicalWindow.end.getTime()) {
+              draftKeys.add(key);
+            }
+          } else {
+            validatedKeys.add(key);
+          }
+        });
+        setPrescriptionDateKeys(validatedKeys);
+        setDraftDateKeys(draftKeys);
       } catch (err) {
         console.error('[prescriptionDateKeys] fetch failed', err);
       }
@@ -6336,6 +6364,9 @@ const PrescricaoPage = () => {
   }, [prescriptionLocked, patient.name, resetPrescriptionForNewDay, openRepeatDialog]);
 
   const [showPrintPortal, setShowPrintPortal] = useState(false);
+  // Quando setado, PrintablePrescription imprime APENAS os itens cujo id está no set
+  // (impressão parcial via "Imprimir selecionados" da barra de seleção em lote).
+  const [printSelectionIds, setPrintSelectionIds] = useState<Set<string> | null>(null);
   const [printGuidesOpen, setPrintGuidesOpen] = useState(false);
   const [printPrescription, setPrintPrescription] = useState(true);
   const [printGuideAtm, setPrintGuideAtm] = useState(false);
@@ -6371,8 +6402,35 @@ const PrescricaoPage = () => {
     setTimeout(() => {
       window.print();
       setShowPrintPortal(false);
+      // Limpa filtro de seleção após o ciclo de impressão (se houver)
+      setPrintSelectionIds(null);
     }, 300);
   };
+
+  // === Impressão parcial — itens selecionados na barra de seleção em lote ===
+  // Reaproveita o mesmo cabeçalho e layout do PDF, apenas filtra a lista.
+  // Bypassa o fluxo de guias regulatórias (ATM/Psy) porque é uma reimpressão parcial.
+  const printSelectedItems = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    // Só faz sentido imprimir itens validados — bloqueia pendentes para evitar
+    // impressão de prescrição não validada por engano.
+    const selectedList = items.filter(i => selectedIds.has(i.id));
+    const pendentes = selectedList.filter(i => i.status === 'active' && !isItemValidatedToday(i));
+    if (pendentes.length > 0) {
+      toast.error("Impressão bloqueada — há itens selecionados pendentes", {
+        description: `${pendentes.length} ${pendentes.length === 1 ? 'item aguarda' : 'itens aguardam'} validação.`,
+      });
+      return;
+    }
+    setPrintSelectionIds(new Set(selectedIds));
+    setShowPrintPortal(true);
+    setTimeout(() => {
+      window.print();
+      setShowPrintPortal(false);
+      setPrintSelectionIds(null);
+    }, 300);
+  }, [selectedIds, items, isItemValidatedToday]);
+
 
   const handlePrint = () => {
     if (!hasActiveAtb && !hasActivePsy) {
@@ -6456,8 +6514,9 @@ const PrescricaoPage = () => {
       // sigOverride=null força status='draft'; autoNewVersionIfSigned cria nova versão
       // draft sem rebaixar a assinada anterior, preservando auditoria.
       await persistItems(items, { sigOverride: null, autoNewVersionIfSigned: true });
-      toast.success("Rascunho salvo", {
-        description: `${renewalPendingCount} item(ns) pendente(s) preservado(s). Visível apenas para você no calendário.`,
+      const savedAt = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
+      toast.success(`Rascunho salvo às ${savedAt}`, {
+        description: `${renewalPendingCount} item(ns) pendente(s) preservado(s). Marcado com ponto cinza no calendário (some às 05h).`,
       });
     } catch {
       // persistItems já reportou erro
@@ -6995,15 +7054,28 @@ const PrescricaoPage = () => {
                 className="pointer-events-auto"
                 modifiers={{
                   hasPrescription: (date) => prescriptionDateKeys.has(format(date, 'yyyy-MM-dd')),
+                  hasDraft: (date) => {
+                    const key = format(date, 'yyyy-MM-dd');
+                    // Ponto cinza só quando NÃO existir validada nesse mesmo dia
+                    return draftDateKeys.has(key) && !prescriptionDateKeys.has(key);
+                  },
                 }}
                 modifiersClassNames={{
                   hasPrescription:
                     "relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-primary",
+                  hasDraft:
+                    "relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-muted-foreground/60",
                 }}
               />
-              <div className="px-3 pb-2 -mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-                Dias com prescrição salva
+              <div className="px-3 pb-2 -mt-1 flex items-center gap-3 text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+                  Validada
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/60" />
+                  Rascunho (some às 05h)
+                </span>
               </div>
               {historyDate && (
                 <div className="p-2 border-t">
@@ -7031,7 +7103,7 @@ const PrescricaoPage = () => {
                       >
                         <button
                           type="button"
-                          onClick={() => loadPrescription(p.id)}
+                          onClick={() => setPreviewPrescription(p)}
                           className="flex-1 text-left min-w-0"
                         >
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -7854,6 +7926,7 @@ const PrescricaoPage = () => {
           onSuspendSelected={suspendSelected}
           onDeleteSelected={deleteSelected}
           onDuplicateSelected={duplicateSelected}
+          onPrintSelected={printSelectedItems}
         />
 
       {/* Nutrition Wizard */}
@@ -7984,28 +8057,62 @@ const PrescricaoPage = () => {
               <p className="text-xs text-muted-foreground italic py-4 text-center">Prescrição sem itens.</p>
             )}
           </div>
+          {/* Painel didático — explica qual ação acontece de acordo com o estado atual */}
+          {previewPrescription && (() => {
+            const hasCurrentValidated = items.some(i => i.status === 'active' && isItemValidatedToday(i));
+            const isDraft = !previewPrescription.isValidated;
+            // Fluxo solicitado pelo médico:
+            // - Rascunho + corpo vazio/sem validação → SUBSTITUI integralmente
+            // - Rascunho + corpo já tem validada → MESCLA (soma itens novos)
+            // - Validada antiga → mesma lógica (substituir se nada validado; mesclar caso contrário)
+            const willMerge = hasCurrentValidated;
+            return (
+              <div className={cn(
+                "mx-6 mb-2 rounded-md border px-3 py-2 text-[11px] leading-snug",
+                willMerge
+                  ? "border-amber-300/70 bg-amber-50/70 text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/20 dark:text-amber-200"
+                  : "border-sky-300/70 bg-sky-50/70 text-sky-900 dark:border-sky-500/40 dark:bg-sky-950/20 dark:text-sky-200",
+              )}>
+                <strong className="font-semibold">
+                  {willMerge ? "Há prescrição validada hoje" : "Restauração integral"}
+                </strong>
+                {": "}
+                {willMerge
+                  ? <>os itens desta {isDraft ? "rascunho" : "prescrição"} serão <strong>somados</strong> ao corpo atual (duplicados são ignorados). A prescrição validada de hoje permanece intacta.</>
+                  : <>o corpo atual será <strong>substituído</strong> pelos itens desta {isDraft ? "rascunho" : "prescrição"} — você poderá continuar editando.</>}
+              </div>
+            );
+          })()}
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" size="sm" onClick={() => setPreviewPrescription(null)}>Fechar</Button>
-            {previewPrescription && (
-              <>
+            {previewPrescription && (() => {
+              const hasCurrentValidated = items.some(i => i.status === 'active' && isItemValidatedToday(i));
+              if (hasCurrentValidated) {
+                // Só permite mesclar — substituir poria a validada em risco
+                return (
+                  <Button
+                    size="sm"
+                    className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
+                    onClick={() => { restoreFromPrescription(previewPrescription); setPreviewPrescription(null); }}
+                    title="Soma os itens desta versão no rascunho atual, ignorando duplicados"
+                  >
+                    <CopyPlus className="h-3.5 w-3.5" />
+                    Mesclar itens
+                  </Button>
+                );
+              }
+              return (
                 <Button
-                  variant="outline"
                   size="sm"
-                  className="gap-1.5 border-emerald-300/70 text-emerald-800 hover:bg-emerald-100/60 dark:text-emerald-200 dark:border-emerald-500/40 dark:hover:bg-emerald-900/30"
-                  onClick={() => { restoreFromPrescription(previewPrescription); setPreviewPrescription(null); }}
-                  title="Soma os itens desta versão no rascunho atual, ignorando duplicados"
-                >
-                  <CopyPlus className="h-3.5 w-3.5" />
-                  Restaurar (somar)
-                </Button>
-                <Button
-                  size="sm"
+                  className="gap-1.5"
                   onClick={() => { loadPrescription(previewPrescription.id); setPreviewPrescription(null); }}
+                  title="Restaura por completo — substitui o corpo da prescrição atual"
                 >
-                  Abrir no editor
+                  <RotateCw className="h-3.5 w-3.5" />
+                  Restaurar no corpo
                 </Button>
-              </>
-            )}
+              );
+            })()}
           </DialogFooter>
 
         </DialogContent>
@@ -8422,19 +8529,38 @@ const PrescricaoPage = () => {
       </div>
 
       {/* ===== PRINT PORTAL ===== */}
-      {showPrintPortal && createPortal(
-        <div id="prescription-print-root" style={{ display: 'none' }}>
-          <PrintablePrescription
-            patient={patient}
-            items={items}
-            itemsByCategory={itemsByCategory}
-            digitalSignature={digitalSignature}
-            prescriptionDate={prescriptionDate}
-            hospitalName={currentHospital?.name || 'HOSPITAL MUNICIPAL'}
-          />
-        </div>,
-        document.body
-      )}
+      {showPrintPortal && (() => {
+        // Filtra itens quando há uma seleção parcial (botão "Imprimir selecionados")
+        const printItems = printSelectionIds
+          ? items.filter(i => printSelectionIds.has(i.id))
+          : items;
+        const printItemsByCategory = printSelectionIds
+          ? (() => {
+              const map: Record<PrescriptionCategory, PrescriptionItem[]> = {
+                nutrition: [], hydration: [], replacement: [], medication: [], antimicrobial: [],
+                high_alert: [], inhalation: [], hemotherapy: [], care: [], nonstandard: [],
+              };
+              printItems.forEach(item => {
+                const cat = item.category in map ? item.category : 'nonstandard' as PrescriptionCategory;
+                map[cat].push(item);
+              });
+              return map;
+            })()
+          : itemsByCategory;
+        return createPortal(
+          <div id="prescription-print-root" style={{ display: 'none' }}>
+            <PrintablePrescription
+              patient={patient}
+              items={printItems}
+              itemsByCategory={printItemsByCategory}
+              digitalSignature={digitalSignature}
+              prescriptionDate={prescriptionDate}
+              hospitalName={currentHospital?.name || 'HOSPITAL MUNICIPAL'}
+            />
+          </div>,
+          document.body
+        );
+      })()}
 
       {/* ===== FOOTER SUMMARY ===== */}
       <div className="rounded-xl border border-[hsl(217,30%,84%)]/70 dark:border-[hsl(217,30%,24%)]/70 bg-gradient-to-b from-[hsl(217,45%,98%)] to-[hsl(217,40%,96%)] dark:from-[hsl(217,35%,13%)] dark:to-[hsl(217,32%,11%)] p-4 flex items-center justify-between print:hidden shadow-[0_4px_16px_-6px_hsl(217,50%,30%,0.18)] dark:shadow-[0_4px_16px_-6px_hsl(217,80%,5%,0.45)] ring-1 ring-[hsl(217,55%,90%)]/40 dark:ring-[hsl(217,40%,22%)]/40">
