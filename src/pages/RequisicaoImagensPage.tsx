@@ -117,6 +117,11 @@ const RequisicaoImagensPage = () => {
   const [searchProcedure, setSearchProcedure] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
+  // Manual (avulso) procedure entry — sem SIGTAP
+  const [manualName, setManualName] = useState("");
+  const [manualCode, setManualCode] = useState("");
+  const [manualQty, setManualQty] = useState<number>(1);
+
   // Justification
   const [diagnosis, setDiagnosis] = useState("");
   const [cidPrimary, setCidPrimary] = useState("");
@@ -268,6 +273,28 @@ const RequisicaoImagensPage = () => {
 
   const removeProcedure = (code: string) => {
     setSelectedProcedures((prev) => prev.filter((p) => p.code !== code));
+  };
+
+  const addManualProcedure = () => {
+    const name = manualName.trim().toUpperCase();
+    if (!name) {
+      toast.error("Informe a descrição do procedimento");
+      return;
+    }
+    if (selectedProcedures.length >= 6) {
+      toast.error("Máximo de 6 procedimentos por laudo");
+      return;
+    }
+    const codeRaw = manualCode.trim();
+    // Gera código único se vazio (não conflita com SIGTAP)
+    const code = codeRaw || `AVULSO-${Date.now().toString().slice(-6)}`;
+    if (selectedProcedures.find((p) => p.code === code)) {
+      toast.info("Procedimento já adicionado");
+      return;
+    }
+    setSelectedProcedures((prev) => [...prev, { code, name, qty: Math.max(1, manualQty || 1) }]);
+    setManualName(""); setManualCode(""); setManualQty(1);
+    toast.success("Procedimento avulso adicionado");
   };
 
   const resetForm = () => {
@@ -527,6 +554,53 @@ const RequisicaoImagensPage = () => {
               </CardContent>
             </Card>
 
+            {/* Manual / Avulso (sem SIGTAP) */}
+            <Card className="border-dashed">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  Procedimento avulso (sem SIGTAP)
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Use para exames não catalogados — ex.: COLANGIO-RM, ANGIOTOMOGRAFIA específica, ressonâncias dedicadas. Código é opcional.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="grid grid-cols-12 gap-2">
+                  <div className="col-span-7">
+                    <Label className="text-xs text-muted-foreground">Descrição do procedimento *</Label>
+                    <Input
+                      value={manualName}
+                      onChange={(e) => setManualName(e.target.value)}
+                      placeholder="Ex: COLANGIO-RESSONÂNCIA DE VIAS BILIARES"
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <Label className="text-xs text-muted-foreground">Código (opcional)</Label>
+                    <Input
+                      value={manualCode}
+                      onChange={(e) => setManualCode(e.target.value)}
+                      placeholder="—"
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-xs text-muted-foreground">Qtde</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={99}
+                      value={manualQty}
+                      onChange={(e) => setManualQty(parseInt(e.target.value) || 1)}
+                      className="text-center"
+                    />
+                  </div>
+                </div>
+                <Button size="sm" variant="secondary" className="w-full" onClick={addManualProcedure}>
+                  <Plus className="h-4 w-4 mr-1" /> Adicionar procedimento avulso
+                </Button>
+              </CardContent>
+            </Card>
+
             {/* Selected procedures */}
             <Card className={selectedProcedures.length > 0 ? "border-primary/30" : ""}>
               <CardHeader className="pb-2">
@@ -635,28 +709,30 @@ const RequisicaoImagensPage = () => {
       <div ref={printRef} className="hidden print:block">
         <style>{`
           @media print {
-            @page { size: A4 portrait; margin: 10mm 12mm; }
+            @page { size: A4 portrait; margin: 8mm 10mm; }
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .print\\:block { display: block !important; }
             .print\\:hidden { display: none !important; }
+            .apac-doc { font-size: 7.5pt; line-height: 1.15; }
           }
-          .apac-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
-          .apac-table th, .apac-table td { border: 1px solid #000; padding: 2px 4px; text-align: left; vertical-align: top; }
-          .apac-table th { background: #e5e7eb; font-weight: bold; font-size: 7pt; text-transform: uppercase; }
-          .apac-section-title { background: #1e293b; color: white; font-weight: bold; font-size: 8pt; padding: 3px 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-          .apac-header { text-align: center; margin-bottom: 6px; }
-          .apac-header h1 { font-size: 11pt; font-weight: bold; margin: 0; }
-          .apac-header p { font-size: 7pt; margin: 0; color: #666; }
-          .apac-field-label { font-size: 6.5pt; color: #666; display: block; }
-          .apac-field-value { font-size: 9pt; font-weight: 500; min-height: 14px; }
-          .apac-signature-area { height: 40px; border-bottom: 1px solid #000; margin-top: 20px; }
+          .apac-doc table { page-break-inside: avoid; }
+          .apac-table { width: 100%; border-collapse: collapse; font-size: 7pt; }
+          .apac-table th, .apac-table td { border: 1px solid #000; padding: 1px 3px; text-align: left; vertical-align: top; }
+          .apac-table th { background: #e5e7eb; font-weight: bold; font-size: 6.5pt; text-transform: uppercase; }
+          .apac-section-title { background: #1e293b; color: white; font-weight: bold; font-size: 7pt; padding: 2px 5px; text-transform: uppercase; letter-spacing: 0.3px; }
+          .apac-header { text-align: center; margin-bottom: 4px; }
+          .apac-header h1 { font-size: 10pt; font-weight: bold; margin: 0; }
+          .apac-header p { font-size: 6.5pt; margin: 0; color: #666; }
+          .apac-field-label { font-size: 6pt; color: #555; display: block; line-height: 1.1; }
+          .apac-field-value { font-size: 8pt; font-weight: 500; min-height: 11px; line-height: 1.2; }
+          .apac-obs-value { font-size: 8pt; font-weight: 500; min-height: 78px; line-height: 1.3; white-space: pre-wrap; }
         `}</style>
 
-        <div style={{ fontFamily: "'Arial', sans-serif", color: "#000" }}>
+        <div className="apac-doc" style={{ fontFamily: "'Arial', sans-serif", color: "#000" }}>
           {/* Header */}
-          <div className="apac-header" style={{ borderBottom: "2px solid #000", paddingBottom: "4px", marginBottom: "8px" }}>
-            <p style={{ fontSize: "7pt", margin: 0 }}>Sistema Único de Saúde — Ministério da Saúde</p>
-            <h1 style={{ fontSize: "11pt", fontWeight: "bold", margin: "2px 0" }}>LAUDO PARA SOLICITAÇÃO / AUTORIZAÇÃO DE PROCEDIMENTO AMBULATORIAL</h1>
+          <div className="apac-header" style={{ borderBottom: "1.5px solid #000", paddingBottom: "2px", marginBottom: "4px" }}>
+            <p style={{ fontSize: "6.5pt", margin: 0 }}>Sistema Único de Saúde — Ministério da Saúde</p>
+            <h1 style={{ fontSize: "10pt", fontWeight: "bold", margin: "1px 0" }}>LAUDO PARA SOLICITAÇÃO / AUTORIZAÇÃO DE PROCEDIMENTO AMBULATORIAL</h1>
           </div>
 
           {/* Institution */}
@@ -677,7 +753,7 @@ const RequisicaoImagensPage = () => {
           </table>
 
           {/* Patient */}
-          <table className="apac-table" style={{ marginTop: "4px" }}>
+          <table className="apac-table" style={{ marginTop: "3px" }}>
             <tbody>
               <tr><td colSpan={5} className="apac-section-title">IDENTIFICAÇÃO DO PACIENTE</td></tr>
               <tr>
@@ -736,7 +812,7 @@ const RequisicaoImagensPage = () => {
           </table>
 
           {/* Primary procedure */}
-          <table className="apac-table" style={{ marginTop: "4px" }}>
+          <table className="apac-table" style={{ marginTop: "3px" }}>
             <tbody>
               <tr><td colSpan={3} className="apac-section-title">PROCEDIMENTO SOLICITADO</td></tr>
               <tr>
@@ -756,35 +832,36 @@ const RequisicaoImagensPage = () => {
             </tbody>
           </table>
 
-          {/* Secondary procedures */}
-          <table className="apac-table" style={{ marginTop: "4px" }}>
-            <tbody>
-              <tr><td colSpan={3} className="apac-section-title">PROCEDIMENTO(S) SECUNDÁRIO(S)</td></tr>
-              {[1, 2, 3, 4, 5].map((idx) => {
-                const proc = selectedProcedures[idx];
-                const fieldNum = 18 + (idx - 1) * 3;
-                return (
-                  <tr key={idx}>
-                    <td style={{ width: "25%" }}>
-                      <span className="apac-field-label">{fieldNum} — CÓDIGO</span>
-                      <div className="apac-field-value" style={{ fontFamily: "monospace" }}>{proc?.code || ""}</div>
-                    </td>
-                    <td style={{ width: "60%" }}>
-                      <span className="apac-field-label">{fieldNum + 1} — NOME DO PROCEDIMENTO</span>
-                      <div className="apac-field-value">{proc?.name || ""}</div>
-                    </td>
-                    <td>
-                      <span className="apac-field-label">{fieldNum + 2} — QTDE</span>
-                      <div className="apac-field-value" style={{ textAlign: "center" }}>{proc?.qty || ""}</div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {/* Secondary procedures — só renderiza os preenchidos para economizar espaço */}
+          {selectedProcedures.length > 1 && (
+            <table className="apac-table" style={{ marginTop: "3px" }}>
+              <tbody>
+                <tr><td colSpan={3} className="apac-section-title">PROCEDIMENTO(S) SECUNDÁRIO(S)</td></tr>
+                {selectedProcedures.slice(1).map((proc, i) => {
+                  const fieldNum = 18 + i * 3;
+                  return (
+                    <tr key={proc.code}>
+                      <td style={{ width: "22%" }}>
+                        <span className="apac-field-label">{fieldNum} — CÓDIGO</span>
+                        <div className="apac-field-value" style={{ fontFamily: "monospace" }}>{proc.code}</div>
+                      </td>
+                      <td style={{ width: "68%" }}>
+                        <span className="apac-field-label">{fieldNum + 1} — NOME DO PROCEDIMENTO</span>
+                        <div className="apac-field-value">{proc.name}</div>
+                      </td>
+                      <td>
+                        <span className="apac-field-label">{fieldNum + 2} — QTDE</span>
+                        <div className="apac-field-value" style={{ textAlign: "center" }}>{proc.qty}</div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
 
           {/* Justification */}
-          <table className="apac-table" style={{ marginTop: "4px" }}>
+          <table className="apac-table" style={{ marginTop: "3px" }}>
             <tbody>
               <tr><td colSpan={4} className="apac-section-title">JUSTIFICATIVA DO(S) PROCEDIMENTO(S) SOLICITADO(S)</td></tr>
               <tr>
@@ -821,15 +898,15 @@ const RequisicaoImagensPage = () => {
               </tr>
               <tr>
                 <td colSpan={4}>
-                  <span className="apac-field-label">37 — OBSERVAÇÕES</span>
-                  <div className="apac-field-value" style={{ minHeight: "30px", whiteSpace: "pre-wrap" }}>{observations}</div>
+                  <span className="apac-field-label">37 — OBSERVAÇÕES / JUSTIFICATIVA CLÍNICA DETALHADA</span>
+                  <div className="apac-obs-value">{observations}</div>
                 </td>
               </tr>
             </tbody>
           </table>
 
           {/* Solicitation */}
-          <table className="apac-table" style={{ marginTop: "4px" }}>
+          <table className="apac-table" style={{ marginTop: "3px" }}>
             <tbody>
               <tr><td colSpan={4} className="apac-section-title">SOLICITAÇÃO</td></tr>
               <tr>
@@ -843,7 +920,7 @@ const RequisicaoImagensPage = () => {
                 </td>
                 <td>
                   <span className="apac-field-label">42 — ASSINATURA E CARIMBO</span>
-                  <div style={{ height: "30px" }}></div>
+                  <div style={{ height: "22px" }}></div>
                 </td>
               </tr>
               <tr>
@@ -860,21 +937,21 @@ const RequisicaoImagensPage = () => {
           </table>
 
           {/* Authorization (blank) */}
-          <table className="apac-table" style={{ marginTop: "4px" }}>
+          <table className="apac-table" style={{ marginTop: "3px" }}>
             <tbody>
               <tr><td colSpan={4} className="apac-section-title">AUTORIZAÇÃO (PREENCHIMENTO PELO AUTORIZADOR)</td></tr>
               <tr>
                 <td colSpan={2}>
                   <span className="apac-field-label">43 — NOME DO PROFISSIONAL AUTORIZADOR</span>
-                  <div style={{ height: "16px" }}></div>
+                  <div style={{ height: "12px" }}></div>
                 </td>
                 <td>
                   <span className="apac-field-label">44 — CÓD. ÓRGÃO EMISSOR</span>
-                  <div style={{ height: "16px" }}></div>
+                  <div style={{ height: "12px" }}></div>
                 </td>
                 <td>
                   <span className="apac-field-label">49 — Nº DA AUTORIZAÇÃO APAC</span>
-                  <div style={{ height: "16px" }}></div>
+                  <div style={{ height: "12px" }}></div>
                 </td>
               </tr>
               <tr>
@@ -884,15 +961,15 @@ const RequisicaoImagensPage = () => {
                 </td>
                 <td>
                   <span className="apac-field-label">46 — Nº DOCUMENTO</span>
-                  <div style={{ height: "16px" }}></div>
+                  <div style={{ height: "12px" }}></div>
                 </td>
                 <td>
                   <span className="apac-field-label">47 — DATA DA AUTORIZAÇÃO</span>
-                  <div style={{ height: "16px" }}></div>
+                  <div style={{ height: "12px" }}></div>
                 </td>
                 <td>
                   <span className="apac-field-label">48 — ASSINATURA E CARIMBO</span>
-                  <div style={{ height: "30px" }}></div>
+                  <div style={{ height: "22px" }}></div>
                 </td>
               </tr>
             </tbody>
