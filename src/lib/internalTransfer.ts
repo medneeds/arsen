@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { repointPatientHistory } from "@/lib/repointPatientHistory";
 import { classifyTransfer, requiresSaps, type TransferClassification } from "@/lib/sectorComplexity";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { invalidateResolvedRegistry } from "@/hooks/useResolvedRegistryId";
 import type { Patient } from "@/types/patient";
 
 /**
@@ -77,6 +78,18 @@ export async function executeInternalTransfer(params: {
   const needsSaps = requiresSaps(classification);
 
   try {
+    // 0. Busca identidade permanente (registry/prontuário/admissão) do leito origem
+    //    para garantir que documentação clínica acompanhe o paciente no destino.
+    const { data: sourceDbRow } = await supabase
+      .from("patients")
+      .select("patient_registry_id, medical_record, admitted_at")
+      .eq("id", source.id)
+      .maybeSingle();
+
+    const sourceRegistryId = (sourceDbRow as any)?.patient_registry_id ?? null;
+    const sourceMedicalRecord = (sourceDbRow as any)?.medical_record ?? null;
+    const sourceAdmittedAt = (sourceDbRow as any)?.admitted_at ?? null;
+
     // 1. Preenche o leito destino com os dados do paciente.
     const destinationAdmissionStatus = needsSaps
       ? "saps_pendente"
@@ -111,8 +124,12 @@ export async function executeInternalTransfer(params: {
         clinical_status: source.clinicalStatus || null,
         psm_status: source.psmStatus || null,
         admission_status: destinationAdmissionStatus,
+        patient_registry_id: sourceRegistryId,
+        medical_record: sourceMedicalRecord,
+        admitted_at: sourceAdmittedAt,
+        is_vacant: false,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq("id", targetBedRow.id);
     if (targetError) throw targetError;
 
@@ -156,8 +173,12 @@ export async function executeInternalTransfer(params: {
         clinical_status: null,
         psm_status: null,
         admission_status: null,
+        patient_registry_id: null,
+        medical_record: null,
+        admitted_at: null,
+        is_vacant: true,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq("id", source.id);
     if (sourceError) throw sourceError;
 
@@ -179,6 +200,9 @@ export async function executeInternalTransfer(params: {
       state_id: stateId,
       hospital_unit_id: hospitalUnitId,
     });
+
+    invalidateResolvedRegistry(source.id);
+    invalidateResolvedRegistry(targetBedRow.id);
 
     return { ok: true, classification, needsSaps };
   } catch (err: any) {
@@ -296,8 +320,11 @@ export async function signalInternalTransfer(
         clinical_status: null,
         psm_status: null,
         admission_status: null,
+        patient_registry_id: null,
+        medical_record: null,
+        is_vacant: true,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq("id", source.id);
     if (clearError) throw clearError;
 
@@ -358,6 +385,18 @@ export async function completeInternalTransfer(
     const needsSaps: boolean = req.requires_saps;
     const sourcePatientId: string = req.source_patient_id;
 
+    // Busca identidade permanente (registry/prontuário/admissão) ainda preservada
+    // no leito origem para garantir que documentação clínica acompanhe o paciente.
+    const { data: sourceDbRow } = await supabase
+      .from("patients")
+      .select("patient_registry_id, medical_record, admitted_at")
+      .eq("id", sourcePatientId)
+      .maybeSingle();
+
+    const sourceRegistryId = (sourceDbRow as any)?.patient_registry_id ?? null;
+    const sourceMedicalRecord = (sourceDbRow as any)?.medical_record ?? null;
+    const sourceAdmittedAt = (sourceDbRow as any)?.admitted_at ?? null;
+
     const destinationAdmissionStatus = needsSaps
       ? "saps_pendente"
       : (snapshot.admissionStatus ?? "admitido");
@@ -391,8 +430,12 @@ export async function completeInternalTransfer(
         clinical_status: snapshot.clinicalStatus || null,
         psm_status: snapshot.psmStatus || null,
         admission_status: destinationAdmissionStatus,
+        patient_registry_id: sourceRegistryId,
+        medical_record: sourceMedicalRecord,
+        admitted_at: sourceAdmittedAt,
+        is_vacant: false,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq("id", targetBedRow.id);
     if (targetError) throw targetError;
 
@@ -431,6 +474,8 @@ export async function completeInternalTransfer(
       state_id: stateId,
       hospital_unit_id: hospitalUnitId,
     });
+
+    invalidateResolvedRegistry(targetBedRow.id);
 
     return { ok: true, classification, needsSaps };
   } catch (err: any) {
