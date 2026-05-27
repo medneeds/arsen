@@ -501,6 +501,8 @@ const RequisicaoImagensPage = () => {
             </Card>
           </div>
 
+          {/* Right column: Search + selected */}
+          <div className="space-y-4">
             {/* Manual / Avulso (sem SIGTAP) — destacado no topo */}
             <Card className="border-2 border-primary/40 bg-primary/5">
               <CardHeader className="pb-2">
