@@ -1484,6 +1484,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   }, [unitPatients, pickerSearch]);
 
   const [selectedProcedures, setSelectedProcedures] = useState<ApacSelectedProcedure[]>([]);
+  const [customProcCode, setCustomProcCode] = useState("");
+  const [customProcName, setCustomProcName] = useState("");
   const [searchProcedure, setSearchProcedure] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
