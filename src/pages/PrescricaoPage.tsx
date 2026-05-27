@@ -3365,7 +3365,7 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
         {!isNutrition && (
           <div style={{ fontSize: '7.5pt', color: '#334155', lineHeight: '1.3', marginTop: '1px' }}>
             {[
-              item.dose && item.dose !== '-' ? item.dose : null,
+              item.dose && item.dose !== '-' ? composeDoseLabel(item) : null,
               item.route && item.route !== '-' ? item.route : null,
               item.posology && item.posology !== '-' ? item.posology : null,
             ].filter(Boolean).join(' · ')}
@@ -8709,7 +8709,7 @@ const PrescricaoPage = () => {
                         {(item.dose && item.dose !== '-') || (item.route && item.route !== '-') || (item.posology && item.posology !== '-') ? (
                           <span className="text-muted-foreground ml-1">
                             {[
-                              item.dose && item.dose !== '-' ? item.dose : null,
+                              item.dose && item.dose !== '-' ? composeDoseLabel(item) : null,
                               item.route && item.route !== '-' ? item.route : null,
                               item.posology && item.posology !== '-' ? item.posology : null,
                             ].filter(Boolean).join(' · ')}
@@ -9756,7 +9756,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 {item.category !== 'nutrition' && (
                   <div style={{ fontSize: '7.5pt', color: '#1e293b', lineHeight: 1.35, marginTop: '2px', fontWeight: 600 }}>
                     {[
-                      item.dose && item.dose !== '-' ? item.dose : null,
+                      item.dose && item.dose !== '-' ? composeDoseLabel(item) : null,
                       item.route && item.route !== '-' ? abbrevRoute(item.route) : null,
                       item.posology && item.posology !== '-' ? item.posology : null,
                     ].filter(Boolean).join(' · ')}
