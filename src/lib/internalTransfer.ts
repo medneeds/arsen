@@ -320,8 +320,11 @@ export async function signalInternalTransfer(
         clinical_status: null,
         psm_status: null,
         admission_status: null,
+        patient_registry_id: null,
+        medical_record: null,
+        is_vacant: true,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq("id", source.id);
     if (clearError) throw clearError;
 
