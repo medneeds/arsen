@@ -430,8 +430,12 @@ export async function completeInternalTransfer(
         clinical_status: snapshot.clinicalStatus || null,
         psm_status: snapshot.psmStatus || null,
         admission_status: destinationAdmissionStatus,
+        patient_registry_id: sourceRegistryId,
+        medical_record: sourceMedicalRecord,
+        admitted_at: sourceAdmittedAt,
+        is_vacant: false,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq("id", targetBedRow.id);
     if (targetError) throw targetError;
 
