@@ -599,6 +599,8 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
                         patientRecord={patientRecord || null}
                         cidPrimary={cidPrimary || null}
                         cidSecondary={cidSecondary || null}
+                        diagnosticsSlot={diagnosticsSlot}
+                        diagnosticsReviewSlot={diagnosticsSlot}
                       />
                     )}
                   </div>
