@@ -153,4 +153,6 @@
 - [Pre-admission Cancel Guard + Reopen](mem://features/pre-admission-cancel-guard-reopen) — Cancelamento didático (impacto explícito, prontuário preservado) + aba "Canceladas" com botão Reabrir que devolve à fila como aguardando_leito sem recadastrar; resgate sem SQL manual
 - [Resolve Header MR Name Guard](mem://features/resolve-header-medical-record-name-guard) — Fallback 1c do resolvePatientHeader exige match NFD/upper entre patients.name e registry.full_name ao vincular por medical_record; impede vazamento de identidade no cabeçalho do PDF (bug L09 Luis Carlos x Marilene)
 - [FAQ Help Center](mem://features/faq-help-center) — Central /ajuda com 9 guias didáticos em slides (setas/dots/swipe/teclado), botão na sidebar acima do toggle de tema; FaqVisualBlock reproduz padrões reais (bedCard/menu/cockpit/dialog) sem screenshots estáticos
+- [Prescription Universal Auto-Load](mem://features/prescription/universal-auto-load) — Auto-load 2 etapas (rascunho do dia → última validada renovada do mesmo encounter); blindado por registry+encounter; sem autosave
+
 

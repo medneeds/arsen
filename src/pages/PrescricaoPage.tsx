@@ -62,6 +62,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
+import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 import { getClinicalDayWindowSP } from "@/lib/clinicalDay";
 import {
   DndContext,
@@ -4046,6 +4047,7 @@ const PrescricaoPage = () => {
   // 🔒 Resolução blindada via helper único — fonte da verdade para registry_id.
   // Ver src/hooks/useResolvedRegistryId.ts para detalhes da garantia anti-vazamento.
   const { registryId: patientRegistryId } = useResolvedRegistryId(urlPatientId);
+  const { encounterId: activeEncounterId } = useActiveEncounterId(urlPatientId);
   const lastSyncedPatientIdRef = useRef<string>(urlPatientId);
   useEffect(() => {
     if (!urlPatientId || urlPatientId === lastSyncedPatientIdRef.current) return;
@@ -5953,45 +5955,98 @@ const PrescricaoPage = () => {
     }
   }, [draftToDelete, draftDeleteReason, currentPrescriptionId, fetchPrescriptions]);
 
-  // Auto-hidrata a última prescrição do paciente dentro do DIA CLÍNICO atual (05:00 → 04:59 SP).
-  // Garante que prescrições validadas/impressas continuem visíveis até o corte das 05h SP
-  // mesmo se o médico fechar a aba e reabrir, e impede duplicatas.
+  // ============================================================
+  // AUTO-LOAD universal de prescrição ao abrir o paciente
+  // ============================================================
+  // Regras (acordadas com o usuário):
+  //  1) Procura RASCUNHO do dia clínico atual (05h SP → 04h59 SP) para este
+  //     paciente/encounter. Se achar: carrega como está (continua editando).
+  //  2) Senão: busca a ÚLTIMA VALIDADA/ASSINADA do MESMO encounter (qualquer
+  //     data passada) e carrega os itens como RASCUNHO NOVO (status renovado):
+  //       • items: novo id, validated=false, validatedAt undefined, status active
+  //       • digitalSignature limpo, currentPrescriptionId=null
+  //       • a validada original PERMANECE INTOCADA no histórico/calendário
+  //       • toast didático "carregada validada de DD/MM HH:mm — revise para validar hoje"
+  //  3) Sem encounter ativo resolvido OU novo atendimento sem histórico no
+  //     encounter → prescrição em branco (não vaza prescrição de alta anterior).
+  //  4) NÃO faz autosave. Rascunho só persiste se o médico clicar "Salvar Rascunho".
   const autoLoadAttemptedRef = useRef(false);
   const loadPrescriptionRef = useRef<((id: string) => Promise<void>) | null>(null);
   useEffect(() => {
     if (autoLoadAttemptedRef.current) return;
     if (!currentHospital || !currentState || !patient.name.trim()) return;
     if (currentPrescriptionId) return;
+    // Só auto-carrega se já temos identidade segura: registry resolvido E encounter ativo.
+    // Sem isso, esperamos (evita vazamento entre encounters do mesmo leito).
+    if (!patientRegistryId || !activeEncounterId) return;
     autoLoadAttemptedRef.current = true;
     (async () => {
       try {
-        const since = getClinicalDayWindowSP().start.toISOString();
-        let alQ = supabase
+        const clinicalStart = getClinicalDayWindowSP().start.toISOString();
+
+        // Etapa 1 — rascunho do dia clínico atual deste encounter
+        const { data: draftRows, error: draftErr } = await supabase
           .from('prescriptions')
-          .select('id, created_at, items')
+          .select('id, items, created_at')
           .eq('hospital_unit_id', currentHospital.id)
           .eq('state_id', currentState.id)
-          .gte('created_at', since)
+          .eq('patient_registry_id', patientRegistryId)
+          .eq('encounter_id', activeEncounterId)
+          .eq('status', 'draft')
+          .is('archived_at', null)
+          .gte('created_at', clinicalStart)
           .order('created_at', { ascending: false })
           .limit(1);
-        alQ = patientRegistryId
-          ? alQ.eq('patient_registry_id', patientRegistryId)
-          : alQ.eq('patient_name', patient.name.trim()).is('patient_registry_id', null);
-        const { data, error } = await alQ;
-        if (error) throw error;
-        const last = (data || [])[0];
-        // ⚠️  Não carregar drafts vazios — eles sobrescrevem o demo (L09-L18) e
-        // o cabeçalho com dados obsoletos (ex.: corrupção que trazia birthDate
-        // de outro paciente para o NI do leito 10).
-        const lastItems = Array.isArray(last?.items) ? last!.items : [];
-        if (last?.id && lastItems.length > 0 && loadPrescriptionRef.current) {
-          await loadPrescriptionRef.current(last.id);
+        if (draftErr) throw draftErr;
+        const draft = (draftRows || [])[0];
+        const draftItems = Array.isArray(draft?.items) ? draft!.items : [];
+        if (draft?.id && draftItems.length > 0 && loadPrescriptionRef.current) {
+          await loadPrescriptionRef.current(draft.id);
+          return;
         }
+
+        // Etapa 2 — última validada/assinada do mesmo encounter (qualquer data)
+        const { data: validatedRows, error: vErr } = await supabase
+          .from('prescriptions')
+          .select('id, items, created_at, version')
+          .eq('hospital_unit_id', currentHospital.id)
+          .eq('state_id', currentState.id)
+          .eq('patient_registry_id', patientRegistryId)
+          .eq('encounter_id', activeEncounterId)
+          .neq('status', 'draft')
+          .is('archived_at', null)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (vErr) throw vErr;
+        const lastValidated = (validatedRows || [])[0];
+        const sourceItems = Array.isArray(lastValidated?.items) ? lastValidated!.items as unknown as PrescriptionItem[] : [];
+        if (!lastValidated?.id || sourceItems.length === 0) return;
+
+        // Renova: novo id por item, sem validação, sem suspensão, status active
+        const renewedItems: PrescriptionItem[] = sourceItems.map((it) => ({
+          ...it,
+          id: crypto.randomUUID(),
+          validated: false,
+          validatedAt: undefined,
+          status: 'active' as const,
+          suspensionReason: undefined,
+          suspendedAt: undefined,
+        }));
+        setItems(renewedItems);
+        setDigitalSignature(null);
+        setCurrentPrescriptionId(null); // próximo "Salvar" cria registro novo → preserva original
+        setSelectedIds(new Set());
+        const when = format(new Date(lastValidated.created_at), "dd/MM 'às' HH:mm", { locale: ptBR });
+        toast.info(`Última prescrição validada (${when}) carregada como rascunho`, {
+          description: `${renewedItems.length} itens renovados — revise e valide para o ciclo de hoje. A original permanece intocada no histórico.`,
+          duration: 8000,
+        });
       } catch (err) {
         console.error('[autoLoadPrescription] failed', err);
       }
     })();
-  }, [currentHospital, currentState, patient.name, patientRegistryId, currentPrescriptionId]);
+  }, [currentHospital, currentState, patient.name, patientRegistryId, activeEncounterId, currentPrescriptionId]);
+
 
   // Fetch version history for a prescription (by patient_name in same hospital)
   const fetchVersionHistory = useCallback(async (prescriptionId: string) => {
