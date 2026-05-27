@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { repointPatientHistory } from "@/lib/repointPatientHistory";
 import { classifyTransfer, requiresSaps, type TransferClassification } from "@/lib/sectorComplexity";
 import { sectorLabelFromCode } from "@/lib/hospitalSectors";
+import { invalidateResolvedRegistry } from "@/hooks/useResolvedRegistryId";
 import type { Patient } from "@/types/patient";
 
 /**
