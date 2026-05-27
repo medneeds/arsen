@@ -78,6 +78,18 @@ export async function executeInternalTransfer(params: {
   const needsSaps = requiresSaps(classification);
 
   try {
+    // 0. Busca identidade permanente (registry/prontuário/admissão) do leito origem
+    //    para garantir que documentação clínica acompanhe o paciente no destino.
+    const { data: sourceDbRow } = await supabase
+      .from("patients")
+      .select("patient_registry_id, medical_record, admitted_at")
+      .eq("id", source.id)
+      .maybeSingle();
+
+    const sourceRegistryId = (sourceDbRow as any)?.patient_registry_id ?? null;
+    const sourceMedicalRecord = (sourceDbRow as any)?.medical_record ?? null;
+    const sourceAdmittedAt = (sourceDbRow as any)?.admitted_at ?? null;
+
     // 1. Preenche o leito destino com os dados do paciente.
     const destinationAdmissionStatus = needsSaps
       ? "saps_pendente"
@@ -112,8 +124,12 @@ export async function executeInternalTransfer(params: {
         clinical_status: source.clinicalStatus || null,
         psm_status: source.psmStatus || null,
         admission_status: destinationAdmissionStatus,
+        patient_registry_id: sourceRegistryId,
+        medical_record: sourceMedicalRecord,
+        admitted_at: sourceAdmittedAt,
+        is_vacant: false,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq("id", targetBedRow.id);
     if (targetError) throw targetError;
 
