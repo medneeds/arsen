@@ -709,21 +709,23 @@ const RequisicaoImagensPage = () => {
       <div ref={printRef} className="hidden print:block">
         <style>{`
           @media print {
-            @page { size: A4 portrait; margin: 10mm 12mm; }
+            @page { size: A4 portrait; margin: 8mm 10mm; }
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .print\\:block { display: block !important; }
             .print\\:hidden { display: none !important; }
+            .apac-doc { font-size: 7.5pt; line-height: 1.15; }
           }
-          .apac-table { width: 100%; border-collapse: collapse; font-size: 8pt; }
-          .apac-table th, .apac-table td { border: 1px solid #000; padding: 2px 4px; text-align: left; vertical-align: top; }
-          .apac-table th { background: #e5e7eb; font-weight: bold; font-size: 7pt; text-transform: uppercase; }
-          .apac-section-title { background: #1e293b; color: white; font-weight: bold; font-size: 8pt; padding: 3px 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-          .apac-header { text-align: center; margin-bottom: 6px; }
-          .apac-header h1 { font-size: 11pt; font-weight: bold; margin: 0; }
-          .apac-header p { font-size: 7pt; margin: 0; color: #666; }
-          .apac-field-label { font-size: 6.5pt; color: #666; display: block; }
-          .apac-field-value { font-size: 9pt; font-weight: 500; min-height: 14px; }
-          .apac-signature-area { height: 40px; border-bottom: 1px solid #000; margin-top: 20px; }
+          .apac-doc table { page-break-inside: avoid; }
+          .apac-table { width: 100%; border-collapse: collapse; font-size: 7pt; }
+          .apac-table th, .apac-table td { border: 1px solid #000; padding: 1px 3px; text-align: left; vertical-align: top; }
+          .apac-table th { background: #e5e7eb; font-weight: bold; font-size: 6.5pt; text-transform: uppercase; }
+          .apac-section-title { background: #1e293b; color: white; font-weight: bold; font-size: 7pt; padding: 2px 5px; text-transform: uppercase; letter-spacing: 0.3px; }
+          .apac-header { text-align: center; margin-bottom: 4px; }
+          .apac-header h1 { font-size: 10pt; font-weight: bold; margin: 0; }
+          .apac-header p { font-size: 6.5pt; margin: 0; color: #666; }
+          .apac-field-label { font-size: 6pt; color: #555; display: block; line-height: 1.1; }
+          .apac-field-value { font-size: 8pt; font-weight: 500; min-height: 11px; line-height: 1.2; }
+          .apac-obs-value { font-size: 8pt; font-weight: 500; min-height: 78px; line-height: 1.3; white-space: pre-wrap; }
         `}</style>
 
         <div style={{ fontFamily: "'Arial', sans-serif", color: "#000" }}>
