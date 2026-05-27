@@ -753,7 +753,7 @@ const RequisicaoImagensPage = () => {
           </table>
 
           {/* Patient */}
-          <table className="apac-table" style={{ marginTop: "4px" }}>
+          <table className="apac-table" style={{ marginTop: "3px" }}>
             <tbody>
               <tr><td colSpan={5} className="apac-section-title">IDENTIFICAÇÃO DO PACIENTE</td></tr>
               <tr>
@@ -812,7 +812,7 @@ const RequisicaoImagensPage = () => {
           </table>
 
           {/* Primary procedure */}
-          <table className="apac-table" style={{ marginTop: "4px" }}>
+          <table className="apac-table" style={{ marginTop: "3px" }}>
             <tbody>
               <tr><td colSpan={3} className="apac-section-title">PROCEDIMENTO SOLICITADO</td></tr>
               <tr>
@@ -861,7 +861,7 @@ const RequisicaoImagensPage = () => {
           )}
 
           {/* Justification */}
-          <table className="apac-table" style={{ marginTop: "4px" }}>
+          <table className="apac-table" style={{ marginTop: "3px" }}>
             <tbody>
               <tr><td colSpan={4} className="apac-section-title">JUSTIFICATIVA DO(S) PROCEDIMENTO(S) SOLICITADO(S)</td></tr>
               <tr>
@@ -906,7 +906,7 @@ const RequisicaoImagensPage = () => {
           </table>
 
           {/* Solicitation */}
-          <table className="apac-table" style={{ marginTop: "4px" }}>
+          <table className="apac-table" style={{ marginTop: "3px" }}>
             <tbody>
               <tr><td colSpan={4} className="apac-section-title">SOLICITAÇÃO</td></tr>
               <tr>
@@ -920,7 +920,7 @@ const RequisicaoImagensPage = () => {
                 </td>
                 <td>
                   <span className="apac-field-label">42 — ASSINATURA E CARIMBO</span>
-                  <div style={{ height: "30px" }}></div>
+                  <div style={{ height: "22px" }}></div>
                 </td>
               </tr>
               <tr>
@@ -937,21 +937,21 @@ const RequisicaoImagensPage = () => {
           </table>
 
           {/* Authorization (blank) */}
-          <table className="apac-table" style={{ marginTop: "4px" }}>
+          <table className="apac-table" style={{ marginTop: "3px" }}>
             <tbody>
               <tr><td colSpan={4} className="apac-section-title">AUTORIZAÇÃO (PREENCHIMENTO PELO AUTORIZADOR)</td></tr>
               <tr>
                 <td colSpan={2}>
                   <span className="apac-field-label">43 — NOME DO PROFISSIONAL AUTORIZADOR</span>
-                  <div style={{ height: "16px" }}></div>
+                  <div style={{ height: "12px" }}></div>
                 </td>
                 <td>
                   <span className="apac-field-label">44 — CÓD. ÓRGÃO EMISSOR</span>
-                  <div style={{ height: "16px" }}></div>
+                  <div style={{ height: "12px" }}></div>
                 </td>
                 <td>
                   <span className="apac-field-label">49 — Nº DA AUTORIZAÇÃO APAC</span>
-                  <div style={{ height: "16px" }}></div>
+                  <div style={{ height: "12px" }}></div>
                 </td>
               </tr>
               <tr>
@@ -961,15 +961,15 @@ const RequisicaoImagensPage = () => {
                 </td>
                 <td>
                   <span className="apac-field-label">46 — Nº DOCUMENTO</span>
-                  <div style={{ height: "16px" }}></div>
+                  <div style={{ height: "12px" }}></div>
                 </td>
                 <td>
                   <span className="apac-field-label">47 — DATA DA AUTORIZAÇÃO</span>
-                  <div style={{ height: "16px" }}></div>
+                  <div style={{ height: "12px" }}></div>
                 </td>
                 <td>
                   <span className="apac-field-label">48 — ASSINATURA E CARIMBO</span>
-                  <div style={{ height: "30px" }}></div>
+                  <div style={{ height: "22px" }}></div>
                 </td>
               </tr>
             </tbody>
