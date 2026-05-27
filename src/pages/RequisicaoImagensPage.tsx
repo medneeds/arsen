@@ -912,17 +912,17 @@ const RequisicaoImagensPage = () => {
             <tbody>
               <tr><td colSpan={4} className="apac-section-title">SOLICITAÇÃO</td></tr>
               <tr>
-                <td colSpan={2}>
+                <td style={{ width: "32%" }}>
                   <span className="apac-field-label">38 — NOME DO PROFISSIONAL SOLICITANTE</span>
                   <div className="apac-field-value">{doctorName.toUpperCase()}</div>
                 </td>
-                <td>
+                <td style={{ width: "18%" }}>
                   <span className="apac-field-label">39 — DATA DA SOLICITAÇÃO</span>
                   <div className="apac-field-value">{todayFormatted}</div>
                 </td>
-                <td>
+                <td colSpan={2} style={{ width: "50%" }}>
                   <span className="apac-field-label">42 — ASSINATURA E CARIMBO</span>
-                  <div style={{ height: "22px" }}></div>
+                  <div style={{ height: "30px" }}></div>
                 </td>
               </tr>
               <tr>
