@@ -8056,28 +8056,62 @@ const PrescricaoPage = () => {
               <p className="text-xs text-muted-foreground italic py-4 text-center">Prescrição sem itens.</p>
             )}
           </div>
+          {/* Painel didático — explica qual ação acontece de acordo com o estado atual */}
+          {previewPrescription && (() => {
+            const hasCurrentValidated = items.some(i => i.status === 'active' && isItemValidatedToday(i));
+            const isDraft = !previewPrescription.isValidated;
+            // Fluxo solicitado pelo médico:
+            // - Rascunho + corpo vazio/sem validação → SUBSTITUI integralmente
+            // - Rascunho + corpo já tem validada → MESCLA (soma itens novos)
+            // - Validada antiga → mesma lógica (substituir se nada validado; mesclar caso contrário)
+            const willMerge = hasCurrentValidated;
+            return (
+              <div className={cn(
+                "mx-6 mb-2 rounded-md border px-3 py-2 text-[11px] leading-snug",
+                willMerge
+                  ? "border-amber-300/70 bg-amber-50/70 text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/20 dark:text-amber-200"
+                  : "border-sky-300/70 bg-sky-50/70 text-sky-900 dark:border-sky-500/40 dark:bg-sky-950/20 dark:text-sky-200",
+              )}>
+                <strong className="font-semibold">
+                  {willMerge ? "Há prescrição validada hoje" : "Restauração integral"}
+                </strong>
+                {": "}
+                {willMerge
+                  ? <>os itens desta {isDraft ? "rascunho" : "prescrição"} serão <strong>somados</strong> ao corpo atual (duplicados são ignorados). A prescrição validada de hoje permanece intacta.</>
+                  : <>o corpo atual será <strong>substituído</strong> pelos itens desta {isDraft ? "rascunho" : "prescrição"} — você poderá continuar editando.</>}
+              </div>
+            );
+          })()}
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" size="sm" onClick={() => setPreviewPrescription(null)}>Fechar</Button>
-            {previewPrescription && (
-              <>
+            {previewPrescription && (() => {
+              const hasCurrentValidated = items.some(i => i.status === 'active' && isItemValidatedToday(i));
+              if (hasCurrentValidated) {
+                // Só permite mesclar — substituir poria a validada em risco
+                return (
+                  <Button
+                    size="sm"
+                    className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
+                    onClick={() => { restoreFromPrescription(previewPrescription); setPreviewPrescription(null); }}
+                    title="Soma os itens desta versão no rascunho atual, ignorando duplicados"
+                  >
+                    <CopyPlus className="h-3.5 w-3.5" />
+                    Mesclar itens
+                  </Button>
+                );
+              }
+              return (
                 <Button
-                  variant="outline"
                   size="sm"
-                  className="gap-1.5 border-emerald-300/70 text-emerald-800 hover:bg-emerald-100/60 dark:text-emerald-200 dark:border-emerald-500/40 dark:hover:bg-emerald-900/30"
-                  onClick={() => { restoreFromPrescription(previewPrescription); setPreviewPrescription(null); }}
-                  title="Soma os itens desta versão no rascunho atual, ignorando duplicados"
-                >
-                  <CopyPlus className="h-3.5 w-3.5" />
-                  Restaurar (somar)
-                </Button>
-                <Button
-                  size="sm"
+                  className="gap-1.5"
                   onClick={() => { loadPrescription(previewPrescription.id); setPreviewPrescription(null); }}
+                  title="Restaura por completo — substitui o corpo da prescrição atual"
                 >
-                  Abrir no editor
+                  <RotateCw className="h-3.5 w-3.5" />
+                  Restaurar no corpo
                 </Button>
-              </>
-            )}
+              );
+            })()}
           </DialogFooter>
 
         </DialogContent>
