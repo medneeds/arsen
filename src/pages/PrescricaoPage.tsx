@@ -6058,10 +6058,10 @@ const PrescricaoPage = () => {
   // Mantém o ref do auto-load apontando para a versão atual de loadPrescription
   useEffect(() => { loadPrescriptionRef.current = loadPrescription; }, [loadPrescription]);
 
-  // Busca as datas (últimos 60 dias) com prescrições do paciente — para marcar bolinhas no calendário
   useEffect(() => {
     if (!currentHospital || !currentState || !patient.name.trim()) {
       setPrescriptionDateKeys(new Set());
+      setDraftDateKeys(new Set());
       return;
     }
     let cancelled = false;
@@ -6070,7 +6070,7 @@ const PrescricaoPage = () => {
         const since = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
         let dkQ = supabase
           .from('prescriptions')
-          .select('created_at')
+          .select('created_at, status')
           .eq('hospital_unit_id', currentHospital.id)
           .eq('state_id', currentState.id)
           .gte('created_at', since)
@@ -6082,9 +6082,25 @@ const PrescricaoPage = () => {
         const { data, error } = await dkQ;
         if (error) throw error;
         if (cancelled) return;
-        const keys = new Set<string>();
-        (data || []).forEach(d => keys.add(format(new Date(d.created_at), 'yyyy-MM-dd')));
-        setPrescriptionDateKeys(keys);
+        // Janela do dia clínico atual SP (05h → 04h59 do dia seguinte).
+        // Rascunhos só aparecem no calendário durante essa janela; depois somem.
+        const clinicalWindow = getClinicalDayWindowSP();
+        const validatedKeys = new Set<string>();
+        const draftKeys = new Set<string>();
+        (data || []).forEach(d => {
+          const dt = new Date(d.created_at);
+          const key = format(dt, 'yyyy-MM-dd');
+          if (d.status === 'draft') {
+            // Só inclui rascunho se estiver dentro do dia clínico atual
+            if (dt.getTime() >= clinicalWindow.start.getTime() && dt.getTime() <= clinicalWindow.end.getTime()) {
+              draftKeys.add(key);
+            }
+          } else {
+            validatedKeys.add(key);
+          }
+        });
+        setPrescriptionDateKeys(validatedKeys);
+        setDraftDateKeys(draftKeys);
       } catch (err) {
         console.error('[prescriptionDateKeys] fetch failed', err);
       }
