@@ -512,6 +512,7 @@ const EvolucaoPage = () => {
             patientId={initialPatientId || null}
             cidPrimary={cidPrimary}
             cidSecondary={Array.isArray(cidSecondary) ? cidSecondary.join(", ") : cidSecondary}
+            diagnosticsSlot={diagnosticsSlot}
             onUpdate={updateEvolution}
             onValidate={validateEvolution}
             onSuspend={suspendEvolution}
