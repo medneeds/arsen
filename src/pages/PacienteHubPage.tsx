@@ -86,7 +86,32 @@ export default function PacienteHubPage() {
     const row: any = data || {};
     setAdmissionStatus((row.admission_status as AdmissionStatus) ?? "admitido");
     setDepartment(row.department ?? null);
-    setSapsPending(!!row.saps_pending && !row.saps_completed_at);
+
+    let stillPending = !!row.saps_pending && !row.saps_completed_at;
+
+    // Defesa em profundidade: se patients.saps_pending estiver preso (residual),
+    // checa se existe ficha SAPS 3 'completed' do paciente — se sim, libera o gate
+    // clínico e cura o flag silenciosamente (self-heal).
+    if (stillPending) {
+      const { data: sapsRow } = await supabase
+        .from("saps3_assessments" as any)
+        .select("id")
+        .eq("patient_id", ctx.patientId)
+        .eq("status", "completed")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (sapsRow) {
+        stillPending = false;
+        supabase
+          .from("patients")
+          .update({ saps_pending: false, saps_completed_at: new Date().toISOString() } as any)
+          .eq("id", ctx.patientId)
+          .then(() => { /* self-heal silencioso */ });
+      }
+    }
+
+    setSapsPending(stillPending);
     setSapsSince(row.saps_pending_since ?? null);
     setStatusLoading(false);
   };
