@@ -581,6 +581,13 @@ export function PrintableRequisitionGuide({
 export async function printRequisitionGuide(
   request: any,
   sectorLabel?: (s: string | null) => string,
+  opts?: {
+    compactDuo?: {
+      otherItems: any[];
+      otherLabel?: string;
+      gasoLabel?: string;
+    };
+  },
 ) {
   const items = Array.isArray(request.items) ? request.items : [];
 
