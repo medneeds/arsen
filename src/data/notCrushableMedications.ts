@@ -16,6 +16,21 @@ export interface NotCrushableEntry {
   kind: 'liberacao_modificada' | 'reves_enterico' | 'sublingual' | 'citotoxico' | 'irritante' | 'capsula_gel' | 'outros';
   /** Sugestão de manejo (substituição quando possível). */
   alternative?: string;
+  /**
+   * Técnica alternativa VIÁVEL via sonda enteral (quando existe).
+   * Quando definida, o builder mostra painel ÂMBAR (não bloqueante) com:
+   *   - aviso "NÃO triturar — usar técnica específica"
+   *   - inputs para veículo/volume + botão "Aplicar técnica à instrução"
+   * Quando ausente, painel VERMELHO bloqueia (sem técnica viável).
+   */
+  technique?: {
+    /** Rótulo curto da técnica (ex.: "Abrir cápsula e dispersar grânulos"). */
+    label: string;
+    /** Veículo recomendado (água, suco de laranja, suco de maçã, NaCl 0,9%). */
+    vehicle: 'agua' | 'suco_laranja' | 'suco_maca' | 'nacl_09' | 'qualquer';
+    /** Instrução base que será aplicada (com placeholders {volume}, {preLav}, {posLav}). */
+    instructionTemplate: string;
+  };
 }
 
 export const NOT_CRUSHABLE: NotCrushableEntry[] = [
