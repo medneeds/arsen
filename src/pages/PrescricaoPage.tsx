@@ -343,8 +343,8 @@ function detectQuantityUnit(presentation: string, dose: string): string {
 }
 
 // Auto-detect default diluent and volume from instructions
-function detectDiluentDefaults(instructions: string): { diluent: string; diluentVolume: string; infusionTime: string } {
-  const result = { diluent: '', diluentVolume: '', infusionTime: '' };
+function detectDiluentDefaults(instructions: string): { diluent: string; diluentVolume: string; infusionTime: string; infusionTimeUnit: 'min' | 'h' } {
+  const result = { diluent: '', diluentVolume: '', infusionTime: '', infusionTimeUnit: 'min' as 'min' | 'h' };
   if (!instructions) return result;
   const inst = instructions.toLowerCase();
   // Detect diluent
@@ -359,7 +359,10 @@ function detectDiluentDefaults(instructions: string): { diluent: string; diluent
   const timeMatch = inst.match(/(?:infundir em|correr em|infusão em)\s+(\d+)\s*(?:min|minutos)/i);
   if (timeMatch) result.infusionTime = timeMatch[1];
   const timeHMatch = inst.match(/(?:infundir em|correr em)\s+(\d+)\s*h/i);
-  if (timeHMatch) result.infusionTime = String(parseInt(timeHMatch[1]) * 60);
+  if (timeHMatch) {
+    result.infusionTime = timeHMatch[1]; // preserva o valor original (ex.: "2" para 2h)
+    result.infusionTimeUnit = 'h';
+  }
   return result;
 }
 
@@ -406,10 +409,14 @@ function calcVolumeTotal(item: PrescriptionItem): string {
   if (qtyVal > 0 && qtyUnit === 'ml') {
     medVol = qtyVal;
   } else {
-    // Fallback: extract mL from dose string
-    const doseVol = parseFloat(item.dose?.replace(/[^\d.,]/g, '').replace(',', '.') || '');
-    if (doseVol > 0 && item.dose?.toLowerCase().includes('ml')) {
-      medVol = doseVol;
+    // Fallback: extrair o PRIMEIRO número que precede "mL" na dose.
+    // NUNCA usar replace(/[^\d.,]/g,'') pois concatena todos os dígitos:
+    // "10 mL (≈ 25 mEq)" → "1025" → medVol absurdo.
+    const mlMatch = item.dose?.match(/^([\d.,]+)\s*mL/i)
+                 || item.dose?.match(/([\d.,]+)\s*mL/i);
+    if (mlMatch) {
+      const parsed = parseFloat(mlMatch[1].replace(',', '.'));
+      if (parsed > 0) medVol = parsed;
     }
   }
   // With diluent: medication volume + diluent volume
@@ -568,12 +575,32 @@ function buildSolutoToken(item: PrescriptionItem): string {
   const isMassDose = !!doseRaw && !isPureMlVolume &&
     /(mg|mcg|µg|ug|\bg\b|\bui\b|u\/|unidades?|meq|%)/i.test(doseRaw);
 
-  // Quando temos dose terapêutica + volume aspirado distinto, mostramos os dois
-  // (mais informativo para a enfermagem): "100 mg (10 mL)".
-  if (isMassDose && qtyStr && qtyStr.toLowerCase() !== doseRaw.toLowerCase()) {
-    return `${doseRaw} (${qtyStr})`;
+  // Dose terapêutica com unidade de massa → mostra dose + volume aspirado se diferente
+  if (isMassDose) {
+    if (qtyStr && qtyStr.toLowerCase() !== doseRaw.toLowerCase()) {
+      // Evita redundância: "1 amp (1.000 mg sal) (1 amp)" → "1 amp (1.000 mg sal)"
+      const qtyIsAlreadyInDose = doseRaw.toLowerCase().includes(qtyStr.toLowerCase().replace(/\s+/g, ' ').trim());
+      if (!qtyIsAlreadyInDose) return `${doseRaw} (${qtyStr})`;
+    }
+    return doseRaw;
   }
-  if (isMassDose) return doseRaw;
+
+  // Dose é volume puro em mL (ex.: "30 mL", "150 mL") — preservar o volume prescrito.
+  // Retornar qtyStr aqui descartaria o volume e mostraria apenas "1 amp", causando
+  // erro de administração (enfermagem usa 1 ampola = 10 mL ao invés dos 30 mL prescritos).
+  if (isPureMlVolume) {
+    const unitLower = (item.quantityUnit || '').toLowerCase();
+    if (qtyStr && !unitLower.includes('ml') && unitLower !== '') {
+      return `${qtyStr} (${doseRaw})`;
+    }
+    return doseRaw;
+  }
+
+  // Dose contém volume em mL embutido (ex.: "Bolus 150 mL") — preservar
+  if (doseRaw && /\d+(?:[.,]\d+)?\s*ml/i.test(doseRaw)) {
+    return doseRaw;
+  }
+
   if (qtyStr) return qtyStr;
   return doseRaw; // fallback bruto (raro)
 }
@@ -605,7 +632,12 @@ function buildPrepDescription(item: PrescriptionItem): string {
     // Volume final apenas quando distinto do diluente (ex.: soluto 50 mL + diluente 50 mL = 100 mL)
     const volTotalNum = parseFloat((item.volumeTotal || '').replace(',', '.'));
     const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
-    const hasDistinctTotal = item.volumeTotal && (!item.diluentVolume || (volTotalNum && volTotalNum !== volDilNum));
+    // Imprime volume final quando:
+    // (a) volumeTotal existe e é diferente do diluentVolume (há volume de medicamento somado)
+    // (b) volumeTotal existe e não há diluentVolume (volume total da bolsa)
+    const hasDistinctTotal = item.volumeTotal &&
+      (volTotalNum > 0) &&
+      (!item.diluentVolume || !volDilNum || volTotalNum !== volDilNum);
     if (hasDistinctTotal) parts.push(`Volume final: ${item.volumeTotal} mL.`);
   } else if (soluto) {
     parts.push(`${soluto}.`);
@@ -5196,12 +5228,23 @@ const PrescricaoPage = () => {
       status: 'active',
       infusionMode: 'BIC',
       infusionTime: autoDefaults.infusionTime,
-      infusionTimeUnit: 'min' as const,
-      volumeTotal: autoDefaults.diluentVolume,
+      infusionTimeUnit: (autoDefaults.infusionTimeUnit || 'min') as 'min' | 'h',
       quantity: '1',
       quantityUnit: autoUnit,
       diluent: isIV ? autoDefaults.diluent : '',
       diluentVolume: isIV ? autoDefaults.diluentVolume : '',
+      volumeTotal: (() => {
+        // volumeTotal = volume do medicamento + volume do diluente.
+        // Volume do medicamento: extraído da dose com regex segura (primeiro número antes de mL).
+        const dilVol = parseFloat(autoDefaults.diluentVolume || '') || 0;
+        const doseStr = med.defaultDose || '';
+        const mlMatch = doseStr.match(/^([\d.,]+)\s*mL/i) || doseStr.match(/([\d.,]+)\s*mL/i);
+        const medVol = mlMatch ? parseFloat(mlMatch[1].replace(',', '.')) || 0 : 0;
+        if (dilVol > 0 && medVol > 0) return String(Math.round(dilVol + medVol));
+        if (dilVol > 0) return String(dilVol);
+        if (medVol > 0) return String(medVol);
+        return '';
+      })(),
       accessType: '',
       concentration: '',
     };
