@@ -137,12 +137,13 @@ const RequisicaoImagensPage = () => {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, crm")
+        .select("full_name, crm, cpf")
         .eq("id", user.id)
         .maybeSingle();
       if (data) {
         setDoctorName(data.full_name || "");
         setDoctorCRM(data.crm || "");
+        setDoctorCPF((data as any).cpf || "");
       }
     };
     load();
@@ -710,23 +711,26 @@ const RequisicaoImagensPage = () => {
       <div ref={printRef} className="hidden print:block">
         <style>{`
           @media print {
-            @page { size: A4 portrait; margin: 8mm 10mm; }
+            @page { size: A4 portrait; margin: 7mm 9mm; }
+            html, body { height: 283mm; max-height: 283mm; overflow: hidden !important; }
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .print\\:block { display: block !important; }
             .print\\:hidden { display: none !important; }
-            .apac-doc { font-size: 7.5pt; line-height: 1.15; }
+            .apac-doc { font-size: 7.3pt; line-height: 1.12; max-height: 283mm; overflow: hidden; page-break-after: avoid; page-break-inside: avoid; }
+            .apac-doc * { page-break-inside: avoid !important; page-break-after: avoid !important; }
+            .apac-doc table, .apac-doc tr, .apac-doc td, .apac-doc th { page-break-inside: avoid !important; page-break-after: avoid !important; }
           }
           .apac-doc table { page-break-inside: avoid; }
-          .apac-table { width: 100%; border-collapse: collapse; font-size: 7pt; }
+          .apac-table { width: 100%; border-collapse: collapse; font-size: 6.8pt; }
           .apac-table th, .apac-table td { border: 1px solid #000; padding: 1px 3px; text-align: left; vertical-align: top; }
-          .apac-table th { background: #e5e7eb; font-weight: bold; font-size: 6.5pt; text-transform: uppercase; }
-          .apac-section-title { background: #1e293b; color: white; font-weight: bold; font-size: 7pt; padding: 2px 5px; text-transform: uppercase; letter-spacing: 0.3px; }
-          .apac-header { text-align: center; margin-bottom: 4px; }
-          .apac-header h1 { font-size: 10pt; font-weight: bold; margin: 0; }
-          .apac-header p { font-size: 6.5pt; margin: 0; color: #666; }
-          .apac-field-label { font-size: 6pt; color: #555; display: block; line-height: 1.1; }
-          .apac-field-value { font-size: 8pt; font-weight: 500; min-height: 11px; line-height: 1.2; }
-          .apac-obs-value { font-size: 7.5pt; font-weight: 500; min-height: 38px; line-height: 1.25; white-space: pre-wrap; }
+          .apac-table th { background: #e5e7eb; font-weight: bold; font-size: 6.3pt; text-transform: uppercase; }
+          .apac-section-title { background: #1e293b; color: white; font-weight: bold; font-size: 6.8pt; padding: 1.5px 5px; text-transform: uppercase; letter-spacing: 0.3px; }
+          .apac-header { text-align: center; margin-bottom: 3px; }
+          .apac-header h1 { font-size: 9.5pt; font-weight: bold; margin: 0; }
+          .apac-header p { font-size: 6.3pt; margin: 0; color: #666; }
+          .apac-field-label { font-size: 5.8pt; color: #555; display: block; line-height: 1.05; }
+          .apac-field-value { font-size: 7.6pt; font-weight: 500; min-height: 10px; line-height: 1.15; }
+          .apac-obs-value { font-size: 7.3pt; font-weight: 500; min-height: 34px; line-height: 1.2; white-space: pre-wrap; }
         `}</style>
 
         <div className="apac-doc" style={{ fontFamily: "'Arial', sans-serif", color: "#000" }}>
@@ -911,17 +915,17 @@ const RequisicaoImagensPage = () => {
             <tbody>
               <tr><td colSpan={4} className="apac-section-title">SOLICITAÇÃO</td></tr>
               <tr>
-                <td colSpan={2}>
+                <td style={{ width: "32%" }}>
                   <span className="apac-field-label">38 — NOME DO PROFISSIONAL SOLICITANTE</span>
                   <div className="apac-field-value">{doctorName.toUpperCase()}</div>
                 </td>
-                <td>
+                <td style={{ width: "18%" }}>
                   <span className="apac-field-label">39 — DATA DA SOLICITAÇÃO</span>
                   <div className="apac-field-value">{todayFormatted}</div>
                 </td>
-                <td>
+                <td colSpan={2} style={{ width: "50%" }}>
                   <span className="apac-field-label">42 — ASSINATURA E CARIMBO</span>
-                  <div style={{ height: "22px" }}></div>
+                  <div style={{ height: "30px" }}></div>
                 </td>
               </tr>
               <tr>
