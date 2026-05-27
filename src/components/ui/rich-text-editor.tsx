@@ -76,14 +76,27 @@ export function RichTextEditor({
   React.useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (value === lastEmittedRaw.current) {
+    // Comparação canônica: normaliza ambos os lados pelo mesmo pipeline
+    // (toRichHtml + sanitizeRichHtml) antes de comparar. Isso evita que
+    // diferenças cosméticas vindas do round-trip (servidor/JSONB/texto legado)
+    // disparem reescrita de innerHTML e percam o cursor.
+    const incoming = sanitizeRichHtml(toRichHtml(value));
+    const currentCanonical = sanitizeRichHtml(el.innerHTML);
+    if (incoming === currentCanonical) {
+      lastEmittedRaw.current = value ?? "";
       setEmpty(!(el.textContent || "").trim());
       return;
     }
-    const incoming = toRichHtml(value);
-    if (incoming !== el.innerHTML) {
-      el.innerHTML = incoming;
+    // Se o editor está focado (usuário digitando), NUNCA reescrever innerHTML
+    // — qualquer alteração do DOM aqui derruba a Selection/Range e joga o
+    // caret pro começo. O próximo handleInput vai re-emitir o estado real.
+    const isFocused = typeof document !== "undefined" && document.activeElement === el;
+    if (isFocused) {
+      lastEmittedRaw.current = value ?? "";
+      setEmpty(!(el.textContent || "").trim());
+      return;
     }
+    el.innerHTML = incoming;
     lastEmittedRaw.current = value ?? "";
     setEmpty(!(el.textContent || "").trim());
   }, [value]);
