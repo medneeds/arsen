@@ -296,6 +296,30 @@ const QUANTITY_UNIT_SHORT: Record<string, string> = {
 };
 const quantityUnitShort = (u?: string) => (u && QUANTITY_UNIT_SHORT[u]) || u || '';
 
+// Compose dose token combining `dose` (texto livre, geralmente do preset do wizard)
+// e `quantity`+`quantityUnit` (campos editados inline pelo médico).
+// Garante que edição em quantity/quantityUnit (ex.: "3 ampolas", "30 mL", "2 amp")
+// SEMPRE apareça no impresso/cartão, mesmo quando o preset do wizard
+// (ex.: "10 mL (≈ 25 mEq)") permanece em `dose`.
+function composeDoseLabel(item: { dose?: string; quantity?: string; quantityUnit?: string }): string {
+  const doseRaw = (item.dose && item.dose !== '-') ? item.dose.trim() : '';
+  const qtyRaw = (item.quantity || '').trim();
+  const qty = qtyRaw && qtyRaw !== '0' ? qtyRaw : '';
+  const unitShort = item.quantityUnit ? quantityUnitShort(item.quantityUnit) : '';
+  const qtyStr = qty ? (unitShort ? `${qty} ${unitShort}` : qty) : '';
+  if (!qtyStr) return doseRaw;
+  if (!doseRaw) return qtyStr;
+  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+  if (norm(doseRaw).includes(norm(qtyStr))) return doseRaw;
+  // Se dose é só volume puro em mL e quantidade traz ampola/frasco — prioriza qty (contagem real do médico)
+  const isPureMlDose = /^\d+(?:[.,]\d+)?\s*ml$/i.test(doseRaw);
+  const unitLower = (item.quantityUnit || '').toLowerCase();
+  const qtyIsAmpFr = unitLower.includes('ampola') || unitLower.includes('frasco');
+  if (isPureMlDose && qtyIsAmpFr) return qtyStr;
+  // Dose com massa real (mg/g/mcg/UI/mEq) + quantitativo distinto → mostra ambos
+  return `${doseRaw} (${qtyStr})`;
+}
+
 // Auto-detect quantity unit from medication presentation
 function detectQuantityUnit(presentation: string, dose: string): string {
   const p = presentation.toLowerCase();
@@ -2005,7 +2029,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       ].filter(Boolean).join(' · ');
       if (phrase) compactParts.push(phrase);
     } else {
-      if (item.dose && item.dose !== '-') compactParts.push(item.dose);
+      if (item.dose && item.dose !== '-') compactParts.push(composeDoseLabel(item));
       if (item.diluent && item.diluent !== 'sem_diluente') {
         let dil = `diluir em ${item.diluent}`;
         if (item.diluentVolume) dil += ` ${item.diluentVolume}mL`;
@@ -3341,7 +3365,7 @@ function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }
         {!isNutrition && (
           <div style={{ fontSize: '7.5pt', color: '#334155', lineHeight: '1.3', marginTop: '1px' }}>
             {[
-              item.dose && item.dose !== '-' ? item.dose : null,
+              item.dose && item.dose !== '-' ? composeDoseLabel(item) : null,
               item.route && item.route !== '-' ? item.route : null,
               item.posology && item.posology !== '-' ? item.posology : null,
             ].filter(Boolean).join(' · ')}
@@ -8685,7 +8709,7 @@ const PrescricaoPage = () => {
                         {(item.dose && item.dose !== '-') || (item.route && item.route !== '-') || (item.posology && item.posology !== '-') ? (
                           <span className="text-muted-foreground ml-1">
                             {[
-                              item.dose && item.dose !== '-' ? item.dose : null,
+                              item.dose && item.dose !== '-' ? composeDoseLabel(item) : null,
                               item.route && item.route !== '-' ? item.route : null,
                               item.posology && item.posology !== '-' ? item.posology : null,
                             ].filter(Boolean).join(' · ')}
@@ -9732,7 +9756,7 @@ function PrintablePrescription({ patient, items, itemsByCategory, digitalSignatu
                 {item.category !== 'nutrition' && (
                   <div style={{ fontSize: '7.5pt', color: '#1e293b', lineHeight: 1.35, marginTop: '2px', fontWeight: 600 }}>
                     {[
-                      item.dose && item.dose !== '-' ? item.dose : null,
+                      item.dose && item.dose !== '-' ? composeDoseLabel(item) : null,
                       item.route && item.route !== '-' ? abbrevRoute(item.route) : null,
                       item.posology && item.posology !== '-' ? item.posology : null,
                     ].filter(Boolean).join(' · ')}
