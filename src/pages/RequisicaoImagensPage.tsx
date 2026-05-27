@@ -277,7 +277,10 @@ const RequisicaoImagensPage = () => {
     setSelectedProcedures([]);
     setDiagnosis(""); setCidPrimary(""); setCidSecondary(""); setCidAssociated("");
     setObservations("");
-    toast.info("Formulário limpo");
+    // Libera o guard para que a próxima requisição re-hidrate o paciente
+    // automaticamente a partir do ?patientId= da URL (sem precisar recarregar a página).
+    setHydratedFromRegistry(false);
+    toast.info("Formulário limpo — paciente será re-sincronizado do prontuário");
   };
 
   const handlePrint = () => {
