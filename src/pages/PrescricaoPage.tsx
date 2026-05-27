@@ -6514,8 +6514,9 @@ const PrescricaoPage = () => {
       // sigOverride=null força status='draft'; autoNewVersionIfSigned cria nova versão
       // draft sem rebaixar a assinada anterior, preservando auditoria.
       await persistItems(items, { sigOverride: null, autoNewVersionIfSigned: true });
-      toast.success("Rascunho salvo", {
-        description: `${renewalPendingCount} item(ns) pendente(s) preservado(s). Visível apenas para você no calendário.`,
+      const savedAt = format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
+      toast.success(`Rascunho salvo às ${savedAt}`, {
+        description: `${renewalPendingCount} item(ns) pendente(s) preservado(s). Marcado com ponto cinza no calendário (some às 05h).`,
       });
     } catch {
       // persistItems já reportou erro
