@@ -4047,6 +4047,7 @@ const PrescricaoPage = () => {
   // 🔒 Resolução blindada via helper único — fonte da verdade para registry_id.
   // Ver src/hooks/useResolvedRegistryId.ts para detalhes da garantia anti-vazamento.
   const { registryId: patientRegistryId } = useResolvedRegistryId(urlPatientId);
+  const { encounterId: activeEncounterId } = useActiveEncounterId(urlPatientId);
   const lastSyncedPatientIdRef = useRef<string>(urlPatientId);
   useEffect(() => {
     if (!urlPatientId || urlPatientId === lastSyncedPatientIdRef.current) return;
