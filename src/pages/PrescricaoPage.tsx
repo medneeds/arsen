@@ -6401,7 +6401,7 @@ const PrescricaoPage = () => {
       setShowPrintPortal(false);
       setPrintSelectionIds(null);
     }, 300);
-  }, [selectedIds, items]);
+  }, [selectedIds, items, isItemValidatedToday]);
 
 
   const handlePrint = () => {
