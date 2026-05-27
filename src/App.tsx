@@ -11,6 +11,9 @@ import { lazy, Suspense, useState, useEffect } from "react";
 import { FloatingThemeToggle } from "@/components/FloatingThemeToggle";
 import { PageLoader } from "@/components/PageLoader";
 import { startIdlePrefetch } from "@/lib/prefetchRoutes";
+import { HelpTourProvider } from "@/contexts/HelpTourContext";
+import { HelpTourButton } from "@/components/help/HelpTourButton";
+import { HelpTourOverlay } from "@/components/help/HelpTourOverlay";
 
 // Telas críticas (eager): impactam first paint do app
 import Index from "./pages/Index";
