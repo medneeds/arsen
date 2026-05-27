@@ -4250,9 +4250,8 @@ const PrescricaoPage = () => {
     // ============= NUTRIÇÃO =============
     // Escape universal removido.
     if (item.category === 'nutrition') {
-      // Adição manual: exige apenas recomendações (instructions)
+      // Adição manual: recomendações são opcionais (apenas o nome basta)
       if (item.nutManual) {
-        if (empty(item.instructions)) missing.push('recomendações');
         return missing;
       }
 
@@ -8297,10 +8296,10 @@ const PrescricaoPage = () => {
               </div>
             </div>
 
-            {/* 2) Recomendações (obrigatório) */}
+            {/* 2) Recomendações (opcional) */}
             <div className="space-y-1.5">
               <label className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wide">
-                Recomendações <span className="text-red-600">*</span>
+                Recomendações <span className="text-muted-foreground font-normal normal-case">(opcional)</span>
               </label>
               <Textarea
                 value={nutritionManualRecs}
@@ -8310,7 +8309,7 @@ const PrescricaoPage = () => {
                 className="resize-none text-[12px] italic focus:not-italic"
                 autoFocus
               />
-              <p className="text-[10.5px] text-muted-foreground">Obrigatório para validar a prescrição.</p>
+              <p className="text-[10.5px] text-muted-foreground">Campo opcional — basta selecionar a modalidade para validar.</p>
             </div>
           </div>
 
@@ -8320,10 +8319,8 @@ const PrescricaoPage = () => {
             </Button>
             <Button
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              disabled={!nutritionManualRecs.trim()}
               onClick={() => {
                 const recs = nutritionManualRecs.trim();
-                if (!recs) return;
                 const MODALITY_LABELS: Record<string, string> = {
                   diet_oral: 'Oral', diet_enteral: 'Enteral', diet_parenteral: 'Parenteral',
                   supplement: 'Suplementação', zero: 'Zero (jejum)',
