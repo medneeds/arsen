@@ -470,6 +470,9 @@ const EvolucaoPage = () => {
               onSave={handleCreateEvolution}
               saving={creating}
               diagnosticsSlot={diagnosticsSlot}
+              diagnosticsReviewSlot={diagnosticsSlot}
+              cidPrimary={cidPrimary}
+              cidSecondary={cidSecondary}
               devices={newDevices}
               onDevicesChange={setNewDevices}
               culturesHtml={newCulturesHtml}
@@ -483,6 +486,7 @@ const EvolucaoPage = () => {
                 }) || patient.admissionDate
               }
             />
+
           </div>
         )}
 

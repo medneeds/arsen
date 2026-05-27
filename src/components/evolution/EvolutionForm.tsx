@@ -4,6 +4,7 @@ import {
   Save, Loader2, CheckCircle2,
   ShieldCheck, Printer,
   AlertCircle, Eye, ChevronDown, Stethoscope as DiagnosisIcon,
+  Activity, ClipboardCopy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,12 +21,12 @@ import { FieldTemplates } from "@/components/FieldTemplates";
 import { useHospital } from "@/contexts/HospitalContext";
 import { DevicesCulturesSection } from "@/components/evolution/DevicesCulturesSection";
 import { deviceAlertTone, type EvolutionDevice } from "@/lib/devicesCatalog";
-import { Activity } from "lucide-react";
 import { printEvolution } from "@/lib/printEvolution";
 import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
+import { calculateNEWS2, news2RiskLabels, parseVitalNumber } from "@/lib/news2";
 
 interface SOAPData {
   subjective: string;
@@ -63,6 +64,11 @@ interface EvolutionFormProps {
   hasUnsaved?: boolean;
   /** Render slot for the Diagnostics panel — placed as 1st collapsible section. */
   diagnosticsSlot?: React.ReactNode;
+  /** Optional compact render of the diagnostics panel inside the Revisão (review) section. */
+  diagnosticsReviewSlot?: React.ReactNode;
+  /** CID primário ativo — usado para gatear validação (obrigatório). */
+  cidPrimary?: string | null;
+  cidSecondary?: string | string[] | null;
   /** Dispositivos invasivos (lista catálogo + custom). */
   devices?: EvolutionDevice[];
   onDevicesChange?: (next: EvolutionDevice[]) => void;
@@ -77,9 +83,10 @@ interface EvolutionFormProps {
   patientId?: string | null;
   /** Prontuário fallback (usado se o resolver não encontrar). */
   patientRecord?: string | null;
-  /** CIDs ativos — incluídos no bloco "Diagnósticos" do PDF. */
-  cidPrimary?: string | null;
-  cidSecondary?: string | null;
+  /** Callback opcional — quando definido, exibe botão "Copiar da admissão" no Exame Físico. */
+  onCopyExamFromAdmission?: () => void;
+  /** Callback opcional — quando definido, exibe botão "Copiar da admissão" nos Sinais Vitais. */
+  onCopyVitalsFromAdmission?: () => void;
 }
 
 type SectionKey = 'vitals' | 'evolucao' | 'objective' | 'plan' | 'review';
@@ -112,6 +119,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   onSave, onValidate, saving, readOnly = false, isValidated = false,
   autoSave = false, hasUnsaved = false,
   diagnosticsSlot,
+  diagnosticsReviewSlot,
   devices, onDevicesChange,
   culturesHtml, onCulturesChange,
   admissionDate,
@@ -120,6 +128,8 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   patientRecord,
   cidPrimary,
   cidSecondary,
+  onCopyExamFromAdmission,
+  onCopyVitalsFromAdmission,
 }) => {
   const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'devices', 'evolucao', 'complementares', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
@@ -139,16 +149,34 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     if (soap.assessment) onSOAPChange('assessment', '');
   };
 
-  // Calculate completion status — apenas Evolução e Plano são obrigatórios.
-  // Sinais vitais e exame físico foram removidos do formulário (médico relata dentro
-  // do corpo da Evolução). Exames complementares permanecem como campo opcional.
+  // NEWS2 — calculado em tempo real a partir dos sinais vitais preenchidos.
+  // Exibido como badge no header da seção quando ≥ 1 campo está preenchido.
+  const news2 = useMemo(() => {
+    const hasAny = Object.values(vitals).some(v => (v ?? "").trim());
+    if (!hasAny) return null;
+    const pa = vitals.pa.split("/")[0];
+    return calculateNEWS2({
+      respiratoryRate: parseVitalNumber(vitals.fr),
+      spo2: parseVitalNumber(vitals.spo2),
+      temperature: parseVitalNumber(vitals.temp),
+      systolicBp: parseVitalNumber(pa),
+      heartRate: parseVitalNumber(vitals.fc),
+    });
+  }, [vitals]);
+
+  // Completion status — campos opcionais e obrigatórios bem separados.
+  // OBRIGATÓRIOS para validar: Diagnóstico (CID primário) + Evolução + Plano.
+  // OPCIONAIS: Sinais Vitais, Exame Físico, Exames Complementares, Dispositivos/Culturas.
   const completion = useMemo(() => ({
+    diagnostics: !!(cidPrimary && cidPrimary.trim()),
+    vitals: Object.values(vitals).some(v => (v ?? "").trim()),
+    exam: Object.values(physicalExam).some(v => (v ?? "").trim()),
     evolucao: richHtmlToPlainText(evolucaoText).length >= 10,
     complementares: richHtmlToPlainText(soap.objective).length > 0,
     plan: richHtmlToPlainText(soap.plan).length >= 10,
-  }), [soap.objective, soap.plan, evolucaoText]);
+  }), [cidPrimary, vitals, physicalExam, soap.objective, soap.plan, evolucaoText]);
 
-  const requiredComplete = completion.evolucao && completion.plan;
+  const requiredComplete = completion.diagnostics && completion.evolucao && completion.plan;
 
 
   // Autosave (debounced 2s) for editing existing drafts in Timeline
@@ -220,7 +248,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                     patientCpf: resolved.cpf || undefined,
                     patientCns: resolved.cns || undefined,
                     cidPrimary: cidPrimary || undefined,
-                    cidSecondary: cidSecondary || undefined,
+                    cidSecondary: (Array.isArray(cidSecondary) ? cidSecondary.filter(Boolean).join("; ") : cidSecondary) || undefined,
                   });
                 } catch (err) {
                   console.error("[EvolutionForm] Falha ao imprimir evolução:", err);
@@ -236,7 +264,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     );
   }
 
-  const expandAll = () => setOpenSections(['diagnostics', 'devices', 'evolucao', 'complementares', 'plan', 'review']);
+  const expandAll = () => setOpenSections(['diagnostics', 'vitals', 'exam', 'devices', 'evolucao', 'complementares', 'plan', 'review']);
   const collapseAll = () => setOpenSections([]);
 
   return (
@@ -288,12 +316,106 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
             iconColor="text-primary"
             label="Diagnósticos"
             hint="CID-10, previsão de alta, paliativo, isolamento"
-            complete={false}
-            required={false}
+            complete={completion.diagnostics}
+            required
           >
             {diagnosticsSlot}
           </SectionItem>
         )}
+
+        {/* Sinais Vitais — OPCIONAL. NEWS2 calculado em tempo real (badge no header). */}
+        <SectionItem
+          id="vitals"
+          icon={Heart}
+          iconColor="text-rose-500"
+          label="Sinais Vitais"
+          hint="PA, FC, FR, Tax, SpO₂, Glasgow, Diurese, Dor — opcional"
+          complete={completion.vitals}
+          required={false}
+          customStatus={
+            news2 && news2.score > 0 ? (
+              <span className={cn(
+                "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+                news2RiskLabels[news2.risk].className,
+              )}>
+                NEWS2 {news2.score} · {news2RiskLabels[news2.risk].label}
+              </span>
+            ) : undefined
+          }
+        >
+          <div className="flex items-center justify-between mb-2">
+            <Label className="text-[10px] text-muted-foreground font-semibold tracking-wider">
+              SINAIS VITAIS (OPCIONAL)
+            </Label>
+            {onCopyVitalsFromAdmission && (
+              <Button
+                variant="ghost" size="sm" className="h-6 text-[10px] gap-1 px-2"
+                onClick={onCopyVitalsFromAdmission}
+              >
+                <ClipboardCopy className="h-3 w-3" /> Copiar da admissão
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {VITAL_FIELDS.map(f => (
+              <div key={f.key} className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">
+                  {f.label} {f.unit && <span className="text-muted-foreground/60">({f.unit})</span>}
+                </Label>
+                <Input
+                  value={vitals[f.key]}
+                  onChange={(e) => onVitalsChange(f.key, e.target.value)}
+                  placeholder={f.placeholder}
+                  className="h-8 text-xs"
+                />
+              </div>
+            ))}
+          </div>
+          {news2 && news2.score > 0 && (
+            <p className="mt-2 text-[10px] text-muted-foreground">
+              NEWS2 calculado a partir de FR, SpO₂, T, PAS e FC. Glasgow/Diurese/Dor não compõem o escore.
+            </p>
+          )}
+        </SectionItem>
+
+        {/* Exame Físico — OPCIONAL. Ectoscopia + aparelhos pré-configurados. */}
+        <SectionItem
+          id="exam"
+          icon={Stethoscope}
+          iconColor="text-blue-500"
+          label="Exame Físico"
+          hint="Ectoscopia, cardiovascular, respiratório, abdome, neurológico, extremidades, pele — opcional"
+          complete={completion.exam}
+          required={false}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <Label className="text-[10px] text-muted-foreground font-semibold tracking-wider">
+              EXAME FÍSICO POR APARELHOS (OPCIONAL)
+            </Label>
+            {onCopyExamFromAdmission && (
+              <Button
+                variant="ghost" size="sm" className="h-6 text-[10px] gap-1 px-2"
+                onClick={onCopyExamFromAdmission}
+              >
+                <ClipboardCopy className="h-3 w-3" /> Copiar da admissão
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {EXAM_FIELDS.map(f => (
+              <div key={f.key} className="space-y-1">
+                <Label className="text-[10px] text-muted-foreground">{f.label}</Label>
+                <Textarea
+                  value={physicalExam[f.key]}
+                  onChange={(e) => onPhysicalExamChange(f.key, e.target.value)}
+                  className="text-xs min-h-[56px] resize-y"
+                  placeholder={`Descrever ${f.label.toLowerCase()}...`}
+                />
+              </div>
+            ))}
+          </div>
+        </SectionItem>
+
         <SectionItem
           id="complementares"
           icon={Stethoscope}
@@ -431,12 +553,22 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                 <AlertCircle className="h-3.5 w-3.5" /> Pendências para validação
               </p>
               <ul className="text-[11px] text-amber-700/80 dark:text-amber-400/80 space-y-0.5 ml-5 list-disc">
+                {!completion.diagnostics && <li>Definir <strong>CID-10 primário</strong> em Diagnósticos</li>}
                 {!completion.evolucao && <li>Preencher <strong>Evolução</strong> (mín. 10 caracteres)</li>}
                 {!completion.plan && <li>Preencher <strong>Plano</strong> (mín. 10 caracteres)</li>}
               </ul>
             </div>
           )}
+          {diagnosticsReviewSlot && (
+            <div className="mb-3 rounded-lg border border-border bg-muted/20 p-2.5">
+              <p className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-2">
+                DIAGNÓSTICOS — REVISÃO
+              </p>
+              {diagnosticsReviewSlot}
+            </div>
+          )}
           <ReadOnlyView soap={soap} vitals={vitals} physicalExam={physicalExam} devices={devices} culturesHtml={culturesHtml} />
+
         </SectionItem>
       </Accordion>
 
