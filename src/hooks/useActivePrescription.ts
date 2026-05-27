@@ -46,21 +46,22 @@ export function useActivePrescription(
       .neq("status", "draft");
 
     if (resolvedRegistryId && activeEncounterId) {
-      // Caminho ideal: registry_id resolvido + encounter ativo
+      // Caminho ideal: registry resolvido + encounter ativo
+      // Aceita encounter_id NULL (legado) p/ não esconder prescrições antigas.
       query = query
         .eq("patient_registry_id", resolvedRegistryId)
-        .eq("encounter_id", activeEncounterId);
+        .or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
     } else if (resolvedRegistryId) {
       query = query.eq("patient_registry_id", resolvedRegistryId);
     } else if (patientId && activeEncounterId) {
-      // Sem registry: exigir encounter_id (não aceitar fallback null)
-      query = query.eq("encounter_id", activeEncounterId);
+      // Sem registry: aceita encounter ativo OU legado sem carimbo do mesmo bed.
+      query = query
+        .eq("patient_id", patientId)
+        .or(`encounter_id.eq.${activeEncounterId},encounter_id.is.null`);
     } else {
-      // Sem identidade segura: não buscar nada para evitar vazamento
-      console.warn('[useActivePrescription] sem identidade segura — sem busca');
-      setData(null);
-      setLoading(false);
-      return;
+      // Fallback legado: busca por patient_name (prescrições anteriores ao
+      // linking de registry/encounter ainda devem aparecer no cockpit).
+      query = query.eq("patient_name", patientName.trim());
     }
     const { data: rows, error } = await query
       .order("created_at", { ascending: false })
