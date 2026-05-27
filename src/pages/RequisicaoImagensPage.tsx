@@ -898,8 +898,8 @@ const RequisicaoImagensPage = () => {
               </tr>
               <tr>
                 <td colSpan={4}>
-                  <span className="apac-field-label">37 — OBSERVAÇÕES</span>
-                  <div className="apac-field-value" style={{ minHeight: "30px", whiteSpace: "pre-wrap" }}>{observations}</div>
+                  <span className="apac-field-label">37 — OBSERVAÇÕES / JUSTIFICATIVA CLÍNICA DETALHADA</span>
+                  <div className="apac-obs-value">{observations}</div>
                 </td>
               </tr>
             </tbody>
