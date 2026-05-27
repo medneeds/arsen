@@ -154,6 +154,8 @@ export const ANTIMICROBIAL_OPTIONS: MedicationEntry[] = [
   { id: 'atm12', name: 'Oxacilina', presentation: '500mg - Frasco-ampola', defaultDose: '2g', defaultRoute: 'Intravenosa', defaultPosology: '4/4h', defaultSchedule: '06h', instructions: 'Diluir em 100mL de SF0,9%. Infundir em 30 min.', category: 'antimicrobial' },
   { id: 'atm13', name: 'Polimixina B', presentation: '500.000 UI - Frasco-ampola', defaultDose: '25.000 UI/kg', defaultRoute: 'Intravenosa', defaultPosology: '12/12h', defaultSchedule: '08h', instructions: 'Diluir em 250mL de SG5%. Infundir em 60 min.', category: 'antimicrobial' },
   { id: 'atm14', name: 'Linezolida', presentation: '600mg/300mL - Bolsa', defaultDose: '600mg', defaultRoute: 'Intravenosa', defaultPosology: '12/12h', defaultSchedule: '08h', instructions: 'Infundir em 30-120 min.', category: 'antimicrobial' },
+  { id: 'atm15', name: 'Teicoplanina', presentation: '200mg - Frasco-ampola', defaultDose: '200mg', defaultRoute: 'Intravenosa', defaultPosology: '24/24h', defaultSchedule: '08h', instructions: 'Dose de ataque: 400mg 12/12h nas primeiras 3 doses. Manutenção: 200mg 24/24h. Diluir em 100mL de SF0,9%. Infundir em 30 min.', category: 'antimicrobial', aliases: ['Targocid'] },
+  { id: 'atm16', name: 'Teicoplanina', presentation: '400mg - Frasco-ampola', defaultDose: '400mg', defaultRoute: 'Intravenosa', defaultPosology: '12/12h', defaultSchedule: '08h', instructions: 'Dose de ataque: 400mg 12/12h (3 doses). Manutenção: 400mg 24/24h. Diluir em 100mL de SF0,9%. Infundir em 30 min.', category: 'antimicrobial', aliases: ['Targocid'] },
 ];
 
 // ========== ALTA VIGILÂNCIA ==========
