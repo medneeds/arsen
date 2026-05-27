@@ -173,8 +173,12 @@ export async function executeInternalTransfer(params: {
         clinical_status: null,
         psm_status: null,
         admission_status: null,
+        patient_registry_id: null,
+        medical_record: null,
+        admitted_at: null,
+        is_vacant: true,
         updated_at: new Date().toISOString(),
-      })
+      } as any)
       .eq("id", source.id);
     if (sourceError) throw sourceError;
 
