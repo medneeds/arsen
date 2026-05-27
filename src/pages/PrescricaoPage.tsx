@@ -465,7 +465,7 @@ function calcRateFromTime(volumeTotal: string, infusionTime: string, mode: 'BIC'
 
 // Auto-calculate concentration from dose and volume total
 function calcConcentration(item: PrescriptionItem): string {
-  const doseMatch = item.dose?.match(/([\d.,]+)\s*(mg|g|mcg|UI)/i);
+  const doseMatch = item.dose?.match(/([\d.,]+)\s*(mg|g|mcg|UI|mEq)/i);
   if (!doseMatch) return '';
   let doseVal = parseFloat(doseMatch[1].replace(',', '.'));
   const doseUnit = doseMatch[2].toLowerCase();
@@ -473,6 +473,7 @@ function calcConcentration(item: PrescriptionItem): string {
   const volTotal = parseFloat(item.volumeTotal || '');
   if (!doseVal || !volTotal || volTotal <= 0) return '';
   const conc = doseVal / volTotal;
+  if (doseUnit === 'meq') return `${conc.toFixed(2)} mEq/mL`;
   if (doseUnit === 'ui') return `${conc.toFixed(1)} UI/mL`;
   if (doseUnit === 'mcg') return `${conc.toFixed(1)} mcg/mL`;
   return `${conc.toFixed(2)} mg/mL`;
