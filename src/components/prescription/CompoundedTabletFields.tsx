@@ -88,7 +88,7 @@ export function CompoundedTabletFields({ item, onUpdate }: Props) {
     <div
       className={cn(
         "rounded-md border p-2 space-y-2 mt-1",
-        block
+        hardBlock
           ? "bg-rose-50/80 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800 border-l-[3px] border-l-rose-500"
           : "bg-amber-50/60 dark:bg-amber-950/25 border-amber-300/70 dark:border-amber-800/50 border-l-[3px] border-l-amber-500"
       )}
@@ -97,26 +97,30 @@ export function CompoundedTabletFields({ item, onUpdate }: Props) {
         <div
           className={cn(
             "flex items-center justify-center h-5 w-5 rounded-md text-white shadow-sm",
-            block ? "bg-rose-600 shadow-rose-600/30" : "bg-amber-600 shadow-amber-600/30"
+            hardBlock ? "bg-rose-600 shadow-rose-600/30" : "bg-amber-600 shadow-amber-600/30"
           )}
         >
-          {block ? <AlertTriangle className="h-3 w-3" /> : <Pill className="h-3 w-3" />}
+          {hardBlock ? <AlertTriangle className="h-3 w-3" /> : <Pill className="h-3 w-3" />}
         </div>
         <span
           className={cn(
             "text-[10px] font-bold uppercase tracking-[0.08em]",
-            block ? "text-rose-800 dark:text-rose-200" : "text-amber-800 dark:text-amber-200"
+            hardBlock ? "text-rose-800 dark:text-rose-200" : "text-amber-800 dark:text-amber-200"
           )}
         >
-          {block ? 'NÃO TRITURAR — administração por sonda inviável' : 'Comprimido por sonda — diluição'}
+          {hardBlock
+            ? 'NÃO TRITURAR — administração por sonda inviável'
+            : hasTechnique
+              ? 'NÃO TRITURAR — usar técnica específica'
+              : 'Comprimido por sonda — diluição'}
         </span>
       </div>
 
-      {block ? (
+      {hardBlock ? (
         <div className="space-y-1 text-[11px] text-rose-900 dark:text-rose-100 leading-relaxed">
-          <p><strong>Motivo:</strong> {block.reason}</p>
-          {block.alternative && (
-            <p><strong>Sugestão:</strong> {block.alternative}</p>
+          <p><strong>Motivo:</strong> {block!.reason}</p>
+          {block!.alternative && (
+            <p><strong>Sugestão:</strong> {block!.alternative}</p>
           )}
           <p className="text-[10px] text-rose-700/80 dark:text-rose-300/80 italic">
             Considere trocar a apresentação ou a via antes de prescrever.
@@ -124,9 +128,26 @@ export function CompoundedTabletFields({ item, onUpdate }: Props) {
         </div>
       ) : (
         <>
+          {hasTechnique && (
+            <div className="space-y-1 text-[11px] text-amber-900 dark:text-amber-100 leading-relaxed bg-amber-100/50 dark:bg-amber-900/20 rounded p-1.5">
+              <p><strong>Técnica:</strong> {block!.technique!.label}</p>
+              <p className="text-[10px]"><strong>Motivo:</strong> {block!.reason}</p>
+              {block!.alternative && (
+                <p className="text-[10px]"><strong>Alternativa IV:</strong> {block!.alternative}</p>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <Label className="text-[10px] text-amber-900/80 dark:text-amber-200/80">Diluir em (mL)</Label>
+              <Label className="text-[10px] text-amber-900/80 dark:text-amber-200/80">
+                {hasTechnique
+                  ? (block!.technique!.vehicle === 'suco_laranja' ? 'Suco (mL)'
+                    : block!.technique!.vehicle === 'suco_maca' ? 'Suco (mL)'
+                    : block!.technique!.vehicle === 'nacl_09' ? 'NaCl 0,9% (mL)'
+                    : 'Veículo (mL)')
+                  : 'Diluir em (mL)'}
+              </Label>
               <Input
                 type="number"
                 min={5}
@@ -158,20 +179,23 @@ export function CompoundedTabletFields({ item, onUpdate }: Props) {
           </div>
 
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
-              <Switch checked={individual} onCheckedChange={setIndividual} id={`indiv-${item.id}`} />
-              <Label htmlFor={`indiv-${item.id}`} className="text-[10px] text-amber-900/90 dark:text-amber-100/90 cursor-pointer">
-                Administrar separadamente (não misturar com outras medicações)
-              </Label>
-            </div>
+            {!hasTechnique && (
+              <div className="flex items-center gap-2">
+                <Switch checked={individual} onCheckedChange={setIndividual} id={`indiv-${item.id}`} />
+                <Label htmlFor={`indiv-${item.id}`} className="text-[10px] text-amber-900/90 dark:text-amber-100/90 cursor-pointer">
+                  Administrar separadamente (não misturar com outras medicações)
+                </Label>
+              </div>
+            )}
             <Button
               type="button"
               size="sm"
               variant="outline"
               onClick={handleApply}
-              className="h-7 text-[10px] gap-1 border-amber-400 text-amber-900 hover:bg-amber-100 dark:text-amber-100 dark:border-amber-700 dark:hover:bg-amber-900/40"
+              className="h-7 text-[10px] gap-1 border-amber-400 text-amber-900 hover:bg-amber-100 dark:text-amber-100 dark:border-amber-700 dark:hover:bg-amber-900/40 ml-auto"
             >
-              <Droplets className="h-3 w-3" /> Aplicar à instrução
+              <Droplets className="h-3 w-3" />
+              {hasTechnique ? 'Aplicar técnica à instrução' : 'Aplicar à instrução'}
             </Button>
           </div>
 
@@ -187,7 +211,9 @@ export function CompoundedTabletFields({ item, onUpdate }: Props) {
 
           <p className="text-[9px] text-amber-700/80 dark:text-amber-300/70 leading-snug flex items-start gap-1">
             <Check className="h-2.5 w-2.5 mt-0.5 shrink-0" />
-            Padrão ISMP-Brasil: diluir em 20 mL de água, lavar sonda com 10 mL antes/depois, administrar separadamente.
+            {hasTechnique
+              ? 'Após aplicar a técnica, a instrução fica registrada e libera a validação.'
+              : 'Padrão ISMP-Brasil: diluir em 20 mL de água, lavar sonda com 10 mL antes/depois, administrar separadamente.'}
           </p>
         </>
       )}
