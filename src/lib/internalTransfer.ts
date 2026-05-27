@@ -385,6 +385,18 @@ export async function completeInternalTransfer(
     const needsSaps: boolean = req.requires_saps;
     const sourcePatientId: string = req.source_patient_id;
 
+    // Busca identidade permanente (registry/prontuário/admissão) ainda preservada
+    // no leito origem para garantir que documentação clínica acompanhe o paciente.
+    const { data: sourceDbRow } = await supabase
+      .from("patients")
+      .select("patient_registry_id, medical_record, admitted_at")
+      .eq("id", sourcePatientId)
+      .maybeSingle();
+
+    const sourceRegistryId = (sourceDbRow as any)?.patient_registry_id ?? null;
+    const sourceMedicalRecord = (sourceDbRow as any)?.medical_record ?? null;
+    const sourceAdmittedAt = (sourceDbRow as any)?.admitted_at ?? null;
+
     const destinationAdmissionStatus = needsSaps
       ? "saps_pendente"
       : (snapshot.admissionStatus ?? "admitido");
