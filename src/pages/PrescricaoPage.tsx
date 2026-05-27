@@ -2029,7 +2029,7 @@ const SortablePrescriptionItemRow = React.memo(function SortablePrescriptionItem
       ].filter(Boolean).join(' · ');
       if (phrase) compactParts.push(phrase);
     } else {
-      if (item.dose && item.dose !== '-') compactParts.push(item.dose);
+      if (item.dose && item.dose !== '-') compactParts.push(composeDoseLabel(item));
       if (item.diluent && item.diluent !== 'sem_diluente') {
         let dil = `diluir em ${item.diluent}`;
         if (item.diluentVolume) dil += ` ${item.diluentVolume}mL`;
