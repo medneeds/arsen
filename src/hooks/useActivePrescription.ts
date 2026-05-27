@@ -38,7 +38,7 @@ export function useActivePrescription(
       return;
     }
     setLoading(true);
-    let query = supabase
+    let query: any = supabase
       .from("prescriptions")
       .select("id, status, version, items, digital_signature, updated_at, created_at")
       .eq("hospital_unit_id", hospitalUnitId)
