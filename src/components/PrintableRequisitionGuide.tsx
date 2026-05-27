@@ -581,6 +581,13 @@ export function PrintableRequisitionGuide({
 export async function printRequisitionGuide(
   request: any,
   sectorLabel?: (s: string | null) => string,
+  opts?: {
+    compactDuo?: {
+      otherItems: any[];
+      otherLabel?: string;
+      gasoLabel?: string;
+    };
+  },
 ) {
   const items = Array.isArray(request.items) ? request.items : [];
 
@@ -870,6 +877,182 @@ export async function printRequisitionGuide(
   `;
 
   const logoDataUrl = await prepareLogo();
+
+  // ── Modo compacto: 2 vias lado a lado (paisagem), inspirado no layout de culturas ──
+  if (opts?.compactDuo) {
+    const { otherItems, otherLabel = "Exames Laboratoriais", gasoLabel = "Gasometria" } = opts.compactDuo;
+    const inst = (whitelabel as any).print?.institutionalHeader || {};
+    const colors = (whitelabel as any).theme?.institutionalColors || {};
+    const docNoDuo = generateDocCode("REQ-LAB");
+    const nowDuo = new Date();
+    const dateStrDuo = nowDuo.toLocaleDateString("pt-BR");
+    const timeStrDuo = nowDuo.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+    const logoBlockDuo = logoDataUrl
+      ? `<img class="mini-logo" src="${logoDataUrl}" alt="logo" />`
+      : `<div class="mini-logo" style="display:flex;align-items:center;justify-content:center;background:#0054A6;color:#fff;font-weight:700;font-size:9pt;border-radius:4px">HM</div>`;
+
+    const cruzColors = [
+      colors.red || "#E53935",
+      colors.orange || "#FB8C00",
+      colors.yellow || "#FDD835",
+      colors.green || "#43A047",
+      colors.blue || "#0054A6",
+    ];
+    const cruzBar = `<div class="mini-cruz-bar">${cruzColors.map((c) => `<div style="background:${c}"></div>`).join("")}</div>`;
+
+    const miniHeader = `
+      <div class="mini-header">
+        <div class="mini-header-inner">
+          ${logoBlockDuo}
+          <div class="mini-h-text">
+            <div class="mini-h-line1">${escapeHtml(inst.line1 || "")}</div>
+            <div class="mini-h-line2">${escapeHtml(inst.line2 || "")}</div>
+            <div class="mini-h-line3">${escapeHtml(inst.line3 || "")}</div>
+          </div>
+        </div>
+        ${cruzBar}
+        <div class="mini-doc-bar">
+          <span><b>Doc:</b> ${docNoDuo}</span>
+          <span><b>Setor:</b> ${escapeHtml(sectorName || "Assistência Hospitalar")}</span>
+          <span><b>Emissão:</b> ${dateStrDuo} ${timeStrDuo}</span>
+        </div>
+      </div>
+    `;
+
+    const priorityCssLocal = PRIORITY_BADGE_CSS[request.priority] || PRIORITY_BADGE_CSS.rotina;
+    const priorityLabelLocal = PRIORITY_LABELS[request.priority] || (request.priority || "").toUpperCase();
+
+    const idBlock = `
+      <table class="mini-id">
+        <tbody>
+          <tr>
+            <th>Paciente</th>
+            <td colspan="3" class="pid-strong">${escapeHtml(request.patient_name)}</td>
+          </tr>
+          <tr>
+            <th>Setor</th><td>${escapeHtml(sectorName || "—")}</td>
+            <th>Leito</th><td>${escapeHtml(request.patient_bed || "—")}</td>
+          </tr>
+          <tr>
+            <th>Prontuário</th><td>${escapeHtml(medicalRecord || "—")}</td>
+            <th>Prioridade</th><td><span class="prio-badge" style="${priorityCssLocal}">${escapeHtml(priorityLabelLocal)}</span></td>
+          </tr>
+          <tr>
+            <th>Solicitante</th><td colspan="3">${escapeHtml(request.requested_by_name || "—")}</td>
+          </tr>
+          ${request.clinical_indication ? `<tr><th>Justificativa</th><td colspan="3" class="just-cell">${escapeHtml(request.clinical_indication)}</td></tr>` : ""}
+        </tbody>
+      </table>
+    `;
+
+    const renderItems = (its: any[], label: string) => {
+      const cells = its.map((it, i) => {
+        const name = typeof it === "string" ? it : (it?.name || String(it ?? ""));
+        return `<div class="req-item-mini"><span class="req-num-mini">${i + 1}.</span><span>${escapeHtml(name)}</span></div>`;
+      }).join("");
+      return `
+        <div class="items-section">
+          <div class="items-label">${escapeHtml(label)} (${its.length})</div>
+          <div class="items-grid-mini">${cells || '<div class="req-item-mini" style="grid-column:1/-1;color:#64748b">Nenhum item.</div>'}</div>
+        </div>
+      `;
+    };
+
+    const gasoItemsLocal = Array.isArray(request.items) ? request.items : [];
+
+    const oneVia = (viaLabel: string, its: any[], sectionLabel: string) => `
+      <div class="via">
+        <div class="via-tag">${escapeHtml(viaLabel)}</div>
+        ${miniHeader}
+        <div class="mini-title">Requisição Laboratorial</div>
+        ${idBlock}
+        ${renderItems(its, sectionLabel)}
+        <div class="mini-sig">
+          <div class="mini-sig-line">Médico Solicitante — CRM · Assinatura</div>
+          ${request.requested_by_name ? `<div class="mini-sig-name">${escapeHtml(request.requested_by_name)}</div>` : ""}
+        </div>
+      </div>
+    `;
+
+    const duoBody = `
+      <div class="duo">
+        ${oneVia("1ª via — Coleta (Gasometria)", gasoItemsLocal, gasoLabel)}
+        <div class="cut-line"></div>
+        ${oneVia("2ª via — Laboratório", otherItems, otherLabel)}
+      </div>
+    `;
+
+    const duoStyles = `
+      .duo { display:grid; grid-template-columns: 1fr 6pt 1fr; gap:0; align-items:start; }
+      .duo .cut-line { border-left: 1pt dashed #64748b; margin: 0 3pt; align-self:stretch; min-height: 180mm; }
+      .duo .via { padding: 0 4pt; }
+      .duo .via-tag { font-size:7pt; font-weight:700; color:#0054A6; text-transform:uppercase; letter-spacing:0.5pt; margin-bottom:2pt; text-align:right; }
+
+      .mini-header { border-bottom: 2pt solid #0054A6; padding-bottom: 3pt; margin-bottom: 4pt; }
+      .mini-header-inner { display:grid; grid-template-columns: 34px 1fr; align-items:center; gap:6pt; }
+      .mini-logo { height: 32px; width: 32px; object-fit: contain; }
+      .mini-h-text { text-align:center; }
+      .mini-h-line1, .mini-h-line2 { font-size:5.5pt; font-weight:600; color:#475569; text-transform:uppercase; line-height:1.15; }
+      .mini-h-line3 { font-size:7.5pt; font-weight:700; color:#0a1628; margin-top:1pt; line-height:1.15; }
+      .mini-cruz-bar { display:flex; height:2.5pt; margin-top:3pt; border-radius:1.5pt; overflow:hidden; }
+      .mini-cruz-bar > div { flex:1; }
+      .mini-doc-bar { display:flex; justify-content:space-between; background:#f1f5f9; border:0.5pt solid #cbd5e1; padding:2pt 5pt; font-size:6pt; margin-top:3pt; border-radius:2pt; }
+      .mini-doc-bar b { color:#0a1628; }
+      .mini-title { font-size:9pt; margin:3pt 0 3pt; color:#0a1628; text-align:center; text-transform:uppercase; font-weight:800; letter-spacing:0.3pt; }
+
+      table.mini-id { width:100%; border-collapse:collapse; font-size:7pt; border:0.5pt solid #1e293b; margin-bottom:4pt; }
+      table.mini-id th, table.mini-id td { border:0.5pt solid #1e293b; padding:2pt 4pt; color:#0a1628; vertical-align:middle; }
+      table.mini-id th { width:18%; font-weight:500; white-space:nowrap; background:#f8fafc; }
+      table.mini-id td.pid-strong { font-weight:700; font-size:8pt; }
+      table.mini-id td.just-cell { font-size:6.5pt; line-height:1.3; }
+
+      .items-section { margin-bottom:4pt; }
+      .items-label { font-size:6.5pt; font-weight:700; text-transform:uppercase; letter-spacing:0.3pt; color:#0054A6; margin-bottom:2pt; }
+      .items-grid-mini { display:grid; grid-template-columns: 1fr 1fr; gap:0; border:0.5pt solid #cbd5e1; border-radius:2pt; overflow:hidden; }
+      .req-item-mini { display:flex; align-items:center; gap:4pt; padding:2.5pt 5pt; font-size:7pt; border-bottom:0.5pt solid #e2e8f0; border-right:0.5pt solid #e2e8f0; color:#0a1628; }
+      .req-item-mini:nth-child(2n) { border-right:none; }
+      .req-num-mini { min-width:12pt; font-weight:600; text-align:right; flex-shrink:0; }
+
+      .prio-badge { display:inline-block; padding:1pt 6pt; border-radius:2pt; font-weight:700; font-size:6.5pt; }
+
+      .mini-sig { border-top: 0.5pt solid #0a1628; margin-top:6pt; padding-top:3pt; text-align:center; }
+      .mini-sig-line { font-size:7pt; font-weight:600; color:#0a1628; }
+      .mini-sig-name { font-size:7.5pt; font-weight:700; margin-top:1pt; }
+
+      body.duo-mode > .nz-header,
+      body.duo-mode > .nz-doc-bar,
+      body.duo-mode > h1.nz-title,
+      body.duo-mode > .nz-subtitle,
+      body.duo-mode > .nz-footer { display:none !important; }
+      body.duo-mode { margin:0 !important; }
+
+      @media print {
+        .duo { page-break-inside: avoid; break-inside: avoid; }
+        .duo .via { page-break-inside: avoid; break-inside: avoid; }
+        @page { size: A4 landscape; margin: 6mm 8mm; }
+      }
+    `;
+
+    const duoHtml = buildNormaZeroDocument({
+      title: "Requisição Laboratorial — Compacta 2 vias",
+      subtitle: `Emitida em ${createdStr} · impressão compacta`,
+      sectorLabel: sectorName || "Assistência Hospitalar",
+      docCodePrefix: "REQ-LAB",
+      bodyHtml: duoBody,
+      signatures: [],
+      logoDataUrl,
+      extraStyles: duoStyles,
+      orientation: "landscape",
+    });
+
+    const finalDuoHtml = duoHtml.replace("<body>", '<body class="duo-mode">');
+    const wDuo = openPrintWindow(finalDuoHtml, "Preparando impressão compacta…");
+    if (!wDuo) alert("Permita pop-ups para imprimir.");
+    return;
+  }
+  // ── fim do bloco compactDuo ──
+
   const html = buildNormaZeroDocument({
     title: `Guia de Requisição — ${categoryLabel}`,
     subtitle: `Solicitada em ${createdStr}`,
