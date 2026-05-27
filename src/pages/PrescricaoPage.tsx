@@ -317,6 +317,11 @@ function composeDoseLabel(item: { dose?: string; quantity?: string; quantityUnit
   const unitLower = (item.quantityUnit || '').toLowerCase();
   const qtyIsAmpFr = unitLower.includes('ampola') || unitLower.includes('frasco');
   if (isPureMlDose && qtyIsAmpFr) return qtyStr;
+  // Opção B: dose preset é apenas "N amp/FA/frasco/ampola" (sem massa real) e médico editou quantidade em mL
+  // → descarta o preset e imprime o que foi prescrito (ex.: "30 mL" em vez de "1 amp (30 mL)")
+  const isPureAmpDose = /^\d+(?:[.,]\d+)?\s*(amp(ola)?s?|fa|frasco(-?ampola)?s?|fr)\.?$/i.test(doseRaw);
+  const qtyIsMl = unitLower === 'ml' || unitLower === 'mililitro' || unitLower === 'mililitros';
+  if (isPureAmpDose && qtyIsMl) return qtyStr;
   // Dose com massa real (mg/g/mcg/UI/mEq) + quantitativo distinto → mostra ambos
   return `${doseRaw} (${qtyStr})`;
 }
