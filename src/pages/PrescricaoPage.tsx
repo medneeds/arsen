@@ -2950,8 +2950,20 @@ function ExtraPrescriptionDialog({
       isExtra: true,
       infusionMode: 'BIC',
       infusionTime: autoDefaults.infusionTime,
-      infusionTimeUnit: 'min' as const,
-      volumeTotal: autoDefaults.diluentVolume,
+      infusionTimeUnit: (autoDefaults.infusionTimeUnit || 'min') as 'min' | 'h',
+      volumeTotal: (() => {
+        // volumeTotal = volume do medicamento + volume do diluente.
+        // Bug A3: inicializar volumeTotal igual ao diluentVolume descartava o volume
+        // do medicamento (KCl 30 mL + SF 270 mL devia dar 300 mL, não 270).
+        const dilVol = parseFloat(autoDefaults.diluentVolume || '') || 0;
+        const doseStr = med.defaultDose || '';
+        const mlMatch = doseStr.match(/^([\d.,]+)\s*mL/i) || doseStr.match(/([\d.,]+)\s*mL/i);
+        const medVol = mlMatch ? parseFloat(mlMatch[1].replace(',', '.')) || 0 : 0;
+        if (dilVol > 0 && medVol > 0) return String(Math.round(dilVol + medVol));
+        if (dilVol > 0) return String(dilVol);
+        if (medVol > 0) return String(medVol);
+        return '';
+      })(),
       quantity: '1',
       quantityUnit: autoUnit,
       diluent: isIV ? autoDefaults.diluent : '',
