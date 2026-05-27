@@ -68,7 +68,7 @@ interface EvolutionFormProps {
   diagnosticsReviewSlot?: React.ReactNode;
   /** CID primário ativo — usado para gatear validação (obrigatório). */
   cidPrimary?: string | null;
-  cidSecondary?: string | null;
+  cidSecondary?: string | string[] | null;
   /** Dispositivos invasivos (lista catálogo + custom). */
   devices?: EvolutionDevice[];
   onDevicesChange?: (next: EvolutionDevice[]) => void;
