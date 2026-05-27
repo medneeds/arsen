@@ -62,6 +62,7 @@ import { useHospital } from "@/contexts/HospitalContext";
 import { usePatientIdentifiers } from "@/hooks/usePatientIdentifiers";
 import { usePatientLive } from "@/hooks/usePatientLive";
 import { useResolvedRegistryId } from "@/hooks/useResolvedRegistryId";
+import { useActiveEncounterId } from "@/hooks/useActiveEncounterId";
 import { getClinicalDayWindowSP } from "@/lib/clinicalDay";
 import {
   DndContext,
