@@ -728,11 +728,11 @@ const RequisicaoImagensPage = () => {
           .apac-obs-value { font-size: 8pt; font-weight: 500; min-height: 78px; line-height: 1.3; white-space: pre-wrap; }
         `}</style>
 
-        <div style={{ fontFamily: "'Arial', sans-serif", color: "#000" }}>
+        <div className="apac-doc" style={{ fontFamily: "'Arial', sans-serif", color: "#000" }}>
           {/* Header */}
-          <div className="apac-header" style={{ borderBottom: "2px solid #000", paddingBottom: "4px", marginBottom: "8px" }}>
-            <p style={{ fontSize: "7pt", margin: 0 }}>Sistema Único de Saúde — Ministério da Saúde</p>
-            <h1 style={{ fontSize: "11pt", fontWeight: "bold", margin: "2px 0" }}>LAUDO PARA SOLICITAÇÃO / AUTORIZAÇÃO DE PROCEDIMENTO AMBULATORIAL</h1>
+          <div className="apac-header" style={{ borderBottom: "1.5px solid #000", paddingBottom: "2px", marginBottom: "4px" }}>
+            <p style={{ fontSize: "6.5pt", margin: 0 }}>Sistema Único de Saúde — Ministério da Saúde</p>
+            <h1 style={{ fontSize: "10pt", fontWeight: "bold", margin: "1px 0" }}>LAUDO PARA SOLICITAÇÃO / AUTORIZAÇÃO DE PROCEDIMENTO AMBULATORIAL</h1>
           </div>
 
           {/* Institution */}
