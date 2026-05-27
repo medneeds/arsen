@@ -6374,8 +6374,35 @@ const PrescricaoPage = () => {
     setTimeout(() => {
       window.print();
       setShowPrintPortal(false);
+      // Limpa filtro de seleção após o ciclo de impressão (se houver)
+      setPrintSelectionIds(null);
     }, 300);
   };
+
+  // === Impressão parcial — itens selecionados na barra de seleção em lote ===
+  // Reaproveita o mesmo cabeçalho e layout do PDF, apenas filtra a lista.
+  // Bypassa o fluxo de guias regulatórias (ATM/Psy) porque é uma reimpressão parcial.
+  const printSelectedItems = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    // Só faz sentido imprimir itens validados — bloqueia pendentes para evitar
+    // impressão de prescrição não validada por engano.
+    const selectedList = items.filter(i => selectedIds.has(i.id));
+    const pendentes = selectedList.filter(i => i.status === 'active' && !isItemValidatedToday(i));
+    if (pendentes.length > 0) {
+      toast.error("Impressão bloqueada — há itens selecionados pendentes", {
+        description: `${pendentes.length} ${pendentes.length === 1 ? 'item aguarda' : 'itens aguardam'} validação.`,
+      });
+      return;
+    }
+    setPrintSelectionIds(new Set(selectedIds));
+    setShowPrintPortal(true);
+    setTimeout(() => {
+      window.print();
+      setShowPrintPortal(false);
+      setPrintSelectionIds(null);
+    }, 300);
+  }, [selectedIds, items]);
+
 
   const handlePrint = () => {
     if (!hasActiveAtb && !hasActivePsy) {
