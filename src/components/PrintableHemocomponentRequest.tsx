@@ -703,6 +703,93 @@ export async function printHemocomponentRequest(
         </td></tr>
       </tbody>
     </table>
+
+    <!-- ───────────────── VERSO (página 2) — Termos e Agência Transfusional ───────────────── -->
+    <div class="hemo-verso">
+      <div class="verso-title">Verso — Termos, Indicações Especiais e Uso da Agência Transfusional</div>
+
+      <table class="nz hemo verso">
+        <tbody>
+          <!-- 1. TERMO DE RESPONSABILIDADE -->
+          <tr><td colspan="12" class="band">Termo de Responsabilidade</td></tr>
+          <tr>
+            <td colspan="12" class="cell verso-text">
+              ${cb()} Declaro estar ciente dos riscos transfusionais a que possa estar submetido o(a) paciente em questão, por não serem realizadas as provas imunohematológicas. O paciente está sob minha responsabilidade médica e suas condições clínicas não permitem demora na liberação do hemocomponente solicitado, estando eu de acordo com a transfusão sem as provas de compatibilidade pré-transfusionais, sendo que as mesmas devem ser finalizadas ainda que sejam completadas.
+            </td>
+          </tr>
+          <tr>
+            <td colspan="4" class="cell sig-fields">
+              <div>Data: ____/____/______</div>
+              <div style="margin-top:6pt">Hora: ____:____</div>
+            </td>
+            <td colspan="8" class="cell sig-area">
+              <div class="sig-line-bottom">Assinatura e Carimbo do Médico</div>
+            </td>
+          </tr>
+
+          <!-- 2. AUTORIZAÇÃO HETEROGRUPOS -->
+          <tr><td colspan="12" class="band">Autorização de Transfusão com Hemocomponentes Heterogrupos e/ou Incompatíveis</td></tr>
+          <tr>
+            <td colspan="12" class="cell verso-text">
+              ${cb()} Declaro estar ciente da não disponibilidade em estoque, no momento, do hemocomponente do mesmo grupo sanguíneo do meu paciente, porém, diante da urgência do caso, autorizo a transfusão de sangue do heterogrupo compatível.
+            </td>
+          </tr>
+          <tr>
+            <td colspan="12" class="cell verso-text">
+              ${cb()} Declaro estar ciente do problema imunohematológico do sangue do paciente a quem estou prestando assistência médica, cabendo-me a autorização do sangue menos compatível pela imperativa necessidade de tratamento que o caso requer.
+            </td>
+          </tr>
+          <tr>
+            <td colspan="4" class="cell sig-fields">
+              <div>Data: ____/____/______</div>
+              <div style="margin-top:6pt">Hora: ____:____</div>
+            </td>
+            <td colspan="8" class="cell sig-area">
+              <div class="sig-line-bottom">Assinatura e Carimbo do Médico</div>
+            </td>
+          </tr>
+
+          <!-- 3. INDICAÇÃO PARA HEMOCOMPONENTES PROCESSADOS -->
+          <tr><td colspan="12" class="band">Indicação para Hemocomponentes Processados</td></tr>
+          <tr>
+            <td colspan="12" class="cell verso-text">
+              ${cb()} <strong>1. FILTRADO / DESLEUCOCITADO:</strong> Hemoglobinopatias; Anemias hemolíticas hereditárias; duas ou mais reações febris não hemolíticas prévias; Síndrome de imunodeficiência congênita; Candidatos a transplante de medula óssea; Anemia aplástica; Leucemia mielóide aguda; Doenças onco-hematológicas graves; Portadores de doença plaquetária com necessidade transfusional frequente; Prevenção de infecção por CMV: paciente HIV positivo com sorologia CMV negativa, candidatos a transplante de órgão e medula óssea se doador e receptor forem CMV negativos, transfusão intrauterina, gestante com sorologia negativa ou desconhecida para CMV, RN prematuros e de baixo peso (1.200g) de mães CMV negativas ou com sorologias desconhecidas.
+            </td>
+          </tr>
+          <tr>
+            <td colspan="12" class="cell verso-text">
+              ${cb()} <strong>2. LAVADOS:</strong> Antecedentes de reação alérgica grave associada a transfusão não evitadas com uso de medicamentos; pacientes deficientes de IgA, haptoglobina ou transferrina com história prévia de reações anafiláticas em transfusões.
+            </td>
+          </tr>
+          <tr>
+            <td colspan="12" class="cell verso-text">
+              ${cb()} <strong>3. IRRADIADOS:</strong> Transfusão intrauterina; exsanguineotransfusão obrigatoriamente quando houver transfusão intrauterina prévia; RN prematuro (inferior a 28 semanas) e/ou de baixo peso (1.200g); portadores de imunodeficiência congênita grave; pós-transplante de medula óssea autólogo ou alogênico; pós-transplante de células progenitoras hematopoiéticas (CPH) de cordão umbilical ou da placenta; pacientes tratados com análogos de purina, fludarabina, cladribina, deoxicoformicina; receptor de transplante de órgãos sólidos em uso de imunossupressor; portadores de linfoma, leucemia mielóide aguda e anemia aplástica em tratamento quimioterápico ou imunossupressor (ou recente, usualmente &lt;6 meses); receptor de concentrado de plaquetas HLA compatíveis; quando houver parentesco entre receptor e doador.
+            </td>
+          </tr>
+
+          <!-- 4. USO DA AGÊNCIA TRANSFUSIONAL (grade 4 linhas × 3 colunas = 12 bolsas) -->
+          <tr><td colspan="12" class="band">Uso da Agência Transfusional</td></tr>
+          ${Array.from({ length: 4 })
+            .map(
+              () => `
+          <tr>
+            ${Array.from({ length: 3 })
+              .map(
+                () => `
+            <td colspan="4" class="cell agencia-cell">
+              <div class="ag-row">Nº da bolsa: <span class="ag-fill"></span></div>
+              <div class="ag-row">Nº macarrão: <span class="ag-fill"></span></div>
+              <div class="ag-row">Volume da bolsa: <span class="ag-fill"></span></div>
+              <div class="ag-row">Hora: <span class="ag-fill"></span></div>
+            </td>`,
+              )
+              .join("")}
+          </tr>`,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
   `;
 
   const extraStyles = `
@@ -726,6 +813,19 @@ export async function printHemocomponentRequest(
     .cb { display:inline-block; width:8pt; height:8pt; border:1pt solid #0a1628; margin-right:4pt; vertical-align:middle; }
     .cb.on { background:#0a1628; }
     .fill { display:inline-block; border-bottom:1pt solid #0a1628; padding:0 3pt; min-width:40pt; }
+
+    /* ─────────── VERSO (página 2) ─────────── */
+    .hemo-verso { page-break-before: always; padding-top: 2mm; }
+    .verso-title { text-align:center; font-size:9pt; font-weight:800; text-transform:uppercase; letter-spacing:0.5pt; color:#0a1628; margin:0 0 4pt 0; }
+    table.nz.hemo.verso { margin-top: 3pt; }
+    table.nz.hemo.verso .verso-text { font-size:7.5pt; line-height:1.35; text-align:justify; padding:4pt 6pt; }
+    table.nz.hemo.verso .sig-fields { font-size:8pt; padding:6pt 8pt; vertical-align:middle; }
+    table.nz.hemo.verso .sig-area { padding:6pt 8pt; vertical-align:bottom; }
+    table.nz.hemo.verso .sig-line-bottom { border-top:1pt solid #0a1628; padding-top:3pt; font-size:7.5pt; text-align:center; margin-top:24pt; }
+    table.nz.hemo.verso .agencia-cell { padding:0; font-size:7.5pt; }
+    table.nz.hemo.verso .ag-row { border-bottom:0.5pt solid #1e293b; padding:3pt 5pt; }
+    table.nz.hemo.verso .ag-row:last-child { border-bottom:0; }
+    table.nz.hemo.verso .ag-fill { display:inline-block; min-width:55%; border-bottom:0; }
   `;
 
   const logoDataUrl = await prepareLogo();
