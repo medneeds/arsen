@@ -28,7 +28,7 @@ function hasGasometriaSplitCandidate(items: any[]): boolean {
   return gaso.length >= 1 && others.length >= 1;
 }
 
-type SplitChoice = "split" | "together" | "cancel";
+type SplitChoice = "split" | "compact" | "together" | "cancel";
 
 function askSplitGasometria(items: any[]): Promise<SplitChoice> {
   return new Promise((resolve) => {
