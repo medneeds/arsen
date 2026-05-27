@@ -275,6 +275,28 @@ const RequisicaoImagensPage = () => {
     setSelectedProcedures((prev) => prev.filter((p) => p.code !== code));
   };
 
+  const addManualProcedure = () => {
+    const name = manualName.trim().toUpperCase();
+    if (!name) {
+      toast.error("Informe a descrição do procedimento");
+      return;
+    }
+    if (selectedProcedures.length >= 6) {
+      toast.error("Máximo de 6 procedimentos por laudo");
+      return;
+    }
+    const codeRaw = manualCode.trim();
+    // Gera código único se vazio (não conflita com SIGTAP)
+    const code = codeRaw || `AVULSO-${Date.now().toString().slice(-6)}`;
+    if (selectedProcedures.find((p) => p.code === code)) {
+      toast.info("Procedimento já adicionado");
+      return;
+    }
+    setSelectedProcedures((prev) => [...prev, { code, name, qty: Math.max(1, manualQty || 1) }]);
+    setManualName(""); setManualCode(""); setManualQty(1);
+    toast.success("Procedimento avulso adicionado");
+  };
+
   const resetForm = () => {
     setPatientName(""); setPatientRecord(""); setPatientCNS("");
     setPatientDOB(""); setPatientSex(""); setPatientMotherName("");
