@@ -343,8 +343,8 @@ function detectQuantityUnit(presentation: string, dose: string): string {
 }
 
 // Auto-detect default diluent and volume from instructions
-function detectDiluentDefaults(instructions: string): { diluent: string; diluentVolume: string; infusionTime: string } {
-  const result = { diluent: '', diluentVolume: '', infusionTime: '' };
+function detectDiluentDefaults(instructions: string): { diluent: string; diluentVolume: string; infusionTime: string; infusionTimeUnit: 'min' | 'h' } {
+  const result = { diluent: '', diluentVolume: '', infusionTime: '', infusionTimeUnit: 'min' as 'min' | 'h' };
   if (!instructions) return result;
   const inst = instructions.toLowerCase();
   // Detect diluent
@@ -359,7 +359,10 @@ function detectDiluentDefaults(instructions: string): { diluent: string; diluent
   const timeMatch = inst.match(/(?:infundir em|correr em|infusão em)\s+(\d+)\s*(?:min|minutos)/i);
   if (timeMatch) result.infusionTime = timeMatch[1];
   const timeHMatch = inst.match(/(?:infundir em|correr em)\s+(\d+)\s*h/i);
-  if (timeHMatch) result.infusionTime = String(parseInt(timeHMatch[1]) * 60);
+  if (timeHMatch) {
+    result.infusionTime = timeHMatch[1]; // preserva o valor original (ex.: "2" para 2h)
+    result.infusionTimeUnit = 'h';
+  }
   return result;
 }
 
