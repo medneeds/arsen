@@ -487,7 +487,7 @@ function posologyToIntervals(posology: string): number {
   const map: Record<string, number> = {
     '1x/dia': 1, '2x/dia': 2, '3x/dia': 3, '4x/dia': 4,
     '6/6h': 4, '8/8h': 3, '12/12h': 2, '24/24h': 1,
-    '4/4h': 6, '2/2h': 12, 'Contínuo': 1, 'Dose única': 1,
+    '4/4h': 6, '3/3h': 8, '2/2h': 12, 'Contínuo': 1, 'Dose única': 1,
   };
   return map[posology] || 1;
 }
