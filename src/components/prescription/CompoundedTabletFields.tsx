@@ -42,6 +42,10 @@ interface Props {
 export function CompoundedTabletFields({ item, onUpdate }: Props) {
   const block = useMemo(() => findNotCrushable(item.name, item.presentation), [item.name, item.presentation]);
 
+  // Quando o entry tem `technique`, NÃO é bloqueio absoluto — é técnica viável (âmbar).
+  const hasTechnique = !!block?.technique;
+  const hardBlock = !!block && !hasTechnique;
+
   // Defaults práticos: ISMP-Brasil sugere 20 mL para diluir e 10 mL para lavar antes/depois.
   const [waterMl, setWaterMl] = useState<string>('20');
   const [preFlushMl, setPreFlushMl] = useState<string>('10');
@@ -50,7 +54,19 @@ export function CompoundedTabletFields({ item, onUpdate }: Props) {
   const [extraNote, setExtraNote] = useState<string>('');
 
   const buildInstruction = () => {
-    if (block) return null;
+    if (hardBlock) return null;
+
+    // Caminho 1: medicamento com técnica alternativa cadastrada (omeprazol etc.)
+    if (block?.technique) {
+      let text = block.technique.instructionTemplate
+        .replace('{volume}', waterMl || '20')
+        .replace('{preLav}', preFlushMl || '10')
+        .replace('{posLav}', postFlushMl || '10');
+      if (extraNote.trim()) text += ` ${extraNote.trim()}`;
+      return text;
+    }
+
+    // Caminho 2: comprimido comum triturável
     const parts: string[] = [];
     parts.push(`Triturar e diluir em ${waterMl || '20'} mL de água destilada/filtrada`);
     if (preFlushMl) parts.push(`lavar sonda com ${preFlushMl} mL de água ANTES`);
@@ -65,7 +81,7 @@ export function CompoundedTabletFields({ item, onUpdate }: Props) {
     const text = buildInstruction();
     if (!text) return;
     onUpdate(item.id, 'instructions', text);
-    toast.success('Instrução de trituração aplicada');
+    toast.success(hasTechnique ? 'Técnica específica aplicada à instrução' : 'Instrução de trituração aplicada');
   };
 
   return (
