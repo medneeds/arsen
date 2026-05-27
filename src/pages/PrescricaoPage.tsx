@@ -7894,6 +7894,7 @@ const PrescricaoPage = () => {
           onSuspendSelected={suspendSelected}
           onDeleteSelected={deleteSelected}
           onDuplicateSelected={duplicateSelected}
+          onPrintSelected={printSelectedItems}
         />
 
       {/* Nutrition Wizard */}
