@@ -632,7 +632,12 @@ function buildPrepDescription(item: PrescriptionItem): string {
     // Volume final apenas quando distinto do diluente (ex.: soluto 50 mL + diluente 50 mL = 100 mL)
     const volTotalNum = parseFloat((item.volumeTotal || '').replace(',', '.'));
     const volDilNum = parseFloat((item.diluentVolume || '').replace(',', '.'));
-    const hasDistinctTotal = item.volumeTotal && (!item.diluentVolume || (volTotalNum && volTotalNum !== volDilNum));
+    // Imprime volume final quando:
+    // (a) volumeTotal existe e é diferente do diluentVolume (há volume de medicamento somado)
+    // (b) volumeTotal existe e não há diluentVolume (volume total da bolsa)
+    const hasDistinctTotal = item.volumeTotal &&
+      (volTotalNum > 0) &&
+      (!item.diluentVolume || !volDilNum || volTotalNum !== volDilNum);
     if (hasDistinctTotal) parts.push(`Volume final: ${item.volumeTotal} mL.`);
   } else if (soluto) {
     parts.push(`${soluto}.`);
