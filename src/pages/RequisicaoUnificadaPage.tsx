@@ -384,11 +384,9 @@ const RequisicaoUnificadaPage = () => {
 
   const requiresExtraJustification = offQuickLabItems.length > 0;
 
-  const resetForm = () => {
-    setFormPatientId(null);
-    setFormPatientName("");
-    setFormPatientBed("");
-    setFormPatientSector("");
+  // Limpa SOMENTE os campos da requisição — preserva paciente selecionado para encadear
+  // múltiplas solicitações sem perder identificação. (Bug: após submit a identificação sumia.)
+  const resetRequestFields = () => {
     setFormPriority("rotina");
     setFormScheduledDate("");
     setFormScheduledTime("");
@@ -398,6 +396,15 @@ const RequisicaoUnificadaPage = () => {
     setFormCustomItem("");
     setFormExtraJustification("");
     setExpandedCombo(null);
+  };
+
+  // Limpa TUDO (paciente + campos) — usado pelo botão "Limpar" explícito.
+  const resetForm = () => {
+    setFormPatientId(null);
+    setFormPatientName("");
+    setFormPatientBed("");
+    setFormPatientSector("");
+    resetRequestFields();
   };
 
   const handleSubmitRequest = async () => {
@@ -462,7 +469,8 @@ const RequisicaoUnificadaPage = () => {
         throw error;
       }
       toast.success(`${CATEGORIES[activeCategory].shortLabel}: ${formSelectedItems.length} item(ns) solicitado(s)`);
-      resetForm();
+      // Preserva paciente selecionado para encadear novas solicitações sem reabrir o picker.
+      resetRequestFields();
       setActiveSubTab("solicitados");
       fetchRequests();
     } catch (err: any) {
