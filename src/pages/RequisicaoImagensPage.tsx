@@ -726,7 +726,7 @@ const RequisicaoImagensPage = () => {
           .apac-header p { font-size: 6.5pt; margin: 0; color: #666; }
           .apac-field-label { font-size: 6pt; color: #555; display: block; line-height: 1.1; }
           .apac-field-value { font-size: 8pt; font-weight: 500; min-height: 11px; line-height: 1.2; }
-          .apac-obs-value { font-size: 8pt; font-weight: 500; min-height: 78px; line-height: 1.3; white-space: pre-wrap; }
+          .apac-obs-value { font-size: 7.5pt; font-weight: 500; min-height: 38px; line-height: 1.25; white-space: pre-wrap; }
         `}</style>
 
         <div className="apac-doc" style={{ fontFamily: "'Arial', sans-serif", color: "#000" }}>
