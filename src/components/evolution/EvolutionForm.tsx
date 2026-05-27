@@ -4,6 +4,7 @@ import {
   Save, Loader2, CheckCircle2,
   ShieldCheck, Printer,
   AlertCircle, Eye, ChevronDown, Stethoscope as DiagnosisIcon,
+  Activity, ClipboardCopy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,12 +21,12 @@ import { FieldTemplates } from "@/components/FieldTemplates";
 import { useHospital } from "@/contexts/HospitalContext";
 import { DevicesCulturesSection } from "@/components/evolution/DevicesCulturesSection";
 import { deviceAlertTone, type EvolutionDevice } from "@/lib/devicesCatalog";
-import { Activity } from "lucide-react";
 import { printEvolution } from "@/lib/printEvolution";
 import { resolvePatientHeader } from "@/lib/resolvePatientHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { EvolutionRecord } from "@/hooks/useEvolutions";
+import { calculateNEWS2, news2RiskLabels, parseVitalNumber } from "@/lib/news2";
 
 interface SOAPData {
   subjective: string;
