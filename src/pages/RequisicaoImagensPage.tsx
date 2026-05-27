@@ -131,23 +131,47 @@ const RequisicaoImagensPage = () => {
   const [useContrast, setUseContrast] = useState(false);
   const [useSedation, setUseSedation] = useState(false);
 
-  // Load doctor profile
+  // Load doctor profile (full_name, crm, cpf) — fallback para user_metadata
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const { data } = await supabase
+      const meta = (user as any)?.user_metadata || {};
+      // pré-preenche com metadata enquanto o fetch resolve
+      if (meta.cpf && !doctorCPF) setDoctorCPF(String(meta.cpf));
+      if (meta.full_name && !doctorName) setDoctorName(String(meta.full_name));
+      if (meta.crm && !doctorCRM) setDoctorCRM(String(meta.crm));
+
+      const { data, error } = await supabase
         .from("profiles")
         .select("full_name, crm, cpf")
         .eq("id", user.id)
         .maybeSingle();
+      if (error) {
+        console.warn("[APAC] erro lendo profile:", error.message);
+        return;
+      }
       if (data) {
-        setDoctorName(data.full_name || "");
-        setDoctorCRM(data.crm || "");
-        setDoctorCPF((data as any).cpf || "");
+        const fn = (data as any).full_name || meta.full_name || "";
+        const cr = (data as any).crm || meta.crm || "";
+        const cp = (data as any).cpf || meta.cpf || "";
+        if (fn) setDoctorName(String(fn));
+        if (cr) setDoctorCRM(String(cr));
+        if (cp) setDoctorCPF(String(cp));
       }
     };
     load();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // Persiste CPF de volta no profile quando o usuário digitar (auto-save no blur)
+  const handleSaveDoctorCPF = async () => {
+    if (!user?.id || !doctorCPF.trim()) return;
+    try {
+      await supabase.from("profiles").update({ cpf: doctorCPF.trim() } as any).eq("id", user.id);
+    } catch (e) {
+      console.warn("[APAC] não foi possível salvar CPF no profile:", e);
+    }
+  };
 
   // Auto-hydrate patient data from URL params (patientId) + patient_registry (prontuário real)
   useEffect(() => {
