@@ -4250,9 +4250,8 @@ const PrescricaoPage = () => {
     // ============= NUTRIÇÃO =============
     // Escape universal removido.
     if (item.category === 'nutrition') {
-      // Adição manual: exige apenas recomendações (instructions)
+      // Adição manual: recomendações são opcionais (apenas o nome basta)
       if (item.nutManual) {
-        if (empty(item.instructions)) missing.push('recomendações');
         return missing;
       }
 
