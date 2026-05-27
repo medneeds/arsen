@@ -166,10 +166,18 @@ export async function printRequisitionGuideWithGasometriaPrompt(
     return printRequisitionGuide(request, sectorLabel);
   }
 
-  // Split
   const gasoItems = items.filter((it: any) => GASO_REGEX.test(getItemName(it)));
   const otherItems = items.filter((it: any) => !GASO_REGEX.test(getItemName(it)));
 
+  if (choice === "compact") {
+    return printRequisitionGuide(
+      { ...request, items: gasoItems },
+      sectorLabel,
+      { compactDuo: { otherItems, otherLabel: "Exames Laboratoriais", gasoLabel: "Gasometria" } },
+    );
+  }
+
+  // Split (2 janelas sequenciais)
   await printRequisitionGuide({ ...request, items: gasoItems }, sectorLabel);
   // Pequeno respiro para o navegador abrir a segunda janela sem bloquear pop-up.
   await new Promise((r) => setTimeout(r, 350));
