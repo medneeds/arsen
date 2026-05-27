@@ -40,6 +40,10 @@ interface EvolutionTimelineProps {
   cidSecondary?: string;
   /** ID do paciente — usado para resolver identidade canônica antes de imprimir */
   patientId?: string | null;
+  /** Painel Diagnósticos (CID-10, previsão de alta, paliativo, isolamento) — injetado
+   *  como 1ª seção colapsável do EvolutionForm ao editar rascunho na Timeline.
+   *  Sem isso, a Revisão lista "Definir CID-10 primário" mas o campo não aparece. */
+  diagnosticsSlot?: React.ReactNode;
   onUpdate: (id: string, updates: any) => Promise<boolean>;
   onValidate: (id: string) => Promise<boolean>;
   onSuspend: (id: string, reason: string) => Promise<boolean>;
