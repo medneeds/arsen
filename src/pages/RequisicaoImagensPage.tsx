@@ -131,23 +131,47 @@ const RequisicaoImagensPage = () => {
   const [useContrast, setUseContrast] = useState(false);
   const [useSedation, setUseSedation] = useState(false);
 
-  // Load doctor profile
+  // Load doctor profile (full_name, crm, cpf) — fallback para user_metadata
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const { data } = await supabase
+      const meta = (user as any)?.user_metadata || {};
+      // pré-preenche com metadata enquanto o fetch resolve
+      if (meta.cpf && !doctorCPF) setDoctorCPF(String(meta.cpf));
+      if (meta.full_name && !doctorName) setDoctorName(String(meta.full_name));
+      if (meta.crm && !doctorCRM) setDoctorCRM(String(meta.crm));
+
+      const { data, error } = await supabase
         .from("profiles")
         .select("full_name, crm, cpf")
         .eq("id", user.id)
         .maybeSingle();
+      if (error) {
+        console.warn("[APAC] erro lendo profile:", error.message);
+        return;
+      }
       if (data) {
-        setDoctorName(data.full_name || "");
-        setDoctorCRM(data.crm || "");
-        setDoctorCPF((data as any).cpf || "");
+        const fn = (data as any).full_name || meta.full_name || "";
+        const cr = (data as any).crm || meta.crm || "";
+        const cp = (data as any).cpf || meta.cpf || "";
+        if (fn) setDoctorName(String(fn));
+        if (cr) setDoctorCRM(String(cr));
+        if (cp) setDoctorCPF(String(cp));
       }
     };
     load();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // Persiste CPF de volta no profile quando o usuário digitar (auto-save no blur)
+  const handleSaveDoctorCPF = async () => {
+    if (!user?.id || !doctorCPF.trim()) return;
+    try {
+      await supabase.from("profiles").update({ cpf: doctorCPF.trim() } as any).eq("id", user.id);
+    } catch (e) {
+      console.warn("[APAC] não foi possível salvar CPF no profile:", e);
+    }
+  };
 
   // Auto-hydrate patient data from URL params (patientId) + patient_registry (prontuário real)
   useEffect(() => {
@@ -693,7 +717,7 @@ const RequisicaoImagensPage = () => {
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">CPF</Label>
-                    <Input value={doctorCPF} onChange={(e) => setDoctorCPF(e.target.value)} placeholder="000.000.000-00" className="font-mono" />
+                    <Input value={doctorCPF} onChange={(e) => setDoctorCPF(e.target.value)} onBlur={handleSaveDoctorCPF} placeholder="000.000.000-00" className="font-mono" />
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">Data da Solicitação: <strong>{todayFormatted}</strong></p>
@@ -711,26 +735,43 @@ const RequisicaoImagensPage = () => {
       <div ref={printRef} className="hidden print:block">
         <style>{`
           @media print {
-            @page { size: A4 portrait; margin: 7mm 9mm; }
-            html, body { height: 283mm; max-height: 283mm; overflow: hidden !important; }
+            @page { size: A4 portrait; margin: 6mm 8mm; }
+            html, body { height: 285mm; max-height: 285mm; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .print\\:block { display: block !important; }
             .print\\:hidden { display: none !important; }
-            .apac-doc { font-size: 7.3pt; line-height: 1.12; max-height: 283mm; overflow: hidden; page-break-after: avoid; page-break-inside: avoid; }
-            .apac-doc * { page-break-inside: avoid !important; page-break-after: avoid !important; }
-            .apac-doc table, .apac-doc tr, .apac-doc td, .apac-doc th { page-break-inside: avoid !important; page-break-after: avoid !important; }
+            /* Lock total: nada quebra, nada estoura. Tudo numa única página A4. */
+            .apac-doc {
+              font-size: 7pt; line-height: 1.1;
+              height: 285mm; max-height: 285mm; overflow: hidden;
+              page-break-after: avoid !important;
+              page-break-before: avoid !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            .apac-doc * {
+              page-break-inside: avoid !important;
+              page-break-after: avoid !important;
+              page-break-before: avoid !important;
+              break-inside: avoid !important;
+            }
+            .apac-doc table, .apac-doc tr, .apac-doc td, .apac-doc th {
+              page-break-inside: avoid !important;
+              page-break-after: avoid !important;
+              break-inside: avoid !important;
+            }
           }
           .apac-doc table { page-break-inside: avoid; }
-          .apac-table { width: 100%; border-collapse: collapse; font-size: 6.8pt; }
-          .apac-table th, .apac-table td { border: 1px solid #000; padding: 1px 3px; text-align: left; vertical-align: top; }
-          .apac-table th { background: #e5e7eb; font-weight: bold; font-size: 6.3pt; text-transform: uppercase; }
-          .apac-section-title { background: #1e293b; color: white; font-weight: bold; font-size: 6.8pt; padding: 1.5px 5px; text-transform: uppercase; letter-spacing: 0.3px; }
-          .apac-header { text-align: center; margin-bottom: 3px; }
-          .apac-header h1 { font-size: 9.5pt; font-weight: bold; margin: 0; }
-          .apac-header p { font-size: 6.3pt; margin: 0; color: #666; }
-          .apac-field-label { font-size: 5.8pt; color: #555; display: block; line-height: 1.05; }
-          .apac-field-value { font-size: 7.6pt; font-weight: 500; min-height: 10px; line-height: 1.15; }
-          .apac-obs-value { font-size: 7.3pt; font-weight: 500; min-height: 34px; line-height: 1.2; white-space: pre-wrap; }
+          .apac-table { width: 100%; border-collapse: collapse; font-size: 6.6pt; table-layout: fixed; }
+          .apac-table th, .apac-table td { border: 1px solid #000; padding: 1px 3px; text-align: left; vertical-align: top; overflow: hidden; word-wrap: break-word; }
+          .apac-table th { background: #e5e7eb; font-weight: bold; font-size: 6.2pt; text-transform: uppercase; }
+          .apac-section-title { background: #1e293b; color: white; font-weight: bold; font-size: 6.6pt; padding: 1px 5px; text-transform: uppercase; letter-spacing: 0.3px; }
+          .apac-header { text-align: center; margin-bottom: 2px; }
+          .apac-header h1 { font-size: 9pt; font-weight: bold; margin: 0; }
+          .apac-header p { font-size: 6.2pt; margin: 0; color: #666; }
+          .apac-field-label { font-size: 5.6pt; color: #555; display: block; line-height: 1.02; }
+          .apac-field-value { font-size: 7.4pt; font-weight: 500; min-height: 9px; line-height: 1.12; }
+          .apac-obs-value { font-size: 7pt; font-weight: 500; min-height: 30px; line-height: 1.18; white-space: pre-wrap; }
         `}</style>
 
         <div className="apac-doc" style={{ fontFamily: "'Arial', sans-serif", color: "#000" }}>
@@ -915,17 +956,17 @@ const RequisicaoImagensPage = () => {
             <tbody>
               <tr><td colSpan={4} className="apac-section-title">SOLICITAÇÃO</td></tr>
               <tr>
-                <td style={{ width: "32%" }}>
+                <td style={{ width: "22%" }}>
                   <span className="apac-field-label">38 — NOME DO PROFISSIONAL SOLICITANTE</span>
                   <div className="apac-field-value">{doctorName.toUpperCase()}</div>
                 </td>
-                <td style={{ width: "18%" }}>
+                <td style={{ width: "14%" }}>
                   <span className="apac-field-label">39 — DATA DA SOLICITAÇÃO</span>
                   <div className="apac-field-value">{todayFormatted}</div>
                 </td>
-                <td colSpan={2} style={{ width: "50%" }}>
+                <td colSpan={2} style={{ width: "64%" }}>
                   <span className="apac-field-label">42 — ASSINATURA E CARIMBO</span>
-                  <div style={{ height: "30px" }}></div>
+                  <div style={{ height: "36px" }}></div>
                 </td>
               </tr>
               <tr>
