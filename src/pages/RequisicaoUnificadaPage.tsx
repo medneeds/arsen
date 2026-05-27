@@ -1500,8 +1500,8 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const { data } = await supabase.from("profiles").select("full_name, crm").eq("id", user.id).maybeSingle();
-      if (data) { setDoctorName(data.full_name || ""); setDoctorCRM(data.crm || ""); }
+      const { data } = await supabase.from("profiles").select("full_name, crm, cpf").eq("id", user.id).maybeSingle();
+      if (data) { setDoctorName(data.full_name || ""); setDoctorCRM(data.crm || ""); if ((data as any).cpf) setDoctorCPF((data as any).cpf); }
     };
     load();
   }, [user]);
