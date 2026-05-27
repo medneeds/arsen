@@ -87,10 +87,13 @@ export function usePatients(department?: Department, sector?: string) {
         psmStatus: p.psm_status as Patient['psmStatus'],
         clinicalStatus: (p as any).clinical_status as Patient['clinicalStatus'],
         isVacant: (p as any).is_vacant ?? false,
-        // Leito vago NUNCA carrega admission_status (evita "admitido fantasma" pós-alta/óbito)
+        // Leito vago NUNCA carrega admission_status (evita "admitido fantasma" pós-alta/óbito).
+        // Sem fallback para 'admitido' quando admission_status é NULL: null significa que o
+        // status não foi registrado — é diferente de "admitido". O fallback anterior causava
+        // bloqueio duro indevido em leitos com status residual nulo (ex.: pós-alta com flag não gravado).
         admissionStatus: (p as any).is_vacant
           ? undefined
-          : (((p as any).admission_status as Patient['admissionStatus']) ?? 'admitido'),
+          : ((p as any).admission_status as Patient['admissionStatus']) ?? undefined,
         admittedAt: (p as any).admitted_at ?? null,
       }));
 
@@ -809,7 +812,7 @@ export function usePatients(department?: Department, sector?: string) {
     isVacant: record.is_vacant ?? false,
     admissionStatus: record.is_vacant
       ? undefined
-      : ((record.admission_status as Patient['admissionStatus']) ?? 'admitido'),
+      : ((record.admission_status as Patient['admissionStatus']) ?? undefined),
     admittedAt: record.admitted_at ?? null,
   });
 

@@ -199,7 +199,9 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
   // BLOQUEIO DURO: paciente sem sinalização não pode ser desalocado pelo Mapa.
   // Único caminho permitido é sinalizar a saída pelo Painel Clínico (alta/óbito/transferência).
   // Casos de "cadastro errado/leito sujo" ficam no Dev Console / Edição Avançada, fora deste fluxo.
-  const blockReleaseHard = isExceptional;
+  // Não há mais bloqueio duro — casos excepcionais passam por senha + justificativa
+  // (igual ao fluxo normal, com aviso adicional de que a alta não foi sinalizada).
+  const blockReleaseHard = false;
 
   return (
     <>
@@ -273,7 +275,20 @@ export function BedReleasePreAdmissionDialog({ open, onOpenChange, patient, onCo
                         <Stethoscope className="h-4 w-4" />
                         Ir para o Painel Clínico agora
                         <ArrowRight className="h-4 w-4" />
+                       </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 w-full gap-1.5 border-amber-500 text-amber-700 hover:bg-amber-50"
+                        onClick={goToFormStep}
+                      >
+                        <UserMinus className="h-4 w-4" />
+                        Prosseguir com desalocação mesmo assim
                       </Button>
+                      <p className="text-[10px] text-muted-foreground mt-1 leading-snug text-center">
+                        Use apenas se o paciente já saiu fisicamente e não é possível sinalizar pelo Painel Clínico. A ação ficará registrada no histórico com justificativa obrigatória.
+                      </p>
                     </div>
 
                     <p className="text-[11px] text-muted-foreground leading-snug">
