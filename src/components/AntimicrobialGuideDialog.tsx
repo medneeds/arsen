@@ -477,6 +477,7 @@ export function AntimicrobialGuideDialog({
       startDate: e.startDate, plannedDuration: e.plannedDuration, infectionSite: e.infectionSite,
     })));
     if (draftKey) localStorage.removeItem(draftKey);
+    if (autosaveKey) localStorage.removeItem(autosaveKey);
     if (close) onOpenChange(false);
     return true;
   };
