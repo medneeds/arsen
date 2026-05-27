@@ -134,9 +134,10 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <PrivacyProvider>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <Suspense fallback={<PageFallback />}>
+          <HelpTourProvider>
+            <Toaster />
+            <Sonner />
+            <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/welcome" element={<LandingPage />} />
               <Route path="/apresentacao" element={<ApresentacaoPage />} />
