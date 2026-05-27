@@ -1377,6 +1377,11 @@ const APAC_PROCEDURES = [
   { code: "02.05.01.003-0", name: "ULTRASSONOGRAFIA DE ABDOMEN TOTAL", category: "USG" },
   { code: "02.05.01.004-8", name: "ULTRASSONOGRAFIA DE TÓRAX", category: "USG" },
   { code: "02.05.01.005-6", name: "ECOCARDIOGRAMA TRANSTORÁCICO", category: "USG" },
+  { code: "02.07.03.004-9", name: "COLANGIORRESSONÂNCIA (CPRM)", category: "RM" },
+  { code: "02.07.01.003-0", name: "ANGIORRESSONÂNCIA DE CRÂNIO", category: "RM" },
+  { code: "02.07.03.005-7", name: "RESSONÂNCIA MAGNÉTICA DE FÍGADO E VIAS BILIARES", category: "RM" },
+  { code: "02.07.03.006-5", name: "RESSONÂNCIA MAGNÉTICA DE PÂNCREAS", category: "RM" },
+  { code: "02.06.01.006-0", name: "ANGIOTOMOGRAFIA DE ARTÉRIAS RENAIS", category: "TC" },
 ];
 
 const APAC_QUICK_ACCESS = [
