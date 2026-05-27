@@ -248,7 +248,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
                     patientCpf: resolved.cpf || undefined,
                     patientCns: resolved.cns || undefined,
                     cidPrimary: cidPrimary || undefined,
-                    cidSecondary: cidSecondary || undefined,
+                    cidSecondary: (Array.isArray(cidSecondary) ? cidSecondary.filter(Boolean).join("; ") : cidSecondary) || undefined,
                   });
                 } catch (err) {
                   console.error("[EvolutionForm] Falha ao imprimir evolução:", err);
