@@ -494,9 +494,9 @@ const RequisicaoImagensPage = () => {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Observações</Label>
-                  <Textarea value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Informações clínicas relevantes..." rows={3} />
-                </div>
+                   <Label className="text-xs text-muted-foreground">Observações</Label>
+                   <Textarea value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Informações clínicas relevantes..." rows={2} />
+                 </div>
               </CardContent>
             </Card>
           </div>
