@@ -832,32 +832,33 @@ const RequisicaoImagensPage = () => {
             </tbody>
           </table>
 
-          {/* Secondary procedures */}
-          <table className="apac-table" style={{ marginTop: "4px" }}>
-            <tbody>
-              <tr><td colSpan={3} className="apac-section-title">PROCEDIMENTO(S) SECUNDÁRIO(S)</td></tr>
-              {[1, 2, 3, 4, 5].map((idx) => {
-                const proc = selectedProcedures[idx];
-                const fieldNum = 18 + (idx - 1) * 3;
-                return (
-                  <tr key={idx}>
-                    <td style={{ width: "25%" }}>
-                      <span className="apac-field-label">{fieldNum} — CÓDIGO</span>
-                      <div className="apac-field-value" style={{ fontFamily: "monospace" }}>{proc?.code || ""}</div>
-                    </td>
-                    <td style={{ width: "60%" }}>
-                      <span className="apac-field-label">{fieldNum + 1} — NOME DO PROCEDIMENTO</span>
-                      <div className="apac-field-value">{proc?.name || ""}</div>
-                    </td>
-                    <td>
-                      <span className="apac-field-label">{fieldNum + 2} — QTDE</span>
-                      <div className="apac-field-value" style={{ textAlign: "center" }}>{proc?.qty || ""}</div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {/* Secondary procedures — só renderiza os preenchidos para economizar espaço */}
+          {selectedProcedures.length > 1 && (
+            <table className="apac-table" style={{ marginTop: "3px" }}>
+              <tbody>
+                <tr><td colSpan={3} className="apac-section-title">PROCEDIMENTO(S) SECUNDÁRIO(S)</td></tr>
+                {selectedProcedures.slice(1).map((proc, i) => {
+                  const fieldNum = 18 + i * 3;
+                  return (
+                    <tr key={proc.code}>
+                      <td style={{ width: "22%" }}>
+                        <span className="apac-field-label">{fieldNum} — CÓDIGO</span>
+                        <div className="apac-field-value" style={{ fontFamily: "monospace" }}>{proc.code}</div>
+                      </td>
+                      <td style={{ width: "68%" }}>
+                        <span className="apac-field-label">{fieldNum + 1} — NOME DO PROCEDIMENTO</span>
+                        <div className="apac-field-value">{proc.name}</div>
+                      </td>
+                      <td>
+                        <span className="apac-field-label">{fieldNum + 2} — QTDE</span>
+                        <div className="apac-field-value" style={{ textAlign: "center" }}>{proc.qty}</div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
 
           {/* Justification */}
           <table className="apac-table" style={{ marginTop: "4px" }}>
