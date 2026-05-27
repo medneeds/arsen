@@ -249,11 +249,26 @@ export function AntimicrobialGuideDialog({
   const allValid = entries.length > 0 && entries.every(e => missingByEntry[e.id].length === 0);
   const validCount = entries.filter(e => missingByEntry[e.id].length === 0).length;
 
+  // Chave separada para prescribe vs review — evita anexar medicamento errado
+  // em prescribe, mas preserva tudo que o médico está digitando entre trocas de aba.
+  const autosaveKey = draftKey ? `${draftKey}-${mode === 'prescribe' ? 'prescribe' : 'review'}` : null;
+
   useEffect(() => {
     if (!open) return;
-    // Modo "prescribe" (busca de ATB ou nova solicitação via AtmStatusDialog):
-    // SEMPRE seed limpo a partir do parent — nunca usar rascunho antigo do
-    // localStorage, que provocaria anexar o medicamento errado.
+    // 1) Tenta restaurar autosave da MESMA sessão (mesmo modo, mesmo paciente).
+    if (autosaveKey) {
+      try {
+        const raw = localStorage.getItem(autosaveKey);
+        if (raw) {
+          const parsed = JSON.parse(raw) as AntimicrobialEntry[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setEntries(parsed);
+            return;
+          }
+        }
+      } catch {/* ignore */}
+    }
+    // 2) Sem autosave → seed limpo do parent (ou rascunho legado em review).
     if (mode === 'prescribe') {
       if (antimicrobialItems.length > 0) {
         setEntries(antimicrobialItems.filter(i => i.status === 'active').map(item => createEmptyEntry(item)));
@@ -262,7 +277,7 @@ export function AntimicrobialGuideDialog({
       }
       return;
     }
-    // Modo "review": restaura rascunho salvo se existir
+    // Modo "review": tenta rascunho legado (chave antiga) antes do seed
     if (draftKey) {
       try {
         const raw = localStorage.getItem(draftKey);
@@ -280,7 +295,21 @@ export function AntimicrobialGuideDialog({
     } else {
       setEntries([createEmptyEntry()]);
     }
-  }, [open, antimicrobialItems, draftKey, mode]);
+  }, [open, antimicrobialItems, draftKey, autosaveKey, mode]);
+
+  // === Autosave com debounce — preserva tudo ao trocar de aba/voltar ===
+  useEffect(() => {
+    if (!open || !autosaveKey || entries.length === 0) return;
+    // Só persiste se houver algo realmente preenchido (não salva o seed vazio).
+    const hasContent = entries.some(
+      e => (e.medication || e.dose || e.posology || e.infectionSite || e.justification || e.ccihNotes).trim().length > 0
+    );
+    if (!hasContent) return;
+    const handle = window.setTimeout(() => {
+      try { localStorage.setItem(autosaveKey, JSON.stringify(entries)); } catch {/* quota */}
+    }, 600);
+    return () => window.clearTimeout(handle);
+  }, [entries, autosaveKey, open]);
 
   useEffect(() => {
     if (open && patientId) {
