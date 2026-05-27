@@ -1716,6 +1716,49 @@ function ApacEmbeddedForm({ patientName: initialPatientName, patientBed, patient
                   );
                 })}
               </div>
+              <div className="border-t pt-3 space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Procedimento não listado no SIGTAP
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    value={customProcCode}
+                    onChange={(e) => setCustomProcCode(e.target.value)}
+                    placeholder="Código SIGTAP (opcional)"
+                    className="w-40 font-mono text-xs"
+                  />
+                  <Input
+                    value={customProcName}
+                    onChange={(e) => setCustomProcName(e.target.value)}
+                    placeholder="Nome do procedimento"
+                    className="flex-1 text-xs"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const name = customProcName.trim();
+                      if (!name) { toast.error("Informe o nome do procedimento"); return; }
+                      const code = customProcCode.trim() || "00.00.00.000-0";
+                      if (selectedProcedures.find((p) => p.code === code && p.name === name.toUpperCase())) {
+                        toast.info("Procedimento já adicionado"); return;
+                      }
+                      if (selectedProcedures.length >= 6) {
+                        toast.error("Máximo de 6 procedimentos por laudo"); return;
+                      }
+                      setSelectedProcedures((prev) => [
+                        ...prev,
+                        { code, name: name.toUpperCase(), qty: 1 },
+                      ]);
+                      setCustomProcCode("");
+                      setCustomProcName("");
+                      toast.success("Procedimento avulso adicionado");
+                    }}
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+                  </Button>
+                </div>
+              </div>
               <div className="border-t pt-3">
                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                   Selecionados ({selectedProcedures.length}/6)
