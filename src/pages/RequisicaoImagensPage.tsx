@@ -735,26 +735,43 @@ const RequisicaoImagensPage = () => {
       <div ref={printRef} className="hidden print:block">
         <style>{`
           @media print {
-            @page { size: A4 portrait; margin: 7mm 9mm; }
-            html, body { height: 283mm; max-height: 283mm; overflow: hidden !important; }
+            @page { size: A4 portrait; margin: 6mm 8mm; }
+            html, body { height: 285mm; max-height: 285mm; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .print\\:block { display: block !important; }
             .print\\:hidden { display: none !important; }
-            .apac-doc { font-size: 7.3pt; line-height: 1.12; max-height: 283mm; overflow: hidden; page-break-after: avoid; page-break-inside: avoid; }
-            .apac-doc * { page-break-inside: avoid !important; page-break-after: avoid !important; }
-            .apac-doc table, .apac-doc tr, .apac-doc td, .apac-doc th { page-break-inside: avoid !important; page-break-after: avoid !important; }
+            /* Lock total: nada quebra, nada estoura. Tudo numa única página A4. */
+            .apac-doc {
+              font-size: 7pt; line-height: 1.1;
+              height: 285mm; max-height: 285mm; overflow: hidden;
+              page-break-after: avoid !important;
+              page-break-before: avoid !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            .apac-doc * {
+              page-break-inside: avoid !important;
+              page-break-after: avoid !important;
+              page-break-before: avoid !important;
+              break-inside: avoid !important;
+            }
+            .apac-doc table, .apac-doc tr, .apac-doc td, .apac-doc th {
+              page-break-inside: avoid !important;
+              page-break-after: avoid !important;
+              break-inside: avoid !important;
+            }
           }
           .apac-doc table { page-break-inside: avoid; }
-          .apac-table { width: 100%; border-collapse: collapse; font-size: 6.8pt; }
-          .apac-table th, .apac-table td { border: 1px solid #000; padding: 1px 3px; text-align: left; vertical-align: top; }
-          .apac-table th { background: #e5e7eb; font-weight: bold; font-size: 6.3pt; text-transform: uppercase; }
-          .apac-section-title { background: #1e293b; color: white; font-weight: bold; font-size: 6.8pt; padding: 1.5px 5px; text-transform: uppercase; letter-spacing: 0.3px; }
-          .apac-header { text-align: center; margin-bottom: 3px; }
-          .apac-header h1 { font-size: 9.5pt; font-weight: bold; margin: 0; }
-          .apac-header p { font-size: 6.3pt; margin: 0; color: #666; }
-          .apac-field-label { font-size: 5.8pt; color: #555; display: block; line-height: 1.05; }
-          .apac-field-value { font-size: 7.6pt; font-weight: 500; min-height: 10px; line-height: 1.15; }
-          .apac-obs-value { font-size: 7.3pt; font-weight: 500; min-height: 34px; line-height: 1.2; white-space: pre-wrap; }
+          .apac-table { width: 100%; border-collapse: collapse; font-size: 6.6pt; table-layout: fixed; }
+          .apac-table th, .apac-table td { border: 1px solid #000; padding: 1px 3px; text-align: left; vertical-align: top; overflow: hidden; word-wrap: break-word; }
+          .apac-table th { background: #e5e7eb; font-weight: bold; font-size: 6.2pt; text-transform: uppercase; }
+          .apac-section-title { background: #1e293b; color: white; font-weight: bold; font-size: 6.6pt; padding: 1px 5px; text-transform: uppercase; letter-spacing: 0.3px; }
+          .apac-header { text-align: center; margin-bottom: 2px; }
+          .apac-header h1 { font-size: 9pt; font-weight: bold; margin: 0; }
+          .apac-header p { font-size: 6.2pt; margin: 0; color: #666; }
+          .apac-field-label { font-size: 5.6pt; color: #555; display: block; line-height: 1.02; }
+          .apac-field-value { font-size: 7.4pt; font-weight: 500; min-height: 9px; line-height: 1.12; }
+          .apac-obs-value { font-size: 7pt; font-weight: 500; min-height: 30px; line-height: 1.18; white-space: pre-wrap; }
         `}</style>
 
         <div className="apac-doc" style={{ fontFamily: "'Arial', sans-serif", color: "#000" }}>
