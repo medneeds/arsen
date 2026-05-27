@@ -409,10 +409,14 @@ function calcVolumeTotal(item: PrescriptionItem): string {
   if (qtyVal > 0 && qtyUnit === 'ml') {
     medVol = qtyVal;
   } else {
-    // Fallback: extract mL from dose string
-    const doseVol = parseFloat(item.dose?.replace(/[^\d.,]/g, '').replace(',', '.') || '');
-    if (doseVol > 0 && item.dose?.toLowerCase().includes('ml')) {
-      medVol = doseVol;
+    // Fallback: extrair o PRIMEIRO número que precede "mL" na dose.
+    // NUNCA usar replace(/[^\d.,]/g,'') pois concatena todos os dígitos:
+    // "10 mL (≈ 25 mEq)" → "1025" → medVol absurdo.
+    const mlMatch = item.dose?.match(/^([\d.,]+)\s*mL/i)
+                 || item.dose?.match(/([\d.,]+)\s*mL/i);
+    if (mlMatch) {
+      const parsed = parseFloat(mlMatch[1].replace(',', '.'));
+      if (parsed > 0) medVol = parsed;
     }
   }
   // With diluent: medication volume + diluent volume
