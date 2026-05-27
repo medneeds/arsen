@@ -3350,7 +3350,7 @@ function parseScheduleSlots(schedule: string): string[] {
 // --- Print-only Item Row (dynamic schedule slots) ---
 function PrintItemRow({ item, index }: { item: PrescriptionItem; index: number }) {
   const isNutrition = item.category === 'nutrition';
-  const hasPreparo = !isNutrition && (item.diluent || item.diluentVolume || item.accessType || item.infusionTime);
+  const hasPreparo = !isNutrition && (item.diluent || item.diluentVolume || item.accessType || item.infusionTime || item.reconstitutionVolume || item.reconstitutionSolvent);
   const slots = parseScheduleSlots(item.schedule);
   const isEven = index % 2 === 0;
   const rowBg = isEven ? '#ffffff' : '#f8fafc';
