@@ -475,6 +475,8 @@ export async function completeInternalTransfer(
       hospital_unit_id: hospitalUnitId,
     });
 
+    invalidateResolvedRegistry(targetBedRow.id);
+
     return { ok: true, classification, needsSaps };
   } catch (err: any) {
     console.error("[completeInternalTransfer] erro", err);
