@@ -95,16 +95,30 @@ function askSplitGasometria(items: any[]): Promise<SplitChoice> {
         React.createElement(
           "div",
           { style: cardStyle, onClick: (e: any) => e.stopPropagation() },
-          React.createElement("h2", { style: titleStyle }, "Imprimir gasometria separadamente?"),
+          React.createElement("h2", { style: titleStyle }, "Como imprimir a gasometria?"),
           React.createElement(
             "p",
             { style: bodyStyle },
-            "Padrão hospitalar: gasometria é coletada em tubo/seringa específico. Deseja gerar uma guia exclusiva só com a(s) gasometria(s) e outra com os demais exames?",
+            "Gasometria usa tubo/seringa específico. Escolha como imprimir:",
           ),
           React.createElement(
             "div",
-            { style: infoStyle },
-            `Esta requisição contém ${gasoCount} item(ns) de gasometria e ${otherCount} outro(s) exame(s).`,
+            { style: { fontSize: 12, marginBottom: 14, display: "flex", flexDirection: "column", gap: 6 } },
+            React.createElement(
+              "div",
+              { style: { padding: "7px 10px", background: "hsl(var(--muted, 210 40% 96%))", borderRadius: 6, color: "hsl(var(--foreground, 222 47% 11%))" } },
+              `📄 2 guias separadas — uma só com gasometria (${gasoCount} item), outra com os demais (${otherCount} exame${otherCount > 1 ? "s" : ""}).`,
+            ),
+            React.createElement(
+              "div",
+              { style: { padding: "7px 10px", background: "hsl(var(--muted, 210 40% 96%))", borderRadius: 6, color: "hsl(var(--foreground, 222 47% 11%))" } },
+              "🗜️ Compacto (1 página) — gasometria e demais exames lado a lado em paisagem, 2 vias com linha de corte. Economiza papel.",
+            ),
+            React.createElement(
+              "div",
+              { style: { padding: "7px 10px", background: "hsl(var(--muted, 210 40% 96%))", borderRadius: 6, color: "hsl(var(--foreground, 222 47% 11%))" } },
+              "📋 Tudo junto — uma única guia com todos os exames.",
+            ),
           ),
           React.createElement(
             "div",
@@ -112,6 +126,14 @@ function askSplitGasometria(items: any[]): Promise<SplitChoice> {
             React.createElement("button", { style: btnGhost, onClick: () => finish("cancel") }, "Cancelar"),
             React.createElement("button", { style: btnSecondary, onClick: () => finish("together") }, "Não, imprimir tudo junto"),
             React.createElement("button", { style: btnPrimary, onClick: () => finish("split") }, "Sim, imprimir 2 guias"),
+            React.createElement(
+              "button",
+              {
+                style: { ...btnPrimary, opacity: 0.85 },
+                onClick: () => finish("compact"),
+              },
+              "Compacto — 1 página",
+            ),
           ),
         ),
       );
