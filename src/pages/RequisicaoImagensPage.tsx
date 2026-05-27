@@ -137,12 +137,13 @@ const RequisicaoImagensPage = () => {
     const load = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, crm")
+        .select("full_name, crm, cpf")
         .eq("id", user.id)
         .maybeSingle();
       if (data) {
         setDoctorName(data.full_name || "");
         setDoctorCRM(data.crm || "");
+        setDoctorCPF((data as any).cpf || "");
       }
     };
     load();
