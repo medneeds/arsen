@@ -11,6 +11,9 @@ import { lazy, Suspense, useState, useEffect } from "react";
 import { FloatingThemeToggle } from "@/components/FloatingThemeToggle";
 import { PageLoader } from "@/components/PageLoader";
 import { startIdlePrefetch } from "@/lib/prefetchRoutes";
+import { HelpTourProvider } from "@/contexts/HelpTourContext";
+import { HelpTourButton } from "@/components/help/HelpTourButton";
+import { HelpTourOverlay } from "@/components/help/HelpTourOverlay";
 
 // Telas críticas (eager): impactam first paint do app
 import Index from "./pages/Index";
@@ -131,9 +134,10 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <PrivacyProvider>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <Suspense fallback={<PageFallback />}>
+          <HelpTourProvider>
+            <Toaster />
+            <Sonner />
+            <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route path="/welcome" element={<LandingPage />} />
               <Route path="/apresentacao" element={<ApresentacaoPage />} />
@@ -215,8 +219,11 @@ const App = () => {
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </Suspense>
-          <FloatingThemeToggle />
+            </Suspense>
+            <FloatingThemeToggle />
+            <HelpTourButton />
+            <HelpTourOverlay />
+          </HelpTourProvider>
         </TooltipProvider>
       </PrivacyProvider>
     </QueryClientProvider>
