@@ -119,6 +119,7 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   onSave, onValidate, saving, readOnly = false, isValidated = false,
   autoSave = false, hasUnsaved = false,
   diagnosticsSlot,
+  diagnosticsReviewSlot,
   devices, onDevicesChange,
   culturesHtml, onCulturesChange,
   admissionDate,
@@ -127,6 +128,8 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
   patientRecord,
   cidPrimary,
   cidSecondary,
+  onCopyExamFromAdmission,
+  onCopyVitalsFromAdmission,
 }) => {
   const [openSections, setOpenSections] = useState<string[]>(['diagnostics', 'devices', 'evolucao', 'complementares', 'plan']);
   const [autoSavedAt, setAutoSavedAt] = useState<Date | null>(null);
@@ -146,16 +149,34 @@ export const EvolutionForm: React.FC<EvolutionFormProps> = ({
     if (soap.assessment) onSOAPChange('assessment', '');
   };
 
-  // Calculate completion status — apenas Evolução e Plano são obrigatórios.
-  // Sinais vitais e exame físico foram removidos do formulário (médico relata dentro
-  // do corpo da Evolução). Exames complementares permanecem como campo opcional.
+  // NEWS2 — calculado em tempo real a partir dos sinais vitais preenchidos.
+  // Exibido como badge no header da seção quando ≥ 1 campo está preenchido.
+  const news2 = useMemo(() => {
+    const hasAny = Object.values(vitals).some(v => (v ?? "").trim());
+    if (!hasAny) return null;
+    const pa = vitals.pa.split("/")[0];
+    return calculateNEWS2({
+      respiratoryRate: parseVitalNumber(vitals.fr),
+      spo2: parseVitalNumber(vitals.spo2),
+      temperature: parseVitalNumber(vitals.temp),
+      systolicBp: parseVitalNumber(pa),
+      heartRate: parseVitalNumber(vitals.fc),
+    });
+  }, [vitals]);
+
+  // Completion status — campos opcionais e obrigatórios bem separados.
+  // OBRIGATÓRIOS para validar: Diagnóstico (CID primário) + Evolução + Plano.
+  // OPCIONAIS: Sinais Vitais, Exame Físico, Exames Complementares, Dispositivos/Culturas.
   const completion = useMemo(() => ({
+    diagnostics: !!(cidPrimary && cidPrimary.trim()),
+    vitals: Object.values(vitals).some(v => (v ?? "").trim()),
+    exam: Object.values(physicalExam).some(v => (v ?? "").trim()),
     evolucao: richHtmlToPlainText(evolucaoText).length >= 10,
     complementares: richHtmlToPlainText(soap.objective).length > 0,
     plan: richHtmlToPlainText(soap.plan).length >= 10,
-  }), [soap.objective, soap.plan, evolucaoText]);
+  }), [cidPrimary, vitals, physicalExam, soap.objective, soap.plan, evolucaoText]);
 
-  const requiredComplete = completion.evolucao && completion.plan;
+  const requiredComplete = completion.diagnostics && completion.evolucao && completion.plan;
 
 
   // Autosave (debounced 2s) for editing existing drafts in Timeline
