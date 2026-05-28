@@ -92,6 +92,7 @@ const SECTORS = [
   { value: "yellow", label: "UTI 2", color: "text-yellow-500" },
   { value: "blue", label: "UCI 1", color: "text-blue-500" },
   { value: "outside", label: "UCI 2", color: "text-emerald-500" },
+  { value: "ucc", label: "UCC", color: "text-cyan-600" },
 ];
 
 export function AdmitPatientDialog({ open, onOpenChange, preAdmission, onSuccess }: AdmitPatientDialogProps) {
