@@ -4398,7 +4398,7 @@ const PrescricaoPage = () => {
     const route = (item.route || '').toLowerCase();
     const presentation = (item.presentation || '').toLowerCase();
     const isOralSolid = /(comprimido|capsula|cap\.|drágea|dragea)/.test(presentation);
-    const isEnteralRoute = /(\bsng\b|\bsne\b|enteral|gastrostomia|jejunostomia)/.test(route);
+    const isEnteralRoute = /(\bsng\b|\bsne\b|enteral|nasoenter|nasogastr|orogastr|gastrostomia|jejunostomia|\bgtt\b|sonda)/.test(route);
     if (isOralSolid && isEnteralRoute) {
       const isCrushable = (item as any).crushable !== false; // false explícito = bloqueado por catálogo ISMP
       if (!isCrushable) {

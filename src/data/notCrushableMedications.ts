@@ -123,5 +123,5 @@ export function isTabletOrCapsule(presentation?: string): boolean {
 /** Heurística: via é enteral/sonda? */
 export function isEnteralRoute(route?: string): boolean {
   const r = norm(route || '');
-  return /enteral|sng|sne|gtt|sonda|nasoenter|nasogastr|gastrostom|jejunost/.test(r);
+  return /enteral|sng|sne|gtt|sonda|nasoenter|nasogastr|orogastr|gastrostom|jejunost/.test(r);
 }
