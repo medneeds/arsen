@@ -6099,36 +6099,50 @@ const PrescricaoPage = () => {
         }
 
         // Etapa 2 — última validada/assinada (com fallback para legados sem encounter)
-        const renewAndLoad = (row: { id: string; items: unknown; created_at: string }) => {
+        // Bifurcação:
+        //  • Mesmo dia clínico (não cruzou 05h) → carrega a prescrição REAL via
+        //    loadPrescriptionRef (preserva validated=true, assinatura, etc.)
+        //  • Cruzou 05h → cópia com needsShiftRevalidation=true (amarelas)
+        const loadValidatedPrescription = async (row: { id: string; items: unknown; created_at: string }) => {
           const sourceItems = Array.isArray(row.items) ? row.items as unknown as PrescriptionItem[] : [];
           if (sourceItems.length === 0) return false;
           const crossedShift = hasCrossedShiftBoundary(row.created_at);
+
+          if (!crossedShift) {
+            // ── MESMO DIA CLÍNICO: carrega o registro REAL com status preservado ──
+            if (loadPrescriptionRef.current) {
+              await loadPrescriptionRef.current(row.id);
+              toast.success('Prescrição do dia carregada', {
+                description: 'Exibindo a última prescrição validada deste plantão.',
+                duration: 4000,
+              });
+              return true;
+            }
+            return false;
+          }
+
+          // ── DIA SEGUINTE (cruzou 05h): cópia com renovação pendente ──
           const renewedItems: PrescriptionItem[] = sourceItems.map((it) => ({
             ...it,
             id: crypto.randomUUID(),
             validated: false,
             validatedAt: undefined,
+            validatedByName: undefined,
+            digitalSignature: null,
             status: 'active' as const,
             suspensionReason: undefined,
             suspendedAt: undefined,
-            needsShiftRevalidation: crossedShift,
+            needsShiftRevalidation: true,
           }));
           setItems(renewedItems);
           setDigitalSignature(null);
           setCurrentPrescriptionId(null);
           setSelectedIds(new Set());
           const when = format(new Date(row.created_at), "dd/MM 'às' HH:mm", { locale: ptBR });
-          if (crossedShift) {
-            toast.info(`Última prescrição validada (${when}) carregada — renovação de plantão necessária`, {
-              description: `${renewedItems.length} itens precisam ser revalidados pelo médico do plantão atual (corte 05:00). A original permanece intocada no histórico.`,
-              duration: 8000,
-            });
-          } else {
-            toast.info(`Última prescrição validada (${when}) carregada como rascunho`, {
-              description: `${renewedItems.length} itens renovados — revise e valide para o ciclo de hoje. A original permanece intocada no histórico.`,
-              duration: 8000,
-            });
-          }
+          toast.info(`Renovação de plantão — prescrição de ${when} replicada`, {
+            description: `${renewedItems.length} itens aguardam revalidação pelo médico do plantão atual. A original permanece intocada no histórico.`,
+            duration: 8000,
+          });
           return true;
         };
 
@@ -6148,7 +6162,7 @@ const PrescricaoPage = () => {
           if (encErr) throw encErr;
           const encRow = (encRows || [])[0];
           if (encRow?.id && (encRow as any).patient_registry_id === patientRegistryId) {
-            if (renewAndLoad(encRow as any)) return;
+            if (await loadValidatedPrescription(encRow as any)) return;
           }
         }
 
@@ -6168,9 +6182,11 @@ const PrescricaoPage = () => {
         const lastValidated = (validatedRows || [])[0];
         // Dupla verificação anti-avulsa
         if (!lastValidated?.id || (lastValidated as any).patient_registry_id !== patientRegistryId) return;
-        renewAndLoad(lastValidated as any);
+        await loadValidatedPrescription(lastValidated as any);
       } catch (err) {
         console.error('[autoLoadPrescription] failed', err);
+      } finally {
+        setAutoLoadDone(true);
       }
     })();
   }, [currentHospital, currentState, patient.name, patientRegistryId, activeEncounterId, currentPrescriptionId]);
