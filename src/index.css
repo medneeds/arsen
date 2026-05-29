@@ -700,3 +700,24 @@ body.gestor-readonly main::before {
 }
 
 
+
+/* ============================================================
+   INSTITUTIONAL HEADER — Botões de ação no gradiente escuro
+   Garante visibilidade permanente dos ícones sem depender de hover.
+   ============================================================ */
+.institutional-actions button {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+}
+
+.institutional-actions button:hover {
+  background-color: rgba(255, 255, 255, 0.28) !important;
+  border-color: rgba(255, 255, 255, 0.50) !important;
+  transform: translateY(-1px);
+}
+
+.institutional-actions svg {
+  color: rgba(255, 255, 255, 0.92) !important;
+  opacity: 1 !important;
+}
