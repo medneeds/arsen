@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { ClinicalHeader } from "@/components/ClinicalHeader";
-import { PatientContextStrip } from "@/components/PatientContextStrip";
 
 import { PatientCockpit } from "@/components/PatientCockpit";
 import { SapsPendingAlert } from "@/components/SapsPendingAlert";
