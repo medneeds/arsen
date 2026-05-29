@@ -179,7 +179,7 @@ export const printEvolution = async (
     `;
   }
 
-  const doctorName = evo.validated_by_name || evo.created_by_name || "Médico Assistente";
+
 
   const html = buildNormaZeroDocument({
     title: intercurrence ? "Intercorrência Clínica" : "Evolução Clínica",
