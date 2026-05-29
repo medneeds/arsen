@@ -392,30 +392,30 @@ export default function PacienteHubPage() {
                 )}
                 <div className={cn(
                   "relative flex flex-col items-center justify-center aspect-square rounded-lg overflow-hidden transition-transform",
-                  "bg-white",
+                  "bg-card",
                   isPreAdmitted
                     ? "border-2 border-amber-400 shadow-lg group-hover:scale-[1.02]"
                     : isAdmitted
                     ? "border border-emerald-300 group-hover:scale-[1.02] group-hover:shadow-md"
-                    : "border border-slate-200 group-hover:scale-[1.02] group-hover:shadow-md",
+                    : "border border-border group-hover:scale-[1.02] group-hover:shadow-md",
                 )}>
                   <span className={cn(
                     "absolute top-0 left-0 right-0 h-1",
-                    isPreAdmitted ? "bg-amber-400" : isAdmitted ? "bg-emerald-400" : "bg-slate-300",
+                    isPreAdmitted ? "bg-amber-400" : isAdmitted ? "bg-emerald-400" : "bg-muted-foreground/30",
                   )} />
                   <div className={cn(
                     "p-3 rounded-xl mb-3",
-                    isPreAdmitted ? "bg-amber-50" : isAdmitted ? "bg-emerald-50" : "bg-slate-100",
+                    isPreAdmitted ? "bg-amber-50" : isAdmitted ? "bg-emerald-50" : "bg-muted",
                   )}>
                     <AdmissionIcon
                       className={cn(
                         "w-7 h-7",
-                        isPreAdmitted ? "text-amber-600" : isAdmitted ? "text-emerald-600" : "text-slate-500",
+                        isPreAdmitted ? "text-amber-600" : isAdmitted ? "text-emerald-600" : "text-muted-foreground",
                       )}
                       strokeWidth={1.75}
                     />
                   </div>
-                  <span className="text-[11px] font-bold text-slate-900 tracking-[0.15em] uppercase">
+                  <span className="text-[11px] font-bold text-foreground tracking-[0.15em] uppercase">
                     Admissão
                   </span>
                   {isPreAdmitted && (
