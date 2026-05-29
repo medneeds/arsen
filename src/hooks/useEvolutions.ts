@@ -228,6 +228,8 @@ export function useEvolutions(
           vital_signs: vitalSigns || EMPTY_VITALS,
           physical_exam: physicalExam || EMPTY_EXAM,
           diagnostic_hypotheses: diagnosticHypotheses ?? null,
+          cid_primary: cidPrimary ?? null,
+          cid_secondary: cidSecondary ?? null,
           hospital_unit_id: currentHospital.id,
           state_id: currentState.id,
           created_by: user.id,
