@@ -490,6 +490,8 @@ export type Database = {
           archive_reason: string | null
           archived_at: string | null
           archived_from_patient_id: string | null
+          cid_primary: string | null
+          cid_secondary: string[] | null
           created_at: string
           created_by: string
           created_by_name: string | null
@@ -524,6 +526,8 @@ export type Database = {
           archive_reason?: string | null
           archived_at?: string | null
           archived_from_patient_id?: string | null
+          cid_primary?: string | null
+          cid_secondary?: string[] | null
           created_at?: string
           created_by: string
           created_by_name?: string | null
@@ -558,6 +562,8 @@ export type Database = {
           archive_reason?: string | null
           archived_at?: string | null
           archived_from_patient_id?: string | null
+          cid_primary?: string | null
+          cid_secondary?: string[] | null
           created_at?: string
           created_by?: string
           created_by_name?: string | null

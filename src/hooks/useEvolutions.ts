@@ -45,6 +45,8 @@ export interface EvolutionRecord {
   status: "draft" | "validated" | "suspended";
   evolution_type?: string;
   diagnostic_hypotheses?: string | null;
+  cid_primary?: string | null;
+  cid_secondary?: string[] | null;
   validated_at: string | null;
   validated_by: string | null;
   validated_by_name: string | null;
@@ -202,7 +204,9 @@ export function useEvolutions(
     soapData?: typeof EMPTY_SOAP,
     vitalSigns?: typeof EMPTY_VITALS,
     physicalExam?: typeof EMPTY_EXAM,
-    diagnosticHypotheses?: string
+    diagnosticHypotheses?: string,
+    cidPrimary?: string | null,
+    cidSecondary?: string[] | null,
   ): Promise<EvolutionRecord | null> => {
     if (!user || !currentHospital || !currentState) {
       toast.error("Contexto hospitalar não disponível");
@@ -224,6 +228,8 @@ export function useEvolutions(
           vital_signs: vitalSigns || EMPTY_VITALS,
           physical_exam: physicalExam || EMPTY_EXAM,
           diagnostic_hypotheses: diagnosticHypotheses ?? null,
+          cid_primary: cidPrimary ?? null,
+          cid_secondary: cidSecondary ?? null,
           hospital_unit_id: currentHospital.id,
           state_id: currentState.id,
           created_by: user.id,
