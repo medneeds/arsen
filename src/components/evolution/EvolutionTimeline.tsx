@@ -70,6 +70,8 @@ export const EvolutionTimeline: React.FC<EvolutionTimelineProps> = ({
   const [suspendReason, setSuspendReason] = useState("");
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
   const [validateDialogId, setValidateDialogId] = useState<string | null>(null);
+  const [justValidatedEvo, setJustValidatedEvo] = useState<EvolutionRecord | null>(null);
+  const printPromptTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Filters
   const [filterStatus, setFilterStatus] = useState<"all" | "draft" | "validated" | "suspended">("all");
