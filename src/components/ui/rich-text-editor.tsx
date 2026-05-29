@@ -124,6 +124,23 @@ export function RichTextEditor({
     handleInput();
   };
 
+  const execAlign = (justify: "justifyLeft" | "justifyCenter" | "justifyRight" | "justifyFull") => {
+    if (disabled) return;
+    ref.current?.focus();
+    document.execCommand(justify, false);
+    handleInput();
+  };
+
+  const getActiveAlign = (): "left" | "center" | "right" | "full" => {
+    if (typeof document === "undefined") return "left";
+    try {
+      if (document.queryCommandState("justifyCenter")) return "center";
+      if (document.queryCommandState("justifyRight")) return "right";
+      if (document.queryCommandState("justifyFull")) return "full";
+    } catch { /* noop */ }
+    return "left";
+  };
+
   const handleInput = () => {
     const el = ref.current;
     if (!el) return;
