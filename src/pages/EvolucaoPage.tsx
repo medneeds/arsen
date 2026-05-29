@@ -246,6 +246,15 @@ const EvolucaoPage = () => {
   const performDuplicate = (source: EvolutionRecord) => {
     // Limpa qualquer estado sujo de interações anteriores antes de popular.
     resetNewForm();
+    // Restaura snapshot de CID da evolução original no estado do paciente
+    const srcCidPrimary = (source as any).cid_primary;
+    const srcCidSecondary = (source as any).cid_secondary;
+    if (typeof srcCidPrimary === "string" && srcCidPrimary.trim()) {
+      updateCidPrimary(srcCidPrimary);
+    }
+    if (Array.isArray(srcCidSecondary) && srcCidSecondary.length > 0) {
+      updateCidSecondary(srcCidSecondary);
+    }
     const srcSoap: any = source.soap_data || {};
     const { devices: srcDevices, culturesHtml: srcCulturesHtml, ...soapBase } = srcSoap;
     setNewSoap({ ...soapBase });
